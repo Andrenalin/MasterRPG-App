@@ -141,14 +141,14 @@ public extension RuleModel {
         let metadata = RuleSourceMetadata(
             sourceIdentifier: rule.id,
             systemID: manifest.id,
-            systemTitle: manifest.title,
+            systemTitle: FoundryTextDecoder.decodedText(manifest.title),
             systemVersion: manifest.version,
             packageIdentifier: "\(manifest.id).\(rule.packName)",
-            packageName: rule.packName,
+            packageName: FoundryTextDecoder.decodedText(rule.packName),
             documentID: rule.documentID,
-            documentType: rule.documentType,
-            subtype: rule.subtype,
-            ruleCategory: rule.category.rawValue,
+            documentType: FoundryTextDecoder.decodedText(rule.documentType),
+            subtype: FoundryTextDecoder.decodedText(rule.subtype),
+            ruleCategory: FoundryTextDecoder.decodedText(rule.category.rawValue),
             imagePath: rule.imagePath ?? ""
         )
         let generatedEntries = foundryEntries(
@@ -161,7 +161,7 @@ public extension RuleModel {
 
         return RuleModel(
             id: id ?? rule.masterRPGID,
-            name: rule.name,
+            name: FoundryTextDecoder.decodedText(rule.name),
             description: readableText(fromHTML: rule.descriptionHTML),
             tags: generatedTags,
             category: .rules,
@@ -196,21 +196,21 @@ public extension RuleModel {
             systemID: systemID,
             systemVersion: systemVersion,
             packageIdentifier: packageIdentifier,
-            packageName: packageIdentifier,
+            packageName: FoundryTextDecoder.decodedText(packageIdentifier),
             documentID: sourceIdentifier,
-            documentType: documentType,
-            subtype: subtype,
-            ruleCategory: category,
+            documentType: FoundryTextDecoder.decodedText(documentType),
+            subtype: FoundryTextDecoder.decodedText(subtype),
+            ruleCategory: FoundryTextDecoder.decodedText(category),
             imagePath: imagePath
         )
-        let values = flattenedValues(
+        let values = hierarchicalValues(
             rawData["system"] ?? rawData,
             sourceIdentifier: identityNamespace ?? sourceIdentifier
         )
 
         return RuleModel(
             id: id,
-            name: name,
+            name: FoundryTextDecoder.decodedText(name),
             description: readableText(fromHTML: descriptionHTML),
             tags: orderedUnique(tags + [subtype, "Foundry VTT"]),
             category: .rules,
@@ -220,6 +220,7 @@ public extension RuleModel {
             parentId: parentId
         )
     }
+
 }
 
 private extension RuleModel {
@@ -227,20 +228,18 @@ private extension RuleModel {
         rule: FoundryRuleDefinition,
         sourceIdentifier: String
     ) -> [RuleEntryModel] {
-        var result = rule.values.map { value in
-            RuleEntryModel(
-                id: FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#value#\(value.path)"),
-                name: value.path,
-                content: presentation(value.value),
-                kind: .value
-            )
-        }
+        var result = hierarchicalValues(
+            projectedRuleValues(rule.values),
+            sourceIdentifier: sourceIdentifier
+        )
 
         result.append(contentsOf: rule.references.enumerated().map { index, reference in
-            let label = reference.label?.isEmpty == false ? reference.label ?? reference.target : reference.target
+            let label = reference.label?.isEmpty == false
+                ? FoundryTextDecoder.decodedText(reference.label ?? reference.target)
+                : FoundryTextDecoder.decodedText(reference.target)
             var details = "**Target:** \(reference.target)"
             if let packName = reference.packName, !packName.isEmpty {
-                details += "\n\n**Pack:** \(packName)"
+                details += "\n\n**Pack:** \(FoundryTextDecoder.decodedText(packName))"
             }
             if let documentID = reference.documentID, !documentID.isEmpty {
                 details += "\n\n**Document:** \(documentID)"
@@ -258,7 +257,9 @@ private extension RuleModel {
         result.append(contentsOf: rule.embeddedRules.map { embedded in
             var sections = [readableText(fromHTML: embedded.descriptionHTML)]
                 .filter { !$0.isEmpty }
-            let values = embedded.values.map { "- **\($0.path):** \(presentation($0.value))" }
+            let values = embedded.values.map {
+                "- **\(FoundryTextDecoder.decodedText($0.path)):** \(presentation($0.value))"
+            }
             if !values.isEmpty {
                 sections.append("**Values**\n\(values.joined(separator: "\n"))")
             }
@@ -270,7 +271,9 @@ private extension RuleModel {
             }
             if !embedded.effects.isEmpty {
                 let effects = embedded.effects.enumerated().map { index, effect in
-                    let name = effect.name.isEmpty ? "Effect \(index + 1)" : effect.name
+                    let name = effect.name.isEmpty
+                        ? "Effect \(index + 1)"
+                        : FoundryTextDecoder.decodedText(effect.name)
                     return "**\(name)**\n\(foundryEffectDetails(effect))"
                 }
                 sections.append("**Effects**\n\n\(effects.joined(separator: "\n\n"))")
@@ -279,7 +282,7 @@ private extension RuleModel {
                 id: FoundryRuleIdentity.uuid(
                     for: "\(sourceIdentifier)#embedded#\(embedded.id)"
                 ),
-                name: embedded.name,
+                name: FoundryTextDecoder.decodedText(embedded.name),
                 content: sections.joined(separator: "\n\n"),
                 kind: .embeddedRule
             )
@@ -290,7 +293,9 @@ private extension RuleModel {
                 id: FoundryRuleIdentity.uuid(
                     for: "\(sourceIdentifier)#effect#\(effect.id)"
                 ),
-                name: effect.name.isEmpty ? "Effect \(index + 1)" : effect.name,
+                name: effect.name.isEmpty
+                    ? "Effect \(index + 1)"
+                    : FoundryTextDecoder.decodedText(effect.name),
                 content: foundryEffectDetails(effect),
                 kind: .effect
             )
@@ -303,8 +308,8 @@ private extension RuleModel {
         index: Int
     ) -> String {
         let label = reference.label?.isEmpty == false
-            ? reference.label ?? reference.target
-            : reference.target
+            ? FoundryTextDecoder.decodedText(reference.label ?? reference.target)
+            : FoundryTextDecoder.decodedText(reference.target)
         var lines = [
             "**Reference \(index + 1): \(label)**",
             "- **Target:** \(reference.target)",
@@ -313,7 +318,7 @@ private extension RuleModel {
             "- **Token:** \(reference.rawToken)",
         ]
         if let packName = reference.packName, !packName.isEmpty {
-            lines.append("- **Pack:** \(packName)")
+            lines.append("- **Pack:** \(FoundryTextDecoder.decodedText(packName))")
         }
         if let documentID = reference.documentID, !documentID.isEmpty {
             lines.append("- **Document:** \(documentID)")
@@ -328,7 +333,9 @@ private extension RuleModel {
             "- **Transfers to actor:** \(effect.transfersToActor ? "yes" : "no")",
         ]
         if !effect.statuses.isEmpty {
-            lines.append("- **Statuses:** \(effect.statuses.joined(separator: ", "))")
+            lines.append(
+                "- **Statuses:** \(effect.statuses.map(FoundryTextDecoder.decodedText).joined(separator: ", "))"
+            )
         }
         if let duration = effect.duration {
             lines.append("- **Duration:** \(presentation(duration))")
@@ -343,55 +350,138 @@ private extension RuleModel {
         return lines.joined(separator: "\n")
     }
 
-    static func flattenedValues(
+    static func hierarchicalValues(
         _ value: FoundryJSONValue,
         sourceIdentifier: String
     ) -> [RuleEntryModel] {
-        var leaves: [(path: String, value: FoundryJSONValue)] = []
-        flatten(value, path: [], into: &leaves)
+        hierarchicalValues(
+            FoundryValueHierarchy.nodes(from: value),
+            sourceIdentifier: sourceIdentifier
+        )
+    }
+
+    static func hierarchicalValues(
+        _ values: [FoundryRuleValue],
+        sourceIdentifier: String
+    ) -> [RuleEntryModel] {
+        hierarchicalValues(
+            FoundryValueHierarchy.nodes(from: values),
+            sourceIdentifier: sourceIdentifier
+        )
+    }
+
+    static func hierarchicalValues(
+        _ nodes: [FoundryValueNode],
+        sourceIdentifier: String
+    ) -> [RuleEntryModel] {
         let maximumPresentedValues = 500
-        var result = leaves.prefix(maximumPresentedValues).map { leaf in
-            RuleEntryModel(
-                id: FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#value#\(leaf.path)"),
-                name: leaf.path,
-                content: presentation(leaf.value),
-                kind: .value
-            )
-        }
-        if leaves.count > maximumPresentedValues {
+        let valueCount = nodes.reduce(0) { $0 + $1.valueCount }
+        var remainingValues = maximumPresentedValues
+        var result = projectedValueEntries(
+            nodes,
+            sourceIdentifier: sourceIdentifier,
+            parentId: nil,
+            remainingValues: &remainingValues
+        )
+        if valueCount > maximumPresentedValues {
             result.append(RuleEntryModel(
                 id: FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#source#remaining-values"),
                 name: "Additional source values",
-                content: "\(leaves.count - maximumPresentedValues) values remain available in the lossless source payload.",
+                content: "\(valueCount - maximumPresentedValues) values remain available in the lossless source payload.",
                 kind: .source
             ))
         }
         return result
     }
 
-    static func flatten(
-        _ value: FoundryJSONValue,
-        path: [String],
-        into output: inout [(path: String, value: FoundryJSONValue)]
-    ) {
-        switch value {
-        case .object(let object):
-            for key in object.keys.sorted() {
-                guard let child = object[key] else { continue }
-                flatten(child, path: path + [key], into: &output)
+    static func projectedValueEntries(
+        _ nodes: [FoundryValueNode],
+        sourceIdentifier: String,
+        parentId: UUID?,
+        remainingValues: inout Int
+    ) -> [RuleEntryModel] {
+        var entries: [RuleEntryModel] = []
+        for node in nodes {
+            guard remainingValues > 0 else { break }
+            let pathIdentity = valuePathIdentity(node.pathComponents)
+            if node.children.isEmpty, let value = node.value {
+                remainingValues -= 1
+                entries.append(RuleEntryModel(
+                    id: FoundryRuleIdentity.uuid(
+                        for: "\(sourceIdentifier)#value#\(pathIdentity)"
+                    ),
+                    name: FoundryTextDecoder.decodedText(node.component),
+                    content: presentation(value),
+                    kind: .value,
+                    parentId: parentId
+                ))
+                continue
             }
-        case .array(let array):
-            for (index, child) in array.enumerated() {
-                flatten(child, path: path + [String(index)], into: &output)
+
+            let groupId = FoundryRuleIdentity.uuid(
+                for: "\(sourceIdentifier)#value-group#\(pathIdentity)"
+            )
+            var descendants: [RuleEntryModel] = []
+            if let value = node.value, remainingValues > 0 {
+                remainingValues -= 1
+                descendants.append(RuleEntryModel(
+                    id: FoundryRuleIdentity.uuid(
+                        for: "\(sourceIdentifier)#value#\(pathIdentity)#own"
+                    ),
+                    name: "value",
+                    content: presentation(value),
+                    kind: .value,
+                    parentId: groupId
+                ))
             }
-        default:
-            output.append((path.joined(separator: "."), value))
+            descendants.append(contentsOf: projectedValueEntries(
+                node.children,
+                sourceIdentifier: sourceIdentifier,
+                parentId: groupId,
+                remainingValues: &remainingValues
+            ))
+            guard !descendants.isEmpty else { continue }
+
+            entries.append(RuleEntryModel(
+                id: groupId,
+                name: FoundryTextDecoder.decodedText(node.component),
+                content: "",
+                kind: .group,
+                parentId: parentId
+            ))
+            entries.append(contentsOf: descendants)
         }
+        return entries
+    }
+
+    static func projectedRuleValues(
+        _ values: [FoundryRuleValue]
+    ) -> [FoundryRuleValue] {
+        let paths = values.map {
+            $0.path.split(separator: ".", omittingEmptySubsequences: true).map(String.init)
+        }
+        let hasCommonTechnicalSystemRoot = !paths.isEmpty && paths.allSatisfy {
+            $0.count > 1 && $0.first == "system"
+        }
+        guard hasCommonTechnicalSystemRoot else { return values }
+        return zip(values, paths).map { value, path in
+            FoundryRuleValue(
+                path: path.dropFirst().joined(separator: "."),
+                value: value.value
+            )
+        }
+    }
+
+    static func valuePathIdentity(_ components: [String]) -> String {
+        guard !components.isEmpty else { return "root" }
+        return components.map { component in
+            "\(component.utf8.count):\(component)"
+        }.joined()
     }
 
     static func presentation(_ value: FoundryJSONValue) -> String {
         switch value {
-        case .string(let value): return value
+        case .string(let value): return FoundryTextDecoder.plainText(fromHTML: value)
         case .integer(let value): return value.formatted()
         case .unsignedInteger(let value): return value.formatted()
         case .number(let value): return value.formatted(.number)
@@ -406,38 +496,20 @@ private extension RuleModel {
     }
 
     static func readableText(fromHTML html: String?) -> String {
-        guard let html, !html.isEmpty else { return "" }
-        var result = ""
-        var isInsideTag = false
-        for character in html {
-            switch character {
-            case "<": isInsideTag = true
-            case ">":
-                isInsideTag = false
-                if !result.hasSuffix("\n") { result.append("\n") }
-            default:
-                if !isInsideTag { result.append(character) }
-            }
-        }
-        return result
-            .replacing("&nbsp;", with: " ")
-            .replacing("&amp;", with: "&")
-            .replacing("&lt;", with: "<")
-            .replacing("&gt;", with: ">")
-            .replacing("&quot;", with: "\"")
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n\n")
+        FoundryTextDecoder.plainText(fromHTML: html)
     }
 
     static func orderedUnique(_ values: [String]) -> [String] {
         var seen: Set<String> = []
-        return values.filter { value in
-            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return false }
-            return seen.insert(trimmed.localizedLowercase).inserted
+        var result: [String] = []
+        for value in values {
+            let decoded = FoundryTextDecoder.decodedText(value)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !decoded.isEmpty,
+                  seen.insert(decoded.localizedLowercase).inserted else { continue }
+            result.append(decoded)
         }
+        return result
     }
 }
 
@@ -557,14 +629,27 @@ extension RuleModel: ItemDiffComparable {
 
 extension RuleModel: ItemDuplicatable {
     public func duplicate() -> RuleModel {
-        RuleModel(
+        var duplicatedEntryIDs: [UUID: UUID] = [:]
+        for entry in entries {
+            if duplicatedEntryIDs[entry.id] == nil {
+                duplicatedEntryIDs[entry.id] = UUID()
+            }
+        }
+        let duplicatedEntries = entries.compactMap { entry -> RuleEntryModel? in
+            guard let duplicatedID = duplicatedEntryIDs[entry.id] else { return nil }
+            return entry.duplicate(
+                id: duplicatedID,
+                parentId: entry.parentId.flatMap { duplicatedEntryIDs[$0] }
+            )
+        }
+        return RuleModel(
             id: UUID(),
             name: duplicateName(from: name),
             description: description,
             tags: tags,
             category: category,
             displayState: displayState,
-            entries: entries.map { $0.duplicate() },
+            entries: duplicatedEntries,
             sourceMetadata: sourceMetadata,
             sourcePayload: sourcePayload,
             parentId: nil

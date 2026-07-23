@@ -247,7 +247,7 @@ struct FoundryVTTImportReaderTests {
     }
 
     @Test("Collects every additional mapper-supported media extension", arguments: [
-        "bmp", "tif", "tiff", "aif", "aiff", "caf",
+        "apng", "bmp", "tif", "tiff", "aif", "aiff", "caf",
     ])
     func collectsAdditionalMapperMediaExtensions(fileExtension: String) async throws {
         let directory = try temporaryDirectory()

@@ -51,8 +51,21 @@ struct RuleDataControllerTests {
             tags: ["one", "two"],
             displayState: 4,
             entries: [
-                .fixture(id: firstID, name: "First", content: "A", kind: .text, displayState: 1),
-                .fixture(id: secondID, name: "Second", content: "B", kind: .effect, displayState: 2)
+                .fixture(
+                    id: firstID,
+                    name: "First",
+                    content: "A",
+                    kind: .group,
+                    displayState: 1
+                ),
+                .fixture(
+                    id: secondID,
+                    name: "Second",
+                    content: "B",
+                    kind: .value,
+                    displayState: 2,
+                    parentId: firstID
+                )
             ],
             sourceMetadata: metadata,
             sourcePayload: .foundryDocument(payload),
@@ -74,8 +87,9 @@ struct RuleDataControllerTests {
         #expect(fetched.entries.map(\.id) == [firstID, secondID])
         #expect(fetched.entries.map(\.name) == ["First", "Second"])
         #expect(fetched.entries.map(\.content) == ["A", "B"])
-        #expect(fetched.entries.map(\.kind) == [.text, .effect])
+        #expect(fetched.entries.map(\.kind) == [.group, .value])
         #expect(fetched.entries.map(\.displayState) == [1, 2])
+        #expect(fetched.entries.map(\.parentId) == [nil, firstID])
         #expect(fetched.sourceMetadata == metadata)
         #expect(fetched.sourcePayload == .foundryDocument(payload))
         #expect(fetched.parentId == parentID)
@@ -110,6 +124,7 @@ struct RuleDataControllerTests {
         #expect(fetchedUpdated.entries.map(\.content) == ["B2"])
         #expect(fetchedUpdated.entries.map(\.kind) == [.value])
         #expect(fetchedUpdated.entries.map(\.displayState) == [0])
+        #expect(fetchedUpdated.entries.map(\.parentId) == [nil])
         #expect(fetchedUpdated.sourceMetadata == metadata)
         #expect(fetchedUpdated.sourcePayload == .foundryDocument(payload))
         #expect(fetchedUpdated.parentId == nil)

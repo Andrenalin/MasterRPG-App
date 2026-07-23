@@ -47,9 +47,10 @@ extension SheetController: SheetControllable {
         moduleDepth: Int,
         isEditor: Bool
     ) -> [SheetModel] {
-        itemController.reviewAwareItemOrEmpty(root: root, for: itemId).entries.map { entry in
+        let entries = itemController.reviewAwareItemOrEmpty(root: root, for: itemId).entries
+        return RuleEntryTree(entries: entries).roots.map { node in
             sheet(
-                entry: entry,
+                node: node,
                 root: root,
                 itemId: itemId,
                 level: level,
@@ -61,13 +62,14 @@ extension SheetController: SheetControllable {
 
     @MainActor
     private func sheet(
-        entry: RuleEntryModel,
+        node: RuleEntryTree.Node,
         root: RootManager,
         itemId: UUID,
         level: Int,
         moduleDepth: Int,
         isEditor: Bool
     ) -> SheetModel {
+        let entry = node.entry
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: .rule)
         let links = LinkReplaceController.links(for: entry.content)
         let linkedSheets = links.compactMap { link -> SheetModel? in
@@ -93,12 +95,23 @@ extension SheetController: SheetControllable {
                 isEditor: isEditor
             )
         }
+        let childSheets = node.children.map { child in
+            sheet(
+                node: child,
+                root: root,
+                itemId: itemId,
+                level: level + 1,
+                moduleDepth: moduleDepth,
+                isEditor: isEditor
+            )
+        }
         return SheetModel(
             source: destination,
             level: level,
+            type: entry.kind == .group ? .group : .item,
             name: entry.name,
             description: entry.content,
-            entries: linkedSheets
+            entries: childSheets + linkedSheets
         )
     }
 
@@ -116,50 +129,136 @@ extension SheetController: SheetControllable {
         }
         guard !sheetModel.isFolded else { return }
 
-        let existing = Dictionary(
-            uniqueKeysWithValues: sheetModel.entries.compactMap { entry in
-                entry.source.entryId.map { ($0, entry) }
-            }
+        let existingEntries = entrySheetsByID(
+            in: sheetModel.entries,
+            ownerID: model.id
         )
-        sheetModel.entries = model.entries.map { entry in
-            if let current = existing[entry.id] {
-                var linksChanged = false
-                unequalSet(lhs: &current.name, rhs: entry.name) { changed in
-                    current.hasChanged = changed
-                }
-                unequalSet(lhs: &current.description, rhs: entry.content) { changed in
-                    current.hasChanged = current.hasChanged || changed
-                    linksChanged = changed
-                }
+        let projectedEntries = sheetEntries(
+            root: root,
+            itemId: model.id,
+            level: sheetModel.level,
+            moduleDepth: 0,
+            isEditor: isEditor
+        )
+        sheetModel.entries = reconciledEntrySheets(
+            projectedEntries,
+            existingEntries: existingEntries,
+            ownerID: model.id,
+            root: root,
+            isEditor: isEditor
+        )
+    }
 
-                if linksChanged {
-                    current.entries = sheet(
-                        entry: entry,
-                        root: root,
-                        itemId: model.id,
-                        level: sheetModel.level,
-                        moduleDepth: 0,
-                        isEditor: isEditor
-                    ).entries
-                } else {
-                    current.entries.forEach { linked in
-                        root.rootModel(for: linked.source.typeId)?.sheetControllable.update(
-                            root: root,
-                            sheetModel: linked,
-                            isEditor: isEditor
-                        )
-                    }
-                }
-                return current
+    @MainActor
+    private func reconciledEntrySheets(
+        _ projectedEntries: [SheetModel],
+        existingEntries: [UUID: SheetModel],
+        ownerID: UUID,
+        root: RootManager,
+        isEditor: Bool
+    ) -> [SheetModel] {
+        projectedEntries.map { projected in
+            guard
+                let entryID = projected.source.entryId,
+                let existing = existingEntries[entryID]
+            else {
+                return projected
             }
-            return sheet(
-                entry: entry,
+
+            let contentChanged = existing.description != projected.description
+            existing.hasChanged = existing.name != projected.name || contentChanged
+            existing.source = projected.source
+            existing.destination = projected.destination
+            existing.level = projected.level
+            existing.sheetType = projected.sheetType
+            existing.isFolded = projected.isFolded
+            existing.name = projected.name
+            existing.description = projected.description
+            existing.inlineEntries = projected.inlineEntries
+            existing.canAdd = projected.canAdd
+            existing.showHeader = projected.showHeader
+
+            let projectedChildren = projected.entries.filter {
+                isEntrySheet($0, ownedBy: ownerID)
+            }
+            let projectedLinks = projected.entries.filter {
+                !isEntrySheet($0, ownedBy: ownerID)
+            }
+            let existingLinks = existing.entries.filter {
+                !isEntrySheet($0, ownedBy: ownerID)
+            }
+            let childSheets = reconciledEntrySheets(
+                projectedChildren,
+                existingEntries: existingEntries,
+                ownerID: ownerID,
                 root: root,
-                itemId: model.id,
-                level: sheetModel.level,
-                moduleDepth: 0,
                 isEditor: isEditor
             )
+            let linkSheets = contentChanged
+                ? projectedLinks
+                : reconciledLinkSheets(
+                    projectedLinks,
+                    existingLinks: existingLinks,
+                    root: root,
+                    isEditor: isEditor
+                )
+            existing.entries = childSheets + linkSheets
+            return existing
         }
+    }
+
+    @MainActor
+    private func reconciledLinkSheets(
+        _ projectedLinks: [SheetModel],
+        existingLinks: [SheetModel],
+        root: RootManager,
+        isEditor: Bool
+    ) -> [SheetModel] {
+        var existingByID: [String: SheetModel] = [:]
+        for link in existingLinks where existingByID[link.id] == nil {
+            existingByID[link.id] = link
+        }
+
+        return projectedLinks.map { projected in
+            guard let existing = existingByID[projected.id] else {
+                return projected
+            }
+            root.rootModel(for: existing.source.typeId)?.sheetControllable.update(
+                root: root,
+                sheetModel: existing,
+                isEditor: isEditor
+            )
+            return existing
+        }
+    }
+
+    @MainActor
+    private func entrySheetsByID(
+        in sheets: [SheetModel],
+        ownerID: UUID
+    ) -> [UUID: SheetModel] {
+        var result: [UUID: SheetModel] = [:]
+        var pending = sheets
+        var visited: Set<ObjectIdentifier> = []
+
+        while let sheet = pending.popLast() {
+            guard visited.insert(ObjectIdentifier(sheet)).inserted else { continue }
+            if
+                isEntrySheet(sheet, ownedBy: ownerID),
+                let entryID = sheet.source.entryId,
+                result[entryID] == nil
+            {
+                result[entryID] = sheet
+            }
+            pending.append(contentsOf: sheet.entries)
+        }
+        return result
+    }
+
+    @MainActor
+    private func isEntrySheet(_ sheet: SheetModel, ownedBy ownerID: UUID) -> Bool {
+        sheet.source.typeId == .rule
+            && sheet.source.itemId == ownerID
+            && sheet.source.entryId != nil
     }
 }

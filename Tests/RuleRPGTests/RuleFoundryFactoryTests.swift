@@ -43,18 +43,25 @@ struct RuleFoundryFactoryTests {
         #expect(model.sourceMetadata.subtype == "spell")
         #expect(model.sourceMetadata.imagePath == "icons/arcane-shield.webp")
         #expect(model.sourcePayload == .foundryRule(rule))
-        #expect(model.entries.map(\.kind) == [.value, .reference, .embeddedRule, .effect])
-        #expect(model.entries[0].name == "system.cost")
-        #expect(model.entries[0].content == "2")
-        #expect(model.entries[1].content.contains("Compendium.ds4.spells.Item.fireball"))
-        #expect(model.entries[2].content.contains("Embedded ward"))
-        #expect(model.entries[2].content.contains("Embedded Reference"))
-        #expect(model.entries[2].content.contains("Compendium.ds4.spells.Item.fireball"))
-        #expect(model.entries[2].content.contains("Embedded Effect"))
-        #expect(model.entries[2].content.contains("system.armor"))
-        #expect(model.entries[2].content.contains("mode 5, priority 20"))
-        #expect(model.entries[3].content.contains("system.defense"))
-        #expect(model.entries[3].content.contains("mode 2, priority 10"))
+        #expect(model.entries.map(\.kind) == [
+            .group, .group, .value, .reference, .embeddedRule, .effect
+        ])
+        #expect(model.entries[0].name == "attributes")
+        #expect(model.entries[0].parentId == nil)
+        #expect(model.entries[1].name == "body")
+        #expect(model.entries[1].parentId == model.entries[0].id)
+        #expect(model.entries[2].name == "base")
+        #expect(model.entries[2].content == "5")
+        #expect(model.entries[2].parentId == model.entries[1].id)
+        #expect(model.entries[3].content.contains("Compendium.ds4.spells.Item.fireball"))
+        #expect(model.entries[4].content.contains("Embedded ward"))
+        #expect(model.entries[4].content.contains("Embedded Reference"))
+        #expect(model.entries[4].content.contains("Compendium.ds4.spells.Item.fireball"))
+        #expect(model.entries[4].content.contains("Embedded Effect"))
+        #expect(model.entries[4].content.contains("system.armor"))
+        #expect(model.entries[4].content.contains("mode 5, priority 20"))
+        #expect(model.entries[5].content.contains("system.defense"))
+        #expect(model.entries[5].content.contains("mode 2, priority 10"))
     }
 
     @Test("Identity namespaces deterministically scope generated entry UUIDs")
@@ -79,7 +86,7 @@ struct RuleFoundryFactoryTests {
         #expect(otherPackage.sourceMetadata.sourceIdentifier == rule.id)
     }
 
-    @Test("Generic Foundry documents flatten editable values and retain raw JSON")
+    @Test("Generic Foundry documents create ordered editable groups and retain raw JSON")
     func genericDocumentMapping() throws {
         // Given
         let modelID = try #require(UUID(uuidString: "7EC9760C-8395-4F9B-A32E-36585FA5363F"))
@@ -120,9 +127,81 @@ struct RuleFoundryFactoryTests {
         #expect(model.sourceMetadata.packageIdentifier == "world.ds4")
         #expect(model.sourceMetadata.ruleCategory == "talent")
         #expect(model.sourcePayload == .foundryDocument(rawData))
-        #expect(model.entries.map(\.name) == ["choices.0", "choices.1", "cost", "enabled"])
-        #expect(model.entries.map(\.content) == ["one", "two", "3", "true"])
-        #expect(model.entries.allSatisfy { $0.kind == .value })
+        #expect(model.entries.map(\.name) == ["choices", "0", "1", "cost", "enabled"])
+        #expect(model.entries.map(\.content) == ["", "one", "two", "3", "true"])
+        #expect(model.entries.map(\.kind) == [.group, .value, .value, .value, .value])
+        #expect(model.entries[0].parentId == nil)
+        #expect(model.entries[1].parentId == model.entries[0].id)
+        #expect(model.entries[2].parentId == model.entries[0].id)
+        #expect(model.entries[3].parentId == nil)
+        #expect(model.entries[4].parentId == nil)
+    }
+
+    @Test("Foundry factories decode HTML entities and controls in visible text")
+    func visibleTextDecoding() throws {
+        // Given
+        let modelID = try #require(UUID(uuidString: "1768FE78-F99D-4A10-8938-0425D9D5A3F7"))
+        let rawData: FoundryJSONValue = .object([
+            "_id": .string("encoded-rule"),
+            "system": .object([
+                "label": .string("<p>R&uuml;stung&nbsp;&#x2014; stark</p>\u{0000}")
+            ])
+        ])
+
+        // When
+        let model = RuleModel.foundryDocument(
+            id: modelID,
+            name: "Schild &amp; Schutz\u{0007}",
+            descriptionHTML: "<p>H&auml;lt &#128; Schaden.</p><script>leak()</script>",
+            tags: ["R&uuml;stung"],
+            documentType: "Item",
+            subtype: "armor&amp;shield",
+            rawData: rawData,
+            parentId: nil,
+            packageIdentifier: "world&amp;ds4"
+        )
+
+        // Then
+        #expect(model.name == "Schild & Schutz")
+        #expect(model.description == "Hält € Schaden.")
+        #expect(model.tags == ["Rüstung", "armor&shield", "Foundry VTT"])
+        #expect(model.sourceMetadata.packageIdentifier == "world&amp;ds4")
+        #expect(model.sourceMetadata.packageName == "world&ds4")
+        #expect(model.sourceMetadata.subtype == "armor&shield")
+        #expect(model.entries.map(\.content) == ["Rüstung — stark"])
+        #expect(!model.description.contains("leak"))
+    }
+
+    @Test("Foundry value projection caps leaves while keeping the complete source payload")
+    func valueProjectionCap() throws {
+        // Given
+        let modelID = try #require(UUID(uuidString: "81B02E29-C87D-4BB0-96A0-764CA1FFB9B3"))
+        let system = Dictionary(uniqueKeysWithValues: (0...500).map { index in
+            ("field\(index)", FoundryJSONValue.integer(Int64(index)))
+        })
+        let rawData = FoundryJSONValue.object([
+            "_id": .string("large-rule"),
+            "system": .object(system)
+        ])
+
+        // When
+        let model = RuleModel.foundryDocument(
+            id: modelID,
+            name: "Large Rule",
+            descriptionHTML: nil,
+            tags: [],
+            documentType: "Item",
+            subtype: "rule",
+            rawData: rawData,
+            parentId: nil,
+            packageIdentifier: "world.ds4"
+        )
+
+        // Then
+        #expect(model.entries.filter { $0.kind == .value }.count == 500)
+        #expect(model.entries.last?.kind == .source)
+        #expect(model.entries.last?.content.contains("1 values remain") == true)
+        #expect(model.sourcePayload == .foundryDocument(rawData))
     }
 }
 
@@ -150,7 +229,9 @@ private func foundryRule() -> FoundryRuleDefinition {
         descriptionHTML: "<p>Shield &amp; ward</p>",
         imagePath: "icons/arcane-shield.webp",
         folderID: "defense",
-        values: [FoundryRuleValue(path: "system.cost", value: .integer(2))],
+        values: [
+            FoundryRuleValue(path: "system.attributes.body.base", value: .integer(5))
+        ],
         tags: ["Magic", "spell"],
         references: [
             FoundryRuleReference(
@@ -220,7 +301,11 @@ private func foundryRule() -> FoundryRuleDefinition {
         ],
         rawData: .object([
             "_id": .string("arcane-shield"),
-            "system": .object(["cost": .integer(2)])
+            "system": .object([
+                "attributes": .object([
+                    "body": .object(["base": .integer(5)])
+                ])
+            ])
         ])
     )
 }

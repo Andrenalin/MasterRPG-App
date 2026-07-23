@@ -492,7 +492,9 @@ private struct FoundryExternalImportReviewView: View {
             }
 
             ForEach(NetworkModules.allCases, id: \.self) { module in
-                let moduleItems = mappedImport.batch.items.filter { $0.module == module }
+                let moduleItems = mappedImport.batch.items.filter {
+                    $0.module == module && !$0.isAuxiliary
+                }
                 if !moduleItems.isEmpty {
                     Section {
                         ForEach(moduleItems) { item in

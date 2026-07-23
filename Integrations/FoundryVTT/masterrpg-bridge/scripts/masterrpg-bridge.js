@@ -296,8 +296,8 @@ function collectAssetReferences(value, paths) {
 
   const direct = normalizedAssetPath(value);
   if (direct) paths.add(direct);
-  for (const match of value.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/giu)) {
-    const embedded = normalizedAssetPath(match[1]);
+  for (const match of value.matchAll(/(?:src|href)\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s"'=<>`]+))/giu)) {
+    const embedded = normalizedAssetPath(match[1] ?? match[2] ?? match[3]);
     if (embedded) paths.add(embedded);
   }
 }
@@ -306,7 +306,7 @@ function normalizedAssetPath(value) {
   const trimmed = value.trim();
   if (!trimmed || trimmed.startsWith("data:") || trimmed.startsWith("@UUID[")) return null;
   const withoutFragment = trimmed.split(/[?#]/u, 1)[0];
-  if (!/\.(?:avif|bmp|gif|jpe?g|png|svg|webp|webm|mp3|m4a|ogg|oga|wav|flac|pdf|gltf|glb|usdz)$/iu.test(withoutFragment)) return null;
+  if (!/\.(?:apng|avif|bmp|gif|heic|heif|jpe?g|png|svg|tiff?|webp|webm|aac|aiff?|caf|flac|m4a|mp3|mp4|oga|ogg|opus|wav|pdf|gltf|glb|usdz)$/iu.test(withoutFragment)) return null;
   if (/^https?:\/\//iu.test(withoutFragment)) return withoutFragment;
   const normalized = withoutFragment.replace(/^\/+/, "").replaceAll("\\", "/");
   if (normalized.split("/").some(component => component === "..")) return null;
@@ -537,6 +537,8 @@ function assertGameMaster() {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     classifyAsset,
+    collectAssetReferences,
+    normalizedAssetPath,
     permitsDocumentRecord,
     scrubPrivateMetadata
   };

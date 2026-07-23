@@ -22,8 +22,8 @@
         <attribute name="index" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="kind" attributeType="String" defaultValueString=""/>
         <attribute name="name" attributeType="String" defaultValueString="" spotlightIndexingEnabled="YES"/>
+        <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="rule" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RPGRule" inverseName="entries" inverseEntity="RPGRule"/>
     </entity>
 </model>
-

@@ -8,6 +8,8 @@ globalThis.Hooks = {
 
 const {
   classifyAsset,
+  collectAssetReferences,
+  normalizedAssetPath,
   permitsDocumentRecord,
   scrubPrivateMetadata
 } = require("../scripts/masterrpg-bridge.js");
@@ -97,4 +99,20 @@ test("package asset classification is case-insensitive", () => {
   assert.equal(classifyAsset("MODULES/MyModule/Map.PNG", excludesPackageAssets), "core");
   assert.equal(classifyAsset("ICONS/svg/sword.svg", excludesPackageAssets), "core");
   assert.equal(classifyAsset("Systems/DS4/Icons/Sword.WEBP", includesPackageAssets), "local");
+});
+
+test("asset discovery accepts supported media and quoted or unquoted HTML attributes", () => {
+  const paths = new Set();
+
+  collectAssetReferences(
+    '<img src="art/token.webp"><audio src=\'audio/theme.opus\'><audio src=audio/room.webm>',
+    paths
+  );
+
+  assert.deepEqual(
+    [...paths].sort(),
+    ["art/token.webp", "audio/room.webm", "audio/theme.opus"]
+  );
+  assert.equal(normalizedAssetPath("art/animated.apng?cache=1"), "art/animated.apng");
+  assert.equal(normalizedAssetPath("audio/scene.mp4#track"), "audio/scene.mp4");
 });

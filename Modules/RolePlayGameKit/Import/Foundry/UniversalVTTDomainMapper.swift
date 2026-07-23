@@ -18,7 +18,9 @@ struct UniversalVTTDomainMapper {
         try Task.checkCancellation()
         await Task.yield()
         try Task.checkCancellation()
-        let sourceName = sourceURL.deletingPathExtension().lastPathComponent
+        let sourceName = FoundryTextDecoder.plainText(
+            fromHTML: sourceURL.deletingPathExtension().lastPathComponent
+        )
         let sourceIdentifier = "universal-vtt#\(sourceScopeID.uuidString.lowercased())"
         let photoID = FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#photo")
         let mapID = FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#map")
@@ -30,16 +32,23 @@ struct UniversalVTTDomainMapper {
             sourceVersion: document.formatVersion.map { String($0) }
         )
         let imageExtension = URL(filePath: document.imageResource.logicalPath).pathExtension
-        let imageFilename = "\(sourceName).\(imageExtension.isEmpty ? "png" : imageExtension)"
+        guard let normalizationPlan = FoundryMediaNormalizer.plan(
+            for: "\(sourceName).\(imageExtension)"
+        ), normalizationPlan.kind == .image else {
+            throw FoundryMediaNormalizationError.invalidImage
+        }
 
         let attachment = ExternalImportAttachment(
             id: photoID,
             fileID: photoID,
-            suggestedFilename: imageFilename,
-            contentTypeIdentifier: UTType(filenameExtension: imageExtension)?.identifier,
-            expectedByteCount: document.imageResource.byteCount,
-            contentHash: document.imageResource.sha256.flatMap(base64Hash),
-            load: { try await resourceLoader(document.imageResource) }
+            suggestedFilename: normalizationPlan.suggestedFilename,
+            contentTypeIdentifier: normalizationPlan.contentTypeIdentifier,
+            expectedByteCount: nil,
+            contentHash: nil,
+            load: {
+                let sourceData = try await resourceLoader(document.imageResource)
+                return try await normalizationPlan.normalize(sourceData)
+            }
         )
         let photo = PhotoModel.empty(photoID)
         photo.name = sourceName

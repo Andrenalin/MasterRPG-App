@@ -99,6 +99,7 @@ public struct ExternalImportBatchItem: Identifiable, Sendable {
         model: Model,
         provenance: ExternalImportProvenance,
         attachment: ExternalImportAttachment? = nil,
+        decisionOwnerID: UUID? = nil,
         warnings: [String] = []
     ) where Model: ItemDataAccessable & Observable {
         self.id = id
@@ -109,6 +110,7 @@ public struct ExternalImportBatchItem: Identifiable, Sendable {
         self.modelModule = Model.typeId
         self.provenance = provenance
         self.attachment = attachment
+        self.decisionOwnerID = decisionOwnerID
         self.warnings = warnings
         self.modelCopier = { candidate in
             guard let candidate = candidate as? Model else { return nil }
@@ -132,7 +134,12 @@ public struct ExternalImportBatchItem: Identifiable, Sendable {
     public let modelModule: NetworkModules
     public let provenance: ExternalImportProvenance
     public let attachment: ExternalImportAttachment?
+    /// An auxiliary item follows its same-module owner's review decision and is not presented as
+    /// an independently selectable row. This keeps recursive imported models atomic.
+    public let decisionOwnerID: UUID?
     public let warnings: [String]
+
+    public var isAuxiliary: Bool { decisionOwnerID != nil }
 
     private let modelCopier: @MainActor @Sendable (any ModelType) -> (any ModelType)?
     private let fileUrlReader: @MainActor @Sendable (any ModelType) -> FileUrl?
@@ -284,7 +291,7 @@ public final class ExternalImportReviewSession {
         self.batch = batch
         var decisions: [DecisionKey: ExternalImportDecision] = [:]
         for item in batch.items {
-            decisions[Self.key(for: item)] = defaultDecision
+            decisions[Self.decisionKey(for: item)] = defaultDecision
         }
         self.decisions = decisions
     }
@@ -304,23 +311,25 @@ public final class ExternalImportReviewSession {
     private var conflictStatuses: [DecisionKey: ExternalImportConflictStatus] = [:]
 
     public func decision(for item: ExternalImportBatchItem) -> ExternalImportDecision {
-        decisions[Self.key(for: item)] ?? .skip
+        decisions[Self.decisionKey(for: item)] ?? .skip
     }
 
     public func setDecision(_ decision: ExternalImportDecision, for item: ExternalImportBatchItem) {
         guard isDecisionEditingEnabled else { return }
-        decisions[Self.key(for: item)] = decision
+        decisions[Self.decisionKey(for: item)] = decision
     }
 
     public func setDecision(_ decision: ExternalImportDecision, itemID: UUID, module: NetworkModules) {
         guard isDecisionEditingEnabled else { return }
-        decisions[DecisionKey(module: module, itemID: itemID)] = decision
+        let item = batch.items.first { $0.id == itemID && $0.module == module }
+        decisions[item.map(Self.decisionKey(for:))
+            ?? DecisionKey(module: module, itemID: itemID)] = decision
     }
 
     public func setDecisionForAll(_ decision: ExternalImportDecision) {
         guard isDecisionEditingEnabled else { return }
         for item in batch.items {
-            decisions[Self.key(for: item)] = decision
+            decisions[Self.decisionKey(for: item)] = decision
         }
     }
 
@@ -588,6 +597,10 @@ private extension ExternalImportReviewSession {
 
     static func key(for item: ExternalImportBatchItem) -> DecisionKey {
         DecisionKey(module: item.module, itemID: item.id)
+    }
+
+    static func decisionKey(for item: ExternalImportBatchItem) -> DecisionKey {
+        DecisionKey(module: item.module, itemID: item.decisionOwnerID ?? item.id)
     }
 
     static let supportedModuleOrder: [NetworkModules] = [

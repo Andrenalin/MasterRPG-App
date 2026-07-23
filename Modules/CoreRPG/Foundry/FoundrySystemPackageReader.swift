@@ -988,8 +988,9 @@ enum FoundryReferenceDecoder {
 
 private enum FoundryAssetCollector {
     private static let extensions = Set([
-        "aac", "flac", "gif", "glb", "gltf", "heic", "jpeg", "jpg", "m4a", "mp3", "mp4",
-        "ogg", "pdf", "png", "svg", "wav", "webm", "webp"
+        "aac", "aif", "aiff", "apng", "avif", "bmp", "caf", "flac", "gif", "glb", "gltf",
+        "heic", "heif", "jpeg", "jpg", "m4a", "mp3", "mp4", "oga", "ogg", "opus", "pdf",
+        "png", "svg", "tif", "tiff", "usdz", "wav", "webm", "webp"
     ])
 
     static func paths(in compendiums: [FoundryCompendium]) -> Set<String> {

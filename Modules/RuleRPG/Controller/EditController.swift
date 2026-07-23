@@ -89,13 +89,49 @@ extension EditController: EntryDataEditable {
     @MainActor
     func merge(itemId: UUID, entries: [RuleEntryModel]) -> [RuleEntryModel] {
         guard let item = editModel(for: itemId) else { return entries }
-        return entries.map { imported in
-            guard var existing = item.entries.first(where: { $0.name == imported.name }) else {
-                return imported
+        return Self.mergeEntries(existing: item.entries, imported: entries)
+    }
+
+    static func mergeEntries(
+        existing: [RuleEntryModel],
+        imported: [RuleEntryModel]
+    ) -> [RuleEntryModel] {
+        var matchedExistingIndices: Set<Int> = []
+        var importedToExistingIDs: [UUID: UUID] = [:]
+
+        return imported.map { sourceEntry in
+            var importedEntry = sourceEntry
+            if let parentId = importedEntry.parentId,
+               let remappedParentId = importedToExistingIDs[parentId] {
+                importedEntry.parentId = remappedParentId
             }
-            existing.content = imported.content
-            existing.kind = imported.kind
-            return existing
+
+            let stableIdentityIndex = existing.indices.first {
+                !matchedExistingIndices.contains($0) && existing[$0].id == importedEntry.id
+            }
+            let hierarchyFallbackIndices = existing.indices.filter {
+                !matchedExistingIndices.contains($0) &&
+                existing[$0].name == importedEntry.name &&
+                existing[$0].kind == importedEntry.kind &&
+                existing[$0].parentId == importedEntry.parentId
+            }
+            let matchedIndex = stableIdentityIndex ?? (
+                hierarchyFallbackIndices.count == 1 ? hierarchyFallbackIndices[0] : nil
+            )
+            guard let matchedIndex else {
+                importedToExistingIDs[sourceEntry.id] = importedEntry.id
+                return importedEntry
+            }
+
+            matchedExistingIndices.insert(matchedIndex)
+            var mergedEntry = existing[matchedIndex]
+            importedToExistingIDs[sourceEntry.id] = mergedEntry.id
+            mergedEntry.name = importedEntry.name
+            mergedEntry.content = importedEntry.content
+            mergedEntry.kind = importedEntry.kind
+            mergedEntry.displayState = importedEntry.displayState
+            mergedEntry.parentId = importedEntry.parentId
+            return mergedEntry
         }
     }
 

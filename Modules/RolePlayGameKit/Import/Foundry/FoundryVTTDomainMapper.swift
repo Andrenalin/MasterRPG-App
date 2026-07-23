@@ -216,7 +216,7 @@ private final class FoundryMappingState {
             includingUsers: selectedCategories.contains(.users)
         )
         let fallback = sourceURL.deletingPathExtension().lastPathComponent
-        packageName = package.manifest?.title ?? fallback
+        packageName = FoundryTextDecoder.plainText(fromHTML: package.manifest?.title ?? fallback)
         // Scope identity must survive content edits so repeated imports update the same records.
         // The content hash is integrity metadata, not identity. Including the package kind avoids
         // collisions between, for example, a System and World which happen to share an id.
@@ -312,13 +312,17 @@ private final class FoundryMappingState {
         let mappings = mappingReferences
             .map { FoundryImportMapping(foundryIdentifier: $0.key, references: Array($0.value).sorted(by: mappingOrder)) }
             .sorted { $0.foundryIdentifier < $1.foundryIdentifier }
+        let projectedResourcePaths = Set(resourceIDs.keys.map(\.path))
         return FoundryMappedImport(
             batch: batch,
             mappings: mappings,
             archiveID: sourceScopeID,
             rawOnlyDocumentCount: rawOnlyDocumentIDs.count,
             missingResources: package.resources.filter { $0.location == .unresolved },
-            unsupportedResources: package.resources.filter { module(for: $0.logicalPath) == nil },
+            unsupportedResources: package.resources.filter {
+                module(for: $0.logicalPath) == nil
+                    && !projectedResourcePaths.contains(canonicalResourcePath($0.logicalPath))
+            },
             archivePackage: packageForArchive()
         )
     }
@@ -871,6 +875,8 @@ private extension FoundryMappingState {
                     updated.content = safeText(entry.content)
                 }
                 effectIndex += 1
+            case .value:
+                updated.content = decodedFoundryText(entry.content)
             default:
                 updated.content = safeText(entry.content)
             }
@@ -933,7 +939,7 @@ private extension FoundryMappingState {
         var sections = [safeText(rule.descriptionHTML)].filter { !$0.isEmpty }
         let values = rule.values.map { value in
             let path = sanitizedFoundryText(value.path)
-            let presentation = safeText(displayString(value.value))
+            let presentation = presentedFoundryValue(value.value)
             return "- **\(path):** \(presentation)"
         }
         if !values.isEmpty {
@@ -972,13 +978,13 @@ private extension FoundryMappingState {
             lines.append("- **Statuses:** \(statuses)")
         }
         if let duration = effect.duration {
-            lines.append("- **Duration:** \(safeText(displayString(duration)))")
+            lines.append("- **Duration:** \(presentedFoundryValue(duration))")
         }
         if !effect.changes.isEmpty {
             lines.append("**Changes**")
             lines.append(contentsOf: effect.changes.map { change in
                 let path = sanitizedFoundryText(change.path)
-                let operand = safeText(displayString(change.operand))
+                let operand = presentedFoundryValue(change.operand)
                 let priority = change.priority.map { ", priority \($0)" } ?? ""
                 return "- **\(path):** \(operand) (mode \(change.mode)\(priority))"
             })
@@ -1004,16 +1010,52 @@ private extension FoundryMappingState {
         if let existing = resourceIDs[key] { return existing }
         let id = stableID("asset#\(module.token)#\(key.path)")
         resourceIDs[key] = id
-        let filename = resource.logicalPath.split(separator: "/").last.map(String.init) ?? resource.logicalPath
-        let attachment = ExternalImportAttachment(
-            id: id,
-            fileID: id,
-            suggestedFilename: filename,
-            contentTypeIdentifier: UTType(filenameExtension: URL(filePath: filename).pathExtension)?.identifier,
-            expectedByteCount: resource.byteCount,
-            contentHash: resource.sha256.flatMap(base64Hash),
-            load: { [resourceLoader] in try await resourceLoader(resource) }
+        let sourceFilename = resource.logicalPath.split(separator: "/").last.map(String.init)
+            ?? resource.logicalPath
+        let expectedMediaKind: FoundryMediaNormalizationPlan.Kind? = switch module {
+        case .photo: .image
+        case .audio: .audio
+        default: nil
+        }
+        let normalizationPlan = FoundryMediaNormalizer.plan(
+            for: resource.logicalPath,
+            expectedKind: expectedMediaKind
         )
+        let filename = normalizationPlan?.suggestedFilename
+            ?? FoundryTextDecoder.decodedText(sourceFilename)
+        let attachment: ExternalImportAttachment
+        if module == .photo || module == .audio {
+            guard let normalizationPlan else {
+                warnings.append(
+                    "Foundry media \(resource.logicalPath) has no safe raster or audio conversion and was not projected."
+                )
+                return id
+            }
+            attachment = ExternalImportAttachment(
+                id: id,
+                fileID: id,
+                suggestedFilename: filename,
+                contentTypeIdentifier: normalizationPlan.contentTypeIdentifier,
+                expectedByteCount: nil,
+                contentHash: nil,
+                load: { [resourceLoader] in
+                    let sourceData = try await resourceLoader(resource)
+                    return try await normalizationPlan.normalize(sourceData)
+                }
+            )
+        } else {
+            attachment = ExternalImportAttachment(
+                id: id,
+                fileID: id,
+                suggestedFilename: filename,
+                contentTypeIdentifier: UTType(
+                    filenameExtension: URL(filePath: filename).pathExtension
+                )?.identifier,
+                expectedByteCount: resource.byteCount,
+                contentHash: resource.sha256.flatMap(base64Hash),
+                load: { [resourceLoader] in try await resourceLoader(resource) }
+            )
+        }
         switch module {
         case .photo:
             let model = PhotoModel.empty(id)
@@ -1052,7 +1094,12 @@ private extension FoundryMappingState {
               resource.location == .packaged else {
             return nil
         }
-        guard self.module(for: resource.logicalPath) == module else {
+        let contextualPlan = FoundryMediaNormalizer.plan(
+            for: resource.logicalPath,
+            expectedKind: module == .audio ? .audio : nil
+        )
+        guard self.module(for: resource.logicalPath) == module
+            || (module == .audio && contextualPlan?.kind == .audio) else {
             warnings.append("Foundry media reference \(path) is not a \(module.token) resource and was not projected into that module.")
             return nil
         }
@@ -1065,7 +1112,11 @@ private extension FoundryMappingState {
               let module = module(for: resource.logicalPath),
               resource.location == .packaged else { return nil }
         let id = createAsset(resource, module: module)
-        let name = resource.logicalPath.split(separator: "/").last.map(String.init) ?? resource.logicalPath
+        let name = FoundryMediaNormalizer.plan(for: resource.logicalPath)?.suggestedFilename
+            ?? resource.logicalPath.split(separator: "/").last.map {
+                FoundryTextDecoder.decodedText(String($0))
+            }
+            ?? FoundryTextDecoder.decodedText(resource.logicalPath)
         return markdownLink(name: name, module: module, itemID: id)
     }
 
@@ -1106,6 +1157,10 @@ private extension FoundryMappingState {
             mapRollTable(document)
         case .playlist where selectedCategories.contains(.playlists):
             mapPlaylist(document)
+        case .playlistSound where selectedCategories.contains(.playlists):
+            mapStandaloneAudio(document)
+        case .ambientSound where selectedCategories.contains(.scenes):
+            mapStandaloneAudio(document)
         case .cards where selectedCategories.contains(.cards):
             mapCards(document)
         case .adventure where selectedCategories.contains(.adventures):
@@ -1114,8 +1169,8 @@ private extension FoundryMappingState {
             mapCombat(document)
         case .macro where selectedCategories.contains(.macros):
             mapMacro(document)
-        case .folder, .level, .journalEntryPage, .tableResult, .playlistSound, .card, .user,
-             .token, .wall, .ambientLight, .ambientSound, .activeEffect, .combatant:
+        case .folder, .level, .journalEntryPage, .tableResult, .card, .user,
+             .token, .wall, .ambientLight, .activeEffect, .combatant:
             break
         default:
             rawOnlyDocumentIDs.insert(document.id)
@@ -1124,7 +1179,12 @@ private extension FoundryMappingState {
 
     func mapActor(_ document: FoundryDocument) {
         let id = stableID("\(document.id)#character")
-        var entries = flattenedEntries(document.rawData["system"], sourceID: document.id)
+        var entries = hierarchicalEntries(
+            document.rawData["system"],
+            sourceID: document.id,
+            ownerID: id,
+            decisionOwnerID: id
+        )
         for child in document.embeddedDocuments where child.documentType == .item {
             let childID = stableID("\(child.id)#character-item")
             let childModel = ValueModel(
@@ -1135,13 +1195,23 @@ private extension FoundryMappingState {
                 category: .item,
                 displayState: DisplayStateMask.groupHidden.rawValue,
                 photoId: mediaID(path: child.imagePath, module: .photo),
-                entries: flattenedEntries(child.rawData["system"], sourceID: child.id),
+                entries: hierarchicalEntries(
+                    child.rawData["system"],
+                    sourceID: child.id,
+                    ownerID: childID,
+                    decisionOwnerID: id
+                ),
                 groupId: id
             )
-            add(childModel, module: .value, sourceID: child.id)
+            add(
+                childModel,
+                module: .value,
+                sourceID: child.id,
+                decisionOwnerID: id
+            )
             entries.append(ValueEntryModel(
                 id: stableID("\(document.id)#embedded-item#\(child.id)"),
-                name: child.name,
+                name: sanitizedFoundryText(child.name),
                 type: .text,
                 value: "",
                 valueId: childID
@@ -1170,7 +1240,12 @@ private extension FoundryMappingState {
                 tags: foundryTags(document),
                 category: .item,
                 photoId: mediaID(path: document.imagePath, module: .photo),
-                entries: flattenedEntries(document.rawData["system"], sourceID: document.id),
+                entries: hierarchicalEntries(
+                    document.rawData["system"],
+                    sourceID: document.id,
+                    ownerID: id,
+                    decisionOwnerID: id
+                ),
                 parentId: folderID(for: document, module: .value)
             )
             add(model, module: .value, sourceID: document.id)
@@ -1216,6 +1291,9 @@ private extension FoundryMappingState {
         let id = stableID("\(document.id)#map")
         let imagePath = document.rawData.value(at: "background.src")?.stringValue ?? document.imagePath
         let photoID = mediaID(path: imagePath, module: .photo)
+        let ambientAudioLinks = projectedAmbientAudioLinks(
+            in: document.embeddedDocuments.filter { $0.documentType == .ambientSound }
+        )
         let tokens = document.embeddedDocuments.filter { $0.documentType == .token }
         let mappedPins = tokens.compactMap { token -> (source: FoundryDocument, model: MapPinModel)? in
             guard let pin = tokenPin(token, gridSize: geometry.gridSize) else {
@@ -1233,7 +1311,10 @@ private extension FoundryMappingState {
         let model = MapModel(
             id: id,
             name: document.name,
-            description: safeText(document.descriptionHTML),
+            description: appendingAmbientAudio(
+                ambientAudioLinks,
+                to: safeText(document.descriptionHTML)
+            ),
             tags: foundryTags(document),
             category: .dungeon,
             photoId: photoID,
@@ -1290,6 +1371,14 @@ private extension FoundryMappingState {
                 .filter { $0.documentType == .wall }
                 .map { LeveledChild(document: $0, containingLevel: level) }
         }
+        let directAmbientSounds = document.embeddedDocuments
+            .filter { $0.documentType == .ambientSound }
+            .map { LeveledChild(document: $0, containingLevel: nil) }
+        let nestedAmbientSounds = levels.flatMap { level in
+            level.embeddedDocuments
+                .filter { $0.documentType == .ambientSound }
+                .map { LeveledChild(document: $0, containingLevel: level) }
+        }
         let tokensByLevel = assignLevelMembership(
             directTokens + nestedTokens,
             levels: levels,
@@ -1301,6 +1390,12 @@ private extension FoundryMappingState {
             levels: levels,
             initialLevel: initialLevel,
             kind: "Wall"
+        )
+        let ambientSoundsByLevel = assignLevelMembership(
+            directAmbientSounds + nestedAmbientSounds,
+            levels: levels,
+            initialLevel: initialLevel,
+            kind: "Ambient sound"
         )
 
         for level in levels {
@@ -1342,6 +1437,10 @@ private extension FoundryMappingState {
             if let foreground = assetLink(path: foregroundPath) {
                 description += "\(description.isEmpty ? "" : "\n\n")Foreground: \(foreground)"
             }
+            description = appendingAmbientAudio(
+                projectedAmbientAudioLinks(in: ambientSoundsByLevel[level.id] ?? []),
+                to: description
+            )
             let model = MapModel(
                 id: id,
                 name: levels.count == 1 ? document.name : "\(document.name) — \(level.name)",
@@ -1385,7 +1484,7 @@ private extension FoundryMappingState {
         if pages.isEmpty {
             model.entries = [AdventureEntryModel(
                 id: stableID("\(document.id)#content"),
-                name: document.name,
+                name: sanitizedFoundryText(document.name),
                 content: safeText(document.descriptionHTML)
             )]
         } else {
@@ -1399,7 +1498,7 @@ private extension FoundryMappingState {
                 }
                 let entry = AdventureEntryModel(
                     id: stableID("\(page.id)#entry"),
-                    name: page.name,
+                    name: sanitizedFoundryText(page.name),
                     content: rewriteFoundryLinks(content)
                 )
                 recordMapping(sourceID: page.id, module: .adventure, itemID: id, entryID: entry.id)
@@ -1425,7 +1524,7 @@ private extension FoundryMappingState {
             .filter { $0.documentType == .tableResult }
             .map { result in
                 var entry = TableEntryModel.empty(stableID("\(result.id)#table-entry"))
-                entry.name = result.name
+                entry.name = sanitizedFoundryText(result.name)
                 let range = result.rawData["range"]?.arrayValue?.compactMap(number).map { $0.formatted() }.joined(separator: "–")
                 let weight = number(result.rawData["weight"])
                 var details = safeText(result.descriptionHTML)
@@ -1469,6 +1568,18 @@ private extension FoundryMappingState {
         add(model, module: .audio, sourceID: document.id)
     }
 
+    func mapStandaloneAudio(_ document: FoundryDocument) {
+        let path = firstString(
+            document.rawData,
+            paths: ["path", "src", "sound.src", "source"]
+        )
+        guard let audioID = mediaID(path: path, module: .audio) else {
+            rawOnlyDocumentIDs.insert(document.id)
+            return
+        }
+        recordMapping(sourceID: document.id, module: .audio, itemID: audioID)
+    }
+
     func mapCards(_ document: FoundryDocument) {
         let id = stableID("\(document.id)#cards")
         let model = TableModel.empty(id)
@@ -1481,7 +1592,7 @@ private extension FoundryMappingState {
             .filter { $0.documentType == .card }
             .map { card in
                 var entry = TableEntryModel.empty(stableID("\(card.id)#card-entry"))
-                entry.name = card.name
+                entry.name = sanitizedFoundryText(card.name)
                 var content = safeText(card.descriptionHTML)
                 if let link = assetLink(path: card.imagePath) {
                     content += "\(content.isEmpty ? "" : "\n")\(link)"
@@ -1512,8 +1623,12 @@ private extension FoundryMappingState {
             (mappingReferences[child.id] ?? []).map { reference in
                 AdventureEntryModel(
                     id: stableID("\(document.id)#link#\(child.id)#\(reference.module.token)#\(reference.itemID)"),
-                    name: child.name,
-                    content: markdownLink(name: child.name, module: reference.module, itemID: reference.itemID)
+                    name: sanitizedFoundryText(child.name),
+                    content: markdownLink(
+                        name: sanitizedFoundryText(child.name),
+                        module: reference.module,
+                        itemID: reference.itemID
+                    )
                 )
             }
         }
@@ -1533,7 +1648,7 @@ private extension FoundryMappingState {
             .map { combatant in
                 let entry = AdventureEntryModel(
                     id: stableID("\(combatant.id)#combat-entry"),
-                    name: combatant.name,
+                    name: sanitizedFoundryText(combatant.name),
                     content: combatantSummary(combatant)
                 )
                 recordMapping(sourceID: combatant.id, module: .adventure, itemID: id, entryID: entry.id)
@@ -1564,7 +1679,7 @@ private extension FoundryMappingState {
         guard !messages.isEmpty else { return }
         let id = stableID("\(collection.id)#chat-transcript")
         let model = AdventureModel.empty(id)
-        model.name = "\(collection.label) – Chat transcript"
+        model.name = "\(sanitizedFoundryText(collection.label)) – Chat transcript"
         model.description = "Foundry chat history. Review private, blind, and whispered messages before sharing."
         model.tags = ["Foundry VTT", "Private import"]
         model.category = .supplement
@@ -1575,7 +1690,11 @@ private extension FoundryMappingState {
             let dateText = timestamp.map { Date(timeIntervalSince1970: TimeInterval($0 / 1_000)).formatted(date: .abbreviated, time: .shortened) }
             let entry = AdventureEntryModel(
                 id: stableID("\(message.id)#chat-entry"),
-                name: [speaker, dateText].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " – "),
+                name: [speaker, dateText]
+                    .compactMap { $0 }
+                    .map(sanitizedFoundryText)
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " – "),
                 content: rewriteFoundryLinks(safeText(content))
             )
             recordMapping(sourceID: message.id, module: .adventure, itemID: id, entryID: entry.id)
@@ -1594,7 +1713,38 @@ private extension FoundryMappingState {
     }
 
     var sceneHandledTypes: Set<FoundryDocumentType> {
-        [.level, .token, .wall]
+        [.level, .token, .wall, .ambientSound]
+    }
+
+    func projectedAmbientAudioLinks(in sounds: [FoundryDocument]) -> [String] {
+        sounds.compactMap { sound in
+            let path = firstString(
+                sound.rawData,
+                paths: ["path", "src", "sound.src", "source"]
+            )
+            guard let path,
+                  let resource = resource(matching: path),
+                  let audioID = mediaID(path: path, module: .audio) else {
+                rawOnlyDocumentIDs.insert(sound.id)
+                return nil
+            }
+            recordMapping(sourceID: sound.id, module: .audio, itemID: audioID)
+            let importedFilename = FoundryMediaNormalizer.plan(
+                for: resource.logicalPath,
+                expectedKind: .audio
+            )?.suggestedFilename
+            let documentName = sanitizedFoundryText(sound.name)
+            let fallbackName = importedFilename
+                ?? URL(filePath: resource.logicalPath).lastPathComponent
+            let name = documentName.isEmpty ? fallbackName : documentName
+            return markdownLink(name: name, module: .audio, itemID: audioID)
+        }
+    }
+
+    func appendingAmbientAudio(_ links: [String], to description: String) -> String {
+        guard !links.isEmpty else { return description }
+        let section = "**Ambient audio**\n\(links.map { "- \($0)" }.joined(separator: "\n"))"
+        return [description, section].filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
 
     func initialLevel(in scene: FoundryDocument, levels: [FoundryDocument]) -> FoundryDocument {
@@ -1883,39 +2033,106 @@ private extension FoundryMappingState {
         return id
     }
 
-    func flattenedEntries(_ value: FoundryJSONValue?, sourceID: String) -> [ValueEntryModel] {
+    func hierarchicalEntries(
+        _ value: FoundryJSONValue?,
+        sourceID: String,
+        ownerID: UUID,
+        decisionOwnerID: UUID
+    ) -> [ValueEntryModel] {
         guard let value else { return [] }
-        var leaves: [(String, FoundryJSONValue)] = []
-        flatten(value, path: [], into: &leaves)
-        if leaves.count > 500 {
-            warnings.append("\(sourceID) has \(leaves.count) system fields; the display projection includes the first 500 and the archive retains all fields.")
-        }
-        return leaves.prefix(500).map { path, value in
-            let presentation = valuePresentation(value)
-            return ValueEntryModel(
-                id: stableID("\(sourceID)#field#\(path)"),
-                name: path,
-                type: presentation.type,
-                value: presentation.value
+        let nodes = FoundryValueHierarchy.nodes(from: value)
+        let valueCount = nodes.reduce(0) { $0 + $1.valueCount }
+        let maximumPresentedValues = 500
+        if valueCount > maximumPresentedValues {
+            warnings.append(
+                "\(sourceID) has \(valueCount) system fields; the display projection includes the first \(maximumPresentedValues) and the archive retains all fields."
             )
         }
+        var remainingValues = maximumPresentedValues
+        return projectedValueEntries(
+            nodes,
+            sourceID: sourceID,
+            ownerID: ownerID,
+            decisionOwnerID: decisionOwnerID,
+            remainingValues: &remainingValues
+        )
     }
 
-    func flatten(_ value: FoundryJSONValue, path: [String], into output: inout [(String, FoundryJSONValue)]) {
-        switch value {
-        case .object(let object):
-            for key in object.keys.sorted() {
-                if let child = object[key] { flatten(child, path: path + [key], into: &output) }
+    func projectedValueEntries(
+        _ nodes: [FoundryValueNode],
+        sourceID: String,
+        ownerID: UUID,
+        decisionOwnerID: UUID,
+        remainingValues: inout Int
+    ) -> [ValueEntryModel] {
+        var entries: [ValueEntryModel] = []
+        for node in nodes {
+            guard remainingValues > 0 else { break }
+            let pathIdentity = valuePathIdentity(node.pathComponents)
+            if node.children.isEmpty, let value = node.value {
+                remainingValues -= 1
+                let presentation = valuePresentation(value)
+                entries.append(ValueEntryModel(
+                    id: stableID("\(sourceID)#field#\(pathIdentity)"),
+                    name: FoundryTextDecoder.decodedText(node.component),
+                    type: presentation.type,
+                    value: presentation.value
+                ))
+                continue
             }
-        case .array(let array):
-            for (index, child) in array.enumerated() {
-                flatten(child, path: path + [String(index)], into: &output)
+
+            let groupID = stableID("\(sourceID)#field-group#\(pathIdentity)")
+            var childEntries: [ValueEntryModel] = []
+            if let value = node.value, remainingValues > 0 {
+                remainingValues -= 1
+                let presentation = valuePresentation(value)
+                childEntries.append(ValueEntryModel(
+                    id: stableID("\(sourceID)#field#\(pathIdentity)#value"),
+                    name: "value",
+                    type: presentation.type,
+                    value: presentation.value
+                ))
             }
-        case .null:
-            break
-        default:
-            output.append((path.joined(separator: "."), value))
+            childEntries.append(contentsOf: projectedValueEntries(
+                node.children,
+                sourceID: sourceID,
+                ownerID: groupID,
+                decisionOwnerID: decisionOwnerID,
+                remainingValues: &remainingValues
+            ))
+            guard !childEntries.isEmpty else { continue }
+
+            let groupName = FoundryTextDecoder.decodedText(node.component)
+            let groupModel = ValueModel(
+                id: groupID,
+                name: groupName,
+                category: .item,
+                displayState: DisplayStateMask.groupHidden.rawValue,
+                entries: childEntries,
+                groupId: ownerID
+            )
+            add(
+                groupModel,
+                module: .value,
+                sourceID: sourceID,
+                decisionOwnerID: decisionOwnerID
+            )
+            entries.append(ValueEntryModel(
+                id: stableID("\(sourceID)#field-group-link#\(pathIdentity)"),
+                name: groupName,
+                type: .text,
+                value: "",
+                valueId: groupID
+            ))
         }
+        return entries
+    }
+
+    func valuePathIdentity(_ components: [String]) -> String {
+        guard !components.isEmpty else { return "root" }
+        return components.map { component in
+            "\(component.utf8.count):\(component)"
+        }.joined()
     }
 
     func valuePresentation(_ value: FoundryJSONValue) -> (type: ValueEntryModel.ValueType, value: String) {
@@ -1924,7 +2141,7 @@ private extension FoundryMappingState {
         case .unsignedInteger(let value): (.number, String(value))
         case .number(let value): (.decimal, String(value))
         case .bool(let value): (.selection, value ? "I" : "")
-        case .string(let value): (.text, safeText(value))
+        case .string(let value): (.text, decodedFoundryText(value))
         case .array, .object: (.text, displayString(value))
         case .null: (.text, "")
         }
@@ -1976,8 +2193,11 @@ private extension FoundryMappingState {
         module: NetworkModules,
         sourceID: String,
         attachment: ExternalImportAttachment? = nil,
+        decisionOwnerID: UUID? = nil,
         warnings: [String] = []
     ) where Model: ItemDataAccessable & Observable {
+        var model = model
+        model.name = sanitizedFoundryText(model.name)
         let key = DestinationKey(module: module, id: model.id)
         recordMapping(sourceID: sourceID, module: module, itemID: model.id)
         guard emittedItems.insert(key).inserted else { return }
@@ -1995,6 +2215,7 @@ private extension FoundryMappingState {
                 sourceVersion: provenance.sourceVersion
             ),
             attachment: attachment,
+            decisionOwnerID: decisionOwnerID,
             warnings: warnings
         ))
     }
@@ -2105,9 +2326,13 @@ private extension FoundryMappingState {
     }
 
     func module(for path: String) -> NetworkModules? {
-        switch URL(filePath: canonicalResourcePath(path)).pathExtension.lowercased() {
-        case "avif", "bmp", "gif", "heic", "jpeg", "jpg", "png", "tif", "tiff", "webp": .photo
-        case "aac", "aif", "aiff", "caf", "flac", "m4a", "mp3", "oga", "ogg", "wav": .audio
+        if let plan = FoundryMediaNormalizer.plan(for: path) {
+            return switch plan.kind {
+            case .image: .photo
+            case .audio: .audio
+            }
+        }
+        return switch URL(filePath: canonicalResourcePath(path)).pathExtension.lowercased() {
         case "pdf": .pdf
         case "usdz": .space
         default: nil
@@ -2145,7 +2370,7 @@ private extension FoundryMappingState {
     func foundryTags(_ document: FoundryDocument) -> [String] {
         ["Foundry VTT", document.subtype].compactMap { value in
             guard let value, !value.isEmpty else { return nil }
-            return value
+            return FoundryTextDecoder.decodedText(value)
         }
     }
 
@@ -2167,40 +2392,28 @@ private extension FoundryMappingState {
     }
 
     func sanitizedFoundryText(_ optionalHTML: String?) -> String {
-        guard var text = optionalHTML, !text.isEmpty else { return "" }
-        let substitutions = [
-            (#"(?is)<(script|style)[^>]*>.*?</\1>"#, ""),
-            (#"(?i)<br\s*/?>"#, "\n"),
-            (#"(?i)</(?:p|div|li|h[1-6]|tr)>"#, "\n"),
-            (#"(?is)<[^>]+>"#, "")
-        ]
-        for (pattern, replacement) in substitutions {
-            guard let expression = try? NSRegularExpression(pattern: pattern) else { continue }
-            let range = NSRange(text.startIndex..<text.endIndex, in: text)
-            text = expression.stringByReplacingMatches(in: text, range: range, withTemplate: replacement)
-        }
-        let entities = [
-            "&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">",
-            "&quot;": "\"", "&#39;": "'", "&apos;": "'"
-        ]
-        for (entity, replacement) in entities { text = text.replacing(entity, with: replacement) }
-        let sanitized = text
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .joined(separator: "\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return sanitized
+        FoundryTextDecoder.plainText(fromHTML: optionalHTML)
     }
 
     func safeText(_ optionalHTML: String?) -> String {
         rewriteFoundryLinks(sanitizedFoundryText(optionalHTML))
     }
 
+    func decodedFoundryText(_ text: String?) -> String {
+        guard let text else { return "" }
+        return rewriteFoundryLinks(
+            FoundryTextDecoder.decodedText(text)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
     func prepareGenericRuleProjection(_ model: RuleModel, descriptionHTML: String?) {
         model.description = safeText(descriptionHTML)
         model.entries = model.entries.map { entry in
             var updated = entry
-            updated.content = safeText(entry.content)
+            updated.content = entry.kind == .value
+                ? decodedFoundryText(entry.content)
+                : safeText(entry.content)
             return updated
         }
     }
@@ -2290,6 +2503,23 @@ private extension FoundryMappingState {
         case .number(let value): String(value)
         case .bool(let value): value ? "true" : "false"
         case .null: "null"
+        }
+    }
+
+    func presentedFoundryValue(_ value: FoundryJSONValue) -> String {
+        switch value {
+        case .object(let values):
+            values.keys.sorted().compactMap { key in
+                values[key].map {
+                    "\(sanitizedFoundryText(key)): \(presentedFoundryValue($0))"
+                }
+            }.joined(separator: ", ")
+        case .array(let values):
+            values.map(presentedFoundryValue).joined(separator: ", ")
+        case .string(let value):
+            safeText(value)
+        case .integer, .unsignedInteger, .number, .bool, .null:
+            decodedFoundryText(displayString(value))
         }
     }
 

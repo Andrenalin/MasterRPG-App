@@ -65,6 +65,7 @@ public enum RuleSourcePayload: Codable, Equatable, Sendable {
 
 public enum RuleEntryKind: String, Codable, CaseIterable, Equatable, Hashable, Sendable {
     case text
+    case group
     case value
     case reference
     case embeddedRule
@@ -74,6 +75,7 @@ public enum RuleEntryKind: String, Codable, CaseIterable, Equatable, Hashable, S
     public var localizedTitle: LocalizedStringResource {
         switch self {
         case .text: "Sections"
+        case .group: "Groups"
         case .value: "Values"
         case .reference: "References"
         case .embeddedRule: "Embedded Rules"
@@ -82,4 +84,3 @@ public enum RuleEntryKind: String, Codable, CaseIterable, Equatable, Hashable, S
         }
     }
 }
-

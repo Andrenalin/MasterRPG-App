@@ -44,7 +44,12 @@ struct FoundryVTTDomainMapperRuleTests {
         let retainedRule = try #require(retainedPayload)
         #expect(retainedRule.name == fixture.rule.name)
         #expect(retainedRule.rawData["ownership"] == nil)
-        #expect(rule.entries.contains { $0.name == "system.damage" && $0.content == "4" })
+        let damage = try #require(rule.entries.first {
+            $0.name == "damage" && $0.kind == .value
+        })
+        #expect(damage.content == "4")
+        #expect(damage.parentId == nil)
+        #expect(!rule.entries.contains { $0.name == "system.damage" })
         #expect(repeated.batch.items.map(\.id) == first.batch.items.map(\.id))
 
         let folders = first.batch.items.compactMap { $0.model as? RuleModel }

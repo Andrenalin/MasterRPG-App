@@ -169,7 +169,8 @@ extension LinkController: LinkControllable {
         }) else { return nil }
         let item = itemController.itemOrEmpty(for: itemID)
         guard let entryName else { return item.url(linkNumber: 0) }
-        guard let entry = item.entries.first(where: { $0.name == entryName }) else { return nil }
+        let matchingEntries = item.entries.filter { $0.name == entryName }
+        guard matchingEntries.count == 1, let entry = matchingEntries.first else { return nil }
         return item.url(linkNumber: 0, entryId: entry.id)
     }
 

@@ -95,7 +95,8 @@ extension DataController: CoreDataSnapshotPersistable {
             name: model.name ?? "",
             content: model.content ?? "",
             kind: RuleEntryKind(rawValue: model.kind ?? "") ?? .text,
-            displayState: Int(model.displayState)
+            displayState: Int(model.displayState),
+            parentId: model.parentId
         )
     }
 
@@ -105,6 +106,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.content = entry.content
         model.kind = entry.kind.rawValue
         model.displayState = Int32(entry.displayState)
+        model.parentId = entry.parentId
         model.index = Int32(index)
     }
 }

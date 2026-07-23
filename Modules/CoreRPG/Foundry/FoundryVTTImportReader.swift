@@ -1691,9 +1691,9 @@ private enum FoundryVTTStatisticsBuilder {
 
 private enum FoundryVTTAssetCollector {
     static let pathExtensions = Set([
-        "aac", "aif", "aiff", "avif", "bmp", "caf", "flac", "gif", "glb", "gltf", "heic",
-        "jpeg", "jpg", "m4a", "m4v", "mp3", "mp4", "oga", "ogg", "ogv", "pdf", "png", "svg",
-        "tif", "tiff", "usdz", "wav", "webm", "webp",
+        "aac", "aif", "aiff", "apng", "avif", "bmp", "caf", "flac", "gif", "glb", "gltf",
+        "heic", "heif", "jpeg", "jpg", "m4a", "m4v", "mp3", "mp4", "oga", "ogg", "ogv",
+        "opus", "pdf", "png", "svg", "tif", "tiff", "usdz", "wav", "webm", "webp",
     ])
 
     static func paths(in collections: [FoundryDocumentCollection]) -> Set<String> {
