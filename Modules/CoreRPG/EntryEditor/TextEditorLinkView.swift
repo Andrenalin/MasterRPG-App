@@ -38,31 +38,44 @@ struct TextEditorLinkView: View {
 }
 
 struct AttributedTextEditorSurface: View {
+    enum Layout {
+        case singleLine
+        case multiline
+    }
+
     @Binding var text: AttributedString
 
     let links: [LinkRegisterModel]
     let minHeight: CGFloat
     let maxHeight: CGFloat
     let isFocused: Bool
+    var layout: Layout = .multiline
 
     @Environment(\.appTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         TextEditor(text: $text)
             .attributedTextFormattingDefinition(
                 ContentFormattingDefinition(
                     links: Set(links.map(\.id)),
-                    colorScheme: colorScheme
+                    foregroundColor: theme.foregroundColor,
+                    linkBackgroundColor: theme.accentColor.opacity(0.65)
                 )
             )
+            .font(.body)
+            .foregroundStyle(theme.foregroundColor)
             .textEditorStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(.clear)
             .writingToolsBehavior(.complete)
-            .padding(.horizontal, 6)
-            .padding(.vertical, valueFor(iOS: 4, macOS: 6, tvOS: 0, visionOS: 4))
-            .frame(minHeight: minHeight, maxHeight: maxHeight)
+            .contentMargins(.horizontal, 12, for: .scrollContent)
+            .contentMargins(.vertical, verticalContentMargin, for: .scrollContent)
+            .scrollIndicators(.hidden)
+            .frame(
+                minHeight: minHeight,
+                idealHeight: layout == .singleLine ? minHeight : maxHeight,
+                maxHeight: maxHeight
+            )
             .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(theme.panelColor.opacity(0.5))
@@ -77,6 +90,15 @@ struct AttributedTextEditorSurface: View {
                     )
             }
             .clipShape(.rect(cornerRadius: 14, style: .continuous))
+    }
+
+    private var verticalContentMargin: CGFloat {
+        switch layout {
+        case .singleLine:
+            valueFor(iOS: 10, macOS: 11, tvOS: 0, visionOS: 10)
+        case .multiline:
+            10
+        }
     }
 }
 

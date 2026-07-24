@@ -39,8 +39,10 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
                 Image(systemName: "xmark")
             }
             .labelStyle(.iconOnly)
-            .frame(minWidth: 44, minHeight: 44)
         }
+        .buttonSizing(.fitted)
+        .buttonBorderShape(.circle)
+        .controlSize(.large)
 #if os(macOS)
         .keyboardShortcut(.cancelAction)
 #endif
@@ -56,8 +58,10 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
                 Image(systemName: isSaving ? "ellipsis" : "checkmark")
             }
             .labelStyle(.iconOnly)
-            .frame(minWidth: 44, minHeight: 44)
         }
+        .buttonSizing(.fitted)
+        .buttonBorderShape(.circle)
+        .controlSize(.large)
         .disabled(isSaving)
     }
     

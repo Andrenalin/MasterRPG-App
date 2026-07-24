@@ -7,11 +7,12 @@ struct ContentFormattingDefinition: AttributedTextFormattingDefinition {
     typealias Scope = AttributeScopes.ContentAttributes
     
     let links: Set<LinkDataModel.ID>
-    var colorScheme: ColorScheme = .light
+    let foregroundColor: Color
+    let linkBackgroundColor: Color
 
     var body: some AttributedTextFormattingDefinition<Scope> {
-        LinksAreAdaptive(links: links, colorScheme: colorScheme)
-        LinksHaveAdaptiveBacks(links: links, colorScheme: colorScheme)
+        LinksHaveThemeForeground(links: links, foregroundColor: foregroundColor)
+        LinksHaveThemeBackground(links: links, backgroundColor: linkBackgroundColor)
     }
 }
 
@@ -39,34 +40,32 @@ struct NormalizeFonts: AttributedTextValueConstraint {
     }
 }
 
-struct LinksAreAdaptive: AttributedTextValueConstraint {
+struct LinksHaveThemeForeground: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute
 
     let links: Set<LinkDataModel.ID>
-    let colorScheme: ColorScheme
+    let foregroundColor: Color
 
     func constrain(_ container: inout Attributes) {
         if let link = container.linkContent, links.contains(link) {
-            // Adaptive color based on color scheme and accent color
-            container.foregroundColor = colorScheme == .dark ? .white : .primary
+            container.foregroundColor = foregroundColor
         } else {
             container.foregroundColor = nil
         }
     }
 }
 
-struct LinksHaveAdaptiveBacks: AttributedTextValueConstraint {
+struct LinksHaveThemeBackground: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.BackgroundColorAttribute
 
     let links: Set<LinkDataModel.ID>
-    let colorScheme: ColorScheme
+    let backgroundColor: Color
 
     func constrain(_ container: inout Attributes) {
         if let link = container.linkContent, links.contains(link) {
-            // Use accent color with adaptive opacity
-            container.backgroundColor = Color.accentColor.opacity(colorScheme == .dark ? 0.6 : 0.8)
+            container.backgroundColor = backgroundColor
         } else {
             container.backgroundColor = nil
         }

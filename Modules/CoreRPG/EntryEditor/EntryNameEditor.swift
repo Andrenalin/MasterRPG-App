@@ -20,7 +20,8 @@ struct EntryNameEditor: View {
                     links: editModel.nameLinks,
                     minHeight: 44,
                     maxHeight: 44,
-                    isFocused: currentFocus == .name
+                    isFocused: currentFocus == .name,
+                    layout: .singleLine
                 )
                 .focused($currentFocus, equals: .name)
                 .accessibilityIdentifier("entry.editor.name")
