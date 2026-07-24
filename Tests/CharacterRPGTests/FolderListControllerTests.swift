@@ -120,11 +120,17 @@ struct FolderListControllerTests {
         try await MockRoot.resetTestData(for: root)
 
         let characterId = await root.itemController.addNew(type: .item)
+        let memberId = await root.itemController.addNew(type: .item)
         let folderId = await root.itemController.addNew(type: .folder)
         root.editController.reset(name: "Hero", itemId: characterId)
+        root.editController.reset(name: "Member", itemId: memberId)
         root.editController.reset(name: "Party", itemId: folderId)
+        // Folder needs at least one member so canOpen is true (buildCharacterFolderNode:
+        // canOpen = childNodes.isEmpty && !item.entries.isEmpty)
+        root.editController.addItem(itemId: memberId, parentId: folderId)
 
-        let (sut, _) = makeSUT(for: root)
+        // Folders are excluded from list mode; use folder mode where both appear at root.
+        let (sut, _) = makeSUT(for: root, listMode: .folder)
         let results = await sut.results(text: "")
         let character = try #require(results.first { $0.itemId == characterId })
         let folder = try #require(results.first { $0.itemId == folderId })

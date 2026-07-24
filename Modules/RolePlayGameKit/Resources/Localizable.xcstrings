@@ -142,6 +142,12 @@
             "state" : "translated",
             "value" : "Farbschema"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "โทนสี"
+          }
         }
       }
     },
@@ -177,6 +183,12 @@
             "state" : "translated",
             "value" : "Datenprüfungen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การตรวจสอบข้อมูล"
+          }
         }
       }
     },
@@ -211,6 +223,12 @@
             "state" : "translated",
             "value" : "Löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบ"
+          }
         }
       }
     },
@@ -220,6 +238,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Datenbank löschen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบฐานข้อมูล"
           }
         }
       }
@@ -281,6 +305,12 @@
             "state" : "translated",
             "value" : "Exportieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งออก"
+          }
         }
       }
     },
@@ -290,6 +320,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Datenbank für die Teilen-Erweiterung konnte nicht initialisiert werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถเริ่มต้นฐานข้อมูลสำหรับส่วนขยายการแชร์ได้"
           }
         }
       }
@@ -336,6 +372,12 @@
             "state" : "translated",
             "value" : "Spiel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกม"
+          }
         }
       }
     },
@@ -346,6 +388,12 @@
             "state" : "translated",
             "value" : "Generator"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวสร้าง"
+          }
         }
       }
     },
@@ -355,6 +403,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iCloud-Kontoprobleme"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปัญหาบัญชี iCloud"
           }
         }
       }
@@ -377,6 +431,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้า"
           }
         }
       }
@@ -423,6 +483,12 @@
             "state" : "translated",
             "value" : "Initialisieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มต้น"
+          }
         }
       }
     },
@@ -451,6 +517,12 @@
             "state" : "translated",
             "value" : "Es wird empfohlen, die Datenbank zu validieren, um die Datenkonsistenz sicherzustellen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แนะนำให้ตรวจสอบฐานข้อมูลเพื่อให้แน่ใจว่าข้อมูลของคุณถูกต้องสอดคล้องกัน"
+          }
         }
       }
     },
@@ -460,6 +532,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bibliothek"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คลัง"
           }
         }
       }
@@ -471,6 +549,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hell"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สว่าง"
           }
         }
       }
@@ -496,6 +580,12 @@
             "state" : "translated",
             "value" : "Daten verwalten"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "จัดการข้อมูล"
+          }
         }
       }
     },
@@ -507,6 +597,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Karte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่"
           }
         }
       }
@@ -521,6 +617,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Material"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วัสดุ"
           }
         }
       }
@@ -553,6 +655,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Navigieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำทาง"
           }
         }
       }
@@ -604,6 +712,12 @@
             "state" : "translated",
             "value" : "Nicht jetzt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ใช่ตอนนี้"
+          }
         }
       }
     },
@@ -613,6 +727,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht jetzt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ใช่ตอนนี้"
           }
         }
       }
@@ -664,6 +784,12 @@
             "state" : "translated",
             "value" : "Foto"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภาพถ่าย"
+          }
         }
       }
     },
@@ -701,9 +827,69 @@
     "Purchased items: %lld" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gekaufte Pakete: %lld"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Gekaufte Pakete: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Gekaufte Pakete: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Gekaufte Pakete: %lld"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Purchased items: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Purchased items: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Purchased items: %lld"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "รายการที่ซื้อ: %lld"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "รายการที่ซื้อ: %lld"
+                }
+              }
+            }
           }
         }
       }
@@ -832,6 +1018,12 @@
             "state" : "translated",
             "value" : "Abschnitt noch nicht begonnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยังไม่ได้เริ่มส่วน"
+          }
         }
       }
     },
@@ -845,6 +1037,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Einstellung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การตั้งค่า"
           }
         }
       }
@@ -889,6 +1087,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spezial"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พิเศษ"
           }
         }
       }
@@ -942,6 +1146,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Datenbank konnte auf diesem Gerät nicht neu erstellt werden. Zugrunde liegender Fehler: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถสร้างฐานข้อมูลใหม่บนอุปกรณ์นี้ได้ ข้อผิดพลาดที่เกิดขึ้น: %@"
           }
         }
       }
@@ -1003,6 +1213,12 @@
             "state" : "translated",
             "value" : "Dies ist der erste Start und die Datenbank ist leer. Möchtest du die Datenbank mit Beispieldaten initialisieren? Es ist kein Download erforderlich — die Beispieldaten sind bereits enthalten."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นี่คือการเปิดใช้งานครั้งแรก และยังไม่มีข้อมูลในฐานข้อมูล คุณต้องการเริ่มต้นฐานข้อมูลด้วยข้อมูลตัวอย่างหรือไม่? ไม่จำเป็นต้องดาวน์โหลด — ข้อมูลตัวอย่างมาพร้อมกับแอปแล้ว"
+          }
         }
       }
     },
@@ -1016,6 +1232,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dadurch wird die Datenbank dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การดำเนินการนี้จะลบฐานข้อมูลอย่างถาวร การกระทำนี้ไม่สามารถยกเลิกได้"
           }
         }
       }
@@ -1054,6 +1276,12 @@
             "state" : "translated",
             "value" : "Validieren"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตรวจสอบ"
+          }
         }
       }
     },
@@ -1073,6 +1301,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordner validieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตรวจสอบโฟลเดอร์"
           }
         }
       }
@@ -1152,5 +1386,5 @@
       }
     }
   },
-  "version" : "1.1"
+  "version" : "1.3"
 }
