@@ -31,6 +31,7 @@ struct SheetAIAssistantOpenButton: View {
         )
         .glassEffectID("aiOverlay", in: glassNamespace)
 #endif
+        .padding([.trailing, .bottom])
     }
 }
 

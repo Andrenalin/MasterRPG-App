@@ -19,9 +19,11 @@ struct SheetAIAssistantComposer: View {
 
     var body: some View {
         HStack(alignment: .bottom) {
-            Image(systemName: NetworkModules.generator.icon)
+            Button("Hide Ask AI", systemImage: NetworkModules.generator.icon, action: closeAction)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
                 .foregroundStyle(theme.tint(for: module))
-                .accessibilityHidden(true)
+                .accessibilityLabel(Text("Hide Ask AI", bundle: .module))
 
             TextField(
                 String(localized: "Type your request...", bundle: .module),
@@ -52,16 +54,7 @@ struct SheetAIAssistantComposer: View {
         .glassEffectID("aiOverlay", in: glassNamespace)
 #endif
         .padding(.horizontal)
-        .overlay(alignment: .topTrailing) {
-            Button(action: closeAction) {
-                Label("Close", systemImage: "xmark.circle.fill")
-                    .labelStyle(.iconOnly)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .offset(x: 6, y: -6)
-            .accessibilityLabel(Text("Close", bundle: .module))
-        }
+        .padding(.bottom)
     }
 }
 

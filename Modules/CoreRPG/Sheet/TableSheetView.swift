@@ -12,6 +12,8 @@ struct TableSheetView<LinkType: LinkDataTransferable>: View {
     let isEditor: Bool
     let linkTypes: LinkType.Type
 
+    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
+
     var body: some View {
         @Bindable var model = model
 
@@ -34,6 +36,15 @@ private extension TableSheetView {
                 )
                     .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
+            .scrollTargetLayout()
+        }
+        .scrollPosition($scrollPosition, anchor: .center)
+        .onChange(of: model.editorModel.scrollEntryId) { _, entryID in
+            guard let entryID else { return }
+            withAnimation(accessibilityReduceMotion ? nil : .smooth) {
+                scrollPosition.scrollTo(id: entryID, anchor: .center)
+            }
+            model.editorModel.scrollEntryId = nil
         }
 #if os(iOS)
         .background(theme.tint(for: root.configurable.module).opacity(0.3).gradient)
