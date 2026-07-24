@@ -5,9 +5,14 @@ import SwiftUI
 struct TextEditorLinkView: View {
     @Bindable public var model: TextEditModel
     let maxHeight: CGFloat
-    
-    @State private var formattingDefinition: ContentFormattingDefinition?
-    @Environment(\.colorScheme) private var colorScheme
+
+    let isFocused: Bool
+
+    init(model: TextEditModel, maxHeight: CGFloat, isFocused: Bool = false) {
+        self.model = model
+        self.maxHeight = maxHeight
+        self.isFocused = isFocused
+    }
     
     public var body: some View {
 #if os(tvOS)
@@ -21,45 +26,57 @@ struct TextEditorLinkView: View {
         }
         .padding(.bottom, 6)
 #else
-        let currentDefinition = formattingDefinition ?? ContentFormattingDefinition(links: [], colorScheme: colorScheme)
-        
-        VStack {
-            TextEditor(text: $model.attributedText)
-                .attributedTextFormattingDefinition(currentDefinition)
-                .textInputAutocapitalizationAll(.sentences)
-                .writingToolsBehavior(.complete)
-                .autocorrectionDisabled(true)
-                .padding(valueFor(iOS: 0, macOS: 4, tvOS: 0, visionOS: 0))
-                .onChange(of: model.links, initial: true) { _, newLinks in
-                    updateFormattingDefinition(links: newLinks)
-                }
-                .onChange(of: colorScheme) { _, _ in
-                    updateFormattingDefinition(links: model.links)
-                }
-                .onAppear {
-                    updateFormattingDefinition(links: model.links)
-                }
-        }
-        .background {
-#if os(macOS)
-            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(nsColor: .controlBackgroundColor))
-#else
-            Color.clear
-#endif
-        }
-#if !os(macOS)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-#endif
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
-        }
-        .frame(minHeight: 120, maxHeight: maxHeight)
+        AttributedTextEditorSurface(
+            text: $model.attributedText,
+            links: model.links,
+            minHeight: 120,
+            maxHeight: maxHeight,
+            isFocused: isFocused
+        )
 #endif
     }
-    
-    private func updateFormattingDefinition(links: [LinkRegisterModel]) {
-        let linkIds = Set(links.map(\.id))
-        formattingDefinition = ContentFormattingDefinition(links: linkIds, colorScheme: colorScheme)
+}
+
+struct AttributedTextEditorSurface: View {
+    @Binding var text: AttributedString
+
+    let links: [LinkRegisterModel]
+    let minHeight: CGFloat
+    let maxHeight: CGFloat
+    let isFocused: Bool
+
+    @Environment(\.appTheme) private var theme
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        TextEditor(text: $text)
+            .attributedTextFormattingDefinition(
+                ContentFormattingDefinition(
+                    links: Set(links.map(\.id)),
+                    colorScheme: colorScheme
+                )
+            )
+            .textEditorStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(.clear)
+            .writingToolsBehavior(.complete)
+            .padding(.horizontal, 6)
+            .padding(.vertical, valueFor(iOS: 4, macOS: 6, tvOS: 0, visionOS: 4))
+            .frame(minHeight: minHeight, maxHeight: maxHeight)
+            .background {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(theme.panelColor.opacity(0.5))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        isFocused
+                            ? Color.accentColor
+                            : theme.secondaryForegroundColor.opacity(0.35),
+                        lineWidth: isFocused ? 2 : 1
+                    )
+            }
+            .clipShape(.rect(cornerRadius: 14, style: .continuous))
     }
 }
 

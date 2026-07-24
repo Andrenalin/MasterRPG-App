@@ -20,6 +20,7 @@ struct TabbedSplitNavigation: View {
 
     @State private var contentColumnWidth: Double = 350
     @State private var fallbackNavigationModel = ModuleNavigationModel()
+    @FocusState private var navigationColumnFocus: NavigationColumnFocus?
 
     var body: some View {
         @Bindable var appModel = appModel
@@ -61,6 +62,7 @@ struct TabbedSplitNavigation: View {
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule)
         .navigationSplitViewStyle(.prominentDetail)
+        .environment(\.navigationColumnFocus, $navigationColumnFocus)
         .applyIf(restoresState && rolePlayStateRestorationEnabled) {
             $0.modifier(TabbedSplitNavigationRestorationModifier(
                 contentColumnWidth: $contentColumnWidth

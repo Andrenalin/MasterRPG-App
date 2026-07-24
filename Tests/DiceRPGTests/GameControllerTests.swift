@@ -21,9 +21,6 @@ struct GameControllerTests {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController
 
-        sut.clearAllFavoriteDice()
-        defer { sut.clearAllFavoriteDice() }
-
         let renamed = dice.copy()
         renamed.name = "Renamed"
         sut.setGame(item: renamed, itemId: dice.id)
@@ -74,11 +71,6 @@ struct GameControllerTests {
         sut.remove(die: removableDie, from: dice.id)
         #expect(activeDice.dice.count == count - 1)
 
-        #expect(!sut.isFavoriteDice(itemId: dice.id))
-        sut.toggleFavoriteDice(itemId: dice.id, diceName: "Favorite")
-        #expect(sut.isFavoriteDice(itemId: dice.id))
-        sut.toggleFavoriteDice(itemId: dice.id)
-        #expect(!sut.isFavoriteDice(itemId: dice.id))
     }
 
     @Test func gameNetworkResultPayloads() async throws {

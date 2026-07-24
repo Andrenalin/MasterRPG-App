@@ -14,6 +14,7 @@ struct ListRootView: View {
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.switchToDetailColumn) private var switchToDetailColumn
+    @Environment(\.navigationColumnFocus) private var navigationColumnFocus
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -46,20 +47,17 @@ struct ListRootView: View {
 #endif
 #if !os(tvOS)
                 .onKeyPress(.leftArrow, phases: .down) { _ in
-                    if let sheetRootModel = root.editControllable.editorModel.sheetRootModel, sheetRootModel.selectedEntryId != nil {
-                        sheetRootModel.clearSelection()
-                    } else {
-                        withAnimation(accessibilityReduceMotion ? nil : .default) { listController.closeParentFolder() }
-                    }
+                    navigationColumnFocus?.wrappedValue = .tabs
                     return .handled
                 }
                 .onKeyPress(.rightArrow, phases: .down) { _ in
                     if listController.canOpenFolder(itemId: listModel.selected) {
                         withAnimation(accessibilityReduceMotion ? nil : .default) { listController.openSelectedFolder() }
                     } else if let sheetRootModel = root.editControllable.editorModel.sheetRootModel,
-                              sheetRootModel.sheetModel.source.itemId == listModel.selected,
+                              sheetRootModel.sheetModel.source.itemId == listModel.selectedItemId,
                               let firstEntry = sheetRootModel.firstSelectableEntry {
                         sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
+                        navigationColumnFocus?.wrappedValue = .detail
                         switchToDetailColumn?()
                     }
                     return .handled
@@ -178,8 +176,13 @@ private extension ListRootView {
 #endif
         }
         .scrollPosition(id: $listModel.scrollId, anchor: .center)
+        .navigationColumnFocused(navigationColumnFocus, equals: .list)
         .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
         .themedListSurface()
+        .onChange(of: navigationColumnFocus?.wrappedValue) { _, newValue in
+            guard newValue == .list else { return }
+            focusPreferredListRow()
+        }
 #if os(macOS)
         .onChange(of: listModel.scrollId) { _, newValue in
             if let newValue {
@@ -197,12 +200,22 @@ private extension ListRootView {
 
 #if os(macOS)
     func restoreMacScrollPosition() {
-        let target = listModel.selected ?? listModel.lastNonNilScrollId
+        let target = listModel.lastNonNilScrollId ?? listModel.selected
         guard let target, listModel.list.contains(where: { $0.id == target }) else { return }
         listModel.lastNonNilScrollId = target
         listModel.scrollId = target
     }
 #endif
+
+    func focusPreferredListRow() {
+        let target = listModel.selected.flatMap { selected in
+            listModel.list.first(where: { $0.id == selected })?.id
+        } ?? listModel.list.first?.id
+        guard let target else { return }
+        listModel.selected = target
+        listModel.listSelection = [target]
+        listModel.scrollId = target
+    }
     
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
     func deleteItems(offsets: IndexSet) {

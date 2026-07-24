@@ -54,11 +54,6 @@ private enum DiceIntentPerformer {
         config.save()
 
         DiceWidgetReloader.reloadDiceWidgets()
-
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        if defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) == true {
-            await DiceRollerLiveActivityManager.shared.startOrUpdate(with: rollResult)
-        }
     }
 }
 
@@ -78,93 +73,6 @@ struct ClearDiceHistoryIntent: AppIntent {
         return .result()
     }
 }
-
-/// App Intent for rolling favorite dice by opening the app with URL
-struct RollFavoriteDiceIntent: AppIntent {
-    static let title: LocalizedStringResource = "Roll Favorite Dice"
-    static let description = IntentDescription("Roll a favorite dice configuration")
-    static let isDiscoverable = false
-    
-    @Parameter(title: "Dice ID")
-    var diceId: String
-    
-    init() {
-        self.diceId = ""
-    }
-    
-    init(diceId: UUID) {
-        self.diceId = diceId.uuidString
-    }
-    
-    func perform() async throws -> some IntentResult {
-        guard let uuid = UUID(uuidString: diceId) else {
-            return .result()
-        }
-        
-        // Create URL to open app and roll this dice
-        // Format: RPG://DICE/0/{itemId}/roll
-        let urlString = "\(URL.appScheme)://\(NetworkModules.dice.token)/0/\(uuid.uuidString)/roll"
-        
-        guard let url = URL(string: urlString) else {
-            return .result()
-        }
-        
-        // Open the app with this URL - the app will handle the roll
-        return .result(opensIntent: OpenURLIntent(url))
-    }
-}
-
-#if os(iOS)
-/// Live Activity action for rolling dice without leaving the Lock Screen or Dynamic Island.
-struct RollDiceLiveActivityIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Roll Dice"
-    static let description = IntentDescription("Roll a dice and show the result")
-    static let isDiscoverable = false
-
-    @Parameter(title: "Dice Type", default: .d20)
-    var diceType: IntentDiceType
-
-    init(diceType: IntentDiceType) {
-        self.diceType = diceType
-    }
-
-    init() {
-        self.diceType = .d20
-    }
-
-    func perform() async throws -> some IntentResult {
-        await DiceIntentPerformer.roll(diceType)
-        return .result()
-    }
-}
-
-/// Live Activity action for opening a favorite dice roll in the app.
-struct RollFavoriteDiceLiveActivityIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Roll Favorite Dice"
-    static let description = IntentDescription("Roll a favorite dice configuration")
-    static let isDiscoverable = false
-
-    @Parameter(title: "Dice ID")
-    var diceId: String
-
-    init() {
-        self.diceId = ""
-    }
-
-    init(diceId: UUID) {
-        self.diceId = diceId.uuidString
-    }
-
-    func perform() async throws -> some IntentResult {
-        guard let uuid = UUID(uuidString: diceId),
-              let url = URL(string: "\(URL.appScheme)://\(NetworkModules.dice.token)/0/\(uuid.uuidString)/roll") else {
-            return .result()
-        }
-
-        return .result(opensIntent: OpenURLIntent(url))
-    }
-}
-#endif
 
 // MARK: - Dice Type for Intents
 

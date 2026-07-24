@@ -7,20 +7,14 @@ import SwiftUI
 /// Integration view for managing dice roller widget from the main app
 struct DiceRollerWidgetConfiguration: View {
     @State private var configuration: DiceConfiguration = .default
-    @State private var isGameActive: Bool = false
-    @State private var currentGameName: String = ""
 
     private let loadsStoredConfiguration: Bool
 
     init(
         configuration: DiceConfiguration = .default,
-        isGameActive: Bool = false,
-        currentGameName: String = "",
         loadsStoredConfiguration: Bool = true
     ) {
         _configuration = State(initialValue: configuration)
-        _isGameActive = State(initialValue: isGameActive)
-        _currentGameName = State(initialValue: currentGameName)
         self.loadsStoredConfiguration = loadsStoredConfiguration
     }
     
@@ -33,39 +27,6 @@ struct DiceRollerWidgetConfiguration: View {
                 Text("Widget Settings", bundle: .main)
             } footer: {
                 Text("The widget displays your last rolled dice configuration", bundle: .main)
-            }
-            
-            Section {
-                Toggle(isOn: $isGameActive) {
-                    Text("Enable Live Activity", bundle: .main)
-                }
-                    .onChange(of: isGameActive) { _, newValue in
-                        updateGameStatus(isActive: newValue)
-                    }
-                
-                if isGameActive {
-                    TextField(text: $currentGameName) {
-                        Text("Game Name", bundle: .main)
-                    }
-                        .onChange(of: currentGameName) { _, newValue in
-                            saveGameName(newValue)
-                        }
-                    
-                    NavigationLink {
-                        FavoriteDiceManagementView(configuration: $configuration)
-                    } label: {
-                        HStack {
-                            Text("Favorite Dice", bundle: .main)
-                            Spacer()
-                            Text(verbatim: "\(configuration.favoriteDice.count)/6")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            } header: {
-                Text("Live Activity", bundle: .main)
-            } footer: {
-                Text("Show dice rolls in Dynamic Island and Lock Screen during gameplay", bundle: .main)
             }
             
             Section {
@@ -186,35 +147,6 @@ struct DiceRollerWidgetConfiguration: View {
     
     private func loadConfiguration() {
         configuration = DiceConfiguration.loadFromUserDefaults()
-        
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-        currentGameName = defaults?.string(forKey: UserDefaults.DiceKeys.currentGameName) ?? ""
-    }
-    
-    private func updateGameStatus(isActive: Bool) {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        defaults?.set(isActive, forKey: UserDefaults.DiceKeys.isGameActive)
-        
-        if !isActive {
-            // Clear all favorites when game ends
-            // Game dice IDs are only valid during the session
-            configuration.favoriteDice.removeAll()
-            configuration.save()
-            
-            // End Live Activity
-            Task {
-                await DiceRollerLiveActivityManager.shared.endActivity()
-            }
-        }
-        
-        // Reload widget to reflect changes
-        DiceWidgetReloader.reloadDiceWidgets()
-    }
-    
-    private func saveGameName(_ name: String) {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        defaults?.set(name, forKey: UserDefaults.DiceKeys.currentGameName)
     }
     
     private func clearHistory() {
@@ -256,8 +188,6 @@ struct DiceRollerWidgetConfiguration: View {
     NavigationStack {
         DiceRollerWidgetConfiguration(
             configuration: configuration,
-            isGameActive: true,
-            currentGameName: "The Verdant Vault",
             loadsStoredConfiguration: false
         )
     }

@@ -6,7 +6,7 @@ struct GameStatisticsHighlightsView: View {
     let summary: GameStatisticsSummary
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))]) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 180))]) {
             GameStatisticsHighlightCard(
                 title: String(localized: "Games", bundle: .module),
                 value: summary.sessionCount.formatted(),

@@ -146,12 +146,14 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     }
 }
 
-public enum SheetModelEditType: Equatable, Hashable, Sendable {
+public enum SheetModelEditType: Equatable, Hashable, Sendable, CaseIterable, Identifiable {
     case none
     case number
     case decimal
     case selection
     case text
+
+    public var id: Self { self }
     
     var isEditable: Bool {
         self != .none
@@ -167,6 +169,15 @@ public enum SheetModelEditType: Equatable, Hashable, Sendable {
         }
     }
 
+    var localizedTitle: LocalizedStringResource {
+        switch self {
+        case .text: LocalizedStringResource("Text", bundle: .module)
+        case .number: LocalizedStringResource("Number", bundle: .module)
+        case .decimal: LocalizedStringResource("Decimal", bundle: .module)
+        case .selection: LocalizedStringResource("Selection", bundle: .module)
+        case .none: LocalizedStringResource("None", bundle: .module)
+        }
+    }
 }
 
 public enum SheetModelType: Equatable, Hashable, Sendable {

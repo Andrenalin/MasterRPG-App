@@ -29,15 +29,11 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
 
     func timeline(for configuration: ConfigureDiceWidgetIntent, in context: Context) async -> Timeline<DiceRollerEntry> {
         let snapshot = DiceWidgetSnapshot.loadFromUserDefaults()
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-
         let entry = DiceRollerEntry(
             date: Date(),
             snapshot: snapshot,
             intent: configuration,
-            isGameActive: isGameActive,
-            relevance: relevance(for: snapshot, isGameActive: isGameActive)
+            relevance: relevance(for: snapshot)
         )
 
         return Timeline(entries: [entry], policy: .never)
@@ -45,24 +41,10 @@ struct DiceRollerProvider: AppIntentTimelineProvider {
     
     // iOS 18+: Provide recommended configurations
     func recommendations() -> [AppIntentRecommendation<ConfigureDiceWidgetIntent>] {
-        return [
-            AppIntentRecommendation(intent: ConfigureDiceWidgetIntent(), description: "Standard Dice Roller"),
-            AppIntentRecommendation(
-                intent: {
-                    let intent = ConfigureDiceWidgetIntent()
-                    intent.showFavoritesOnly = true
-                    return intent
-                }(),
-                description: "Favorites Only"
-            )
-        ]
+        [AppIntentRecommendation(intent: ConfigureDiceWidgetIntent(), description: "Standard Dice Roller")]
     }
 
-    private func relevance(for snapshot: DiceWidgetSnapshot, isGameActive: Bool) -> TimelineEntryRelevance {
-        if isGameActive {
-            return TimelineEntryRelevance(score: 100, duration: 3600)
-        }
-
+    private func relevance(for snapshot: DiceWidgetSnapshot) -> TimelineEntryRelevance {
         if let timestamp = snapshot.lastRoll?.timestamp {
             let timeSinceRoll = Date().timeIntervalSince(timestamp)
             if timeSinceRoll < 300 {
@@ -81,7 +63,6 @@ struct DiceRollerEntry: TimelineEntry {
     let date: Date
     let snapshot: DiceWidgetSnapshot
     var intent: ConfigureDiceWidgetIntent = ConfigureDiceWidgetIntent()
-    var isGameActive: Bool = false
     var relevance: TimelineEntryRelevance?
 
     static var preview: DiceRollerEntry {

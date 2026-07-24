@@ -7,7 +7,7 @@ struct EntryContentEditor: View {
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Description", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -22,7 +22,11 @@ struct EntryContentEditor: View {
             .padding(.bottom, 6)
             .focused($currentFocus, equals: .information)
 #else
-            TextEditorLinkView(model: editModel, maxHeight: 200)
+            TextEditorLinkView(
+                model: editModel,
+                maxHeight: 200,
+                isFocused: currentFocus == .information
+            )
                 .focused($currentFocus, equals: .information)
                 .onChange(of: editModel.attributedText) { _, _ in
                     editModel.updateLinks()

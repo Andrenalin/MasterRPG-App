@@ -12,59 +12,63 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     
     @State private var isDropTargeted: Bool = false
     @State private var isSaving: Bool = false
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var body: some View {
-        HStack(spacing: 12) {
-            dismissButton
+        GlassEffectContainerAll {
+            HStack(spacing: 12) {
+                dismissButton
 
-            dropLinkArea
+                dropLinkArea
 
-            saveButton
+                saveButton
+            }
         }
-        .buttonStyle(.borderless)
-        .padding(.horizontal, 8)
     }
 
     // MARK: - Dismiss Button
 
     private var dismissButton: some View {
-        Button {
+        GlassButton(action: {
             withAnimation(accessibilityReduceMotion ? nil : .default) { editorModel.entryId = nil }
-        } label: {
-            Image(systemName: "xmark")
+        }) {
+            Label {
+                Text("Close editor", bundle: .module)
+            } icon: {
+                Image(systemName: "xmark")
+            }
+            .labelStyle(.iconOnly)
+            .frame(minWidth: 44, minHeight: 44)
         }
-        .padding(12)
-        .foregroundStyle(.primary)
 #if os(macOS)
         .keyboardShortcut(.cancelAction)
 #endif
-#if !os(visionOS)
-        .glassEffectAll(.regular.interactive())
-#endif
-        .accessibilityLabel(Text("Close editor", bundle: .module))
     }
     
     // MARK: - Save Button
     
     private var saveButton: some View {
-        Button(action: save) {
-            Image(systemName: "checkmark")
+        GlassButton(isProminent: true, action: save) {
+            Label {
+                Text("Save entry", bundle: .module)
+            } icon: {
+                Image(systemName: isSaving ? "ellipsis" : "checkmark")
+            }
+            .labelStyle(.iconOnly)
+            .frame(minWidth: 44, minHeight: 44)
         }
-        .padding(12)
-        .foregroundStyle(.primary)
-#if !os(visionOS)
-        .glassEffectAll(.regular.interactive())
-#endif
-        .accessibilityLabel(Text("Save entry", bundle: .module))
+        .disabled(isSaving)
     }
     
     func save() {
+        guard !isSaving else { return }
+        isSaving = true
 #if os(iOS)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 #endif
         
+        editModel.resetNameText()
         editModel.resetText()
         
         editController.update(
@@ -91,16 +95,17 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .center)
         .background {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(dropBackgroundColor)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(dropStrokeColor, lineWidth: 2)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(dropStrokeColor, lineWidth: isDropTargeted ? 2 : 1)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .scaleEffect(isDropTargeted ? 1.1 : 1.0)
-        .dropDestination(for: linkTypes) { items, location in
+        .contentShape(.rect(cornerRadius: 16, style: .continuous))
+        .scaleEffect(isDropTargeted ? 1.03 : 1)
+        .entryDropGlass()
+        .dropDestination(for: linkTypes) { items, _ in
             handleDrop(items: items)
             return true
         } isTargeted: { isTargeted in
@@ -116,23 +121,16 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     // MARK: - Computed Properties
     
     private var dropBackgroundColor: Color {
-#if os(iOS) || os(visionOS)
         if isDropTargeted {
-            return Color.accentColor.opacity(0.2)
+            return theme.tint(for: editorModel.module).opacity(0.22)
         }
-        return colorScheme == .dark ? Color(uiColor: .systemGray5) : Color(uiColor: .systemGray6)
-#elseif os(tvOS)
-        return isDropTargeted ? Color.accentColor.opacity(0.3) : .clear
-#else
-        if isDropTargeted {
-            return Color.accentColor.opacity(0.2)
-        }
-        return Color(nsColor: .controlBackgroundColor)
-#endif
+        return theme.panelColor.opacity(0.38)
     }
     
     private var dropStrokeColor: Color {
-        isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.3)
+        isDropTargeted
+            ? theme.tint(for: editorModel.module)
+            : theme.secondaryForegroundColor.opacity(0.35)
     }
     
     // MARK: - Actions
@@ -143,6 +141,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 #endif
         
+        editModel.resetNameText()
         editModel.resetText()
         editController.update(
             itemId: itemId,
@@ -168,6 +167,17 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
             try? await Task.sleep(for: .milliseconds(100))
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
+#endif
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func entryDropGlass() -> some View {
+#if os(visionOS)
+        self
+#else
+        glassEffectAll(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
 #endif
     }
 }

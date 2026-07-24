@@ -65,6 +65,33 @@ extension EditController: EntryDataEditable {
     var canAddGroups: Bool { true }
 }
 
+extension EditController: SheetEditTypeControllable {
+    var supportedSheetEditTypes: [SheetModelEditType] {
+        [.text, .number, .decimal, .selection]
+    }
+
+    @MainActor
+    func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType) {
+        guard let item = editModel(for: itemId) else { return }
+        let valueType: ValueEntryModel.ValueType
+        switch editType {
+        case .text:
+            valueType = .text
+        case .number:
+            valueType = .number
+        case .decimal:
+            valueType = .decimal
+        case .selection:
+            valueType = .selection
+        case .none:
+            return
+        }
+        guard item[entryId].type != valueType else { return }
+        item[entryId].type = valueType
+        save(updated: item, message: String(localized: "Change Value Type", bundle: .module).localizedString)
+    }
+}
+
 extension EditController {
     @MainActor
     public func gameValueEntryUpdate(

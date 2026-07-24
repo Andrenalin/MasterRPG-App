@@ -37,6 +37,57 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.selectedEntryId == entries[1].id)
     }
 
+    @Test func selectingCurrentEntryAgainDoesNotReplaceScrollTarget() {
+        let (rootModel, entries) = makeRootModel(entryCount: 1)
+        let sheetEditorModel = rootModel
+            .editControllable(for: entries[0].source)?
+            .editorModel
+            .sheetEditorModel
+
+        rootModel.setSelected(entries[0], parent: rootModel.sheetModel)
+        #expect(sheetEditorModel?.scrollEntryId == entries[0].source.entryId)
+
+        let preservedScrollTarget = UUID()
+        sheetEditorModel?.scrollEntryId = preservedScrollTarget
+        rootModel.setSelected(entries[0], parent: rootModel.sheetModel)
+
+        #expect(sheetEditorModel?.scrollEntryId == preservedScrollTarget)
+    }
+
+    @Test func itemDescriptionLinkTogglesExistingChildSheet() {
+        let rootItemID = UUID()
+        let linkedItemID = UUID()
+        let linkedSheet = SheetModel(
+            source: ItemRowModel(itemId: linkedItemID, typeId: .adventure),
+            level: 1,
+            isShown: false,
+            name: "Linked",
+            description: "",
+            entries: []
+        )
+        let rootSheet = SheetModel(
+            source: ItemRowModel(itemId: rootItemID, typeId: .adventure),
+            name: "Root",
+            description: "",
+            entries: [linkedSheet]
+        )
+        let rootModel = SheetRootModel(
+            rootManager: ItemRootController.fake.rootManager!,
+            linkControllable: FakeLinkController.fake,
+            sheetControllable: FakeSheetController.fake,
+            sheetModel: rootSheet,
+            isEditor: false
+        )
+
+        rootModel.toggle(
+            id: .itemContent(rootItemID),
+            itemId: linkedItemID,
+            module: .adventure
+        )
+
+        #expect(linkedSheet.isShown)
+    }
+
     @Test func duplicateDomainIdentifiersReceiveDistinctModelIDsAndSelectIndependently() async throws {
         let sharedItemID = UUID()
         let sharedEntryID = UUID()

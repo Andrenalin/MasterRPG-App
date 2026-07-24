@@ -38,6 +38,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var isEditTypePickerPresented = false
 
     var body: some View {
         let geometryMatch = rootModel.sheetRowGeometryMatch(
@@ -243,15 +244,7 @@ private extension SheetEntryView {
         if !entryModel.description.isEmpty {
             HStack {
                 if entryModel.editType.isEditable {
-                    Image(systemName: entryModel.editType.icon)
-                        .imageScale(.small)
-                        .foregroundStyle(.foreground, .tint)
-                        .padding(4)
-                        .background {
-                            Circle().stroke(
-                                theme.tint(for: entryModel.source.typeId).opacity(0.3)
-                            )
-                        }
+                    editTypeIndicator
                 }
                 switch entryModel.sheetType {
                 case .item:
@@ -263,6 +256,69 @@ private extension SheetEntryView {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    var editTypeIndicator: some View {
+        if isEditor, !supportedEditTypes.isEmpty {
+            Button {
+                isEditTypePickerPresented = true
+            } label: {
+                Label {
+                    Text(entryModel.editType.localizedTitle)
+                } icon: {
+                    Image(systemName: entryModel.editType.icon)
+                }
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .imageScale(.small)
+            .foregroundStyle(.foreground, .tint)
+            .padding(4)
+            .background {
+                Circle().stroke(
+                    theme.tint(for: entryModel.source.typeId).opacity(0.3)
+                )
+            }
+            .popover(isPresented: $isEditTypePickerPresented, arrowEdge: .leading) {
+                Picker(
+                    selection: Binding(
+                        get: { entryModel.editType },
+                        set: { rootModel.updateEditType($0, for: entryModel, parent: parentModel) }
+                    )
+                ) {
+                    ForEach(supportedEditTypes) { editType in
+                        Label {
+                            Text(editType.localizedTitle)
+                        } icon: {
+                            Image(systemName: editType.icon)
+                        }
+                        .tag(editType)
+                    }
+                } label: {
+                    Text("Value Type", bundle: .module)
+                }
+                .pickerStyle(.inline)
+                .padding()
+                .presentationCompactAdaptation(.popover)
+            }
+            .accessibilityLabel(Text("Change Value Type", bundle: .module))
+        } else {
+            Image(systemName: entryModel.editType.icon)
+                .imageScale(.small)
+                .foregroundStyle(.foreground, .tint)
+                .padding(4)
+                .background {
+                    Circle().stroke(
+                        theme.tint(for: entryModel.source.typeId).opacity(0.3)
+                    )
+                }
+                .accessibilityHidden(true)
+        }
+    }
+
+    var supportedEditTypes: [SheetModelEditType] {
+        rootModel.supportedEditTypes(for: entryModel.source)
     }
     
     @ViewBuilder var afterInline: some View {

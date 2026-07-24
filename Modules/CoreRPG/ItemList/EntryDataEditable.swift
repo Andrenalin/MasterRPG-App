@@ -14,6 +14,11 @@ public enum AdditionalEntryViewType: Hashable, Sendable {
     case inline
 }
 
+public protocol SheetEditTypeControllable: Sendable {
+    var supportedSheetEditTypes: [SheetModelEditType] { get }
+    @MainActor func updateSheetEditType(itemId: UUID, entryId: UUID, editType: SheetModelEditType)
+}
+
 public protocol EntryDataEditable: EditControllable {
     @MainActor func editEntries(for item: Model) -> [Model.Entry]
 

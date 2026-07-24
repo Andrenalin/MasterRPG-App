@@ -12,10 +12,6 @@ struct DiceRollerWidgetView: View {
     @Environment(\.widgetRenderingMode) var renderingMode
     
     let entry: DiceRollerEntry
-
-    private var shouldShowFavorites: Bool {
-        (entry.isGameActive || entry.intent.showFavoritesOnly) && !entry.snapshot.favoriteDice.isEmpty
-    }
     
     var body: some View {
         switch family {
@@ -78,22 +74,12 @@ struct DiceRollerWidgetView: View {
 
             Divider()
 
-            // Right side - Show favorites only if game is active AND we have favorites
-            // Otherwise always show quick roll
             VStack(spacing: 4) {
-                if shouldShowFavorites {
-                    Text("Favorites", bundle: .main)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    favoriteDiceGrid
-                } else {
-                    Text("Quick Roll", bundle: .main)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Text("Quick Roll", bundle: .main)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
-                    quickDiceGrid
-                }
+                quickDiceGrid
             }
             .frame(maxWidth: .infinity)
         }
@@ -137,21 +123,11 @@ struct DiceRollerWidgetView: View {
 
             Divider()
 
-            // Dice selection grid - Show favorites only if game is active AND we have favorites
-            // Otherwise always show quick roll
-            if shouldShowFavorites {
-                Text("Favorite Dice", bundle: .main)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Text("Quick Roll", bundle: .main)
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-                favoriteDiceGrid
-            } else {
-                Text("Quick Roll", bundle: .main)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                quickDiceGrid
-            }
+            quickDiceGrid
         }
         .padding()
     }
@@ -218,27 +194,6 @@ struct DiceRollerWidgetView: View {
         }
     }
     
-    private var favoriteDiceGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(entry.snapshot.favoriteDice.prefix(6)) { favorite in
-                Button(intent: RollFavoriteDiceIntent(diceId: favorite.id)) {
-                    VStack(spacing: 2) {
-                        dieImageView(favorite.dice, size: 32)
-                        
-                        Text(verbatim: favorite.name)
-                            .font(.caption2)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Roll \(favorite.name)", bundle: .main))
-            }
-        }
-    }
-
     private func resultColor(for result: DiceWidgetRoll) -> Color {
         switch result.result {
         case .coup:

@@ -8,19 +8,13 @@ public extension UserDefaults {
     
     // MARK: - UserDefaults Keys
     
-    /// Keys for storing dice roller widget and live activity data
+    /// Keys for storing dice roller widget data
     enum DiceKeys {
         /// Main dice configuration data
         public static let diceConfiguration = "diceConfiguration"
 
-        /// Compact dice payload read by widgets and Live Activities
+        /// Compact dice payload read by widgets
         public static let widgetSnapshot = "diceWidgetSnapshot"
-        
-        /// Whether a game session is currently active
-        public static let isGameActive = "isGameActive"
-        
-        /// Name of the current game session
-        public static let currentGameName = "currentGameName"
         
         /// History of dice rolls
         public static let rollHistory = "rollHistory"

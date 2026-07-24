@@ -20,20 +20,30 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     let linkTypes: LinkType.Type
     
     @FocusState private var currentFocus: EntryEditorFocusField?
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     @State private var editModel: TextEditModel
 
     var body: some View {
-        editorCard
+        GlassEffectContainerAll {
+            editorCard
+        }
             .frame(maxWidth: 800)
-            .padding(32)
+            .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             // Optimization: Combine onChange modifiers to prevent duplicate updates
             .onChange(of: entry.content, initial: true) { _, newContent in
+                let source = ItemRowModel(
+                    itemId: itemId,
+                    entryId: entry.id,
+                    typeId: editorModel.module
+                )
                 // Check if we actually need to update to prevent unnecessary work
-                if editModel.text != newContent || editModel.name != entry.name {
+                if editModel.source != source ||
+                    editModel.text != newContent ||
+                    editModel.name != entry.name {
                     updateEditModel(entry: entry, itemId: itemId)
                 }
             }
@@ -65,7 +75,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     }
     
     private var editorCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             EntryEditorHeaderView(
                 editController: editController,
                 editorModel: editorModel,
@@ -81,23 +91,37 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
         }
         .padding(20)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(adaptiveCardBackground)
-                .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(theme.panelColor.opacity(reduceTransparency ? 1 : 0.58))
         }
-        .containerShape(.rect(cornerRadius: 24, style: .continuous))
-    }
-    
-    private var adaptiveCardBackground: some ShapeStyle {
-        if colorScheme == .dark {
-            return Color.accentColor.opacity(0.9).gradient
-        } else {
-            return Color.accentColor.opacity(0.95).gradient
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(
+                    theme.tint(for: editorModel.module).opacity(0.45),
+                    lineWidth: 1
+                )
         }
+        .entryEditorGlass(tint: theme.background(for: editorModel.module))
+        .shadow(color: .black.opacity(0.24), radius: 24, y: 12)
+        .containerShape(.rect(cornerRadius: 28, style: .continuous))
     }
     
     private func updateEditModel(entry: any EntryDataAccessable, itemId: UUID) {
         editModel.reset(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func entryEditorGlass(tint: Color) -> some View {
+#if os(visionOS)
+        self
+#else
+        glassEffectAll(
+            .regular.tint(tint.opacity(0.18)),
+            in: .rect(cornerRadius: 28, style: .continuous)
+        )
+#endif
     }
 }
 

@@ -209,7 +209,7 @@ private extension SheetView {
     @ViewBuilder
     var secondaryRow: some View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
-            LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(sheetModel.source.entryId ?? sheetModel.source.itemId), text: description))
+            LinkHighlightTextView(model: rootModel.linkTextModel(for: .itemContent(sheetModel.source.itemId), text: description))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.subheadline)
         }

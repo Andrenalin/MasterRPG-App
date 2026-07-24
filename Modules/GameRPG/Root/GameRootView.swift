@@ -25,7 +25,6 @@ struct GameRootView: View {
                 if appGameStateModel.gameModus != newModus {
                     appGameStateModel.gameModus = newModus
                 }
-                root.widgetGameRunningChanged()
             }
     }
 

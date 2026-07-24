@@ -61,7 +61,6 @@ struct GameRootSetupView: View {
             appGameStateModel.gameModus = newState == .started
                 ? (root.gameModel.gameConfig.isMaster ? .master : .player)
                 : .edit
-            root.widgetGameRunningChanged()
         }
     }
 }

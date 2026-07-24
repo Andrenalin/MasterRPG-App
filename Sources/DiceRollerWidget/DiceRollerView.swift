@@ -304,14 +304,6 @@ struct DiceRollerView: View {
                 config.save()
                 DiceWidgetReloader.reloadDiceWidgets()
 
-                // Update Live Activity if game is active
-                let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-                let isGameActive = defaults?.bool(forKey: UserDefaults.DiceKeys.isGameActive) ?? false
-
-                if isGameActive {
-                    await DiceRollerLiveActivityManager.shared.startOrUpdate(with: result)
-                }
-
                 // Save history
                 saveHistory()
             }

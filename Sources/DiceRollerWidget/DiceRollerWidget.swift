@@ -116,9 +116,6 @@ struct ConfigureDiceWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Configure Dice Widget"
     static let description = IntentDescription("Customize your dice widget appearance")
 
-    @Parameter(title: "Show Favorites Only", default: false)
-    var showFavoritesOnly: Bool
-
     init() {}
 }
 
@@ -133,7 +130,6 @@ struct DiceRollerWidgetBundle: WidgetBundle {
         #if os(iOS)
         DiceRollerAccessoryWidget()
         DiceRollerControl()
-        DiceRollerLiveActivity()
         #endif
     }
 }

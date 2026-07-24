@@ -4,6 +4,7 @@ import SwiftUI
 
 enum LinkHighlightTextModelId: Hashable {
     case item(UUID)
+    case itemContent(UUID)
     case entry(UUID)
     case entryContent(UUID)
 }
@@ -249,14 +250,56 @@ public final class SheetRootModel: Sendable {
     func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
         withAnimation {
             switch id {
-            case .item:
-                break
+            case .item(let uuid), .itemContent(let uuid):
+                _ = toggleItemLink(
+                    sheetModel: sheetModel,
+                    sourceItemId: uuid,
+                    linkId: itemId,
+                    module: module
+                )
             case .entry(let uuid):
                 _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
             case .entryContent(let uuid):
                 _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
             }
         }
+    }
+
+    func toggleItemLink(
+        sheetModel: SheetModel,
+        sourceItemId: UUID,
+        linkId: UUID,
+        module: NetworkModules
+    ) -> Bool {
+        if sheetModel.source.itemId == sourceItemId {
+            if let existingSheet = sheetModel.entries.first(where: { $0.source.itemId == linkId }) {
+                unfold(sheetModel: existingSheet)
+                existingSheet.isShown.toggle()
+                return true
+            }
+            guard let rootModel = rootManager.rootModel(for: module) else { return false }
+            let newSheet = rootModel.sheetControllable.sheet(
+                root: rootManager,
+                itemId: linkId,
+                destination: sheetModel.destination,
+                level: sheetModel.level + 1,
+                isShown: true,
+                moduleDepth: 0,
+                isEditor: isEditor
+            )
+            unfold(sheetModel: newSheet)
+            sheetModel.entries.append(newSheet)
+            return true
+        }
+        for entry in sheetModel.entries where toggleItemLink(
+            sheetModel: entry,
+            sourceItemId: sourceItemId,
+            linkId: linkId,
+            module: module
+        ) {
+            return true
+        }
+        return false
     }
     
     func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules) -> Bool {
@@ -306,6 +349,12 @@ public final class SheetRootModel: Sendable {
     /// `parent` is threaded explicitly by the caller (who already has it in scope) rather than
     /// looked up, since SheetContextMenuView's move-up/down/into-group actions need it too.
     func setSelected(_ entryModel: SheetModel, parent: SheetModel) {
+        if selectedEntryId == entryModel.id,
+           selectedEntryModel === entryModel,
+           entryModel.isSelected {
+            selectedParentModel = parent
+            return
+        }
         if let previous = selectedEntryModel, previous !== entryModel {
             previous.isSelected = false
         } else if selectedEntryModel == nil,
@@ -354,6 +403,29 @@ public final class SheetRootModel: Sendable {
 
     func isInlineEditing(_ entryModel: SheetModel) -> Bool {
         inlineEditingEntryModel === entryModel
+    }
+
+    func updateEditType(
+        _ editType: SheetModelEditType,
+        for entryModel: SheetModel,
+        parent: SheetModel
+    ) {
+        guard let entryId = entryModel.source.entryId,
+              let editable = editControllable(for: entryModel.source) as? any SheetEditTypeControllable,
+              editable.supportedSheetEditTypes.contains(editType),
+              entryModel.editType != editType else { return }
+        editable.updateSheetEditType(
+            itemId: entryModel.source.itemId,
+            entryId: entryId,
+            editType: editType
+        )
+        entryModel.editType = editType
+        updateParent(parent)
+    }
+
+    func supportedEditTypes(for source: ItemRowModel) -> [SheetModelEditType] {
+        (editControllable(for: source) as? any SheetEditTypeControllable)?
+            .supportedSheetEditTypes ?? []
     }
 
     /// First non-hidden top-level entry — used to select "into" a sheet from the sidebar list.

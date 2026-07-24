@@ -13,6 +13,20 @@ struct SheetControllerTests {
     func linkRegisterController(for root: CharacterRootModel) -> LinkRegisterController {
         LinkRegisterController(root: RootManager.init(anyRoot: root))
     }
+
+    @Test func characterSheetEditTypeControllerPersistsSelectedType() async throws {
+        let root = try await MockRoot.importTestData()
+        let itemID = try #require(root.itemController.itemDataModel.items.first)
+        let entryID = try #require(root.itemController.itemOrEmpty(for: itemID).entries.first?.id)
+
+        root.editController.updateSheetEditType(
+            itemId: itemID,
+            entryId: entryID,
+            editType: .selection
+        )
+
+        #expect(root.itemController.itemOrEmpty(for: itemID)[entryID].type == .selection)
+    }
     
     @Test func characterSheetBasic() async throws {
         let root = try await MockRoot.importTestData()

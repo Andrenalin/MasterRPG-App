@@ -4,6 +4,7 @@ import SwiftUI
 
 public struct AddTagsEditor: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.appTheme) private var theme
 
     public init(tags: Binding<[String]>, prompt: LocalizedStringKey = "New tag") {
         self._tags = tags
@@ -13,7 +14,7 @@ public struct AddTagsEditor: View {
     @Binding var tags: [String]
     let prompt: LocalizedStringKey
 
-    @FocusState var focusState: Bool
+    @FocusState private var focusState: Bool
     @State private var currentTag: String = ""
 
     public var body: some View {
@@ -23,30 +24,41 @@ public struct AddTagsEditor: View {
 
 private extension AddTagsEditor {
     var addTagView: some View {
-        HStack {
-            TextField(text: $currentTag, prompt: Text(prompt, bundle: .module)) {
-                Text("Tag", bundle: .module)
-            }
+        GlassEffectContainerAll {
+            HStack(spacing: 12) {
+                TextField(text: $currentTag, prompt: Text(prompt, bundle: .module)) {
+                    Text("Tag", bundle: .module)
+                }
 #if os(iOS) || os(visionOS)
-            .autocapitalization(.none)
-            .textContentType(.name)
+                .autocapitalization(.none)
+                .textContentType(.name)
 #endif
-            .disableAutocorrection(true)
-            .focused($focusState)
-            .onSubmit {
-                addCurrentTag()
-                focusState = true
-            }
+                .disableAutocorrection(true)
+                .focused($focusState)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 44)
+                .background {
+                    Capsule()
+                        .fill(theme.panelColor.opacity(0.42))
+                }
+                .addTagInputGlass()
+                .onSubmit {
+                    addCurrentTag()
+                    focusState = true
+                }
 
-            Button { addCurrentTag() } label: {
-                Image(systemName: "plus")
-                    .imageScale(.large)
+                GlassButton(isProminent: true, action: addCurrentTag) {
+                    Label {
+                        Text("Add tag", bundle: .module)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
+                    .labelStyle(.iconOnly)
+                    .frame(minWidth: 44, minHeight: 44)
+                }
+                .disabled(currentTag.isEmpty)
             }
-            .frame(minWidth: 44, minHeight: 44)
-            .padding(.horizontal, self.valueFor(iOS: 16, macOS: 8, tvOS: 16, visionOS: 16))
-            .disabled(currentTag.isEmpty)
-            .buttonStyle(.borderedProminent)
-            .accessibilityLabel(Text("Add tag", bundle: .module))
         }
     }
 
@@ -60,6 +72,17 @@ private extension AddTagsEditor {
             tags = updatedTags
             currentTag = ""
         }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func addTagInputGlass() -> some View {
+#if os(visionOS)
+        self
+#else
+        glassEffectAll(.regular.interactive(), in: .capsule)
+#endif
     }
 }
 

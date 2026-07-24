@@ -28,9 +28,11 @@ public struct ModuleCommands: Commands {
             NavigateButton(root: root, routeActions: routeActions, key: key)
         }
         CommandGroup(after: .newItem) {
-            AddItemButton(root: root, routeActions: routeActions, key: key)
-            AddFolderButton(root: root, routeActions: routeActions, key: key)
-            AddCollectionButton(root: root, routeActions: routeActions, key: key)
+            if selectedModule == root.configurable.module {
+                AddItemButton(root: root, routeActions: routeActions)
+                AddFolderButton(root: root, routeActions: routeActions)
+                AddCollectionButton(root: root, routeActions: routeActions)
+            }
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {

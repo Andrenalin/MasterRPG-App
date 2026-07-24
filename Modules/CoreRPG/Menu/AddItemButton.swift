@@ -6,7 +6,6 @@ import SwiftUI
 struct AddItemButton: View {
     let root: any ItemRootControllable
     let routeActions: RouteActions
-    let key: AKKeyEquivalent
 
     var body: some View {
         Button {
@@ -17,11 +16,11 @@ struct AddItemButton: View {
         } label: {
             Label { Text("New \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }
         }
-        .keyboardShortcut(key, modifiers: [.command, .control])
+        .keyboardShortcut("n", modifiers: .command)
     }
 }
 
 #Preview {
-    AddItemButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+    AddItemButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in })
 }
 #endif

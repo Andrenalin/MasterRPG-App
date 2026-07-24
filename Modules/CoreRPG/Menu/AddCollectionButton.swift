@@ -6,7 +6,6 @@ import SwiftUI
 struct AddCollectionButton: View {
     let root: any ItemRootControllable
     let routeActions: RouteActions
-    let key: AKKeyEquivalent
 
     var body: some View {
         Button {
@@ -16,17 +15,17 @@ struct AddCollectionButton: View {
             }
         } label: {
             Label {
-                Text(EditControllerAddType.collection.title)
+                Text("New Collection in \(root.configurable.module.title)", bundle: .module)
             } icon: {
                 Image(systemName: EditControllerAddType.collection.icon(collection: root.itemControllable.collectionCategory.icon))
             }
         }
-        .keyboardShortcut(key, modifiers: [.command, .control, .option])
+        .keyboardShortcut("n", modifiers: [.command, .shift, .option])
         .disabled(root.folderListControllable.listDisplayModel.isListMode)
     }
 }
 
 #Preview {
-    AddCollectionButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+    AddCollectionButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in })
 }
 #endif

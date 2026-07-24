@@ -694,21 +694,3 @@ extension GameRoot {
         }
     }
 }
-
-// MARK: - Widget
-
-extension GameRoot {
-    func widgetGameRunningChanged() {
-        if gameModel.gameConfig.state == .started {
-            let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-            defaults?.set(true, forKey: UserDefaults.DiceKeys.isGameActive)
-            defaults?.set(gameModel.gameConfig.master.adventureTitle, forKey: UserDefaults.DiceKeys.currentGameName)
-            diceRoot.diceGameControllable.clearAllFavoriteDice()
-        } else {
-            let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-            defaults?.set(false, forKey: UserDefaults.DiceKeys.isGameActive)
-            defaults?.set("", forKey: UserDefaults.DiceKeys.currentGameName)
-            diceRoot.diceGameControllable.clearAllFavoriteDice()
-        }
-    }
-}

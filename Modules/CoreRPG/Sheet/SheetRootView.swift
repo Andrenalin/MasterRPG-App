@@ -44,6 +44,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
     let detailContent: (SheetModel) -> DetailContent
 
     @Namespace private var generatedAcceptanceNamespace
+    @Environment(\.navigationColumnFocus) private var navigationColumnFocus
 
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -66,6 +67,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
         // focus is on this container or on a child button — and TextFields consume
         // arrow keys themselves, so editing is never interrupted.
         .focusable()
+        .navigationColumnFocused(navigationColumnFocus, equals: .detail)
         .onKeyPress(.downArrow, phases: .down) { _ in
             rootModel.selectNextEntry()
             return .handled
@@ -77,6 +79,11 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
         .onKeyPress(.escape, phases: .down) { _ in
             guard rootModel.selectedEntryId != nil else { return .ignored }
             rootModel.clearSelection()
+            return .handled
+        }
+        .onKeyPress(.leftArrow, phases: .down) { _ in
+            rootModel.clearSelection()
+            navigationColumnFocus?.wrappedValue = .list
             return .handled
         }
 #endif

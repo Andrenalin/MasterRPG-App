@@ -1292,7 +1292,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("AddCollectionButton")
     func snapshotAddCollectionButton() async throws {
         try await assertPreviewSnapshot("AddCollectionButton") {
-            CoreRPG.AddCollectionButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+            CoreRPG.AddCollectionButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in })
         }
     }
 
@@ -1300,7 +1300,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("AddFolderButton")
     func snapshotAddFolderButton() async throws {
         try await assertPreviewSnapshot("AddFolderButton") {
-            CoreRPG.AddFolderButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+            CoreRPG.AddFolderButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in })
         }
     }
 
@@ -1308,7 +1308,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("AddItemButton")
     func snapshotAddItemButton() async throws {
         try await assertPreviewSnapshot("AddItemButton") {
-            CoreRPG.AddItemButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in }, key: "n")
+            CoreRPG.AddItemButton(root: ItemRootController.fake, routeActions: RouteActions { _, _, _ in })
         }
     }
 

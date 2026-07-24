@@ -101,6 +101,11 @@ class MasterRPGUITestCase: XCTestCase {
         )
         addItem.tap()
 
+        let keyboardSetupContinue = app.buttons["Continue"].firstMatch
+        if keyboardSetupContinue.waitForExistence(timeout: 2), keyboardSetupContinue.isHittable {
+            keyboardSetupContinue.tap()
+        }
+
         let nameField = app.textFields.firstMatch
         XCTAssertTrue(
             nameField.waitForExistence(timeout: 15),
