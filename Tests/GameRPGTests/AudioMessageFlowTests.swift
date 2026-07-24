@@ -152,7 +152,7 @@ extension MultiConnectionAudioTests {
         #expect(env.player1Root.audioRoot.gameController.gameModel.playerReport(for: audioId) == [env.player1Config.id])
     }
 
-    @Test("Play waits and sends journaled audio only to missing player ids")
+    @Test("Play waits and publishes one journaled audio repair")
     func playWaitsForMissingPlayers() async throws {
         // Given
         let env = try await Self.preparedEnvironment()
@@ -176,11 +176,42 @@ extension MultiConnectionAudioTests {
         let transfer = try #require(sent.first)
         #expect(transfer.type == .store)
         #expect(transfer.subType == .show)
-        #expect(transfer.targetId == env.player2Config.id)
+        #expect(transfer.targetId == nil)
         #expect(transfer.data.id == audioId)
         #expect(transfer.data.data != nil)
         #expect(MasterController.usesFileJournal(for: transfer))
         #expect(env.masterRoot.audioRoot.audioController.model.currentId == nil)
+    }
+
+    @Test("Several missing players share one audio repair publication")
+    func missingPlayersShareOneAudioRepair() async throws {
+        // Given
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        try await Self.reportAvailability(
+            in: env,
+            audioId: audioId,
+            availablePlayerIds: [env.player1Config.id]
+        )
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When
+        await env.master.game(
+            message: env.masterRoot.audioRoot.gameController.requestPlay(id: audioId),
+            actionType: .playAudio
+        )
+
+        // Then
+        let repairs = env.masterNetworkSpy.sendResponseHistory
+            .dropFirst(baseline)
+            .compactMap { $0 as? GameNetworkModel }
+            .filter { $0.type == .store && $0.subType == .show && $0.data.id == audioId }
+        #expect(repairs.count == 1)
+        #expect(repairs.first?.targetId == nil)
+        #expect(env.master.gameModel.audioTransferPlayers[audioId] == Set([
+            env.player2Config.id,
+            env.player3Config.id
+        ]))
     }
 
     @Test("Last successful receipt starts pending play without publishing another list")
@@ -245,12 +276,12 @@ extension MultiConnectionAudioTests {
             Self.audioReport(from: env.player2Root, availableIds: [], counter: 2)
         )
 
-        // Then - The list converges first, followed by a new targeted transfer.
+        // Then - The list converges first, followed by one group repair.
         let sent = env.masterNetworkSpy.sendResponseHistory
             .dropFirst(baseline)
             .compactMap { $0 as? GameNetworkModel }
         #expect(sent.map(\.subType) == [.audioList, .show])
-        #expect(sent.last?.targetId == env.player2Config.id)
+        #expect(sent.last?.targetId == nil)
     }
 
     @Test("Pause cancels a pending play while a player is missing audio")

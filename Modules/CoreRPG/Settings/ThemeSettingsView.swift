@@ -3,13 +3,18 @@
 import SwiftUI
 
 public struct ThemeSettingsView: View {
-    public init() {}
+    public init() {
+        self._isPickerPresented = .constant(false)
+    }
+
+    public init(isPickerPresented: Binding<Bool>) {
+        self._isPickerPresented = isPickerPresented
+    }
 
     @Environment(AppSettingsModel.self) private var settingsModel
     @Environment(\.appTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
 
-    @State private var isPickerPresented = false
+    @Binding private var isPickerPresented: Bool
 
     public var body: some View {
         SectionGroupEditorView {
@@ -39,18 +44,13 @@ public struct ThemeSettingsView: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("settings.theme.choose")
             .accessibilityLabel(Text("Theme", bundle: .module))
             .accessibilityValue(Text(settingsModel.appThemeID.localizedName))
         } header: {
             Text("Theme", bundle: .module)
         } footer: {
             Text("Themes change app surfaces and module colors without changing your photos, maps, or documents.", bundle: .module)
-        }
-        .sheet(isPresented: $isPickerPresented) {
-            ThemePickerView()
-                .environment(settingsModel)
-                .environment(\.appTheme, theme)
-                .environment(\.colorScheme, colorScheme)
         }
     }
 
@@ -60,8 +60,10 @@ public struct ThemeSettingsView: View {
 }
 
 #Preview {
+    @Previewable @State var isPickerPresented = false
+
     List {
-        ThemeSettingsView()
+        ThemeSettingsView(isPickerPresented: $isPickerPresented)
     }
     .environment(AppSettingsModel.previewFixture(appThemeID: .arcane))
 }

@@ -13,10 +13,11 @@ ACTIVE_PROMOTION_STARTED=0
 ACTIVE_TRANSACTION_COMMITTED=0
 
 usage() {
-    echo "Usage: $0 <verify|record> <26|27|both> [additional xcodebuild arguments...]"
+    echo "Usage: $0 <verify|record|update> <26|27|both> [additional xcodebuild arguments...]"
     echo
     echo "  verify  Compares references without writing them."
     echo "  record  Records into a clean staging tree, verifies it, then replaces the reference tree."
+    echo "  update  Copies the current tree into staging and transactionally re-records selected tests."
 }
 
 path_exists() {
@@ -86,7 +87,7 @@ TOOLCHAIN="$2"
 shift 2
 
 case "$ACTION" in
-    verify|record)
+    verify|record|update)
         ;;
     *)
         usage
@@ -181,14 +182,15 @@ run_tests() {
     echo "Destination: $destination"
     echo "Derived data: $derived_data"
 
-    # The SnapshotTests plan expands these build settings into the simulator
-    # test process. Shell-prefixed variables are intentionally not used because
-    # xcodebuild does not forward arbitrary parent-process variables to tests.
+    # xcodebuild forwards parent-process variables carrying the TEST_RUNNER_
+    # prefix into the simulator test process after stripping that prefix.
+    TEST_RUNNER_SNAPSHOT_RECORD_MODE="$record_mode" \
+    TEST_RUNNER_SNAPSHOT_BASELINE_VARIANT="$baseline_variant" \
     DEVELOPER_DIR="$xcode_app/Contents/Developer" \
         xcodebuild test \
             -project "$ROOT_DIR/MasterRPG.xcodeproj" \
             -scheme MasterRPG \
-            -testPlan SnapshotTests \
+            -testPlan MasterSnapshot \
             -configuration Debug \
             -destination "$destination" \
             -derivedDataPath "$derived_data" \
@@ -199,9 +201,7 @@ run_tests() {
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             EAGER_LINKING=NO \
-            "$@" \
-            "SNAPSHOT_RECORD_MODE_BUILD_SETTING=$record_mode" \
-            "SNAPSHOT_BASELINE_VARIANT_BUILD_SETTING=$baseline_variant"
+            "$@"
 }
 
 png_count() {
@@ -297,13 +297,90 @@ record_and_verify() {
     echo "Committed $staged_png_count references to Snapshots/Xcode$major."
 }
 
-for major in "${TOOLCHAINS[@]}"; do
-    if [[ "$ACTION" == "record" ]]; then
-        record_and_verify "$major" "$@"
-    else
-        echo "Verifying Snapshots/Xcode$major without writes"
-        run_tests "$major" never "" "$@"
+update_and_verify() {
+    local major="$1"
+    local staging_variant="Xcode${major}Recording"
+    local record_status
+    local staged_png_count
+    local verify_status
+    local selected_filter_count=0
+    local argument
+    shift
+
+    for argument in "$@"; do
+        if [[ "$argument" == -only-testing:* ]]; then
+            selected_filter_count=$((selected_filter_count + 1))
+        fi
+    done
+    if [[ $selected_filter_count -eq 0 ]]; then
+        echo "Targeted update requires at least one -only-testing filter." >&2
+        return 64
     fi
+
+    begin_recording_transaction "$major"
+    if ! path_exists "$ACTIVE_CANONICAL"; then
+        echo "Cannot update missing baseline tree $ACTIVE_CANONICAL; use record first." >&2
+        return 72
+    fi
+    cp -R "$ACTIVE_CANONICAL" "$ACTIVE_STAGING"
+
+    echo "Updating $selected_filter_count selected test filters in staged baseline Snapshots/$staging_variant"
+    set +e
+    run_tests "$major" all "$staging_variant" "$@"
+    record_status=$?
+    set -e
+    echo "Recording pass exited with status $record_status; SnapshotTesting reports recorded cases as failures."
+    if [[ $record_status -eq 0 ]]; then
+        echo "Recording unexpectedly passed. No recording assertions were executed; check the test filters." >&2
+        return 70
+    fi
+
+    staged_png_count="$(png_count "$ACTIVE_STAGING")"
+    if [[ $staged_png_count -le 0 ]]; then
+        echo "Targeted recording produced no PNG references in $ACTIVE_STAGING." >&2
+        return 71
+    fi
+
+    echo "Verifying the selected staged references without writes"
+    set +e
+    run_tests "$major" never "$staging_variant" "$@"
+    verify_status=$?
+    set -e
+    if [[ $verify_status -ne 0 ]]; then
+        echo "Targeted staged verification failed; the existing Xcode$major baseline remains unchanged." >&2
+        return "$verify_status"
+    fi
+
+    echo "Replacing Snapshots/Xcode$major with the verified targeted update"
+    promote_staged_baseline
+
+    echo "Verifying automatic DTXcode selection for the selected references"
+    set +e
+    run_tests "$major" never "" "$@"
+    verify_status=$?
+    set -e
+    if [[ $verify_status -ne 0 ]]; then
+        echo "Automatic DTXcode verification failed; restoring the previous Xcode$major baseline." >&2
+        return "$verify_status"
+    fi
+
+    commit_recording_transaction
+    echo "Committed updates for $selected_filter_count targeted test filters to Snapshots/Xcode$major."
+}
+
+for major in "${TOOLCHAINS[@]}"; do
+    case "$ACTION" in
+        record)
+            record_and_verify "$major" "$@"
+            ;;
+        update)
+            update_and_verify "$major" "$@"
+            ;;
+        verify)
+            echo "Verifying Snapshots/Xcode$major without writes"
+            run_tests "$major" never "" "$@"
+            ;;
+    esac
 
     # Default DerivedData is script-owned and temporary. Explicit override
     # paths remain untouched so callers can opt into a persistent build cache.

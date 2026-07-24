@@ -178,8 +178,31 @@ private extension ListRootView {
 #endif
         }
         .scrollPosition(id: $listModel.scrollId, anchor: .center)
+        .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
         .themedListSurface()
+#if os(macOS)
+        .onChange(of: listModel.scrollId) { _, newValue in
+            if let newValue {
+                listModel.lastNonNilScrollId = newValue
+            }
+        }
+        .onAppear {
+            restoreMacScrollPosition()
+        }
+        .onChange(of: listModel.list.map(\.id)) {
+            restoreMacScrollPosition()
+        }
+#endif
     }
+
+#if os(macOS)
+    func restoreMacScrollPosition() {
+        let target = listModel.selected ?? listModel.lastNonNilScrollId
+        guard let target, listModel.list.contains(where: { $0.id == target }) else { return }
+        listModel.lastNonNilScrollId = target
+        listModel.scrollId = target
+    }
+#endif
     
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
     func deleteItems(offsets: IndexSet) {

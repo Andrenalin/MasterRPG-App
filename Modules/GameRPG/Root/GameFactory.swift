@@ -36,11 +36,15 @@ public enum GameFactory {
         GameRootSetupView(root: root, openStatistics: openStatistics)
     }
 
-    @MainActor public static func statisticsView(root: GameRoot) -> some View {
+    @MainActor public static func statisticsView(
+        root: GameRoot,
+        showsDismissButton: Bool = false
+    ) -> some View {
         GameStatisticsDashboardView(
             model: root.statisticsModel,
             gameCenterModel: root.gameCenterModel,
-            gameCenterController: root.gameCenterController
+            gameCenterController: root.gameCenterController,
+            showsDismissButton: showsDismissButton
         )
     }
 

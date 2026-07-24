@@ -45,6 +45,7 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
     @SceneStorage private var listMode: ListDisplayModel.ListMode
 
     @State private var route: Route?
+    @State private var moduleRootNavigationDepth: Int?
 
     func body(content: Content) -> some View {
         content
@@ -55,7 +56,8 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
             .onChange(of: navigator.count) { oldCount, newCount in
                 guard appSizeModel.mode == .compact,
                       oldCount > newCount,
-                      newCount == 0 else { return }
+                      let moduleRootNavigationDepth,
+                      newCount == moduleRootNavigationDepth else { return }
                 route = nil
                 selectedItemId = nil
                 let listModel = root.folderListControllable.listModel
@@ -75,6 +77,11 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
                     if root.folderListControllable.listModel.selected != nil {
                         root.folderListControllable.listModel.update(selection: Set())
                     }
+                }
+            }
+            .onAppear {
+                if moduleRootNavigationDepth == nil {
+                    moduleRootNavigationDepth = navigator.count
                 }
             }
             .task {

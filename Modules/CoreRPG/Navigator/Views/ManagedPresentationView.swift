@@ -70,6 +70,7 @@ public struct ManagedPresentationView<Content: View>: View {
         content
             .modifier(NavigationPresentationModifiers(navigator: navigator))
             .environment(\.navigator, navigator)
+            .themedSurface()
             .onAppear {
                 Navigator.set(current: navigator)
             }

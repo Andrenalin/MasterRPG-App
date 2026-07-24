@@ -15,6 +15,8 @@ struct WindowMacList: Scene {
         MenuBarExtra() {
             MenuBarView(appModel: appModel)
                 .environmentSetUp(appModel)
+                .environmentActionSetUp(appModel)
+                .appSettingsSetUp(appModel)
         } label: {
             Label {
                 Text(verbatim: "MasterRPG")
@@ -33,7 +35,8 @@ struct WindowMacList: Scene {
                 .onNavigationOpenURL(RootURLHandler(appModel: appModel, role: .settings))
                 .navigationRoot(appModel.settingsNavigator)
                 .environmentSetUp(appModel)
-                .tint(.teal)
+                .environmentActionSetUp(appModel)
+                .modifier(UserSettingsViewModifier(appModel: appModel))
                 .frame(minWidth: 600, minHeight: 400)
             }
         }

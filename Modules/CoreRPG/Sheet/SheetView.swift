@@ -194,6 +194,7 @@ private extension SheetView {
             .applyIf(inlineEntry.sheetType == .photo) {
                 $0.frame(height: 160)
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .clipShape(.rect(cornerRadius: 16))
             }
             .applyIf(inlineEntry.sheetType != .photo) {
                 $0.frame(maxWidth: .infinity, alignment: .leading)

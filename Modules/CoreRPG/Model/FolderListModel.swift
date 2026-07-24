@@ -52,6 +52,7 @@ public final class FolderListModel {
     // MARK: - Scroll
     
     var scrollId: UUID?
+    var lastNonNilScrollId: UUID?
     
     // MARK: - ListModels
     public var detailListModel: FolderListModel?

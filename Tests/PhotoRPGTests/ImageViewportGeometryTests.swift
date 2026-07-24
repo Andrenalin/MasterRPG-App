@@ -124,6 +124,29 @@ struct ImageViewportGeometryTests {
         #expect(original == equivalentRotation)
     }
 
+    @Test("Game sidebar reservation reduces only the usable trailing viewport")
+    func trailingViewportReservation() {
+        let measuredSize = CGSize(width: 1_024, height: 768)
+
+        let visibleSize = PhotoViewportReservation.effectiveContainerSize(
+            measuredSize: measuredSize,
+            trailingReservation: 324
+        )
+        let oversizedReservation = PhotoViewportReservation.effectiveContainerSize(
+            measuredSize: measuredSize,
+            trailingReservation: 2_000
+        )
+
+        #expect(visibleSize == CGSize(width: 700, height: 768))
+        #expect(oversizedReservation == CGSize(width: 44, height: 768))
+        #expect(
+            PhotoViewportReservation.effectiveContainerSize(
+                measuredSize: measuredSize,
+                trailingReservation: .nan
+            ) == measuredSize
+        )
+    }
+
     @Test("Pan bounds keep large content covering the viewport and center the smaller axis")
     func panBounds() {
         // Given

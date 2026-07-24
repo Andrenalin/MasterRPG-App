@@ -44,4 +44,28 @@ struct FileUrlTests {
         let dataFileUrl = FileUrl(string: "", fileId: fileId, module: nil, unconvertedData: nil)
         #expect(nil == dataFileUrl)
     }
+
+    @Test("Remote URL metadata survives serialization without inline data")
+    func remoteURLSerialization() throws {
+        let remoteURL = try #require(URL(string: "https://example.com/assets/map.png"))
+        var source = FileUrl(
+            fileId: fileId,
+            url: remoteURL,
+            location: .url,
+            module: "Photo",
+            relativeUrl: nil
+        )
+        source.resetData(Data("remote bytes".utf8))
+
+        let restored = try #require(
+            FileUrl(string: source.rawValue)
+        )
+
+        #expect(restored.location == .url)
+        #expect(restored.rawUrl == remoteURL)
+        #expect(restored.contentHash == source.contentHash)
+        #expect(restored.data == nil)
+        #expect(remoteURL.isSupportedRemoteFileURL)
+        #expect(URL(filePath: "/tmp/map.png").isSupportedRemoteFileURL == false)
+    }
 }

@@ -33,15 +33,15 @@ public struct UserSettingsViewModifier: ViewModifier {
                 }
             }
             .environment(\.appTheme, theme)
-#if os(iOS)
+#if os(iOS) || os(macOS)
             .applyIf(settingsModel.appColorScheme != .system) {
-                $0.environment(\.colorScheme, effectiveColorScheme)
+                $0.preferredColorScheme(effectiveColorScheme)
             }
 #endif
     }
 
     private var effectiveColorScheme: ColorScheme {
-#if os(iOS)
+#if os(iOS) || os(macOS)
         settingsModel.appColorScheme.colorScheme(for: colorScheme)
 #else
         colorScheme

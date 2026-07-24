@@ -29,9 +29,8 @@ struct LinkHighlightTextRenderer: TextRenderer {
 
     // MARK : - TextRenderer
     func draw(layout: Text.Layout, in context: inout GraphicsContext) {
-        Task { @MainActor in
-            model.linkLocations.update(isStart: true)
-        }
+        var linkMeasurements: [LinkLayoutMeasurement] = []
+
         for line in layout {
             for run in line {
                 if run[SearchHighlightAttribute.self] != nil {
@@ -47,18 +46,26 @@ struct LinkHighlightTextRenderer: TextRenderer {
                     rect = CGRect(x: rect.origin.x, y: rect.origin.y, width: rect.width + 2, height: rect.height)
                     let location = rect
                     let runId = run.indices.upperBound + 10000 + run.indices.upperBound
-                    Task { @MainActor in
-                        model.linkLocations.reset(link: link.linkModel, runId: runId, location: location)
-                    }
+                    linkMeasurements.append(
+                        LinkLayoutMeasurement(
+                            link: link.linkModel,
+                            runId: runId,
+                            rect: location
+                        )
+                    )
                     context.draw(run)
                 } else if let link = run[LinkIconAttribute.self] {
                     var rect = run.typographicBounds.rect
                     rect = CGRect(x: rect.origin.x - 2, y: rect.origin.y - 2, width: rect.width + 2, height: rect.height + 4)
                     let location = rect
                     let runId = run.indices.upperBound + 10000 + run.indices.upperBound
-                    Task { @MainActor in
-                        model.linkLocations.reset(link: link.linkModel, runId: runId, location: location)
-                    }
+                    linkMeasurements.append(
+                        LinkLayoutMeasurement(
+                            link: link.linkModel,
+                            runId: runId,
+                            rect: location
+                        )
+                    )
                     context.draw(run)
                 } else if let _ = run[LinkIconExpandedAttribute.self] {
                     context.draw(run)
@@ -69,17 +76,15 @@ struct LinkHighlightTextRenderer: TextRenderer {
                     let shape = UnevenRoundedRectangle(topLeadingRadius: 4, bottomLeadingRadius: 4, bottomTrailingRadius: 4, topTrailingRadius: 4, style: .continuous)
                         .path(in: rect)
                     let deep: CGFloat = CGFloat(linkExpand.deep * 5) / 100.0
-                    //copy.fill(shape, with: .style(.green.opacity(0.40 - CGFloat(linkExpand.deep * 5))))
                     copy.fill(shape, with: .style(.green.opacity(0.40 - deep)))
-                    copy.draw(run)
-                    //                let delay = elementDelay(count: run.count)
-                    //
-                    //                for (index, slice) in run.enumerated() {
-                    //                    let timeOffset = TimeInterval(index) * delay
-                    //                    let elementTime = max(0, min(elapsedTime - timeOffset, elementDuration))
-                    //
-                    //                    draw(slice, at: elementTime, in: &copy)
-                    //                }
+                    let delay = elementDelay(count: run.count)
+
+                    for (index, slice) in run.enumerated() {
+                        let timeOffset = TimeInterval(index) * delay
+                        let elementTime = max(0, min(elapsedTime - timeOffset, elementDuration))
+                        var characterContext = copy
+                        draw(slice, at: elementTime, in: &characterContext)
+                    }
                 } else {
                     let copy = context
                     //copy.opacity = UnitCurve.easeIn.value(at: elapsedTime / 0.2)
@@ -87,12 +92,13 @@ struct LinkHighlightTextRenderer: TextRenderer {
                 }
             }
         }
-        Task { @MainActor in
-            model.linkLocations.update(isStart: false)
+        Task { @MainActor [linkMeasurements] in
+            model.linkLocations.replace(with: linkMeasurements)
         }
     }
 
     func elementDelay(count: Int) -> TimeInterval {
+        guard count > 0 else { return 0 }
         let count = TimeInterval(count)
         let remainingTime = totalDuration - count * elementDuration
 
@@ -111,7 +117,7 @@ struct LinkHighlightTextRenderer: TextRenderer {
         // The y-translation derives from a spring, which requires a
         // time in seconds.
         let translationY = spring.value(
-            fromValue: -slice.typographicBounds.descent,
+            fromValue: -slice.typographicBounds.rect.height * 0.85,
             toValue: 0,
             initialVelocity: 0,
             time: time)

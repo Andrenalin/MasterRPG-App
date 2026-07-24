@@ -110,6 +110,7 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .moduleTint(module)
             .environmentSetUp(model)
             .environmentActionSetUp(model)
+            .modifier(UserSettingsViewModifier(appModel: model))
 #if os(macOS)
             .toolbarBackgroundVisibility(
                 showsWindowToolbarBackground ? .visible : .hidden,

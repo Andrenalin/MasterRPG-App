@@ -13,8 +13,8 @@ struct SheetEntryQuickEditButton: View {
     var body: some View {
         Button {
             if let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
-                navigator.navigate(to: entryDataEditable.quickEditorDestination(itemRowModel: entryModel.source))
                 rootModel.editorModel.parentModel = parentModel
+                navigator.navigate(to: entryDataEditable.quickEditorDestination(itemRowModel: entryModel.source))
             }
         } label: {
             Label {

@@ -141,8 +141,8 @@ struct CreateNewFileUrlTests {
         #expect(result?.hasUnconvertedData == false || ((result?.rawUrl.path().isEmpty) != nil), "Should either save to disk or keep in memory as last resort")
     }
 
-    @Test("Writes imported URL metadata into managed cloud storage")
-    func writesImportedUrlMetadataIntoManagedCloudStorage() async throws {
+    @Test("Restores imported URL data into cache while preserving the remote URL")
+    func writesImportedURLDataIntoCache() async throws {
         let module = uniqueModuleName()
         let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
 
@@ -156,11 +156,14 @@ struct CreateNewFileUrlTests {
         let result = try await sut.createNewFileUrl(fileId: fileId, unconvertedFileUrl: fileUrl, pathExtension: "test")
 
         let stored = try #require(result)
-        #expect(stored.location == .newCloud)
-        #expect(stored.rawUrl.lastPathComponent == remoteUrl.lastPathComponent)
+        #expect(stored.location == .url)
+        #expect(stored.rawUrl == remoteUrl)
         #expect(stored.hasUnconvertedData == false)
+        #expect(await sut.hasLocalData(for: stored))
         let loadedData = try await sut.loadData(for: stored)
         #expect(loadedData == testData)
+
+        try? FileManager.default.removeItem(at: sut.remoteCacheURL(for: stored))
     }
 }
 
@@ -298,6 +301,99 @@ struct FileAccessTests {
         let isDownloaded = await sut.fileDownloaded(for: fileUrl)
         
         #expect(isDownloaded == nil, "Local files should return nil for download status")
+    }
+
+    @Test("Creating a remote file keeps its URL and defers the download")
+    func createsRemoteURLMetadata() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(
+            moduleFolder: module,
+            fileTypes: [.data],
+            filenameExtension: "test"
+        )
+        let remoteURL = try #require(
+            URL(string: "https://example.com/content/remote-file.test")
+        )
+
+        let fileURL = try await sut.createFileUrl(
+            fileId: UUID(),
+            url: remoteURL,
+            module: module,
+            category: nil
+        )
+
+        #expect(fileURL.location == .url)
+        #expect(fileURL.rawUrl == remoteURL)
+        #expect(await sut.hasLocalData(for: fileURL) == false)
+
+        let replacementURL = try #require(
+            URL(string: "https://example.com/content/replacement.test")
+        )
+        let replacement = FileUrl(
+            fileId: fileURL.fileId,
+            url: replacementURL,
+            location: .url,
+            module: module,
+            relativeUrl: nil
+        )
+        #expect(sut.remoteCacheURL(for: replacement) != sut.remoteCacheURL(for: fileURL))
+    }
+
+    @Test("First use downloads a remote URL once and later reads use its cache")
+    func downloadsRemoteURLIntoCacheOnFirstUse() async throws {
+        let module = uniqueModuleName()
+        let sourceURL = URL.temporaryDirectory
+            .appending(path: UUID().uuidString)
+            .appendingPathExtension("test")
+        let expectedData = Data("downloaded remote data".utf8)
+        try expectedData.write(to: sourceURL)
+        let probe = RemoteDownloadProbe(sourceURL: sourceURL)
+        let sut = await FileUrlDataController(
+            moduleFolder: module,
+            fileTypes: [.data],
+            filenameExtension: "test",
+            remoteFileDownloader: { remoteURL in
+                try await probe.download(remoteURL)
+            }
+        )
+        let remoteURL = try #require(
+            URL(string: "https://example.com/content/download.test")
+        )
+        let fileURL = FileUrl(
+            fileId: UUID(),
+            url: remoteURL,
+            location: .url,
+            module: module,
+            relativeUrl: nil
+        )
+
+        let firstRead = try await sut.loadData(for: fileURL)
+        try FileManager.default.removeItem(at: sourceURL)
+        let secondRead = try await sut.loadData(for: fileURL)
+
+        #expect(firstRead == expectedData)
+        #expect(secondRead == expectedData)
+        #expect(await probe.requestCount == 1)
+        #expect(await sut.hasLocalData(for: fileURL))
+
+        try? FileManager.default.removeItem(at: sut.remoteCacheURL(for: fileURL))
+    }
+}
+
+private actor RemoteDownloadProbe {
+    init(sourceURL: URL) {
+        self.sourceURL = sourceURL
+    }
+
+    let sourceURL: URL
+    private(set) var requestCount = 0
+
+    func download(_ remoteURL: URL) throws -> URL {
+        guard remoteURL.isSupportedRemoteFileURL else {
+            throw URLError(.unsupportedURL)
+        }
+        requestCount += 1
+        return sourceURL
     }
 }
 

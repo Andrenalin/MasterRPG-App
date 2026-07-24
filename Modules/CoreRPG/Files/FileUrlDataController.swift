@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import Combine
+import CryptoKit
 import SwiftUI
 import UniformTypeIdentifiers
 import os.log
@@ -13,9 +14,12 @@ public final class FileUrlDataModel {
 }
 
 public struct FileUrlDataController: Sendable {
+    typealias RemoteFileDownloader = @Sendable (URL) async throws -> URL
+
     private let cloudDocumentController: CloudDocumentController
     private let fileBookmarkController: FileBookmarkController
     private let locationFileManager: LocationFileManager
+    private let remoteFileDownloader: RemoteFileDownloader
 
     public let fileTypes: [UTType]
     let filenameExtension: String
@@ -24,9 +28,25 @@ public struct FileUrlDataController: Sendable {
 
     @MainActor
     public init(moduleFolder: String, fileTypes: [UTType], filenameExtension: String) {
+        self.init(
+            moduleFolder: moduleFolder,
+            fileTypes: fileTypes,
+            filenameExtension: filenameExtension,
+            remoteFileDownloader: Self.downloadRemoteFile(from:)
+        )
+    }
+
+    @MainActor
+    init(
+        moduleFolder: String,
+        fileTypes: [UTType],
+        filenameExtension: String,
+        remoteFileDownloader: @escaping RemoteFileDownloader
+    ) {
         let fileBookmarkController = FileBookmarkController(module: moduleFolder)
         self.fileBookmarkController = fileBookmarkController
         self.locationFileManager = LocationFileManager(moduleFolder: moduleFolder)
+        self.remoteFileDownloader = remoteFileDownloader
 
         self.fileTypes = fileTypes
         self.filenameExtension = filenameExtension
@@ -61,6 +81,9 @@ public struct FileUrlDataController: Sendable {
 
 public extension FileUrlDataController {
     func fileDownloaded(for fileUrl: FileUrl) async -> Bool? {
+        if fileUrl.location == .url {
+            return await hasLocalData(for: fileUrl)
+        }
         guard fileUrl.location != .local && fileUrl.location != .other else { return nil }
         guard await hasAccess(for: fileUrl) else { return nil }
         guard let fullUrl = locationFileManager.absoluteUrl(
@@ -90,7 +113,9 @@ public extension FileUrlDataController {
         switch fileUrl.location {
         case .appCloud, .icloud, .newCloud:
             return await fileDownloaded(for: fileUrl) == true
-        case .local, .other, .url:
+        case .url:
+            return await hasLocalData(for: fileUrl)
+        case .local, .other:
             return true
         }
     }
@@ -111,9 +136,16 @@ public extension FileUrlDataController {
         // false for these URLs; treating that as denial caused full-image loading
         // to remove a valid list thumbnail and then refuse to recreate it.
         switch fileUrl.location {
-        case .newCloud, .local, .appCloud:
+        case .appCloud:
+            // Legacy app-cloud metadata can outlive the device's iCloud
+            // configuration. It never needs a security-scoped bookmark; actual
+            // file availability is checked separately by `hasLocalData(for:)`.
+            return true
+        case .newCloud, .local:
             return managedUrl != nil
-        case .icloud, .other, .url:
+        case .url:
+            return fileUrl.rawUrl.isSupportedRemoteFileURL
+        case .icloud, .other:
             guard let bookmarkedUrl else { return false }
             let didStartAccess = bookmarkedUrl.startAccessingSecurityScopedResource()
             if didStartAccess {
@@ -129,6 +161,11 @@ public extension FileUrlDataController {
     /// a valid-looking FileUrl but no local file.
     func hasLocalData(for fileUrl: FileUrl) async -> Bool {
         if fileUrl.hasUnconvertedData { return true }
+        if fileUrl.location == .url {
+            return FileManager.default.fileExists(
+                atPath: remoteCacheURL(for: fileUrl).path(percentEncoded: false)
+            )
+        }
         let exists = await url(for: fileUrl) { url -> Bool? in
             guard let url else { return false }
             return FileManager.default.fileExists(atPath: url.relativePath)
@@ -147,6 +184,11 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) async throws -> T?) async rethrows -> T? {
+        if fileUrl.location == .url {
+            let cachedURL = try? await ensureRemoteCache(for: fileUrl)
+            return try await action(cachedURL)
+        }
+
         if fileUrl.location == .newCloud {
             let url = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
             return try await action(url)
@@ -171,6 +213,11 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
+        if fileUrl.location == .url {
+            let cachedURL = try? await ensureRemoteCache(for: fileUrl)
+            return try action(cachedURL)
+        }
+
         if fileUrl.location == .newCloud {
             let url = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
             return try action(url)
@@ -208,6 +255,13 @@ public extension FileUrlDataController {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createNewFileUrl(fileId:unconvertedFileUrl:pathExtension:)", file: "FileUrlDataController.swift")
         
         guard let oldData = unconvertedFileUrl.data else { return nil }
+        if unconvertedFileUrl.location == .url {
+            return try await cacheRemoteData(
+                oldData,
+                fileId: fileId,
+                source: unconvertedFileUrl
+            )
+        }
         let contentHash = unconvertedFileUrl.contentHash ?? FileUrl.contentHash(of: oldData)
 
         if let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: unconvertedFileUrl.location, module: unconvertedFileUrl.module) {
@@ -257,6 +311,17 @@ public extension FileUrlDataController {
     func createFileUrl(fileId: UUID, url: URL, module: String, category: String?, contentHash: String? = nil) async throws -> FileUrl {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createFileUrl(fileId:url:module:category:)", file: "FileUrlDataController.swift")
 
+        if url.isSupportedRemoteFileURL {
+            return FileUrl(
+                fileId: fileId,
+                url: url,
+                location: .url,
+                module: module,
+                relativeUrl: nil,
+                contentHash: contentHash
+            )
+        }
+
         do {
             let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             if values.ubiquitousItemDownloadingStatus != .current {
@@ -274,6 +339,9 @@ public extension FileUrlDataController {
     /// Check if the new URL points to the same file as the existing FileUrl
     func isSameFile(existingFileUrl: FileUrl, newUrl: URL?) async -> Bool {
         guard let newUrl else { return false }
+        if existingFileUrl.location == .url || newUrl.isSupportedRemoteFileURL {
+            return existingFileUrl.rawUrl.absoluteString == newUrl.absoluteString
+        }
 
         // Quick path comparison first (fast path for obvious matches)
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: newUrl)
@@ -315,7 +383,13 @@ public extension FileUrlDataController {
                     try? await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
-            case .icloud, .other, .url:
+            case .url:
+                Task { @concurrent in
+                    let cacheURL = remoteCacheURL(for: fileUrl)
+                    try? await FileManager.default.removeItem(coordinatingAccessAt: cacheURL)
+                    fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+                }
+            case .icloud, .other:
                 fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 break
         }
@@ -330,6 +404,8 @@ public extension FileUrlDataController {
         
         if fileUrl.location == .newCloud {
             try await cloudDocumentController.download(filePath: fileUrl.rawUrl.absoluteString)
+        } else if fileUrl.location == .url {
+            _ = try await ensureRemoteCache(for: fileUrl)
         }
     }
 
@@ -356,6 +432,10 @@ public extension FileUrlDataController {
 extension FileUrlDataController {
     public func move(fileUrl: FileUrl, name: String, category: String) async throws -> FileUrl? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:name:category:)", file: "FileUrlDataController.swift")
+
+        if fileUrl.location == .url {
+            return fileUrl
+        }
         
         return try await url(for: fileUrl) { url -> FileUrl? in
             guard let url else { return nil }
@@ -431,6 +511,111 @@ extension FileUrlDataController {
 }
 
 extension FileUrlDataController {
+    func remoteCacheURL(for fileUrl: FileUrl) -> URL {
+        let pathExtension = fileUrl.rawUrl.pathExtension.isEmpty
+            ? normalizedFilenameExtension
+            : fileUrl.rawUrl.pathExtension
+        var url = URL.cachesDirectory
+            .appending(path: "RemoteFiles", directoryHint: .isDirectory)
+            .appending(path: locationFileManager.moduleFolder, directoryHint: .isDirectory)
+            .appending(path: String(fileUrl.fileId.uuidString.suffix(2)), directoryHint: .isDirectory)
+            .appending(path: "\(fileUrl.fileId.uuidString)-\(remoteURLIdentity(for: fileUrl))")
+        if !pathExtension.isEmpty {
+            url.appendPathExtension(pathExtension)
+        }
+        return url
+    }
+
+    private func remoteURLIdentity(for fileUrl: FileUrl) -> String {
+        Data(SHA256.hash(data: Data(fileUrl.rawUrl.absoluteString.utf8)))
+            .base64EncodedString()
+            .replacing("/", with: "_")
+            .replacing("+", with: "-")
+            .replacing("=", with: "")
+    }
+
+    private var normalizedFilenameExtension: String {
+        filenameExtension.first == "."
+            ? String(filenameExtension.dropFirst())
+            : filenameExtension
+    }
+
+    private func ensureRemoteCache(for fileUrl: FileUrl) async throws -> URL? {
+        guard fileUrl.location == .url,
+              fileUrl.rawUrl.isSupportedRemoteFileURL else {
+            return nil
+        }
+
+        let cacheURL = remoteCacheURL(for: fileUrl)
+        if FileManager.default.fileExists(atPath: cacheURL.path(percentEncoded: false)) {
+            return cacheURL
+        }
+
+        if let data = fileUrl.data {
+            try await writeRemoteCache(data, to: cacheURL)
+            return cacheURL
+        }
+
+        let temporaryURL = try await remoteFileDownloader(fileUrl.rawUrl)
+        try Task.checkCancellation()
+        try await FileManager.default.createDirectory(
+            coordinatingAccessAt: cacheURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        do {
+            try await FileManager.default.copyItem(
+                coordinatingAccessFrom: temporaryURL,
+                to: cacheURL
+            )
+        } catch {
+            // Multiple consumers can request the same uncached file together. The
+            // first completed copy wins; later copies may safely reuse that result.
+            guard FileManager.default.fileExists(
+                atPath: cacheURL.path(percentEncoded: false)
+            ) else {
+                throw error
+            }
+        }
+        return cacheURL
+    }
+
+    private func cacheRemoteData(
+        _ data: Data,
+        fileId: UUID,
+        source: FileUrl
+    ) async throws -> FileUrl {
+        var cachedFileURL = FileUrl(
+            fileId: fileId,
+            url: source.rawUrl,
+            location: .url,
+            module: source.module,
+            relativeUrl: nil,
+            contentHash: source.contentHash
+        )
+        cachedFileURL.resetContentHash(of: data)
+        try await writeRemoteCache(data, to: remoteCacheURL(for: cachedFileURL))
+        return cachedFileURL
+    }
+
+    private func writeRemoteCache(_ data: Data, to cacheURL: URL) async throws {
+        try await Task.detached(priority: .utility) {
+            try FileManager.default.createDirectory(
+                at: cacheURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: cacheURL, options: .atomic)
+        }.value
+    }
+
+    private static func downloadRemoteFile(from url: URL) async throws -> URL {
+        let (temporaryURL, response) = try await URLSession.shared.download(from: url)
+        if let response = response as? HTTPURLResponse,
+           !(200...299).contains(response.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        return temporaryURL
+    }
+
     @MainActor
     static public func empty() -> FileUrlDataController {
         FileUrlDataController(moduleFolder: "Tests", fileTypes: [.image], filenameExtension: "test")

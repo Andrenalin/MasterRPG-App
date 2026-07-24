@@ -17,7 +17,7 @@ struct GameStatisticsHighlightCard: View {
                 .bold()
                 .contentTransition(.numericText())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
         .padding()
         .background(.regularMaterial, in: .rect(cornerRadius: 18))
         .accessibilityElement(children: .combine)
