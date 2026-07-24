@@ -45,7 +45,7 @@ struct SheetEntryEditButton: View {
     }
 
     private var isEditing: Bool {
-        isEditor ? entryModel.isEditing : rootModel.isInlineEditing(entryModel)
+        entryModel.isEditing
     }
 }
 

@@ -27,7 +27,11 @@ struct TableSheetView<LinkType: LinkDataTransferable>: View {
 private extension TableSheetView {
     var listContentView: some View {
         ScrollView {
-            LazyVStack(spacing: 4) {
+            // This stack contains one recursively sized sheet tree. Making that single
+            // child lazy causes SwiftUI to cache its old height when a nested quick
+            // editor opens, which leaves a blank scroll tail and delays the expansion
+            // until another update refreshes the sheet.
+            VStack(spacing: 4) {
                 SheetRootView(
                     root: root,
                     rootModel: model,

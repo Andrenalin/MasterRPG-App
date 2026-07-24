@@ -340,9 +340,10 @@ private extension SheetEntryView {
     }
     
     @ViewBuilder var inlineEditorRow: some View {
-        if !isEditor && rootModel.inlineEditingEntryId == entryModel.id && entryModel.editType != .none,
+        if !isEditor && entryModel.isEditing && entryModel.editType != .none,
            let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
-            // Show inline editor when in edit mode (not available in editor mode)
+            // Observe the row's own state so the quick controls are inserted in the
+            // same update as the edit-button tap on both iOS and macOS.
             InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
                 rootModel.updateSheetModel(entryModel: entryModel, updatedText: text)
                 guard appGameStateModel.isGameRunning,
