@@ -35,6 +35,7 @@ struct TabSidebar: View {
         }
 
         Section {
+            tabView(tab: .rules)
             tabView(tab: .pdfs)
             tabView(tab: .tables)
         } header: {

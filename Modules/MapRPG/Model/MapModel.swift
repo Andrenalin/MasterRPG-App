@@ -14,7 +14,7 @@ enum MapPinId {
 // the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
 @MainActor @Observable
 public final class MapModel: nonisolated Identifiable {
-    nonisolated public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil) {
+    nonisolated public init(id: UUID, name: String, description: String = "", tags: [String] = [], category: ItemListCategory = .dungeon, displayState: Int = 0, entries: [MapEntryModel] = [], displayConfig: DisplayConfigModel = DisplayConfigModel(id: UUID(), tileCoordinates: [], border: DisplayBorderViewModel(id: UUID())), photoId: UUID? = nil, width: CGFloat = 1200, height: CGFloat = 800, mapPins: [MapPinModel] = [], walls: [MapWallModel] = [], pinScale: CGFloat = 1.0, hexMapScale: Double = 0, scale: CGFloat = 1.0, degrees: Double = 0, parentId: UUID? = nil) {
         self.id = id
         _name_ = CRDT(wrappedValue: name)
         _description_ = CRDT(wrappedValue: description)
@@ -27,6 +27,7 @@ public final class MapModel: nonisolated Identifiable {
         self._width = width
         self._height = height
         _mapPins_ = CRDTDataUpdate(wrappedValue: mapPins)
+        _walls_ = CRDTDataUpdate(wrappedValue: walls)
         self._pinScale = pinScale
         _hexMapScale_ = CRDT(wrappedValue: hexMapScale)
         self._scale = scale
@@ -34,7 +35,7 @@ public final class MapModel: nonisolated Identifiable {
         self._parentId = parentId
     }
 
-    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?) {
+    nonisolated public init(id: UUID, name: CRDT<String>, description: CRDT<String>, tags: CRDT<[String]>, category: CRDT<ItemListCategory>, displayState: Int, entries: CRDTDataUpdate<[MapEntryModel]>, displayConfig: CRDTDataUpdate<DisplayConfigModel>, photoId: CRDTDataUpdate<UUID?>, width: CGFloat, height: CGFloat, mapPins: CRDTDataUpdate<[MapPinModel]>, walls: CRDTDataUpdate<[MapWallModel]> = CRDTDataUpdate(wrappedValue: []), pinScale: CGFloat, hexMapScale: CRDT<Double>, scale: CGFloat, degrees: Double, parentId: UUID?) {
         self.id = id
         _name_ = name
         _description_ = description
@@ -47,6 +48,7 @@ public final class MapModel: nonisolated Identifiable {
         self._width = width
         self._height = height
         _mapPins_ = mapPins
+        _walls_ = walls
         self._pinScale = pinScale
         _hexMapScale_ = hexMapScale
         self._scale = scale
@@ -69,6 +71,7 @@ public final class MapModel: nonisolated Identifiable {
         self._width = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._width)
         self._height = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._height)
         self._mapPins_ = try container.decode(CRDTDataUpdate<[MapPinModel]>.self, forKey: MapModel.CodingKeys._mapPins_)
+        self._walls_ = try container.decodeIfPresent(CRDTDataUpdate<[MapWallModel]>.self, forKey: MapModel.CodingKeys._walls_) ?? CRDTDataUpdate(wrappedValue: [])
         self._pinScale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._pinScale)
         self._hexMapScale_ = try container.decode(CRDT<Double>.self, forKey: MapModel.CodingKeys._hexMapScale_)
         self._scale = try container.decode(CGFloat.self, forKey: MapModel.CodingKeys._scale)
@@ -133,6 +136,12 @@ public final class MapModel: nonisolated Identifiable {
         set { mapPins_.wrappedValue = newValue }
     }
     var mapPins_: CRDTDataUpdate<[MapPinModel]>
+
+    public var walls: [MapWallModel] {
+        get { walls_.wrappedValue }
+        set { walls_.wrappedValue = newValue }
+    }
+    var walls_: CRDTDataUpdate<[MapWallModel]>
 
     public var pinScale: CGFloat = 1.0
     public var hexMapScale: Double {
@@ -251,6 +260,12 @@ extension MapModel {
             var updatedPin = $0
             updatedPin.location = transform(updatedPin.location)
             return updatedPin
+        }
+        walls = walls.map {
+            var updatedWall = $0
+            updatedWall.start = transform(updatedWall.start)
+            updatedWall.end = transform(updatedWall.end)
+            return updatedWall
         }
         pointer.location = transform(pointer.location)
         var updatedDisplayConfig = displayConfig
@@ -469,6 +484,7 @@ extension MapModel: nonisolated ItemDiffComparable {
         return MainActor.assumeIsolated {
             let mergedPhotoId = photoId_.merged(other: other.photoId_)
             let mergedMapPins = mapPins_.merged(other: other.mapPins_)
+            let mergedWalls = walls_.merged(other: other.walls_)
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[MapEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -493,6 +509,7 @@ extension MapModel: nonisolated ItemDiffComparable {
                 width: mergedPhotoId.update == photoId_.update ? width : other.width,
                 height: mergedPhotoId.update == photoId_.update ? height : other.height,
                 mapPins: mergedMapPins,
+                walls: mergedWalls,
                 pinScale: pinScale,
                 hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
                 scale: other.scale,
@@ -522,6 +539,7 @@ extension MapModel: nonisolated ItemDiffComparable {
                 width == other.width &&
                 height == other.height &&
                 mapPins_.update == other.mapPins_.update &&
+                walls_.update == other.walls_.update &&
                 hexMapScale == other.hexMapScale &&
                 pinScale == other.pinScale &&
                 scale == other.scale &&
@@ -541,8 +559,12 @@ extension MapModel: nonisolated ItemDiffComparable {
             let pinsMatch: Bool = mapPins.enumerated().allSatisfy { index, pin in
                 pin == other.mapPins[index]
             }
+            guard pinsMatch else { return false }
 
-            return pinsMatch
+            guard walls.count == other.walls.count else { return false }
+            return walls.enumerated().allSatisfy { index, wall in
+                wall == other.walls[index]
+            }
     
         }
     }
@@ -563,6 +585,7 @@ extension MapModel {
         [
             ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? MapModel)?.photoId) },
             ReviewCustomProperty(displayName: "Pins") { ReviewPropertyValue(($0 as? MapModel)?.mapPins.count ?? 0) },
+            ReviewCustomProperty(displayName: "Walls") { ReviewPropertyValue(($0 as? MapModel)?.walls.count ?? 0) },
             ReviewCustomProperty(displayName: "Pin Scale") { ReviewPropertyValue(($0 as? MapModel)?.pinScale ?? 1) },
             ReviewCustomProperty(displayName: "Hex Scale") { ReviewPropertyValue(($0 as? MapModel)?.hexMapScale ?? 0) },
             ReviewCustomProperty(displayName: "Rotation") { ReviewPropertyValue(($0 as? MapModel)?.degrees ?? 0) }
@@ -574,7 +597,7 @@ extension MapModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> MapModel {
         return MainActor.assumeIsolated {
             let copyName = duplicateName(from: name)
-            return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
+            return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, walls: walls, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
     
         }
     }
@@ -608,7 +631,7 @@ extension MapModel: nonisolated ItemDataAccessable {
     nonisolated public static let typeId: NetworkModules = .map
 
     public func copy() -> MapModel {
-        MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId)
+        MapModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, entries: entries_, displayConfig: displayConfig_, photoId: photoId_, width: width, height: height, mapPins: mapPins_, walls: walls_, pinScale: pinScale, hexMapScale: hexMapScale_, scale: scale, degrees: degrees, parentId: parentId)
     }
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
@@ -648,6 +671,7 @@ extension MapModel: nonisolated ItemDataAccessable {
         width <=> model.width
         height <=> model.height
         mapPins_ <=> model.mapPins_
+        walls_ <=> model.walls_
         pinScale <=> model.pinScale
         hexMapScale_ <=> model.hexMapScale_
         scale <=> model.scale
@@ -682,6 +706,7 @@ extension MapModel: nonisolated Codable {
         case _width
         case _height
         case _mapPins_
+        case _walls_
         case _pinScale
         case _hexMapScale_
         case _scale
@@ -706,6 +731,7 @@ extension MapModel: nonisolated Codable {
             try container.encode(self._width, forKey: MapModel.CodingKeys._width)
             try container.encode(self._height, forKey: MapModel.CodingKeys._height)
             try container.encode(self._mapPins_, forKey: MapModel.CodingKeys._mapPins_)
+            try container.encode(self._walls_, forKey: MapModel.CodingKeys._walls_)
             try container.encode(self._pinScale, forKey: MapModel.CodingKeys._pinScale)
             try container.encode(self._hexMapScale_, forKey: MapModel.CodingKeys._hexMapScale_)
             try container.encode(self._scale, forKey: MapModel.CodingKeys._scale)

@@ -1,0 +1,106 @@
+// @copyright André Trettin
+
+import Foundation
+import Testing
+
+@testable import CoreRPG
+
+@Suite("Foundry presentation helpers")
+struct FoundryPresentationHelpersTests {
+    @Test("HTML entities and control characters become safe visible text")
+    func decodesHTMLAndControls() {
+        // Given
+        let html = """
+        <p>R&uuml;stung&nbsp;&amp; Schutz&#x3A;<br>Zeile&#10;Zwei &#128;</p>
+        <script>privateLeak()</script>\u{0000}\u{0007}
+        """
+
+        // When
+        let result = FoundryTextDecoder.plainText(fromHTML: html)
+
+        // Then
+        #expect(result == "Rüstung & Schutz:\nZeile\nZwei €")
+        #expect(!result.contains("privateLeak"))
+        #expect(result.unicodeScalars.allSatisfy { scalar in
+            scalar.value == 0x0A || scalar.value >= 0x20
+        })
+    }
+
+    @Test(
+        "Entity decoding handles named, decimal, hexadecimal, and unknown entities",
+        arguments: [
+            ("Shield &amp; ward", "Shield & ward"),
+            ("It&#39;s ready", "It's ready"),
+            ("Roll &#x1F3B2;", "Roll 🎲"),
+            ("A&#13;&#10;B&Tab;C", "A\nB C"),
+            ("Keep &systemSpecific;", "Keep &systemSpecific;"),
+        ]
+    )
+    func decodesEntity(input: String, expected: String) {
+        // When
+        let result = FoundryTextDecoder.decodedText(input)
+
+        // Then
+        #expect(result == expected)
+    }
+
+    @Test("Nested JSON becomes deterministic editable groups")
+    func groupsNestedJSONValues() throws {
+        // Given
+        let source: FoundryJSONValue = .object([
+            "attributes": .object([
+                "body": .object([
+                    "base": .integer(5),
+                    "label": .string("Strong")
+                ])
+            ]),
+            "inventory": .array([
+                .string("Sword"),
+                .string("Shield")
+            ])
+        ])
+
+        // When
+        let nodes = FoundryValueHierarchy.nodes(from: source)
+
+        // Then
+        let attributes = try #require(nodes.first)
+        let body = try #require(attributes.children.first)
+        let base = try #require(body.children.first)
+        #expect(nodes.map(\.component) == ["attributes", "inventory"])
+        #expect(attributes.path == "attributes")
+        #expect(body.component == "body")
+        #expect(body.path == "attributes.body")
+        #expect(body.children.map(\.component) == ["base", "label"])
+        #expect(base.path == "attributes.body.base")
+        #expect(base.value == .integer(5))
+        #expect(attributes.valueCount == 2)
+        #expect(nodes[1].children.map(\.component) == ["0", "1"])
+    }
+
+    @Test("Dotted values share groups and retain a value on a group node")
+    func groupsDottedValues() throws {
+        // Given
+        let values = [
+            FoundryRuleValue(path: "attributes.body.base", value: .integer(5)),
+            FoundryRuleValue(path: "attributes.body", value: .string("Body")),
+            FoundryRuleValue(path: "attributes.mind.base", value: .integer(3)),
+            FoundryRuleValue(path: "inventory.10", value: .string("Potion")),
+            FoundryRuleValue(path: "inventory.2", value: .string("Shield")),
+        ]
+
+        // When
+        let nodes = FoundryValueHierarchy.nodes(from: values)
+
+        // Then
+        let attributes = try #require(nodes.first)
+        let body = try #require(attributes.children.first)
+        #expect(nodes.map(\.component) == ["attributes", "inventory"])
+        #expect(attributes.children.map(\.component) == ["body", "mind"])
+        #expect(body.value == .string("Body"))
+        #expect(body.children.map(\.component) == ["base"])
+        #expect(body.children.first?.value == .integer(5))
+        #expect(attributes.valueCount == 3)
+        #expect(nodes[1].children.map(\.component) == ["2", "10"])
+    }
+}

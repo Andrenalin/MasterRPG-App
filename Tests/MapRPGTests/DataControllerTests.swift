@@ -21,9 +21,13 @@ struct DataControllerTests {
         let pinEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMapPin"])
         let deadAttribute = try #require(pinEntity.attributesByName["isDead"])
         let characterAttribute = try #require(pinEntity.attributesByName["characterId"])
+        let mapEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMap"])
+        let wallsDataAttribute = try #require(mapEntity.attributesByName["wallsData"])
         #expect(!deadAttribute.isOptional)
         #expect((deadAttribute.defaultValue as? NSNumber)?.boolValue == false)
         #expect(characterAttribute.isOptional)
+        #expect(!wallsDataAttribute.isOptional)
+        #expect(wallsDataAttribute.defaultValue as? String == "")
 
         let itemId = UUID()
         let parentId = UUID()
@@ -70,6 +74,19 @@ struct DataControllerTests {
             size: .small,
             isShown: false
         )
+        let firstWall = MapWallModel(
+            sourceIdentifier: "world:crypt:scene:entry:wall:first",
+            start: CGPoint(x: 17, y: 18),
+            end: CGPoint(x: 19, y: 20),
+            movementRestriction: .normal,
+            sightRestriction: .limited,
+            doorType: .secret,
+            doorState: .locked,
+            minimumElevation: -5,
+            maximumElevation: 15,
+            levelIdentifier: "crypt",
+            rawMetadata: .object(["sound": .integer(20)])
+        )
         let original = MapModel(
             id: itemId,
             name: "Dungeon",
@@ -83,6 +100,7 @@ struct DataControllerTests {
             width: 600,
             height: 400,
             mapPins: [firstPin, secondPin],
+            walls: [firstWall],
             pinScale: 2,
             hexMapScale: 25,
             parentId: parentId
@@ -114,6 +132,7 @@ struct DataControllerTests {
         #expect(fetchedOriginal.mapPins.first?.isShown == true)
         #expect(fetchedOriginal.mapPins.first?.isDead == true)
         #expect(fetchedOriginal.mapPins.first?.isHighlighted == false)
+        #expect(fetchedOriginal.walls == [firstWall])
         #expect(fetchedOriginal.pinScale == 2)
         #expect(fetchedOriginal.hexMapScale == 25)
         #expect(fetchedOriginal.parentId == parentId)
@@ -141,6 +160,15 @@ struct DataControllerTests {
             isShown: true,
             isDead: false
         )
+        let updatedWall = MapWallModel(
+            sourceIdentifier: firstWall.sourceIdentifier,
+            start: CGPoint(x: 26, y: 27),
+            end: CGPoint(x: 28, y: 29),
+            movementRestriction: .none,
+            sightRestriction: .distance,
+            doorType: .door,
+            doorState: .open
+        )
         let updated = MapModel(
             id: itemId,
             name: "Dungeon Revised",
@@ -154,6 +182,7 @@ struct DataControllerTests {
             width: 300,
             height: 200,
             mapPins: [updatedPin],
+            walls: [updatedWall],
             pinScale: 1.5,
             hexMapScale: 10,
             parentId: nil
@@ -184,6 +213,7 @@ struct DataControllerTests {
         #expect(fetchedUpdated.mapPins.first?.isShown == true)
         #expect(fetchedUpdated.mapPins.first?.isDead == false)
         #expect(fetchedUpdated.mapPins.first?.characterId == nil)
+        #expect(fetchedUpdated.walls == [updatedWall])
         #expect(fetchedUpdated.pinScale == 1.5)
         #expect(fetchedUpdated.hexMapScale == 10)
         #expect(fetchedUpdated.parentId == nil)
@@ -222,6 +252,7 @@ struct DataControllerTests {
         #expect(model.description == "Hidden stairs")
         #expect(model.category == .entry)
         #expect(model.photoId == photoId)
+        #expect(model.walls.isEmpty)
     }
 }
 

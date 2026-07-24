@@ -10,7 +10,7 @@ import Testing
 struct ReviewSheetMemoryTests {
     @Test(
         "Structured review is enabled only for sheet-first modules",
-        arguments: [NetworkModules.adventure, .map, .value, .table]
+        arguments: [NetworkModules.adventure, .map, .rule, .value, .table]
     )
     func structuredModulesUseInlineReview(_ module: NetworkModules) {
         // Given / When / Then

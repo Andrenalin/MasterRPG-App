@@ -23,12 +23,12 @@ struct ExtendedSplitWithDetailView: View {
             .environment(controller)
             .environment(\.switchToDetailColumn) { preferredCompactColumn = .detail }
         } detail: {
-            SplitDetailView(isExtendedRoutes: true)
+            SplitDetailView(module: tab.module)
                 .environment(controller)
         }
         .inspectorAll(isPresented: $model.showInspector) {
             if model.showInspector {
-                AppInspectorView(isExtendedRoutes: true)
+                AppInspectorView(module: tab.module)
             }
         }
     }

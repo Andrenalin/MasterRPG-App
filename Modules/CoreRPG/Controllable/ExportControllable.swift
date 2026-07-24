@@ -16,6 +16,7 @@ public protocol ExportControllable: Sendable {
     @MainActor func exportingAll() -> ItemModuleIds
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds
     func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds
+    func finalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds
 }
 
 public extension ExportControllable {
@@ -29,6 +30,10 @@ public extension ExportControllable {
     }
 
     func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {
+        itemIds
+    }
+
+    func finalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {
         itemIds
     }
 
@@ -147,6 +152,11 @@ public extension ExportControllable {
         let module = await token()
         updatedIds.ids.removeValue(forKey: module)
         updatedIds.partialIds.removeValue(forKey: module)
+        updatedIds = try await finalExport(
+            itemIds: updatedIds,
+            stream: stream,
+            exportModel: exportModel
+        )
         await logExport(title: "export after extract", count: updatedIds.count, exportModel: exportModel)
         return updatedIds
     }

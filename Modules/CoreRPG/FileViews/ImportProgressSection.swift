@@ -4,15 +4,30 @@ import SwiftUI
 
 struct ImportProgressSection: View {
     let importModel: ItemDataImportModel
+    var isFinalizing = false
 
     var body: some View {
-        if importModel.isImportRunning && importModel.totalImportingItems > 0 {
-            ProgressView(
-                value: Double(importModel.importedItems),
-                total: Double(importModel.totalImportingItems)
-            )
-            .tint(Color.accentColor)
-            .accessibilityLabel(Text("Import progress", bundle: .module))
+        VStack {
+            if (importModel.isImportRunning || isFinalizing)
+                && importModel.totalImportingItems > 0 {
+                ProgressView(
+                    value: Double(importModel.importedItems),
+                    total: Double(importModel.totalImportingItems)
+                )
+                .accessibilityLabel(Text("Import progress", bundle: .module))
+            }
+
+            if isFinalizing || importModel.isFinalizingImport {
+                ImportFinalizationIndicator()
+            }
+        }
+    }
+}
+
+private struct ImportFinalizationIndicator: View {
+    var body: some View {
+        ProgressView {
+            Text("Finalizing import", bundle: .module)
         }
     }
 }
@@ -21,7 +36,7 @@ struct ImportProgressSection: View {
     let model = {
         let model = ItemDataImportModel()
         model.isImportRunning = true
-        model.importedItems = 3
+        model.importedItems = 8
         model.totalImportingItems = 8
         return model
     }()

@@ -7,6 +7,7 @@ import os.log
 
 // Import ALL module bundles - we need the complete database for proper saving
 import PhotoRPG
+import RuleRPG
 import PdfRPG
 import AudioRPG
 import AdventureRPG
@@ -88,6 +89,7 @@ public final class ShareExtensionDatabaseService {
         var bundles = [
             CoreRPG.Resources.bundle,
             PhotoRPG.Resources.bundle,
+            RuleRPG.Resources.bundle,
             PdfRPG.Resources.bundle,
             AudioRPG.Resources.bundle,
             AdventureRPG.Resources.bundle,

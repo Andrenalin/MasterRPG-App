@@ -1227,7 +1227,7 @@ extension MasterController {
         origin: GameMessageOrigin?
     ) async throws -> NetworkCodableDataType? {
         switch model.data.type {
-        case .adventure, .none, .setting, .editor, .generator, .search:
+        case .adventure, .none, .rule, .setting, .editor, .generator, .search:
             Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) but model request data is not supported. \(model.debugDescription, privacy: .public)")
             return nil
         case .audio:

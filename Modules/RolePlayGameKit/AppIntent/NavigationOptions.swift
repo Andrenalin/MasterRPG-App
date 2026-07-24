@@ -14,6 +14,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
     case map
     case pdf
     case photo
+    case rule
     case search
     case space
     case table
@@ -63,6 +64,10 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
             title: "Photo",
             image: .init(systemName: "photo.on.rectangle.angled")
         ),
+        NavigationOption.rule: DisplayRepresentation(
+            title: "Rules",
+            image: .init(systemName: "book.closed")
+        ),
         NavigationOption.search: DisplayRepresentation(
             title: "Search",
             image: .init(systemName: "magnifyingglass")
@@ -94,6 +99,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         case .map: "Map"
         case .pdf: "Pdf"
         case .photo: "Photo"
+        case .rule: "Rules"
         case .search: "Search"
         case .space: "Space"
         case .table: "Table"
@@ -112,6 +118,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         case .map: "map"
         case .pdf: "books.vertical"
         case .photo: "photo.on.rectangle.angled"
+        case .rule: "book.closed"
         case .search: "magnifyingglass"
         case .space: "view.3d"
         case .table: "tablecells.fill"
@@ -130,6 +137,7 @@ enum NavigationOption: String, Hashable, Identifiable, CaseIterable, AppEnum {
         case .map: .map
         case .pdf: .pdf
         case .photo: .photo
+        case .rule: .rule
         case .search: .search
         case .space: .space
         case .table: .table

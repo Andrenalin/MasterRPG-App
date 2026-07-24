@@ -42,6 +42,7 @@ struct LinkDragViewModifierPreview<Preview: View>: ViewModifier {
         case .map: content.draggable(LinkMapData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
         case .pdf: content.draggable(LinkPdfData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
         case .photo: content.draggable(LinkPhotoData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
+        case .rule: content.draggable(LinkRuleData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
         case .space: content.draggable(LinkSpaceData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
         case .table: content.draggable(LinkTableData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
         case .weather: content.draggable(LinkWeatherData(itemId: itemId, entryId: entryId, name: name, isMove: isMove)) { preview() }
@@ -70,6 +71,7 @@ struct LinkDragViewModifier: ViewModifier {
         case .map: content.draggable(LinkMapData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
         case .pdf: content.draggable(LinkPdfData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
         case .photo: content.draggable(LinkPhotoData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
+        case .rule: content.draggable(LinkRuleData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
         case .space: content.draggable(LinkSpaceData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
         case .table: content.draggable(LinkTableData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
         case .weather: content.draggable(LinkWeatherData(itemId: itemId, entryId: entryId, name: name, isMove: isMove))
@@ -96,6 +98,7 @@ struct LinkDropDestinationViewModifier: ViewModifier {
         case .map: content.dropDestination(for: LinkMapData.self, isEnabled: isEnabled, action: linkMap(links:session:))
         case .pdf: content.dropDestination(for: LinkPdfData.self, isEnabled: isEnabled, action: linkPdf(links:session:))
         case .photo: content.dropDestination(for: LinkPhotoData.self, isEnabled: isEnabled, action: linkPhoto(links:session:))
+        case .rule: content.dropDestination(for: LinkRuleData.self, isEnabled: isEnabled, action: linkRule(links:session:))
         case .space: content.dropDestination(for: LinkSpaceData.self, isEnabled: isEnabled, action: linkSpace(links:session:))
         case .table: content.dropDestination(for: LinkTableData.self, isEnabled: isEnabled, action: linkTable(links:session:))
         case .weather: content.dropDestination(for: LinkWeatherData.self, isEnabled: isEnabled, action: linkWeather(links:session:))
@@ -146,6 +149,12 @@ struct LinkDropDestinationViewModifier: ViewModifier {
             withAnimation { handler(link.name, link.itemId, link.entryId) }
         }
     }
+
+    func linkRule(links: [LinkRuleData], session: DropSession) {
+        links.forEach { link in
+            withAnimation { handler(link.name, link.itemId, link.entryId) }
+        }
+    }
     
     func linkSpace(links: [LinkSpaceData], session: DropSession) {
         links.forEach { link in
@@ -185,6 +194,7 @@ struct LinkDropDestinationTargetedViewModifier: ViewModifier {
         case .map: content.dropDestination(for: LinkMapData.self, action: linkMap(links:location:), isTargeted: isTargeted)
         case .pdf: content.dropDestination(for: LinkPdfData.self, action: linkPdf(links:location:), isTargeted: isTargeted)
         case .photo: content.dropDestination(for: LinkPhotoData.self, action: linkPhoto(links:location:), isTargeted: isTargeted)
+        case .rule: content.dropDestination(for: LinkRuleData.self, action: linkRule(links:location:), isTargeted: isTargeted)
         case .space: content.dropDestination(for: LinkSpaceData.self, action: linkSpace(links:location:), isTargeted: isTargeted)
         case .table: content.dropDestination(for: LinkTableData.self, action: linkTable(links:location:), isTargeted: isTargeted)
         case .weather: content.dropDestination(for: LinkWeatherData.self, action: linkWeather(links:location:), isTargeted: isTargeted)
@@ -236,6 +246,13 @@ struct LinkDropDestinationTargetedViewModifier: ViewModifier {
     }
     
     func linkPhoto(links: [LinkPhotoData], location: CGPoint) -> Bool {
+        links.forEach { link in
+            withAnimation { handler(link.name, link.itemId, link.entryId) }
+        }
+        return true
+    }
+
+    func linkRule(links: [LinkRuleData], location: CGPoint) -> Bool {
         links.forEach { link in
             withAnimation { handler(link.name, link.itemId, link.entryId) }
         }

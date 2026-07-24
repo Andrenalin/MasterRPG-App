@@ -73,6 +73,11 @@
         },
         {
           "containerPath" : "container:MasterRPG.xcodeproj",
+          "identifier" : "59F400012FA0000000000001",
+          "name" : "RuleRPG"
+        },
+        {
+          "containerPath" : "container:MasterRPG.xcodeproj",
           "identifier" : "8EA804502E62EBC60009479F",
           "name" : "TableRPG"
         },
@@ -164,6 +169,13 @@
         "containerPath" : "container:MasterRPG.xcodeproj",
         "identifier" : "8EBECE222CD8EE85004E7103",
         "name" : "SpaceRPGTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MasterRPG.xcodeproj",
+        "identifier" : "59F401012FA0000000000001",
+        "name" : "RuleRPGTests"
       }
     },
     {

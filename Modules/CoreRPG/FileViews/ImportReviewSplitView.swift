@@ -6,6 +6,7 @@ import SwiftUI
 struct ImportReviewSplitView: View {
     @Bindable var model: ImportReviewModel
     let rootManager: RootManager?
+    var isApplying = false
     let onCancel: () -> Void
     let onApply: () async -> Void
 
@@ -22,6 +23,8 @@ struct ImportReviewSplitView: View {
                     String(localized: "Select a Module", bundle: .module),
                     systemImage: "sidebar.left"
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .themedSurface()
             }
         } detail: {
             if let item = model.selectedItem {
@@ -38,9 +41,18 @@ struct ImportReviewSplitView: View {
                     String(localized: "Select an Item", bundle: .module),
                     systemImage: "doc.text"
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .themedSurface()
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .themedSurface()
+        .disabled(isApplying)
+        .overlay {
+            if isApplying {
+                ImportReviewFinalizationIndicator()
+            }
+        }
         .task(resolveReferences)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -77,6 +89,18 @@ struct ImportReviewSplitView: View {
 
     private func applyReview() {
         Task { await onApply() }
+    }
+}
+
+private struct ImportReviewFinalizationIndicator: View {
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
+        ProgressView {
+            Text("Finalizing import", bundle: .module)
+        }
+        .padding()
+        .background(theme.panelColor, in: .capsule)
     }
 }
 

@@ -30,6 +30,7 @@ extension LinkDataTransferable {
         case .map: LinkMapData(itemId: UUID(), name: "")
         case .pdf: LinkPdfData(itemId: UUID(), name: "")
         case .photo: LinkPhotoData(itemId: UUID(), name: "")
+        case .rule: LinkRuleData(itemId: UUID(), name: "")
         case .space: LinkSpaceData(itemId: UUID(), name: "")
         case .table: LinkTableData(itemId: UUID(), name: "")
         case .weather: LinkWeatherData(itemId: UUID(), name: "")
@@ -46,6 +47,7 @@ extension UTType {
     public static var mapLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Map") }
     public static var pdfLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Pdf") }
     public static var photoLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Photo") }
+    public static var ruleLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Rule") }
     public static var spaceLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Space") }
     public static var tableLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Table") }
     public static var weatherLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Weather") }
@@ -245,6 +247,27 @@ public struct LinkSpaceData: LinkDataTransferable {
 
     public static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .spaceLink)
+        ProxyRepresentation(exporting: \.linkRepresentation)
+    }
+
+    public let module: NetworkModules
+    public let itemId: UUID
+    public let entryId: UUID?
+    public let name: String
+    public let isMove: Bool
+}
+
+public struct LinkRuleData: LinkDataTransferable {
+    public init(itemId: UUID, entryId: UUID? = nil, name: String, module: NetworkModules = .rule, isMove: Bool = false) {
+        self.itemId = itemId
+        self.entryId = entryId
+        self.name = name
+        self.module = .rule
+        self.isMove = isMove
+    }
+
+    public static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .ruleLink)
         ProxyRepresentation(exporting: \.linkRepresentation)
     }
 

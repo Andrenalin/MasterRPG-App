@@ -5,7 +5,7 @@ import SwiftUI
 import AdventureRPG
 
 struct AppInspectorView: View {
-    let isExtendedRoutes: Bool
+    let module: NetworkModules
     
     @Environment(AppModel.self) private var appModel
     
@@ -15,15 +15,11 @@ struct AppInspectorView: View {
     }
     
     var rootController: ItemRootController {
-        appModel.itemRootController(for: selectedModule) ?? appModel.adventureRoot.rootController
-    }
-    
-    var selectedModule: NetworkModules {
-        isExtendedRoutes ? (appModel.selectedEditorModule ?? AppModel.defaultEditorModule).module : (appModel.selectedModule ?? .game).module
+        appModel.itemRootController(for: module) ?? appModel.adventureRoot.rootController
     }
 }
 
 #Preview {
-    AppInspectorView(isExtendedRoutes: false)
+    AppInspectorView(module: .adventure)
         .environment(AppModel.preview)
 }

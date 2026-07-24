@@ -15,6 +15,10 @@ public struct RootURLHandler: NavigationURLHandler {
     let role: WindowRole
 
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
+        if url.isVTTImportDocument {
+            return handleVTT(url: url, with: navigator)
+        }
+
         if url.isGmzDocument {
             return handleGmz(url: url, with: navigator)
         }
@@ -45,5 +49,19 @@ public struct RootURLHandler: NavigationURLHandler {
     @MainActor private func handleGmz(url: URL, with navigator: Navigator) -> Bool {
         appModel.presentImport(url, with: navigator)
         return true
+    }
+
+    @MainActor private func handleVTT(url: URL, with navigator: Navigator) -> Bool {
+        appModel.presentVTTImport(url, with: navigator)
+        return true
+    }
+}
+
+private extension URL {
+    var isVTTImportDocument: Bool {
+        switch pathExtension.lowercased() {
+        case "uvtt", "dd2vtt", "mrpgfoundry": true
+        default: false
+        }
     }
 }

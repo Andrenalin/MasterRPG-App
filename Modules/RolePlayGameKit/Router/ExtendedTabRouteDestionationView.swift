@@ -6,6 +6,7 @@ import DiceRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import SwiftUI
 import TableRPG
@@ -39,6 +40,8 @@ struct ExtendedTabRouteDestionationView: View {
             PdfFactory.rootView()
         case .photos:
             PhotoFactory.rootView()
+        case .rules:
+            RuleFactory.rootView()
         case .space:
             SpaceFactory.rootView()
         case .tables:

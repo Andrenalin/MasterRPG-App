@@ -47,6 +47,8 @@ extension LinkController: LinkControllable {
             return resolvedRootManager.pdfRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .photo:
             return resolvedRootManager.photoRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
+        case .rule:
+            return resolvedRootManager.ruleRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .space:
             return resolvedRootManager.spaceRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
         case .table:
@@ -80,6 +82,8 @@ extension LinkController: LinkControllable {
             return resolvedRootManager.pdfRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .photo:
             return resolvedRootManager.photoRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
+        case .rule:
+            return resolvedRootManager.ruleRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .space:
             return resolvedRootManager.spaceRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         case .table:
@@ -134,6 +138,7 @@ extension LinkController: LinkControllable {
             result = resolvedRootManager.mapRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = resolvedRootManager.pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = resolvedRootManager.photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = resolvedRootManager.ruleRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = resolvedRootManager.spaceRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = resolvedRootManager.tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = resolvedRootManager.characterRoot.linkControllable.repairLink(link, for: result, for: [.all])

@@ -24,6 +24,7 @@
         <attribute name="pinScale" attributeType="Double" defaultValueString="1" usesScalarValueType="YES"/>
         <attribute name="tags" attributeType="String" defaultValueString=""/>
         <attribute name="uuid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="wallsData" attributeType="String" defaultValueString=""/>
         <attribute name="width" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="displayConfig" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="RPGDisplayConfig" inverseName="map" inverseEntity="RPGDisplayConfig"/>
         <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RPGMapEntry" inverseName="map" inverseEntity="RPGMapEntry"/>

@@ -9,13 +9,17 @@ import SwiftData
 /// those values share the same models instead of crossing fixture boundaries.
 @MainActor
 struct FakeItemRootControllerFixture {
-    init(sharingViewType: SharingViewType = .none) {
+    init(
+        sharingViewType: SharingViewType = .none,
+        dataControllable: (any DataPersistenceControllable)? = nil
+    ) {
         let config = FakeModuleConfiguration()
         let navigationModel = ModuleNavigationModel()
         let linkRegisterController = LinkRegisterController(root: nil)
         let itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         let itemController = FakeItemController(
             config: config,
+            dataControllable: dataControllable,
             linkRegisterController: linkRegisterController,
             itemDataModel: itemDataModel
         )
@@ -113,9 +117,13 @@ public extension ItemRootController {
     /// Every call owns fresh mutable models. Keep the returned root in a local
     /// value when a preview passes more than one controller from the graph.
     @MainActor static func previewFixture(
-        sharingViewType: SharingViewType = .none
+        sharingViewType: SharingViewType = .none,
+        dataControllable: (any DataPersistenceControllable)? = nil
     ) -> ItemRootController {
-        FakeItemRootControllerFixture(sharingViewType: sharingViewType).root
+        FakeItemRootControllerFixture(
+            sharingViewType: sharingViewType,
+            dataControllable: dataControllable
+        ).root
     }
 
     /// Compatibility spelling for existing test and preview call sites.

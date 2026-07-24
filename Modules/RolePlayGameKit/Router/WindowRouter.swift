@@ -8,6 +8,7 @@ import DiceRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import SwiftUI
 import TableRPG
@@ -105,6 +106,8 @@ private extension WindowRouter {
             return editorTabActions(rootRoute: .pdfs, extendedTab: .pdfs, detail: itemId.map { PdfRoute.detail($0) })
         case .photos(let itemId, _):
             return editorTabActions(rootRoute: .photos, extendedTab: .photos, detail: itemId.map { PhotoRoute.detail($0) })
+        case .rules(let itemId, _):
+            return editorTabActions(rootRoute: .rules, extendedTab: .rules, detail: itemId.map { RuleRoute.detail($0) })
         case .spaces(let itemId, _):
             return editorTabActions(rootRoute: .space, extendedTab: .space, detail: itemId.map { SpaceRoute.detail($0) })
         case .search:
@@ -178,8 +181,9 @@ private extension WindowRouter {
     @MainActor func forwardToOtherWindow(for route: KnownRoutes) -> [NavigationAction] {
         let module = networkModule(for: route)
 #if os(macOS)
-        // Settings has its own SwiftUI Settings window — opened via Cmd-, not by ScenesManager.
+        // Settings has its own SwiftUI Settings scene, so request that scene before routing.
         if module == .setting {
+            appModel.scenesManager.openSettingsWindow()
             Task { @MainActor in
                 try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
                 appModel.navigator(for: module).perform(route: route)
@@ -217,6 +221,8 @@ private extension WindowRouter {
             return rootAndDirectSelectionActions(rootRoute: .pdfs, module: .pdf, itemId: itemId)
         case .photos(let itemId, _):
             return rootAndDirectSelectionActions(rootRoute: .photos, module: .photo, itemId: itemId)
+        case .rules(let itemId, _):
+            return rootAndDirectSelectionActions(rootRoute: .rules, module: .rule, itemId: itemId)
         case .spaces(let itemId, _):
             return rootAndDirectSelectionActions(rootRoute: .space, module: .space, itemId: itemId)
         case .tables(let itemId, _):
@@ -314,6 +320,7 @@ private extension WindowRouter {
         case .maps: return .map
         case .pdfs: return .pdf
         case .photos: return .photo
+        case .rules: return .rule
         case .spaces: return .space
         case .search: return .search
         case .settings: return .setting
@@ -328,7 +335,7 @@ private extension WindowRouter {
         switch route {
         case .adventures(let itemId, _), .audios(let itemId, _), .dice(let itemId, _),
              .generators(let itemId, _), .maps(let itemId, _), .pdfs(let itemId, _),
-             .photos(let itemId, _), .spaces(let itemId, _), .tables(let itemId, _),
+             .photos(let itemId, _), .rules(let itemId, _), .spaces(let itemId, _), .tables(let itemId, _),
              .values(let itemId, _), .weathers(let itemId, _):
             return itemId
         case .game, .search, .settings:
@@ -342,7 +349,7 @@ private extension WindowRouter {
         switch route {
         case .adventures(_, let entryId), .audios(_, let entryId), .dice(_, let entryId),
              .generators(_, let entryId), .maps(_, let entryId), .pdfs(_, let entryId),
-             .photos(_, let entryId), .spaces(_, let entryId), .tables(_, let entryId),
+             .photos(_, let entryId), .rules(_, let entryId), .spaces(_, let entryId), .tables(_, let entryId),
              .values(_, let entryId), .weathers(_, let entryId):
             return entryId
         case .game, .search, .settings:

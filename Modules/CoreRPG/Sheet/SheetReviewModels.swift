@@ -213,7 +213,7 @@ enum SheetReviewTreeBuilder {
 extension NetworkModules {
     var supportsStructuredImportReview: Bool {
         switch self {
-        case .adventure, .map, .value, .table:
+        case .adventure, .map, .rule, .value, .table:
             true
         default:
             false

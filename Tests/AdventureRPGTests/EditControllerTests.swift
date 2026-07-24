@@ -115,7 +115,7 @@ struct EditControllerTests {
         _ = sut.quickEditorDestination(itemRowModel: ItemRowModel(itemId: itemId, typeId: .adventure))
 
         #expect(sut.canAddLink(module: .photo, entryId: entryId))
-        #expect(sut.linkModules == [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather])
+        #expect(sut.linkModules == [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .rule, .space, .table, .weather])
 
         sut.add(diceId: diceId, itemId: itemId)
         sut.add(photoId: photoId, itemId: itemId)

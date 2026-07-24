@@ -73,6 +73,20 @@ public final class LinkRegisterListModel: Sendable {
         sourceItems = [:]
     }
 
+    /// Restores both directional indexes as one rollback operation.
+    ///
+    /// External imports snapshot the link register before repairing imported models. Keeping this
+    /// mutation on the model prevents rollback from restoring only one side of the dual index.
+    func restoreSnapshot(
+        items: [UUID: [LinkRegisterModel]],
+        sourceItems: [UUID: [LinkRegisterModel]],
+        pendingAffectedSourceIds: Set<UUID>
+    ) {
+        self.items = items
+        self.sourceItems = sourceItems
+        self.pendingAffectedSourceIds = pendingAffectedSourceIds
+    }
+
     /// Adds a link to both indexes. Returns `false` when the same source-to-destination
     /// relationship was already registered.
     @discardableResult

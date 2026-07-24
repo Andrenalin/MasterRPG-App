@@ -58,8 +58,8 @@ struct SearchListView: View {
     
     private func updateModulesOrder() {
         modules = locale.identifier.hasPrefix("de")
-        ? [.space, .adventure, .value, .photo, .map, .audio, .pdf, .table, .weather, .dice]
-        : [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather]
+        ? [.space, .adventure, .value, .photo, .map, .audio, .pdf, .rule, .table, .weather, .dice]
+        : [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .rule, .space, .table, .weather]
     }
 }
 

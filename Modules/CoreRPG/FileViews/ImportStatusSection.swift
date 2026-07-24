@@ -24,7 +24,11 @@ struct ImportStatusSection: View {
                     importModel: importModel
                 )
             case .running:
-                Text("Importing \(importModel.importedItems) of \(importModel.totalImportingItems)", bundle: .module)
+                if !importModel.isFinalizingImport {
+                    Text("Importing \(importModel.importedItems) of \(importModel.totalImportingItems)", bundle: .module)
+                }
+            case .finalizing:
+                EmptyView()
             case .finished:
                 Text("Import is finished, \(importModel.importedItems) are successfully imported.", bundle: .module)
             case .cancelled:

@@ -11,6 +11,7 @@ import MapRPG
 import PdfRPG
 import PhotoRPG
 import RolePlayGameKit
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import WeatherRPG
@@ -26,6 +27,7 @@ enum MasterRPGSpotlightIndexer {
         await MapShortcutCatalog.reindexAll(root: appModel.mapRoot)
         await PdfShortcutCatalog.reindexAll(root: appModel.pdfRoot)
         await PhotoShortcutCatalog.reindexAll(root: appModel.photoRoot)
+        await RuleShortcutCatalog.reindexAll(root: appModel.ruleRoot)
         await SpaceShortcutCatalog.reindexAll(root: appModel.spaceRoot)
         await TableShortcutCatalog.reindexAll(root: appModel.tableRoot)
         await WeatherShortcutCatalog.reindexAll(root: appModel.weatherRoot)

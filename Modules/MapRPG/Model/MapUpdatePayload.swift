@@ -60,6 +60,7 @@ private struct CanonicalMapContent: Codable, Sendable {
     let width: CGFloat
     let height: CGFloat
     let mapPins: [MapPinModel]
+    let walls: [MapWallModel]
     let pinScale: CGFloat
     let hexMapScale: Double
     let scale: CGFloat
@@ -93,6 +94,7 @@ private struct CanonicalMapContent: Codable, Sendable {
                 return canonicalPin
             }
             .sorted { $0.id.uuidString < $1.id.uuidString }
+        walls = snapshot.walls.wrappedValue.sorted { $0.id.uuidString < $1.id.uuidString }
         pinScale = snapshot.pinScale
         hexMapScale = snapshot.hexMapScale.wrappedValue
         scale = snapshot.scale

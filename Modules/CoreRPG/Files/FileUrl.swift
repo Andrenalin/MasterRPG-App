@@ -41,6 +41,21 @@ public struct FileUrl: Equatable, Hashable, Codable, Sendable {
             return nil
         }
     }
+
+    /// Creates the transient file descriptor used by staged external imports.
+    /// No file is written until `FileUrlDataController.createNewFileUrl` receives
+    /// this value during the commit phase.
+    public init(importedData data: Data, fileId: UUID, filename: String, module: String) {
+        let basename = URL(filePath: filename).lastPathComponent
+        let safeBasename = basename.isEmpty ? "attachment" : basename
+        let encodedBasename = safeBasename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "attachment"
+        self.fileId = fileId
+        self._url = URL(string: encodedBasename) ?? URL(filePath: "attachment")
+        self.location = .newCloud
+        self.module = module
+        self.data = data
+        self.contentHash = Self.contentHash(of: data)
+    }
 }
 
 public extension FileUrl {

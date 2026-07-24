@@ -46,6 +46,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.mapRoot)
             .environment(appModel.pdfRoot)
             .environment(appModel.photoRoot)
+            .environment(appModel.ruleRoot)
             .environment(appModel.spaceRoot)
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
@@ -72,6 +73,9 @@ struct AppSettingSetUpViewModifier: ViewModifier {
     @Environment(\.openWindow) var openWindow
     @Environment(\.dismissWindow) var dismissWindow
     #endif
+#if os(macOS)
+    @Environment(\.openSettings) private var openSettings
+#endif
 #if os(visionOS)
     @Environment(\.openImmersiveSpace) var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
@@ -88,6 +92,14 @@ struct AppSettingSetUpViewModifier: ViewModifier {
                         openImmersiveSpace: openImmersiveSpace,
                         dismissImmersiveSpace: dismissImmersiveSpace
                     )
+                }
+#elseif os(macOS)
+                .onAppear {
+                    appModel.scenesManager.setActions(
+                        openWindow: openWindow,
+                        dismissWindow: dismissWindow
+                    )
+                    appModel.scenesManager.setOpenSettingsAction(openSettings)
                 }
 #elseif !os(tvOS)
                 .onAppear {

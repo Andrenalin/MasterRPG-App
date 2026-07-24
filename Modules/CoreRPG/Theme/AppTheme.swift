@@ -209,7 +209,7 @@ private extension NetworkModules {
         case .space: 7
         case .table: 8
         case .weather: 9
-        case .none, .game, .setting, .editor, .search, .generator:
+        case .none, .game, .setting, .editor, .search, .generator, .rule:
             nil
         }
     }

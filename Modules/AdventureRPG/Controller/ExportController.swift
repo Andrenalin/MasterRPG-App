@@ -8,6 +8,7 @@ import MapRPG
 import PdfRPG
 import WeatherRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
@@ -43,6 +44,7 @@ extension ExportController: ExportControllable {
         itemIds.merge(other: resolvedRootManager.mapRoot.exportControllable.exportingAll())
         itemIds.merge(other: resolvedRootManager.pdfRoot.exportControllable.exportingAll())
         itemIds.merge(other: resolvedRootManager.photoRoot.exportControllable.exportingAll())
+        itemIds.merge(other: resolvedRootManager.ruleRoot.exportControllable.exportingAll())
         itemIds.merge(other: resolvedRootManager.spaceRoot.exportControllable.exportingAll())
         itemIds.merge(other: resolvedRootManager.tableRoot.exportControllable.exportingAll())
         itemIds.merge(other: resolvedRootManager.characterRoot.exportControllable.exportingAll())
@@ -59,6 +61,7 @@ extension ExportController: ExportControllable {
         var mapIds: Set<UUID> = []
         var pdfIds: Set<UUID> = []
         var photoIds: Set<UUID> = []
+        var ruleIds: Set<UUID> = []
         var spaceIds: Set<UUID> = []
         var weatherIds: Set<UUID> = []
         var tableIds: Set<UUID> = []
@@ -117,6 +120,10 @@ extension ExportController: ExportControllable {
                         if resolvedRootManager.photoRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             photoIds.insert($0.itemId)
                         }
+                    case .rule:
+                        if resolvedRootManager.ruleRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                            ruleIds.insert($0.itemId)
+                        }
                     case .space:
                         if resolvedRootManager.spaceRoot.linkControllable.validateLink(itemId: $0.itemId) {
                             spaceIds.insert($0.itemId)
@@ -153,6 +160,8 @@ extension ExportController: ExportControllable {
         allIds.merge(other: newPdfIds)
         let newPhotoIds = resolvedRootManager.photoRoot.exportControllable.exporting(ids: photoIds)
         allIds.merge(other: newPhotoIds)
+        let newRuleIds = resolvedRootManager.ruleRoot.exportControllable.exporting(ids: ruleIds)
+        allIds.merge(other: newRuleIds)
         let newSpaceIds = resolvedRootManager.spaceRoot.exportControllable.exporting(ids: spaceIds)
         allIds.merge(other: newSpaceIds)
         let newTableIds = resolvedRootManager.tableRoot.exportControllable.exporting(ids: tableIds)
@@ -175,5 +184,13 @@ extension ExportController: ExportControllable {
         let ids8 = try await resolvedRootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, exportModel: exportModel)
         let ids9 = try await resolvedRootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, exportModel: exportModel)
         return ids9
+    }
+
+    public func finalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {
+        try await resolvedRootManager.ruleRoot.exportControllable.export(
+            itemIds: itemIds,
+            into: outputStream,
+            exportModel: exportModel
+        )
     }
 }

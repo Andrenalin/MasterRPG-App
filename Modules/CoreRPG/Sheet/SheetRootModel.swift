@@ -1238,7 +1238,8 @@ public final class SheetRootModel: Sendable {
         updateParent(parentModel)
     }
 
-    func updateParent() {
+    /// Re-synchronizes the currently edited parent after a module-specific bulk editor saves.
+    public func updateParent() {
         guard let parentModel = editorModel.parentModel else { return }
         updateParent(parentModel)
     }

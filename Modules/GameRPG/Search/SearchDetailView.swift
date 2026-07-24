@@ -10,6 +10,7 @@ import CharacterRPG
 import PdfRPG
 import DiceRPG
 import PhotoRPG
+import RuleRPG
 import WeatherRPG
 import SpaceRPG
 
@@ -30,6 +31,10 @@ struct SearchDetailView: View {
                 case .map: root.mapRoot.viewController.viewer(root: root.mapRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .pdf: root.pdfRoot.viewController.viewer(root: root.pdfRoot, itemId: selection.itemId, entryId: selection.entryId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .photo: root.photoRoot.viewController.viewer(root: root.photoRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                case .rule:
+                    if let ruleRoot = root.ruleRoot {
+                        ruleRoot.viewController.viewer(root: ruleRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
+                    }
                 case .space: root.spaceRoot.viewController.viewer(root: root.spaceRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .table: root.tableRoot.viewController.viewer(root: root.tableRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))
                 case .value: root.characterRoot.viewController.viewer(root: root.characterRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: false, addToolbar: true, isGame: false))

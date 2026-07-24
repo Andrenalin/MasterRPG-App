@@ -22,6 +22,21 @@
 			<key>NSUbiquitousDocumentUserActivityType</key>
 			<string>de.AndreTrettin.GameMaster.gmz</string>
 		</dict>
+		<dict>
+			<key>CFBundleTypeIconSystemGenerated</key>
+			<integer>1</integer>
+			<key>CFBundleTypeName</key>
+			<string>Virtual Tabletop Import</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>de.andretrettin.MasterRPG.foundry-bridge</string>
+				<string>org.universalvtt.map</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
@@ -119,6 +134,25 @@
 	<true/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>MasterRPG Foundry Bridge Export</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.foundry-bridge</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mrpgfoundry</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.foundry-bridge</string>
+			</dict>
+		</dict>
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
@@ -268,6 +302,21 @@
 				<string>public.text</string>
 			</array>
 			<key>UTTypeDescription</key>
+			<string>MasterRPG Rule Link</string>
+			<key>UTTypeIdentifier</key>
+			<string>de.andretrettin.MasterRPG.Link.Rule</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.mime-type</key>
+				<string>application/vnd.masterrpg.link.rule</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.text</string>
+			</array>
+			<key>UTTypeDescription</key>
 			<string>MasterRPG Space Link</string>
 			<key>UTTypeIdentifier</key>
 			<string>de.andretrettin.MasterRPG.Link.Space</string>
@@ -325,6 +374,24 @@
 	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Universal VTT Map</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.universalvtt.map</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>uvtt</string>
+					<string>dd2vtt</string>
+				</array>
+			</dict>
+		</dict>
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>

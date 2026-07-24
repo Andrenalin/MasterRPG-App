@@ -13,6 +13,7 @@ public final class EditorLinkModel {
         mapSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
         pdfSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
         photoSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+        ruleSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
         spaceSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
         tableSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
         weatherSelectionModel: ItemSelectionModel = ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
@@ -28,6 +29,7 @@ public final class EditorLinkModel {
         self.mapSelectionModel = mapSelectionModel
         self.pdfSelectionModel = pdfSelectionModel
         self.photoSelectionModel = photoSelectionModel
+        self.ruleSelectionModel = ruleSelectionModel
         self.spaceSelectionModel = spaceSelectionModel
         self.tableSelectionModel = tableSelectionModel
         self.weatherSelectionModel = weatherSelectionModel
@@ -50,6 +52,7 @@ public final class EditorLinkModel {
     public let mapSelectionModel: ItemSelectionModel
     public let pdfSelectionModel: ItemSelectionModel
     public let photoSelectionModel: ItemSelectionModel
+    public let ruleSelectionModel: ItemSelectionModel
     public let spaceSelectionModel: ItemSelectionModel
     public let tableSelectionModel: ItemSelectionModel
     public let weatherSelectionModel: ItemSelectionModel
@@ -109,6 +112,7 @@ public final class EditorLinkModel {
         case .map: return rootManager.mapRoot.folderLinkControllable
         case .pdf: return rootManager.pdfRoot.folderLinkControllable
         case .photo: return rootManager.photoRoot.folderLinkControllable
+        case .rule: return rootManager.ruleRoot.folderLinkControllable
         case .space: return rootManager.spaceRoot.folderLinkControllable
         case .table: return rootManager.tableRoot.folderLinkControllable
         case .value: return rootManager.characterRoot.folderLinkControllable
@@ -125,6 +129,7 @@ public final class EditorLinkModel {
         case .map: mapSelectionModel
         case .pdf: pdfSelectionModel
         case .photo: photoSelectionModel
+        case .rule: ruleSelectionModel
         case .space: spaceSelectionModel
         case .table: tableSelectionModel
         case .value: characterSelectionModel

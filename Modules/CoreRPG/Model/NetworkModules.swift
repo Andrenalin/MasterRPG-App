@@ -20,6 +20,7 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
     case editor = 14
     case search = 15
     case generator = 16
+    case rule = 17
 
     public var token: String {
         switch self {
@@ -31,6 +32,7 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
         case .generator: "GENERATOR"
         case .pdf: "PDFS"
         case .photo: "PHOTOS"
+        case .rule: "RULES"
         case .map: "MAPS"
         case .none: "ERROR"
         case .search: "SEARCH"
@@ -54,6 +56,7 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
         case .none: LocalizedStringResource("ERROR", bundle: .module)
         case .pdf: LocalizedStringResource("Pdf", bundle: .module)
         case .photo: LocalizedStringResource("Photo", bundle: .module)
+        case .rule: LocalizedStringResource("Rules", bundle: .module)
         case .search: LocalizedStringResource("Search", bundle: .module)
         case .setting: LocalizedStringResource("Settings", bundle: .module)
         case .space: LocalizedStringResource("Space", bundle: .module)
@@ -79,6 +82,7 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
         case .none: "warning"
         case .pdf: "apple.books.pages"
         case .photo: "photo.on.rectangle.angled"
+        case .rule: "book.closed"
         case .search: "magnifyingglass"
         case .setting: "gear"
         case .space: "view.3d"
@@ -100,6 +104,7 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
         case .none: "NoWindow"
         case .pdf: "PdfLink"
         case .photo: "PhotoLink"
+        case .rule: "RuleLink"
         case .search: "NoWindow"
         case .setting: "NoWindow"
         case .space: "SpaceLink"
@@ -142,4 +147,47 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
 #endif
     }
 
+    public var color: Color {
+        switch self {
+        case .adventure: Color("AdventureBackground", bundle: .module)
+        case .audio: Color("AudioBackground", bundle: .module)
+        case .dice: Color("DiceBackground", bundle: .module)
+        case .editor: .blue
+        case .game: .blue
+        case .generator: .blue
+        case .map: Color("MapBackground", bundle: .module)
+        case .none: .blue
+        case .pdf: Color("PdfBackground", bundle: .module)
+        case .photo: Color("PhotoBackground", bundle: .module)
+        case .rule: .indigo
+        case .search: .blue
+        case .setting: .blue
+        case .space: Color("SpaceBackground", bundle: .module)
+        case .table: Color("TableBackground", bundle: .module)
+        case .value: Color("CharacterBackground", bundle: .module)
+        case .weather: Color("WeatherBackground", bundle: .module)
+        }
+    }
+    
+    public var tint: Color {
+        switch self {
+        case .adventure: Color("AdventureTint", bundle: .module)
+        case .audio: Color("AudioTint", bundle: .module)
+        case .dice: Color("DiceTint", bundle: .module)
+        case .editor: .blue
+        case .game: .blue
+        case .generator: .blue
+        case .map: Color("MapTint", bundle: .module)
+        case .none: .blue
+        case .pdf: Color("PdfTint", bundle: .module)
+        case .photo: Color("PhotoTint", bundle: .module)
+        case .rule: .indigo
+        case .space: Color("SpaceTint", bundle: .module)
+        case .search: .blue
+        case .setting: .blue
+        case .table: Color("TableTint", bundle: .module)
+        case .value: Color("CharacterTint", bundle: .module)
+        case .weather: Color("WeatherTint", bundle: .module)
+        }
+    }
 }

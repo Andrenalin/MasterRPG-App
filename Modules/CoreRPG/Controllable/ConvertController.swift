@@ -22,6 +22,7 @@ public struct ConvertController: Sendable {
 
     @MainActor private func repairItems(reportModel: ValidateRepairModel, only repairIds: Set<UUID>?) async {
         for itemId in itemController.itemDataModel.items {
+            guard !Task.isCancelled else { return }
             guard repairIds?.contains(itemId) ?? true else { continue }
             guard let item = itemController.itemSync(for: itemId), item.displayState != 2 else { continue }
 

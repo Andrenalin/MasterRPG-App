@@ -11,20 +11,20 @@ require "pathname"
 
 ROOT = Pathname(__dir__).parent.freeze
 MODULES = {
-  "AdventureRPG" => "AdventureRPGSnapshotTests",
-  "AudioRPG" => "AudioRPGSnapshotTests",
-  "CharacterRPG" => "CharacterRPGSnapshotTests",
-  "CoreRPG" => "CoreRPGSnapshotTests",
-  "DiceRPG" => "DiceRPGSnapshotTests",
-  "GameRPG" => "GameRPGSnapshotTests",
-  "GeneratorRPG" => "GeneratorRPGSnapshotTests",
-  "MapRPG" => "MapRPGSnapshotTests",
-  "PdfRPG" => "PdfRPGSnapshotTests",
-  "PhotoRPG" => "PhotoRPGSnapshotTests",
-  "RolePlayGameKit" => "GameRPGSnapshotTests",
-  "SpaceRPG" => "SpaceRPGSnapshotTests",
-  "TableRPG" => "TableRPGSnapshotTests",
-  "WeatherRPG" => "WeatherRPGSnapshotTests"
+  "AdventureRPG" => "AdventureRPGTests",
+  "AudioRPG" => "AudioRPGTests",
+  "CharacterRPG" => "CharacterRPGTests",
+  "CoreRPG" => "CoreRPGTests",
+  "DiceRPG" => "DiceRPGTests",
+  "GameRPG" => "GameRPGTests",
+  "GeneratorRPG" => "GeneratorRPGTests",
+  "MapRPG" => "MapRPGTests",
+  "PdfRPG" => "PdfRPGTests",
+  "PhotoRPG" => "PhotoRPGTests",
+  "RolePlayGameKit" => "GameRPGTests",
+  "SpaceRPG" => "SpaceRPGTests",
+  "TableRPG" => "TableRPGTests",
+  "WeatherRPG" => "WeatherRPGTests"
 }.freeze
 
 def view_declarations(source)
@@ -435,7 +435,7 @@ def generated_test(module_name, cases, imports)
     #{import_lines}@testable import #{module_name}
 
     @MainActor
-    @Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
     struct #{suite_name} {
     #{tests}
 

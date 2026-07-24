@@ -117,7 +117,7 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
     @Test("AppInspectorView")
     func snapshotAppInspectorView() async throws {
         try await assertPreviewSnapshot("AppInspectorView") { appModel in
-            RolePlayGameKit.AppInspectorView(isExtendedRoutes: false)
+            RolePlayGameKit.AppInspectorView(module: .adventure)
                 .environment(appModel)
         }
     }
@@ -225,7 +225,7 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
     @Test("SplitDetailView")
     func snapshotSplitDetailView() async throws {
         try await assertPreviewSnapshot("SplitDetailView") { appModel in
-            RolePlayGameKit.SplitDetailView(isExtendedRoutes: false)
+            RolePlayGameKit.SplitDetailView(module: .adventure)
                 .environment(appModel)
         }
     }

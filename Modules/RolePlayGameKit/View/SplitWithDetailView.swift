@@ -35,12 +35,12 @@ struct SplitWithDetailView: View {
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 800)
 #endif
         } detail: {
-            SplitDetailView(isExtendedRoutes: false)
+            SplitDetailView(module: tab.module)
                 .environment(controller)
         }
         .inspectorAll(isPresented: inspectorBinding) {
             if canShow && model.showInspector {
-                AppInspectorView(isExtendedRoutes: false)
+                AppInspectorView(module: tab.module)
             }
         }
     }

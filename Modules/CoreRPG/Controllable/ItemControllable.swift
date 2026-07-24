@@ -8,6 +8,43 @@ public enum GameMutationPolicy: Equatable, Sendable {
     case persist
 }
 
+/// Captures persistence errors from legacy edit-controller repair operations.
+///
+/// Most editor call sites intentionally keep their historical best-effort behaviour.
+/// External import installs this reporter only while running its repair pass so a
+/// swallowed `replaceSync` error can still abort the transaction and be rolled back.
+@MainActor
+final class ItemPersistenceFailureReporter {
+    private var firstError: (any Error)?
+
+    func record(_ error: any Error) {
+        if firstError == nil {
+            firstError = error
+        }
+    }
+
+    func rethrowRecordedError() throws {
+        if let firstError {
+            throw firstError
+        }
+    }
+}
+
+enum ItemPersistenceFailureScope {
+    @TaskLocal static var reporter: ItemPersistenceFailureReporter?
+}
+
+enum ItemTransactionMutationError: LocalizedError {
+    case incompatibleModel
+
+    var errorDescription: String? {
+        switch self {
+        case .incompatibleModel:
+            "The model is incompatible with this item controller."
+        }
+    }
+}
+
 public protocol ItemControllable: Sendable  {
     associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
     
@@ -78,7 +115,11 @@ public extension ItemControllable {
                 function: "ItemControllable.delete(itemId:withFileData:\(withFileData))",
                 file: "ItemControllable.swift"
             )
-            try? await dataControllable?.delete(id: item.id)
+            do {
+                try await dataControllable?.delete(id: item.id)
+            } catch {
+                ItemPersistenceFailureScope.reporter?.record(error)
+            }
         }
         if let fileUrlDataController, let fileUrl = item.fileUrl {
             await cacheControllable?.remove(itemId: itemId)
@@ -106,7 +147,11 @@ public extension ItemControllable {
         if let original = self.itemSync(for: model.id, noGame: true) {
             let resort = original.name != model.name
             if original.replace(with: model) {
-                try? dataControllable?.replaceSync(id: original.id, with: original.copy())
+                do {
+                    try dataControllable?.replaceSync(id: original.id, with: original.copy())
+                } catch {
+                    ItemPersistenceFailureScope.reporter?.record(error)
+                }
                 if resort {
                     resortItem(changed: original)
                 }
@@ -114,7 +159,11 @@ public extension ItemControllable {
             }
         } else {
             if isInsert {
-                try? dataControllable?.replaceSync(id: model.id, with: model.copy())
+                do {
+                    try dataControllable?.replaceSync(id: model.id, with: model.copy())
+                } catch {
+                    ItemPersistenceFailureScope.reporter?.record(error)
+                }
             }
             resetModel(with: model)
         }
@@ -135,6 +184,61 @@ public extension ItemControllable {
         }
 
         replace(model: model, isInsert: isInsert, forceSave: forceSave)
+    }
+
+    /// Stages one exact model snapshot for an external-import transaction and
+    /// surfaces persistence errors to the caller. This deliberately does not
+    /// change the best-effort behaviour of the general editor API above.
+    @MainActor func replaceForExternalImport(
+        model: any ModelType,
+        isInsert: Bool
+    ) throws {
+        guard let model = model as? Model else {
+            throw ItemTransactionMutationError.incompatibleModel
+        }
+
+        let snapshot = model.copy()
+        let existing = itemSync(for: snapshot.id, noGame: true)
+        if existing != nil || isInsert {
+            try dataControllable?.replaceSync(id: snapshot.id, with: snapshot)
+        }
+
+        if let existing {
+            let needsResort = existing.name != snapshot.name
+            setModel(with: snapshot)
+            if needsResort {
+                resortItem(changed: snapshot)
+            }
+        } else {
+            resetModel(with: snapshot)
+        }
+    }
+
+    /// Removes an item as part of external-import rollback while keeping the
+    /// binary intact. Database staging happens before the in-memory removal so a
+    /// thrown error never masquerades as a successful rollback.
+    @MainActor func deleteForExternalImport(itemId: UUID) async throws {
+        guard let item = itemSync(for: itemId, noGame: true) else { return }
+        try await dataControllable?.delete(id: item.id)
+
+        for entry in item.entries {
+            await cacheControllable?.remove(itemId: entry.id)
+        }
+        if let fileUrl = item.fileUrl {
+            await cacheControllable?.remove(itemId: itemId)
+            fileUrlDataController?.removeBookmarks(fileId: fileUrl.fileId)
+        }
+        itemDataModel.resetModel(id: item.id)
+    }
+
+    /// Exact copies of the current library models used to cover repair effects
+    /// that can reach parents or children outside the selected import batch.
+    @MainActor func externalImportSnapshots(excluding excludedIDs: Set<UUID>) -> [any ModelType] {
+        itemDataModel.items.compactMap { itemID -> (any ModelType)? in
+            guard !excludedIDs.contains(itemID),
+                  let item = itemSync(for: itemID, noGame: true) else { return nil }
+            return item.copy()
+        }
     }
 
     @MainActor func replaceForGame(model: ModelType?, isInsert: Bool, policy: GameMutationPolicy) {

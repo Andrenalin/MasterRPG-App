@@ -47,6 +47,7 @@ extension DataController: CoreDataSnapshotPersistable {
             width: model.width,
             height: model.height,
             mapPins: CRDTDataUpdate(wrappedValue: map(model.mapPinModels), update: CRDT(string: model.mapPinsUpdate ?? "", defaultValue: UUID())),
+            walls: MapWallPersistenceCodec.decode(model.wallsData),
             pinScale: model.pinScale,
             hexMapScale: CRDT(string: model.hexMapScale ?? "", defaultValue: 0.0),
             scale: 1,
@@ -106,6 +107,9 @@ extension DataController: CoreDataSnapshotPersistable {
             for pin in oldPins where !keptPins.contains(ObjectIdentifier(pin)) {
                 model.managedObjectContext?.delete(pin)
             }
+        }
+        if let wallsData = MapWallPersistenceCodec.encode(snapshot.walls) {
+            model.wallsData <=> wallsData
         }
         model.pinScale <=> snapshot.pinScale
         model.hexMapScale <=> snapshot.hexMapScale.rawValue

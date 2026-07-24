@@ -16,6 +16,7 @@ import MapRPG
 import PdfRPG
 import PhotoRPG
 import RPGResources
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
@@ -39,20 +40,28 @@ public final class AppModel: Sendable {
     
     // Database
     public var coreDataInitModel: CoreDataInitModel?
+    /// File handed to the app through Open In; consumed by the Foundry import screen.
+    public var pendingVTTImportURL: URL?
 #if os(tvOS)
     public let databaseModel: DataBaseModel
 #else
     public let databaseModel: DataBaseModel
 #endif
-    @ObservationIgnored var saveIsDeferred: Bool = false
     /// A document URL handed to the app by the system. The import screen owns
     /// the explicit user confirmation before any bytes are read or applied.
     public var pendingImportURL: URL?
     @ObservationIgnored private var pendingImportNavigator: Navigator?
+    @ObservationIgnored private var pendingVTTImportNavigator: Navigator?
     @ObservationIgnored private var securityScopedImportURL: URL?
     @ObservationIgnored private var pendingExternalRoute: PendingExternalRoute?
     @ObservationIgnored private var lastExternalRoute: PendingExternalRoute?
     @ObservationIgnored private var lastExternalRouteDate = Date.distantPast
+    @ObservationIgnored private var saveDeferralTokens: Set<UUID> = []
+
+    var saveIsDeferred: Bool { !saveDeferralTokens.isEmpty }
+    var isExclusiveDataMutationActive: Bool {
+        DataMutationCoordinator.shared.isActive
+    }
 
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
@@ -88,6 +97,7 @@ public final class AppModel: Sendable {
     @ObservationIgnored public let mapRoot: MapRootModel
     @ObservationIgnored public let pdfRoot: PdfRootModel
     @ObservationIgnored public let photoRoot: PhotoRootModel
+    @ObservationIgnored public let ruleRoot: RuleRootModel
     @ObservationIgnored public let spaceRoot: SpaceRootModel
     @ObservationIgnored public let tableRoot: TableRootModel
     @ObservationIgnored public let characterRoot: CharacterRootModel
@@ -168,6 +178,7 @@ public final class AppModel: Sendable {
         let photoRoot = PhotoFactory.root(tagController: tagController)
         let audioRoot = AudioFactory.root(tagController: tagController)
         let pdfRoot = PdfFactory.root(tagController: tagController)
+        let ruleRoot = RuleFactory.root(tagController: tagController)
         let spaceRoot = SpaceFactory.root(tagController: tagController)
         
         let tableRoot = TableFactory.root(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot)
@@ -178,11 +189,11 @@ public final class AppModel: Sendable {
         let mapRoot = MapRootFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot)
 
 #if os(tvOS)
-        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: nil, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: nil, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, ruleRoot: ruleRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
 #else
-        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: generatorRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+        let adventureRoot = AdventureFactory.root(tagController: tagController, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: generatorRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, ruleRoot: ruleRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
 #endif
-        let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
+        let gameRoot = GameRoot(adventureRoot: adventureRoot, audioRoot: audioRoot, diceRoot: diceRoot, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, ruleRoot: ruleRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
@@ -191,6 +202,7 @@ public final class AppModel: Sendable {
         self.mapRoot = mapRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
+        self.ruleRoot = ruleRoot
         self.spaceRoot = spaceRoot
         self.tableRoot = tableRoot
         self.characterRoot = characterRoot
@@ -207,6 +219,7 @@ public final class AppModel: Sendable {
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,
+            ruleRoot: ruleRoot,
             spaceRoot: spaceRoot,
             tableRoot: tableRoot,
             weatherRoot: weatherRoot
@@ -223,6 +236,7 @@ public final class AppModel: Sendable {
             mapRoot: mapRoot,
             pdfRoot: pdfRoot,
             photoRoot: photoRoot,
+            ruleRoot: ruleRoot,
             spaceRoot: spaceRoot,
             tableRoot: tableRoot,
             weatherRoot: weatherRoot
@@ -252,6 +266,39 @@ public final class AppModel: Sendable {
 // MARK: - Maintanence
 
 extension AppModel {
+    /// Defers opportunistic saves without allowing one overlapping operation to clear another's
+    /// deferral. The owner must return the token with `endSaveDeferral(_:)`.
+    @discardableResult
+    func beginSaveDeferral() -> UUID {
+        let token = UUID()
+        saveDeferralTokens.insert(token)
+        return token
+    }
+
+    func endSaveDeferral(_ token: UUID) {
+        saveDeferralTokens.remove(token)
+    }
+
+    /// Grants exclusive access to mutate the shared controller graph. Import and repair operations
+    /// must retain the returned token until their final consolidated save has completed.
+    func beginExclusiveDataMutation() -> UUID? {
+        DataMutationCoordinator.shared.begin()
+    }
+
+    func endExclusiveDataMutation(_ token: UUID) {
+        DataMutationCoordinator.shared.end(token)
+    }
+
+    /// Compatibility spelling retained for the Foundry import transaction.
+    func beginExternalImport() -> UUID? {
+        beginExclusiveDataMutation()
+    }
+
+    /// Compatibility spelling retained for the Foundry import transaction.
+    func endExternalImport(_ token: UUID) {
+        endExclusiveDataMutation(token)
+    }
+
     public func resetData() async {
         await adventureRoot.resetData()
     }
@@ -269,6 +316,7 @@ extension AppModel {
         try? await mapRoot.itemDataCleanup()
         try? await pdfRoot.itemDataCleanup()
         try? await photoRoot.itemDataCleanup()
+        try? await ruleRoot.itemDataCleanup()
         try? await tableRoot.itemDataCleanup()
         try? await spaceRoot.itemDataCleanup()
         try? await weatherRoot.itemDataCleanup()
@@ -331,6 +379,8 @@ extension AppModel {
                 return .below(NetworkModules.adventure.linkWindowId, fallback: SceneId.game.rawValue)
             case .pdf:
                 return .leading(NetworkModules.table.linkWindowId, fallback: SceneId.game.rawValue)
+            case .rule:
+                return .trailing(NetworkModules.pdf.linkWindowId, fallback: SceneId.game.rawValue)
             case .space:
                 if appGameStateModel.gameModus == .player {
                     return .leading(NetworkModules.photo.linkWindowId, fallback: SceneId.game.rawValue)
@@ -386,6 +436,16 @@ extension AppModel {
         navigator.navigate(to: SettingsRoute.importData, method: .managedCover)
     }
 
+    @MainActor public func presentVTTImport(_ url: URL, with navigator: Navigator) {
+        guard pendingVTTImportURL != url else { return }
+        pendingVTTImportURL = url
+        guard appNavigationModel.initialRouteType == .ready else {
+            pendingVTTImportNavigator = navigator
+            return
+        }
+        presentVTTImport(with: navigator)
+    }
+
     @MainActor public func finishImportPresentation() {
         securityScopedImportURL?.stopAccessingSecurityScopedResource()
         securityScopedImportURL = nil
@@ -421,9 +481,31 @@ extension AppModel {
             pendingImportNavigator = nil
             navigator.navigate(to: SettingsRoute.importData, method: .managedCover)
         }
+        if let navigator = pendingVTTImportNavigator, pendingVTTImportURL != nil {
+            pendingVTTImportNavigator = nil
+            presentVTTImport(with: navigator)
+        }
         if let route = pendingExternalRoute {
             pendingExternalRoute = nil
             routeToModule(route.module, itemId: route.itemId, entryId: route.entryId)
+        }
+    }
+
+    private func presentVTTImport(with navigator: Navigator) {
+#if os(macOS)
+        let target = settingsNavigator
+        scenesManager.openSettingsWindow()
+#else
+        let target = gameNavigator
+#endif
+
+        Task { @MainActor in
+            if target !== navigator {
+                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
+            }
+            target.perform(route: KnownRoutes.settings)
+            try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
+            target.navigate(to: SettingsRoute.importData, method: .managedCover)
         }
     }
 

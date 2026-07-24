@@ -10,6 +10,7 @@ import CharacterRPG
 import MapRPG
 import PdfRPG
 import PhotoRPG
+import RuleRPG
 import SpaceRPG
 import TableRPG
 import WeatherRPG
@@ -44,6 +45,10 @@ struct WindowViewerList: Scene {
 
             windowGroup(model: appModel, module: .photo) { selection in
                 appModel.photoRoot.viewController.viewer(root: appModel.photoRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
+            }
+
+            windowGroup(model: appModel, module: .rule) { selection in
+                appModel.ruleRoot.viewController.viewer(root: appModel.ruleRoot, itemId: selection.itemId, configuration: ViewerConfiguration(closeButton: closeButton, addToolbar: true))
             }
 
             windowGroup(model: appModel, module: .space) { selection in

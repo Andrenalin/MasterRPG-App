@@ -60,6 +60,7 @@ struct ImportReviewSheetDetailView: View {
             .onChange(of: reviewModel.sheetMemorySignature, initial: true) { _, _ in
                 rebuildSheetRootModel(rootController: rootController, rootManager: rootManager)
             }
+            .themedSurface()
         } else {
             SingleItemReviewAccordionView(
                 model: item.itemModel,
@@ -67,6 +68,7 @@ struct ImportReviewSheetDetailView: View {
                 rootManager: rootManager,
                 reviewModel: reviewModel
             )
+            .themedSurface()
         }
     }
 

@@ -1,0 +1,22 @@
+{
+  "id": "masterrpg-bridge",
+  "title": "MasterRPG Bridge",
+  "description": "Exports Foundry VTT world and Adventure data into MasterRPG's reviewable, non-executable interchange format.",
+  "version": "1.1.0",
+  "authors": [
+    {
+      "name": "MasterRPG"
+    }
+  ],
+  "compatibility": {
+    "minimum": "12",
+    "verified": "14",
+    "maximum": "14"
+  },
+  "esmodules": [
+    "scripts/masterrpg-bridge.js"
+  ],
+  "styles": [
+    "styles/masterrpg-bridge.css"
+  ]
+}

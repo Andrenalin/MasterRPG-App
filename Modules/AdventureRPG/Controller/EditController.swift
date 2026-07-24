@@ -46,7 +46,16 @@ struct LinkAdventureModuleTransferable: LinkDataTransferable {
         CodableRepresentation(contentType: .mapLink)
         CodableRepresentation(contentType: .pdfLink)
         CodableRepresentation(contentType: .photoLink)
+        CodableRepresentation(contentType: .ruleLink)
         CodableRepresentation(contentType: .spaceLink)
+        AdventureSupplementalLinkRepresentations()
+    }
+}
+
+private struct AdventureSupplementalLinkRepresentations: TransferRepresentation {
+    typealias Item = LinkAdventureModuleTransferable
+
+    var body: some TransferRepresentation {
         CodableRepresentation(contentType: .tableLink)
         CodableRepresentation(contentType: .weatherLink)
     }
@@ -104,7 +113,7 @@ extension EditController {
         }
     }
 
-    public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather] }
+    public var linkModules: [NetworkModules] { [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .rule, .space, .table, .weather] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         AdventureEditorRoute.linkSelection(itemRowModel)
