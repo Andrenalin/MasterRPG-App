@@ -73,8 +73,6 @@ private struct SheetAIAssistantPlacementModifier: ViewModifier {
     let itemId: UUID
     let rootModel: SheetRootModel?
 
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
-
     func body(content: Content) -> some View {
 #if os(iOS)
         content
@@ -83,7 +81,7 @@ private struct SheetAIAssistantPlacementModifier: ViewModifier {
                 itemId: itemId,
                 rootModel: SheetAIGenerationController.isAvailable ? rootModel : nil
             )
-            .applyIf(appSizeModel.mode == .regular && rootModel != nil && SheetAIGenerationController.isAvailable) {
+            .applyIf(!SheetAIGenerationController.usesPhoneTabAccessory && rootModel != nil && SheetAIGenerationController.isAvailable) {
                 $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
                     assistant
                 }

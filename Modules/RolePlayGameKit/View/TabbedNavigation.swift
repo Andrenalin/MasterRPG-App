@@ -12,7 +12,6 @@ struct TabbedNavigation: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.appTheme) private var theme
     @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
-    @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     private let restoresState: Bool
 
@@ -113,7 +112,7 @@ struct TabbedNavigation: View {
     }
 
     private var shouldShowPhoneBottomAccessory: Bool {
-        appSizeModel.mode == .compact &&
+        SheetAIGenerationController.usesPhoneTabAccessory &&
         (appModel.audioRoot.audioPlayerModel.showPlayerToolBar || aiAssistantContext != nil)
     }
 #endif
