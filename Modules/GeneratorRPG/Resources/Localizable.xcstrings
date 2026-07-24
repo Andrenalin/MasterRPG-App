@@ -212,6 +212,12 @@
             "state" : "translated",
             "value" : "%lld Token"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld โทเคน"
+          }
         }
       }
     },
@@ -355,6 +361,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notiz zu ${target} hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มโน้ตไปยัง ${target}"
           }
         }
       }
@@ -701,6 +713,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anwenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำไปใช้"
           }
         }
       }
@@ -1176,6 +1194,12 @@
             "state" : "translated",
             "value" : "Antworten löschen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบคำตอบ"
+          }
         }
       }
     },
@@ -1644,6 +1668,12 @@
             "state" : "translated",
             "value" : "Die Antwort konnte nicht dekodiert werden: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ถอดรหัสการตอบกลับไม่สำเร็จ: %@"
+          }
         }
       }
     },
@@ -1669,6 +1699,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Text konnte nicht aus dem PDF-Dokument extrahiert werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึงข้อความจากเอกสาร PDF ไม่สำเร็จ"
           }
         }
       }
@@ -1933,7 +1969,14 @@
       }
     },
     "Hide Ask AI" : {
-
+      "localizations" : {
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนถาม AI"
+          }
+        }
+      }
     },
     "Identified %lld sections" : {
       "localizations" : {
@@ -2048,7 +2091,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เกินขีดจำกัดหน่วยความจำ: %@"
+            "value" : "หน่วยความจำเกิน: %@"
           }
         }
       }
@@ -2514,6 +2557,12 @@
             "state" : "translated",
             "value" : "Ratenbegrenzung: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "จำกัดอัตราการใช้งาน: %@"
+          }
         }
       }
     },
@@ -2810,7 +2859,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "การสตรีมเสร็จสิ้นแล้วแต่ไม่ได้รับเนื้อหาใดๆ"
+            "value" : "การสตรีมเสร็จสิ้นแล้วแต่ไม่ได้รับเนื้อหาใด"
           }
         }
       }
@@ -2838,6 +2887,12 @@
             "state" : "translated",
             "value" : "Zusammenfassung extrahiert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดึงสรุปแล้ว"
+          }
         }
       }
     },
@@ -2847,6 +2902,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zusammenfassung ausstehend"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รอสรุป"
           }
         }
       }
@@ -3206,7 +3267,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "มีคำขอพร้อมกันมากเกินไป (สูงสุด %@) โปรดรอสักครู่"
+            "value" : "มีคำขอพร้อมกันมากเกินไป (สูงสุด %@) โปรดรอ"
           }
         }
       }
@@ -3431,6 +3492,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unbekannter Generierungsfehler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อผิดพลาดในการสร้างที่ไม่ทราบสาเหตุ"
           }
         }
       }

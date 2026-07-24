@@ -1774,6 +1774,12 @@
             "state" : "translated",
             "value" : "Spielansicht"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มุมมองเกม"
+          }
         }
       }
     },
@@ -1811,6 +1817,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spiele"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกม"
           }
         }
       }
@@ -2191,6 +2203,12 @@
             "state" : "translated",
             "value" : "Längstes Spiel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เกมที่ยาวนานที่สุด"
+          }
         }
       }
     },
@@ -2277,6 +2295,12 @@
             "state" : "translated",
             "value" : "Nachricht:"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อความ:"
+          }
         }
       }
     },
@@ -2286,6 +2310,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nachrichten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อความ"
           }
         }
       }
@@ -2569,6 +2599,12 @@
             "state" : "translated",
             "value" : "Spielansicht in einem Fenster öffnen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดมุมมองเกมในหน้าต่าง"
+          }
         }
       }
     },
@@ -2612,6 +2648,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gruppe"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กลุ่ม"
           }
         }
       }
@@ -3129,6 +3171,12 @@
             "state" : "translated",
             "value" : "Speichern und Beenden"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บันทึกและออก"
+          }
         }
       }
     },
@@ -3174,6 +3222,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elemente und Einträge suchen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหารายการทั้งหมด"
           }
         }
       }
@@ -3318,6 +3372,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gesendet"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่ง"
           }
         }
       }
@@ -3512,6 +3572,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spielansicht eingebettet anzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงมุมมองเกมแบบอินไลน์"
           }
         }
       }
@@ -3871,7 +3937,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "การรับส่ง"
+            "value" : "การส่งถ่าย"
           }
         }
       }

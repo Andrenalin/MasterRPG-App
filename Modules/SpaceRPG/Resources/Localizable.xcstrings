@@ -68,6 +68,12 @@
             "state" : "translated",
             "value" : "3D-Objekt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วัตถุ 3D"
+          }
         }
       }
     },
@@ -261,6 +267,12 @@
             "state" : "new",
             "value" : "Cancel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิก"
+          }
         }
       }
     },
@@ -302,6 +314,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Cancel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิก"
           }
         }
       }
@@ -428,6 +446,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Continue"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดำเนินการต่อ"
           }
         }
       }
@@ -995,6 +1019,12 @@
             "state" : "new",
             "value" : "Make sure that areas you captured previously can still be seen. Avoid flipping your object if it changes the shape."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตรวจสอบให้แน่ใจว่าพื้นที่ที่บันทึกไว้ก่อนหน้านี้ยังคงมองเห็นได้อยู่ หลีกเลี่ยงการพลิกวัตถุหากการพลิกจะทำให้รูปทรงเปลี่ยนไป"
+          }
         }
       }
     },
@@ -1553,6 +1583,12 @@
             "state" : "translated",
             "value" : "Scan-Durchgang %lld"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รอบการสแกน %lld"
+          }
         }
       }
     },
@@ -1777,6 +1813,12 @@
             "state" : "translated",
             "value" : "Drehung %@ Grad, Neigung %@ Grad"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การหมุน %@ องศา, การเอียง %@ องศา"
+          }
         }
       }
     },
@@ -1805,6 +1847,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Your object may have single color surfaces or be too reflective to add more segments.\nTap Continue to capture more detail without flipping, or Flip Object Anyway."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วัตถุของคุณอาจมีพื้นผิวสีเดียวหรือสะท้อนแสงมากเกินไปจนไม่สามารถเพิ่มส่วนได้อีก\nแตะ ดำเนินการต่อ เพื่อบันทึกรายละเอียดเพิ่มเติมโดยไม่ต้องพลิก หรือแตะ พลิกวัตถุอยู่ดี"
           }
         }
       }
