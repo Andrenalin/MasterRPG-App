@@ -25,7 +25,6 @@ struct SheetAIAssistantComponentPreview: View {
                 messageText: $message,
                 availability: SheetAIGenerationController().availability,
                 isGenerating: false,
-                canSubmit: true,
                 isTextFieldFocused: $isFocused,
                 glassNamespace: namespace,
                 submitAction: {},

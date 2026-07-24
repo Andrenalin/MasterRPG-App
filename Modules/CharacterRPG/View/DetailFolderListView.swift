@@ -28,35 +28,17 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-#if os(iOS)
-        .sheetAIAssistantContext(
+        .sheetAIAssistantPlacement(
             module: root.configurable.module,
             itemId: model.id,
             rootModel: root.editController.editorModel.sheetRootModel
         )
-#elseif !os(tvOS)
-        .applyIf(root.editController.editorModel.sheetRootModel != nil) {
-            $0.safeAreaInset(edge: .bottom, alignment: .center) {
-                GlassEffectContainerAll {
-                    aiAssistantView
-                }
-            }
-        }
-#endif
         .overlay {
             overlayContent
         }
     }
 
     // MARK: - Overlays
-
-#if !os(tvOS) && !os(iOS)
-    @ViewBuilder private var aiAssistantView: some View {
-        if let sheetRootModel = root.editController.editorModel.sheetRootModel {
-            SheetAIAssistantOverlayView(module: root.configurable.module, itemId: model.id, rootModel: sheetRootModel)
-        }
-    }
-#endif
 
     @ViewBuilder private var overlayContent: some View {
         if root.openFileWindowModel.showItem {

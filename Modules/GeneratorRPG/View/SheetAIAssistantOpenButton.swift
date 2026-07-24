@@ -11,27 +11,11 @@ struct SheetAIAssistantOpenButton: View {
 
     @Environment(\.appTheme) private var theme
 
-#if os(iOS)
-    @Environment(\.tabViewBottomAccessoryPlacement) private var tabAccessoryPlacement
-#endif
-
     var body: some View {
         Button(action: action) {
-#if os(iOS)
-            if tabAccessoryPlacement == .inline {
-                Label {
-                    Text("Ask AI", bundle: .module)
-                } icon: {
-                    Image(systemName: NetworkModules.generator.icon)
-                }
+            Label("Ask AI", systemImage: NetworkModules.generator.icon)
                 .labelStyle(.iconOnly)
                 .frame(minWidth: 44, minHeight: 44)
-            } else {
-                regularLabel
-            }
-#else
-            regularLabel
-#endif
         }
 #if os(iOS)
         .accessibilityLabel(Text("Ask AI", bundle: .module))
@@ -47,18 +31,6 @@ struct SheetAIAssistantOpenButton: View {
         )
         .glassEffectID("aiOverlay", in: glassNamespace)
 #endif
-#if !os(iOS)
-        .padding()
-#endif
-    }
-
-    private var regularLabel: some View {
-        Label {
-            Text("Ask AI", bundle: .module)
-        } icon: {
-            Image(systemName: NetworkModules.generator.icon)
-        }
-        .padding()
     }
 }
 

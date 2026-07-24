@@ -89,6 +89,8 @@ struct TabbedNavigation: View {
 
 #if os(iOS)
     private var aiAssistantContext: SheetAIAssistantContext? {
+        guard SheetAIGenerationController.isAvailable else { return nil }
+
         if let publishedContext = aiAssistantContexts.last(where: {
             $0.module == selectedModule && $0.rootModel.hasAIAssistantContent
         }) {

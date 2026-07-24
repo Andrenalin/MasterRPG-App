@@ -9,7 +9,6 @@ struct SheetAIAssistantComposer: View {
     @Binding var messageText: String
     let availability: SheetAIGenerationAvailability
     let isGenerating: Bool
-    let canSubmit: Bool
     @FocusState.Binding var isTextFieldFocused: Bool
     let glassNamespace: Namespace.ID
     let submitAction: () -> Void
@@ -19,61 +18,29 @@ struct SheetAIAssistantComposer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(alignment: .leading) {
-            if let availabilityMessage = availability.message {
-                Label {
-                    Text(verbatim: availabilityMessage)
-                } icon: {
-                    Image(systemName: "apple.intelligence")
-                }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+        HStack(alignment: .bottom) {
+            Image(systemName: NetworkModules.generator.icon)
+                .foregroundStyle(theme.tint(for: module))
+                .accessibilityHidden(true)
 
-            HStack(alignment: .bottom) {
-                TextField(
-                    String(localized: "Type your request...", bundle: .module),
-                    text: $messageText,
-                    axis: .vertical
-                )
-                .textFieldStyle(.plain)
-                .focused($isTextFieldFocused)
-                .onSubmit(submitAction)
+            TextField(
+                String(localized: "Type your request...", bundle: .module),
+                text: $messageText,
+                axis: .vertical
+            )
+            .textFieldStyle(.plain)
+            .focused($isTextFieldFocused)
+            .onSubmit(submitAction)
 #if os(iOS)
-                .submitLabel(.send)
+            .submitLabel(.send)
 #endif
-                .disabled(!availability.isAvailable)
-
+            .disabled(!availability.isAvailable || isGenerating)
+            .overlay(alignment: .trailing) {
                 if isGenerating {
                     ProgressView()
                         .controlSize(.small)
                         .accessibilityLabel(Text("Generating sheet content", bundle: .module))
-                        .transition(.scale(scale: 0.8).combined(with: .opacity))
                 }
-
-                Button(action: submitAction) {
-                    Label {
-                        Text("Generate", bundle: .module)
-                    } icon: {
-                        Image(systemName: "arrow.up")
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .frame(minWidth: 44, minHeight: 44)
-                .disabled(!canSubmit)
-
-                Button(action: closeAction) {
-                    Label {
-                        Text("Close", bundle: .module)
-                    } icon: {
-                        Image(systemName: "xmark.circle.fill")
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .frame(minWidth: 44, minHeight: 44)
             }
         }
         .animation(reduceMotion ? nil : .smooth, value: isGenerating)
@@ -85,6 +52,16 @@ struct SheetAIAssistantComposer: View {
         .glassEffectID("aiOverlay", in: glassNamespace)
 #endif
         .padding(.horizontal)
+        .overlay(alignment: .topTrailing) {
+            Button(action: closeAction) {
+                Label("Close", systemImage: "xmark.circle.fill")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .offset(x: 6, y: -6)
+            .accessibilityLabel(Text("Close", bundle: .module))
+        }
     }
 }
 
@@ -116,6 +93,13 @@ struct SheetAIAssistantMiniComposer: View {
             .submitLabel(.send)
 #endif
             .disabled(!availability.isAvailable || isGenerating)
+            .overlay(alignment: .trailing) {
+                if isGenerating {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel(Text("Generating sheet content", bundle: .module))
+                }
+            }
             .accessibilityLabel(Text("Ask AI", bundle: .module))
             .accessibilityHint(
                 isGenerating
@@ -137,7 +121,6 @@ struct SheetAIAssistantMiniComposer: View {
         messageText: $message,
         availability: SheetAIGenerationController().availability,
         isGenerating: false,
-        canSubmit: true,
         isTextFieldFocused: $isFocused,
         glassNamespace: namespace,
         submitAction: {},

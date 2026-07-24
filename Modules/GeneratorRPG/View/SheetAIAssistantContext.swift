@@ -49,4 +49,63 @@ public extension View {
         )
     }
 }
+
+/// Places the assistant in the phone tab accessory, while larger screens keep its
+/// compact icon on the bottom trailing edge of the active editor.
+public extension View {
+    func sheetAIAssistantPlacement(
+        module: NetworkModules,
+        itemId: UUID,
+        rootModel: SheetRootModel?
+    ) -> some View {
+        modifier(
+            SheetAIAssistantPlacementModifier(
+                module: module,
+                itemId: itemId,
+                rootModel: rootModel
+            )
+        )
+    }
+}
+
+private struct SheetAIAssistantPlacementModifier: ViewModifier {
+    let module: NetworkModules
+    let itemId: UUID
+    let rootModel: SheetRootModel?
+
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+
+    func body(content: Content) -> some View {
+#if os(iOS)
+        content
+            .sheetAIAssistantContext(
+                module: module,
+                itemId: itemId,
+                rootModel: SheetAIGenerationController.isAvailable ? rootModel : nil
+            )
+            .applyIf(appSizeModel.mode == .regular && rootModel != nil && SheetAIGenerationController.isAvailable) {
+                $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
+                    assistant
+                }
+            }
+#elseif !os(tvOS)
+        content
+            .applyIf(rootModel != nil && SheetAIGenerationController.isAvailable) {
+                $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
+                    assistant
+                }
+            }
+#else
+        content
+#endif
+    }
+
+    @ViewBuilder private var assistant: some View {
+        if let rootModel {
+            GlassEffectContainerAll {
+                SheetAIAssistantOverlayView(module: module, itemId: itemId, rootModel: rootModel)
+            }
+        }
+    }
+}
 #endif

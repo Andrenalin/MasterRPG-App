@@ -44,6 +44,7 @@ public struct SheetAIAssistantOverlayView: View {
 
     public var body: some View {
         Group {
+            if SheetAIGenerationController.isAvailable {
             if presentation == .tabAccessory {
                 SheetAIAssistantMiniComposer(
                     module: module,
@@ -55,6 +56,7 @@ public struct SheetAIAssistantOverlayView: View {
                 )
             } else {
                 standardAssistant
+            }
             }
         }
         .animation(reduceMotion ? nil : .smooth, value: rootModel.isAIModeActive)
@@ -104,7 +106,6 @@ public struct SheetAIAssistantOverlayView: View {
                     messageText: $messageText,
                     availability: availability,
                     isGenerating: rootModel.pendingGenerationRequest != nil,
-                    canSubmit: canSubmit,
                     isTextFieldFocused: $isTextFieldFocused,
                     glassNamespace: glassNamespace,
                     submitAction: submitPrompt,
@@ -128,7 +129,6 @@ public struct SheetAIAssistantOverlayView: View {
                     messageText: $messageText,
                     availability: availability,
                     isGenerating: rootModel.pendingGenerationRequest != nil,
-                    canSubmit: canSubmit,
                     isTextFieldFocused: $isTextFieldFocused,
                     glassNamespace: glassNamespace,
                     submitAction: submitPrompt,
@@ -143,11 +143,6 @@ public struct SheetAIAssistantOverlayView: View {
             }
         }
 #endif
-    }
-
-    private var canSubmit: Bool {
-        availability.isAvailable &&
-        !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var isErrorPresented: Binding<Bool> {

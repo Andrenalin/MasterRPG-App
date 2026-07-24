@@ -51,6 +51,12 @@ public struct SheetAIGenerationController: Sendable {
     public let maxInputCharacters: Int
     public let maximumResponseTokens: Int
 
+    /// Keep presentation code independent from Foundation Models while ensuring an
+    /// unavailable device never exposes an AI affordance.
+    public static var isAvailable: Bool {
+        SystemLanguageModel.default.availability == .available
+    }
+
     public var availability: SheetAIGenerationAvailability {
         switch SystemLanguageModel.default.availability {
         case .available:

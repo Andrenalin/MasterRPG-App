@@ -139,7 +139,6 @@ struct GeneratorRPGDynamicPreviewSnapshotTests {
                         messageText: .constant("Create a dramatic encounter"),
                         availability: SheetAIGenerationController().availability,
                         isGenerating: false,
-                        canSubmit: true,
                         isTextFieldFocused: focus,
                         glassNamespace: namespace,
                         submitAction: {},
