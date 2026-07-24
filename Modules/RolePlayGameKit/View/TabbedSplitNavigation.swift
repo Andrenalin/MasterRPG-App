@@ -18,7 +18,9 @@ struct TabbedSplitNavigation: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
 
-    @State private var contentColumnWidth: Double = 350
+    @AppStorage(TabbedSplitContentColumnWidth.storageKey)
+    private var storedContentColumnWidth = TabbedSplitContentColumnWidth.defaultWidth
+    @State private var transientContentColumnWidth = TabbedSplitContentColumnWidth.defaultWidth
     @State private var fallbackNavigationModel = ModuleNavigationModel()
     @FocusState private var navigationColumnFocus: NavigationColumnFocus?
 
@@ -31,6 +33,12 @@ struct TabbedSplitNavigation: View {
             get: { canShow && model.showInspector },
             set: { if canShow { model.showInspector = $0 } }
         )
+        let restoresContentColumnWidth = restoresState && rolePlayStateRestorationEnabled
+        let contentColumnWidth = TabbedSplitContentColumnWidth.normalized(
+            restoresContentColumnWidth
+                ? storedContentColumnWidth
+                : transientContentColumnWidth
+        )
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar(restoresState: restoresState)
@@ -40,11 +48,18 @@ struct TabbedSplitNavigation: View {
                 appModel.selectedModule
             }
             .environment(appModel.itemRootController(for: selectedModule))
-            .navigationSplitViewColumnWidth(min: 250, ideal: contentColumnWidth, max: 600)
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.frame(in: .global).width
+            .navigationSplitViewColumnWidth(
+                min: TabbedSplitContentColumnWidth.minimumWidth,
+                ideal: contentColumnWidth,
+                max: TabbedSplitContentColumnWidth.maximumWidth
+            )
+            .onGeometryChange(for: Double.self) { proxy in
+                Double(proxy.size.width)
             } action: { newWidth in
-                contentColumnWidth = newWidth
+                updateContentColumnWidth(
+                    measuredWidth: newWidth,
+                    restoresWidth: restoresContentColumnWidth
+                )
             }
         } detail: {
             SplitDetailView(module: selectedModule)
@@ -63,15 +78,29 @@ struct TabbedSplitNavigation: View {
         .onNavigationReceive(assign: $appModel.selectedModule)
         .navigationSplitViewStyle(.prominentDetail)
         .environment(\.navigationColumnFocus, $navigationColumnFocus)
-        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
-            $0.modifier(TabbedSplitNavigationRestorationModifier(
-                contentColumnWidth: $contentColumnWidth
-            ))
-        }
     }
     
     var selectedModule: NetworkModules {
         (appModel.selectedModule ?? .game).module
+    }
+
+    private func updateContentColumnWidth(
+        measuredWidth: Double,
+        restoresWidth: Bool
+    ) {
+        let currentWidth = restoresWidth
+            ? storedContentColumnWidth
+            : transientContentColumnWidth
+        guard let updatedWidth = TabbedSplitContentColumnWidth.updatedWidth(
+            measuredWidth: measuredWidth,
+            currentWidth: currentWidth
+        ) else { return }
+
+        if restoresWidth {
+            storedContentColumnWidth = updatedWidth
+        } else {
+            transientContentColumnWidth = updatedWidth
+        }
     }
 }
 
@@ -84,19 +113,28 @@ struct TabbedSplitNavigation: View {
         .environment(AppWindowSizeModel())
 }
 
-private struct TabbedSplitNavigationRestorationModifier: ViewModifier {
-    @AppStorage("contentColumnWidth") private var storedContentColumnWidth: Double = 350
+enum TabbedSplitContentColumnWidth {
+    static let storageKey = "contentColumnWidth"
+    static let minimumWidth = 250.0
+    static let defaultWidth = 350.0
+    static let maximumWidth = 600.0
 
-    @Binding var contentColumnWidth: Double
+    static func normalized(_ width: Double) -> Double {
+        guard width.isFinite else { return defaultWidth }
+        return min(max(width, minimumWidth), maximumWidth)
+    }
 
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: storedContentColumnWidth, initial: true) {
-                contentColumnWidth <=> storedContentColumnWidth
-            }
-            .onChange(of: contentColumnWidth) {
-                storedContentColumnWidth <=> contentColumnWidth
-            }
+    static func updatedWidth(
+        measuredWidth: Double,
+        currentWidth: Double
+    ) -> Double? {
+        guard measuredWidth.isFinite, measuredWidth > 0 else { return nil }
+        let normalizedMeasurement = normalized(measuredWidth)
+        let normalizedCurrentWidth = normalized(currentWidth)
+        guard abs(normalizedMeasurement - normalizedCurrentWidth) >= 0.5 else {
+            return nil
+        }
+        return normalizedMeasurement
     }
 }
 

@@ -715,6 +715,92 @@ struct MapEditorViewportTransformTests {
         #expect(sut.viewport.configuration.containerSize == containerSize)
         #expect(sut.viewport.transform == zoomed)
     }
+
+    @Test("Legacy portrait map uses photo geometry when overlays were authored in photo space")
+    func legacyPortraitMapUsesPhotoGeometry() {
+        // Given
+        let persistedMapSize = CGSize(width: 1_200, height: 800)
+        let photoSize = CGSize(width: 1_066, height: 1_644)
+        let map = MapModel(
+            id: UUID(),
+            name: "Legacy portrait map",
+            entries: [
+                MapEntryModel(
+                    id: UUID(),
+                    name: "Imported room",
+                    content: "",
+                    coordinates: [
+                        CGPoint(x: -29, y: -31),
+                        CGPoint(x: 1_086, y: -31),
+                        CGPoint(x: 1_086, y: 1_661),
+                        CGPoint(x: -29, y: 1_661)
+                    ]
+                )
+            ],
+            width: persistedMapSize.width,
+            height: persistedMapSize.height,
+            mapPins: [
+                MapPinModel(
+                    id: UUID(),
+                    name: "Imported pin",
+                    location: CGPoint(x: 1_001, y: 1_424)
+                )
+            ]
+        )
+
+        // When
+        let resolvedSize = MapCanvasGeometryResolver.resolve(
+            map: map,
+            mapSize: persistedMapSize,
+            imageSize: photoSize,
+            degrees: 0
+        )
+
+        // Then
+        #expect(resolvedSize == photoSize)
+    }
+
+    @Test("Matching image and map aspects retain the persisted logical scale")
+    func matchingAspectRetainsLogicalMapSize() {
+        // Given
+        let persistedMapSize = CGSize(width: 1_200, height: 800)
+        let photoSize = CGSize(width: 3_000, height: 2_000)
+
+        // When
+        let resolvedSize = MapCanvasGeometryResolver.resolve(
+            mapSize: persistedMapSize,
+            imageSize: photoSize,
+            degrees: 0,
+            overlayBounds: CGRect(x: 0, y: 0, width: 1_200, height: 800)
+        )
+
+        // Then
+        #expect(resolvedSize == persistedMapSize)
+    }
+
+    @Test("Mismatched photo does not strand overlays authored for the persisted canvas")
+    func incompatiblePhotoDoesNotReplaceLogicalMapSize() {
+        // Given
+        let persistedMapSize = CGSize(width: 1_200, height: 800)
+        let photoSize = CGSize(width: 600, height: 1_000)
+        let authoredOverlayBounds = CGRect(
+            x: 0,
+            y: 0,
+            width: 1_150,
+            height: 760
+        )
+
+        // When
+        let resolvedSize = MapCanvasGeometryResolver.resolve(
+            mapSize: persistedMapSize,
+            imageSize: photoSize,
+            degrees: 0,
+            overlayBounds: authoredOverlayBounds
+        )
+
+        // Then
+        #expect(resolvedSize == persistedMapSize)
+    }
 }
 
 private extension MapEditorViewportTransformTests {

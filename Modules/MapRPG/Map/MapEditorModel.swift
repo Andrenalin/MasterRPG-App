@@ -122,9 +122,10 @@ final class MapEditorSession {
         self.actions = actions
         self.image = image
         self.photoDegrees = photoDegrees
-        let resolvedCanvasSize = Self.resolvedCanvasSize(
+        let resolvedCanvasSize = MapCanvasGeometryResolver.resolve(
+            map: map,
             mapSize: CGSize(width: map.width, height: map.height),
-            image: image,
+            imageSize: image.fixedSize,
             degrees: photoDegrees
         )
         let normalizedTrailingReservation = trailingViewportReservation.isFinite
@@ -268,9 +269,10 @@ final class MapEditorSession {
         if mapId != map.id {
             changeImage(map: map)
         }
-        let newCanvasSize = Self.resolvedCanvasSize(
+        let newCanvasSize = MapCanvasGeometryResolver.resolve(
+            map: map,
             mapSize: CGSize(width: map.width, height: map.height),
-            image: image,
+            imageSize: image.fixedSize,
             degrees: photoDegrees
         )
         let geometryChanged = self.photoDegrees != photoDegrees
@@ -574,23 +576,6 @@ final class MapEditorSession {
         )
     }
 
-    private static func resolvedCanvasSize(
-        mapSize: CGSize,
-        image: AKImage,
-        degrees: Double
-    ) -> CGSize {
-        guard mapSize.width.isFinite,
-              mapSize.height.isFinite,
-              mapSize.width > 0,
-              mapSize.height > 0 else {
-            return ViewportGeometry.rotatedContentSize(
-                image.fixedSize,
-                rotationDegrees: degrees
-            )
-        }
-        return mapSize
-    }
-
     // MARK: - Helper Methods
 
     func entry(for location: CGPoint, in _: MapModel) -> MapEntryModel? {
@@ -627,4 +612,97 @@ final class MapEditorSession {
     }
 
     var mapCanvasSize: CGSize { canvasSize }
+}
+
+/// Resolves legacy maps whose persisted canvas orientation no longer matches
+/// their linked photo. Correct maps retain their persisted logical scale;
+/// only a material aspect-ratio mismatch with image-compatible overlays uses
+/// the photo's oriented dimensions.
+struct MapCanvasGeometryResolver {
+    @MainActor
+    static func resolve(
+        map: MapModel,
+        mapSize: CGSize,
+        imageSize: CGSize,
+        degrees: Double
+    ) -> CGSize {
+        resolve(
+            mapSize: mapSize,
+            imageSize: imageSize,
+            degrees: degrees,
+            overlayBounds: overlayBounds(for: map)
+        )
+    }
+
+    static func resolve(
+        mapSize: CGSize,
+        imageSize: CGSize,
+        degrees: Double,
+        overlayBounds: CGRect?
+    ) -> CGSize {
+        let orientedImageSize = ViewportGeometry.rotatedContentSize(
+            imageSize,
+            rotationDegrees: degrees
+        )
+
+        guard isValid(mapSize) else { return orientedImageSize }
+        guard isValid(orientedImageSize) else { return mapSize }
+
+        let mapAspectRatio = mapSize.width / mapSize.height
+        let imageAspectRatio = orientedImageSize.width / orientedImageSize.height
+        let aspectRatioError = abs(log(mapAspectRatio / imageAspectRatio))
+        guard aspectRatioError > 0.03 else { return mapSize }
+
+        guard let overlayBounds else { return orientedImageSize }
+        let horizontalTolerance = max(44, orientedImageSize.width * 0.05)
+        let verticalTolerance = max(44, orientedImageSize.height * 0.05)
+        let supportedOverlayBounds = CGRect(origin: .zero, size: orientedImageSize)
+            .insetBy(dx: -horizontalTolerance, dy: -verticalTolerance)
+
+        return supportedOverlayBounds.contains(overlayBounds)
+            ? orientedImageSize
+            : mapSize
+    }
+
+    @MainActor
+    private static func overlayBounds(for map: MapModel) -> CGRect? {
+        var points = map.entries.flatMap(\.coordinates)
+        points.append(contentsOf: map.mapPins.map(\.location))
+        points.append(contentsOf: map.walls.flatMap { [$0.start, $0.end] })
+        points.append(contentsOf: map.displayConfig.tileCoordinates)
+        if map.pointer.location != .zero {
+            points.append(map.pointer.location)
+        }
+
+        let finitePoints = points.filter {
+            $0.x.isFinite && $0.y.isFinite
+        }
+        guard let firstPoint = finitePoints.first else { return nil }
+
+        var minX = firstPoint.x
+        var maxX = firstPoint.x
+        var minY = firstPoint.y
+        var maxY = firstPoint.y
+
+        for point in finitePoints.dropFirst() {
+            minX = min(minX, point.x)
+            maxX = max(maxX, point.x)
+            minY = min(minY, point.y)
+            maxY = max(maxY, point.y)
+        }
+
+        return CGRect(
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        )
+    }
+
+    private static func isValid(_ size: CGSize) -> Bool {
+        size.width.isFinite
+            && size.height.isFinite
+            && size.width > 0
+            && size.height > 0
+    }
 }
