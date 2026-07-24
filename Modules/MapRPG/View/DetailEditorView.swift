@@ -1,6 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PhotoRPG
 import SwiftUI
 
@@ -17,12 +20,29 @@ struct DetailEditorView: View {
         DisplayConfigEditor(model: model)
 
         if let sheetRootModel = root.editController.editorModel.sheetRootModel {
+#if os(tvOS)
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: sheetRootModel,
                 headerTitle: String(localized: "Rooms", bundle: .module).localizedString,
                 linkTypes: LinkMapModuleTransferable.self
             )
+#else
+            SheetRootEditorView(
+                root: root.rootController,
+                sheetRootModel: sheetRootModel,
+                headerTitle: String(localized: "Rooms", bundle: .module).localizedString,
+                linkTypes: LinkMapModuleTransferable.self,
+                configuration: .init(showsAIAssistant: true),
+                aiAssistantContent: {
+                    SheetAIAssistantContent(
+                        module: root.configurable.module,
+                        itemId: model.id,
+                        rootModel: sheetRootModel
+                    )
+                }
+            )
+#endif
         }
     }
 }

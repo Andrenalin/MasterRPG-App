@@ -3,21 +3,28 @@
 import SwiftUI
 
 public struct AudioPlayerMiniBarView: View {
-    public init() {}
+    public init(showsMetadata: Bool = true) {
+        self.showsMetadata = showsMetadata
+    }
+
+    let showsMetadata: Bool
 
     @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
 
     public var body: some View {
         HStack(spacing: 8) {
-            musicArtTitleTimeline
+            if showsMetadata {
+                musicArtTitleTimeline
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
+            }
 
             playbackControls
         }
         .padding(4)
         .padding(.horizontal)
+        .frame(maxWidth: showsMetadata ? .infinity : nil)
     }
 }
 

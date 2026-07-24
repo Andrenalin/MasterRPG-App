@@ -13,6 +13,8 @@ struct DetailFolderListView: View {
     let model: AudioModel
     let folderListController: FolderListController
     var isSubFolder: Bool = false
+
+    @Environment(\.audioPlayerUsesTabAccessory) private var audioPlayerUsesTabAccessory
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -26,15 +28,16 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-            // Spacer to reserve space for the overlay
-            Color.clear
-                .frame(height: 80)
-                .allowsHitTesting(false) // Critical: don't block touches
-        }
-        .overlay(alignment: .bottom) {
-            AudioPlayerBarView()
-                .padding()
+        .applyIf(!audioPlayerUsesTabAccessory) {
+            $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                Color.clear
+                    .frame(height: 80)
+                    .allowsHitTesting(false)
+            }
+            .overlay(alignment: .bottom) {
+                AudioPlayerBarView()
+                    .padding()
+            }
         }
         .overlay {
             overlayContent

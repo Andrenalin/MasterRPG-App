@@ -31,10 +31,6 @@ struct IOSGameOverlayMenu: View {
                             isMaster: isMaster,
                             allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
                         )
-
-                        if isMaster || root.gameModel.gameType != .observer {
-                            IOSGameSearchField()
-                        }
                     }
 
                     IOSGameOverlayControlField(
@@ -62,10 +58,6 @@ struct IOSGameOverlayMenu: View {
                         isMaster: isMaster,
                         allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
                     )
-
-                    if isMaster || root.gameModel.gameType != .observer {
-                        IOSGameSearchField()
-                    }
                 }
             }
         }

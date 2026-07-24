@@ -100,6 +100,7 @@ struct SheetAIAssistantComposer: View {
                 axis: .vertical
             )
             .textFieldStyle(.plain)
+            .frame(maxWidth: .infinity)
             .focused($isTextFieldFocused)
             .onSubmit(submitAction)
 #if os(iOS)
@@ -174,6 +175,8 @@ struct SheetAIAssistantMiniComposer: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
+        .contentShape(.rect)
+        .allowsHitTesting(true)
     }
 }
 

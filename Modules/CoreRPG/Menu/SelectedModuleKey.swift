@@ -46,8 +46,28 @@ public extension FocusedValues {
     @Entry var editorUndoActions: FocusedUndoActions?
 }
 
-/// Action injected by NavigationSplitView-based layouts so the list can switch
-/// the compact column to the detail pane (iPad compact layout only; no-op elsewhere).
+/// Stable action injected by NavigationSplitView-based layouts so the list can
+/// switch the compact column to the detail pane.
+///
+/// A reference identity keeps SwiftUI environment comparison stable while the
+/// stored closure remains an implementation detail.
+public final class DetailColumnSwitchAction: Equatable {
+    public init(action: @escaping @MainActor () -> Void = {}) {
+        self.action = action
+    }
+
+    private let action: @MainActor () -> Void
+
+    @MainActor
+    public func callAsFunction() {
+        action()
+    }
+
+    public static func == (lhs: DetailColumnSwitchAction, rhs: DetailColumnSwitchAction) -> Bool {
+        lhs === rhs
+    }
+}
+
 public extension EnvironmentValues {
-    @Entry var switchToDetailColumn: (() -> Void)? = nil
+    @Entry var switchToDetailColumn = DetailColumnSwitchAction()
 }

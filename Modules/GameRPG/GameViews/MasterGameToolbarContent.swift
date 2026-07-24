@@ -69,10 +69,6 @@ struct GameToolbarContent: ToolbarContent {
                 GameSidebarToolbarMenu(role: role)
             }
         }
-
-        ToolbarItem(placement: .primaryAction) {
-            GameWindowSearchField()
-        }
     }
 }
 

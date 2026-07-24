@@ -19,29 +19,61 @@ import SwiftUI
 // tracking window. This leaked tracking dependencies (locations, itemData) up to
 // DetailEditorView, causing a tight re-render loop every time text rendered.
 
-public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
+public struct SheetRootEditorView<
+    LinkType: LinkDataTransferable,
+    AIAssistantContent: View
+>: View {
     public init(
         root: ItemRootController,
         sheetRootModel: SheetRootModel,
         headerTitle: String,
         linkTypes: LinkType.Type
+    ) where AIAssistantContent == EmptyView {
+        self.init(
+            root: root,
+            sheetRootModel: sheetRootModel,
+            headerTitle: headerTitle,
+            linkTypes: linkTypes,
+            configuration: .init(),
+            aiAssistantContent: { EmptyView() }
+        )
+    }
+
+    public init(
+        root: ItemRootController,
+        sheetRootModel: SheetRootModel,
+        headerTitle: String,
+        linkTypes: LinkType.Type,
+        configuration: SheetRootViewConfiguration,
+        @ViewBuilder aiAssistantContent: @escaping () -> AIAssistantContent
     ) {
         self.root = root
         self.sheetRootModel = sheetRootModel
         self.headerTitle = headerTitle
         self.linkTypes = linkTypes
+        self.configuration = configuration
+        self.aiAssistantContent = aiAssistantContent
     }
 
     let root: ItemRootController
     let sheetRootModel: SheetRootModel
     let headerTitle: String
     let linkTypes: LinkType.Type
+    let configuration: SheetRootViewConfiguration
+    let aiAssistantContent: () -> AIAssistantContent
 
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         Section {
-            SheetRootView(root: root, rootModel: sheetRootModel, isEditor: true, linkTypes: linkTypes)
+            SheetRootView(
+                root: root,
+                rootModel: sheetRootModel,
+                isEditor: true,
+                linkTypes: linkTypes,
+                configuration: configuration,
+                aiAssistantContent: aiAssistantContent
+            )
         } header: {
             Text(headerTitle)
         }

@@ -2,7 +2,46 @@
 
 import SwiftUI
 
-struct TableSheetView<LinkType: LinkDataTransferable>: View {
+struct TableSheetView<
+    LinkType: LinkDataTransferable,
+    AIAssistantContent: View
+>: View {
+    init(
+        root: ItemRootController,
+        model: SheetRootModel,
+        addSearchable: Bool = true,
+        isEditor: Bool,
+        linkTypes: LinkType.Type
+    ) where AIAssistantContent == EmptyView {
+        self.init(
+            root: root,
+            model: model,
+            addSearchable: addSearchable,
+            isEditor: isEditor,
+            linkTypes: linkTypes,
+            configuration: .init(),
+            aiAssistantContent: { EmptyView() }
+        )
+    }
+
+    init(
+        root: ItemRootController,
+        model: SheetRootModel,
+        addSearchable: Bool = true,
+        isEditor: Bool,
+        linkTypes: LinkType.Type,
+        configuration: SheetRootViewConfiguration,
+        @ViewBuilder aiAssistantContent: @escaping () -> AIAssistantContent
+    ) {
+        self.root = root
+        self.model = model
+        self.addSearchable = addSearchable
+        self.isEditor = isEditor
+        self.linkTypes = linkTypes
+        self.configuration = configuration
+        self.aiAssistantContent = aiAssistantContent
+    }
+
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -11,6 +50,8 @@ struct TableSheetView<LinkType: LinkDataTransferable>: View {
     var addSearchable: Bool = true
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let configuration: SheetRootViewConfiguration
+    let aiAssistantContent: () -> AIAssistantContent
 
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
 
@@ -36,7 +77,9 @@ private extension TableSheetView {
                     root: root,
                     rootModel: model,
                     isEditor: isEditor,
-                    linkTypes: linkTypes
+                    linkTypes: linkTypes,
+                    configuration: configuration,
+                    aiAssistantContent: aiAssistantContent
                 )
                     .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
@@ -65,6 +108,8 @@ private extension TableSheetView {
         root: ItemRootController.fake,
         model: .fake,
         isEditor: false,
-        linkTypes: LinkDiceData.self
+        linkTypes: LinkDiceData.self,
+        configuration: .init(),
+        aiAssistantContent: { EmptyView() }
     )
 }

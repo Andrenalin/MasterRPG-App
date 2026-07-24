@@ -18,8 +18,7 @@ struct TabPlayerGameView: View {
                     root.characterRoot.viewController.gameView(
                         root: root.characterRoot,
                         select: characterId,
-                        searchContext: gameSearchContext,
-                        addsSearchable: addsNestedSearchable
+                        inlineSearch: usesInlineSearch
                     )
                 }
             }
@@ -58,19 +57,11 @@ struct TabPlayerGameView: View {
         }
     }
 
-    private var gameSearchContext: SheetSearchContext? {
+    private var usesInlineSearch: Bool {
 #if os(iOS) || os(macOS)
-        gameScreenModel.searchContext
-#else
-        nil
-#endif
-    }
-
-    private var addsNestedSearchable: Bool {
-#if os(iOS) || os(macOS)
-        false
-#else
         true
+#else
+        false
 #endif
     }
 }

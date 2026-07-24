@@ -79,7 +79,7 @@ struct ListRootView: View {
                               let firstEntry = sheetRootModel.firstSelectableEntry {
                         sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
                         navigationColumnFocus?.wrappedValue = .detail
-                        switchToDetailColumn?()
+                        switchToDetailColumn()
                     }
                     return .handled
                 }

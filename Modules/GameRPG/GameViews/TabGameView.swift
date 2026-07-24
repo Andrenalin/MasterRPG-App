@@ -17,8 +17,7 @@ struct TabGameView: View {
         root.adventureRoot.viewController.gameView(
             root: root.adventureRoot,
             focusedIds: [adventureId],
-            searchContext: gameSearchContext,
-            addsSearchable: addsNestedSearchable
+            inlineSearch: usesInlineSearch
         )
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(
@@ -55,19 +54,11 @@ struct TabGameView: View {
             }
     }
 
-    private var gameSearchContext: SheetSearchContext? {
+    private var usesInlineSearch: Bool {
 #if os(iOS) || os(macOS)
-        gameScreenModel.searchContext
-#else
-        nil
-#endif
-    }
-
-    private var addsNestedSearchable: Bool {
-#if os(iOS) || os(macOS)
-        false
-#else
         true
+#else
+        false
 #endif
     }
 }
