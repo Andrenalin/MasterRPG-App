@@ -1760,6 +1760,7 @@
       }
     },
     "Generate" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1930,6 +1931,9 @@
           }
         }
       }
+    },
+    "Hide Ask AI" : {
+
     },
     "Identified %lld sections" : {
       "localizations" : {
