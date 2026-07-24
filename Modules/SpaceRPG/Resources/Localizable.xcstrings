@@ -219,6 +219,12 @@
             "state" : "translated",
             "value" : "Dein Objekt wurde nicht erkannt. Es sollte in jeder Abmessung größer als 3 Zoll (8 cm) sein."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่พบวัตถุของคุณ วัตถุควรมีขนาดใหญ่กว่า 3 นิ้ว (8 ซม.) ในแต่ละด้าน"
+          }
         }
       }
     },
@@ -272,6 +278,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Cancel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยกเลิก"
           }
         }
       }
@@ -347,6 +359,12 @@
             "state" : "translated",
             "value" : "Aufgenommene Bilder"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภาพที่บันทึกแล้ว"
+          }
         }
       }
     },
@@ -376,6 +394,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด %@"
           }
         }
       }
@@ -422,6 +446,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Continue"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ดำเนินการต่อ"
           }
         }
       }
@@ -667,6 +697,12 @@
             "state" : "new",
             "value" : "Flip object on the opposite side and capture again"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พลิกวัตถุไปด้านตรงข้ามแล้วบันทึกอีกครั้ง"
+          }
         }
       }
     },
@@ -839,6 +875,12 @@
             "state" : "translated",
             "value" : "Import"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้า"
+          }
         }
       }
     },
@@ -928,6 +970,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Keep moving around your object."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เดินวนรอบวัตถุของคุณต่อไป"
           }
         }
       }
@@ -1138,6 +1186,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Move Farther Away"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนถอยออกไป"
           }
         }
       }
@@ -1463,6 +1517,12 @@
             "state" : "translated",
             "value" : "Nach links drehen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หมุนซ้าย"
+          }
         }
       }
     },
@@ -1750,5 +1810,5 @@
       }
     }
   },
-  "version" : "1.1"
+  "version" : "1.3"
 }

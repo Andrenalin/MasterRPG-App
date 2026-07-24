@@ -190,6 +190,7 @@
       }
     },
     "Add to favorites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -802,6 +803,7 @@
       }
     },
     "Remove from favorites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
