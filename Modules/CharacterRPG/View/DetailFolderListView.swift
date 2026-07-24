@@ -28,11 +28,13 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
+#if !os(tvOS)
         .sheetAIAssistantPlacement(
             module: root.configurable.module,
             itemId: model.id,
             rootModel: root.editController.editorModel.sheetRootModel
         )
+#endif
         .overlay {
             overlayContent
         }

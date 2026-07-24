@@ -1208,6 +1208,9 @@
         }
       }
     },
+    "Close %@" : {
+
+    },
     "Close editor" : {
       "localizations" : {
         "de" : {
@@ -1223,6 +1226,9 @@
           }
         }
       }
+    },
+    "Close Folder" : {
+
     },
     "Close parent folder" : {
       "comment" : "A button label that closes a folder section in a list view.",

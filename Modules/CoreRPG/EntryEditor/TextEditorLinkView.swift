@@ -54,6 +54,9 @@ struct AttributedTextEditorSurface: View {
     @Environment(\.appTheme) private var theme
 
     var body: some View {
+#if os(tvOS)
+        EmptyView()
+#else
         TextEditor(text: $text)
             .attributedTextFormattingDefinition(
                 ContentFormattingDefinition(
@@ -90,6 +93,7 @@ struct AttributedTextEditorSurface: View {
                     )
             }
             .clipShape(.rect(cornerRadius: 14, style: .continuous))
+#endif
     }
 
     private var verticalContentMargin: CGFloat {

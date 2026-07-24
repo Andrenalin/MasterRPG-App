@@ -281,6 +281,7 @@ private extension SheetEntryView {
                     theme.tint(for: entryModel.source.typeId).opacity(0.3)
                 )
             }
+#if !os(tvOS)
             .popover(isPresented: $isEditTypePickerPresented, arrowEdge: .leading) {
                 Picker(
                     selection: Binding(
@@ -304,6 +305,7 @@ private extension SheetEntryView {
                 .presentationCompactAdaptation(.popover)
             }
             .accessibilityLabel(Text("Change Value Type", bundle: .module))
+#endif
         } else {
             Image(systemName: entryModel.editType.icon)
                 .imageScale(.small)
