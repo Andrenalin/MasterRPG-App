@@ -62,3 +62,16 @@ struct BattleInitiativeEditor: View {
         setValue(combatantId, parsed)
     }
 }
+
+#Preview("Initiative editor") {
+    @Previewable @State var initiative: Int? = 18
+    let combatantID = UUID()
+
+    BattleInitiativeEditor(
+        combatantId: combatantID,
+        value: initiative,
+        setValue: { _, value in initiative = value },
+        adjust: { _, amount in initiative = (initiative ?? 0) + amount }
+    )
+    .padding()
+}

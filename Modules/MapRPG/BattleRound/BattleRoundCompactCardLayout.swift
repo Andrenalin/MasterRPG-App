@@ -51,3 +51,18 @@ struct BattleRoundCompactCardLayout: View {
         }
     }
 }
+
+#Preview("Compact card layout", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    if let card = model.cardPresentations.first {
+        BattleRoundCompactCardLayout(
+            presentation: card,
+            actions: .preview(model: model),
+            showCharacter: { _ in },
+            selectHitPoints: { _ in }
+        )
+        .frame(width: 340)
+        .padding()
+    }
+}

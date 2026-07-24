@@ -27,3 +27,21 @@ struct BattleRoundHeading: View {
         }
     }
 }
+
+#Preview("Battle heading") {
+    BattleRoundHeading(
+        isRunning: true,
+        round: 3,
+        activeAttackerName: "Aria Swiftwind"
+    )
+    .padding()
+}
+
+#Preview("Initiative heading") {
+    BattleRoundHeading(
+        isRunning: false,
+        round: 0,
+        activeAttackerName: nil
+    )
+    .padding()
+}

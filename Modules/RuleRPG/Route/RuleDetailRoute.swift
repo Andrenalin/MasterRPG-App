@@ -87,3 +87,10 @@ private struct RuleDetailRouteDestinationView: View {
     }
 }
 
+#Preview("Rule folder route", traits: .mockData) {
+    RuleDetailRoute.folder(RuleModel.previewChildID).body
+}
+
+#Preview("Rule inline folder route", traits: .mockData) {
+    RuleDetailRoute.folderInline(RuleModel.previewChildID).body
+}

@@ -101,4 +101,11 @@ private struct PlayerBattleRoundToolbarStatus: View {
         }
     }
 }
+
+#Preview("Player battle status") {
+    PlayerBattleRoundToolbarStatus(
+        model: GameRoot.previewFixture().mapRoot.mapGameControllable.battleRoundModel
+    )
+    .padding()
+}
 #endif

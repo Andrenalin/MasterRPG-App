@@ -412,3 +412,42 @@ private struct MapFogTileSymbol: View {
         .accessibilityHidden(true)
     }
 }
+
+#Preview("Master room canvas") {
+    let image = AKImage()
+
+    MapPassiveRoomCanvas(
+        rooms: MapEntryViewerModel(
+            mapId: MapModel.preview.id,
+            entries: MapModel.preview.entries
+        ),
+        displayMode: .master,
+        displayConfig: MapModel.preview.displayConfig,
+        phase: .base,
+        mapImage: image,
+        degrees: 0,
+        canvasSize: CGSize(width: MapModel.preview.width, height: MapModel.preview.height)
+    )
+    .scaleEffect(0.5, anchor: .topLeading)
+    .frame(width: MapModel.preview.width / 2, height: MapModel.preview.height / 2)
+    .clipped()
+}
+
+#Preview("Player fog canvas") {
+    let image = AKImage()
+
+    MapActiveRoomLayer(
+        rooms: MapEntryViewerModel(
+            mapId: MapModel.preview.id,
+            entries: MapModel.preview.entries
+        ),
+        displayMode: .player,
+        displayConfig: MapModel.preview.displayConfig,
+        mapImage: image,
+        degrees: 0,
+        canvasSize: CGSize(width: MapModel.preview.width, height: MapModel.preview.height)
+    )
+    .scaleEffect(0.5, anchor: .topLeading)
+    .frame(width: MapModel.preview.width / 2, height: MapModel.preview.height / 2)
+    .clipped()
+}

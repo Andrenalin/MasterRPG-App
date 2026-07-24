@@ -41,3 +41,31 @@ struct BattleDefenderStrip: View {
         }
     }
 }
+
+#Preview("Defenders", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    if let card = model.cardPresentations.first {
+        BattleDefenderStrip(
+            defenders: card.defenders,
+            isActiveEntry: card.isActive,
+            actions: .preview(model: model),
+            showCharacter: { _ in },
+            selectHitPoints: { _ in }
+        )
+        .padding()
+    }
+}
+
+#Preview("No defenders") {
+    let model = BattleRoundPreviewData.model()
+
+    BattleDefenderStrip(
+        defenders: [],
+        isActiveEntry: false,
+        actions: .preview(model: model),
+        showCharacter: { _ in },
+        selectHitPoints: { _ in }
+    )
+    .padding()
+}

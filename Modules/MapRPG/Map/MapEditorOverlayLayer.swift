@@ -354,3 +354,37 @@ private struct MapLoupeCrosshair: Shape {
         return path
     }
 }
+
+private struct MapViewportOverlayPreview: View {
+    @State private var session: MapEditorSession
+    private let image: AKImage
+
+    init() {
+        let image = AKImage()
+        let session = MapEditorSession(
+            map: .preview,
+            image: image,
+            photoDegrees: 0,
+            containerSize: CGSize(width: 640, height: 480),
+            mapMode: .gameMaster
+        )
+        session.pins.isExpandedId = session.pins.mapPinNodes.first?.id
+        self.image = image
+        _session = State(initialValue: session)
+    }
+
+    var body: some View {
+        MapViewportOverlayLayer(
+            session: session,
+            image: image,
+            degrees: 0,
+            transform: session.viewport.transform,
+            safeAreaInsets: EdgeInsets()
+        )
+        .frame(width: 640, height: 480)
+    }
+}
+
+#Preview("Map viewport controls") {
+    MapViewportOverlayPreview()
+}

@@ -29,3 +29,13 @@ struct BattleRoundEmptyState: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+#Preview("No battle") {
+    BattleRoundEmptyState(isRunning: false, start: {})
+        .frame(width: 420, height: 320)
+}
+
+#Preview("No combatants") {
+    BattleRoundEmptyState(isRunning: true, start: {})
+        .frame(width: 420, height: 320)
+}

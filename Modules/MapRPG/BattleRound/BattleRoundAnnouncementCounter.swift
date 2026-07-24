@@ -30,3 +30,11 @@ struct BattleRoundAnnouncementCounter: View {
         .accessibilityAddTraits(.isHeader)
     }
 }
+
+#Preview("Round announcement") {
+    BattleRoundAnnouncementCounter(
+        round: 3,
+        attackerName: "Aria Swiftwind"
+    )
+    .padding()
+}

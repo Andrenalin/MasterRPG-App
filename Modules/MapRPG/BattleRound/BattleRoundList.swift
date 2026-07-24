@@ -79,3 +79,15 @@ struct BattleRoundList: View {
         actions.moveEntries(IndexSet(integer: sourceIndex), destination)
     }
 }
+
+#Preview("Turn order", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    BattleRoundList(
+        cards: model.cardPresentations,
+        actions: .preview(model: model),
+        showCharacter: { _ in },
+        selectHitPoints: { _ in }
+    )
+    .frame(width: 720, height: 640)
+}

@@ -38,3 +38,22 @@ struct GameScreenLayer<Surface: View, Chrome: View>: View {
         }
     }
 }
+
+#Preview("Game screen layer") {
+    GameScreenLayer {
+        LinearGradient(
+            colors: [.blue, .teal],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    } chrome: {
+        VStack {
+            Label("Game controls", systemImage: "gamecontroller.fill")
+                .padding()
+                .background(.regularMaterial, in: .capsule)
+            Spacer()
+        }
+        .padding()
+    }
+    .frame(width: 640, height: 480)
+}

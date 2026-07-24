@@ -29,3 +29,12 @@ struct BattleRollResults: View {
         }
     }
 }
+
+#Preview("Roll results") {
+    let model = BattleRoundPreviewData.model()
+
+    if let rolls = model.cardPresentations.first?.attacker.rolls {
+        BattleRollResults(results: rolls, tint: .blue)
+            .padding()
+    }
+}

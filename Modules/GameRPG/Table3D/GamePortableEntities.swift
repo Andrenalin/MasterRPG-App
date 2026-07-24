@@ -252,6 +252,38 @@ private struct GameTableTextureView: View {
     }
 }
 
+#Preview("Game table texture") {
+    let image = AKImage()
+    let room = MapEntryModel(
+        id: UUID(),
+        name: "Hidden chamber",
+        content: "Preview fog area.",
+        coordinates: [
+            CGPoint(x: 40, y: 40),
+            CGPoint(x: 280, y: 40),
+            CGPoint(x: 280, y: 200),
+            CGPoint(x: 40, y: 200)
+        ],
+        isShown: false
+    )
+    let displayConfig = DisplayConfigModel(
+        tileCoordinates: [],
+        color: .black.opacity(0.72),
+        border: DisplayBorderViewModel(thickness: 3, color: .blue)
+    )
+
+    GameTableTextureView(
+        image: image,
+        sourceRenderSize: CGSize(width: 320, height: 240),
+        outputSize: CGSize(width: 320, height: 240),
+        coordinateSize: CGSize(width: 320, height: 240),
+        degrees: 0,
+        entries: [room],
+        displayConfig: displayConfig,
+        isGameMaster: true
+    )
+}
+
 /// Identifies a map token for entity-targeted gestures.
 struct PinComponent: Component {
     let pinId: UUID

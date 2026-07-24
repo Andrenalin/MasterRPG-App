@@ -16,3 +16,11 @@ struct BattleRankBadge: View {
             .accessibilityLabel(Text("Initiative position \(rank)", bundle: .module))
     }
 }
+
+#Preview("Battle rank") {
+    HStack {
+        BattleRankBadge(rank: 1, isActive: true)
+        BattleRankBadge(rank: 2, isActive: false)
+    }
+    .padding()
+}

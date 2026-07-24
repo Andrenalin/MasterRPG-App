@@ -47,3 +47,23 @@ struct BattleRoundHeaderActions: View {
         .controlSize(.small)
     }
 }
+
+#Preview("Running battle actions") {
+    let model = BattleRoundPreviewData.model()
+
+    BattleRoundHeaderActions(
+        isRunning: true,
+        actions: .preview(model: model)
+    )
+    .padding()
+}
+
+#Preview("Start battle action") {
+    let model = BattleRoundModel()
+
+    BattleRoundHeaderActions(
+        isRunning: false,
+        actions: .preview(model: model)
+    )
+    .padding()
+}

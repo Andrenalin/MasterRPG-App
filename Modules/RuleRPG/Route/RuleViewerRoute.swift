@@ -45,3 +45,7 @@ private struct RuleViewerRouteDestinationView: View {
         .tint(NetworkModules.rule.tint)
     }
 }
+
+#Preview("Rule viewer route", traits: .mockData) {
+    RuleViewerRoute.viewer(RuleModel.previewID).body
+}

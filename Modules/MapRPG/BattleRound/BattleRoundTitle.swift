@@ -13,3 +13,11 @@ struct BattleRoundTitle: View {
         }
     }
 }
+
+#Preview("Round title") {
+    VStack {
+        BattleRoundTitle(round: 0)
+        BattleRoundTitle(round: 3)
+    }
+    .padding()
+}

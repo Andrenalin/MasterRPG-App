@@ -57,3 +57,27 @@ struct BattleRoundSideOverlay: View {
         }
     }
 }
+
+private struct BattleRoundSideOverlayPreview: View {
+    @State private var root: GameRoot
+    @State private var screenModel: GameScreenModel
+    @State private var scenesManager = ScenesManager()
+
+    init() {
+        let screenModel = GameScreenModel()
+        screenModel.showsBattleRoundSidebar = true
+        _root = State(initialValue: GameRoot.previewFixture())
+        _screenModel = State(initialValue: screenModel)
+    }
+
+    var body: some View {
+        BattleRoundSideOverlay(root: root)
+            .environment(screenModel)
+            .environment(scenesManager)
+            .frame(width: 800, height: 700, alignment: .trailing)
+    }
+}
+
+#Preview("Battle sidebar") {
+    BattleRoundSideOverlayPreview()
+}

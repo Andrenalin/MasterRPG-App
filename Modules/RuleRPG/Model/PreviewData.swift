@@ -24,6 +24,8 @@ public extension RuleRootModel {
             linkRegisterController: LinkRegisterController(root: rootManager)
         )
         root.itemController.replace(model: RuleModel.preview, isInsert: true)
+        root.itemController.replace(model: RuleModel.previewFolder, isInsert: true)
+        root.itemController.replace(model: RuleModel.previewChild, isInsert: true)
         root.editController.setCurrentItem(
             to: ItemRowTreeModel(itemId: RuleModel.preview.id, typeId: .rule)
         )
@@ -50,6 +52,12 @@ public extension RuleRootModel {
 public extension RuleModel {
     nonisolated static let previewID = UUID(
         uuidString: "D1B63D74-354B-49B9-A654-CF6F1B7F8E12"
+    ) ?? UUID()
+    nonisolated static let previewFolderID = UUID(
+        uuidString: "575E4D7A-8727-4CE0-B2DE-6B1132E5AD44"
+    ) ?? UUID()
+    nonisolated static let previewChildID = UUID(
+        uuidString: "F4C37B4A-C9EC-49E1-9BFD-F76E8DBA53EF"
     ) ?? UUID()
 
     @MainActor
@@ -86,5 +94,20 @@ public extension RuleModel {
             ruleCategory: "spell"
         )
     )
-}
 
+    @MainActor
+    static let previewFolder = RuleModel(
+        id: previewFolderID,
+        name: "Spell Compendium",
+        description: "Preview folder containing related rules.",
+        category: .folder
+    )
+
+    @MainActor
+    static let previewChild = RuleModel(
+        id: previewChildID,
+        name: "Protective Magic",
+        description: "A preview rule nested inside the spell compendium.",
+        parentId: previewFolderID
+    )
+}

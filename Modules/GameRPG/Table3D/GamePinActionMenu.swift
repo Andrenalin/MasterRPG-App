@@ -2,6 +2,7 @@
 
 #if os(iOS) || os(macOS) || os(visionOS)
 import MapRPG
+import PhotoRPG
 import SwiftUI
 
 @MainActor
@@ -89,6 +90,19 @@ private struct GamePinMenuBackground: ViewModifier {
         content.background(.regularMaterial, in: .capsule)
 #endif
     }
+}
+
+#Preview("Pin actions") {
+    let game = GameTableModel(mapRoot: .preview, photoRoot: .preview)
+    let pin = MapPinModel(
+        id: UUID(),
+        name: "Goblin Guard",
+        color: .red,
+        location: CGPoint(x: 160, y: 120)
+    )
+
+    GamePinActionMenuContent(game: game, pin: pin)
+        .padding()
 }
 
 #endif
