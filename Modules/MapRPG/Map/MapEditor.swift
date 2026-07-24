@@ -139,12 +139,36 @@ struct MapEditor: View {
                   session.hexScale != map.hexMapScale else { return }
             editController.createHexMap(model: map, hexMapScale: session.hexScale)
         }
+        .focusedSceneValue(\.editorUndoActions, focusedUndoActions)
+        .focusedSceneValue(
+            \.selectedModule,
+            configuration.mode == .edit
+                ? Binding.constant(NetworkModules.map)
+                : nil
+        )
         .onAppear(perform: appear)
         .onDisappear(perform: disappear)
     }
 }
 
 private extension MapEditor {
+    var focusedUndoActions: FocusedUndoActions? {
+        guard configuration.mode == .edit else { return nil }
+
+        return FocusedUndoActions(
+            canUndo: session.history.canUndo,
+            canRedo: session.history.canRedo,
+            undoTitle: session.history.undoTitle,
+            redoTitle: session.history.redoTitle,
+            undo: {
+                _ = mapEditController.undo(editorModel: session)
+            },
+            redo: {
+                _ = mapEditController.redo(editorModel: session)
+            }
+        )
+    }
+
     func synchronizeCanvas() {
         let mapChanged = session.mapId != map.id
         if mapChanged {

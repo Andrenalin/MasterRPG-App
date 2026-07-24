@@ -22,6 +22,7 @@ final class MapEditorSession {
     // Working copy of MapModel — owned here, mutated by MapEditController
     var workingCopy: MapModel?
     var undoDepthAtOpen: Int = 0
+    let history: MapEditorHistory
 
     // MARK: - Toolbar State (merged from EditToolBarModel)
 
@@ -147,6 +148,7 @@ final class MapEditorSession {
         self.lastIsHexMap = map.entries.contains(where: { $0.isHexGrid })
         self.displayMode = configuration.displayMode
         self.mapId = map.id
+        self.history = MapEditorHistory(map: map)
         self.pendingInitialFitMapId = Self.isValidSize(effectiveContainerSize)
             && Self.isValidSize(resolvedCanvasSize)
             ? nil
@@ -408,7 +410,8 @@ final class MapEditorSession {
             workingCopy = nil
             clearSelections()
             if mapMode == .edit {
-                pins.resetEditorHistory(to: map.mapPins)
+                pins.mapPins = map.mapPins
+                history.reset(to: MapEditorSnapshot(map: map, activeEntryId: nil))
             } else {
                 pins.mapPins = map.mapPins
             }

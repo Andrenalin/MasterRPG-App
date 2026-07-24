@@ -4,14 +4,27 @@ import CoreRPG
 import SwiftUI
 
 struct PinScaleView: View {
+    init(
+        model: MapEditorSession,
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
+    ) {
+        self.model = model
+        self.onEditingChanged = onEditingChanged
+    }
+
     @Bindable var model: MapEditorSession
+    let onEditingChanged: (Bool) -> Void
 
     var body: some View {
         HStack {
 #if !os(tvOS)
             Text("Pin Scale", bundle: .module)
                 .foregroundStyle(.primary)
-            Slider(value: $model.pinScale, in: 0.5 ... 3.5) {
+            Slider(
+                value: $model.pinScale,
+                in: 0.5 ... 3.5,
+                onEditingChanged: onEditingChanged
+            ) {
                 Text("Pin Scale", bundle: .module)
             }
             .accessibilityValue(

@@ -20,6 +20,7 @@ public struct ModuleCommands: Commands {
     @FocusedValue(\.listDisplayModel) private var listDisplayModel: ListDisplayModel?
     @FocusedValue(\.moduleListIsFocused) private var moduleListIsFocused: Bool?
     @FocusedValue(\.selectedSheetEntry) private var selectedSheetEntry: SelectedSheetEntry?
+    @FocusedValue(\.editorUndoActions) private var editorUndoActions: FocusedUndoActions?
 
     public var body: some Commands {
         CommandGroup(after: .windowArrangement) {
@@ -67,8 +68,13 @@ public struct ModuleCommands: Commands {
         }
         CommandGroup(replacing: .undoRedo) {
             if selectedModule == root.configurable.module {
-                UndoButton(root: root)
-                RedoButton(root: root)
+                if let editorUndoActions {
+                    FocusedEditorUndoButton(actions: editorUndoActions)
+                    FocusedEditorRedoButton(actions: editorUndoActions)
+                } else {
+                    UndoButton(root: root)
+                    RedoButton(root: root)
+                }
             }
         }
         CommandGroup(before: .sidebar) {
@@ -83,6 +89,46 @@ public struct ModuleCommands: Commands {
                 Divider()
             }
         }
+    }
+}
+
+private struct FocusedEditorUndoButton: View {
+    let actions: FocusedUndoActions
+
+    var body: some View {
+        Button {
+            withAnimation {
+                actions.undo()
+            }
+        } label: {
+            Label {
+                Text("Undo \(actions.undoTitle)", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.uturn.backward")
+            }
+        }
+        .keyboardShortcut("z", modifiers: [.command])
+        .disabled(!actions.canUndo)
+    }
+}
+
+private struct FocusedEditorRedoButton: View {
+    let actions: FocusedUndoActions
+
+    var body: some View {
+        Button {
+            withAnimation {
+                actions.redo()
+            }
+        } label: {
+            Label {
+                Text("Redo \(actions.redoTitle)", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.uturn.forward")
+            }
+        }
+        .keyboardShortcut("z", modifiers: [.command, .shift])
+        .disabled(!actions.canRedo)
     }
 }
 #endif

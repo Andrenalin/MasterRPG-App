@@ -44,6 +44,10 @@ struct EditToolBarViewModifier: ViewModifier {
                     ToolbarItem(placement: bottomBarPlacement) {
                         cancelButtonView
                     }
+                    ToolbarItemGroup(placement: bottomBarPlacement) {
+                        undoButton
+                        redoButton
+                    }
                     ToolbarItem(placement: bottomBarPlacement) {
                         confirmTileButtonView
                     }
@@ -59,7 +63,13 @@ struct EditToolBarViewModifier: ViewModifier {
                 if !hideScales {
                     GlassEffectContainerView {
                         VStack(spacing: 8) {
-                            PinScaleView(model: editorModel)
+                            PinScaleView(model: editorModel) { isEditing in
+                                guard !isEditing else { return }
+                                mapEditController.updatePinScale(
+                                    editorModel.pinScale,
+                                    editorModel: editorModel
+                                )
+                            }
 
                             HexMapScaleView(
                                 model: editorModel,
@@ -69,12 +79,18 @@ struct EditToolBarViewModifier: ViewModifier {
                                 }
                             ) { scale in
                                 mapEditController.updateHexScale(scale, editorModel: editorModel)
+                            } onScaleEditingChanged: { isEditing in
+                                guard !isEditing else { return }
+                                mapEditController.commitHexScale(editorModel: editorModel)
                             }
 
                             MaxSizeScaleView(model: editorModel) { ratio in
                                 mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
                             } onMaxHeightChanged: { ratio in
                                 mapEditController.updateMaxHeight(ratio, editorModel: editorModel)
+                            } onEditingChanged: { isEditing in
+                                guard !isEditing else { return }
+                                mapEditController.commitBoundaryScale(editorModel: editorModel)
                             }
                         }
                         .padding()
@@ -366,37 +382,35 @@ private extension EditToolBarViewModifier {
     @ViewBuilder var undoButton: some View {
         Button {
             withAnimation(reduceMotion ? nil : .default) {
-                if !mapEditController.undoPinMutation(editorModel: editorModel) {
-                    editController.undo()
-                }
+                _ = mapEditController.undo(editorModel: editorModel)
             }
         } label: {
             let symbolName = "arrow.uturn.backward"
             Image(systemName: symbolName)
                 .accessibilityLabel(Text("Undo", bundle: .module))
         }
-        .disabled(!editorModel.pins.canUndoEditorMutation && !editController.canUndo)
+        .disabled(!editorModel.history.canUndo)
     }
 
     @ViewBuilder var redoButton: some View {
         Button {
             withAnimation(reduceMotion ? nil : .default) {
-                if !mapEditController.redoPinMutation(editorModel: editorModel) {
-                    editController.redo()
-                }
+                _ = mapEditController.redo(editorModel: editorModel)
             }
         } label: {
             let symbolName = "arrow.uturn.forward"
             Image(systemName: symbolName)
                 .accessibilityLabel(Text("Redo", bundle: .module))
         }
-        .disabled(!editorModel.pins.canRedoEditorMutation && !editController.canRedo)
+        .disabled(!editorModel.history.canRedo)
     }
 
     func resetSelectedIndex(shouldIncrease: Bool) {
         guard let mapModel = editorModel.workingCopy else { return }
         if shouldIncrease && !canIncrease {
-            let entryId = editController.addNewEntry(itemId: mapModel.id)
+            guard let entryId = mapEditController.addEntry(editorModel: editorModel) else {
+                return
+            }
             withAnimation(reduceMotion ? nil : .default) {
                 editController.editorModel.sheetEditorModel.entryId = entryId
             }

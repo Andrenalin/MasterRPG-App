@@ -93,13 +93,11 @@ final class MapEditorActionRouter {
     private func toggleRoomVisibility(_ entryId: UUID) {
         switch session.mapMode {
         case .edit:
-            guard let mapModel = editController.editModel(for: map.id) else { return }
-            mapModel.toggle(entryId)
-            synchronizeRooms(from: mapModel)
-            editController.save(
-                updated: mapModel,
-                message: String(localized: "update entry", bundle: .module).localizedString
-            )
+            guard mapEditController.toggleRoomVisibility(
+                entryId: entryId,
+                editorModel: session
+            ), let workingCopy = session.workingCopy else { return }
+            synchronizeRooms(from: workingCopy)
 
         case .gameMaster:
             // A room toggle is an authoritative game command, not an
@@ -139,12 +137,11 @@ final class MapEditorActionRouter {
             session.focusId = shouldFocus ? entryId : nil
             session.focusedMap()
 
-            guard let mapModel = editController.editModel(for: map.id) else { return }
-            mapModel.focused(entry)
-            editController.save(
-                updated: mapModel,
-                message: String(localized: "focus entry", bundle: .module).localizedString
-            )
+            guard mapEditController.toggleRoomFocus(
+                entryId: entryId,
+                editorModel: session
+            ), let workingCopy = session.workingCopy else { return }
+            synchronizeRooms(from: workingCopy)
 
         case .gameMaster:
             // Focus is authoritative shared game state. Resolve the current
@@ -169,9 +166,9 @@ final class MapEditorActionRouter {
     }
 
     private func handleNeedleCoordinatesChanged(entryId: UUID) {
-        guard session.configuration.isTileEditor else { return }
-        mapEditController.syncTileCoordinates(
-            session.editEntries.entry(entryId).coordinates,
+        guard session.mapMode == .edit else { return }
+        mapEditController.commitEntryCoordinates(
+            entryId: entryId,
             editorModel: session
         )
     }

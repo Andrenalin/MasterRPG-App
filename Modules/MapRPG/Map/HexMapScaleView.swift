@@ -13,6 +13,7 @@ struct HexMapScaleView: View {
     let appearance: HexMapScaleAppearance
     let onToggle: () -> Void
     let onScaleChanged: (Double) -> Void
+    let onScaleEditingChanged: (Bool) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -20,12 +21,14 @@ struct HexMapScaleView: View {
         model: MapEditorSession,
         appearance: HexMapScaleAppearance = .editor,
         onToggle: @escaping () -> Void,
-        onScaleChanged: @escaping (Double) -> Void
+        onScaleChanged: @escaping (Double) -> Void,
+        onScaleEditingChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         self.model = model
         self.appearance = appearance
         self.onToggle = onToggle
         self.onScaleChanged = onScaleChanged
+        self.onScaleEditingChanged = onScaleEditingChanged
     }
 
     var body: some View {
@@ -56,7 +59,11 @@ struct HexMapScaleView: View {
 
             Text("Hex Scale", bundle: .module)
                 .foregroundStyle(.primary)
-            Slider(value: $model.hexScale, in: 20 ... 200) {
+            Slider(
+                value: $model.hexScale,
+                in: 20 ... 200,
+                onEditingChanged: onScaleEditingChanged
+            ) {
                 Text("Hex Scale", bundle: .module)
             }
             .onChange(of: model.hexScale) {

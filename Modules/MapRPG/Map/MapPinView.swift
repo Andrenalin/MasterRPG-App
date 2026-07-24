@@ -96,7 +96,6 @@ final class MapPinViewModel {
 
     init(mapPins: [MapPinModel], pointer: MapPinModel) {
         let nodes = mapPins.map { MapPinNode(pin: $0) }
-        editorHistory = MapEditorPinHistory(pins: mapPins)
         mapPinNodes = nodes
         ordinaryPinNodes = nodes.filter { !$0.pin.isZoom }
         zoomedPinNodes = nodes.filter { $0.pin.isZoom }
@@ -114,7 +113,6 @@ final class MapPinViewModel {
     private(set) var zoomedPinNodes: [MapPinNode]
     private(set) var pointerNode: MapPinNode
     private var expandedId: UUID?
-    private let editorHistory: MapEditorPinHistory
 
     @ObservationIgnored private var interactionHandler: InteractionHandler?
 
@@ -133,33 +131,6 @@ final class MapPinViewModel {
     var isExpandedId: UUID? {
         get { expandedId }
         set { setExpanded(id: newValue) }
-    }
-
-    var canUndoEditorMutation: Bool { editorHistory.canUndo }
-    var canRedoEditorMutation: Bool { editorHistory.canRedo }
-
-    /// Records the current stable-node values once after an editor action or
-    /// drag has committed. Preview movement never reaches this method.
-    @discardableResult
-    func commitEditorMutation() -> Bool {
-        editorHistory.record(mapPins)
-    }
-
-    func undoEditorMutation() -> [MapPinModel]? {
-        guard let restored = editorHistory.undo() else { return nil }
-        reconcileMapPins(with: restored)
-        return restored
-    }
-
-    func redoEditorMutation() -> [MapPinModel]? {
-        guard let restored = editorHistory.redo() else { return nil }
-        reconcileMapPins(with: restored)
-        return restored
-    }
-
-    func resetEditorHistory(to pins: [MapPinModel]) {
-        reconcileMapPins(with: pins)
-        editorHistory.reset(to: pins)
     }
 
     func configureInteractionHandler(_ handler: InteractionHandler?) {

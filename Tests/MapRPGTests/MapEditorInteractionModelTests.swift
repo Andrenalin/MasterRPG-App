@@ -308,12 +308,12 @@ struct MapEditorInteractionModelTests {
 
         node.move(by: CGSize(width: 40, height: 50))
 
-        #expect(session.pins.canUndoEditorMutation)
+        #expect(session.history.canUndo)
         #expect(session.workingCopy?.mapPins.first?.location == CGPoint(x: 60, y: 80))
-        #expect(controller.undoPinMutation(editorModel: session))
+        #expect(controller.undo(editorModel: session))
         #expect(session.pins.pinNode(for: pin.id) === node)
         #expect(session.workingCopy?.mapPins == [pin])
-        #expect(controller.redoPinMutation(editorModel: session))
+        #expect(controller.redo(editorModel: session))
         #expect(session.workingCopy?.mapPins.first?.location == CGPoint(x: 60, y: 80))
     }
 
@@ -380,7 +380,7 @@ struct MapEditorInteractionModelTests {
         node.perform(.remove, context: .editor)
 
         #expect(session.workingCopy?.mapPins.isEmpty == true)
-        #expect(controller.undoPinMutation(editorModel: session))
+        #expect(controller.undo(editorModel: session))
         #expect(session.workingCopy?.mapPins == [pin])
     }
 
