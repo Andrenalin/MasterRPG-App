@@ -159,9 +159,7 @@ public final class SheetRootModel: Sendable {
     /// lets changing rows close the previous editor in the same state transaction.
     private var inlineEditingEntryModel: SheetModel?
 
-    var inlineEditingEntryId: UUID? {
-        inlineEditingEntryModel?.id
-    }
+    private(set) var inlineEditingEntryId: UUID?
 
     // MARK: - AI generation
 
@@ -207,6 +205,7 @@ public final class SheetRootModel: Sendable {
         selectedEntryModel = nil
         selectedParentModel = nil
         inlineEditingEntryModel = nil
+        inlineEditingEntryId = nil
         pendingGenerationRequest = nil
         pendingGenerationParentModel = nil
         generatedBatch = nil
@@ -390,19 +389,22 @@ public final class SheetRootModel: Sendable {
     func toggleInlineEditing(_ entryModel: SheetModel, parent: SheetModel) {
         setSelected(entryModel, parent: parent)
 
-        if inlineEditingEntryModel === entryModel {
+        if inlineEditingEntryId == entryModel.id {
             entryModel.isEditing = false
+            inlineEditingEntryModel?.isEditing = false
             inlineEditingEntryModel = nil
+            inlineEditingEntryId = nil
             return
         }
 
         inlineEditingEntryModel?.isEditing = false
         entryModel.isEditing = true
         inlineEditingEntryModel = entryModel
+        inlineEditingEntryId = entryModel.id
     }
 
     func isInlineEditing(_ entryModel: SheetModel) -> Bool {
-        inlineEditingEntryModel === entryModel
+        inlineEditingEntryId == entryModel.id
     }
 
     func updateEditType(

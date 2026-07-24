@@ -248,4 +248,5 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.inlineEditingEntryId == nil)
         #expect(!entries[0].isEditing)
     }
+
 }

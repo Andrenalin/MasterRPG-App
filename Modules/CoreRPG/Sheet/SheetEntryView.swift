@@ -47,10 +47,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         )
 
         ZStack(alignment: .topLeading) {
-            if !usesGeneratedContextMenu && !entryModel.isReviewPlaceholder {
-                selectionBackgroundButton
-            }
-
             VStack(alignment: .leading) {
                 if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
                     SheetEntryReviewPlaceholderView(
@@ -75,6 +71,11 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
                 if let reviewModel = entryModel.entryReviewModel, reviewModel.hasDifferences {
                     SheetEntryReviewAlternativesView(reviewModel: reviewModel)
                 }
+            }
+        }
+        .background {
+            if !usesGeneratedContextMenu && !entryModel.isReviewPlaceholder {
+                selectionBackgroundButton
             }
         }
         .id(entryModel.source.entryId ?? entryModel.source.itemId)
@@ -339,7 +340,7 @@ private extension SheetEntryView {
     }
     
     @ViewBuilder var inlineEditorRow: some View {
-        if !isEditor && rootModel.isInlineEditing(entryModel) && entryModel.editType != .none,
+        if !isEditor && rootModel.inlineEditingEntryId == entryModel.id && entryModel.editType != .none,
            let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
             // Show inline editor when in edit mode (not available in editor mode)
             InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
@@ -481,9 +482,8 @@ private extension SheetEntryView {
     /// Fills regular and non-editor rows so a plain tap anywhere that isn't already an
     /// interactive element selects it. Editor previews intentionally omit this button
     /// because they expose explicit Take Over/Delete controls (and a context menu).
-    /// Placed behind the row content, so those existing controls keep first hit-test priority.
-    /// The explicit frame + contentShape guarantee the whole row is tappable, independent
-    /// of how the sibling row content happens to size the surrounding ZStack.
+    /// It is installed as a background, so it adopts the row's finite size without
+    /// contributing an infinite-height child to the containing ScrollView.
     var selectionBackgroundButton: some View {
         Button {
             performPrimaryAction()
@@ -492,7 +492,7 @@ private extension SheetEntryView {
         }
         .buttonStyle(.plain)
         .contentShape(.rect)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityLabel(primaryActionAccessibilityLabel)
         .accessibilityValue(generatedSelectionAccessibilityValue)
     }

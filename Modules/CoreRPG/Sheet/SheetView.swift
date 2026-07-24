@@ -83,8 +83,6 @@ private extension SheetView {
 
     var nameRow: some View {
         ZStack(alignment: .topLeading) {
-            selectionBackgroundButton
-
             HStack {
                 if rootModel.isAIModeActive && sheetModel.hasDetailContent {
                     Button(action: refineSheetWithAI) {
@@ -139,6 +137,9 @@ private extension SheetView {
                 }
             }
         }
+        .background {
+            selectionBackgroundButton
+        }
         .overlay {
             selectionBorder
                 .allowsHitTesting(false)
@@ -164,7 +165,7 @@ private extension SheetView {
         }
         .buttonStyle(.plain)
         .contentShape(.rect)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
     }
 
@@ -244,7 +245,7 @@ private extension SheetView {
                 // silently stop reaching it. simultaneousGesture is guaranteed to coexist
                 // with .draggable's gesture rather than compete with it. Generated editor
                 // rows deliberately omit tap handling and expose their actions by context menu.
-                .applyIf(!entry.isGeneratedAnswer && !entry.isReviewPlaceholder && entry.entryReviewModel == nil) {
+                .applyIf(isEditor && !entry.isGeneratedAnswer && !entry.isReviewPlaceholder && entry.entryReviewModel == nil) {
                     $0.simultaneousGesture(TapGesture().onEnded {
                         rootModel.setSelected(entry, parent: sheetModel)
                     })

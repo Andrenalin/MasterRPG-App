@@ -37,7 +37,6 @@ public struct SheetAIAssistantOverlayView: View {
     @State private var errorMessage: String?
     @State private var availability = SheetAIGenerationController().availability
     @FocusState private var isTextFieldFocused: Bool
-    @Namespace private var glassNamespace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let generationController = SheetAIGenerationController()
@@ -59,7 +58,6 @@ public struct SheetAIAssistantOverlayView: View {
             }
             }
         }
-        .animation(reduceMotion ? nil : .smooth, value: rootModel.isAIModeActive)
         .alert(
             Text("AI Generation Failed", bundle: .module),
             isPresented: isErrorPresented,
@@ -98,51 +96,16 @@ public struct SheetAIAssistantOverlayView: View {
 
     @ViewBuilder
     private var standardAssistant: some View {
-#if os(visionOS)
-        Group {
-            if rootModel.isAIModeActive {
-                SheetAIAssistantComposer(
-                    module: module,
-                    messageText: $messageText,
-                    availability: availability,
-                    isGenerating: rootModel.pendingGenerationRequest != nil,
-                    isTextFieldFocused: $isTextFieldFocused,
-                    glassNamespace: glassNamespace,
-                    submitAction: submitPrompt,
-                    closeAction: closeAIMode
-                )
-                .transition(.scale(scale: 0.95).combined(with: .opacity))
-            } else {
-                SheetAIAssistantOpenButton(
-                    module: module,
-                    glassNamespace: glassNamespace,
-                    action: activateAIMode
-                )
-                .transition(.scale(scale: 0.95).combined(with: .opacity))
-            }
-        }
-#else
-        GlassEffectContainer {
-            if rootModel.isAIModeActive {
-                SheetAIAssistantComposer(
-                    module: module,
-                    messageText: $messageText,
-                    availability: availability,
-                    isGenerating: rootModel.pendingGenerationRequest != nil,
-                    isTextFieldFocused: $isTextFieldFocused,
-                    glassNamespace: glassNamespace,
-                    submitAction: submitPrompt,
-                    closeAction: closeAIMode
-                )
-            } else {
-                SheetAIAssistantOpenButton(
-                    module: module,
-                    glassNamespace: glassNamespace,
-                    action: activateAIMode
-                )
-            }
-        }
-#endif
+        SheetAIAssistantStandardControl(
+            module: module,
+            messageText: $messageText,
+            availability: availability,
+            isExpanded: rootModel.isAIModeActive,
+            isGenerating: rootModel.pendingGenerationRequest != nil,
+            isTextFieldFocused: $isTextFieldFocused,
+            submitAction: submitPrompt,
+            toggleAction: toggleAIMode
+        )
     }
 
     private var isErrorPresented: Binding<Bool> {
@@ -167,6 +130,14 @@ public struct SheetAIAssistantOverlayView: View {
         withAnimation(reduceMotion ? nil : .smooth) {
             isTextFieldFocused = false
             rootModel.setAIModeActive(false)
+        }
+    }
+
+    private func toggleAIMode() {
+        if rootModel.isAIModeActive {
+            closeAIMode()
+        } else {
+            activateAIMode()
         }
     }
 
