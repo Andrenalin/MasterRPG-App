@@ -15,10 +15,24 @@ public struct LinkHighlightTextView: View {
         ZStack(alignment: .topLeading) {
             overlays(foreground: false)
 
-            plainText
-                .textRenderer(LinkHighlightTextRenderer(model: model, style: .yellow.opacity(0.5), elapsedTime: 2, totalDuration: 2))
-                .lineSpacing(4)
-                .transition(OnboardingTextTransition(model: model))
+            Group {
+                if accessibilityReduceMotion {
+                    plainText
+                } else {
+                    plainText
+                        .id(model.linkToggled)
+                        .transition(OnboardingTextTransition(model: model))
+                }
+            }
+            .textRenderer(
+                LinkHighlightTextRenderer(
+                    model: model,
+                    style: .yellow.opacity(0.5),
+                    elapsedTime: 1,
+                    totalDuration: 1
+                )
+            )
+            .lineSpacing(4)
 
             overlays(foreground: true)
         }
@@ -49,7 +63,7 @@ public struct LinkHighlightTextView: View {
     func overlayView(linkLocation: LinkHighLightLocation, foreground: Bool) -> some View {
         if foreground {
             Button {
-                withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 1)) {
+                withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.8)) {
                     model.handle(link: linkLocation.link)
                 }
             } label: {

@@ -131,7 +131,10 @@ struct GameRootViewer: View {
                 case .pdf:
                     root.pdfRoot.viewController.gamePdfView(root: root.pdfRoot)
                 case .photo:
-                    root.photoRoot.viewController.gameViewer(root: root.photoRoot)
+                    root.photoRoot.viewController.gameViewer(
+                        root: root.photoRoot,
+                        trailingViewportReservation: mapTrailingViewportReservation
+                    )
                 case .space:
                     root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
                 case .table:

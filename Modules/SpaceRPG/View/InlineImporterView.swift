@@ -5,12 +5,14 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum ImporterButtonType: String {
-    case file, scanner
+    case file, url, scanner
     
     var systemImage: String {
         switch self {
         case .file:
             return "folder"
+        case .url:
+            return "link.badge.plus"
         case .scanner:
             return "doc.viewfinder"
         }
@@ -20,6 +22,8 @@ enum ImporterButtonType: String {
         switch self {
         case .file:
             LocalizedStringResource("File", bundle: .module)
+        case .url:
+            LocalizedStringResource("URL", bundle: .module)
         case .scanner:
             LocalizedStringResource("3D Scanner", bundle: .module)
         }
@@ -29,6 +33,8 @@ enum ImporterButtonType: String {
         switch self {
         case .file:
             return 0.5
+        case .url:
+            return 0.55
         case .scanner:
             return 0.6
         }
@@ -41,16 +47,18 @@ enum ImporterButtonType: String {
         
         switch self {
         case .file:
-            return offset(atIndex: 2, layoutDown: layoutDown)
+            return offset(atIndex: 0, layoutDown: layoutDown)
+        case .url:
+            return offset(atIndex: 1, layoutDown: layoutDown)
         case .scanner:
-            return offset(atIndex: 3, layoutDown: layoutDown)
+            return offset(atIndex: 2, layoutDown: layoutDown)
         }
     }
     
     private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
         let radius: CGFloat = 120
         let startAngleDeg = -180.0
-        let step = 90.0 / Double(4 - 1)
+        let step = 90.0 / Double(3 - 1)
         
         let angleDeg = startAngleDeg + (Double(index) * step)
         let angleRad = angleDeg * .pi / 180
@@ -83,6 +91,7 @@ struct InlineImporterView: View, Equatable {
     @State private var isExpanded: Bool
     
     @State private var showImporter = false
+    @State private var showRemoteURLImporter = false
     @State private var showScanner = false
     
     var body: some View {
@@ -98,6 +107,7 @@ struct InlineImporterView: View, Equatable {
     var content: some View {
         ZStack {
             button(type: .file)
+            button(type: .url)
             button(type: .scanner)
             
             Button {
@@ -127,6 +137,11 @@ struct InlineImporterView: View, Equatable {
                 await root.editController.resetFile(url: url, itemId: itemId)
             }
         }
+        .remoteFileURLImporter(
+            isPresented: $showRemoteURLImporter,
+            editControllable: root.editController,
+            itemId: itemId
+        )
 #endif
 #if os(iOS) && !targetEnvironment(simulator)
         .sheet(isPresented: $showScanner) {
@@ -142,6 +157,8 @@ struct InlineImporterView: View, Equatable {
             switch type {
             case .file:
                 showImporter.toggle()
+            case .url:
+                showRemoteURLImporter.toggle()
             case .scanner:
                 showScanner.toggle()
             }

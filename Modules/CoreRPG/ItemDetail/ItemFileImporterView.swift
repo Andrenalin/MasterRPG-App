@@ -70,7 +70,7 @@ struct ItemFileImporterView: View {
     private var filePathDisplay: some View {
         if !isInitial {
             HStack {
-                Text(model.url?.path(percentEncoded: false) ?? 
+                Text(displayedFileURL ??
                      String(localized: "No file is set", bundle: .module).localizedString)
                     .font(.callout)
             }
@@ -79,6 +79,13 @@ struct ItemFileImporterView: View {
             .glassEffectAll(.regular.interactive())
 #endif
         }
+    }
+
+    private var displayedFileURL: String? {
+        guard let url = model.url else { return nil }
+        return model.fileUrl?.location == .url
+            ? url.absoluteString
+            : url.path(percentEncoded: false)
     }
 }
 

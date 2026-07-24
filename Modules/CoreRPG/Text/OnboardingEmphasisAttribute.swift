@@ -100,15 +100,18 @@ struct OnboardingTextTransition: Transition {
     let model: LinkHighlightTextModel
 
     func body(content: Content, phase: TransitionPhase) -> some View {
-        let duration = 2.0
+        let duration = 0.8
         let elapsedTime = phase.isIdentity ? duration : 0
-        let renderer = LinkHighlightTextRenderer(model: model, elapsedTime: elapsedTime,
+        let renderer = LinkHighlightTextRenderer(
+            model: model,
+            elapsedTime: elapsedTime,
+            elementDuration: 0.52,
             totalDuration: duration
         )
 
         content.transaction { transaction in
             if !transaction.disablesAnimations {
-                transaction.animation = .easeInOut(duration: 2)
+                transaction.animation = .easeInOut(duration: duration)
             }
         } body: { view in
             view.textRenderer(renderer)

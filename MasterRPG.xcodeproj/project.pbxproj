@@ -1694,7 +1694,6 @@
 		21C7327FE6A243BA5700B702 /* PdfRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PdfRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D28DA7BBED65D587DC2BE5D /* CharacterRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CharacterRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		593D0D2C2E31F2D000410232 /* AudioRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AudioRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		596787F8300F0F680094885F /* TraceMap.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = TraceMap.txt; sourceTree = "<group>"; };
 		5997CAF62B4D494C0021BACB /* ExternalPlayerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPlayerWindow.swift; sourceTree = "<group>"; };
 		599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GeneratorRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		599DCAD82E8E30C00056E46C /* GeneratorRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeneratorRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1813,6 +1812,7 @@
 		4E241AF31C198BEE2F3131A8 /* AdventureRPGSnapshotTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AdventureRPGSnapshotTests; sourceTree = "<group>"; };
 		593D0D2D2E31F2D000410232 /* AudioRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AudioRPG; sourceTree = "<group>"; };
 		599DCAD12E8E30C00056E46C /* GeneratorRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GeneratorRPG; sourceTree = "<group>"; };
+		59A1B2C3D4E5F60718293A4B /* MasterRPGUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MasterRPGUITests; sourceTree = "<group>"; };
 		59CE1E9D2E84F011009C6CB5 /* GameRPG */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = GameRPG; sourceTree = "<group>"; };
 		5CC95343DA2F80CF937E12E2 /* AudioRPGSnapshotTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AudioRPGSnapshotTests; sourceTree = "<group>"; };
 		75C2D9088D3326842DAD2B93 /* CoreRPGSnapshotTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CoreRPGSnapshotTests; sourceTree = "<group>"; };
@@ -2470,6 +2470,7 @@
 				F3F7C909FF7D082399D931A7 /* TableRPGSnapshotTests */,
 				8E8A41082FC200000049C6B5 /* WeatherRPGTests */,
 				4956784250F3935632E0B099 /* WeatherRPGSnapshotTests */,
+				59A1B2C3D4E5F60718293A4B /* MasterRPGUITests */,
 				7A5A7E1A2FC9000000000001 /* SnapshotTestSupport */,
 			);
 			path = Tests;
@@ -2499,7 +2500,6 @@
 		8EC4E46028DDA29600D0279F = {
 			isa = PBXGroup;
 			children = (
-				596787F8300F0F680094885F /* TraceMap.txt */,
 				8E19D4D32FC5418100B23172 /* .agents */,
 				8EEB00E32FC5411B004B78D8 /* AGENTS.md */,
 				8EEB00E42FC5411B004B78D8 /* CLAUDE.md */,
@@ -3066,6 +3066,9 @@
 			);
 			dependencies = (
 				8E00BC642990942C00C484A1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				59A1B2C3D4E5F60718293A4B /* MasterRPGUITests */,
 			);
 			name = MasterRPGUITests;
 			productName = MasterRPGUITests;

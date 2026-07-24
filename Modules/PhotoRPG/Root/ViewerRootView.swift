@@ -7,6 +7,7 @@ struct ViewerRootView: View {
     let model: PhotoModel
     let configuration: ViewerConfiguration
     var dismissAction: (() -> Void)? = nil
+    var trailingViewportReservation: CGFloat = 0
 
     @Environment(PhotoRootModel.self) private var root
     @Environment(\.appTheme) private var theme
@@ -60,16 +61,44 @@ struct ViewerRootView: View {
 private extension ViewerRootView {
     var contentView: some View {
         GeometryReader { geo in
+            let viewportSize = PhotoViewportReservation.effectiveContainerSize(
+                measuredSize: geo.size,
+                trailingReservation: trailingViewportReservation
+            )
             AsyncImageViewer(
                 model: model,
-                size: geo.size,
+                size: viewportSize,
                 toolBarModel: toolBarModel
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(width: viewportSize.width, height: viewportSize.height)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 #if !os(visionOS)
             .background(Color.black.gradient)
 #endif
         }
+    }
+}
+
+struct PhotoViewportReservation {
+    static func effectiveContainerSize(
+        measuredSize: CGSize,
+        trailingReservation: CGFloat
+    ) -> CGSize {
+        guard measuredSize.width.isFinite,
+              measuredSize.height.isFinite,
+              measuredSize.width > 0,
+              measuredSize.height > 0 else {
+            return .zero
+        }
+
+        let reservation = trailingReservation.isFinite
+            ? max(0, trailingReservation)
+            : 0
+        let minimumRecoverableWidth = min(44, measuredSize.width)
+        return CGSize(
+            width: max(minimumRecoverableWidth, measuredSize.width - reservation),
+            height: measuredSize.height
+        )
     }
 }
 

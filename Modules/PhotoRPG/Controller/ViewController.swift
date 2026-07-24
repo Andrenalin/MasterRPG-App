@@ -59,8 +59,15 @@ public extension ViewController {
 // MARK: - Viewer
 
 public extension ViewController {
-    @MainActor func gameViewer(root: PhotoRootModel) -> some View {
-        ViewerRootView(model: root.gameController.currentItem(), configuration: ViewerConfiguration(isGame: true))
+    @MainActor func gameViewer(
+        root: PhotoRootModel,
+        trailingViewportReservation: CGFloat = 0
+    ) -> some View {
+        ViewerRootView(
+            model: root.gameController.currentItem(),
+            configuration: ViewerConfiguration(isGame: true),
+            trailingViewportReservation: trailingViewportReservation
+        )
     }
 
     @MainActor func viewer(root: PhotoRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {

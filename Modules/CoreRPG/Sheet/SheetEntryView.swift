@@ -155,6 +155,7 @@ private extension SheetEntryView {
                     viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
                         .frame(height: 96)
                         .frame(maxWidth: .infinity, alignment: .center)
+                        .clipShape(.rect(cornerRadius: 16))
                 default:
                     EmptyView()
                 }
@@ -187,7 +188,11 @@ private extension SheetEntryView {
 
                 case .dice:
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                case .pdf, .photo, .space, .weather:
+                case .photo:
+                    viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        .frame(height: 256)
+                        .clipShape(.rect(cornerRadius: 16))
+                case .pdf, .space, .weather:
                     viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
                         .frame(height: 256)
 

@@ -124,4 +124,19 @@ public extension FileUrl {
     var fileExtension: String? {
         _url.pathExtension
     }
+
+    var isRemoteURL: Bool {
+        location == .url && rawUrl.isSupportedRemoteFileURL
+    }
+}
+
+public extension URL {
+    var isSupportedRemoteFileURL: Bool {
+        guard let scheme = scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              host() != nil else {
+            return false
+        }
+        return true
+    }
 }

@@ -7,34 +7,47 @@ import SwiftUI
 final class LinkHighLightLocations {
     var locations: [LinkHighLightLocation] = []
 
-    @ObservationIgnored private var updatedLocations: [LinkHighLightLocation] = []
-
-    func update(isStart: Bool) {
-        if isStart {
-            updatedLocations = []
-        } else {
-            // Fix #1: Only write (and fire @Observable notifications) when the
-            // highlight layout actually changed. Without this guard every text
-            // render cycle wrote locations — even when the values were identical —
-            // causing DetailEditorView to re-render in a tight loop.
-            guard updatedLocations != locations else { return }
-            locations = updatedLocations
-        }
-    }
-
-    func reset(link: LinkReplaceModel, runId: Int, location: CGRect) {
-        if let index = updatedLocations.firstIndex(where: { $0.link == link }) {
-            var linkLocation = updatedLocations[index]
-            if linkLocation.locations.first(where: { $0.runId == runId }) == nil {
-                linkLocation.locations.append(LinkLocationCoordinate(id: UUID(), runId: runId, rect: location))
-                updatedLocations[index] = linkLocation
+    func replace(with measurements: [LinkLayoutMeasurement]) {
+        var updatedLocations: [LinkHighLightLocation] = []
+        for measurement in measurements {
+            if let index = updatedLocations.firstIndex(where: { $0.link == measurement.link }) {
+                var linkLocation = updatedLocations[index]
+                if linkLocation.locations.first(where: { $0.runId == measurement.runId }) == nil {
+                    linkLocation.locations.append(
+                        LinkLocationCoordinate(
+                            id: UUID(),
+                            runId: measurement.runId,
+                            rect: measurement.rect
+                        )
+                    )
+                    updatedLocations[index] = linkLocation
+                }
+            } else {
+                updatedLocations.append(
+                    LinkHighLightLocation(
+                        id: measurement.link.markDown,
+                        link: measurement.link,
+                        locations: [
+                            LinkLocationCoordinate(
+                                id: UUID(),
+                                runId: measurement.runId,
+                                rect: measurement.rect
+                            )
+                        ]
+                    )
+                )
             }
-        } else {
-            let linkLocation = LinkHighLightLocation(id: link.markDown, link: link, locations: [LinkLocationCoordinate(id: UUID(), runId: runId, rect: location)])
-
-            updatedLocations.append(linkLocation)
         }
+
+        guard updatedLocations != locations else { return }
+        locations = updatedLocations
     }
+}
+
+struct LinkLayoutMeasurement: Sendable {
+    let link: LinkReplaceModel
+    let runId: Int
+    let rect: CGRect
 }
 
 struct LinkHighLightLocation: Identifiable, Equatable, Hashable {
@@ -65,10 +78,22 @@ struct LinkHighLightLocation: Identifiable, Equatable, Hashable {
     }
 }
 
-struct LinkLocationCoordinate: Identifiable, Hashable, Equatable {
+struct LinkLocationCoordinate: Identifiable, Hashable {
     let id: UUID
     let runId: Int
     var rect: CGRect
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.runId == rhs.runId && lhs.rect == rhs.rect
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(runId)
+        hasher.combine(rect.origin.x)
+        hasher.combine(rect.origin.y)
+        hasher.combine(rect.size.width)
+        hasher.combine(rect.size.height)
+    }
 }
 
 enum LinkExpandHighLightValues: String {

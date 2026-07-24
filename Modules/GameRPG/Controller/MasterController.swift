@@ -1349,8 +1349,14 @@ extension MasterController {
             }
             let stillMissing = Set(root.audioRoot.audioGameControllable.missingPlayers(for: id))
                 .intersection(newPlayers)
-            for playerId in stillMissing.sorted() {
-                await send(type: .store, subtype: .show, updated: audioData, playerId: playerId)
+            if !stillMissing.isEmpty {
+                // Audio repairs use GroupSessionJournal, whose attachment is
+                // visible to the whole SharePlay session. Publishing the same
+                // package once per missing logical player serializes duplicate
+                // uploads and makes playback appear to hang. An untargeted
+                // store is idempotent and also keeps Bonjour/local peers in
+                // sync with a single transfer.
+                await send(type: .store, subtype: .show, updated: audioData)
             }
         } catch {
             gameModel.audioTransferPlayers[id]?.subtract(newPlayers)

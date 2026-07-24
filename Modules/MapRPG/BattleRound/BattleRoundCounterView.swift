@@ -35,3 +35,15 @@ public struct BattleRoundCounterView: View {
         return model.attacker(for: entry)?.name
     }
 }
+
+#Preview("Compact Counter") {
+    let model = BattleRoundPreviewData.model()
+    BattleRoundCounterView(model: model, style: .compact)
+        .padding()
+}
+
+#Preview("Round Announcement") {
+    let model = BattleRoundPreviewData.model()
+    BattleRoundCounterView(model: model, style: .announcement)
+        .padding()
+}

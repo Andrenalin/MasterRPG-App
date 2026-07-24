@@ -92,6 +92,7 @@ private extension ExtendedTabBar {
         } label: {
             GridLabelView(value: route.module, color: theme.tint(for: route.module))
         }
+        .accessibilityIdentifier("module.editor.\(route.module.token)")
         .modifier(ZoomDestinationViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
     }
 

@@ -68,7 +68,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) var dismiss
 
     @State private var sheetRootModel: SheetRootModel
@@ -86,9 +85,8 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             }
 #if os(macOS) || os(visionOS)
             .padding(.top)
-#else
-            .background(colorScheme == .dark ? Color.black.ignoresSafeArea() : Color.white.ignoresSafeArea())
 #endif
+            .themedSurface()
 #if os(visionOS)
             .glassBackgroundEffect()
 #endif

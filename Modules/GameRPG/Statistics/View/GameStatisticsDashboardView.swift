@@ -2,27 +2,275 @@
 
 import SwiftUI
 
-#if os(tvOS)
-private enum GameStatisticsDashboardDestination: Hashable {
-    case customize
-}
-#endif
-
 struct GameStatisticsDashboardView: View {
     @Bindable var model: GameStatisticsModel
     @Bindable var gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
-#if !os(tvOS)
-    @State private var isCustomizationPresented = false
-#endif
+    let showsDismissButton: Bool
+
+    init(
+        model: GameStatisticsModel,
+        gameCenterModel: GameCenterModel,
+        gameCenterController: GameCenterController,
+        showsDismissButton: Bool = false
+    ) {
+        self.model = model
+        self.gameCenterModel = gameCenterModel
+        self.gameCenterController = gameCenterController
+        self.showsDismissButton = showsDismissButton
+    }
+
     private let previewSummary = GameStatisticsPreviewController().summary(
         referenceDate: GamePreviewData.referenceDate,
         calendar: GamePreviewData.calendar
     )
 
     var body: some View {
+#if os(iOS)
+        GameStatisticsIOSDashboardView(
+            model: model,
+            gameCenterModel: gameCenterModel,
+            gameCenterController: gameCenterController,
+            previewSummary: previewSummary,
+            showsDismissButton: showsDismissButton
+        )
+#elseif os(tvOS)
+        GameStatisticsTVDashboardView(
+            model: model,
+            gameCenterModel: gameCenterModel,
+            gameCenterController: gameCenterController,
+            previewSummary: previewSummary
+        )
+#else
+        GameStatisticsPresentedCustomizationDashboardView(
+            model: model,
+            gameCenterModel: gameCenterModel,
+            gameCenterController: gameCenterController,
+            previewSummary: previewSummary
+        )
+#endif
+    }
+}
+
+#if os(iOS)
+private enum GameStatisticsDashboardPage {
+    case dashboard
+    case customization
+}
+
+private struct GameStatisticsIOSDashboardView: View {
+    @Bindable var model: GameStatisticsModel
+    @Bindable var gameCenterModel: GameCenterModel
+    let gameCenterController: GameCenterController
+    let previewSummary: GameStatisticsSummary
+    let showsDismissButton: Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var page: GameStatisticsDashboardPage = .dashboard
+
+    var body: some View {
+        Group {
+            switch page {
+            case .dashboard:
+                GameStatisticsDashboardContent(
+                    model: model,
+                    gameCenterModel: gameCenterModel,
+                    gameCenterController: gameCenterController,
+                    previewSummary: previewSummary,
+                    showsInlineTitle: true
+                )
+            case .customization:
+                GameStatisticsCustomizationView(model: model)
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    page = page == .dashboard ? .customization : .dashboard
+                } label: {
+                    Label {
+                        if page == .dashboard {
+                            Text("Customize", bundle: .module)
+                        } else {
+                            Text("Dashboard", bundle: .module)
+                        }
+                    } icon: {
+                        if page == .dashboard {
+                            Image(systemName: "slider.horizontal.3")
+                        } else {
+                            Image(systemName: "chart.bar.xaxis")
+                        }
+                    }
+                }
+            }
+
+            ToolbarItem(placement: .confirmationAction) {
+                if showsDismissButton {
+                    Button("Done", systemImage: "checkmark") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .modifier(
+            GameStatisticsDashboardLifecycleModifier(
+                model: model,
+                gameCenterModel: gameCenterModel,
+                gameCenterController: gameCenterController
+            )
+        )
+    }
+}
+#endif
+
+#if os(tvOS)
+private enum GameStatisticsDashboardDestination: Hashable {
+    case customize
+}
+
+private struct GameStatisticsTVDashboardView: View {
+    @Bindable var model: GameStatisticsModel
+    @Bindable var gameCenterModel: GameCenterModel
+    let gameCenterController: GameCenterController
+    let previewSummary: GameStatisticsSummary
+
+    var body: some View {
+        GameStatisticsDashboardContent(
+            model: model,
+            gameCenterModel: gameCenterModel,
+            gameCenterController: gameCenterController,
+            previewSummary: previewSummary,
+            showsInlineTitle: false
+        )
+        .navigationTitle(Text("Game Statistics", bundle: .module))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink(value: GameStatisticsDashboardDestination.customize) {
+                    Label {
+                        Text("Customize", bundle: .module)
+                    } icon: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                }
+            }
+        }
+        .navigationDestination(for: GameStatisticsDashboardDestination.self) { destination in
+            switch destination {
+            case .customize:
+                GameStatisticsCustomizationView(model: model)
+            }
+        }
+        .modifier(
+            GameStatisticsDashboardLifecycleModifier(
+                model: model,
+                gameCenterModel: gameCenterModel,
+                gameCenterController: gameCenterController
+            )
+        )
+    }
+}
+#endif
+
+#if os(macOS) || os(visionOS)
+private struct GameStatisticsPresentedCustomizationDashboardView: View {
+    @Bindable var model: GameStatisticsModel
+    @Bindable var gameCenterModel: GameCenterModel
+    let gameCenterController: GameCenterController
+    let previewSummary: GameStatisticsSummary
+
+    @State private var isCustomizationPresented = false
+
+    var body: some View {
+        GameStatisticsDashboardContent(
+            model: model,
+            gameCenterModel: gameCenterModel,
+            gameCenterController: gameCenterController,
+            previewSummary: previewSummary,
+            showsInlineTitle: false
+        )
+        .navigationTitle(Text("Game Statistics", bundle: .module))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isCustomizationPresented.toggle()
+                } label: {
+                    Label {
+                        Text("Customize", bundle: .module)
+                    } icon: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                }
+            }
+        }
+#if os(macOS)
+        .inspector(isPresented: $isCustomizationPresented) {
+            GameStatisticsCustomizationInspectorView(model: model)
+        }
+#else
+        .sheet(isPresented: $isCustomizationPresented) {
+            GameStatisticsCustomizationSheetView(model: model)
+        }
+#endif
+        .modifier(
+            GameStatisticsDashboardLifecycleModifier(
+                model: model,
+                gameCenterModel: gameCenterModel,
+                gameCenterController: gameCenterController
+            )
+        )
+    }
+}
+#endif
+
+private struct GameStatisticsDashboardLifecycleModifier: ViewModifier {
+    @Bindable var model: GameStatisticsModel
+    @Bindable var gameCenterModel: GameCenterModel
+    let gameCenterController: GameCenterController
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(
+                item: Binding(
+                    get: { gameCenterModel.authenticationRequest },
+                    set: { request in
+                        if request == nil {
+                            gameCenterModel.dismissAuthentication()
+                        }
+                    }
+                )
+            ) { request in
+                GameCenterAuthenticationView(request: request)
+            }
+            .onAppear {
+                gameCenterController.setAccessPoint(active: true)
+            }
+            .onDisappear {
+                gameCenterController.setAccessPoint(active: false)
+            }
+    }
+}
+
+private struct GameStatisticsDashboardContent: View {
+    @Bindable var model: GameStatisticsModel
+    @Bindable var gameCenterModel: GameCenterModel
+    let gameCenterController: GameCenterController
+    let previewSummary: GameStatisticsSummary
+    let showsInlineTitle: Bool
+
+    var body: some View {
         ScrollView {
             LazyVStack {
+                if showsInlineTitle {
+                    Text("Game Statistics", bundle: .module)
+                        .font(.largeTitle)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 GameCenterStatusView(model: gameCenterModel, controller: gameCenterController)
 
                 if let errorMessage = model.errorMessage {
@@ -63,73 +311,15 @@ struct GameStatisticsDashboardView: View {
                     )
                 }
             }
-            .frame(maxWidth: 1_200)
             .frame(maxWidth: .infinity)
+            .frame(maxWidth: 1_200)
             .padding()
-        }
-        .navigationTitle(Text("Game Statistics", bundle: .module))
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-#if os(tvOS)
-                NavigationLink(value: GameStatisticsDashboardDestination.customize) {
-                    Label {
-                        Text("Customize", bundle: .module)
-                    } icon: {
-                        Image(systemName: "slider.horizontal.3")
-                    }
-                }
-#else
-                Button {
-                    isCustomizationPresented.toggle()
-                } label: {
-                    Label {
-                        Text("Customize", bundle: .module)
-                    } icon: {
-                        Image(systemName: "slider.horizontal.3")
-                    }
-                }
-#endif
-            }
-        }
-#if os(iOS) || os(macOS)
-        .inspector(isPresented: $isCustomizationPresented) {
-            GameStatisticsCustomizationInspectorView(model: model)
-        }
-#elseif os(visionOS)
-        .sheet(isPresented: $isCustomizationPresented) {
-            GameStatisticsCustomizationSheetView(model: model)
-        }
-#elseif os(tvOS)
-        .navigationDestination(for: GameStatisticsDashboardDestination.self) { destination in
-            switch destination {
-            case .customize:
-                GameStatisticsCustomizationView(model: model)
-            }
-        }
-#endif
-        .sheet(
-            item: Binding(
-                get: { gameCenterModel.authenticationRequest },
-                set: { request in
-                    if request == nil {
-                        gameCenterModel.dismissAuthentication()
-                    }
-                }
-            )
-        ) { request in
-            GameCenterAuthenticationView(request: request)
         }
         .refreshable {
             await model.reload()
         }
         .task(id: model.configuration) {
             await model.reload()
-        }
-        .onAppear {
-            gameCenterController.setAccessPoint(active: true)
-        }
-        .onDisappear {
-            gameCenterController.setAccessPoint(active: false)
         }
     }
 }
@@ -140,7 +330,8 @@ struct GameStatisticsDashboardView: View {
         GameStatisticsDashboardView(
             model: .previewFixture(),
             gameCenterModel: gameCenterModel,
-            gameCenterController: GameCenterController(model: gameCenterModel)
+            gameCenterController: GameCenterController(model: gameCenterModel),
+            showsDismissButton: true
         )
     }
 }

@@ -22,6 +22,7 @@ struct ModuleTabLabel: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(color ?? theme.tint(for: route.module))
         }
+        .accessibilityIdentifier("module.tab.\(route.module.token)")
     }
 }
 

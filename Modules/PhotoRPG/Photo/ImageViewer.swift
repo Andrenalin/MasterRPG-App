@@ -146,6 +146,14 @@ private extension ImageViewer {
                 // A 180-degree rotation (or a 90-degree rotation of square content) keeps the
                 // same bounding size, but ImageViewer has always reset zoom after rotation.
                 viewportModel.reset()
+            } else if let previousConfiguration,
+                      previousConfiguration.id == configuration.id,
+                      previousConfiguration.imageSize == configuration.imageSize,
+                      previousConfiguration.degrees == configuration.degrees {
+                // Sidebar changes resize the usable photo viewport without replacing the
+                // full-window game surface. Preserve the same logical center and zoom just
+                // like the map viewport does when its trailing reservation changes.
+                viewportModel.resize(to: geometry.viewportConfiguration)
             } else {
                 viewportModel.configure(geometry.viewportConfiguration)
             }

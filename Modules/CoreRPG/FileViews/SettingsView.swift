@@ -22,6 +22,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
     let importContentView: ImportContent
     
     @State private var showResetAlert = false
+    @State private var isThemePickerPresented = false
     
     public var body: some View {
         List {
@@ -29,7 +30,7 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
             ColorSchemeSettingsView()
 #endif
 
-            ThemeSettingsView()
+            ThemeSettingsView(isPickerPresented: $isThemePickerPresented)
                         
             importContentView
                         
@@ -69,6 +70,9 @@ public struct SettingsView<Store, ImportContent: View>: View where Store: StoreM
         }
         .themedListSurface()
         .navigationTitle(Text("Settings", bundle: .module))
+        .sheet(isPresented: $isThemePickerPresented) {
+            ThemePickerView()
+        }
     }
 }
 

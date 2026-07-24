@@ -13,12 +13,14 @@ import ImagePlayground
 
 
 enum PhotoImporterButtonType: String {
-    case file, library, camera, playground
+    case file, url, library, camera, playground
     
     var systemImage: String {
         switch self {
         case .file:
             return "folder"
+        case .url:
+            return "link.badge.plus"
         case .library:
             return "photo.stack"
         case .camera:
@@ -32,6 +34,8 @@ enum PhotoImporterButtonType: String {
         switch self {
         case .file:
             LocalizedStringResource("File", bundle: .module)
+        case .url:
+            LocalizedStringResource("URL", bundle: .module)
         case .library:
             LocalizedStringResource("Photo Library", bundle: .module)
         case .camera:
@@ -45,6 +49,8 @@ enum PhotoImporterButtonType: String {
         switch self {
         case .file:
             return 0.3
+        case .url:
+            return 0.35
         case .library:
             return 0.4
         case .camera:
@@ -62,19 +68,21 @@ enum PhotoImporterButtonType: String {
         switch self {
         case .file:
             return offset(atIndex: 0, layoutDown: layoutDown)
-        case .library:
+        case .url:
             return offset(atIndex: 1, layoutDown: layoutDown)
-        case .camera:
+        case .library:
             return offset(atIndex: 2, layoutDown: layoutDown)
-        case .playground:
+        case .camera:
             return offset(atIndex: 3, layoutDown: layoutDown)
+        case .playground:
+            return offset(atIndex: 4, layoutDown: layoutDown)
         }
     }
     
     private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
         let radius: CGFloat = 120
         let startAngleDeg = -180.0
-        let step = 90.0 / Double(4 - 1)
+        let step = 90.0 / Double(5 - 1)
         
         let angleDeg = startAngleDeg + (Double(index) * step)
         let angleRad = angleDeg * .pi / 180
@@ -111,6 +119,7 @@ struct InlineImporterView: View, Equatable {
     @State private var isExpanded: Bool
     
     @State private var showImporter = false
+    @State private var showRemoteURLImporter = false
     @State private var showCamera = false
     @State private var showLibrary = false
     @State private var showImagePlayground = false
@@ -128,6 +137,7 @@ struct InlineImporterView: View, Equatable {
     var content: some View {
         ZStack {
             button(type: .file)
+            button(type: .url)
             button(type: .library)
             button(type: .camera)
             button(type: .playground)
@@ -154,6 +164,11 @@ struct InlineImporterView: View, Equatable {
                 await root.editController.resetFile(url: url, itemId: itemId)
             }
         }
+        .remoteFileURLImporter(
+            isPresented: $showRemoteURLImporter,
+            editControllable: root.editController,
+            itemId: itemId
+        )
         .imagePlaygroundSheet(
             isPresented: $showImagePlayground,
             concept: String(localized: "Create a portrait of a fantasy character", bundle: .module)
@@ -193,6 +208,8 @@ struct InlineImporterView: View, Equatable {
             switch type {
             case .file:
                 showImporter.toggle()
+            case .url:
+                showRemoteURLImporter.toggle()
             case .library:
                 showLibrary.toggle()
             case .camera:
