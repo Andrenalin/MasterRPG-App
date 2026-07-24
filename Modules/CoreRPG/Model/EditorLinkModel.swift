@@ -153,6 +153,7 @@ public final class EditorLinkModel {
         guard let rootController = rootManager?.itemRootController(for: module) else { return }
 
         let selection = selectionModel(for: module)
+        let addedLink = !selection.selection.isEmpty
         for itemSelection in selection.selection {
             let item = rootController.itemControllable.itemOrEmpty(for: itemSelection.itemId)
             let entryId = itemSelection.entryId
@@ -160,5 +161,10 @@ public final class EditorLinkModel {
             editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
         }
         selection.resetSelection(itemId: nil, entryId: nil)
+        if addedLink {
+            Task {
+                await MasterRPGTips.donateContentLinked()
+            }
+        }
     }
 }

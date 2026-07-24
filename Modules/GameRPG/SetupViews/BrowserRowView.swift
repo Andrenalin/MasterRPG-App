@@ -15,6 +15,7 @@ struct BrowserRowView: View {
             Button {
                 Task {
                     await root.startGame(to: model, mode: gameType)
+                    await MasterRPGTips.donateGameStartedOrJoined()
                 }
             } label: {
                 Label {

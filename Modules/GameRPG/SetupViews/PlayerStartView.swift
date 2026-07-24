@@ -3,6 +3,7 @@
 import CoreRPG
 import CharacterRPG
 import SwiftUI
+import TipKit
 
 enum PlayerJoinTransport: Hashable, Sendable {
     case sharePlay
@@ -55,6 +56,7 @@ struct PlayerStartView: View {
 
                         Task {
                             await root.startGame(to: nil, mode: .player)
+                            await MasterRPGTips.donateGameStartedOrJoined()
                         }
                     } label: {
                         Label {
@@ -77,6 +79,7 @@ struct PlayerStartView: View {
                         value: startSharePlayAnimation
                     )
                     .onAppear { startSharePlayAnimation = true }
+                    .popoverTip(MasterRPGTips.startOrJoinGame)
 #if os(tvOS)
                     .padding(.top, 24)
 #endif

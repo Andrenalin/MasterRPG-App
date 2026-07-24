@@ -3,6 +3,7 @@
 import CoreRPG
 import SwiftUI
 import AdventureRPG
+import TipKit
 
 struct MasterStartView: View {
     let root: GameRoot
@@ -38,6 +39,7 @@ struct MasterStartView: View {
             .onChange(of: sharePlayStore.canActivateSharePlay, initial: true) {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
+            .popoverTip(MasterRPGTips.startOrJoinGame)
             
 #if !os(tvOS)
             SharePlayButton("Play RPG Online", activity: RPGActivity())
@@ -75,6 +77,7 @@ struct MasterStartView: View {
     func startGame() async {
         await root.startMaster()
         appGameStateModel.gameModus = .master
+        await MasterRPGTips.donateGameStartedOrJoined()
     }
 }
 

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import TipKit
 
 #if !os(tvOS)
 struct AddCollectionButton: View {
@@ -12,6 +13,7 @@ struct AddCollectionButton: View {
             Task {
                 guard let item = await root.editControllable.addNew(type: .collection) else { return }
                 routeActions.routePage(root.configurable.module, item.id, nil)
+                await MasterRPGTips.donateContentOrganized()
             }
         } label: {
             Label {
@@ -22,6 +24,7 @@ struct AddCollectionButton: View {
         }
         .keyboardShortcut("n", modifiers: [.command, .shift, .option])
         .disabled(root.folderListControllable.listDisplayModel.isListMode)
+        .popoverTip(MasterRPGTips.organizeContent)
     }
 }
 

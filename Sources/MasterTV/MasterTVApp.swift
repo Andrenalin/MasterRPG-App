@@ -10,6 +10,10 @@ struct MasterTVApp: App {
 
     @UIApplicationDelegateAdaptor private var appDelegate: IosAppDelegate
 
+    init() {
+        MasterRPGTips.configure()
+    }
+
     var body: some Scene {
         WindowGroup("Game", id: SceneId.game.rawValue) {
             appModel.appNavigationModel.initialRouteType

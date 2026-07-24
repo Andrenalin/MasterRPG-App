@@ -66,6 +66,22 @@ public struct SettingsView: View {
             } header: {
                 Text("iCloud Sync Status", bundle: .module)
             }
+
+            SectionGroupEditorView {
+                Button {
+                    MasterRPGTips.reset()
+                } label: {
+                    Label {
+                        Text("Show Tips Again", bundle: .module)
+                    } icon: {
+                        Image(systemName: "lightbulb")
+                    }
+                }
+            } header: {
+                Text("Tips", bundle: .module)
+            } footer: {
+                Text("Restores in-app guidance for creating, organizing, linking, and playing.", bundle: .module)
+            }
             
             //            SectionGroupEditorView {
             //                InAppView(inAppController: store.inAppController)
