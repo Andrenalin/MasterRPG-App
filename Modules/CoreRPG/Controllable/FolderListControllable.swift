@@ -163,7 +163,10 @@ public extension FolderListControllable {
                   let newSelected = listModel.list.first(where: { $0.source.itemId == itemId }) {
             listModel.listSelection = Set(arrayLiteral: newSelected.id)
             listModel.selected = newSelected.id
-            listModel.scrollId = newSelected.id
+            listModel.scrollId = listModel.restoredScrollTarget(
+                selection: newSelected.id,
+                prioritizesSelection: !searchModel.searchText.isEmpty
+            )
         }
     }
     
@@ -510,6 +513,37 @@ extension FolderListControllable {
         openFolder(itemId: itemId)
     }
 
+    /// Toggles the selected folder without changing list-column focus.
+    /// Returns whether the selected row supported the action.
+    @discardableResult
+    func toggleSelectedFolder() -> Bool {
+        toggleFolder(itemId: listModel.selectedItemId)
+    }
+
+    /// Toggles a visible folder row. Both an already-open folder and a closed
+    /// folder with loadable/cached children support the action.
+    @discardableResult
+    func toggleFolder(itemId: UUID?) -> Bool {
+        guard let item = folderItem(itemId: itemId),
+              canToggleFolder(itemId: itemId) else { return false }
+        toggleFolder(item: item)
+        listModel.scrollId = item.id
+        listModel.recordVisibleScrollPosition(item.id)
+        return true
+    }
+
+    func canToggleFolder(itemId: UUID?) -> Bool {
+        guard let item = folderItem(itemId: itemId) else { return false }
+        return item.isOpen
+            || item.canOpen
+            || item.wasExplicitlyClosed
+            || !item.children.isEmpty
+    }
+
+    func isFolderOpen(itemId: UUID?) -> Bool {
+        folderItem(itemId: itemId)?.isOpen ?? false
+    }
+
     /// Closes the nearest open parent folder of `itemId` and selects that parent folder.
     func closeParentFolder(of itemId: UUID) {
         guard let item = listModel.list.first(where: { $0.source.itemId == itemId }) else { return }
@@ -541,5 +575,12 @@ extension FolderListControllable {
               let item = listModel.list.first(where: { $0.source.itemId == itemId }),
               let parentId = item.parentId, let parentItem = listModel.cacheListModels[parentId] else { return false }
         return parentItem.isOpen
+    }
+
+    private func folderItem(itemId: UUID?) -> FolderListItemModel? {
+        guard let itemId else { return nil }
+        return listModel.list.first {
+            $0.id == itemId || $0.source.itemId == itemId
+        }
     }
 }

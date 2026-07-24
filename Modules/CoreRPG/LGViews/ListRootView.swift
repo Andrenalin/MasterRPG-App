@@ -15,6 +15,9 @@ struct ListRootView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.switchToDetailColumn) private var switchToDetailColumn
     @Environment(\.navigationColumnFocus) private var navigationColumnFocus
+    @Environment(ScenesManager.self) private var scenesManager
+
+    @State private var userScrollIsActive = false
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -46,6 +49,24 @@ struct ListRootView: View {
                 }
 #endif
 #if !os(tvOS)
+                .onKeyPress(.space, phases: .down) { keyPress in
+                    guard keyPress.modifiers.isEmpty,
+                          listController.canToggleFolder(itemId: listModel.selectedItemId) else {
+                        return .ignored
+                    }
+                    withAnimation(accessibilityReduceMotion ? nil : .default) {
+                        _ = listController.toggleSelectedFolder()
+                    }
+                    return .handled
+                }
+                .onKeyPress(.return, phases: .down) { keyPress in
+                    guard keyPress.modifiers.isEmpty,
+                          ItemPrimaryAction.canPerform(root: root) else {
+                        return .ignored
+                    }
+                    ItemPrimaryAction.perform(root: root, scenesManager: scenesManager)
+                    return .handled
+                }
                 .onKeyPress(.leftArrow, phases: .down) { _ in
                     navigationColumnFocus?.wrappedValue = .tabs
                     return .handled
@@ -177,6 +198,7 @@ private extension ListRootView {
         }
         .scrollPosition(id: $listModel.scrollId, anchor: .center)
         .navigationColumnFocused(navigationColumnFocus, equals: .list)
+        .focusedValue(\.moduleListIsFocused, true)
         .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
         .themedListSurface()
         .onChange(of: navigationColumnFocus?.wrappedValue) { _, newValue in
@@ -184,13 +206,27 @@ private extension ListRootView {
             focusPreferredListRow()
         }
 #if os(macOS)
-        .onChange(of: listModel.scrollId) { _, newValue in
-            if let newValue {
-                listModel.lastNonNilScrollId = newValue
+        .onScrollPhaseChange { _, newPhase in
+            switch newPhase {
+            case .tracking, .interacting, .decelerating:
+                userScrollIsActive = true
+            case .idle:
+                if userScrollIsActive {
+                    listModel.recordVisibleScrollPosition(listModel.scrollId)
+                }
+                userScrollIsActive = false
+            case .animating:
+                break
             }
         }
         .onAppear {
             restoreMacScrollPosition()
+        }
+        .onDisappear {
+            if userScrollIsActive {
+                listModel.recordVisibleScrollPosition(listModel.scrollId)
+            }
+            userScrollIsActive = false
         }
         .onChange(of: listModel.list.map(\.id)) {
             restoreMacScrollPosition()
@@ -200,10 +236,9 @@ private extension ListRootView {
 
 #if os(macOS)
     func restoreMacScrollPosition() {
-        let target = listModel.lastNonNilScrollId ?? listModel.selected
-        guard let target, listModel.list.contains(where: { $0.id == target }) else { return }
-        listModel.lastNonNilScrollId = target
-        listModel.scrollId = target
+        listModel.scrollId = listModel.restoredScrollTarget(
+            selection: listModel.selected
+        )
     }
 #endif
 
@@ -215,6 +250,7 @@ private extension ListRootView {
         listModel.selected = target
         listModel.listSelection = [target]
         listModel.scrollId = target
+        listModel.recordVisibleScrollPosition(target)
     }
     
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.

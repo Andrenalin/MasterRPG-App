@@ -18,6 +18,7 @@ public struct ModuleCommands: Commands {
 
     @FocusedBinding(\.selectedModule) private var selectedModule: NetworkModules?
     @FocusedValue(\.listDisplayModel) private var listDisplayModel: ListDisplayModel?
+    @FocusedValue(\.moduleListIsFocused) private var moduleListIsFocused: Bool?
     @FocusedValue(\.selectedSheetEntry) private var selectedSheetEntry: SelectedSheetEntry?
 
     public var body: some Commands {
@@ -36,7 +37,11 @@ public struct ModuleCommands: Commands {
         }
         CommandGroup(before: .textEditing) {
             if selectedModule == root.configurable.module {
-                SpaceActionButton(root: root, scenesManager: scenesManager)
+                SpaceActionButton(
+                    root: root,
+                    scenesManager: scenesManager,
+                    isListFocused: moduleListIsFocused == true
+                )
                 EditItemButton(root: root)
                 DuplicateItemButton(root: root)
                 ExportItemButton(root: root)
@@ -70,7 +75,10 @@ public struct ModuleCommands: Commands {
             if selectedModule == root.configurable.module, let listDisplayModel {
                 MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: true)
                 Divider()
-                OpenFolderButton(root: root)
+                OpenFolderButton(
+                    root: root,
+                    isListFocused: moduleListIsFocused == true
+                )
                 CloseFolderButton(root: root)
                 Divider()
             }

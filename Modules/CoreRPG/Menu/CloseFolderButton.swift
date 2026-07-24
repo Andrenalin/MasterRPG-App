@@ -16,7 +16,6 @@ struct CloseFolderButton: View {
                 Image(systemName: "chevron.up")
             }
         }
-        .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
         .disabled(!root.folderListControllable.hasParentFolder(itemId: root.currentSelectedItemId))
     }
 }

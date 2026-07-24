@@ -15,6 +15,7 @@ public struct SelectedSheetEntry {
 public extension FocusedValues {
     @Entry var selectedModule: Binding<NetworkModules>?
     @Entry var listDisplayModel: ListDisplayModel?
+    @Entry var moduleListIsFocused: Bool?
     @Entry var selectedSheetEntry: SelectedSheetEntry?
 }
 

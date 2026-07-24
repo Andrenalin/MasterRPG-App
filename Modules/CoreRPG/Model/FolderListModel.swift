@@ -62,6 +62,35 @@ public final class FolderListModel {
     public var subFolderRoute: UUID?
 }
 
+// MARK: - Scroll Restoration
+
+extension FolderListModel {
+    func recordVisibleScrollPosition(_ id: UUID?) {
+        guard let id, list.contains(where: { $0.id == id }) else { return }
+        lastNonNilScrollId = id
+    }
+
+    func restoredScrollTarget(
+        selection: UUID?,
+        prioritizesSelection: Bool = false
+    ) -> UUID? {
+        if prioritizesSelection,
+           let selection,
+           list.contains(where: { $0.id == selection }) {
+            return selection
+        }
+        if let lastNonNilScrollId,
+           list.contains(where: { $0.id == lastNonNilScrollId }) {
+            return lastNonNilScrollId
+        }
+        if let selection,
+           list.contains(where: { $0.id == selection }) {
+            return selection
+        }
+        return nil
+    }
+}
+
 // MARK: - Items
 
 extension FolderListModel {

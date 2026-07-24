@@ -18,6 +18,7 @@ struct ListRootContextMenu: View {
     let listController: (any FolderListControllable)?
 
     @Environment(\.navigator) private var navigator
+    @Environment(ScenesManager.self) private var scenesManager
     
     var body: some View {
         let parent = self.parent
@@ -71,7 +72,11 @@ private extension ListRootContextMenu {
     
     var spaceActionView: some View {
         Button {
-            root.navigationModel.triggerSpaceAction = true
+            ItemPrimaryAction.perform(
+                root: root,
+                scenesManager: scenesManager,
+                itemId: currentSelected
+            )
         } label: {
             let isCustom = root.viewControllable.hasCustomSpaceAction
             Label {
@@ -81,8 +86,9 @@ private extension ListRootContextMenu {
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut(.return, modifiers: [.command, .shift])
+        .keyboardShortcut(.return, modifiers: [])
         #endif
+        .disabled(!ItemPrimaryAction.canPerform(root: root, itemId: currentSelected))
     }
 
     var editItemView: some View {
@@ -102,18 +108,29 @@ private extension ListRootContextMenu {
 
     var openFolderView: some View {
         Button {
-            withAnimation { listController?.openFolder(itemId: currentSelected ?? UUID()) }
+            withAnimation {
+                _ = listController?.toggleFolder(itemId: currentSelected)
+            }
         } label: {
             Label {
-                Text("Open \(title)", bundle: .module)
+                Text(
+                    (listController?.isFolderOpen(itemId: currentSelected) ?? false)
+                        ? "Close \(title)"
+                        : "Open \(title)",
+                    bundle: .module
+                )
             } icon: {
-                Image(systemName: "chevron.down")
+                Image(
+                    systemName: (listController?.isFolderOpen(itemId: currentSelected) ?? false)
+                        ? "chevron.up"
+                        : "chevron.down"
+                )
             }
         }
         #if !os(tvOS)
-        .keyboardShortcut(.rightArrow, modifiers: [.command, .shift])
+        .keyboardShortcut(.space, modifiers: [])
         #endif
-        .disabled(!(listController?.canOpenFolder(itemId: currentSelected) ?? false))
+        .disabled(!(listController?.canToggleFolder(itemId: currentSelected) ?? false))
     }
 
     var closeParentFolderView: some View {
@@ -126,9 +143,6 @@ private extension ListRootContextMenu {
                 Image(systemName: "chevron.up")
             }
         }
-        #if !os(tvOS)
-        .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
-        #endif
         .disabled(!(listController?.hasParentFolder(itemId: currentSelected) ?? false))
     }
 
