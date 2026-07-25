@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import TipKit
 
 extension View {
     public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?, modal: Bool = false, dismissHandler: (() -> Void)? = nil) -> some View {
@@ -101,6 +102,7 @@ private extension ToolbarItemListViewModifier {
         } label: {
             Image(systemName: "ellipsis.circle")
         }
+        .popoverTip(MasterRPGTips.organizeContent)
     }
 
     @ViewBuilder
@@ -118,6 +120,7 @@ private extension ToolbarItemListViewModifier {
                     .disabled(parentModel?.category == root.itemControllable.collectionCategory)
                 addItemButton(for: .collection)
             }
+            .popoverTip(MasterRPGTips.organizeContent)
         }
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
@@ -153,8 +156,9 @@ private extension ToolbarItemListViewModifier {
         }
     }
 
+    @ViewBuilder
     func addItemButton(for type: EditControllerAddType) -> some View {
-        Button {
+        let button = Button {
             Task {
                 await addItem(for: type)
             }
@@ -164,6 +168,11 @@ private extension ToolbarItemListViewModifier {
             } icon: {
                 Image(systemName: type.icon(collection: root.itemControllable.collectionCategory.icon))
             }
+        }
+        if type == .item {
+            button.popoverTip(MasterRPGTips.firstItem)
+        } else {
+            button
         }
     }
 

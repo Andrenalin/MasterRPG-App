@@ -553,32 +553,14 @@ extension RuleModel: ItemLinkRegistable {
     private func linkRegisterModels(description: String) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, typeId: .rule)
         return LinkReplaceController.links(for: description).map { link in
-            LinkRegisterModel(
-                name: link.name,
-                source: source,
-                destination: ItemRowModel(
-                    itemId: link.itemId,
-                    entryId: link.entryId,
-                    typeId: link.module
-                ),
-                markDown: link.markDown
-            )
+            LinkRegisterModel(link: link, source: source)
         }
     }
 
     private func linkRegisterModels(entry: RuleEntryModel) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .rule)
         return entry.links(for: entry.content).map { link in
-            LinkRegisterModel(
-                name: link.name,
-                source: source,
-                destination: ItemRowModel(
-                    itemId: link.itemId,
-                    entryId: link.entryId,
-                    typeId: link.module
-                ),
-                markDown: link.markDown
-            )
+            LinkRegisterModel(link: link, source: source)
         }
     }
 }

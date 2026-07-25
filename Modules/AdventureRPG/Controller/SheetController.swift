@@ -58,17 +58,21 @@ extension SheetController: SheetControllable {
         let links = linkRegisterController.linksFrom(source: destination)
 
         let linkSheets = links.compactMap { link -> SheetModel? in
+            guard link.isSheetLink else { return nil }
             let linkDestination = link.destination
+            let linkedSheet: SheetModel?
             switch linkDestination.typeId {
             case .adventure:
                 if linkDestination.entryId == nil {
-                    return sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
+                    linkedSheet = sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
                 } else {
-                    return nil
+                    linkedSheet = nil
                 }
             default:
-                return root.rootModel(for: linkDestination.typeId)?.sheetControllable.sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
+                linkedSheet = root.rootModel(for: linkDestination.typeId)?.sheetControllable.sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
             }
+            linkedSheet?.linkNumber = link.linkNumber
+            return linkedSheet
         }
         allSheets.append(contentsOf: linkSheets)
 
@@ -140,18 +144,39 @@ extension SheetController: SheetControllable {
                     existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
                     if changed { updatedCount += 1 }
                 }
-                // Ensure sub-adventure SheetModel is present for group entries
-                if let adventureId = entry.adventureId,
-                   !existingSheetModel.entries.contains(where: { $0.source.itemId == adventureId && $0.source.entryId == nil }) {
-                    let destination = ItemRowModel(itemId: model.id, entryId: entry.id, typeId: itemController.config.module)
-                    let subSheet = sheet(root: root, itemId: adventureId, destination: destination, level: sheetModel.level + 1, isShown: false, moduleDepth: 1, isEditor: isEditor)
-                    existingSheetModel.entries.insert(subSheet, at: 0)
+                let projectedEntry = sheet(
+                    entry: entry,
+                    root: root,
+                    itemId: model.id,
+                    level: sheetModel.level,
+                    moduleDepth: 0,
+                    isEditor: isEditor
+                )
+                var unmatchedExisting = existingSheetModel.entries
+                let reconciledEntries = projectedEntry.entries.map { projectedChild in
+                    guard let existingIndex = unmatchedExisting.firstIndex(where: {
+                        $0.source == projectedChild.source &&
+                        $0.linkNumber == projectedChild.linkNumber
+                    }) else {
+                        createdCount += 1
+                        existingSheetModel.hasChanged = true
+                        return projectedChild
+                    }
+
+                    let existingChild = unmatchedExisting.remove(at: existingIndex)
+                    existingChild.destination = projectedChild.destination
+                    existingChild.linkNumber = projectedChild.linkNumber
+                    root.rootModel(for: existingChild.source.typeId)?.sheetControllable.update(
+                        root: root,
+                        sheetModel: existingChild,
+                        isEditor: isEditor
+                    )
+                    return existingChild
+                }
+                if !unmatchedExisting.isEmpty {
                     existingSheetModel.hasChanged = true
-                    createdCount += 1
                 }
-                existingSheetModel.entries.forEach { subSheetModel in
-                    root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
-                }
+                existingSheetModel.entries = reconciledEntries
                 updatedEntries.append(existingSheetModel)
             } else {
                 createdCount += 1

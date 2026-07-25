@@ -99,6 +99,7 @@ extension EditController: EntryDataEditable {
         default:
             return
         }
+        MasterRPGTips.recordContentLinked()
     }
     
     public var thumbnailEntryViewType: ThumbnailEntryViewType { .photo }

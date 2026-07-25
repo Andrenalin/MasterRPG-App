@@ -257,6 +257,16 @@ extension FolderListControllable {
             listModel.scrollId = listModel.selected
             try? await Task.sleep(for: .seconds(0.25))
             root.navigationModel.openHeaderEditor = true
+
+            switch type {
+            case .item:
+                await MasterRPGTips.donateItemCreated()
+            case .folder, .collection:
+                await MasterRPGTips.donateContentOrganized()
+            }
+            if let rootManager = root.rootManager {
+                MasterRPGTips.refreshEligibility(rootManager: rootManager)
+            }
         }
     }
         

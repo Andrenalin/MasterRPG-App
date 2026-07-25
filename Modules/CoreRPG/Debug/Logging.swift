@@ -36,5 +36,6 @@ public extension Logger {
     static let scenesManager = Logger(subsystem: subsystem, category: "ScenesManager")
     static let sheetController = Logger(subsystem: subsystem, category: "SheetController")
     static let sharePlay = Logger(subsystem: subsystem, category: "sharePlay")
+    static let tipKit = Logger(subsystem: subsystem, category: "TipKit")
     static let widget = Logger(subsystem: subsystem, category: "widget")
 }

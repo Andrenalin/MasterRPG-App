@@ -73,9 +73,10 @@ extension SheetController: SheetControllable {
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: .rule)
         let links = LinkReplaceController.links(for: entry.content)
         let linkedSheets = links.compactMap { link -> SheetModel? in
-            guard link.entryId == nil else { return nil }
+            guard link.entryId == nil, link.command == nil else { return nil }
+            let linkedSheet: SheetModel?
             if link.module == .rule {
-                return sheet(
+                linkedSheet = sheet(
                     root: root,
                     itemId: link.itemId,
                     destination: destination,
@@ -84,16 +85,19 @@ extension SheetController: SheetControllable {
                     moduleDepth: moduleDepth + 1,
                     isEditor: isEditor
                 )
+            } else {
+                linkedSheet = root.rootModel(for: link.module)?.sheetControllable.sheet(
+                    root: root,
+                    itemId: link.itemId,
+                    destination: destination,
+                    level: level + 1,
+                    isShown: false,
+                    moduleDepth: 0,
+                    isEditor: isEditor
+                )
             }
-            return root.rootModel(for: link.module)?.sheetControllable.sheet(
-                root: root,
-                itemId: link.itemId,
-                destination: destination,
-                level: level + 1,
-                isShown: false,
-                moduleDepth: 0,
-                isEditor: isEditor
-            )
+            linkedSheet?.linkNumber = link.linkNumber
+            return linkedSheet
         }
         let childSheets = node.children.map { child in
             sheet(

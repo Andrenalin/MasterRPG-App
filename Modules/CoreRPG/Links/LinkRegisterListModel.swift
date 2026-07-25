@@ -5,12 +5,37 @@ import Foundation
 
 /// A directional link from one item/entry to another, stored in the register keyed by `destination.itemId`.
 public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
-    public init(name: String, source: ItemRowModel, destination: ItemRowModel, markDown: String? = nil) {
-        self.id = UUID()
+    public init(
+        id: UUID = UUID(),
+        name: String,
+        source: ItemRowModel,
+        destination: ItemRowModel,
+        linkNumber: Int? = nil,
+        command: String? = nil,
+        markDown: String? = nil
+    ) {
+        self.id = id
         self.name = name
         self.source = source
         self.destination = destination
+        self.linkNumber = linkNumber
+        self.command = command
         self.markDown = markDown
+    }
+
+    public init(link: LinkReplaceModel, source: ItemRowModel) {
+        self.init(
+            name: link.name,
+            source: source,
+            destination: ItemRowModel(
+                itemId: link.itemId,
+                entryId: link.entryId,
+                typeId: link.module
+            ),
+            linkNumber: link.linkNumber,
+            command: link.command,
+            markDown: link.markDown
+        )
     }
 
     public let id: UUID
@@ -19,16 +44,41 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
     public let source: ItemRowModel
     /// The item/entry being referenced (used as the dictionary key in `LinkRegisterListModel.items`).
     public let destination: ItemRowModel
+    /// Identifies this occurrence in its source text. Two links to the same destination
+    /// remain distinct when their link numbers differ.
+    public let linkNumber: Int?
+    /// Action links such as `show` and `remove` belong to the same source text but are
+    /// not standalone rows in a sheet.
+    public let command: String?
     /// Raw markdown string `[name](scheme://module/0/uuid[/entryId])` as it appears in the source text.
     public var markDown: String? = nil
     
     public func duplicate() -> LinkRegisterModel {
-        LinkRegisterModel(name: name, source: source, destination: destination, markDown: markDown)
+        LinkRegisterModel(
+            name: name,
+            source: source,
+            destination: destination,
+            linkNumber: linkNumber,
+            command: command,
+            markDown: markDown
+        )
     }
     
     public var urlMarkDown: String {
-        let entry = destination.entryId == nil ? "" : "/\(destination.entryId!.uuidString)"
-        return "[\(name)](\(URL.appScheme)://\(destination.typeId.token)/0/\(destination.itemId.uuidString)\(entry))"
+        let entry = destination.entryId.map { "/\($0.uuidString)" } ?? ""
+        let action = command.map { "/\($0)" } ?? ""
+        return "[\(name)](\(URL.appScheme)://\(destination.typeId.token)/\(linkNumber ?? 0)/\(destination.itemId.uuidString)\(entry)\(action))"
+    }
+
+    public var isSheetLink: Bool {
+        command == nil
+    }
+
+    func isSameOccurrence(as other: LinkRegisterModel) -> Bool {
+        source == other.source &&
+        destination == other.destination &&
+        linkNumber == other.linkNumber &&
+        command == other.command
     }
 }
 
@@ -87,13 +137,13 @@ public final class LinkRegisterListModel: Sendable {
         self.pendingAffectedSourceIds = pendingAffectedSourceIds
     }
 
-    /// Adds a link to both indexes. Returns `false` when the same source-to-destination
-    /// relationship was already registered.
+    /// Adds a link to both indexes. Returns `false` when the same source occurrence
+    /// was already registered.
     @discardableResult
     func append(_ link: LinkRegisterModel) -> Bool {
         let destinationKey = link.destination.itemId
         let alreadyRegistered = items[destinationKey, default: []].contains {
-            $0.source == link.source && $0.destination == link.destination
+            $0.isSameOccurrence(as: link)
         }
         guard !alreadyRegistered else { return false }
 
@@ -110,10 +160,10 @@ public final class LinkRegisterListModel: Sendable {
         let previousCount = items[destinationKey, default: []].count
 
         items[destinationKey, default: []].removeAll {
-            $0.source == link.source && $0.destination == link.destination
+            $0.isSameOccurrence(as: link)
         }
         sourceItems[sourceKey, default: []].removeAll {
-            $0.source == link.source && $0.destination == link.destination
+            $0.isSameOccurrence(as: link)
         }
         return items[destinationKey, default: []].count != previousCount
     }

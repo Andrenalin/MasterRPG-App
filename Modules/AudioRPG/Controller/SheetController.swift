@@ -42,16 +42,20 @@ extension SheetController: SheetControllable {
 
         let links = LinkReplaceController.links(for: description)
         let linkSheets = links.compactMap { link -> SheetModel? in
+            guard link.command == nil else { return nil }
+            let linkedSheet: SheetModel?
             switch link.module {
             case .audio:
                 if link.entryId == nil {
-                    return sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
+                    linkedSheet = sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
                 } else {
-                    return nil
+                    linkedSheet = nil
                 }
             default:
-                return root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
+                linkedSheet = root.rootModel(for: link.module)?.sheetControllable.sheet(root: root, itemId: link.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
             }
+            linkedSheet?.linkNumber = link.linkNumber
+            return linkedSheet
         }
 
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .audio, name: name, description: description, entries: linkSheets)

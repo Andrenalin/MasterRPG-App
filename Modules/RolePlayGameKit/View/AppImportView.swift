@@ -85,6 +85,7 @@ struct AppImportView: View {
         }
         .onChange(of: appModel.isExclusiveDataMutationActive) { _, isActive in
             guard !isActive else { return }
+            appModel.refreshTipEligibility()
             selectPendingImportWhenAvailable()
         }
         .onDisappear {

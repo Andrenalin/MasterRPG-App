@@ -73,7 +73,9 @@ public protocol EntryDataEditable: EditControllable {
 
 public extension EntryDataEditable {
     @MainActor func add(link: String, module: NetworkModules, itemId: UUID, entryId: UUID?, destinationItemId: UUID, destinationEntryId: UUID) {
+        guard canAddLink(module: module, entryId: entryId) else { return }
         addLinkInEntry(link: link, module: module, itemId: itemId, entryId: entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
+        MasterRPGTips.recordContentLinked()
     }
 
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
@@ -134,6 +136,7 @@ public extension EntryDataEditable {
     @MainActor func addNewEntry(itemId: UUID) -> UUID {
         let entry = Model.Entry.empty
         add(entry: entry, itemId: itemId)
+        MasterRPGTips.recordEntryCreated()
         return entry.id
     }
     
@@ -307,7 +310,7 @@ public extension EntryDataEditable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: any LinkControllable, cacheItemListModel: CacheItemListModel, searchModel: SearchModel, toggler: ((UUID, NetworkModules) async -> Void)? = nil) -> LinkHighlightTextModel {
+    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: any LinkControllable, cacheItemListModel: CacheItemListModel, searchModel: SearchModel, toggler: ((UUID, NetworkModules, Int) async -> Void)? = nil) -> LinkHighlightTextModel {
         let nameText = rowText(itemId: itemId, entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
             let model = LinkHighlightTextModel(linkControllable: linkController, text: nameText, highlightedText: searchModel.searchText, toggler: toggler)        

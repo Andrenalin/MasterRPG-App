@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import TipKit
 
 public struct EditorLinkView: View {
     public init(root: ItemRootController, model: any ItemDataAccessable, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules? = nil, selectedEntryId: UUID? = nil, destinationModule: NetworkModules? = nil) {
@@ -20,6 +21,11 @@ public struct EditorLinkView: View {
     
     public var body: some View {
         VStack {
+#if os(tvOS)
+            if selectionMode {
+                TipView(MasterRPGTips.linkContent)
+            }
+#endif
             pickerAll
             
             ManagedNavigationStack(name: "EditorLink") {
@@ -29,6 +35,9 @@ public struct EditorLinkView: View {
             .frame(maxWidth: .infinity, alignment: .top)
             .transition(.opacity)
         }
+#if !os(tvOS)
+        .popoverTip(selectionMode ? MasterRPGTips.linkContent : nil)
+#endif
         .applyIf(selectionMode) {
             $0
                 .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {

@@ -8,10 +8,11 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         hasher.combine(id)
     }
     
-    public init(id: UUID = UUID(), source: ItemRowModel, destination: ItemRowModel? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+    public init(id: UUID = UUID(), source: ItemRowModel, destination: ItemRowModel? = nil, linkNumber: Int? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
         self.id = id
         self.source = source
         self.destination = destination ?? source
+        self.linkNumber = linkNumber
         self.level = level
         self.sheetType = type
         self.isShown = isShown
@@ -35,6 +36,9 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     
     public var source: ItemRowModel
     public var destination: ItemRowModel
+    /// The occurrence number from the source markdown link, when this sheet was
+    /// materialized from linked text.
+    public var linkNumber: Int?
     public var level: Int
 
     public var sheetType: SheetModelType
@@ -108,6 +112,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     func reset(with otherSheetModel: SheetModel) {
         source <=> otherSheetModel.source
         destination <=> otherSheetModel.destination
+        linkNumber <=> otherSheetModel.linkNumber
         level <=> otherSheetModel.level
         
         sheetType <=> otherSheetModel.sheetType

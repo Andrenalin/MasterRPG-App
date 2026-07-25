@@ -147,7 +147,7 @@ extension AdventureModel: nonisolated ItemLinkRegistable {
         var total: [LinkRegisterModel] = []
         if valueChanged {
             total += entry.links(for: entry.content).map {
-                LinkRegisterModel(name: $0.name, source: source, destination: ItemRowModel(itemId: $0.itemId, entryId: $0.entryId, typeId: $0.module), markDown: $0.markDown)
+                LinkRegisterModel(link: $0, source: source)
             }
         }
         return total

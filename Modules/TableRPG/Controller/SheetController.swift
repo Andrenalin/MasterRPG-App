@@ -41,17 +41,21 @@ extension SheetController: SheetControllable {
         let links = linkRegisterController.linksFrom(source: destination)
 
         let linkSheets = links.compactMap { link -> SheetModel? in
+            guard link.isSheetLink else { return nil }
             let linkDestination = link.destination
+            let linkedSheet: SheetModel?
             switch linkDestination.typeId {
             case .table:
                 if linkDestination.entryId == nil {
-                    return sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
+                    linkedSheet = sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
                 } else {
-                    return nil
+                    linkedSheet = nil
                 }
             default:
-                return root.rootModel(for: linkDestination.typeId)?.sheetControllable.sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
+                linkedSheet = root.rootModel(for: linkDestination.typeId)?.sheetControllable.sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)
             }
+            linkedSheet?.linkNumber = link.linkNumber
+            return linkedSheet
         }
 
         return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: name, description: description, entries: linkSheets)

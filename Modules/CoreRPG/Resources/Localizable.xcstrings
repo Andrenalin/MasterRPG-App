@@ -1,6 +1,236 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Add an adventure, character, map, or other game resource—or import an existing campaign." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge ein Abenteuer, einen Charakter, eine Karte oder eine andere Spielressource hinzu – oder importiere eine bestehende Kampagne."
+          }
+        }
+      }
+    },
+    "Add pins and control visibility" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marker hinzufügen und Sichtbarkeit steuern"
+          }
+        }
+      }
+    },
+    "Add your first entry" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge deinen ersten Eintrag hinzu"
+          }
+        }
+      }
+    },
+    "Ask AI for a starting point" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitte die KI um einen Ausgangspunkt"
+          }
+        }
+      }
+    },
+    "Choose a character" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle einen Charakter"
+          }
+        }
+      }
+    },
+    "Choose an adventure" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle ein Abenteuer"
+          }
+        }
+      }
+    },
+    "Create your first item" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle dein erstes Element"
+          }
+        }
+      }
+    },
+    "Describe what you need, review the generated entries, and accept only the ones you want." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibe, was du brauchst, prüfe die erzeugten Einträge und übernimm nur die gewünschten."
+          }
+        }
+      }
+    },
+    "Entries hold the scenes, notes, values, and details inside an item." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einträge enthalten die Szenen, Notizen, Werte und Details eines Elements."
+          }
+        }
+      }
+    },
+    "Import Campaign" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kampagne importieren"
+          }
+        }
+      }
+    },
+    "Keep another workspace open" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen weiteren Arbeitsbereich geöffnet lassen"
+          }
+        }
+      }
+    },
+    "Link related content" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpfe zusammengehörige Inhalte"
+          }
+        }
+      }
+    },
+    "Open the Game or Editor in another window while keeping your current workspace visible." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Spiel oder Editor in einem weiteren Fenster und behalte deinen aktuellen Arbeitsbereich im Blick."
+          }
+        }
+      }
+    },
+    "Open the Map Editor to add rooms, visibility, pins, and encounter details." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne den Karteneditor, um Räume, Sichtbarkeit, Marker und Begegnungsdetails hinzuzufügen."
+          }
+        }
+      }
+    },
+    "Organize your campaign" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Organisiere deine Kampagne"
+          }
+        }
+      }
+    },
+    "Place characters on the map and switch display modes to manage what players can see." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platziere Charaktere auf der Karte und wechsle den Anzeigemodus, um zu steuern, was Spieler sehen."
+          }
+        }
+      }
+    },
+    "Select a resource, then confirm to connect it with the entry you are editing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle eine Ressource und bestätige, um sie mit dem bearbeiteten Eintrag zu verknüpfen."
+          }
+        }
+      }
+    },
+    "Select the adventure the Game Master will run before starting the game." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle vor Spielbeginn das Abenteuer, das die Spielleitung leiten wird."
+          }
+        }
+      }
+    },
+    "Select the character you want to play before joining a game." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle vor dem Beitritt den Charakter, den du spielen möchtest."
+          }
+        }
+      }
+    },
+    "Start as Game Master, or join through SharePlay or your local network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte als Spielleitung oder tritt über SharePlay beziehungsweise dein lokales Netzwerk bei."
+          }
+        }
+      }
+    },
+    "Start or join a game" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte ein Spiel oder tritt bei"
+          }
+        }
+      }
+    },
+    "Turn this image into a playable map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verwandle dieses Bild in eine spielbare Karte"
+          }
+        }
+      }
+    },
+    "You have several items now. Use folders and collections to keep related content together." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast jetzt mehrere Elemente. Verwende Ordner und Sammlungen, um zusammengehörige Inhalte zu gruppieren."
+          }
+        }
+      }
+    },
     "" : {
 
     },

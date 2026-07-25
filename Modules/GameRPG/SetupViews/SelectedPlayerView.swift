@@ -3,6 +3,7 @@
 import CoreRPG
 import CharacterRPG
 import SwiftUI
+import TipKit
 
 struct SelectedPlayerView: View {
     let root: GameRoot
@@ -14,10 +15,14 @@ struct SelectedPlayerView: View {
     
     var body: some View {
         GroupBoxTV(isCard: true) {
-            root.characterRoot.viewController.dropChooseView(model: selection)
-                .frame(maxWidth: .infinity)
-#if os(macOS)
-                .padding()
+#if os(tvOS)
+            VStack {
+                TipView(MasterRPGTips.chooseCharacter)
+                characterSelection
+            }
+#else
+            characterSelection
+                .popoverTip(MasterRPGTips.chooseCharacter)
 #endif
         } label: {
             Label {
@@ -31,6 +36,7 @@ struct SelectedPlayerView: View {
         .task {
             root.resetSelectedCharacter(uuidString: playerUUID)
             selection.resetSelection(itemId: root.gameModel.selectedCharacter, entryId: nil)
+            updateTipSelection(root.gameModel.selectedCharacter)
         }
         .onChange(of: playerUUID, initial: true) {
             root.gameModel.selectedCharacter <=> selection.itemId
@@ -43,6 +49,23 @@ struct SelectedPlayerView: View {
                 selection.resetSelection(itemId: playerId, entryId: nil)
                 playerUUID <=> playerId.uuidString
             }
+            updateTipSelection(newCharacter)
+        }
+    }
+
+    private var characterSelection: some View {
+        root.characterRoot.viewController.dropChooseView(model: selection)
+            .frame(maxWidth: .infinity)
+#if os(macOS)
+            .padding()
+#endif
+    }
+
+    private func updateTipSelection(_ characterID: UUID?) {
+        MasterRPGTips.setSelectedCharacter(characterID != nil)
+        guard characterID != nil else { return }
+        Task {
+            await MasterRPGTips.donateCharacterSelected()
         }
     }
 }
