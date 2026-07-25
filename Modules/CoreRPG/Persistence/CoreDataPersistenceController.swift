@@ -112,6 +112,8 @@ public struct CoreDataPersistenceController {
 #if !os(tvOS)
         localDescription.url = localFolderURL.appendingPathComponent("local.sqlite")
 #endif
+        localDescription.shouldMigrateStoreAutomatically = true
+        localDescription.shouldInferMappingModelAutomatically = true
         localDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         localDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         

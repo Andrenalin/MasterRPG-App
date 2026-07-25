@@ -58,6 +58,8 @@ public struct CloudKitCoreDataPersistenceController {
             return
         }
         privateDescription.url = privateStoreFolderURL.appendingPathComponent("private.sqlite")
+        privateDescription.shouldMigrateStoreAutomatically = true
+        privateDescription.shouldInferMappingModelAutomatically = true
 
         if allowCloudKitSync && !model.inMemory {
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)

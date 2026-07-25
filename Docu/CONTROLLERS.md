@@ -10,6 +10,7 @@ Related docs:
 - [Root Models And Setup](ROOT_MODELS.md)
 - [Database Handling](DATABASE.md)
 - [File Handling](FILES.md)
+- [Link System](LINKS.md)
 - [Game Connections](GAME_CONNECTIONS.md)
 - [Table Generator](TABLE_GENERATOR.md)
 
@@ -169,6 +170,9 @@ modules.
 
 Normal edits update the register through `EditControllable.saveChanges`.
 Imported data is repaired through `ConvertController.resetLinkRegister(for:)`.
+For URL grammar, occurrence identity, duplicate destinations, Core Data
+persistence, sheet toggling, action links, and implementation caveats, see
+[Link System](LINKS.md).
 
 ## FolderListController
 

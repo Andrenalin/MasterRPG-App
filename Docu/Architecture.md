@@ -8,6 +8,7 @@ Related deep dives:
 - [Controllers](CONTROLLERS.md)
 - [Database Handling](DATABASE.md)
 - [File Handling](FILES.md)
+- [Link System](LINKS.md)
 - [Game Connections](GAME_CONNECTIONS.md)
 
 ---
