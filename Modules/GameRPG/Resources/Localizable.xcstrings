@@ -793,6 +793,7 @@
       }
     },
     "Clear Search" : {
+      "extractionState" : "stale",
       "localizations" : {
         "th" : {
           "stringUnit" : {
@@ -1218,6 +1219,9 @@
           }
         }
       }
+    },
+    "Dismiss" : {
+
     },
     "Do you really want to quit the game?" : {
       "localizations" : {
@@ -1823,6 +1827,16 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เกม"
+          }
+        }
+      }
+    },
+    "Generated %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Generated %1$@: %2$@"
           }
         }
       }
