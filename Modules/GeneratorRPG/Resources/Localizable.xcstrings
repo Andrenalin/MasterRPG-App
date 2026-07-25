@@ -2231,6 +2231,12 @@
             "state" : "translated",
             "value" : "Name"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อ"
+          }
         }
       }
     },
@@ -2685,6 +2691,12 @@
             "state" : "translated",
             "value" : "Generatoren durchsuchen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหาตัวสร้าง"
+          }
         }
       }
     },
@@ -2966,6 +2978,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Übernehmen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำมาใช้"
           }
         }
       }

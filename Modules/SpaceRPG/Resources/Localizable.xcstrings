@@ -32,9 +32,69 @@
     "%lld 3D objects" : {
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld 3D-Objekte"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld 3D-Objekte"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 3D-Objekte"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "%lld 3D-Objekte"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 3D object"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 3D objects"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 3D objects"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld วัตถุ 3D"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld วัตถุ 3D"
+                }
+              }
+            }
           }
         }
       }
@@ -86,6 +146,12 @@
             "state" : "translated",
             "value" : "3D-Objekte"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วัตถุ 3D"
+          }
         }
       }
     },
@@ -120,6 +186,12 @@
             "state" : "translated",
             "value" : "Notiz zum 3D-Objekt hinzufügen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มโน้ตวัตถุ 3D"
+          }
         }
       }
     },
@@ -141,6 +213,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notiz zu „%@“ hinzugefügt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มโน้ตไปยัง “%@” แล้ว"
           }
         }
       }
@@ -177,6 +255,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Aligning Images…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังปรับแนวรูปภาพ…"
           }
         }
       }
@@ -248,6 +332,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Can't flip your object?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พลิกวัตถุไม่ได้ใช่ไหม?"
           }
         }
       }
@@ -393,6 +483,12 @@
             "state" : "translated",
             "value" : "Aufgenommene Fotos"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภาพที่ถ่ายแล้ว"
+          }
         }
       }
     },
@@ -428,6 +524,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abgeschlossen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสร็จสิ้น"
           }
         }
       }
@@ -486,6 +588,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auf die 3D-Modelldatei für „%@“ konnte nicht zugegriffen werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถเข้าถึงไฟล์โมเดล 3D สำหรับรายการ %@ ได้"
           }
         }
       }
@@ -583,6 +691,12 @@
             "state" : "new",
             "value" : "Estimated time remaining: %@"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เวลาที่เหลือโดยประมาณ: %@"
+          }
         }
       }
     },
@@ -602,6 +716,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fehlgeschlagen: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ล้มเหลว: %@"
           }
         }
       }
@@ -631,6 +751,12 @@
             "state" : "new",
             "value" : "Finish"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสร็จสิ้น"
+          }
         }
       }
     },
@@ -648,6 +774,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "First segment complete."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่วนแรกสำเร็จแล้ว"
           }
         }
       }
@@ -684,6 +816,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Flip object on its side and capture again."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "พลิกวัตถุตะแคงข้างแล้วบันทึกอีกครั้ง"
           }
         }
       }
@@ -745,6 +883,12 @@
             "state" : "new",
             "value" : "Flipping this object is not recommended."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่แนะนำให้พลิกวัตถุนี้"
+          }
         }
       }
     },
@@ -762,6 +906,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "For best quality, capture three segments.\nTap Skip if you can't make it all the way around but your final model may have missing areas."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพื่อคุณภาพที่ดีที่สุด ให้บันทึกสามส่วน\nแตะ ข้าม หากคุณไม่สามารถเดินวนรอบได้ครบ แต่โมเดลสุดท้ายอาจมีพื้นที่ที่ขาดหายไป"
           }
         }
       }
@@ -835,6 +985,12 @@
             "state" : "new",
             "value" : "For best quality, capture three segments. When you're done, tap Finish to complete your object."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพื่อคุณภาพที่ดีที่สุด ให้บันทึกสามส่วน เมื่อเสร็จแล้ว แตะ เสร็จสิ้น เพื่อสร้างวัตถุของคุณให้สมบูรณ์"
+          }
         }
       }
     },
@@ -889,6 +1045,12 @@
             "state" : "new",
             "value" : "Help"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วิธีใช้"
+          }
         }
       }
     },
@@ -941,6 +1103,12 @@
             "state" : "new",
             "value" : "Keep going to complete the final segment."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทำต่อเพื่อให้บันทึกส่วนสุดท้ายสำเร็จ"
+          }
         }
       }
     },
@@ -958,6 +1126,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Keep going to complete the first segment."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทำต่อเพื่อให้บันทึกส่วนแรกสำเร็จ"
           }
         }
       }
@@ -1061,6 +1235,12 @@
             "state" : "new",
             "value" : "More Light Required"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ต้องการแสงสว่างมากขึ้น"
+          }
         }
       }
     },
@@ -1107,6 +1287,12 @@
             "state" : "new",
             "value" : "Move above your object and make sure that areas you captured previously can still be seen."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนขึ้นไปเหนือวัตถุของคุณและตรวจสอบให้แน่ใจว่าพื้นที่ที่บันทึกไว้ก่อนหน้านี้ยังคงมองเห็นได้อยู่"
+          }
         }
       }
     },
@@ -1124,6 +1310,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Move around to ensure that the whole object is inside the box. Drag handles to manually resize."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เดินรอบๆ เพื่อให้แน่ใจว่าวัตถุทั้งหมดอยู่ภายในกรอบ ลากที่จับเพื่อปรับขนาดด้วยตนเอง"
           }
         }
       }
@@ -1153,6 +1345,12 @@
             "state" : "new",
             "value" : "Move close and center the dot on your object, then tap Continue."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนเข้าใกล้และวางจุดให้อยู่ตรงกลางวัตถุของคุณ แล้วแตะ ดำเนินการต่อ"
+          }
         }
       }
     },
@@ -1171,6 +1369,12 @@
             "state" : "new",
             "value" : "Move Closer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนเข้าใกล้"
+          }
         }
       }
     },
@@ -1180,6 +1384,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nach unten bewegen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนลง"
           }
         }
       }
@@ -1243,6 +1453,12 @@
             "state" : "translated",
             "value" : "Nach links bewegen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนซ้าย"
+          }
         }
       }
     },
@@ -1289,6 +1505,12 @@
             "state" : "new",
             "value" : "Move slower"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เคลื่อนที่ช้าลง"
+          }
         }
       }
     },
@@ -1307,6 +1529,12 @@
             "state" : "new",
             "value" : "Move slowly around your object."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เดินวนรอบวัตถุของคุณอย่างช้าๆ"
+          }
         }
       }
     },
@@ -1316,6 +1544,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nach oben bewegen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลื่อนขึ้น"
           }
         }
       }
@@ -1381,6 +1615,12 @@
             "state" : "translated",
             "value" : "OK"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตกลง"
+          }
         }
       }
     },
@@ -1402,6 +1642,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aufnahmedateien öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดไฟล์ที่บันทึก"
           }
         }
       }
@@ -1426,6 +1672,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nach Erstellung öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดเมื่อสร้าง"
           }
         }
       }
@@ -1454,6 +1706,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ausstehend"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รอดำเนินการ"
           }
         }
       }
@@ -1509,6 +1767,12 @@
             "state" : "new",
             "value" : "Processing"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังประมวลผล"
+          }
         }
       }
     },
@@ -1536,6 +1800,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Reset Box"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ตกรอบ"
           }
         }
       }
@@ -1599,6 +1869,12 @@
             "state" : "translated",
             "value" : "Scaninformationen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ข้อมูลการสแกน"
+          }
         }
       }
     },
@@ -1608,6 +1884,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scan-Anleitung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บทเรียนการสแกน"
           }
         }
       }
@@ -1620,6 +1902,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "3D-Objekte durchsuchen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ค้นหาวัตถุ 3D"
           }
         }
       }
@@ -1685,6 +1973,12 @@
             "state" : "new",
             "value" : "Start Capture"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เริ่มถ่ายภาพ"
+          }
         }
       }
     },
@@ -1712,6 +2006,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Tap Finish to process your object."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แตะ เสร็จสิ้น เพื่อประมวลผลวัตถุของคุณ"
           }
         }
       }
@@ -1779,6 +2079,12 @@
             "state" : "translated",
             "value" : "Welche Notiz soll hinzugefügt werden?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ควรเพิ่มโน้ตอะไร?"
+          }
         }
       }
     },
@@ -1826,9 +2132,69 @@
       "comment" : "Feedback for when the user has fewer than the minimum required images.",
       "localizations" : {
         "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du benötigst mindestens %lld Bilder deines Objekts, um ein Modell zu erstellen."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Du benötigst mindestens %lld Bilder deines Objekts, um ein Modell zu erstellen."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Du benötigst mindestens %lld Bilder deines Objekts, um ein Modell zu erstellen."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "needs_review",
+                  "value" : "Du benötigst mindestens %lld Bilder deines Objekts, um ein Modell zu erstellen."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "You need at least %lld image of your object to create a model."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "You need at least %lld images of your object to create a model."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "You need at least %lld images of your object to create a model."
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "คุณต้องการรูปภาพอย่างน้อย %lld ภาพของวัตถุเพื่อสร้างโมเดล"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "คุณต้องการรูปภาพอย่างน้อย %lld ภาพของวัตถุเพื่อสร้างโมเดล"
+                }
+              }
+            }
           }
         }
       }
