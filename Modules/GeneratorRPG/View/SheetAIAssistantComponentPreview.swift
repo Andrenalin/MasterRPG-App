@@ -16,9 +16,12 @@ struct SheetAIAssistantComponentPreview: View {
                 module: .adventure,
                 messageText: $message,
                 availability: SheetAIGenerationController().availability,
+                isActive: true,
                 isGenerating: false,
                 isTextFieldFocused: $isFocused,
-                submitAction: {}
+                submitAction: {},
+                activateAction: {},
+                closeAction: {}
             )
             SheetAIAssistantComposer(
                 module: .adventure,

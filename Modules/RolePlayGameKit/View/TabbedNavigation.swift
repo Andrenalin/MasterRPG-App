@@ -4,8 +4,8 @@ import AudioRPG
 import CoreRPG
 import SwiftUI
 import AdventureRPG
-#if os(iOS)
-import UIKit
+#if !os(tvOS)
+import GeneratorRPG
 #endif
 
 struct TabbedNavigation: View {
@@ -14,6 +14,10 @@ struct TabbedNavigation: View {
     @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
 
     private let restoresState: Bool
+
+#if os(iOS)
+    @State private var aiAssistantContexts: [SheetAIAssistantContext] = []
+#endif
 
     init(restoresState: Bool = true) {
         self.restoresState = restoresState
@@ -36,17 +40,23 @@ struct TabbedNavigation: View {
             }
         }
 #if os(iOS)
+        .onPreferenceChange(SheetAIAssistantContextPreferenceKey.self) { newContexts in
+            if aiAssistantContexts != newContexts {
+                aiAssistantContexts = newContexts
+            }
+        }
         .phoneTabBottomAccessory(isEnabled: shouldShowPhoneBottomAccessory) {
             PhoneTabBottomAccessory(
-                showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar
+                showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar,
+                aiAssistantContext: aiAssistantContext
             )
         }
         .environment(
             \.audioPlayerUsesTabAccessory,
-            usesPhoneTabAccessory
+            SheetAIGenerationController.usesPhoneTabAccessory
         )
         .tabBarMinimizeBehavior26(
-            .onScrollDown
+            aiAssistantContext == nil ? .onScrollDown : .never
         )
 #endif
         .applyIf(restoresState && rolePlayStateRestorationEnabled) {
@@ -81,13 +91,17 @@ struct TabbedNavigation: View {
     }
 
 #if os(iOS)
-    private var shouldShowPhoneBottomAccessory: Bool {
-        usesPhoneTabAccessory &&
-        appModel.audioRoot.audioPlayerModel.showPlayerToolBar
+    private var aiAssistantContext: SheetAIAssistantContext? {
+        guard SheetAIGenerationController.isAvailable else { return nil }
+
+        return aiAssistantContexts.last(where: {
+            $0.module == selectedModule && $0.rootModel.hasAIAssistantContent
+        })
     }
 
-    private var usesPhoneTabAccessory: Bool {
-        UIDevice.current.userInterfaceIdiom == .phone
+    private var shouldShowPhoneBottomAccessory: Bool {
+        SheetAIGenerationController.usesPhoneTabAccessory &&
+        (appModel.audioRoot.audioPlayerModel.showPlayerToolBar || aiAssistantContext != nil)
     }
 #endif
 }
@@ -95,11 +109,24 @@ struct TabbedNavigation: View {
 #if os(iOS)
 private struct PhoneTabBottomAccessory: View {
     let showsAudioPlayer: Bool
+    let aiAssistantContext: SheetAIAssistantContext?
 
+    @ViewBuilder
     var body: some View {
-        if showsAudioPlayer {
+        if let aiAssistantContext {
+            aiAssistantView(aiAssistantContext)
+        } else if showsAudioPlayer {
             AudioPlayerMiniBarView()
         }
+    }
+
+    private func aiAssistantView(_ context: SheetAIAssistantContext) -> some View {
+        SheetAIAssistantOverlayView(
+            module: context.module,
+            itemId: context.itemId,
+            rootModel: context.rootModel,
+            presentation: .tabAccessory
+        )
     }
 }
 

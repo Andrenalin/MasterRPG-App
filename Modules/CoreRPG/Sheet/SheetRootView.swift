@@ -134,16 +134,19 @@ public struct SheetRootView<
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        SheetView(
-            root: root,
-            rootModel: rootModel,
-            sheetModel: rootModel.sheetModel,
-            isEditor: isEditor,
-            linkTypes: linkTypes,
-            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-            detailAction: detailAction,
-            detailContent: detailContent
-        )
+        VStack(alignment: .leading, spacing: 4) {
+            SheetView(
+                root: root,
+                rootModel: rootModel,
+                sheetModel: rootModel.sheetModel,
+                isEditor: isEditor,
+                linkTypes: linkTypes,
+                generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+                detailAction: detailAction,
+                detailContent: detailContent
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)
         .applyIf(configuration.showsAIAssistant) {
             $0.overlay(alignment: .bottomTrailing) {

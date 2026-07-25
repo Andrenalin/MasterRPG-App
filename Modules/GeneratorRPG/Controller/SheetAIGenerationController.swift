@@ -5,6 +5,9 @@
 import CoreRPG
 import Foundation
 import FoundationModels
+#if os(iOS)
+import UIKit
+#endif
 
 public enum SheetAIGenerationAvailability: Equatable, Sendable {
     case available
@@ -55,6 +58,16 @@ public struct SheetAIGenerationController: Sendable {
     /// unavailable device never exposes an AI affordance.
     public static var isAvailable: Bool {
         SystemLanguageModel.default.availability == .available
+    }
+
+    /// The sheet-wide composer uses the native tab accessory on iPhone,
+    /// including in a regular horizontal size class such as landscape.
+    @MainActor public static var usesPhoneTabAccessory: Bool {
+#if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .phone
+#else
+        false
+#endif
     }
 
     public var availability: SheetAIGenerationAvailability {

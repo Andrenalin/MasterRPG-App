@@ -9,7 +9,6 @@ class MasterRPGUITestCase: XCTestCase {
 
         let app = XCUIApplication()
         app.launchArguments = [
-            "-disable-tips",
             "-allowCloudKitSync", "0",
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US"

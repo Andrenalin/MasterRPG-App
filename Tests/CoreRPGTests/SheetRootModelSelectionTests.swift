@@ -82,8 +82,7 @@ struct SheetRootModelSelectionTests {
         rootModel.toggle(
             id: .itemContent(rootItemID),
             itemId: linkedItemID,
-            module: .adventure,
-            linkNumber: 0
+            module: .adventure
         )
 
         #expect(linkedSheet.isShown)

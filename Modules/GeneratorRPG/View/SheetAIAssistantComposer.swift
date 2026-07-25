@@ -33,7 +33,8 @@ struct SheetAIAssistantStandardControl: View {
             )
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
-            .foregroundStyle(theme.tint(for: module))
+            .foregroundStyle(.primary)
+            .imageScale(.large)
             .frame(minWidth: 44, minHeight: 44)
             .popoverTip(MasterRPGTips.askAI)
 
@@ -136,49 +137,77 @@ struct SheetAIAssistantMiniComposer: View {
     let module: NetworkModules
     @Binding var messageText: String
     let availability: SheetAIGenerationAvailability
+    let isActive: Bool
     let isGenerating: Bool
     @FocusState.Binding var isTextFieldFocused: Bool
     let submitAction: () -> Void
+    let activateAction: () -> Void
+    let closeAction: () -> Void
 
-    @Environment(\.appTheme) private var theme
-
+    @ViewBuilder
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: NetworkModules.generator.icon)
-                .foregroundStyle(theme.tint(for: module))
+        if isActive {
+            HStack(spacing: 4) {
+                Button(
+                    "Hide Ask AI",
+                    systemImage: NetworkModules.generator.icon,
+                    action: closeAction
+                )
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary)
+                .imageScale(.large)
                 .frame(minWidth: 44, minHeight: 44)
-                .accessibilityHidden(true)
 
-            TextField(
-                availability.message ?? String(localized: "Type your request...", bundle: .module),
-                text: $messageText
-            )
-            .textFieldStyle(.plain)
-            .focused($isTextFieldFocused)
-            .onSubmit(submitAction)
-#if os(iOS)
-            .submitLabel(.send)
-#endif
-            .disabled(!availability.isAvailable || isGenerating)
-            .overlay(alignment: .trailing) {
-                if isGenerating {
-                    ProgressView()
-                        .controlSize(.small)
-                        .accessibilityLabel(Text("Generating sheet content", bundle: .module))
+                TextField(
+                    availability.message ?? String(localized: "Type your request...", bundle: .module),
+                    text: $messageText
+                )
+                .textFieldStyle(.plain)
+                .focused($isTextFieldFocused)
+                .onSubmit(submitAction)
+                .task {
+                    await Task.yield()
+                    guard isActive else { return }
+                    isTextFieldFocused = true
                 }
+#if os(iOS)
+                .submitLabel(.send)
+#endif
+                .disabled(!availability.isAvailable || isGenerating)
+                .overlay(alignment: .trailing) {
+                    if isGenerating {
+                        ProgressView()
+                            .controlSize(.small)
+                            .accessibilityLabel(Text("Generating sheet content", bundle: .module))
+                    }
+                }
+                .accessibilityLabel(Text("Ask AI", bundle: .module))
+                .accessibilityHint(
+                    isGenerating
+                        ? Text("Generating", bundle: .module)
+                        : Text("Press Return to generate sheet content", bundle: .module)
+                )
             }
-            .accessibilityLabel(Text("Ask AI", bundle: .module))
-            .accessibilityHint(
-                isGenerating
-                    ? Text("Generating", bundle: .module)
-                    : Text("Press Return to generate sheet content", bundle: .module)
-            )
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .contentShape(.rect)
+        } else {
+            Button("Ask AI", systemImage: NetworkModules.generator.icon, action: activateAction)
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary)
+                .imageScale(.large)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, 8)
+                .contentShape(.rect)
+                .disabled(!availability.isAvailable)
+                .popoverTip(MasterRPGTips.askAI)
+                .accessibilityHint(
+                    availability.isAvailable
+                        ? Text("Opens the AI request field", bundle: .module)
+                        : Text(verbatim: availability.message ?? "")
+                )
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .contentShape(.rect)
-        .allowsHitTesting(true)
-        .popoverTip(MasterRPGTips.askAI)
     }
 }
 

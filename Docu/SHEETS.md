@@ -216,6 +216,14 @@ AI assistance is optional and owned by `SheetRootView`:
 - `SheetRootModel.isAIModeActive` controls whether that one composer is expanded.
 
 Regular `SheetView` headers and `SheetEntryView` rows do not render AI controls.
+On iPhone, the same single sheet-wide assistant is hosted by the native tab
+accessory instead of the root overlay. It takes priority over the audio
+mini-player while the sheet is visible; outside sheet screens the mini-player
+can use the accessory when audio is available. While Ask AI is present, tab-bar
+minimization is disabled so its text field remains in the expanded, focusable
+accessory placement. The compact accessory starts as one Ask AI button; activating
+it replaces that button with the single request field and explicitly moves keyboard
+focus into the field.
 Generated previews keep their own context-menu actions because those actions manage
 the individual transient result rather than creating another Ask AI input.
 

@@ -4,6 +4,29 @@ import XCTest
 
 final class ContentModuleUITests: MasterRPGUITestCase {
     @MainActor
+    func testAdventureAskAIAccessoryAcceptsKeyboardInput() {
+        let app = launchPreparedApp()
+        openModule(token: "ADVENTURES", title: "Adventure", app: app)
+
+        let adventure = app.staticTexts["00 Adventure"].firstMatch
+        XCTAssertTrue(adventure.waitForExistence(timeout: 15))
+        adventure.tap()
+
+        let askAI = app.buttons["Ask AI"].firstMatch
+        XCTAssertTrue(askAI.waitForExistence(timeout: 15))
+        XCTAssertTrue(askAI.isHittable)
+        askAI.tap()
+
+        let prompt = app.textFields["Ask AI"].firstMatch
+        XCTAssertTrue(prompt.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
+
+        let request = "Create a mysterious encounter"
+        prompt.typeText(request)
+        XCTAssertEqual(prompt.value as? String, request)
+    }
+
+    @MainActor
     func testAdventureNavigationAndCreateAction() {
         let app = launchPreparedApp()
         assertModuleNavigationAndCreateAction(

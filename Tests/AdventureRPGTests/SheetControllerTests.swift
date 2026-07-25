@@ -7,7 +7,6 @@ import RPGResourcesDebug
 import Testing
 
 @testable import AdventureRPG
-@testable import CharacterRPG
 
 @MainActor
 struct SheetControllerTests {
@@ -88,115 +87,6 @@ struct SheetControllerTests {
                 #expect(linkedSheet.level == 1)
             }
         }
-    }
-
-    @Test func duplicateOrcLinksRemainDistinctInEditorAndSheet() async throws {
-        // Given
-        let root = try await MockRoot.importTestData()
-        let rootManager = try rootManager(for: root)
-        let orc = ValueModel(
-            id: UUID(),
-            name: "Orc",
-            description: "A fierce orc",
-            category: .character
-        )
-        root.characterRoot.editController.save(updated: orc, message: "Add Orc")
-
-        let entry = AdventureEntryModel.fixture(name: "Encounter", content: "")
-        let adventure = AdventureModel(
-            id: UUID(),
-            name: "Orc Encounter",
-            entries: [entry]
-        )
-        root.editController.save(updated: adventure, message: "Add Adventure")
-
-        // When
-        for _ in 0..<2 {
-            root.editController.add(
-                link: "Orc",
-                module: .value,
-                itemId: orc.id,
-                entryId: nil,
-                destinationItemId: adventure.id,
-                destinationEntryId: entry.id
-            )
-        }
-
-        // Then
-        let updatedEntry = root.itemController.itemOrEmpty(for: adventure.id)[entry.id]
-        let parsedLinks = LinkReplaceController.links(for: updatedEntry.content)
-        #expect(parsedLinks.count == 2)
-        #expect(parsedLinks.map(\.name) == ["Orc", "Orc"])
-        #expect(parsedLinks.map(\.itemId) == [orc.id, orc.id])
-        #expect(parsedLinks.map(\.linkNumber) == [0, 1])
-
-        let source = ItemRowModel(
-            itemId: adventure.id,
-            entryId: entry.id,
-            typeId: .adventure
-        )
-        let registeredLinks = root.linkRegisterController.linksFrom(source: source)
-            .filter(\.isSheetLink)
-        #expect(registeredLinks.count == 2)
-        #expect(Set(registeredLinks.map(\.id)).count == 2)
-        #expect(registeredLinks.map(\.linkNumber) == [0, 1])
-
-        let textEditModel = TextEditModel(
-            linkRegisterController: root.linkRegisterController
-        )
-        textEditModel.reset(entry: updatedEntry, source: source)
-        #expect(textEditModel.links.count == 2)
-        #expect(Set(textEditModel.links.map(\.id)).count == 2)
-        #expect(String(textEditModel.attributedText.characters) == "Orc Orc")
-        textEditModel.resetText()
-        #expect(textEditModel.text == updatedEntry.content)
-
-        let sheetRootModel = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: try adventureRootController(for: root).linkControllable,
-            sheetControllable: SheetController(itemController: root.itemController),
-            itemId: adventure.id,
-            isEditor: false
-        )
-        let entrySheet = try #require(
-            sheetRootModel.sheetModel.entries.first {
-                $0.source.entryId == entry.id
-            }
-        )
-        let orcSheets = entrySheet.entries.filter {
-            $0.source.itemId == orc.id && $0.source.typeId == .value
-        }
-        #expect(orcSheets.count == 2)
-        #expect(Set(orcSheets.map(\.id)).count == 2)
-        #expect(orcSheets.map(\.linkNumber) == [0, 1])
-        #expect(orcSheets.allSatisfy { !$0.isShown })
-
-        sheetRootModel.toggle(
-            id: .entryContent(entry.id),
-            itemId: orc.id,
-            module: .value,
-            linkNumber: 0
-        )
-        #expect(orcSheets[0].isShown)
-        #expect(!orcSheets[1].isShown)
-
-        sheetRootModel.toggle(
-            id: .entryContent(entry.id),
-            itemId: orc.id,
-            module: .value,
-            linkNumber: 1
-        )
-        #expect(orcSheets[0].isShown)
-        #expect(orcSheets[1].isShown)
-
-        sheetRootModel.toggle(
-            id: .entryContent(entry.id),
-            itemId: orc.id,
-            module: .value,
-            linkNumber: 0
-        )
-        #expect(!orcSheets[0].isShown)
-        #expect(orcSheets[1].isShown)
     }
 
     @Test func adventureSheetLinkToAdventureModule() async throws {

@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Foundation
 import Testing
 
 @testable import CoreRPG
@@ -11,7 +10,7 @@ struct LinkHighlightTextModelTests {
     func parseLink() async throws {
         let text = "**4**: [Dolch](RPG://TABLES/0/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1)"
         
-        let sut = await LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: text, highlightedText: "", toggler: { _, _, _ in })
+        let sut = await LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: text, highlightedText: "", toggler: { _, _ in })
         
         let result = await sut.displayText
         try #require(result.count == 5)
@@ -26,7 +25,7 @@ struct LinkHighlightTextModelTests {
     func parseLinkWithLink() async throws {
         let text = "**4**: [Dolch](RPG://TABLES/0/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1)➡️ [Show](RPG://TABLES/1/84087225-BF5D-4398-B5F3-FDE0A0B79250/EDB0E646-8F15-4D2B-A63C-B31C11E0F1E1/show) Der Dolch ist schnell und leicht. Eine Ideale Waffen für den Dieb, aber macht auch nicht so viele Schadenspunkte.⬅️"
         
-        let sut = await LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: text, highlightedText: "", toggler: { _, _, _ in })
+        let sut = await LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: text, highlightedText: "", toggler: { _, _ in })
         
         let result = await sut.displayText
         try #require(result.count == 11)
@@ -131,86 +130,4 @@ struct LinkHighlightTextModelTests {
         #expect(result[41].string == " = 17")
     }
 
-    @Test @MainActor
-    func duplicateLinkTogglerReceivesClickedOccurrence() async throws {
-        let itemId = UUID()
-        let firstLink = "[Orc](RPG://VALUES/0/\(itemId.uuidString))"
-        let secondLink = "[Orc](RPG://VALUES/1/\(itemId.uuidString))"
-        let links = LinkReplaceController.links(for: "\(firstLink) \(secondLink)")
-        try #require(links.count == 2)
-
-        let controller = TogglerCapturingLinkController(
-            itemControllable: FakeItemController.fake
-        )
-        var toggledOccurrences: [Int] = []
-        let sut = LinkHighlightTextModel(
-            linkControllable: controller,
-            text: "\(firstLink) \(secondLink)",
-            toggler: { _, _, occurrence in
-                toggledOccurrences.append(occurrence)
-            }
-        )
-
-        sut.handle(link: links[1])
-        let secondOccurrenceToggler = try #require(controller.capturedToggler)
-        await secondOccurrenceToggler(itemId, .value)
-
-        let showLink = try #require(
-            LinkReplaceController.links(
-                for: "[Show](RPG://VALUES/601/\(itemId.uuidString)/show)"
-            ).first
-        )
-        sut.handle(link: showLink)
-        let secondShowToggler = try #require(controller.capturedToggler)
-        await secondShowToggler(itemId, .value)
-
-        #expect(toggledOccurrences == [1, 1])
-    }
-
-}
-
-private final class TogglerCapturingLinkController: LinkControllable, @unchecked Sendable {
-    init(itemControllable: any ItemControllable) {
-        self.itemControllable = itemControllable
-    }
-
-    let itemControllable: any ItemControllable
-    @MainActor var capturedToggler: ((UUID, NetworkModules) async -> Void)?
-
-    @MainActor
-    func handleTextLink(
-        url: URL,
-        in text: String,
-        shareResult: ShareValueResult?,
-        toggler: ((UUID, NetworkModules) async -> Void)?,
-        editAction: ((ItemRowModel) -> Bool)?
-    ) -> String {
-        capturedToggler = toggler
-        return text
-    }
-
-    @MainActor
-    func toggleTextLink(
-        linkNumber: Int,
-        itemId: UUID,
-        entryId: UUID?,
-        command: String?,
-        in text: String,
-        shareResult: ShareValueResult?,
-        toggler: ((UUID, NetworkModules) async -> Void)?,
-        editAction: ((ItemRowModel) -> Bool)?
-    ) -> String {
-        text
-    }
-
-    @MainActor
-    func toggleLink(
-        module: NetworkModules,
-        linkNumber: Int,
-        itemId: UUID,
-        entryId: UUID?,
-        command: String?
-    ) -> String {
-        ""
-    }
 }

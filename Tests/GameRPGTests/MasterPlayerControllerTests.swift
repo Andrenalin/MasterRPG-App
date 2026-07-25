@@ -1334,7 +1334,7 @@ final class MasterPlayerControllerTests {
         case .space:
             itemId = try #require(rootPlayer.spaceRoot.itemController.itemDataModel.items.first)
             fullData = try await rootPlayer.spaceRoot.gameControllable.createGameData(for: itemId)
-            rootPlayer.spaceRoot.spaceGameControllable.setMasterVersion(
+            await rootPlayer.spaceRoot.spaceGameControllable.setMasterVersion(
                 itemId: itemId,
                 version: fullData.effectiveAssetVersion,
                 masterId: masterId
