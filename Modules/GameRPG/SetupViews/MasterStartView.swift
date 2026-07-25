@@ -39,7 +39,9 @@ struct MasterStartView: View {
             .onChange(of: sharePlayStore.canActivateSharePlay, initial: true) {
                 startSharePlayAnimation = sharePlayStore.canActivateSharePlay
             }
-            .popoverTip(MasterRPGTips.startOrJoinGame)
+            .popoverTip(
+                navigator.isPresenting ? nil : MasterRPGTips.startOrJoinGame
+            )
             
 #if !os(tvOS)
             SharePlayButton("Play RPG Online", activity: RPGActivity())
