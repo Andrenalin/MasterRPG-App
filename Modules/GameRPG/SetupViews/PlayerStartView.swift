@@ -56,6 +56,7 @@ struct PlayerStartView: View {
 
                         Task {
                             await root.startGame(to: nil, mode: .player)
+                            guard root.gameModel.gameConfig.state == .started else { return }
                             await MasterRPGTips.donateGameStartedOrJoined()
                         }
                     } label: {
@@ -94,6 +95,9 @@ struct PlayerStartView: View {
                         .onChange(of: playerNetworkController.networkModel.isConnected) {
                             if playerNetworkController.networkModel.isConnected {
                                 appGameStateModel.gameModus = .player
+                                Task {
+                                    await MasterRPGTips.donateGameStartedOrJoined()
+                                }
                             } else {
                                 appGameStateModel.gameModus = .edit
                             }

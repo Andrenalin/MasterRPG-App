@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import TipKit
 
 struct SplitEditorNavigation: View {
     @State private var storedTab: RootRoute = .pdfs
@@ -41,6 +42,22 @@ struct SplitEditorNavigation: View {
             appModel.selectedEditorModule = route
             return .after(0.8)
         }
+#if os(macOS)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    openGameWindow()
+                } label: {
+                    Label {
+                        Text("Open Game Window", bundle: .module)
+                    } icon: {
+                        Image(systemName: NetworkModules.game.icon)
+                    }
+                }
+                .popoverTip(MasterRPGTips.openAnotherWindow)
+            }
+        }
+#endif
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {
@@ -51,7 +68,7 @@ struct SplitEditorNavigation: View {
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
-                scenesManager.openWindow(SceneId.game)
+                openGameWindow()
             } label: {
                 Label {
                     Text("Game", bundle: .module)
@@ -61,12 +78,18 @@ struct SplitEditorNavigation: View {
             }
             .padding([.top, .leading], 12)
             .environment(scenesManager)
+            .popoverTip(MasterRPGTips.openAnotherWindow)
         }
 #endif
     }
     
     var selectedModule: NetworkModules {
         (appModel.selectedEditorModule ?? AppModel.defaultEditorModule).module
+    }
+
+    private func openGameWindow() {
+        scenesManager.openWindow(.game)
+        MasterRPGTips.recordWindowOpened()
     }
     
     @ViewBuilder func tabView(tab: RootRoute) -> some View {

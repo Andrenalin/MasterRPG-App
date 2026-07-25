@@ -3,6 +3,7 @@
 import AdventureRPG
 import CoreRPG
 import SwiftUI
+import TipKit
 
 struct SelectedAdventureView: View {
     let root: GameRoot
@@ -14,10 +15,14 @@ struct SelectedAdventureView: View {
     
     var body: some View {
         GroupBoxTV(isCard: true) {
-            root.adventureRoot.viewController.dropChooseView(model: selection)
-                .frame(maxWidth: .infinity)
-#if os(macOS)
-                .padding()
+#if os(tvOS)
+            VStack {
+                TipView(MasterRPGTips.chooseAdventure)
+                adventureSelection
+            }
+#else
+            adventureSelection
+                .popoverTip(MasterRPGTips.chooseAdventure)
 #endif
         } label: {
             Label {
@@ -31,6 +36,7 @@ struct SelectedAdventureView: View {
         .task {
             root.resetSelectedAdventure(uuidString: lastAdventureUUID)
             selection.resetSelection(itemId: root.gameModel.selectedAdventure, entryId: nil)
+            updateTipSelection(root.gameModel.selectedAdventure)
         }
         .onChange(of: lastAdventureUUID, initial: true) {
             root.gameModel.selectedAdventure <=> selection.itemId
@@ -43,6 +49,23 @@ struct SelectedAdventureView: View {
                 selection.resetSelection(itemId: adventureId, entryId: nil)
                 lastAdventureUUID <=> adventureId.uuidString
             }
+            updateTipSelection(newAdventure)
+        }
+    }
+
+    private var adventureSelection: some View {
+        root.adventureRoot.viewController.dropChooseView(model: selection)
+            .frame(maxWidth: .infinity)
+#if os(macOS)
+            .padding()
+#endif
+    }
+
+    private func updateTipSelection(_ adventureID: UUID?) {
+        MasterRPGTips.setSelectedAdventure(adventureID != nil)
+        guard adventureID != nil else { return }
+        Task {
+            await MasterRPGTips.donateAdventureSelected()
         }
     }
 }

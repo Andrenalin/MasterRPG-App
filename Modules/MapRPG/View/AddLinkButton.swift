@@ -2,7 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import TipKit
 
 struct AddLinkButton: View {
     let root: MapRootModel
@@ -27,7 +26,6 @@ struct AddLinkButton: View {
                 Image(systemName: module.icon)
             }
         }
-        .popoverTip(MasterRPGTips.linkContent)
     }
 }
 

@@ -32,6 +32,7 @@ struct DestinationReadyView: View {
                 }
             }
             .task {
+                appModel.refreshTipEligibility()
                 if appModel.settingsModel.firstLaunch {
                     activeAlert = .firstLaunch
                     appModel.settingsModel.needsValidateDatabase = false
@@ -75,6 +76,7 @@ struct DestinationReadyView: View {
                     }
                     Button {
                         appModel.settingsModel.firstLaunch = false
+                        appModel.refreshTipEligibility()
                     } label: {
                         Text("Not now", bundle: .module)
                     }

@@ -5,7 +5,7 @@ import SwiftUI
 
 @MainActor @Observable
 public final class LinkHighlightTextModel {    
-    public init(linkControllable: LinkControllable?, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules) async -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
+    public init(linkControllable: LinkControllable?, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules, Int) async -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
         self.linkControllable = linkControllable
         self.text = text
         self.highlightedText = highlightedText
@@ -18,7 +18,7 @@ public final class LinkHighlightTextModel {
     @ObservationIgnored
     let linkControllable: (any LinkControllable)?
     @ObservationIgnored
-    let toggler: ((UUID, NetworkModules) async -> Void)?
+    let toggler: ((UUID, NetworkModules, Int) async -> Void)?
     @ObservationIgnored
     let shareResult: ShareValueResult?
     @ObservationIgnored
@@ -53,8 +53,16 @@ public final class LinkHighlightTextModel {
 
         var repariedText = text
         _ = LinkReplaceController.linksRepair(for: &repariedText, linkControllable: linkControllable)
-        
-        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: toggler, editAction: editAction)
+
+        let occurrenceToggler: ((UUID, NetworkModules) async -> Void)?
+        if let toggler {
+            occurrenceToggler = { itemId, module in
+                await toggler(itemId, module, link.linkNumber % 100)
+            }
+        } else {
+            occurrenceToggler = nil
+        }
+        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: occurrenceToggler, editAction: editAction)
 
         linkToggled.toggle()
         

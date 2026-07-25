@@ -28,11 +28,31 @@ import os.log
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                     guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return }
+                    var nextLegacyOccurrence: [LegacyLinkKey: Int] = [:]
                     for linkReferenceModel in linkReferenceModels {
                         let source = ItemRowModel(itemId: linkReferenceModel.sourceId ?? UUID(), entryId: linkReferenceModel.sourceEntryId, typeId: NetworkModules(rawValue: Int(linkReferenceModel.sourceModule)) ?? .none)
                         let destination = ItemRowModel(itemId: linkReferenceModel.destinationId ?? UUID(), entryId: linkReferenceModel.destinationEntryId, typeId: NetworkModules(rawValue: Int(linkReferenceModel.destinationModule)) ?? .none)
-                        
-                        let newModel = LinkRegisterModel(name: linkReferenceModel.name ?? "", source: source, destination: destination)
+
+                        let name = linkReferenceModel.name ?? ""
+                        let linkNumber: Int?
+                        if linkReferenceModel.linkNumber >= 0 {
+                            linkNumber = Int(linkReferenceModel.linkNumber)
+                        } else if !name.isEmpty {
+                            let key = LegacyLinkKey(source: source, destination: destination)
+                            linkNumber = nextLegacyOccurrence[key, default: 0]
+                            nextLegacyOccurrence[key, default: 0] += 1
+                        } else {
+                            linkNumber = nil
+                        }
+
+                        let newModel = LinkRegisterModel(
+                            id: linkReferenceModel.uuid ?? UUID(),
+                            name: name,
+                            source: source,
+                            destination: destination,
+                            linkNumber: linkNumber,
+                            command: linkReferenceModel.command
+                        )
                         
                         updateLink(addedModel: newModel)
                     }
@@ -139,6 +159,8 @@ public extension LinkRegisterController {
                     dbModel.destinationId = link.destination.itemId
                     dbModel.destinationEntryId = link.destination.entryId
                     dbModel.destinationModule = Int16(link.destination.typeId.rawValue)
+                    dbModel.linkNumber = Int64(link.linkNumber ?? -1)
+                    dbModel.command = link.command
                     return false
                 }
                 try context.execute(batchInsert)
@@ -205,23 +227,27 @@ public extension LinkRegisterController {
             // Check if link already exists in the in-memory model
             let itemLinks = model.items[rawLink.itemId, default: []]
             if var linkRegisterModel = itemLinks.first(where: { 
-                $0.source.itemId == source.itemId && 
-                $0.source.entryId == source.entryId &&
+                $0.source == source &&
                 $0.destination.itemId == rawLink.itemId &&
-                $0.destination.entryId == rawLink.entryId
+                $0.destination.entryId == rawLink.entryId &&
+                $0.destination.typeId == rawLink.module &&
+                $0.linkNumber == rawLink.linkNumber &&
+                $0.command == rawLink.command
             }) {
                 linkRegisterModel.markDown = rawLink.markDown
                 return linkRegisterModel
             }
             
             // Create new link and register it
-            var newModel = LinkRegisterModel(
+            let newModel = LinkRegisterModel(
                 name: rawLink.name,
                 source: source,
-                destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module)
+                destination: ItemRowModel(itemId: rawLink.itemId, entryId: rawLink.entryId, typeId: rawLink.module),
+                linkNumber: rawLink.linkNumber,
+                command: rawLink.command,
+                markDown: rawLink.markDown
             )
             register(links: [newModel])
-            newModel.markDown = rawLink.markDown
             return newModel
         }
     }
@@ -229,6 +255,11 @@ public extension LinkRegisterController {
 //    func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
 //        "[\(link.name)](\(URL.appScheme)://\(link.id))"
 //    }
+}
+
+private struct LegacyLinkKey: Hashable {
+    let source: ItemRowModel
+    let destination: ItemRowModel
 }
 
 

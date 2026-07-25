@@ -19,6 +19,7 @@ public struct MenuWindowButtonView: View {
                     scenesManager.dismissWindow(SceneId.sceneId(for: valueType))
                 } else {
                     scenesManager.openWindow(SceneId.sceneId(for: valueType))
+                    MasterRPGTips.recordWindowOpened()
                 }
             }
         } label: {

@@ -92,6 +92,12 @@ public struct SheetAIAssistantOverlayView: View {
         .onChange(of: itemId) { _, _ in
             resetForItemChange()
         }
+        .task {
+            MasterRPGTips.setAIAvailable(availability.isAvailable)
+        }
+        .onChange(of: availability) { _, newAvailability in
+            MasterRPGTips.setAIAvailable(newAvailability.isAvailable)
+        }
     }
 
     @ViewBuilder

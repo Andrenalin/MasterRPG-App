@@ -76,6 +76,10 @@ struct MasterStartView: View {
     @MainActor
     func startGame() async {
         await root.startMaster()
+        guard root.gameModel.gameConfig.state == .started else {
+            appGameStateModel.gameModus = .edit
+            return
+        }
         appGameStateModel.gameModus = .master
         await MasterRPGTips.donateGameStartedOrJoined()
     }

@@ -73,12 +73,12 @@ import SwiftUI
     }
 
     public func resetNameText() {
-        name <=> plainText(from: attributedName)
+        name <=> plainText(from: attributedName, links: nameLinks)
         lastProcessedName = ""
     }
     
     public func resetText() {
-        text <=> plainText(from: attributedText)
+        text <=> plainText(from: attributedText, links: links)
         lastProcessedText = ""
     }
 
@@ -140,13 +140,21 @@ import SwiftUI
         return (attributedValue, parsedLinks)
     }
 
-    private func plainText(from attributedValue: AttributedString) -> String {
+    private func plainText(
+        from attributedValue: AttributedString,
+        links: [LinkRegisterModel]
+    ) -> String {
         var result = ""
 
         for run in attributedValue.runs {
             let substring = String(attributedValue[run.range].characters)
-            guard let linkId = run.linkContent,
-                  let link = linkRegisterController?.linkRegisterModel(linkId: linkId) else {
+            guard let linkId = run.linkContent else {
+                result.append(substring)
+                continue
+            }
+            let link = links.first { $0.id == linkId }
+                ?? linkRegisterController?.linkRegisterModel(linkId: linkId)
+            guard let link else {
                 result.append(substring)
                 continue
             }
