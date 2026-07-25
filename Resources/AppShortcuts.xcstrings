@@ -2,7 +2,14 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Add a section to an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einem Abenteuer in ${applicationName} einen Abschnitt hinzufügen"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -19,17 +26,18 @@
               "เพิ่มตอนเข้าในการผจญภัยใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einem Abenteuer in ${applicationName} einen Abschnitt hinzufügen"
-          }
         }
       }
     },
     "Create a new adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein neues Abenteuer in ${applicationName} erstellen"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -46,17 +54,18 @@
               "เริ่มการผจญภัยใหม่ใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein neues Abenteuer in ${applicationName} erstellen"
-          }
         }
       }
     },
     "Delete an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abenteuer in ${applicationName} löschen"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -73,17 +82,18 @@
               "ลบการผจญภัยออกจาก ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Abenteuer in ${applicationName} löschen"
-          }
         }
       }
     },
     "Navigate around ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durch ${applicationName} navigieren"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -100,17 +110,18 @@
               "เปิดไปยังหน้าใดใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Durch ${applicationName} navigieren"
-          }
         }
       }
     },
     "Open an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abenteuer in ${applicationName} öffnen"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -127,17 +138,18 @@
               "เข้าไปยังการผจญภัยใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Abenteuer in ${applicationName} öffnen"
-          }
         }
       }
     },
     "Roll a D6 in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen D6 in ${applicationName} würfeln"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -154,17 +166,18 @@
               "โยน D6 ใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einen D6 in ${applicationName} würfeln"
-          }
         }
       }
     },
     "Roll a D20 in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen D20 in ${applicationName} würfeln"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -181,17 +194,18 @@
               "โยน D20 ใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einen D20 in ${applicationName} würfeln"
-          }
         }
       }
     },
     "Roll my dice in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meine Würfel in ${applicationName} würfeln"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -208,17 +222,18 @@
               "โยนลูกเต๋าใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meine Würfel in ${applicationName} würfeln"
-          }
         }
       }
     },
     "Search adventures in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In ${applicationName} nach Abenteuern suchen"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -235,17 +250,18 @@
               "หาการผจญภัยใน ${applicationName}"
             ]
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In ${applicationName} nach Abenteuern suchen"
-          }
         }
       }
     },
     "Start an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abenteuer in ${applicationName} starten"
+          }
+        },
         "en" : {
           "stringSet" : {
             "state" : "new",
@@ -261,12 +277,6 @@
               "เริ่มการผจญภัยใน ${applicationName}",
               "เริ่มเกมการผจญภัยใน ${applicationName}"
             ]
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Abenteuer in ${applicationName} starten"
           }
         }
       }

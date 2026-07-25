@@ -38,7 +38,7 @@ struct GameRootSetupView: View {
                 Color.clear.ignoresSafeArea()
             } else {
                 ZStack(alignment: .topTrailing) {
-                    CampaignHearthStartGameView(
+                    PortalGateStartGameView(
                         root: root,
                         role: $selectedRole,
                         openStatistics: openStatistics,

@@ -1,229 +1,128 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Rule sections replaced" : {
+    "%@" : {
+
+    },
+    "%lld rules" : {
+
+    },
+    "Add" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Regelabschnitte ersetzt"
+            "value" : "Hinzufügen"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "แทนที่ส่วนของกฎแล้ว"
+            "value" : "เพิ่ม"
           }
         }
       }
     },
-    "Rule source updated" : {
+    "Add Group" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Regelquelle aktualisiert"
+            "value" : "Gruppe hinzufügen"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "อัปเดตแหล่งที่มาของกฎแล้ว"
+            "value" : "เพิ่มกลุ่ม"
           }
         }
       }
     },
-    "Rule section type updated" : {
+    "Add Rule Section" : {
+
+    },
+    "Add Section" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Regelabschnittstyp aktualisiert"
+            "value" : "Abschnitt hinzufügen"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "อัปเดตประเภทส่วนของกฎแล้ว"
+            "value" : "เพิ่มส่วน"
           }
         }
       }
     },
-    "System" : {
+    "Add section ${sectionName} to ${target}" : {
+
+    },
+    "Added \"%@\" to \"%@\"." : {
       "localizations" : {
-        "de" : {
+        "en" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "System"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ระบบ"
+            "state" : "new",
+            "value" : "Added \"%1$@\" to \"%2$@\"."
           }
         }
       }
     },
-    "Package" : {
+    "Cancel" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paket"
+            "value" : "Abbrechen"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "แพ็กเกจ"
+            "value" : "ยกเลิก"
           }
         }
       }
     },
-    "Rule Type" : {
+    "Category" : {
+
+    },
+    "Content" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Regeltyp"
+            "value" : "Inhalt"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ประเภทกฎ"
+            "value" : "เนื้อหา"
           }
         }
       }
     },
-    "Rule Sections" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Regelabschnitte"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ส่วนของกฎ"
-          }
-        }
-      }
+    "Create Rule" : {
+
     },
-    "Edit All Sections" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Abschnitte bearbeiten"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แก้ไขทุกส่วน"
-          }
-        }
-      }
+    "Create rule named ${name}" : {
+
     },
-    "Rule Source" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Regelquelle"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แหล่งที่มาของกฎ"
-          }
-        }
-      }
+    "Created \"%@\"." : {
+
     },
-    "Editing source labels does not alter the retained normalized Foundry payload." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Bearbeiten der Quellenbezeichnungen verändert die beibehaltenen normalisierten Foundry-Daten nicht."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การแก้ไขป้ายกำกับแหล่งข้อมูลจะไม่เปลี่ยนข้อมูล Foundry ที่ปรับเป็นมาตรฐานและเก็บไว้"
-          }
-        }
-      }
+    "Delete Rule" : {
+
     },
-    "Source Identifier" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quellenkennung"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตัวระบุแหล่งข้อมูล"
-          }
-        }
-      }
+    "Deleted ^[%lld rule](inflect: true)." : {
+
     },
-    "System ID" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "System-ID"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ID ระบบ"
-          }
-        }
-      }
-    },
-    "Version" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Version"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เวอร์ชัน"
-          }
-        }
-      }
-    },
-    "Package Identifier" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paketkennung"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตัวระบุแพ็กเกจ"
-          }
-        }
-      }
+    "Description" : {
+
     },
     "Document ID" : {
       "localizations" : {
@@ -257,37 +156,46 @@
         }
       }
     },
-    "Subtype" : {
+    "Edit All Sections" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Untertyp"
+            "value" : "Alle Abschnitte bearbeiten"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ชนิดย่อย"
+            "value" : "แก้ไขทุกส่วน"
           }
         }
       }
     },
-    "Rule Category" : {
+    "Editing source labels does not alter the retained normalized Foundry payload." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Regelkategorie"
+            "value" : "Das Bearbeiten der Quellenbezeichnungen verändert die beibehaltenen normalisierten Foundry-Daten nicht."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "หมวดหมู่กฎ"
+            "value" : "การแก้ไขป้ายกำกับแหล่งข้อมูลจะไม่เปลี่ยนข้อมูล Foundry ที่ปรับเป็นมาตรฐานและเก็บไว้"
           }
         }
       }
+    },
+    "Effects" : {
+
+    },
+    "Embedded Rules" : {
+
+    },
+    "Groups" : {
+
     },
     "Image Path" : {
       "localizations" : {
@@ -305,6 +213,9 @@
         }
       }
     },
+    "Name" : {
+
+    },
     "Normalized Source" : {
       "localizations" : {
         "de" : {
@@ -321,82 +232,40 @@
         }
       }
     },
-    "Retained" : {
+    "Open Rule" : {
+
+    },
+    "Open When Created" : {
+
+    },
+    "Package" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beibehalten"
+            "value" : "Paket"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เก็บไว้"
+            "value" : "แพ็กเกจ"
           }
         }
       }
     },
-    "Add Section" : {
+    "Package Identifier" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abschnitt hinzufügen"
+            "value" : "Paketkennung"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เพิ่มส่วน"
-          }
-        }
-      }
-    },
-    "Add Group" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gruppe hinzufügen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เพิ่มกลุ่ม"
-          }
-        }
-      }
-    },
-    "Add" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hinzufügen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เพิ่ม"
-          }
-        }
-      }
-    },
-    "Top Level" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oberste Ebene"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ระดับบนสุด"
+            "value" : "ตัวระบุแพ็กเกจ"
           }
         }
       }
@@ -417,21 +286,142 @@
         }
       }
     },
-    "Cancel" : {
+    "References" : {
+
+    },
+    "Retained" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abbrechen"
+            "value" : "Beibehalten"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ยกเลิก"
+            "value" : "เก็บไว้"
           }
         }
       }
+    },
+    "Rule" : {
+
+    },
+    "Rule Category" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelkategorie"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หมวดหมู่กฎ"
+          }
+        }
+      }
+    },
+    "Rule section type updated" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelabschnittstyp aktualisiert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตประเภทส่วนของกฎแล้ว"
+          }
+        }
+      }
+    },
+    "Rule Sections" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelabschnitte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่วนของกฎ"
+          }
+        }
+      }
+    },
+    "Rule sections replaced" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelabschnitte ersetzt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แทนที่ส่วนของกฎแล้ว"
+          }
+        }
+      }
+    },
+    "Rule Source" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelquelle"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แหล่งที่มาของกฎ"
+          }
+        }
+      }
+    },
+    "Rule source updated" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelquelle aktualisiert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อัปเดตแหล่งที่มาของกฎแล้ว"
+          }
+        }
+      }
+    },
+    "Rule Type" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regeltyp"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ประเภทกฎ"
+          }
+        }
+      }
+    },
+    "Rules" : {
+
     },
     "Save" : {
       "localizations" : {
@@ -449,6 +439,101 @@
         }
       }
     },
+    "Search Rules" : {
+
+    },
+    "Section" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abschnitt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่วน"
+          }
+        }
+      }
+    },
+    "Section Name" : {
+
+    },
+    "Sections" : {
+
+    },
+    "Source" : {
+
+    },
+    "Source Identifier" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quellenkennung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวระบุแหล่งข้อมูล"
+          }
+        }
+      }
+    },
+    "Subtype" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untertyp"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชนิดย่อย"
+          }
+        }
+      }
+    },
+    "System" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ระบบ"
+          }
+        }
+      }
+    },
+    "System ID" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System-ID"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ID ระบบ"
+          }
+        }
+      }
+    },
+    "The selected rule is no longer available." : {
+
+    },
     "Title" : {
       "localizations" : {
         "de" : {
@@ -465,34 +550,18 @@
         }
       }
     },
-    "Content" : {
+    "Top Level" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inhalt"
+            "value" : "Oberste Ebene"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เนื้อหา"
-          }
-        }
-      }
-    },
-    "Section" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abschnitt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ส่วน"
+            "value" : "ระดับบนสุด"
           }
         }
       }
@@ -512,7 +581,35 @@
           }
         }
       }
+    },
+    "Values" : {
+
+    },
+    "Version" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เวอร์ชัน"
+          }
+        }
+      }
+    },
+    "What should the rule be called?" : {
+
+    },
+    "What should the section be called?" : {
+
+    },
+    "Which rule?" : {
+
     }
   },
-  "version" : "1.1"
+  "version" : "1.3"
 }

@@ -190,6 +190,7 @@
       }
     },
     "Add to favorites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -230,6 +231,7 @@
       }
     },
     "Adventure" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -642,6 +644,7 @@
       }
     },
     "Items sent from the gamemaster" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -709,16 +712,16 @@
     },
     "Open %@" : {
       "localizations" : {
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิด %@"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิด %@"
           }
         }
       }
@@ -806,6 +809,7 @@
       }
     },
     "Remove from favorites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

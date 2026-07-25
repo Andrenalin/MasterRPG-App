@@ -25,7 +25,7 @@ struct PortalGateStartGameView: View {
                         .font(.largeTitle)
                         .foregroundStyle(theme.tint(for: .adventure))
                 }
-                .frame(width: 150, height: 150)
+                .frame(width: 120, height: 120)
                 .accessibilityHidden(true)
 
                 Text("Portal Gate", bundle: .module)
@@ -34,26 +34,40 @@ struct PortalGateStartGameView: View {
                 Text("How will you enter tonight’s story?", bundle: .module)
                     .foregroundStyle(.secondary)
 
-                GameSetupRoleCards(selection: $role)
-
-                GameSetupSectionCard(
-                    role.title,
-                    systemImage: role.systemImage
-                ) {
-                    GameSetupRoleContent(root: root, selection: role)
+#if os(tvOS)
+            Button {
+                Task {
+                    await root.startDemo(supporterTier: .gold)
                 }
+            } label: {
+                Label {
+                    Text("Demo", bundle: .module)
+                } icon: {
+                    Image(systemName: "play.rectangle")
+                }
+            }
+#else
 
-                SupporterWelcomeCard(openSupporter: openSupporter)
+                GameSetupRoleCards(selection: $role)
+#endif
+
+                GameSetupRoleContent(root: root, selection: role)
+                
+                //SupporterWelcomeCard(openSupporter: openSupporter)
 
                 HStack {
                     GameSetupStatisticsCard(
                         sessionCount: root.statisticsModel.summary.sessionCount,
                         openStatistics: openStatistics
                     )
+#if !os(tvOS)
                     GameSetupTipCard()
+#endif
                 }
+                
+                SupporterWelcomeCard(openSupporter: openSupporter)
             }
-            .frame(maxWidth: 900)
+            .frame(maxWidth: 1100)
             .padding()
             .frame(maxWidth: .infinity)
         }

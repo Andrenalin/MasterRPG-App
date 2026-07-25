@@ -15,6 +15,7 @@ struct SearchProxyView: View {
     var body: some View {
         ScrollView {
             LazyVStack {
+                #if !os(tvOS)
                 GroupBoxTV(isCard: true, withoutGroup: true) {
                     Text("Observe any hosted game in the local network, or connect as proxy to extend a player to a second screen and audio source.", bundle: .module)
                         .lineLimit(10)
@@ -27,7 +28,8 @@ struct SearchProxyView: View {
                             .imageScale(.large)
                     }
                 }
-
+                #endif
+                
                 if let observerController = root.networkStore.model.playerStore {
                     ForEach(observerController.browserManager.games) { browser in
                         BrowserRowView(root: root, playerNetworkControllable: observerController, model: browser)

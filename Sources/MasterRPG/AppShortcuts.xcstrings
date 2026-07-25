@@ -2,6 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Add a section to an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -29,6 +30,7 @@
       }
     },
     "Create a new adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -56,6 +58,7 @@
       }
     },
     "Delete an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -83,6 +86,7 @@
       }
     },
     "Navigate around ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -110,6 +114,7 @@
       }
     },
     "Open an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -137,6 +142,7 @@
       }
     },
     "Roll a D6 in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -164,6 +170,7 @@
       }
     },
     "Roll a D20 in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -191,6 +198,7 @@
       }
     },
     "Roll my dice in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -218,6 +226,7 @@
       }
     },
     "Search adventures in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -245,6 +254,7 @@
       }
     },
     "Start an adventure in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "de" : {
           "stringUnit" : {

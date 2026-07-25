@@ -3,17 +3,14 @@
 import SwiftUI
 
 private struct AppThemeEnvironmentKey: EnvironmentKey {
-    static let defaultValue = AppThemeCatalog.standard.resolve(
-        colorScheme: .light,
-        contrast: .standard
+    static let defaultValue = AppThemeCatalog.arcane.resolve(
+        colorScheme: .dark,
+        contrast: .increased
     )
 }
 
 public extension EnvironmentValues {
-    var appTheme: ResolvedAppTheme {
-        get { self[AppThemeEnvironmentKey.self] }
-        set { self[AppThemeEnvironmentKey.self] = newValue }
-    }
+    @Entry var appTheme: ResolvedAppTheme = AppThemeEnvironmentKey.defaultValue
 }
 
 public extension View {
