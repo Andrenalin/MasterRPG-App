@@ -114,9 +114,7 @@ public struct LinkItemListView: View {
                     }
                     .applyIf(type == .inspector) { content in
                         content
-#if !os(macOS)
-                            .toolbarVisibility(.hidden, for: .navigationBar)
-#endif
+                            .navigationVisibility(false)
                     }
             }
             .onChange(of: showDetails) {

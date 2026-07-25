@@ -15,8 +15,7 @@ struct OnlyPlayerGameView: View {
         if root.gameModel.gameType != .observer {
             root.characterRoot.viewController.gameView(
                 root: root.characterRoot,
-                select: root.gameModel.selectedCharacter,
-                inlineSearch: usesInlineSearch
+                select: root.gameModel.selectedCharacter
             )
             .gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
@@ -33,14 +32,6 @@ struct OnlyPlayerGameView: View {
                 gameScreenModel.updateInlineMainOverlayWidth(width)
             }
         }
-    }
-
-    private var usesInlineSearch: Bool {
-#if os(iOS) || os(macOS)
-        true
-#else
-        false
-#endif
     }
 }
 

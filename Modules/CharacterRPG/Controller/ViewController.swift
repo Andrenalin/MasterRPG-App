@@ -44,14 +44,12 @@ public extension ViewController {
         root: CharacterRootModel,
         itemId: UUID,
         configuration: ViewerConfiguration,
-        searchContext: SheetSearchContext? = nil,
         dismissAction: (() -> Void)? = nil
     ) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
         return ViewerRootView(
             model: model,
             configuration: configuration,
-            searchContext: searchContext,
             dismissAction: dismissAction
         )
     }
@@ -63,8 +61,7 @@ public extension ViewController {
     
     @MainActor func gameView(
         root: CharacterRootModel,
-        select: UUID? = nil,
-        inlineSearch: Bool = false
+        select: UUID? = nil
     ) -> some View {
         Group {
             if let select {
@@ -73,8 +70,7 @@ public extension ViewController {
                     itemId: select,
                     configuration: ViewerConfiguration(
                         closeButton: false,
-                        addToolbar: !inlineSearch,
-                        inlineSearch: inlineSearch,
+                        addToolbar: false,
                         isGame: true
                     )
                 )

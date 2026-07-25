@@ -110,9 +110,7 @@ private extension QuickEntryEditorView {
                 inspector
                     .frame(width: 300)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
-#if !os(macOS)
-                    .toolbarVisibility(.visible, for: .navigationBar)
-#endif
+                    .navigationVisibility(true)
 
             }
             #endif

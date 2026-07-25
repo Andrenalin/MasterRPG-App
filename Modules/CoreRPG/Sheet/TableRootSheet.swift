@@ -8,7 +8,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         itemId: UUID,
         module: NetworkModules,
         configuration: ViewerConfiguration,
-        searchContext: SheetSearchContext? = nil,
         dismissAction: (() -> Void)? = nil
     ) where LinkType == LinkDiceData, BottomAccessory == EmptyView {
         self.init(
@@ -16,7 +15,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             itemId: itemId,
             module: module,
             configuration: configuration,
-            searchContext: searchContext,
             dismissAction: dismissAction,
             isEditor: false,
             linkTypes: LinkDiceData.self,
@@ -29,7 +27,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         itemId: UUID,
         module: NetworkModules,
         configuration: ViewerConfiguration,
-        searchContext: SheetSearchContext? = nil,
         dismissAction: (() -> Void)? = nil,
         isEditor: Bool,
         linkTypes: LinkType.Type,
@@ -41,7 +38,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
 
         self.root = root
         self.configuration = configuration
-        self.searchContext = searchContext
         self.dismissAction = dismissAction
         self.isEditor = isEditor
         self.linkTypes = linkTypes
@@ -59,7 +55,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         
     let root: ItemRootController
     let configuration: ViewerConfiguration
-    let searchContext: SheetSearchContext?
     let dismissAction: (() -> Void)?
     let isEditor: Bool
     let linkTypes: LinkType.Type
@@ -74,12 +69,14 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
     @State private var generationSelection: WindowItemSelection?
     
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         @Bindable var sheetRootModel = sheetRootModel
 
         TableSheetView(
             root: root,
             model: sheetRootModel,
-            addSearchable: configuration.addToolbar && !configuration.inlineSearch,
+            addSearchable: configuration.addToolbar && !configuration.isGame,
             isEditor: isEditor,
             linkTypes: linkTypes
         )
@@ -91,7 +88,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             .glassBackgroundEffect()
 #endif
             .overlay(alignment: .topTrailing) {
-                if configuration.inlineSearch {
+                if configuration.isGame {
                     InlineSheetSearchControl(
                         module: root.configurable.module,
                         searchText: $sheetRootModel.searchText
@@ -108,12 +105,6 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
                 toolbarContent
             }
             .navigationTitle(Text(verbatim: sheetRootModel.sheetModel.name))
-            .onAppear {
-                searchContext?.attachResults(sheetRootModel)
-            }
-            .onDisappear {
-                searchContext?.detachResults(sheetRootModel)
-            }
             .itemGenerationPresentation(
                 root: root,
                 selection: $generationSelection

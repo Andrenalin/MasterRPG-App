@@ -24,14 +24,12 @@ public struct ViewerConfiguration: Hashable, Sendable {
     public init(
         closeButton: Bool = false,
         addToolbar: Bool = true,
-        inlineSearch: Bool = false,
         isGame: Bool = false,
         aiExtractor: Bool = false,
         canBookmark: Bool = false
     ) {
         self.closeButton = closeButton
         self.addToolbar = addToolbar
-        self.inlineSearch = inlineSearch
         self.isGame = isGame
         self.aiExtractor = aiExtractor
         self.canBookmark = canBookmark
@@ -39,7 +37,6 @@ public struct ViewerConfiguration: Hashable, Sendable {
     
     public let closeButton: Bool
     public let addToolbar: Bool
-    public let inlineSearch: Bool
     public let isGame: Bool
     public let aiExtractor: Bool
     public let canBookmark: Bool

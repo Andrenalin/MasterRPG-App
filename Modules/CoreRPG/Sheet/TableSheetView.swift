@@ -29,6 +29,8 @@ struct TableSheetView<LinkType: LinkDataTransferable>: View {
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         @Bindable var model = model
 
         listContentView

@@ -66,14 +66,12 @@ public extension ViewController {
         root: AdventureRootModel,
         itemId: UUID,
         configuration: ViewerConfiguration,
-        searchContext: SheetSearchContext? = nil,
         dismissAction: (() -> Void)? = nil
     ) -> some View {
         let model = root.itemController.itemOrEmpty(for: itemId)
         return AdventureSheet(
             model: model,
             configuration: configuration,
-            searchContext: searchContext,
             dismissAction: dismissAction
         )
     }
@@ -84,8 +82,7 @@ public extension ViewController {
 
     @MainActor func gameView(
         root: AdventureRootModel,
-        focusedIds: [UUID],
-        inlineSearch: Bool = false
+        focusedIds: [UUID]
     ) -> some View {
         Group {
             if let select = focusedIds.first {
@@ -94,8 +91,7 @@ public extension ViewController {
                     itemId: select,
                     configuration: ViewerConfiguration(
                         closeButton: false,
-                        addToolbar: !inlineSearch,
-                        inlineSearch: inlineSearch,
+                        addToolbar: true,
                         isGame: true
                     )
                 )

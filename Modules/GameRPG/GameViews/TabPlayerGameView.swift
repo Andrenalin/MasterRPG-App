@@ -17,8 +17,7 @@ struct TabPlayerGameView: View {
                 if let characterId = root.gameModel.selectedCharacter {
                     root.characterRoot.viewController.gameView(
                         root: root.characterRoot,
-                        select: characterId,
-                        inlineSearch: usesInlineSearch
+                        select: characterId
                     )
                 }
             }
@@ -55,14 +54,6 @@ struct TabPlayerGameView: View {
                 gameScreenModel.updateInlineMainOverlayWidth(width)
             }
         }
-    }
-
-    private var usesInlineSearch: Bool {
-#if os(iOS) || os(macOS)
-        true
-#else
-        false
-#endif
     }
 }
 

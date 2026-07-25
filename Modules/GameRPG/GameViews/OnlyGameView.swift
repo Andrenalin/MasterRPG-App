@@ -17,31 +17,22 @@ struct OnlyGameView: View {
 
         root.adventureRoot.viewController.gameView(
             root: root.adventureRoot,
-            focusedIds: [adventureId],
-            inlineSearch: usesInlineSearch
+            focusedIds: [adventureId]
         )
-            .gameOverlayTabBarView(value: NetworkModules.game)
-            .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-            .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
-            .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
-            .allowsHitTesting(gameScreenModel.showMainTab != .none)
-            .accessibilityHidden(gameScreenModel.showMainTab == .none)
-            .shadow(radius: 8)
-            .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showMainTab)
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.size.width
-            } action: { width in
-                gameScreenModel.updateInlineMainOverlayWidth(width)
-            }
-    }
-
-    private var usesInlineSearch: Bool {
-#if os(iOS) || os(macOS)
-        true
-#else
-        false
-#endif
+        .gameOverlayTabBarView(value: NetworkModules.game)
+        .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
+        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+        .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
+        .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
+        .allowsHitTesting(gameScreenModel.showMainTab != .none)
+        .accessibilityHidden(gameScreenModel.showMainTab == .none)
+        .shadow(radius: 8)
+        .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showMainTab)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width
+        } action: { width in
+            gameScreenModel.updateInlineMainOverlayWidth(width)
+        }
     }
 }
 
