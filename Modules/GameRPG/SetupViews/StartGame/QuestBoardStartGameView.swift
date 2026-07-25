@@ -131,8 +131,20 @@ private struct QuestBoardStep<Content: View>: View {
     }
 }
 
+#Preview("Quest Board · Step") {
+    QuestBoardStep(
+        number: 2,
+        title: "Choose your game item",
+        isComplete: true
+    ) {
+        Text("The selected character is ready.", bundle: .module)
+            .foregroundStyle(.secondary)
+    }
+    .padding()
+}
+
 #Preview("3 · Quest Board", traits: .mockData) {
-    @Previewable @State var role: GameSetupRole = .player
+    @Previewable @State var role = GameSetupRole.previewPlayer
 
     ManagedNavigationStack {
         QuestBoardStartGameView(

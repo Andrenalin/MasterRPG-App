@@ -80,7 +80,7 @@ struct GuildHallStartGameView: View {
 }
 
 #Preview("2 · Guild Hall", traits: .mockData) {
-    @Previewable @State var role: GameSetupRole = .master
+    @Previewable @State var role = GameSetupRole.previewMaster
 
     ManagedNavigationStack {
         GuildHallStartGameView(

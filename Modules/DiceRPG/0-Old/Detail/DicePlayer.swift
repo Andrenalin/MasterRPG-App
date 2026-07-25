@@ -74,6 +74,7 @@ struct DicePlayer: View {
                 tier: root.gameController.supporterTier(playerId: playerId)
             )
             .font(.footnote)
+            .fixedSize()
 
             if root.gameController.gameItem(for: playerId).sumUp || root.gameController.gameItem(for: playerId).compareOption != .off {
                 Label {
@@ -91,7 +92,6 @@ struct DicePlayer: View {
                     .accessibilityHidden(true)
             }
         }
-        .fixedSize()
         .accessibilityElement(children: .combine)
     }
 

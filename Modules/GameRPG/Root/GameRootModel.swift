@@ -132,14 +132,17 @@ final class GameRootModel: Sendable {
         gameControl.controls = state.controls
         gameControl.features = state.features
 
+        let localPlayer = gamePlayer
         var updatedPlayers = state.players
-        if !updatedPlayers.contains(where: { $0.id == gameConfig.id }) {
+        if let localIndex = updatedPlayers.firstIndex(where: { $0.id == gameConfig.id }),
+           localPlayer.id == gameConfig.id {
+            // The local entitlement is authoritative for this device. An older
+            // master can legitimately send a roster entry without supporter data.
+            updatedPlayers[localIndex].supporterTier = localPlayer.supporterTier
+        } else if localPlayer.id == gameConfig.id {
             // Keep the local player in the roster, but never append the `.empty`
             // fallback — its random id would poison every later lookup.
-            let localPlayer = gamePlayer
-            if localPlayer.id == gameConfig.id {
-                updatedPlayers.append(localPlayer)
-            }
+            updatedPlayers.append(localPlayer)
         }
         gameRoster.players = updatedPlayers
     }
@@ -223,6 +226,18 @@ final class GameRootModel: Sendable {
     var gameType: GameType { gameConfig.type(in: gameRoster) }
     var gameName: String { gameConfig.name(in: gameRoster) }
     var gamePlayer: PlayerGameModel { gameConfig.player(in: gameRoster) }
+
+    func updateLocalSupporterTier(_ supporterTier: SupporterTier) {
+        if gameConfig.isMaster,
+           gameConfig.master.supporterTier != supporterTier {
+            gameConfig.master.supporterTier = supporterTier
+        }
+
+        if let localIndex = gameRoster.players.firstIndex(where: { $0.id == gameConfig.id }),
+           gameRoster.players[localIndex].supporterTier != supporterTier {
+            gameRoster.players[localIndex].supporterTier = supporterTier
+        }
+    }
 
     func canApplyValueUpdate(
         senderId: UUID,
@@ -326,6 +341,10 @@ public final class GameRoot {
     private(set) var _logGameController: LogGameController?
     var logGameController: LogGameController {
         _logGameController.unsafelyUnwrapped
+    }
+
+    public func updateSupporterTier(_ supporterTier: SupporterTier) {
+        gameModel.updateLocalSupporterTier(supporterTier)
     }
     
     lazy var searchController: SearchGlobalController = {
@@ -590,6 +609,8 @@ extension GameRoot {
         if let index = gameModel.gameRoster.players.firstIndex(where: { $0.id == gameModel.gameConfig.id }) {
             gameModel.gameRoster.players[index].type = type
             gameModel.gameRoster.players[index].name = name(for: type)
+            gameModel.gameRoster.players[index].characterId = gameModel.selectedCharacter
+            gameModel.gameRoster.players[index].supporterTier = supporterTier
         } else {
             gameModel.gameRoster.players.append(
                 PlayerGameModel(

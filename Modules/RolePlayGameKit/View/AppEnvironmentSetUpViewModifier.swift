@@ -62,6 +62,9 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
                 await appModel.inAppController.prepare()
                 appModel.inAppController.startObservingTransactionUpdates()
             }
+            .onChange(of: appModel.supporterTier, initial: true) { _, supporterTier in
+                appModel.gameRoot.updateSupporterTier(supporterTier)
+            }
     }
 }
 

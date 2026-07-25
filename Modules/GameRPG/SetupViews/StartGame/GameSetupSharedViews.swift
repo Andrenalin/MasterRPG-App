@@ -47,6 +47,22 @@ enum GameSetupRole: Int, CaseIterable, Hashable, Identifiable {
         case .join: "person.2.wave.2.fill"
         }
     }
+
+    static var previewPlayer: GameSetupRole {
+#if os(tvOS)
+        .join
+#else
+        .player
+#endif
+    }
+
+    static var previewMaster: GameSetupRole {
+#if os(tvOS)
+        .join
+#else
+        .master
+#endif
+    }
 }
 
 struct GameSetupBackdrop: View {
@@ -285,4 +301,59 @@ struct GameSetupSectionCard<Content: View>: View {
             in: .rect(cornerRadius: 24)
         )
     }
+}
+
+#Preview("Shared · Backdrop") {
+    GameSetupBackdrop()
+}
+
+#Preview("Shared · Role picker") {
+    @Previewable @State var role = GameSetupRole.previewPlayer
+
+    GameSetupRolePicker(selection: $role)
+        .padding()
+}
+
+#Preview("Shared · Role cards") {
+    @Previewable @State var role = GameSetupRole.previewPlayer
+
+    GameSetupRoleCards(selection: $role)
+        .padding()
+}
+
+#Preview("Shared · Role content", traits: .mockData) {
+    GameSetupRoleContent(
+        root: .preview,
+        selection: .previewPlayer
+    )
+    .padding()
+}
+
+#Preview("Shared · Supporter welcome") {
+    SupporterWelcomeCard(openSupporter: {})
+        .padding()
+        .environment(\.supporterTier, .gold)
+}
+
+#Preview("Shared · Statistics") {
+    GameSetupStatisticsCard(
+        sessionCount: 42,
+        openStatistics: {}
+    )
+    .padding()
+}
+
+#Preview("Shared · Tip") {
+    GameSetupTipCard()
+        .padding()
+}
+
+#Preview("Shared · Section card") {
+    GameSetupSectionCard(
+        LocalizedStringResource("Preview section", bundle: .module),
+        systemImage: "sparkles"
+    ) {
+        Text("Preview content", bundle: .module)
+    }
+    .padding()
 }

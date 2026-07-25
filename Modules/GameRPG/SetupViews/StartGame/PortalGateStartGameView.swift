@@ -63,7 +63,7 @@ struct PortalGateStartGameView: View {
 }
 
 #Preview("4 · Portal Gate", traits: .mockData) {
-    @Previewable @State var role: GameSetupRole = .master
+    @Previewable @State var role = GameSetupRole.previewMaster
 
     ManagedNavigationStack {
         PortalGateStartGameView(

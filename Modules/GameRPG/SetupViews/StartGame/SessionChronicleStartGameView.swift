@@ -69,7 +69,7 @@ struct SessionChronicleStartGameView: View {
 }
 
 #Preview("5 · Session Chronicle", traits: .mockData) {
-    @Previewable @State var role: GameSetupRole = .player
+    @Previewable @State var role = GameSetupRole.previewPlayer
 
     ManagedNavigationStack {
         SessionChronicleStartGameView(

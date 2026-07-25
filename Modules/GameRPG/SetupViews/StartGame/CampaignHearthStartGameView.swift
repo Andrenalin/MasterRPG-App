@@ -75,7 +75,7 @@ struct CampaignHearthStartGameView: View {
 }
 
 #Preview("1 · Campaign Hearth", traits: .mockData) {
-    @Previewable @State var role: GameSetupRole = .player
+    @Previewable @State var role = GameSetupRole.previewPlayer
 
     ManagedNavigationStack {
         CampaignHearthStartGameView(

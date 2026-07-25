@@ -29,15 +29,20 @@ enum SupporterProduct: String, CaseIterable, Sendable {
 
 @MainActor @Observable
 final class InAppModel {
-    var products: [Product] = []
-    var activeTransactions: Set<StoreKit.Transaction> = []
-    var isLoading = false
+    var activeProductIDs: Set<Product.ID> = []
+    var hasPrepared = false
+    var isPreparing = false
+    var isRestoring = false
     var message: String?
     @ObservationIgnored var transactionUpdatesTask: Task<Void, Never>?
 
+    var isLoading: Bool {
+        isPreparing || isRestoring
+    }
+
     var supporterTier: SupporterTier {
-        activeTransactions
-            .compactMap { SupporterProduct(productID: $0.productID)?.tier }
+        activeProductIDs
+            .compactMap { SupporterProduct(productID: $0)?.tier }
             .max() ?? .none
     }
 
@@ -48,77 +53,89 @@ final class InAppModel {
 
 @MainActor
 public struct InAppController {
-    let model: InAppModel
+    typealias EntitlementProductIDs = @MainActor @Sendable () async -> Set<Product.ID>
+    typealias StoreSynchronizer = @MainActor @Sendable () async throws -> Void
 
-    init(model: InAppModel) {
+    let model: InAppModel
+    private let entitlementProductIDs: EntitlementProductIDs
+    private let synchronizeStore: StoreSynchronizer
+
+    init(
+        model: InAppModel,
+        entitlementProductIDs: @escaping EntitlementProductIDs = Self.currentEntitlementProductIDs,
+        synchronizeStore: @escaping StoreSynchronizer = Self.synchronizeAppStore
+    ) {
         self.model = model
+        self.entitlementProductIDs = entitlementProductIDs
+        self.synchronizeStore = synchronizeStore
     }
 
     func prepare() async {
-        model.isLoading = true
-        async let products: Void = fetchProducts()
-        async let entitlements: Void = fetchActiveTransactions()
-        _ = await (products, entitlements)
-        model.isLoading = false
-    }
+        guard !model.hasPrepared, !model.isPreparing else { return }
+        model.isPreparing = true
+        defer { model.isPreparing = false }
 
-    func observeTransactionUpdates() async {
-        for await update in StoreKit.Transaction.updates {
-            guard !Task.isCancelled else { return }
-            switch update {
-            case .verified(let transaction):
-                await fetchActiveTransactions()
-                await transaction.finish()
-            case .unverified:
-                model.message = String(
-                    localized: "A purchase could not be verified.",
-                    bundle: .module
-                )
-            }
-        }
+        await fetchActiveTransactions()
+        guard !Task.isCancelled else { return }
+        model.hasPrepared = true
     }
 
     func startObservingTransactionUpdates() {
         guard model.transactionUpdatesTask == nil else { return }
         model.transactionUpdatesTask = Task { @MainActor [weak model] in
-            guard let model else { return }
-            await InAppController(model: model).observeTransactionUpdates()
+            for await update in StoreKit.Transaction.updates {
+                guard !Task.isCancelled else { return }
+                guard let model else { return }
+
+                switch update {
+                case .verified(let transaction):
+                    await InAppController.fetchActiveTransactions(
+                        in: model,
+                        entitlementProductIDs: InAppController.currentEntitlementProductIDs
+                    )
+                    await transaction.finish()
+                case .unverified:
+                    model.message = String(
+                        localized: "A purchase could not be verified.",
+                        bundle: .module
+                    )
+                }
+            }
         }
     }
 
-    static func fetchActiveTransactions(in model: InAppModel) async {
-        var activeTransactions: Set<StoreKit.Transaction> = []
-
+    private static func currentEntitlementProductIDs() async -> Set<Product.ID> {
+        var productIDs: Set<Product.ID> = []
         for await entitlement in StoreKit.Transaction.currentEntitlements {
             guard case .verified(let transaction) = entitlement,
                   SupporterProduct(productID: transaction.productID) != nil
             else { continue }
 
             if transaction.revocationDate == nil {
-                activeTransactions.insert(transaction)
+                productIDs.insert(transaction.productID)
             }
         }
+        return productIDs
+    }
 
-        model.activeTransactions = activeTransactions
+    private static func synchronizeAppStore() async throws {
+        try await AppStore.sync()
+    }
+
+    private static func fetchActiveTransactions(
+        in model: InAppModel,
+        entitlementProductIDs: EntitlementProductIDs
+    ) async {
+        let productIDs = await entitlementProductIDs()
+        guard !Task.isCancelled else { return }
+        model.activeProductIDs = productIDs
     }
 
     public func fetchActiveTransactions() async {
-        await InAppController.fetchActiveTransactions(in: model)
-    }
-
-    func fetchProducts() async {
-        do {
-            let products = try await Product.products(for: SupporterProduct.productIDs)
-            model.products = products.sorted {
-                let left = SupporterProduct(productID: $0.id)?.tier ?? .none
-                let right = SupporterProduct(productID: $1.id)?.tier ?? .none
-                return left < right
-            }
-            model.message = nil
-        } catch {
-            model.products = []
-            model.message = error.localizedDescription
-        }
+        await InAppController.fetchActiveTransactions(
+            in: model,
+            entitlementProductIDs: entitlementProductIDs
+        )
     }
 
     func handlePurchaseResult(_ result: Result<Product.PurchaseResult, any Error>) async {
@@ -150,10 +167,12 @@ public struct InAppController {
     }
 
     func restorePurchases() async {
-        model.isLoading = true
-        defer { model.isLoading = false }
+        guard !model.isRestoring else { return }
+        model.isRestoring = true
+        defer { model.isRestoring = false }
+
         do {
-            try await AppStore.sync()
+            try await synchronizeStore()
             await fetchActiveTransactions()
             model.message = String(
                 localized: "Purchases restored.",

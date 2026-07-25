@@ -21,7 +21,11 @@ public struct InAppView: View {
                         tier: SupporterProduct(productID: product.id)?.tier ?? .none
                     )
                 }
+#if os(tvOS)
+                .productViewStyle(.regular)
+#else
                 .productViewStyle(.large)
+#endif
                 .storeButton(.hidden, for: .restorePurchases)
                 .onInAppPurchaseCompletion { _, result in
                     await inAppController.handlePurchaseResult(result)
@@ -38,6 +42,7 @@ public struct InAppView: View {
                         await inAppController.restorePurchases()
                     }
                 }
+                .disabled(inAppController.model.isLoading)
 
                 if inAppController.model.isLoading {
                     ProgressView {
@@ -91,6 +96,11 @@ private struct SupporterStatusView: View {
     }
 }
 
-#Preview {
+#Preview("Supporter store") {
     InAppView(inAppController: InAppController(model: InAppModel()))
+}
+
+#Preview("Supporter status") {
+    SupporterStatusView(tier: .gold)
+        .padding()
 }
