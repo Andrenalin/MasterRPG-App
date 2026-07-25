@@ -71,7 +71,22 @@ public struct SheetAIAssistantContent: View {
 
     public var body: some View {
         if SheetAIGenerationController.isAvailable {
+#if os(iOS)
+            if SheetAIGenerationController.usesPhoneTabAccessory {
+                Color.clear
+                    .frame(width: 0, height: 0)
+                    .accessibilityHidden(true)
+                    .sheetAIAssistantContext(
+                        module: module,
+                        itemId: itemId,
+                        rootModel: rootModel
+                    )
+            } else {
+                standardAssistant
+            }
+#else
             standardAssistant
+#endif
         }
     }
 

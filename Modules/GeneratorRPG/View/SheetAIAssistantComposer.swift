@@ -166,11 +166,6 @@ struct SheetAIAssistantMiniComposer: View {
                 .textFieldStyle(.plain)
                 .focused($isTextFieldFocused)
                 .onSubmit(submitAction)
-                .task {
-                    await Task.yield()
-                    guard isActive else { return }
-                    isTextFieldFocused = true
-                }
 #if os(iOS)
                 .submitLabel(.send)
 #endif
@@ -192,6 +187,11 @@ struct SheetAIAssistantMiniComposer: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .contentShape(.rect)
+            .defaultFocus(
+                $isTextFieldFocused,
+                true,
+                priority: .userInitiated
+            )
         } else {
             Button("Ask AI", systemImage: NetworkModules.generator.icon, action: activateAction)
                 .buttonStyle(.plain)

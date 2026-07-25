@@ -4,8 +4,8 @@ import AudioRPG
 import CoreRPG
 import SwiftUI
 import AdventureRPG
-#if os(iOS)
-import UIKit
+#if !os(tvOS)
+import GeneratorRPG
 #endif
 
 struct TabbedNavigation: View {
@@ -14,6 +14,10 @@ struct TabbedNavigation: View {
     @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
 
     private let restoresState: Bool
+
+#if os(iOS)
+    @State private var aiAssistantContexts: [SheetAIAssistantContext] = []
+#endif
 
     init(restoresState: Bool = true) {
         self.restoresState = restoresState
@@ -36,14 +40,25 @@ struct TabbedNavigation: View {
             }
         }
 #if os(iOS)
+        .onPreferenceChange(SheetAIAssistantContextPreferenceKey.self) { newContexts in
+            if aiAssistantContexts != newContexts {
+                aiAssistantContexts = newContexts
+            }
+        }
         .phoneTabBottomAccessory(isEnabled: shouldShowPhoneBottomAccessory) {
             PhoneTabBottomAccessory(
-                showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar
+                showsAudioPlayer: appModel.audioRoot.audioPlayerModel.showPlayerToolBar,
+                aiAssistantContext: aiAssistantContext
             )
+        }
+        .safeAreaBar(edge: .bottom, spacing: 0) {
+            if let activeAIAssistantContext {
+                PhoneActiveAIAssistantBar(context: activeAIAssistantContext)
+            }
         }
         .environment(
             \.audioPlayerUsesTabAccessory,
-            usesPhoneTabAccessory
+            SheetAIGenerationController.usesPhoneTabAccessory
         )
         .tabBarMinimizeBehavior26(
             aiAssistantContext == nil ? .onScrollDown : .never
@@ -81,13 +96,33 @@ struct TabbedNavigation: View {
     }
 
 #if os(iOS)
-    private var shouldShowPhoneBottomAccessory: Bool {
-        usesPhoneTabAccessory &&
-        appModel.audioRoot.audioPlayerModel.showPlayerToolBar
+    private var aiAssistantContext: SheetAIAssistantContext? {
+        guard SheetAIGenerationController.isAvailable else { return nil }
+
+        return aiAssistantContexts.last(where: {
+            $0.module == selectedModule && $0.rootModel.hasAIAssistantContent
+        })
     }
 
-    private var usesPhoneTabAccessory: Bool {
-        UIDevice.current.userInterfaceIdiom == .phone
+    private var shouldShowPhoneBottomAccessory: Bool {
+        guard SheetAIGenerationController.usesPhoneTabAccessory else { return false }
+
+        if let aiAssistantContext {
+            return !aiAssistantContext.rootModel.isAIModeActive
+        }
+
+        return appModel.audioRoot.audioPlayerModel.showPlayerToolBar
+    }
+
+    private var activeAIAssistantContext: SheetAIAssistantContext? {
+        guard
+            let aiAssistantContext,
+            aiAssistantContext.rootModel.isAIModeActive
+        else {
+            return nil
+        }
+
+        return aiAssistantContext
     }
 #endif
 }
@@ -100,10 +135,37 @@ private struct PhoneTabBottomAccessory: View {
     @ViewBuilder
     var body: some View {
         if let aiAssistantContext {
-            aiAssistantView(aiAssistantContext)
+            if !aiAssistantContext.rootModel.isAIModeActive {
+                aiAssistantView(aiAssistantContext)
+            }
         } else if showsAudioPlayer {
             AudioPlayerMiniBarView()
         }
+    }
+
+    private func aiAssistantView(_ context: SheetAIAssistantContext) -> some View {
+        SheetAIAssistantOverlayView(
+            module: context.module,
+            itemId: context.itemId,
+            rootModel: context.rootModel,
+            presentation: .tabAccessory
+        )
+    }
+}
+
+private struct PhoneActiveAIAssistantBar: View {
+    let context: SheetAIAssistantContext
+
+    var body: some View {
+        SheetAIAssistantOverlayView(
+            module: context.module,
+            itemId: context.itemId,
+            rootModel: context.rootModel,
+            presentation: .tabAccessory
+        )
+        .glassEffectAll(.regular.interactive(), in: .capsule)
+        .padding(.horizontal)
+        .padding(.bottom)
     }
 }
 

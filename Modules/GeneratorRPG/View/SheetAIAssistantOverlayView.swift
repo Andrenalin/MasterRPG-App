@@ -18,16 +18,19 @@ public struct SheetAIAssistantOverlayView: View {
     public init(
         module: NetworkModules,
         itemId: UUID,
-        rootModel: SheetRootModel
+        rootModel: SheetRootModel,
+        presentation: SheetAIAssistantPresentation = .standard
     ) {
         self.module = module
         self.itemId = itemId
         self.rootModel = rootModel
+        self.presentation = presentation
     }
 
     let module: NetworkModules
     let itemId: UUID
     let rootModel: SheetRootModel
+    let presentation: SheetAIAssistantPresentation
 
     @State private var messageText = ""
     @State private var errorMessage: String?
