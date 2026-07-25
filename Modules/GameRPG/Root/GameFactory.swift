@@ -31,9 +31,14 @@ public enum GameFactory {
 
     @MainActor public static func rootSetupView(
         root: GameRoot,
-        openStatistics: @escaping @MainActor () -> Void
+        openStatistics: @escaping @MainActor () -> Void,
+        openSupporter: @escaping @MainActor () -> Void = {}
     ) -> some View {
-        GameRootSetupView(root: root, openStatistics: openStatistics)
+        GameRootSetupView(
+            root: root,
+            openStatistics: openStatistics,
+            openSupporter: openSupporter
+        )
     }
 
     @MainActor public static func statisticsView(

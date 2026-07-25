@@ -1792,7 +1792,12 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 // controls and roster in separate steps lets concurrent message
                 // builders capture a torn state and send it back to the master.
                 await MainActor.run {
-                    root.gameModel.applyMasterBroadcast(masterId: model.masterId, masterName: model.sender.name, state: masterState)
+                    root.gameModel.applyMasterBroadcast(
+                        masterId: model.masterId,
+                        masterName: model.sender.name,
+                        supporterTier: model.sender.supporterTier,
+                        state: masterState
+                    )
                     resetPlayers()
                 }
             }
@@ -2435,7 +2440,12 @@ extension PlayerController {
             case .show, .store:
                 try await root.diceRoot.diceGameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
             case .generic:
-                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
+                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(
+                    data: model.data,
+                    name: model.senderName,
+                    supporterTier: model.sender.supporterTier,
+                    isGameMaster: model.sender.isMaster
+                )
                 break
             default:
                 break

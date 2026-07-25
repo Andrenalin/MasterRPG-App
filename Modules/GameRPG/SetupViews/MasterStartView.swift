@@ -11,6 +11,7 @@ struct MasterStartView: View {
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
+    @Environment(\.supporterTier) private var supporterTier
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     var sharePlayStore: RPGSharePlayController {
@@ -77,7 +78,7 @@ struct MasterStartView: View {
     
     @MainActor
     func startGame() async {
-        await root.startMaster()
+        await root.startMaster(supporterTier: supporterTier)
         guard root.gameModel.gameConfig.state == .started else {
             appGameStateModel.gameModus = .edit
             return

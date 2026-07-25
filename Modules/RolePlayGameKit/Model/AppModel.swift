@@ -66,6 +66,10 @@ public final class AppModel: Sendable {
 
     @ObservationIgnored let inAppModel = InAppModel()
     public let inAppController: InAppController
+
+    public var supporterTier: SupporterTier {
+        inAppModel.supporterTier
+    }
     
     // Routing models
     @ObservationIgnored public var gameNavigator: Navigator

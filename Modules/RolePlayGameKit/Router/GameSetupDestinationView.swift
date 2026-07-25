@@ -13,7 +13,8 @@ struct GameSetupDestinationView: View {
     var body: some View {
         GameFactory.rootSetupView(
             root: appModel.gameRoot,
-            openStatistics: openStatistics
+            openStatistics: openStatistics,
+            openSupporter: openSupporter
         )
     }
 
@@ -29,6 +30,10 @@ struct GameSetupDestinationView: View {
 #else
         navigator.navigate(to: GameStatisticsRoute.dashboard)
 #endif
+    }
+
+    private func openSupporter() {
+        navigator.navigate(to: SettingsRoute.supporter, method: .managedSheet)
     }
 }
 

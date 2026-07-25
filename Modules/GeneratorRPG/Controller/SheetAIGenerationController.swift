@@ -5,9 +5,6 @@
 import CoreRPG
 import Foundation
 import FoundationModels
-#if os(iOS)
-import UIKit
-#endif
 
 public enum SheetAIGenerationAvailability: Equatable, Sendable {
     case available

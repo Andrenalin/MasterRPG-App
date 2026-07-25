@@ -70,6 +70,11 @@ struct DicePlayer: View {
                 .truncationMode(.head)
                 .font(.footnote)
 
+            SupporterCrownView(
+                tier: root.gameController.supporterTier(playerId: playerId)
+            )
+            .font(.footnote)
+
             if root.gameController.gameItem(for: playerId).sumUp || root.gameController.gameItem(for: playerId).compareOption != .off {
                 Label {
                     Text(root.gameController.resultText(itemId: playerId).markDown())

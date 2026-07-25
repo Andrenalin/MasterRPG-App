@@ -6,6 +6,7 @@ import SwiftUI
 enum SettingsRoute {
     case exportData
     case importData
+    case supporter
     case validate
 }
 

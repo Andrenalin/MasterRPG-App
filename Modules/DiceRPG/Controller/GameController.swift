@@ -14,17 +14,24 @@ final class DiceGameModel: Sendable {
     let audioPlayer: AVPlayer = AVPlayer()
     var hiddenPlayers: [String] = []
     var playerDice: [DiceModel] = []
+    var playerSupporterTiers: [UUID: SupporterTier] = [:]
     var masterDiceName: String?
     
     func reset() {
         hiddenPlayers = []
         playerDice = []
+        playerSupporterTiers = [:]
         masterDiceName = nil
     }
 }
 
 public protocol DiceGameStorable {
-    @MainActor func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?)
+    @MainActor func addGameDiceResult(
+        data: NetworkCodableDataType,
+        name: String,
+        supporterTier: SupporterTier,
+        isGameMaster: Bool
+    ) -> (String?, ResultCategory?)
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType
     func createVirtualGameData(
         numberOfSides: Int,
@@ -82,17 +89,25 @@ extension GameController: GameControllable {
 
 extension GameController: DiceGameStorable {
     @discardableResult @MainActor
-    func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?) {
+    func addGameDiceResult(
+        data: NetworkCodableDataType,
+        name: String,
+        supporterTier: SupporterTier,
+        isGameMaster: Bool
+    ) -> (String?, ResultCategory?) {
         guard let diceResult = DiceResultModel.decodeData(of: data.data) else { return (nil, nil) }
         let dice = diceResult.diceModel.makeModel(withId: UUID())
         dice.name = name
         dice.applyResult(text: diceResult.values)
         
         if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || $0.name == name }) {
+            let replacedID = diceGameModel.playerDice[index].id
+            diceGameModel.playerSupporterTiers[replacedID] = nil
             diceGameModel.playerDice[index] = dice
         } else {
             diceGameModel.playerDice.insert(dice, at: 0)
         }
+        diceGameModel.playerSupporterTiers[dice.id] = supporterTier
         if let index = gameModel.items.firstIndex(where: { $0 == dice.id || (gameModel.itemData[$0] as? DiceModel)?.name == name }) {
             gameModel.items.remove(at: index)
         }
@@ -220,6 +235,10 @@ extension GameController: DiceGameStorable {
         diceGameModel.playerDice = playerNames.compactMap { name in
             diceGameModel.playerDice.first { $0.name == name }
         }
+        let activeDiceIDs = Set(diceGameModel.playerDice.map(\.id))
+        diceGameModel.playerSupporterTiers = diceGameModel.playerSupporterTiers.filter {
+            activeDiceIDs.contains($0.key)
+        }
     }
 }
 
@@ -250,6 +269,11 @@ extension GameController {
     func isPlayerHidden(playerId: UUID) -> Bool {
         let name = gameItem(for: playerId).name
         return diceGameModel.hiddenPlayers.contains { $0 == name }
+    }
+
+    @MainActor
+    func supporterTier(playerId: UUID) -> SupporterTier {
+        diceGameModel.playerSupporterTiers[playerId] ?? .none
     }
     
     @MainActor
