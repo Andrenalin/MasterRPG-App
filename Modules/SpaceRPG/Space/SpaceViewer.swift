@@ -380,8 +380,14 @@ private extension SpaceViewer {
                 firstMesh.components.set(GroundingShadowComponent(castsShadow: true))
 
                 // Generate collision shapes asynchronously to avoid blocking Metal
-                Task.detached(priority: .utility) {
+                Task.detached(name: "RealityKit Collision Shapes", priority: .utility) {
                     await MainActor.run {
+                        let trace = PerformanceTrace.begin(
+                            "CollisionShapeGeneration",
+                            source: "SpaceViewer",
+                            count: 1
+                        )
+                        defer { trace?.end() }
                         firstMesh.generateCollisionShapes(recursive: false, static: true)
                     }
                 }

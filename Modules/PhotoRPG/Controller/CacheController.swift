@@ -27,6 +27,8 @@ struct CacheController: Sendable {
 extension CacheController: ImageCacheControllable {
     @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessable) async {
         guard let fileUrlDataController, let fileUrl = item.fileUrl  else { return }
+        let trace = PerformanceTrace.begin("ImageDecode", itemID: itemId, kind: "full")
+        defer { trace?.end() }
         let image: AKImage?
         if let data = fileUrl.data {
             image = AKImage(data: data)
@@ -46,6 +48,8 @@ extension CacheController: ImageCacheControllable {
     }
 
     @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+        let trace = PerformanceTrace.begin("ThumbnailGenerate", itemID: itemId, kind: "thumbnail")
+        defer { trace?.end() }
         let cachedImage = await imageCacheController.object(for: itemId)
         if cachedImage == nil {
             await createImage(for: itemId, item: item)

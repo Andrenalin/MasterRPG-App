@@ -23,8 +23,10 @@ public final class ResourceCache: Sendable {
     public func load(key: String, from url: URL) async throws -> Data {
         // Check cache first
         if let cached = dataCache[key] {
+            PerformanceTrace.event("ResourceCacheHit", source: key, count: cached.count)
             return cached
         }
+        PerformanceTrace.event("ResourceCacheMiss", source: key, count: 0)
 
         // Check if already loading
         if let inFlight = inFlightRequests[key] {
@@ -32,7 +34,8 @@ public final class ResourceCache: Sendable {
         }
 
         // Start new load task
-        let task = Task.detached(priority: .utility) {
+        let trace = PerformanceTrace.begin("ResourceLoad", source: key, count: 0)
+        let task = Task.detached(name: "Resource Cache Load", priority: .utility) {
             try Data(contentsOf: url)
         }
 
@@ -40,10 +43,12 @@ public final class ResourceCache: Sendable {
 
         do {
             let data = try await task.value
+            trace?.end()
             dataCache[key] = data
             inFlightRequests.removeValue(forKey: key)
             return data
         } catch {
+            trace?.end()
             inFlightRequests.removeValue(forKey: key)
             throw error
         }

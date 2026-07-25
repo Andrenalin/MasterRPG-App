@@ -2,8 +2,9 @@
 
 #if !os(tvOS)
 
-import FoundationModels
+import CoreRPG
 import Foundation
+import FoundationModels
 
 @Observable
 @MainActor
@@ -15,7 +16,7 @@ final class AdventureSessionModel {
         conversationEngine.onStateChange = { [weak self] in
             self?.syncConversationState()
         }
-        Task {
+        Task(name: "Foundation Context Size") {
             await fetchContextSize()
         }
     }
@@ -180,8 +181,15 @@ struct AdventureGeneratorController: Sendable {
         // Cancel any previous request
         model.cancel()
         model.isLoading = true
+        PerformanceTrace.event("FoundationRequest", source: "conversation", count: message.count)
 
-        model.currentTask = Task {
+        model.currentTask = Task(name: "Foundation Conversation") {
+            let trace = PerformanceTrace.begin(
+                "FoundationConversation",
+                source: "conversation",
+                count: message.count
+            )
+            defer { trace?.end() }
             defer { model.isLoading = model.session.isResponding }
             do {
                 _ = try await model.conversationEngine.sendStreamingMessage(
@@ -229,8 +237,15 @@ struct AdventureGeneratorController: Sendable {
     @MainActor func extract(message: String) {
         guard !model.extractSession.isResponding else { return }
         model.isExtracting = true
+        PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 
-        Task {
+        Task(name: "Foundation Extraction") {
+            let trace = PerformanceTrace.begin(
+                "FoundationExtraction",
+                source: "extraction",
+                count: message.count
+            )
+            defer { trace?.end() }
             defer { model.isExtracting = false }
             do {
                 let prompt = Prompt {
