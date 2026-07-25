@@ -220,10 +220,12 @@ On iPhone, the same single sheet-wide assistant is hosted by the native tab
 accessory instead of the root overlay. It takes priority over the audio
 mini-player while the sheet is visible; outside sheet screens the mini-player
 can use the accessory when audio is available. While Ask AI is present, tab-bar
-minimization is disabled so its text field remains in the expanded, focusable
-accessory placement. The compact accessory starts as one Ask AI button; activating
-it replaces that button with the single request field and explicitly moves keyboard
-focus into the field.
+minimization is disabled so the assistant surface does not jump between expanded
+and inline placements. The native accessory starts as one Ask AI button. Because iOS
+does not expose a text field inside `tabViewBottomAccessory` as hittable, activating
+the button disables that accessory and presents the single request field in a
+keyboard-capable bottom `safeAreaBar` one level above it. The custom active bar uses
+interactive Liquid Glass; it disappears when the request field closes.
 Generated previews keep their own context-menu actions because those actions manage
 the individual transient result rather than creating another Ask AI input.
 
