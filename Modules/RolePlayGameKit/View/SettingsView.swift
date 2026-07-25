@@ -94,14 +94,25 @@ public struct SettingsView: View {
                     Text("Restores in-app guidance for creating, organizing, linking, and playing.", bundle: .module)
                 }
             }
-            
-            //            SectionGroupEditorView {
-            //                InAppView(inAppController: store.inAppController)
-            //            } header: {
-            //                Text("In App Purchase")
-            //            }
 
-
+            SectionGroupEditorView {
+                Button {
+                    navigator.navigate(to: SettingsRoute.supporter, method: .managedSheet)
+                } label: {
+                    Label {
+                        Text("Support MasterRPG", bundle: .module)
+                    } icon: {
+                        Image(systemName: "crown.fill")
+                    }
+                }
+            } header: {
+                Text("Supporter", bundle: .module)
+            } footer: {
+                Text(
+                    "Optional one-time support purchases add only a colored crown to your game name. No features are locked.",
+                    bundle: .module
+                )
+            }
         }
         .environment(store.settingsModel)
     }

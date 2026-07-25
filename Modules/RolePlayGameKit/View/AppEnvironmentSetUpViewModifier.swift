@@ -34,6 +34,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.settingsModel)
             .environment(appModel.scenesManager)
             .environment(appModel.appNavigationModel)
+            .environment(\.supporterTier, appModel.supporterTier)
         
             // Module roots
             .environment(appModel.adventureRoot)
@@ -56,6 +57,10 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
                 )
             ) { _ in
                 appModel.presentImportScreen()
+            }
+            .task {
+                await appModel.inAppController.prepare()
+                appModel.inAppController.startObservingTransactionUpdates()
             }
     }
 }

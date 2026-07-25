@@ -84,16 +84,33 @@ struct GameControllerTests {
         let decoded = try #require(DiceResultModel.decodeData(of: resultData.data))
         #expect(decoded.diceModel.resultCategory == resultCategory)
 
-        let playerResult = sut.addGameDiceResult(data: resultData, name: "Player One", isGameMaster: true)
+        let playerResult = sut.addGameDiceResult(
+            data: resultData,
+            name: "Player One",
+            supporterTier: .gold,
+            isGameMaster: true
+        )
         #expect(playerResult.0 == decoded.values)
         #expect(playerResult.1 == resultCategory)
         #expect(sut.diceGameModel.masterDiceName == "Player One")
         #expect(sut.diceGameModel.playerDice.count == 1)
+        let playerDiceID = try #require(sut.diceGameModel.playerDice.first?.id)
+        #expect(sut.supporterTier(playerId: playerDiceID) == .gold)
 
-        _ = sut.addGameDiceResult(data: resultData, name: "Player One", isGameMaster: false)
+        _ = sut.addGameDiceResult(
+            data: resultData,
+            name: "Player One",
+            supporterTier: .silver,
+            isGameMaster: false
+        )
         #expect(sut.diceGameModel.playerDice.count == 1)
 
-        let invalidResult = sut.addGameDiceResult(data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0), name: "Nobody", isGameMaster: false)
+        let invalidResult = sut.addGameDiceResult(
+            data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0),
+            name: "Nobody",
+            supporterTier: .none,
+            isGameMaster: false
+        )
         #expect(invalidResult.0 == nil)
         #expect(invalidResult.1 == nil)
 

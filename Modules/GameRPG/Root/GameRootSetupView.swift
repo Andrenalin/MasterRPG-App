@@ -6,18 +6,29 @@ import SwiftUI
 struct GameRootSetupView: View {
     let root: GameRoot
     let openStatistics: @MainActor () -> Void
+    let openSupporter: @MainActor () -> Void
     private let startsServices: Bool
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
 
+#if os(tvOS)
+    @AppStorage("lastSelectedGameType", store: .standard)
+    private var selectedRole: GameSetupRole = .join
+#else
+    @AppStorage("lastSelectedGameType", store: .standard)
+    private var selectedRole: GameSetupRole = .player
+#endif
+
     init(
         root: GameRoot,
         openStatistics: @escaping @MainActor () -> Void,
+        openSupporter: @escaping @MainActor () -> Void = {},
         startsServices: Bool = true
     ) {
         self.root = root
         self.openStatistics = openStatistics
+        self.openSupporter = openSupporter
         self.startsServices = startsServices
     }
     
@@ -26,30 +37,22 @@ struct GameRootSetupView: View {
             if appGameStateModel.isGameRunning {
                 Color.clear.ignoresSafeArea()
             } else {
-                MeshAnimationView()
-                    .ignoresSafeArea()
-                    .opacity(0.5)
-            }
-            
-            ScrollView {
+                ZStack(alignment: .topTrailing) {
+                    CampaignHearthStartGameView(
+                        root: root,
+                        role: $selectedRole,
+                        openStatistics: openStatistics,
+                        openSupporter: openSupporter
+                    )
 #if os(macOS)
-                Button {
-                    scenesManager.openWindow(SceneId.editor)
-                } label: {
-                    Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                    Button {
+                        scenesManager.openWindow(SceneId.editor)
+                    } label: {
+                        Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
+                    }
+                    .padding()
 #endif
-
-                Button(action: openStatistics) {
-                    GameStatisticsEntryLabel(sessionCount: root.statisticsModel.summary.sessionCount)
                 }
-                .buttonStyle(.borderedProminent)
-                .fixedSize()
-                .padding()
-
-                GameOptionView(root: root)
             }
         }
         .task {
@@ -66,5 +69,10 @@ struct GameRootSetupView: View {
 }
 
 #Preview(traits: .mockData) {
-    GameRootSetupView(root: .preview, openStatistics: {}, startsServices: false)
+    GameRootSetupView(
+        root: .preview,
+        openStatistics: {},
+        openSupporter: {},
+        startsServices: false
+    )
 }

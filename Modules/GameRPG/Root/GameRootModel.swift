@@ -115,8 +115,20 @@ final class GameRootModel: Sendable {
 
     /// Applies a master broadcast in one atomic step so concurrent readers
     /// (message building, sendCharacter) never observe a half-updated state.
-    func applyMasterBroadcast(masterId: UUID, masterName: String, state: GameMasterStateModel) {
-        gameConfig.master = MasterGameModel(id: masterId, type: .master, name: masterName, adventureId: state.adventureId, adventureTitle: state.adventureTitle)
+    func applyMasterBroadcast(
+        masterId: UUID,
+        masterName: String,
+        supporterTier: SupporterTier = .none,
+        state: GameMasterStateModel
+    ) {
+        gameConfig.master = MasterGameModel(
+            id: masterId,
+            type: .master,
+            name: masterName,
+            adventureId: state.adventureId,
+            adventureTitle: state.adventureTitle,
+            supporterTier: supporterTier
+        )
         gameControl.controls = state.controls
         gameControl.features = state.features
 
@@ -153,7 +165,13 @@ final class GameRootModel: Sendable {
         let sender: GameSenderModel
         var masterState: GameMasterStateModel?
         if asMaster {
-            sender = GameSenderModel(id: gameConfig.master.id, role: .master, name: gameConfig.master.name, characterId: nil)
+            sender = GameSenderModel(
+                id: gameConfig.master.id,
+                role: .master,
+                name: gameConfig.master.name,
+                characterId: nil,
+                supporterTier: gameConfig.master.supporterTier
+            )
             masterState = GameMasterStateModel(
                 state: gameConfig.state,
                 adventureId: gameConfig.master.adventureId,
@@ -165,7 +183,13 @@ final class GameRootModel: Sendable {
         } else {
             let player = gamePlayer
             if player.id == gameConfig.id {
-                sender = GameSenderModel(id: player.id, role: player.type, name: player.name, characterId: player.characterId)
+                sender = GameSenderModel(
+                    id: player.id,
+                    role: player.type,
+                    name: player.name,
+                    characterId: player.characterId,
+                    supporterTier: player.supporterTier
+                )
             } else {
                 sender = GameSenderModel(id: gameConfig.id, role: .notSet, name: gameName, characterId: nil)
             }
@@ -434,7 +458,7 @@ extension GameRoot {
 // MARK: - Master Control Game
 
 extension GameRoot {
-    func startMaster() async {
+    func startMaster(supporterTier: SupporterTier = .none) async {
         guard gameModel.gameConfig.state == .stopped else {
             await stopGame()
             return
@@ -443,7 +467,14 @@ extension GameRoot {
             return
         }
         
-        let masterGameModel = MasterGameModel(id: UUID(), type: .master, name: gameMasterName, adventureId: id, adventureTitle: adventureRoot.networkTitle(for: id))
+        let masterGameModel = MasterGameModel(
+            id: UUID(),
+            type: .master,
+            name: gameMasterName,
+            adventureId: id,
+            adventureTitle: adventureRoot.networkTitle(for: id),
+            supporterTier: supporterTier
+        )
         var newConfig = gameModel.gameConfig
         newConfig.id = masterGameModel.id
         newConfig.master = masterGameModel
@@ -489,7 +520,11 @@ extension GameRoot {
         }
     }
 
-    func startGame(to model: BrowserGameModel?, mode: GameType) async {
+    func startGame(
+        to model: BrowserGameModel?,
+        mode: GameType,
+        supporterTier: SupporterTier = .none
+    ) async {
         // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
         // boundary as well as in the setup UI so programmatic callers cannot join
         // SharePlay by passing a nil target.
@@ -497,7 +532,13 @@ extension GameRoot {
         if (mode == .proxy || mode == .observer || mode == .demo) {
             gameModel.selectedCharacter = nil
         }
-        let playerGameModel = PlayerGameModel(id: UUID(), type: mode, name: name(for: mode), characterId: gameModel.selectedCharacter)
+        let playerGameModel = PlayerGameModel(
+            id: UUID(),
+            type: mode,
+            name: name(for: mode),
+            characterId: gameModel.selectedCharacter,
+            supporterTier: supporterTier
+        )
         gameModel.gameRoster = GameRosterModel(players: [playerGameModel])
         gameModel.gameControl = .empty
         var newConfig = gameModel.gameConfig
@@ -518,13 +559,13 @@ extension GameRoot {
         gameModel.playerController = player
 
         if mode == .demo {
-            await joinGame(for: mode)
+            await joinGame(for: mode, supporterTier: supporterTier)
 
 #if !os(macOS)
             UIApplication.shared.isIdleTimerDisabled = true
 #endif
         } else if await player.start(to: model) {
-            await joinGame(for: mode)
+            await joinGame(for: mode, supporterTier: supporterTier)
 
 #if !os(macOS)
             UIApplication.shared.isIdleTimerDisabled = true
@@ -534,7 +575,10 @@ extension GameRoot {
         }
     }
 
-    func joinGame(for type: GameType) async {
+    func joinGame(
+        for type: GameType,
+        supporterTier: SupporterTier = .none
+    ) async {
         gameModel.startGameTime = Date.now
         gameModel.playerGameStarted = true
         var newConfig = gameModel.gameConfig
@@ -547,7 +591,15 @@ extension GameRoot {
             gameModel.gameRoster.players[index].type = type
             gameModel.gameRoster.players[index].name = name(for: type)
         } else {
-            gameModel.gameRoster.players.append(PlayerGameModel(id: gameModel.gameConfig.id, type: type, name: name(for: type), characterId: gameModel.selectedCharacter))
+            gameModel.gameRoster.players.append(
+                PlayerGameModel(
+                    id: gameModel.gameConfig.id,
+                    type: type,
+                    name: name(for: type),
+                    characterId: gameModel.selectedCharacter,
+                    supporterTier: supporterTier
+                )
+            )
         }
         adventureRoot.startGame()
         if type != .observer {
@@ -591,8 +643,8 @@ extension GameRoot {
 // MARK: - Demo
 
 extension GameRoot {
-    func startDemo() async {
-        await startGame(to: nil, mode: .demo)
+    func startDemo(supporterTier: SupporterTier = .none) async {
+        await startGame(to: nil, mode: .demo, supporterTier: supporterTier)
         demoTask?.cancel()
 
         if let playerController = gameModel.playerController {

@@ -9,13 +9,18 @@ struct BrowserRowView: View {
     let model: BrowserGameModel
 
     @Environment(\.browserMode) private var browserMode
+    @Environment(\.supporterTier) private var supporterTier
 
     var body: some View {
         if !isDeactivate {
             Button {
                 Task {
                     let wasConnected = isConnected
-                    await root.startGame(to: model, mode: gameType)
+                    await root.startGame(
+                        to: model,
+                        mode: gameType,
+                        supporterTier: supporterTier
+                    )
                     if !wasConnected && root.gameModel.gameConfig.state == .started {
                         await MasterRPGTips.donateGameStartedOrJoined()
                     }

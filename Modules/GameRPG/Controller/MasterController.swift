@@ -1408,7 +1408,12 @@ extension MasterController {
                     isMaster: model.sender.isMaster
                 )
             }
-            let (_, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
+            let (_, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(
+                data: model.data,
+                name: model.senderName,
+                supporterTier: model.sender.supporterTier,
+                isGameMaster: model.sender.isMaster
+            )
             if let diceResult = DiceResultModel.decodeData(of: model.data.data),
                let resultCategory {
                 await root.tableRoot.tableGameControllable.addResult(
@@ -2238,7 +2243,13 @@ private extension MasterController {
             guard await root.gameModel.gameControl.features.dicePlayers else { return true }
             // The proxy rolls as the host player — show it on the host as well.
             let hostName = await root.gameModel.gamePlayer.name
-            _ = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: hostName, isGameMaster: false)
+            let hostSupporterTier = await root.gameModel.gamePlayer.supporterTier
+            _ = await root.diceRoot.diceGameControllable.addGameDiceResult(
+                data: model.data,
+                name: hostName,
+                supporterTier: hostSupporterTier,
+                isGameMaster: false
+            )
             await root.gameModel.playerController?.relayProxyGroupEvent(
                 model,
                 excludingProxyConnection: connectionId

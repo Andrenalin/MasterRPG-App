@@ -34,6 +34,8 @@ struct PlayerStartView: View {
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.navigator) private var navigator
+    @Environment(\.supporterTier) private var supporterTier
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     
     @State private var startSharePlayAnimation: Bool = false
@@ -55,7 +57,11 @@ struct PlayerStartView: View {
                         appGameStateModel.gameModus = .player
 
                         Task {
-                            await root.startGame(to: nil, mode: .player)
+                            await root.startGame(
+                                to: nil,
+                                mode: .player,
+                                supporterTier: supporterTier
+                            )
                             guard root.gameModel.gameConfig.state == .started else { return }
                             await MasterRPGTips.donateGameStartedOrJoined()
                         }
@@ -80,7 +86,9 @@ struct PlayerStartView: View {
                         value: startSharePlayAnimation
                     )
                     .onAppear { startSharePlayAnimation = true }
-                    .popoverTip(MasterRPGTips.startOrJoinGame)
+                    .popoverTip(
+                        navigator.isPresenting ? nil : MasterRPGTips.startOrJoinGame
+                    )
 #if os(tvOS)
                     .padding(.top, 24)
 #endif

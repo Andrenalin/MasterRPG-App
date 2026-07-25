@@ -70,50 +70,9 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
 }
 
 private extension SheetView {
-    var isRefiningWithAI: Bool {
-        rootModel.pendingGenerationRequest?.focus.selectedModelID == sheetModel.id
-    }
-
-    func refineSheetWithAI() {
-        _ = withAnimation(accessibilityReduceMotion ? nil : .smooth) {
-            rootModel.queueGeneration(
-                from: sheetModel,
-                parent: sheetModel,
-                module: sheetModel.source.typeId
-            )
-        }
-    }
-
     var nameRow: some View {
         ZStack(alignment: .topLeading) {
             HStack {
-                if rootModel.isAIModeActive && sheetModel.hasDetailContent {
-                    Button(action: refineSheetWithAI) {
-                        if isRefiningWithAI {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Label {
-                                Text("Refine with AI", bundle: .module)
-                            } icon: {
-                                Image(systemName: "sparkles")
-                            }
-                                .labelStyle(.iconOnly)
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .disabled(rootModel.pendingGenerationRequest != nil)
-                    .accessibilityLabel(Text("Refine with AI", bundle: .module))
-                    .accessibilityValue(
-                        isRefiningWithAI
-                            ? Text("Generating", bundle: .module)
-                            : Text("Ready", bundle: .module)
-                    )
-                    .help(Text("Refine this sheet with AI", bundle: .module))
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-                }
-
                 if isEditor && sheetModel.canAdd {
                     SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
                 }

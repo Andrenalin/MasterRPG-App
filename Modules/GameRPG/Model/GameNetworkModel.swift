@@ -11,11 +11,49 @@ struct GameSenderModel: Equatable, Codable, Sendable {
     var role: GameType
     var name: String
     var characterId: UUID?
+    var supporterTier: SupporterTier = .none
 
     var isMaster: Bool { role == .master }
 
     var playerModel: PlayerGameModel {
-        PlayerGameModel(id: id, type: role, name: name, characterId: characterId)
+        PlayerGameModel(
+            id: id,
+            type: role,
+            name: name,
+            characterId: characterId,
+            supporterTier: supporterTier
+        )
+    }
+}
+
+extension GameSenderModel {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case role
+        case name
+        case characterId
+        case supporterTier
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        role = try container.decode(GameType.self, forKey: .role)
+        name = try container.decode(String.self, forKey: .name)
+        characterId = try container.decodeIfPresent(UUID.self, forKey: .characterId)
+        supporterTier = try container.decodeIfPresent(
+            SupporterTier.self,
+            forKey: .supporterTier
+        ) ?? .none
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(role, forKey: .role)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(characterId, forKey: .characterId)
+        try container.encode(supporterTier, forKey: .supporterTier)
     }
 }
 
@@ -286,7 +324,13 @@ struct GameNetworkModel: Codable, Sendable {
         features: GameFeatureModel
     ) -> (masterId: UUID, sender: GameSenderModel, masterState: GameMasterStateModel?) {
         if config.isMaster {
-            let sender = GameSenderModel(id: config.id, role: .master, name: config.master.name, characterId: nil)
+            let sender = GameSenderModel(
+                id: config.id,
+                role: .master,
+                name: config.master.name,
+                characterId: nil,
+                supporterTier: config.master.supporterTier
+            )
             let state = GameMasterStateModel(
                 state: config.state,
                 adventureId: config.master.adventureId,
@@ -308,7 +352,13 @@ struct GameNetworkModel: Codable, Sendable {
         } else {
             "Player \(config.id.uuidString.prefix(8))"
         }
-        let sender = GameSenderModel(id: config.id, role: role, name: name, characterId: player?.characterId)
+        let sender = GameSenderModel(
+            id: config.id,
+            role: role,
+            name: name,
+            characterId: player?.characterId,
+            supporterTier: player?.supporterTier ?? .none
+        )
         return (config.master.id, sender, nil)
     }
 }

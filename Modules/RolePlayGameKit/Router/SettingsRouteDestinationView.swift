@@ -14,6 +14,8 @@ struct SettingsRouteDestinationView: View {
             AppExportView(appModel: appModel)
         case .importData:
             AppImportView(appModel: appModel)
+        case .supporter:
+            InAppView(inAppController: appModel.inAppController)
         case .validate:
             ValidateRepairView(controller: ValidateRepairController(appModel: appModel, model: ValidateRepairModel()))
         }
