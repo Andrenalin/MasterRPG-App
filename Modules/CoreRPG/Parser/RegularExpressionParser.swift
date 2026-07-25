@@ -1,10 +1,13 @@
 // @copyright André Trettin
 
 import Foundation
+import Synchronization
 
 public enum RegularExpressionParser {
+    private static let cache = Mutex<[String: NSRegularExpression]>([:])
+
     public static func parse(_ line: String, with pattern: String, extract components: [String]) -> [String] {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        guard let regex = regularExpression(for: pattern) else {
             assertionFailure("Cannot initialize Regex")
             return []
         }
@@ -24,5 +27,19 @@ public enum RegularExpressionParser {
             }
         }
         return result
+    }
+
+    private static func regularExpression(for pattern: String) -> NSRegularExpression? {
+        cache.withLock { cache in
+            if let cached = cache[pattern] {
+                return cached
+            }
+
+            guard let regex = try? NSRegularExpression(pattern: pattern) else {
+                return nil
+            }
+            cache[pattern] = regex
+            return regex
+        }
     }
 }

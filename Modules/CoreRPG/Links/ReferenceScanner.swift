@@ -12,6 +12,10 @@ public enum ReferenceScanner {
     // [name](SCHEME://MODULE/LINKNO/TABLE/ENTRY/COMMAND)
 
     public static func allUuidUrls(for scheme: String, in text: String) -> AllReferenceLinks {
+        guard text.contains("\(scheme)://") else {
+            return AllReferenceLinks(tables: [], tableEntries: [])
+        }
+
         let tables = parseUrlsTableWithCommand(for: scheme, in: text) + parseUrlsTable(for: scheme, in: text)
         let tableEntries = parseUrlsEntryWithCommand(for: scheme, in: text) + parseUrlsEntry(for: scheme, in: text)
         return AllReferenceLinks(tables: tables, tableEntries: tableEntries)
@@ -20,7 +24,8 @@ public enum ReferenceScanner {
     // [name](SCHEME://UUID)
     // [name](SCHEME://UUID/COMMAND)
     public static func parseUrlsUuid(for scheme: String, in content: String) -> [ReferenceShortLink] {
-        parseUrlsLinkCommand(for: scheme, in: content) + parseUrlsLink(for: scheme, in: content)
+        guard content.contains("\(scheme)://") else { return [] }
+        return parseUrlsLinkCommand(for: scheme, in: content) + parseUrlsLink(for: scheme, in: content)
     }
 }
 

@@ -8,7 +8,7 @@ public final class LinkHighlightTextModel {
     public init(linkControllable: LinkControllable?, text: String, highlightedText: String? = nil, toggler: ((UUID, NetworkModules, Int) async -> Void)? = nil, shareResult: ShareValueResult? = nil, editAction: ((ItemRowModel) -> Bool)? = nil) {
         self.linkControllable = linkControllable
         self.text = text
-        self.highlightedText = highlightedText
+        self.highlightedText = highlightedText.flatMap { $0.isEmpty ? nil : $0 }
         self.linkLocations = LinkHighLightLocations()
         self.toggler = toggler
         self.shareResult = shareResult
@@ -26,6 +26,9 @@ public final class LinkHighlightTextModel {
     
     @ObservationIgnored private(set) public var text: String
     @ObservationIgnored private var highlightedText: String?
+    @ObservationIgnored private var cachedRepairedText: String?
+    @ObservationIgnored private var cachedLinks: [LinkReplaceModel]?
+    @ObservationIgnored private var cachedDisplayText: [HighlightedTextComponent]?
     
     var linkLocations: LinkHighLightLocations
 
@@ -33,16 +36,30 @@ public final class LinkHighlightTextModel {
     @ObservationIgnored var lastUpdated: UUID = UUID()
     
     var linkToggled: Bool = false
+
+    /// Plain, unsearched text does not need the custom renderer's link
+    /// measurement pass.
+    var requiresCustomRenderer: Bool {
+        highlightedText != nil
+            || text.contains("\(URL.appScheme)://")
+            || text.contains(LinkExpandHighLightValues.begin.rawValue)
+            || text.contains(LinkExpandHighLightValues.end.rawValue)
+    }
     
     public func reset(highlightedText: String) {
+        let highlightedText = highlightedText.isEmpty ? nil : highlightedText
         guard self.highlightedText != highlightedText else { return }
         self.highlightedText = highlightedText
+        cachedDisplayText = nil
         updated = UUID()
     }
 
     public func reset(text: String) {
         guard self.text != text else { return }
         self.text = text
+        cachedRepairedText = nil
+        cachedLinks = nil
+        cachedDisplayText = nil
         updated = UUID()
     }
 
@@ -72,13 +89,66 @@ public final class LinkHighlightTextModel {
 
 extension LinkHighlightTextModel {
     var displayText: [HighlightedTextComponent] {
+        if let cachedDisplayText {
+            return cachedDisplayText
+        }
+
         var boldRange: Range<String.Index>? = nil
-        var repairedText = text
-        let links = LinkReplaceController.linksRepair(for: &repairedText, linkControllable: linkControllable)
-        return components(for: repairedText, range: repairedText.startIndex..<repairedText.endIndex, links: links, boldRange: &boldRange)
+        let (repairedText, links) = repairedContent()
+
+        guard !repairedText.isEmpty else {
+            cachedDisplayText = []
+            return []
+        }
+
+        let parsedDisplayText: [HighlightedTextComponent]
+        if links.isEmpty && !containsStructuredFormatting(repairedText) {
+            parsedDisplayText = hightlight(
+                text: repairedText,
+                range: repairedText.startIndex..<repairedText.endIndex,
+                isBold: false,
+                deep: 0
+            )
+        } else {
+            let linksByStart = Dictionary(
+                links.map { ($0.range.lowerBound, $0) },
+                uniquingKeysWith: { first, _ in first }
+            )
+            parsedDisplayText = components(
+                for: repairedText,
+                range: repairedText.startIndex..<repairedText.endIndex,
+                linksByStart: linksByStart,
+                boldRange: &boldRange
+            )
+        }
+
+        let displayText = parsedDisplayText.filter { !$0.string.isEmpty }
+        cachedDisplayText = displayText
+        return displayText
     }
     
-    func components(for text: String, range: Range<String.Index>, links: [LinkReplaceModel], boldRange: inout Range<String.Index>?, isBold: Bool = false, deep: Int = 0) -> [HighlightedTextComponent] {
+    private func repairedContent() -> (text: String, links: [LinkReplaceModel]) {
+        if let cachedRepairedText, let cachedLinks {
+            return (cachedRepairedText, cachedLinks)
+        }
+
+        var repairedText = text
+        let links = LinkReplaceController.linksRepair(
+            for: &repairedText,
+            linkControllable: linkControllable
+        )
+        cachedRepairedText = repairedText
+        cachedLinks = links
+        return (repairedText, links)
+    }
+
+    private func containsStructuredFormatting(_ text: String) -> Bool {
+        text.contains("**")
+            || text.contains(LinkExpandHighLightValues.begin.rawValue)
+            || text.contains(LinkExpandHighLightValues.end.rawValue)
+    }
+
+    func components(for text: String, range: Range<String.Index>, linksByStart: [String.Index: LinkReplaceModel], boldRange: inout Range<String.Index>?, isBold: Bool = false, deep: Int = 0) -> [HighlightedTextComponent] {
         var index = range.lowerBound
         var lastIndex = index
         var result: [HighlightedTextComponent] = []
@@ -114,7 +184,15 @@ extension LinkHighlightTextModel {
                 if let endRange {
                     result.append(HighlightedTextComponent(text: Text(Image(systemName: "arrowshape.right.fill"))
                             .customAttribute(LinkIconExpandedAttribute(isStart: true)), string: LinkExpandHighLightValues.begin.rawValue, range: index..<nextIndex))
-                    result.append(contentsOf: components(for: text, range: nextIndex..<endRange.lowerBound, links: links, boldRange: &boldRange, deep: deep + 1))
+                    result.append(
+                        contentsOf: components(
+                            for: text,
+                            range: nextIndex..<endRange.lowerBound,
+                            linksByStart: linksByStart,
+                            boldRange: &boldRange,
+                            deep: deep + 1
+                        )
+                    )
                     //print("Link End:\(text[nextIndex..<endRange.lowerBound])")
                     nextIndex = endRange.upperBound
                     index = endRange.lowerBound
@@ -156,7 +234,7 @@ extension LinkHighlightTextModel {
                 }
             }
             
-            if let link = links.first(where: { $0.range.lowerBound == index }) {
+            if let link = linksByStart[index] {
                 if lastIndex != index && index > lastIndex {
                     let previousRange = lastIndex..<index
                     result.append(contentsOf: hightlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))

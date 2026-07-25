@@ -6,6 +6,54 @@ import Testing
 @testable import CoreRPG
 
 struct LinkHighlightTextModelTests {
+    @Test("Display content invalidates when search or source text changes")
+    @MainActor
+    func displayContentInvalidation() {
+        // Given
+        let sut = LinkHighlightTextModel(
+            linkControllable: FakeLinkController.fake,
+            text: "Zauber"
+        )
+
+        // When
+        let initial = sut.displayText
+        let cached = sut.displayText
+        sut.reset(highlightedText: "za")
+        let highlighted = sut.displayText
+        sut.reset(highlightedText: "")
+        sut.reset(text: "Magie")
+        let updated = sut.displayText
+
+        // Then
+        #expect(initial.map(\.string) == ["Zauber"])
+        #expect(cached.map(\.string) == ["Zauber"])
+        #expect(highlighted.map(\.string) == ["Za", "uber"])
+        #expect(updated.map(\.string) == ["Magie"])
+    }
+
+    @Test("Custom text renderer is reserved for links, expansion, and active search")
+    @MainActor
+    func customRendererEligibility() {
+        // Given
+        let sut = LinkHighlightTextModel(
+            linkControllable: FakeLinkController.fake,
+            text: "Ordinary character text"
+        )
+
+        // When / Then
+        #expect(!sut.requiresCustomRenderer)
+
+        sut.reset(highlightedText: "character")
+        #expect(sut.requiresCustomRenderer)
+
+        sut.reset(highlightedText: "")
+        #expect(!sut.requiresCustomRenderer)
+
+        sut.reset(
+            text: "[Map](RPG://MAPS/0/84087225-BF5D-4398-B5F3-FDE0A0B79250)"
+        )
+        #expect(sut.requiresCustomRenderer)
+    }
 
     @Test
     func parseLink() async throws {

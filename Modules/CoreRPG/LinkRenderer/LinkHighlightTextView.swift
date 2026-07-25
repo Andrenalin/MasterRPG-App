@@ -24,14 +24,16 @@ public struct LinkHighlightTextView: View {
                         .transition(OnboardingTextTransition(model: model))
                 }
             }
-            .textRenderer(
-                LinkHighlightTextRenderer(
-                    model: model,
-                    style: .yellow.opacity(0.5),
-                    elapsedTime: 1,
-                    totalDuration: 1
+            .applyIf(model.requiresCustomRenderer) {
+                $0.textRenderer(
+                    LinkHighlightTextRenderer(
+                        model: model,
+                        style: .yellow.opacity(0.5),
+                        elapsedTime: 1,
+                        totalDuration: 1
+                    )
                 )
-            )
+            }
             .lineSpacing(4)
 
             overlays(foreground: true)
