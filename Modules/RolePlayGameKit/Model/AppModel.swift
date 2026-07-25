@@ -42,6 +42,7 @@ public final class AppModel: Sendable {
     public var coreDataInitModel: CoreDataInitModel?
     /// File handed to the app through Open In; consumed by the Foundry import screen.
     public var pendingVTTImportURL: URL?
+    public var generatedValueEntry: ValueEntryModel?
 #if os(tvOS)
     public let databaseModel: DataBaseModel
 #else

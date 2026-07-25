@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import CharacterRPG
 import SwiftUI
 
 struct DestinationReadyView: View {
@@ -104,6 +105,14 @@ struct DestinationReadyView: View {
                     Text("It is recommended to validate the database to ensure your data is consistent.", bundle: .module)
                 }
             }
+            .environment(
+                \.itemGenerationResultAction,
+                ItemGenerationResultAction { summary in
+                    appModel.generatedValueEntry = ValueEntryModel(
+                        generationSummary: summary
+                    )
+                }
+            )
     }
 
     // Computed Text property keeps the alert call site clean and avoids

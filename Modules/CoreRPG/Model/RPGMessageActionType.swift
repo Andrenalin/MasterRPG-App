@@ -17,6 +17,7 @@ public enum RPGMessageActionType: Int, Codable, Hashable, Sendable {
     case spaceList = 12
     case pdfList = 13
     case valueUpdate = 15
+    case generatedValue = 16
 
     case mapState = 3
     case mapPin = 4
@@ -44,6 +45,8 @@ extension RPGMessageActionType: CustomDebugStringConvertible {
             return "PdfList"
         case .valueUpdate:
             return "ValueUpdate"
+        case .generatedValue:
+            return "GeneratedValue"
         case .playAudio:
             return "PlayAudio"
         case .screen:

@@ -30,11 +30,30 @@ public final class TableRootModel {
 
         let itemController = ItemController(config: config)
         self.itemController = itemController
+        let generationController = TableGenerationController(
+            itemController: itemController,
+            diceRoot: diceRoot
+        )
+        self.generationController = generationController
+        let generationSessionStore = TableGenerationSessionStore(
+            controller: generationController
+        )
+        self.generationSessionStore = generationSessionStore
+        let generationViewController = TableGenerationViewController(
+            controller: generationController,
+            sessionStore: generationSessionStore
+        )
+        self.generationViewController = generationViewController
         let sheetController = SheetController(itemController: itemController)
         self.sheetController = sheetController
         let exportController = ExportController(diceRoot: diceRoot, pdfRoot: pdfRoot, itemController: itemController)
         self.exportController = exportController
-        let gameController = GameController(diceRoot: diceRoot, itemController: itemController, exportController: exportController)
+        let gameController = GameController(
+            diceRoot: diceRoot,
+            itemController: itemController,
+            exportController: exportController,
+            generationSessionStore: generationSessionStore
+        )
         self.gameController = gameController
         let linkController = LinkController(diceRoot: diceRoot, itemController: itemController, gameController: gameController)
         self.linkController = linkController
@@ -84,7 +103,8 @@ public final class TableRootModel {
             folderLinkControllable: folderLinkController,
             searchControllable: searchController,
             sheetControllable: sheetController,
-            viewControllable: _viewController
+            viewControllable: _viewController,
+            generationControllable: generationViewController
         )
     }
 
@@ -126,6 +146,9 @@ public final class TableRootModel {
     let pdfRoot: PdfRootModel
 
     let itemController: ItemController
+    @ObservationIgnored let generationController: TableGenerationController
+    @ObservationIgnored let generationSessionStore: TableGenerationSessionStore
+    @ObservationIgnored let generationViewController: TableGenerationViewController
     let sheetController: SheetController
     
     @ObservationIgnored var exportController: ExportController

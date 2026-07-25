@@ -5,6 +5,9 @@ import SwiftUI
 struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.networkActions) private var networkActions
+    @Environment(\.itemGenerationAction) private var itemGenerationAction
+    @Environment(AppGameStateModel.self) private var appGameStateModel
 
     init(
         root: ItemRootController,
@@ -115,7 +118,13 @@ private extension SheetView {
                     SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
                 }
 
-                LinkHighlightTextView(model: rootModel.linkTextModel(for: .item(sheetModel.source.itemId), text: sheetModel.name))
+                LinkHighlightTextView(
+                    model: rootModel.linkTextModel(
+                        for: .item(sheetModel.source.itemId),
+                        text: sheetModel.name,
+                        shareResults: shareResult
+                    )
+                )
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.title)
 
@@ -206,11 +215,27 @@ private extension SheetView {
     func viewController(for source: ItemRowModel) -> ViewControllable? {
         rootModel.rootController(for: source.typeId)?.viewControllable
     }
+
+    var shareResult: ShareValueResult {
+        ShareValueResult(
+            networkActions: networkActions,
+            resultCategory: ResultCategory(source: sheetModel.source),
+            showGame: appGameStateModel.isGameRunning,
+            gameModus: appGameStateModel.gameModus,
+            generationAction: itemGenerationAction
+        )
+    }
     
     @ViewBuilder
     var secondaryRow: some View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
-            LinkHighlightTextView(model: rootModel.linkTextModel(for: .itemContent(sheetModel.source.itemId), text: description))
+            LinkHighlightTextView(
+                model: rootModel.linkTextModel(
+                    for: .itemContent(sheetModel.source.itemId),
+                    text: description,
+                    shareResults: shareResult
+                )
+            )
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.subheadline)
         }

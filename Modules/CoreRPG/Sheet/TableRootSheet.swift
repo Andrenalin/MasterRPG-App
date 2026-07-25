@@ -75,6 +75,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
     @Environment(\.dismiss) var dismiss
 
     @State private var sheetRootModel: SheetRootModel
+    @State private var generationSelection: WindowItemSelection?
     
     public var body: some View {
         @Bindable var sheetRootModel = sheetRootModel
@@ -116,6 +117,10 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             .onDisappear {
                 searchContext?.detachResults(sheetRootModel)
             }
+            .itemGenerationPresentation(
+                root: root,
+                selection: $generationSelection
+            )
     }
 }
 

@@ -27,6 +27,7 @@ public protocol ItemRootControllable: Sendable {
     var searchControllable: any SearchControllable { get }
     var sheetControllable: any SheetControllable { get }
     var viewControllable: any ViewControllable { get }
+    var generationControllable: (any ItemGenerationControllable)? { get }
 
     var rootController: ItemRootController { get }
 }
@@ -34,6 +35,9 @@ public protocol ItemRootControllable: Sendable {
 public extension ItemRootControllable {
     var searchModel: SearchModel { folderListControllable.searchModel }
     var rootManager: RootManager? { rootController.rootManager }
+    var generationControllable: (any ItemGenerationControllable)? {
+        rootController.generationControllable
+    }
 }
 
 @MainActor @Observable
@@ -57,7 +61,8 @@ public final class ItemRootController: ItemRootControllable {
         folderLinkControllable: any FolderListControllable,
         searchControllable: any SearchControllable,
         sheetControllable: any SheetControllable,
-        viewControllable: any ViewControllable
+        viewControllable: any ViewControllable,
+        generationControllable: (any ItemGenerationControllable)? = nil
     ) {
         self.rootManager = rootManager
         self.configurable = config
@@ -78,6 +83,7 @@ public final class ItemRootController: ItemRootControllable {
         self.searchControllable = searchControllable
         self.sheetControllable = sheetControllable
         self.viewControllable = viewControllable
+        self.generationControllable = generationControllable
     }
 
     @ObservationIgnored public var rootManager: RootManager?
@@ -103,6 +109,7 @@ public final class ItemRootController: ItemRootControllable {
     public let searchControllable: any SearchControllable
     public let sheetControllable: any SheetControllable
     public let viewControllable: any ViewControllable
+    public let generationControllable: (any ItemGenerationControllable)?
 
     public let removeEntryListModel: RemoveEntryListModel
 

@@ -1408,9 +1408,13 @@ extension MasterController {
                     isMaster: model.sender.isMaster
                 )
             }
-            let (diceResult, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
-            if let diceResult, let resultCategory {
-                await root.tableRoot.tableGameControllable.addResult(resultCategory, value: diceResult)
+            let (_, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(data: model.data, name: model.senderName, isGameMaster: model.sender.isMaster)
+            if let diceResult = DiceResultModel.decodeData(of: model.data.data),
+               let resultCategory {
+                await root.tableRoot.tableGameControllable.addResult(
+                    resultCategory,
+                    diceResult: diceResult
+                )
             }
         }
         return nil
