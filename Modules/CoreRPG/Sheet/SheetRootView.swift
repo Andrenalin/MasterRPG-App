@@ -2,14 +2,38 @@
 
 import SwiftUI
 
+/// Presentation options for ``SheetRootView``.
+///
+/// These options add presentation features; they do not change whether the
+/// sheet is in viewer or editor mode. Editor mode is selected by the
+/// `isEditor` argument passed to ``SheetRootView`` and must match the mode used
+/// to create its ``SheetRootModel``.
 public struct SheetRootViewConfiguration: Equatable, Sendable {
     public init(showsAIAssistant: Bool = false) {
         self.showsAIAssistant = showsAIAssistant
     }
 
+    /// Whether the supplied AI assistant view is overlaid once at the bottom of the sheet.
     public var showsAIAssistant: Bool
 }
 
+/// Renders one recursively materialized RPG sheet.
+///
+/// `SheetRootView` is the presentation shell for a ``SheetRootModel``. It
+/// renders the model's root ``SheetModel`` through `SheetView`, publishes the
+/// selected row to focused commands, and handles keyboard selection outside
+/// tvOS. Nested linked sheets are rendered recursively by `SheetView`.
+///
+/// The view has two base presentation modes:
+///
+/// - Viewer mode (`isEditor == false`) supports reading, link expansion,
+///   selection, and value quick editing when an entry has an editable type.
+/// - Editor mode (`isEditor == true`) adds entry creation, deletion, reordering,
+///   drag and drop, edit controls, and focused menu commands.
+///
+/// Search, AI assistance, generated previews, and import review are orthogonal
+/// states layered on top of these two modes. See `Docu/SHEETS.md` for the full
+/// state and data-flow description.
 public struct SheetRootView<
     LinkType: LinkDataTransferable,
     DetailContent: View,
@@ -122,8 +146,10 @@ public struct SheetRootView<
         )
         .id(rootModel.sheetModel.id)
         .applyIf(configuration.showsAIAssistant) {
-            $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
+            $0.overlay(alignment: .bottomTrailing) {
                 aiAssistantContent()
+                    .padding(.horizontal)
+                    .padding(.bottom)
             }
         }
         .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)

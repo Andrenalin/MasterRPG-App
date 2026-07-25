@@ -71,7 +71,6 @@ struct SheetAIAssistantStandardControl: View {
             in: .capsule
         )
 #endif
-        .padding([.trailing, .bottom])
     }
 }
 

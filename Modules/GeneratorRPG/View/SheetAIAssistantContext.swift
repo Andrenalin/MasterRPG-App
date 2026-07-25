@@ -4,57 +4,10 @@
 import CoreRPG
 import SwiftUI
 
-/// The visible sheet publishes this lightweight context to the owning TabView.
-/// On iPhone that lets SwiftUI place Ask AI in the native tab-bar accessory.
-public struct SheetAIAssistantContext: Equatable {
-    public init(module: NetworkModules, itemId: UUID, rootModel: SheetRootModel) {
-        self.module = module
-        self.itemId = itemId
-        self.rootModel = rootModel
-    }
-
-    public let module: NetworkModules
-    public let itemId: UUID
-    public let rootModel: SheetRootModel
-
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.module == rhs.module
-            && lhs.itemId == rhs.itemId
-            && lhs.rootModel === rhs.rootModel
-    }
-}
-
-public struct SheetAIAssistantContextPreferenceKey: PreferenceKey {
-    public static var defaultValue: [SheetAIAssistantContext] { [] }
-
-    public static func reduce(
-        value: inout [SheetAIAssistantContext],
-        nextValue: () -> [SheetAIAssistantContext]
-    ) {
-        value.append(contentsOf: nextValue())
-    }
-}
-
-public extension View {
-    func sheetAIAssistantContext(
-        module: NetworkModules,
-        itemId: UUID,
-        rootModel: SheetRootModel?
-    ) -> some View {
-        preference(
-            key: SheetAIAssistantContextPreferenceKey.self,
-            value: rootModel.map {
-                [SheetAIAssistantContext(module: module, itemId: itemId, rootModel: $0)]
-            } ?? []
-        )
-    }
-}
-
 /// Content supplied to `SheetRootView` when its assistant configuration is enabled.
 ///
-/// The sheet owns this content's placement. On iPhone the zero-sized publisher lets
-/// the native tab accessory host the composer; larger platforms render the standard
-/// expandable control directly at the sheet's bottom edge.
+/// The sheet owns this content's placement and renders the expandable control once
+/// at its bottom edge.
 public struct SheetAIAssistantContent: View {
     public init(
         module: NetworkModules,
@@ -72,22 +25,7 @@ public struct SheetAIAssistantContent: View {
 
     public var body: some View {
         if SheetAIGenerationController.isAvailable {
-#if os(iOS)
-            if SheetAIGenerationController.usesPhoneTabAccessory {
-                Color.clear
-                    .frame(width: 0, height: 0)
-                    .accessibilityHidden(true)
-                    .sheetAIAssistantContext(
-                        module: module,
-                        itemId: itemId,
-                        rootModel: rootModel
-                    )
-            } else {
-                standardAssistant
-            }
-#else
             standardAssistant
-#endif
         }
     }
 

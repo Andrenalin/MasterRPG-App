@@ -176,8 +176,6 @@ private extension SheetEntryView {
                 .accessibilityHidden(true)
             }
 
-            refineWithAIButton
-
             if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
             }
@@ -407,39 +405,6 @@ private extension SheetEntryView {
         isEditor && entryModel.isGeneratedAnswer
     }
 
-    @ViewBuilder var refineWithAIButton: some View {
-        if !entryModel.isGeneratedAnswer && rootModel.isAIModeActive && hasDetailContent {
-            Button(action: refineExistingEntry) {
-                if isRefiningWithAI {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Label {
-                        Text("Refine with AI", bundle: .module)
-                    } icon: {
-                        Image(systemName: "sparkles")
-                    }
-                        .labelStyle(.iconOnly)
-                }
-            }
-            .buttonStyle(.borderless)
-            .frame(minWidth: 44, minHeight: 44)
-            .disabled(rootModel.pendingGenerationRequest != nil)
-            .accessibilityLabel(Text("Refine with AI", bundle: .module))
-            .accessibilityValue(
-                isRefiningWithAI
-                    ? Text("Generating", bundle: .module)
-                    : Text("Ready", bundle: .module)
-            )
-            .help(Text("Refine this content with AI", bundle: .module))
-            .transition(.scale(scale: 0.9).combined(with: .opacity))
-        }
-    }
-
-    var isRefiningWithAI: Bool {
-        rootModel.pendingGenerationRequest?.focus.selectedModelID == entryModel.id
-    }
-
     var generatedTakeOverButton: some View {
         Button(action: takeOverGeneratedEntry) {
             Label {
@@ -553,17 +518,6 @@ private extension SheetEntryView {
             rootModel.finishGeneratedAcceptanceTransition(
                 previewID: previewID,
                 parentModelID: parentModelID
-            )
-        }
-    }
-
-    func refineExistingEntry() {
-        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
-        _ = withAnimation(animation) {
-            rootModel.queueGeneration(
-                from: entryModel,
-                parent: parentModel,
-                module: parentModel.source.typeId
             )
         }
     }

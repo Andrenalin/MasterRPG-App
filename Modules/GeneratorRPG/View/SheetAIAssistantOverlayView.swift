@@ -5,13 +5,6 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
-/// Controls whether the assistant uses its regular expandable presentation or the
-/// always-ready native tab accessory presentation.
-public enum SheetAIAssistantPresentation: Sendable {
-    case standard
-    case tabAccessory
-}
-
 /// A compact composer for generating transient SheetModel previews in the visible sheet.
 /// The SheetRootModel owns focus, request identity, and preview lifetime; this view only
 /// runs the latest immutable request and reports its result back to that model.
@@ -19,19 +12,16 @@ public struct SheetAIAssistantOverlayView: View {
     public init(
         module: NetworkModules,
         itemId: UUID,
-        rootModel: SheetRootModel,
-        presentation: SheetAIAssistantPresentation = .standard
+        rootModel: SheetRootModel
     ) {
         self.module = module
         self.itemId = itemId
         self.rootModel = rootModel
-        self.presentation = presentation
     }
 
     let module: NetworkModules
     let itemId: UUID
     let rootModel: SheetRootModel
-    let presentation: SheetAIAssistantPresentation
 
     @State private var messageText = ""
     @State private var errorMessage: String?
@@ -44,18 +34,7 @@ public struct SheetAIAssistantOverlayView: View {
     public var body: some View {
         Group {
             if SheetAIGenerationController.isAvailable {
-            if presentation == .tabAccessory {
-                SheetAIAssistantMiniComposer(
-                    module: module,
-                    messageText: $messageText,
-                    availability: availability,
-                    isGenerating: rootModel.pendingGenerationRequest != nil,
-                    isTextFieldFocused: $isTextFieldFocused,
-                    submitAction: submitPrompt
-                )
-            } else {
                 standardAssistant
-            }
             }
         }
         .alert(
@@ -74,9 +53,7 @@ public struct SheetAIAssistantOverlayView: View {
         )
         .task(id: rootModel.isAIModeActive) {
             guard rootModel.isAIModeActive else {
-                if presentation == .standard {
-                    isTextFieldFocused = false
-                }
+                isTextFieldFocused = false
                 return
             }
 

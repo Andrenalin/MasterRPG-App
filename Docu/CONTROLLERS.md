@@ -11,6 +11,7 @@ Related docs:
 - [Database Handling](DATABASE.md)
 - [File Handling](FILES.md)
 - [Link System](LINKS.md)
+- [Sheet System](SHEETS.md)
 - [Game Connections](GAME_CONNECTIONS.md)
 - [Table Generator](TABLE_GENERATOR.md)
 
@@ -205,6 +206,11 @@ display mode: compact searches names, medium adds description, regular adds tags
 `SheetController` renders item sheets for editor and game display. It receives
 `RootManager` so a sheet can resolve links and nested module content. It supports
 folded/unfolded sheet nodes and module depth to avoid unbounded traversal.
+
+`SheetRootModel` owns the shared state around that materialized tree, while
+`SheetRootView` and its recursive child views render it. Their modes, lifecycle,
+search, selection, editing, AI generation, import review, and concurrency
+boundaries are documented in [Sheet System](SHEETS.md).
 
 ## CacheController
 

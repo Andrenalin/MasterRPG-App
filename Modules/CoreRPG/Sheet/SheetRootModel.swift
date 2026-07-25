@@ -24,6 +24,24 @@ private struct GeneratedAcceptanceKey: Hashable {
     let persistedEntryID: UUID
 }
 
+/// Main-actor coordinator for one recursively rendered RPG sheet.
+///
+/// A sheet root owns the materialized ``SheetModel`` tree and coordinates
+/// presentation state that must remain consistent across every recursive row:
+/// search, exclusive selection, viewer quick editing, link expansion, editing
+/// mutations, and transient AI generation previews.
+///
+/// Domain mutations are delegated to the module controllers reachable through
+/// `RootManager`. The model then asks the appropriate `SheetControllable` to
+/// reconcile the affected ``SheetModel`` subtree with current domain data.
+///
+/// `SheetRootModel` is main-actor isolated because it owns observable UI state
+/// and mutable ``SheetModel`` reference graphs. Immutable AI requests and
+/// snapshots are `Sendable` values that can cross an asynchronous generation
+/// boundary before results are installed back on the main actor.
+///
+/// See `Docu/SHEETS.md` for construction variants, presentation modes, and the
+/// complete link, search, editor, AI, and import-review flows.
 @MainActor @Observable
 public final class SheetRootModel: Sendable {
     public init(rootManager: RootManager, linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool) {
