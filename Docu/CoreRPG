@@ -69,6 +69,10 @@ Image/object caches live in `Cache` and are reached through cache controllers/pr
 
 Stored text uses markdown-style RPG links such as `[Name](RPG://MODULE/0/ITEM_UUID[/ENTRY_UUID][/COMMAND])`. `ReferenceScanner` and `RegularExpressionParser` extract links. `LinkReplaceController` normalizes and repairs links. `LinkRegisterController` persists source/destination references in Core Data and keeps an in-memory dictionary keyed by destination item UUID. `LinkHighlightTextModel/View/Renderer` turns text into interactive display with custom text attributes and transparent overlay buttons.
 
+See [Link System](LINKS.md) for the complete URL grammar, occurrence identity,
+editor round trip, structural references, persistence, actions, sheet toggling,
+deep links, tests, and current review findings.
+
 ### Navigation And Scenes
 
 `Navigator` is a custom `@Observable` navigation tree layered over SwiftUI navigation. It owns navigation paths, sheets, covers, checkpoints, route sending, and child navigator relationships. App-level navigation flows through `KnownRoutes`, `RouteActions`, `SceneId`, `ScenesManager`, and module-specific route receivers. Use `ManagedNavigationStack` when a screen participates in deep links, restoration, checkpoints, or global dismiss.

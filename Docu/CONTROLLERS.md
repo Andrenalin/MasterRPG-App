@@ -10,7 +10,9 @@ Related docs:
 - [Root Models And Setup](ROOT_MODELS.md)
 - [Database Handling](DATABASE.md)
 - [File Handling](FILES.md)
+- [Link System](LINKS.md)
 - [Game Connections](GAME_CONNECTIONS.md)
+- [Table Generator](TABLE_GENERATOR.md)
 
 ## Controller Map
 
@@ -168,6 +170,9 @@ modules.
 
 Normal edits update the register through `EditControllable.saveChanges`.
 Imported data is repaired through `ConvertController.resetLinkRegister(for:)`.
+For URL grammar, occurrence identity, duplicate destinations, Core Data
+persistence, sheet toggling, action links, and implementation caveats, see
+[Link System](LINKS.md).
 
 ## FolderListController
 
@@ -324,7 +329,8 @@ Module game controllers add specifics:
   absent pin photos and synchronizes visionOS board state.
 - Photo: synchronizes versioned availability lists and validated photo reveals.
 - PDF: synchronizes file-backed PDF reveal/store.
-- Table: reveals linked table data and receives dice/table result values.
+- Table: reveals linked table data, owns recursive generator sessions, and
+  routes categorized dice/table result values.
 - Character/Value: sends player character data, updates player values, and feeds map pins.
 - Weather: reveals weather scenes, often linked to photos.
 - Space: reveals 3D objects and synchronizes space transforms.

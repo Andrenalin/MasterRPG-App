@@ -9,6 +9,7 @@ Related docs:
 - [Root Models And Setup](ROOT_MODELS.md)
 - [Controllers](CONTROLLERS.md)
 - [File Handling](FILES.md)
+- [Link System](LINKS.md)
 
 ## Store Selection
 
@@ -32,6 +33,13 @@ This includes CoreRPG plus every module bundle, and GeneratorRPG on non-tvOS.
 Adding a new persisted module requires adding its bundle to
 `DataBaseModel.rpgModuleBundles`, adding a module `DataController`, and wiring
 that controller during the module root's `setUp`.
+
+Both the local and CloudKit store descriptions explicitly set
+`shouldMigrateStoreAutomatically` and `shouldInferMappingModelAutomatically` to
+`true`. CoreRPG currently has one development-only V1 model because its
+unreleased V2 changes were squashed into V1. After release, every schema change
+must retain V1, add a new model version, and test the inferred lightweight
+migration from all supported source versions.
 
 ## Local Core Data
 

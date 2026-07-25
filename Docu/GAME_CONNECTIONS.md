@@ -14,6 +14,8 @@ For the completed redesign record and remaining compatibility/transport work,
 see [Game Communication Redesign](GAME_COMMUNICATION_PLAN.md).
 For the focused topology, state/identity flow, and prioritized code-review
 findings, see [Game Message Communication Flow Review](GAME_MESSAGE_COMMUNICATION_FLOW_REVIEW.md).
+For recursive Table selection, generated values, targeted result sharing, and
+delegated player Dice rolls, see [Table Generator](TABLE_GENERATOR.md).
 
 Primary source files:
 
@@ -1429,6 +1431,14 @@ Table can still be affected by dice results. When a dice result carries a table
 `ResultCategory`, the master writes that result into the table game controller.
 `TableGameController.requestTableResult(...)` can also create a value result and
 send it as `.update/.valueResult`.
+
+The Table Generator keeps completed-summary traffic separate from normal Table
+transport by using the `.generator` payload module and `.generatedValue` action.
+Delegated generator rolls still travel through DiceRPG with a Table
+`ResultCategory`; an active generation session consumes that categorized result
+before the Table controller's legacy result path. See
+[Table Generator](TABLE_GENERATOR.md) for the complete selection and routing
+flow.
 
 ### Character / Value
 
