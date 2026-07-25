@@ -209,15 +209,16 @@ attaching its query to whichever `SheetRootModel` is currently presented.
 
 ## AI Generation
 
-AI assistance is optional and owned by `SheetRootView`:
+AI assistance is optional and owned by the parent presentation, never by
+`SheetRootView`, `SheetView`, or `SheetEntryView`:
 
-- `SheetRootViewConfiguration.showsAIAssistant` overlays one supplied assistant UI
-  at the bottom trailing edge of the root sheet with horizontal and bottom padding.
+- Adventure, Character, Map, and Table attach one assistant to their
+  `DetailListView`.
+- Adventure game mode supplies one assistant to the parent `TableRootSheet`.
 - `SheetRootModel.isAIModeActive` controls whether that one composer is expanded.
 
-Regular `SheetView` headers and `SheetEntryView` rows do not render AI controls.
-On iPhone, the same single sheet-wide assistant is hosted by the native tab
-accessory instead of the root overlay. It takes priority over the audio
+On iPhone, the same single parent-owned assistant is hosted by the native tab
+accessory instead of a content overlay. It takes priority over the audio
 mini-player while the sheet is visible; outside sheet screens the mini-player
 can use the accessory when audio is available. While Ask AI is present, tab-bar
 minimization is disabled so the assistant surface does not jump between expanded

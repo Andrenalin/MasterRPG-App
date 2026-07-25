@@ -20,8 +20,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             dismissAction: dismissAction,
             isEditor: false,
             linkTypes: LinkDiceData.self,
-            sheetConfiguration: .init(),
-            aiAssistantContent: { _ in EmptyView() }
+            bottomAccessory: { _ in EmptyView() }
         )
     }
 
@@ -34,8 +33,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         dismissAction: (() -> Void)? = nil,
         isEditor: Bool,
         linkTypes: LinkType.Type,
-        sheetConfiguration: SheetRootViewConfiguration = .init(showsAIAssistant: true),
-        @ViewBuilder aiAssistantContent: @escaping (SheetRootModel) -> BottomAccessory
+        @ViewBuilder bottomAccessory: @escaping (SheetRootModel) -> BottomAccessory
     ) {
         guard let rootManager = root.rootManager else {
             preconditionFailure("TableRootSheet requires ItemRootController.rootManager to be set before presentation.")
@@ -47,8 +45,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         self.dismissAction = dismissAction
         self.isEditor = isEditor
         self.linkTypes = linkTypes
-        self.sheetConfiguration = sheetConfiguration
-        self.aiAssistantContent = aiAssistantContent
+        self.bottomAccessory = bottomAccessory
         self._sheetRootModel = State(
             wrappedValue: SheetRootModel(
                 rootManager: rootManager,
@@ -66,8 +63,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
     let dismissAction: (() -> Void)?
     let isEditor: Bool
     let linkTypes: LinkType.Type
-    let sheetConfiguration: SheetRootViewConfiguration
-    let aiAssistantContent: (SheetRootModel) -> BottomAccessory
+    let bottomAccessory: (SheetRootModel) -> BottomAccessory
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(AppGameStateModel.self) private var appGameStateModel
@@ -85,11 +81,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             model: sheetRootModel,
             addSearchable: configuration.addToolbar && !configuration.inlineSearch,
             isEditor: isEditor,
-            linkTypes: linkTypes,
-            configuration: sheetConfiguration,
-            aiAssistantContent: {
-                aiAssistantContent(sheetRootModel)
-            }
+            linkTypes: linkTypes
         )
 #if os(macOS) || os(visionOS)
             .padding(.top)
@@ -106,6 +98,11 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
                     )
                     .padding()
                 }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                bottomAccessory(sheetRootModel)
+                    .padding(.horizontal)
+                    .padding(.bottom)
             }
             .toolbar {
                 toolbarContent

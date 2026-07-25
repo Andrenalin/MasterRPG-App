@@ -1,9 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 import SwiftUI
 
 struct DetailEditorView: View {
@@ -16,30 +13,13 @@ struct DetailEditorView: View {
                 root.editController.editorModel.sheetRootModel?.reset(itemId: model.id)
             }
 
-        if let rootModel = root.editController.editorModel.sheetRootModel {            
-#if os(tvOS)
+        if let rootModel = root.editController.editorModel.sheetRootModel {
             SheetRootEditorView(
                 root: root.rootController,
                 sheetRootModel: rootModel,
                 headerTitle: String(localized: "Sections", bundle: .module).localizedString,
                 linkTypes: LinkAdventureModuleTransferable.self
             )
-#else
-            SheetRootEditorView(
-                root: root.rootController,
-                sheetRootModel: rootModel,
-                headerTitle: String(localized: "Sections", bundle: .module).localizedString,
-                linkTypes: LinkAdventureModuleTransferable.self,
-                configuration: .init(showsAIAssistant: true),
-                aiAssistantContent: {
-                    SheetAIAssistantContent(
-                        module: root.configurable.module,
-                        itemId: model.id,
-                        rootModel: rootModel
-                    )
-                }
-            )
-#endif
         }
     }
 }

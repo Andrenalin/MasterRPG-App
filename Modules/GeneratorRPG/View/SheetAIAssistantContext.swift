@@ -48,12 +48,31 @@ public extension View {
             } ?? []
         )
     }
+
+    /// Attaches one sheet assistant to the bottom of its parent screen.
+    func sheetAIAssistant(
+        module: NetworkModules,
+        itemId: UUID,
+        rootModel: SheetRootModel?
+    ) -> some View {
+        overlay(alignment: .bottomTrailing) {
+            if let rootModel {
+                SheetAIAssistantContent(
+                    module: module,
+                    itemId: itemId,
+                    rootModel: rootModel
+                )
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
+        }
+    }
 }
 
-/// Content supplied to `SheetRootView` when its assistant configuration is enabled.
+/// The one assistant presentation attached to a parent detail or game screen.
 ///
-/// The sheet owns this content's placement. iPhone publishes one control to the
-/// native tab accessory; larger platforms render one control at the root's bottom edge.
+/// iPhone publishes one control to the native tab accessory; larger platforms
+/// render one control at the parent screen's bottom edge.
 public struct SheetAIAssistantContent: View {
     public init(
         module: NetworkModules,

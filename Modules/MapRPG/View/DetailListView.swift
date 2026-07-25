@@ -1,6 +1,9 @@
 // @copyright André Trettin
 
 import CoreRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import SwiftUI
 
 #Preview(traits: .mockData) {
@@ -33,6 +36,11 @@ struct DetailListView: View {
             .task(id: model.id) {
                 await root.donateSiriViewingIntent(for: model.id)
             }
+            .sheetAIAssistant(
+                module: root.configurable.module,
+                itemId: model.id,
+                rootModel: root.editController.editorModel.sheetRootModel
+            )
 #endif
     }
 
