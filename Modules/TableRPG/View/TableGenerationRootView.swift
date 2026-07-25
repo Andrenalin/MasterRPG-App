@@ -138,7 +138,7 @@ private struct TableGenerationHeaderView: View {
                 Text(model.root.tableName)
                     .font(.title)
                     .bold()
-                Text("Choose one result from each generated table.", bundle: .module)
+                Text("Choose the results for each generated table.", bundle: .module)
                     .foregroundStyle(.secondary)
             }
 
@@ -220,115 +220,30 @@ private struct TableGenerationOccurrenceView: View {
     let controller: TableGenerationController
 
     @Environment(\.appTheme) private var theme
-    @Environment(\.networkActions) private var networkActions
-    @Environment(\.sharingControlActions) private var sharingControlActions
-    @Environment(AppGameStateModel.self) private var gameState
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                Label {
-                    Text(occurrence.tableName)
-                        .bold()
-                } icon: {
-                    Image(systemName: occurrence.diceId == nil ? "list.number" : "dice")
-                }
+            TableGenerationOccurrenceHeaderView(
+                model: model,
+                occurrence: occurrence,
+                controller: controller
+            )
 
-                if let lastRoll = occurrence.lastRoll {
-                    Text("Rolled \(lastRoll)", bundle: .module)
-                        .foregroundStyle(.secondary)
-                }
-
-                if let awaitingPlayerName = occurrence.awaitingPlayerName {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Waiting for \(awaitingPlayerName)", bundle: .module)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                if canAskPlayerToRoll {
-                    Menu {
-                        ForEach(visiblePlayers) { player in
-                            Button {
-                                askPlayerToRoll(player)
-                            } label: {
-                                Label {
-                                    Text("Roll with \(player.name)", bundle: .module)
-                                } icon: {
-                                    Image(systemName: "person.crop.circle.badge.questionmark")
-                                }
-                            }
-                        }
-                    } label: {
-                        Label {
-                            Text("Player Roll", bundle: .module)
-                        } icon: {
-                            Image(systemName: "person.2.fill")
-                        }
-                        .labelStyle(.iconOnly)
-                    }
-#if !os(visionOS)
-                    .buttonStyle(.glass)
-#endif
-                    .accessibilityLabel(Text("Ask a player to roll \(occurrence.tableName)", bundle: .module))
-                }
+            if occurrence.allowsMultipleSelection {
+                Text(
+                    "Select every entry you need. Hide any unwanted entries.",
+                    bundle: .module
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             ForEach(occurrence.visibleEntries) { entry in
-                Button {
-                    withAnimation {
-                        controller.select(
-                            entryId: entry.id,
-                            in: occurrence,
-                            model: model
-                        )
-                    }
-                } label: {
-                    HStack(alignment: .top) {
-                        Image(
-                            systemName: occurrence.selectedEntryId == entry.id
-                                ? "checkmark.circle.fill"
-                                : "circle"
-                        )
-                        .foregroundStyle(
-                            occurrence.selectedEntryId == entry.id
-                                ? theme.tint(for: .table)
-                                : .secondary
-                        )
-
-                        VStack(alignment: .leading) {
-                            Text(entry.name.withoutLink())
-                                .bold()
-                            if !entry.content.isEmpty {
-                                Text(entry.content.withoutLink())
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(
-                        theme.tint(for: .table).opacity(
-                            occurrence.selectedEntryId == entry.id ? 0.16 : 0.05
-                        ),
-                        in: .rect(cornerRadius: 16, style: .continuous)
-                    )
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityValue(
-                    occurrence.selectedEntryId == entry.id
-                        ? Text("Selected", bundle: .module)
-                        : Text("Not selected", bundle: .module)
-                )
-                .accessibilityHint(
-                    occurrence.selectedEntryId == entry.id
-                        ? Text("Deselect to show the other entries", bundle: .module)
-                        : Text("Select this generated result", bundle: .module)
+                TableGenerationEntryRow(
+                    entry: entry,
+                    occurrence: occurrence,
+                    model: model,
+                    controller: controller
                 )
             }
 
@@ -352,6 +267,140 @@ private struct TableGenerationOccurrenceView: View {
         )
         .padding(.leading, CGFloat(occurrence.depth) * 16)
     }
+}
+
+private struct TableGenerationOccurrenceHeaderView: View {
+    let model: TableGenerationModel
+    let occurrence: TableGenerationOccurrence
+    let controller: TableGenerationController
+
+    @Environment(\.networkActions) private var networkActions
+    @Environment(\.sharingControlActions) private var sharingControlActions
+    @Environment(AppGameStateModel.self) private var gameState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack {
+            Label {
+                Text(occurrence.tableName)
+                    .bold()
+            } icon: {
+                Image(
+                    systemName: occurrence.diceId == nil
+                        ? "list.number"
+                        : "dice"
+                )
+            }
+
+            if let lastRoll = occurrence.lastRoll {
+                Text("Rolled \(lastRoll)", bundle: .module)
+                    .foregroundStyle(.secondary)
+            }
+
+            if occurrence.isAwaitingPlayerRoll,
+               let awaitingPlayerName = occurrence.awaitingPlayerName {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Waiting for \(awaitingPlayerName)", bundle: .module)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Menu {
+                Button {
+                    withAnimation(reduceMotion ? nil : .smooth) {
+                        _ = controller.roll(
+                            occurrence: occurrence,
+                            model: model
+                        )
+                    }
+                } label: {
+                    Label {
+                        Text("Roll", bundle: .module)
+                    } icon: {
+                        Image(systemName: "dice.fill")
+                    }
+                }
+                .disabled(occurrence.entries.isEmpty)
+
+                if canShareDice {
+                    Divider()
+
+                    ForEach(visiblePlayers) { player in
+                        Button {
+                            shareDice(
+                                to: player.id,
+                                playerName: player.name
+                            )
+                        } label: {
+                            Label {
+                                Text(
+                                    "Share to \(player.name)",
+                                    bundle: .module
+                                )
+                            } icon: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                        }
+                        .disabled(occurrence.isAwaitingPlayerRoll)
+                    }
+
+                    Button {
+                        shareDice(
+                            to: nil,
+                            playerName: String(
+                                localized: "All Players",
+                                bundle: .module
+                            )
+                        )
+                    } label: {
+                        Label {
+                            Text("Share to all", bundle: .module)
+                        } icon: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                    .disabled(occurrence.isAwaitingPlayerRoll)
+                }
+
+                if occurrence.hasDecisions {
+                    Divider()
+
+                    Button(role: .destructive) {
+                        withAnimation(reduceMotion ? nil : .smooth) {
+                            controller.reset(
+                                occurrence: occurrence,
+                                model: model
+                            )
+                        }
+                    } label: {
+                        Label {
+                            Text("Reset", bundle: .module)
+                        } icon: {
+                            Image(systemName: "arrow.counterclockwise")
+                        }
+                    }
+                }
+            } label: {
+                Label {
+                    Text("Roll or Share Dice", bundle: .module)
+                } icon: {
+                    Image(systemName: "dice.fill")
+                }
+                .labelStyle(.iconOnly)
+            }
+#if !os(visionOS)
+            .buttonStyle(.glass)
+#endif
+            .accessibilityLabel(
+                Text(
+                    "Roll or share dice for \(occurrence.tableName)",
+                    bundle: .module
+                )
+            )
+        }
+    }
 
     private var visiblePlayers: [SharingControlModel] {
         (sharingControlActions.control?() ?? [])
@@ -359,32 +408,167 @@ private struct TableGenerationOccurrenceView: View {
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
 
-    private var canAskPlayerToRoll: Bool {
+    private var canShareDice: Bool {
         gameState.isGameRunning
             && gameState.gameModus == .master
             && networkActions != nil
             && !visiblePlayers.isEmpty
-            && occurrence.awaitingPlayerId == nil
     }
 
-    private func askPlayerToRoll(_ player: SharingControlModel) {
-        occurrence.awaitingPlayerId = player.id
-        occurrence.awaitingPlayerName = player.name
+    private func shareDice(
+        to playerId: UUID?,
+        playerName: String
+    ) {
+        occurrence.isAwaitingPlayerRoll = true
+        occurrence.awaitingPlayerId = playerId
+        occurrence.awaitingPlayerName = playerName
         Task {
             do {
                 let data = try await controller.gameData(
                     for: occurrence,
                     sessionId: model.id
                 )
-                networkActions?.game(data, .show, player.id)
+                networkActions?.game(data, .show, playerId)
             } catch {
+                occurrence.isAwaitingPlayerRoll = false
                 occurrence.awaitingPlayerId = nil
                 occurrence.awaitingPlayerName = nil
                 model.errorMessage = String(
-                    localized: "Could not share the dice with \(player.name).",
+                    localized: "Could not share the dice with \(playerName).",
                     bundle: .module
                 )
             }
+        }
+    }
+}
+
+private struct TableGenerationEntryRow: View {
+    init(
+        entry: TableGenerationEntry,
+        occurrence: TableGenerationOccurrence,
+        model: TableGenerationModel,
+        controller: TableGenerationController
+    ) {
+        self.entry = entry
+        self.occurrence = occurrence
+        self.model = model
+        self.controller = controller
+        _contentModel = State(
+            initialValue: LinkHighlightTextModel(
+                linkControllable: nil,
+                text: entry.content
+            )
+        )
+    }
+
+    let entry: TableGenerationEntry
+    let occurrence: TableGenerationOccurrence
+    let model: TableGenerationModel
+    let controller: TableGenerationController
+
+    @State private var contentModel: LinkHighlightTextModel
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(alignment: .top) {
+            Button {
+                withAnimation(reduceMotion ? nil : .smooth) {
+                    controller.select(
+                        entryId: entry.id,
+                        in: occurrence,
+                        model: model
+                    )
+                }
+            } label: {
+                HStack(alignment: .top) {
+                    Image(
+                        systemName: isSelected
+                            ? "checkmark.circle.fill"
+                            : "circle"
+                    )
+                    .foregroundStyle(
+                        isSelected
+                            ? theme.tint(for: .table)
+                            : .secondary
+                    )
+
+                    VStack(alignment: .leading) {
+                        Text(entry.name.withoutLink())
+                            .bold()
+                        if !entry.content.isEmpty {
+                            LinkHighlightTextView(
+                                model: contentModel,
+                                allowsLinkInteraction: false
+                            )
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(
+                isSelected
+                    ? Text("Selected", bundle: .module)
+                    : Text("Not selected", bundle: .module)
+            )
+            .accessibilityHint(selectionHint)
+
+            if occurrence.allowsMultipleSelection, !isSelected {
+                GlassButton {
+                    withAnimation(reduceMotion ? nil : .smooth) {
+                        controller.hide(
+                            entryId: entry.id,
+                            in: occurrence,
+                            model: model
+                        )
+                    }
+                } label: {
+                    Label {
+                        Text("Hide", bundle: .module)
+                    } icon: {
+                        Image(systemName: "eye.slash")
+                    }
+                    .labelStyle(.iconOnly)
+                }
+                .disabled(
+                    !controller.canHide(
+                        entryId: entry.id,
+                        in: occurrence
+                    )
+                )
+                .accessibilityHint(
+                    Text(
+                        "Exclude this entry from the generated result",
+                        bundle: .module
+                    )
+                )
+            }
+        }
+        .padding()
+        .background(
+            theme.tint(for: .table).opacity(isSelected ? 0.16 : 0.05),
+            in: .rect(cornerRadius: 16, style: .continuous)
+        )
+    }
+
+    private var isSelected: Bool {
+        occurrence.selectedEntryIds.contains(entry.id)
+    }
+
+    private var selectionHint: Text {
+        if isSelected {
+            if occurrence.allowsMultipleSelection {
+                Text("Deselect this generated result", bundle: .module)
+            } else {
+                Text("Deselect to show the other entries", bundle: .module)
+            }
+        } else {
+            Text("Select this generated result", bundle: .module)
         }
     }
 }

@@ -41,36 +41,69 @@ struct TableGenerationController: Sendable {
     ) {
         model.errorMessage = nil
         occurrence.lastRoll = nil
-        occurrence.awaitingPlayerId = nil
-        occurrence.awaitingPlayerName = nil
+        clearPendingRoll(in: occurrence)
 
-        if occurrence.selectedEntryId == entryId {
-            occurrence.selectedEntryId = nil
-            occurrence.children = []
-            occurrence.ignoredCycleNames = []
+        guard occurrence.entries.contains(where: { $0.id == entryId }),
+              !occurrence.hiddenEntryIds.contains(entryId)
+        else {
             return
         }
 
-        guard let entry = occurrence.entries.first(where: { $0.id == entryId }) else {
-            return
+        if occurrence.allowsMultipleSelection {
+            if occurrence.selectedEntryIds.contains(entryId) {
+                occurrence.selectedEntryIds.remove(entryId)
+            } else {
+                occurrence.selectedEntryIds.insert(entryId)
+            }
+        } else if occurrence.selectedEntryIds.contains(entryId) {
+            occurrence.selectedEntryIds = []
+        } else {
+            occurrence.selectedEntryIds = [entryId]
         }
-        occurrence.selectedEntryId = entryId
+
+        rebuildChildren(in: occurrence)
+    }
+
+    @MainActor
+    func canHide(
+        entryId: UUID,
+        in occurrence: TableGenerationOccurrence
+    ) -> Bool {
+        guard occurrence.allowsMultipleSelection,
+              occurrence.visibleEntries.contains(where: { $0.id == entryId }),
+              !occurrence.selectedEntryIds.contains(entryId)
+        else {
+            return false
+        }
+        return !occurrence.selectedEntryIds.isEmpty
+            || occurrence.visibleEntries.count > 1
+    }
+
+    @MainActor
+    func hide(
+        entryId: UUID,
+        in occurrence: TableGenerationOccurrence,
+        model: TableGenerationModel
+    ) {
+        guard canHide(entryId: entryId, in: occurrence) else { return }
+        model.errorMessage = nil
+        occurrence.lastRoll = nil
+        clearPendingRoll(in: occurrence)
+        occurrence.hiddenEntryIds.insert(entryId)
+    }
+
+    @MainActor
+    func reset(
+        occurrence: TableGenerationOccurrence,
+        model: TableGenerationModel
+    ) {
+        model.errorMessage = nil
+        occurrence.selectedEntryIds = []
+        occurrence.hiddenEntryIds = []
         occurrence.children = []
         occurrence.ignoredCycleNames = []
-
-        for link in entry.tableLinks {
-            if occurrence.tablePath.contains(link.itemId) {
-                occurrence.ignoredCycleNames.append(link.name)
-                continue
-            }
-            if let child = makeOccurrence(
-                tableId: link.itemId,
-                depth: occurrence.depth + 1,
-                tablePath: occurrence.tablePath
-            ) {
-                occurrence.children.append(child)
-            }
-        }
+        occurrence.lastRoll = nil
+        clearPendingRoll(in: occurrence)
     }
 
     @MainActor
@@ -85,17 +118,49 @@ struct TableGenerationController: Sendable {
         to occurrence: TableGenerationOccurrence,
         model: TableGenerationModel
     ) {
+        model.errorMessage = nil
         guard let entry = matchingEntry(for: result, in: occurrence) else {
+            clearPendingRoll(in: occurrence)
             model.errorMessage = String(
                 localized: "Roll \(result) does not match an entry in \(occurrence.tableName).",
                 bundle: .module
             )
             return
         }
-        select(entryId: entry.id, in: occurrence, model: model)
+
+        let newSelection: Set<UUID> = [entry.id]
+        let selectionChanged = occurrence.selectedEntryIds != newSelection
+        occurrence.selectedEntryIds = newSelection
+        occurrence.hiddenEntryIds.remove(entry.id)
+        if selectionChanged {
+            rebuildChildren(in: occurrence)
+        }
         occurrence.lastRoll = result
-        occurrence.awaitingPlayerId = nil
-        occurrence.awaitingPlayerName = nil
+        clearPendingRoll(in: occurrence)
+    }
+
+    @discardableResult
+    @MainActor
+    func roll(
+        occurrence: TableGenerationOccurrence,
+        model: TableGenerationModel
+    ) -> Int? {
+        model.errorMessage = nil
+        let result: Int
+        if let diceId = occurrence.diceId {
+            result = diceRoot.role(diceId: diceId)
+        } else {
+            guard !occurrence.entries.isEmpty else {
+                model.errorMessage = String(
+                    localized: "\(occurrence.tableName) has no entries.",
+                    bundle: .module
+                )
+                return nil
+            }
+            result = diceRoot.role(number: occurrence.entries.count)
+        }
+        apply(result: result, to: occurrence, model: model)
+        return result
     }
 
     @MainActor
@@ -153,26 +218,48 @@ struct TableGenerationController: Sendable {
         occurrence: TableGenerationOccurrence,
         model: TableGenerationModel
     ) {
-        if occurrence.selectedEntry == nil {
-            let result: Int
-            if let diceId = occurrence.diceId {
-                result = diceRoot.role(diceId: diceId)
-            } else {
-                guard !occurrence.entries.isEmpty else {
-                    model.errorMessage = String(
-                        localized: "\(occurrence.tableName) has no entries.",
-                        bundle: .module
-                    )
-                    return
-                }
-                result = diceRoot.role(number: occurrence.entries.count)
+        if !occurrence.isResolved {
+            guard roll(occurrence: occurrence, model: model) != nil else {
+                return
             }
-            apply(result: result, to: occurrence, model: model)
         }
 
         for child in occurrence.children {
             autoRoll(occurrence: child, model: model)
         }
+    }
+
+    @MainActor
+    private func rebuildChildren(
+        in occurrence: TableGenerationOccurrence
+    ) {
+        occurrence.children = []
+        occurrence.ignoredCycleNames = []
+
+        for entry in occurrence.selectedEntries {
+            for link in entry.tableLinks {
+                if occurrence.tablePath.contains(link.itemId) {
+                    occurrence.ignoredCycleNames.append(link.name)
+                    continue
+                }
+                if let child = makeOccurrence(
+                    tableId: link.itemId,
+                    depth: occurrence.depth + 1,
+                    tablePath: occurrence.tablePath
+                ) {
+                    occurrence.children.append(child)
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func clearPendingRoll(
+        in occurrence: TableGenerationOccurrence
+    ) {
+        occurrence.isAwaitingPlayerRoll = false
+        occurrence.awaitingPlayerId = nil
+        occurrence.awaitingPlayerName = nil
     }
 
     @MainActor

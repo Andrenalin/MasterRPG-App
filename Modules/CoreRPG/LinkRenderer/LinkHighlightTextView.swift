@@ -5,11 +5,16 @@ import SwiftUI
 public struct LinkHighlightTextView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
-    public init(model: LinkHighlightTextModel) {
+    public init(
+        model: LinkHighlightTextModel,
+        allowsLinkInteraction: Bool = true
+    ) {
         self.model = model
+        self.allowsLinkInteraction = allowsLinkInteraction
     }
 
     let model: LinkHighlightTextModel
+    let allowsLinkInteraction: Bool
 
     public var body: some View {
         ZStack(alignment: .topLeading) {
@@ -40,9 +45,9 @@ public struct LinkHighlightTextView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     var plainText: Text {
-        let _ = model.updated        
+        let _ = model.updated
         return model.displayText.reduce(Text(verbatim: "")) {
             partialResult, component in
             return Text("\(partialResult)\(component.text)", bundle: .module)
@@ -64,21 +69,23 @@ public struct LinkHighlightTextView: View {
     @ViewBuilder
     func overlayView(linkLocation: LinkHighLightLocation, foreground: Bool) -> some View {
         if foreground {
-            Button {
-                withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.8)) {
-                    model.handle(link: linkLocation.link)
+            if allowsLinkInteraction {
+                Button {
+                    withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.8)) {
+                        model.handle(link: linkLocation.link)
+                    }
+                } label: {
+                    Color.indigo.opacity(0.01)
                 }
-            } label: {
-                Color.indigo.opacity(0.01)
-            }
-            .buttonStyle(.plain)
-            .contentShape(.rect)
-            .accessibilityLabel(Text(verbatim: linkLocation.link.name))
-            .accessibilityHint(Text("Open link", bundle: .module))
+                .buttonStyle(.plain)
+                .contentShape(.rect)
+                .accessibilityLabel(Text(verbatim: linkLocation.link.name))
+                .accessibilityHint(Text("Open link", bundle: .module))
 #if os(visionOS)
-            .buttonStyle(LinkButtonStyle())
-            .buttonBorderShape(.roundedRectangle(radius: 4))
+                .buttonStyle(LinkButtonStyle())
+                .buttonBorderShape(.roundedRectangle(radius: 4))
 #endif
+            }
         } else {
             RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color.accentColor.secondary)
         }
@@ -104,7 +111,7 @@ public struct LinkHighlightTextView: View {
         } label: {
             Text(verbatim: "Change width")
         }
-        
+
         LinkHighlightTextView(model: model)
             .frame(width: width)
             .padding()

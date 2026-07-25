@@ -65,6 +65,7 @@ struct TableGenerationControllerTests {
         let table = TableModel(
             id: .fixture1,
             name: "Weapon",
+            diceId: .fixtureMap,
             entries: [linkedEntry, otherEntry]
         )
         root.itemController.replace(model: table, isInsert: true)
@@ -93,6 +94,227 @@ struct TableGenerationControllerTests {
         #expect(model.root.visibleEntries.map(\.id) == [linkedEntry.id, otherEntry.id])
         #expect(model.root.children.isEmpty)
         #expect(model.occurrences.count == 1)
+    }
+
+    @Test("A Table without Dice supports multiple selections and explicit hiding")
+    func noDiceTableSupportsMultipleSelections() {
+        // Given
+        let root = makeRoot()
+        let rope = TableEntryModel.fixture(
+            id: .fixture2,
+            name: "Rope",
+            content: "Rope"
+        )
+        let torch = TableEntryModel.fixture(
+            id: .fixture3,
+            name: "Torch",
+            content: "Torch"
+        )
+        let rations = TableEntryModel.fixture(
+            id: .fixture4,
+            name: "Rations",
+            content: "Rations"
+        )
+        let table = TableModel(
+            id: .fixture1,
+            name: "Equipment",
+            entries: [rope, torch, rations]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+
+        // When
+        root.generationController.hide(
+            entryId: rope.id,
+            in: model.root,
+            model: model
+        )
+        root.generationController.hide(
+            entryId: torch.id,
+            in: model.root,
+            model: model
+        )
+
+        // Then
+        #expect(
+            !root.generationController.canHide(
+                entryId: rations.id,
+                in: model.root
+            )
+        )
+
+        // Given
+        root.generationController.reset(
+            occurrence: model.root,
+            model: model
+        )
+
+        // When
+        root.generationController.select(
+            entryId: rope.id,
+            in: model.root,
+            model: model
+        )
+        root.generationController.select(
+            entryId: torch.id,
+            in: model.root,
+            model: model
+        )
+
+        // Then
+        #expect(model.root.visibleEntries.map(\.id) == [rope.id, torch.id, rations.id])
+        #expect(model.root.selectedEntries.map(\.id) == [rope.id, torch.id])
+        #expect(model.canConfirm)
+
+        // When
+        root.generationController.hide(
+            entryId: rations.id,
+            in: model.root,
+            model: model
+        )
+
+        // Then
+        #expect(model.root.hiddenEntryIds == [rations.id])
+        #expect(model.canConfirm)
+        #expect(model.summary?.selections.map(\.entryId) == [rope.id, torch.id])
+        #expect(model.summary?.value == "Equipment: Rope\nEquipment: Torch")
+
+        // When
+        root.generationController.apply(
+            result: 3,
+            to: model.root,
+            model: model
+        )
+
+        // Then
+        #expect(model.root.selectedEntries.map(\.id) == [rations.id])
+        #expect(model.root.hiddenEntryIds.isEmpty)
+        #expect(model.root.visibleEntries.map(\.id) == [rope.id, torch.id, rations.id])
+        #expect(model.summary?.value == "Rations")
+    }
+
+    @Test("Changing a parent selection resets linked Table decisions")
+    func parentSelectionChangeResetsChildren() throws {
+        // Given
+        let root = makeRoot()
+        let childFirst = TableEntryModel.fixture(
+            id: .fixture3,
+            name: "First",
+            content: "First"
+        )
+        let childSecond = TableEntryModel.fixture(
+            id: .fixture4,
+            name: "Second",
+            content: "Second"
+        )
+        let child = TableModel(
+            id: .fixture2,
+            name: "Child",
+            entries: [childFirst, childSecond]
+        )
+        root.itemController.replace(model: child, isInsert: true)
+
+        let linkedEntry = TableEntryModel.fixture(
+            id: .fixturePhoto,
+            name: "Linked",
+            content: root.linkController.generateLink(itemId: child.id)
+        )
+        let plainEntry = TableEntryModel.fixture(
+            id: .fixtureAudio,
+            name: "Plain",
+            content: "Plain"
+        )
+        let table = TableModel(
+            id: .fixture1,
+            name: "Root",
+            diceId: .fixtureMap,
+            entries: [linkedEntry, plainEntry]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+        root.generationController.select(
+            entryId: linkedEntry.id,
+            in: model.root,
+            model: model
+        )
+        let originalChild = try #require(model.root.children.first)
+        root.generationController.select(
+            entryId: childFirst.id,
+            in: originalChild,
+            model: model
+        )
+        root.generationController.hide(
+            entryId: childSecond.id,
+            in: originalChild,
+            model: model
+        )
+        #expect(originalChild.isResolved)
+
+        // When
+        root.generationController.select(
+            entryId: plainEntry.id,
+            in: model.root,
+            model: model
+        )
+        root.generationController.select(
+            entryId: linkedEntry.id,
+            in: model.root,
+            model: model
+        )
+
+        // Then
+        let rebuiltChild = try #require(model.root.children.first)
+        #expect(rebuiltChild.id != originalChild.id)
+        #expect(rebuiltChild.selectedEntryIds.isEmpty)
+        #expect(rebuiltChild.hiddenEntryIds.isEmpty)
+        #expect(!rebuiltChild.isResolved)
+    }
+
+    @Test("A roll replaces a different selection and preserves the same result")
+    func rollResultReplacesSelection() {
+        // Given
+        let root = makeRoot()
+        let first = TableEntryModel.fixture(
+            id: .fixture2,
+            name: "1-3",
+            content: "Mace"
+        )
+        let second = TableEntryModel.fixture(
+            id: .fixture3,
+            name: "4-6",
+            content: "Sword"
+        )
+        let table = TableModel(
+            id: .fixture1,
+            name: "Weapon",
+            tableType: .dice,
+            diceId: .fixtureMap,
+            entries: [first, second]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+        root.generationController.select(
+            entryId: first.id,
+            in: model.root,
+            model: model
+        )
+
+        // When
+        root.generationController.apply(
+            result: 5,
+            to: model.root,
+            model: model
+        )
+        root.generationController.apply(
+            result: 5,
+            to: model.root,
+            model: model
+        )
+
+        // Then
+        #expect(model.root.selectedEntries.map(\.id) == [second.id])
+        #expect(model.root.lastRoll == 5)
+        #expect(model.canConfirm)
     }
 
     @Test("A linked-table cycle is ignored only on the active path")

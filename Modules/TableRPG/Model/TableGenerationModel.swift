@@ -36,6 +36,9 @@ final class TableGenerationOccurrence: Identifiable {
         self.entries = entries
         self.depth = depth
         self.tablePath = tablePath
+        self.selectionIds = Dictionary(
+            uniqueKeysWithValues: entries.map { ($0.id, UUID()) }
+        )
     }
 
     let id: UUID
@@ -47,24 +50,67 @@ final class TableGenerationOccurrence: Identifiable {
     let depth: Int
     let tablePath: [UUID]
 
-    var selectedEntryId: UUID?
+    @ObservationIgnored private let selectionIds: [UUID: UUID]
+
+    var selectedEntryIds: Set<UUID> = []
+    var hiddenEntryIds: Set<UUID> = []
     var children: [TableGenerationOccurrence] = []
     var ignoredCycleNames: [String] = []
     var lastRoll: Int?
+    var isAwaitingPlayerRoll = false
     var awaitingPlayerId: UUID?
     var awaitingPlayerName: String?
 
+    var allowsMultipleSelection: Bool {
+        diceId == nil
+    }
+
+    var selectedEntryId: UUID? {
+        get { selectedEntries.first?.id }
+        set {
+            if let newValue {
+                selectedEntryIds = [newValue]
+            } else {
+                selectedEntryIds = []
+            }
+        }
+    }
+
     var selectedEntry: TableGenerationEntry? {
-        guard let selectedEntryId else { return nil }
-        return entries.first { $0.id == selectedEntryId }
+        selectedEntries.first
+    }
+
+    var selectedEntries: [TableGenerationEntry] {
+        entries.filter { selectedEntryIds.contains($0.id) }
     }
 
     var visibleEntries: [TableGenerationEntry] {
-        if let selectedEntry {
+        if allowsMultipleSelection {
+            entries.filter { !hiddenEntryIds.contains($0.id) }
+        } else if let selectedEntry {
             [selectedEntry]
         } else {
             entries
         }
+    }
+
+    var isResolved: Bool {
+        guard !entries.isEmpty, !selectedEntryIds.isEmpty else { return false }
+        if allowsMultipleSelection {
+            return true
+        }
+        return selectedEntryIds.count == 1
+    }
+
+    var hasDecisions: Bool {
+        !selectedEntryIds.isEmpty
+            || !hiddenEntryIds.isEmpty
+            || lastRoll != nil
+            || isAwaitingPlayerRoll
+    }
+
+    func selectionId(for entryId: UUID) -> UUID {
+        selectionIds[entryId] ?? entryId
     }
 }
 
@@ -86,25 +132,26 @@ final class TableGenerationModel: Identifiable {
     var canConfirm: Bool {
         let currentOccurrences = occurrences
         return !currentOccurrences.isEmpty
-            && currentOccurrences.allSatisfy { $0.selectedEntry != nil }
+            && currentOccurrences.allSatisfy(\.isResolved)
     }
 
     var summary: ItemGenerationSummary? {
         guard canConfirm else { return nil }
-        let selected = occurrences.compactMap { occurrence -> ItemGenerationSelection? in
-            guard let entry = occurrence.selectedEntry else { return nil }
-            let plainContent = entry.content.withoutLink()
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let fallback = entry.name.withoutLink()
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            return ItemGenerationSelection(
-                id: occurrence.id,
-                tableId: occurrence.tableId,
-                tableName: occurrence.tableName.withoutLink(),
-                entryId: entry.id,
-                entryName: entry.name.withoutLink(),
-                content: plainContent.isEmpty ? fallback : plainContent
-            )
+        let selected = occurrences.flatMap { occurrence in
+            occurrence.selectedEntries.map { entry in
+                let plainContent = entry.content.withoutLink()
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let fallback = entry.name.withoutLink()
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return ItemGenerationSelection(
+                    id: occurrence.selectionId(for: entry.id),
+                    tableId: occurrence.tableId,
+                    tableName: occurrence.tableName.withoutLink(),
+                    entryId: entry.id,
+                    entryName: entry.name.withoutLink(),
+                    content: plainContent.isEmpty ? fallback : plainContent
+                )
+            }
         }
         guard !selected.isEmpty else { return nil }
 
