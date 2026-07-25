@@ -78,6 +78,7 @@ struct MasterRPGApp: App {
             AppIntentContentInvalidator.invalidate()
         }
 #endif
+        PerformanceTrace.event("AppInitialized")
     }
 
     private let appModel: AppModel = AppModel.shared

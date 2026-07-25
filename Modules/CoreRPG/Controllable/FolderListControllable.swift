@@ -36,6 +36,8 @@ extension FolderListControllable {
         let startTime = ContinuousClock.now
         let searchText = searchModel.searchText
         let displayMode = listDisplayModel.displayMode
+        let trace = PerformanceTrace.begin("ListSearch", source: source, count: searchText.count)
+        defer { trace?.end() }
         
         Logger.folderListControllable.info("🔍 [Search] Starting ASYNC search - source: '\(source)', text: '\(searchText)', displayMode: \(displayMode.rawValue)")
         
@@ -61,7 +63,7 @@ extension FolderListControllable {
     /// debounce applies only while typing a non-empty query; every other trigger uses a short
     /// coalescing window so bursts still settle into a single call.
     @MainActor func runSearch(source: String, kind: FolderSearchKind, debounceText: Bool) {
-        searchModel.currentTask = Task {
+        searchModel.currentTask = Task(name: "List Search") {
             let delay: Duration = debounceText && !searchModel.searchText.isEmpty ? .milliseconds(300) : .milliseconds(50)
             do { try await Task.sleep(for: delay) } catch { return }
             guard !Task.isCancelled else { return }
@@ -92,6 +94,12 @@ extension FolderListControllable {
     @MainActor public func performDetailSearch() async {
         guard let detailListModel = listModel.detailListModel,
               let parentModel = detailListModel.parentModel else { return }
+        let trace = PerformanceTrace.begin(
+            "DetailListSearch",
+            source: "detail",
+            count: searchModel.searchText.count
+        )
+        defer { trace?.end() }
         // scopedResults — semantically "show this item as the root of the detail view":
         //   SearchListController: folder-mode listSearchResults(focusId:) → parent's children.
         //   SearchLinkController: list-mode inspectorSearchResults(focusId:) → character-as-root
@@ -121,7 +129,7 @@ public extension FolderListControllable {
             listModel.selected = addedItem.id
         }
 
-        searchModel.currentTask = Task {
+        searchModel.currentTask = Task(name: "List Data Refresh") {
             if debounce {
                 // Coalesce a burst of data changes into one search.
                 do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
@@ -154,7 +162,7 @@ public extension FolderListControllable {
         guard listModel.selectionGeneration == selectionGeneration else { return }
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
-            Task { @MainActor in
+            Task(name: "List Selection Restore") { @MainActor in
                 try? await Task.sleep(for: .milliseconds(50))
                 listModel.listSelection = Set(arrayLiteral: addedItem.id)
             }
@@ -220,7 +228,7 @@ public extension FolderListControllable {
     func resetDetail(model: (any ItemDataAccessable)) {
         listModel.resetDetailList(parentModel: model)
         listModel.detailListModel?.updatedOnce = true
-        Task { await performDetailSearch() }
+        Task(name: "Initial Detail Search") { await performDetailSearch() }
     }
 
     /// Fire-and-forget scoped detail search — used by `LinkItemListView` / `resetDetail` when

@@ -24,18 +24,48 @@ extension ImageCacheControllable {
     
     public func photo(for itemId: UUID) async -> AKImage? {
         let image = await imageCacheController.object(for: itemId)
+        PerformanceTrace.cacheEvent(
+            hit: image != nil,
+            itemID: itemId,
+            kind: "full",
+            source: "memory"
+        )
         image?.resetSize()
         return image
     }
     
     public func thumbnail(for itemId: UUID) async -> AKImage? {
         guard let image = await thumbnailCacheController.object(for: itemId) else {
+            PerformanceTrace.cacheEvent(
+                hit: false,
+                itemID: itemId,
+                kind: "thumbnail",
+                source: "memory"
+            )
             guard let fileImage = await thumbnailCacheController.loadFromDisk(for: itemId) else {
+                PerformanceTrace.cacheEvent(
+                    hit: false,
+                    itemID: itemId,
+                    kind: "thumbnail",
+                    source: "disk"
+                )
                 return nil
             }
+            PerformanceTrace.cacheEvent(
+                hit: true,
+                itemID: itemId,
+                kind: "thumbnail",
+                source: "disk"
+            )
             await thumbnailCacheController.setObject(fileImage, for: itemId)
             return fileImage
         }
+        PerformanceTrace.cacheEvent(
+            hit: true,
+            itemID: itemId,
+            kind: "thumbnail",
+            source: "memory"
+        )
         return image
     }
     
@@ -50,7 +80,23 @@ extension ImageCacheControllable {
     @discardableResult
     @MainActor public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
-        guard await !imageCacheController.hasObject(for: itemId) else { return itemId }
+        let trace = PerformanceTrace.begin("FullImagePipeline", itemID: itemId, kind: "full")
+        defer { trace?.end() }
+        if await imageCacheController.hasObject(for: itemId) {
+            PerformanceTrace.cacheEvent(
+                hit: true,
+                itemID: itemId,
+                kind: "full",
+                source: "memory"
+            )
+            return itemId
+        }
+        PerformanceTrace.cacheEvent(
+            hit: false,
+            itemID: itemId,
+            kind: "full",
+            source: "memory"
+        )
         guard !Task.isCancelled else { return nil }
         if shouldDownload {
             if await fileUrlDataController.hasAccess(for: fileUrl) == false {
@@ -67,7 +113,17 @@ extension ImageCacheControllable {
         
     @discardableResult
     public func thumbnailId(for itemId: UUID, item: any ItemDataAccessable) async -> UUID? {
-        guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
+        let trace = PerformanceTrace.begin("ThumbnailPipeline", itemID: itemId, kind: "thumbnail")
+        defer { trace?.end() }
+        if await thumbnailCacheController.hasObject(for: itemId) {
+            PerformanceTrace.cacheEvent(
+                hit: true,
+                itemID: itemId,
+                kind: "thumbnail",
+                source: "memory"
+            )
+            return itemId
+        }
         let _ = await thumbnail(for: itemId) // load from disk
         guard await !thumbnailCacheController.hasObject(for: itemId) else { return itemId }
         guard !Task.isCancelled else { return nil }

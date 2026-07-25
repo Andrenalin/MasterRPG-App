@@ -295,7 +295,10 @@ where Attachment.ID == UUID {
         guard publicationWorkers[module] == nil else { return }
         let workerId = UUID()
         let operationGeneration = generation
-        let task = Task(priority: priority) { @MainActor [weak self] in
+        let task = Task(
+            name: "SharePlay Journal Publication",
+            priority: priority
+        ) { @MainActor [weak self] in
             guard let self else { return }
             await self.drainPublications(
                 for: module,
@@ -321,7 +324,13 @@ where Attachment.ID == UUID {
             pendingPublications[module] = moduleQueue.isEmpty ? nil : moduleQueue
             activePublications[module] = operation
 
+            let trace = PerformanceTrace.begin(
+                "SharePlayJournalPublish",
+                source: module.token,
+                byteCount: operation.byteCount
+            )
             let newAttachment = await operation.publish()
+            trace?.end()
             guard !Task.isCancelled,
                   generation == operationGeneration,
                   activePublications[module]?.id == operation.id

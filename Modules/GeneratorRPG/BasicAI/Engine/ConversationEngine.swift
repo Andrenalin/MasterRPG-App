@@ -212,7 +212,7 @@ private extension ConversationEngine {
         onPartialResponse: (@MainActor @Sendable (String) -> Void)?
     ) async throws -> String {
         activeStreamingTask?.cancel()
-        let task = Task<String, Error> { @MainActor [weak self] in
+        let task = Task<String, Error>(name: "Foundation Response Stream") { @MainActor [weak self] in
             guard let self else {
                 throw CancellationError()
             }

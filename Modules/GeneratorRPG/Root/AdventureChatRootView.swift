@@ -262,6 +262,12 @@ private extension AdventureChatRootView {
 
     func updateActiveAnswerBatch() {
         guard previewBlocks == nil, let activeAnswerBatchID, let activeAnswerParent else { return }
+        let trace = PerformanceTrace.begin(
+            "GeneratedBlocksRebuild",
+            source: "FoundationExtraction",
+            count: model.extracted.count
+        )
+        defer { trace?.end() }
         let updatedBlocks = AdventureChatBlockSnapshot.blocks(
             from: model.extracted,
             batchID: activeAnswerBatchID,

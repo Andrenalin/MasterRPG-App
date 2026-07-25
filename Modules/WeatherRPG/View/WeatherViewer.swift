@@ -15,6 +15,7 @@ struct WeatherViewer: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     @State private var lightningTrigger = 0
+    @State private var animationTrace: PerformanceTrace.Interval?
 
     let backgroundTopStops: [Gradient.Stop] = [
         .init(color: .midnightStart, location: 0),
@@ -124,14 +125,36 @@ struct WeatherViewer: View {
         .accessibilityActions {
             if canTriggerLightning {
                 Button {
+                    PerformanceTrace.event("WeatherLightningTriggered")
                     lightningTrigger &+= 1
                 } label: {
                     Text("Trigger Lightning", bundle: .module)
                 }
             }
         }
+        .onAppear {
+            updatePerformanceTrace(isActive: isAnimating || useGame)
+        }
+        .onChange(of: isAnimating) { _, isAnimating in
+            updatePerformanceTrace(isActive: isAnimating || useGame)
+        }
         .onDisappear {
+            animationTrace?.end()
+            animationTrace = nil
             isAnimating = false
+        }
+    }
+
+    private func updatePerformanceTrace(isActive: Bool) {
+        if isActive, animationTrace == nil {
+            animationTrace = PerformanceTrace.begin(
+                "WeatherAnimationVisible",
+                source: "WeatherViewer",
+                count: model.stormType == .none ? 3 : 4
+            )
+        } else if !isActive {
+            animationTrace?.end()
+            animationTrace = nil
         }
     }
 
