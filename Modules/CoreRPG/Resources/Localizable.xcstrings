@@ -895,6 +895,7 @@
       }
     },
     "Becareful this removes all data and resets the database." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -911,6 +912,7 @@
       }
     },
     "Becareful this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5148,6 +5150,7 @@
       }
     },
     "Really Reset?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5506,6 +5509,7 @@
       }
     },
     "Reset" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5522,6 +5526,7 @@
       }
     },
     "Reset Data" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

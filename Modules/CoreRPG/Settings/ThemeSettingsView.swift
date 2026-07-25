@@ -17,7 +17,25 @@ public struct ThemeSettingsView: View {
     @Binding private var isPickerPresented: Bool
 
     public var body: some View {
+        @Bindable var settingsModel = settingsModel
+        
         SectionGroupEditorView {
+            #if os(iOS)
+            Picker(selection: $settingsModel.appColorScheme) {
+                ForEach(AppSettingsModel.AppColorScheme.allCases) { colorScheme in
+                    ColorSchemeView(colorScheme: colorScheme)
+                        .tag(colorScheme)
+                        .tint(.accentColor)
+                }
+            } label: {
+                Text("Color Scheme", bundle: .module)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .tint(.accentColor)
+            .labelsHidden()
+            #endif
+            
             Button(action: presentPicker) {
                 HStack {
                     ThemePreviewCard(

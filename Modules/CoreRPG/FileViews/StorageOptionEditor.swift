@@ -2,16 +2,23 @@
 
 import SwiftUI
 
-struct StorageOptionEditor: View {
+public struct StorageOptionEditor<Sync: View>: View {
+    public init(@ViewBuilder sync: () -> Sync) {
+        syncView = sync()
+    }
+    
+    let syncView: Sync
+    
     @Environment(AppSettingsModel.self) private var appSettings
     @Environment(\.cloudKitAccountChecksEnabled) private var cloudKitAccountChecksEnabled
+    @Environment(\.appTheme) private var theme
     
     @State private var showExitAlert = false
     @State private var useCloudKit = false
     
     @State private var iCloudAvailable: CloudKitAccountStatus = .notChecked
     
-    var body: some View {
+    public var body: some View {
         @Bindable var appSettings = appSettings
         SectionGroupEditorView {
             Text("iCloud Account Status: \(iCloudAvailable.title)", bundle: .module)
@@ -19,6 +26,7 @@ struct StorageOptionEditor: View {
             Toggle(isOn: $useCloudKit) {
                 Text("Store Database in iCloud", bundle: .module)
             }
+            .tint(theme.accentColor)
             .disabled(disabledUseCloud)
             .onChange(of: appSettings.useCloudKit, initial: true) {
                 useCloudKit <=> appSettings.useCloudKit
@@ -45,6 +53,11 @@ struct StorageOptionEditor: View {
             } message: {
                 Text("The app will be terminated to apply the database change.", bundle: .module)
             }
+            
+            if useCloudKit {
+                syncView
+            }
+            
         } header: {
             Text("Databse Settings", bundle: .module)
         } footer: {
@@ -63,9 +76,12 @@ struct StorageOptionEditor: View {
 }
 
 #Preview {
-    StorageOptionEditor()
+    StorageOptionEditor {
+        Text("Sync View")
+    }
         .environment(AppSettingsModel.previewFixture())
         .cloudKitAccountChecksEnabled(false)
+        .preferredColorScheme(.dark)
 }
 
 private struct CloudKitAccountChecksEnabledKey: EnvironmentKey {

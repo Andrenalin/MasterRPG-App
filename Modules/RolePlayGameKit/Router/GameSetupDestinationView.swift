@@ -22,13 +22,17 @@ struct GameSetupDestinationView: View {
 #if os(macOS) || os(visionOS)
         scenesManager.openWindow(.gameStatistics)
 #elseif os(iOS)
-        if appWindowSizeModel.mode == .compact {
-            navigator.navigate(to: GameStatisticsRoute.dashboard)
-        } else {
-            navigator.present(sheet: GameStatisticsRoute.dashboard, managed: true)
-        }
+        navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
+
+//        if appWindowSizeModel.mode == .compact {
+//            navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
+//        } else {
+//            navigator.present(sheet: GameStatisticsRoute.dashboard, managed: true)
+//        }
 #else
-        navigator.navigate(to: GameStatisticsRoute.dashboard)
+        navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
+
+//        navigator.navigate(to: GameStatisticsRoute.dashboard)
 #endif
     }
 

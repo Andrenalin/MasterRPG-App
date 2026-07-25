@@ -101,6 +101,7 @@ private struct SupporterStatusView: View {
 
 #Preview("Supporter store") {
     InAppView(inAppController: InAppController(model: InAppModel()))
+        .preferredColorScheme(.dark)
 }
 
 #Preview("Supporter status") {

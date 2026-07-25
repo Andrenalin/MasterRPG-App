@@ -5,7 +5,8 @@ import SwiftUI
 /// Shows CloudKit sync status to user during restore/sync operations
 public struct CloudKitSyncStatusView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-
+    @Environment(\.appTheme) private var theme
+    
     let syncState: CloudKitSyncState
     let lastSync: Date?
 
@@ -32,8 +33,6 @@ public struct CloudKitSyncStatusView: View {
                     }
                 }
                 .padding()
-                .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
 
             case .succeeded:
                 if let lastSync = lastSync, Date().timeIntervalSince(lastSync) < 60 {
@@ -41,13 +40,10 @@ public struct CloudKitSyncStatusView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                         Text("Synced with iCloud", bundle: .module)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.headline)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(.thinMaterial)
-                    .clipShape(Capsule())
                     .transition(.scale.combined(with: .opacity))
                 }
 
@@ -65,25 +61,25 @@ public struct CloudKitSyncStatusView: View {
                     }
                 }
                 .padding()
-                .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
+        .backgroundStyle(theme.backgroundGradient)
         .animation(accessibilityReduceMotion ? nil : .easeInOut, value: syncState)
     }
 }
 
 #Preview("Syncing") {
-    CloudKitSyncStatusView(syncState: .inProgress, lastSync: nil)
-        .padding()
-}
-
-#Preview("Succeeded") {
-    CloudKitSyncStatusView(syncState: .succeeded, lastSync: Date())
-        .padding()
-}
-
-#Preview("Failed") {
-    CloudKitSyncStatusView(syncState: .failed("Network connection lost"), lastSync: nil)
-        .padding()
+    VStack(alignment: .leading) {
+        
+        
+        CloudKitSyncStatusView(syncState: .inProgress, lastSync: nil)
+            .padding()
+        
+        CloudKitSyncStatusView(syncState: .succeeded, lastSync: Date())
+            .padding()
+        CloudKitSyncStatusView(syncState: .failed("Network connection lost"), lastSync: nil)
+            .padding()
+        
+    }
+    .preferredColorScheme(.dark)
 }
