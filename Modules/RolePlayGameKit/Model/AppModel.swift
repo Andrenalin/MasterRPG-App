@@ -42,6 +42,7 @@ public final class AppModel: Sendable {
     public var coreDataInitModel: CoreDataInitModel?
     /// File handed to the app through Open In; consumed by the Foundry import screen.
     public var pendingVTTImportURL: URL?
+    public var generatedValueEntry: ValueEntryModel?
 #if os(tvOS)
     public let databaseModel: DataBaseModel
 #else
@@ -329,7 +330,9 @@ extension AppModel {
         guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return }
         let task = importController.importUrl(from: url)
         Task {
-            let _ = await task.result
+            if case .success = await task.result {
+                refreshTipEligibility()
+            }
         }
     }
 
@@ -418,6 +421,10 @@ extension AppModel {
 
         self.appNavigationModel.initialRouteType = .ready
         presentPendingExternalNavigationIfNeeded()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            self?.refreshTipEligibility()
+        }
     }
 }
 
@@ -507,6 +514,30 @@ extension AppModel {
             try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
             target.navigate(to: SettingsRoute.importData, method: .managedCover)
         }
+    }
+
+    @MainActor
+    public func presentImportScreen() {
+#if os(macOS)
+        let target = settingsNavigator
+        scenesManager.openSettingsWindow()
+#else
+        let target = gameNavigator
+#endif
+
+        Task { @MainActor in
+            target.perform(route: KnownRoutes.settings)
+            try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
+            target.navigate(to: SettingsRoute.importData, method: .managedCover)
+        }
+    }
+
+    @MainActor
+    public func refreshTipEligibility() {
+        MasterRPGTips.refreshEligibility(
+            rootManager: root,
+            databaseReady: appNavigationModel.initialRouteType == .ready
+        )
     }
 
     func itemRootController(for module: NetworkModules) -> ItemRootController? {

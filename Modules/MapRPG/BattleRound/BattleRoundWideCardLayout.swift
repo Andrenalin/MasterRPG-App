@@ -43,3 +43,18 @@ struct BattleRoundWideCardLayout: View {
         }
     }
 }
+
+#Preview("Wide card layout", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    if let card = model.cardPresentations.first {
+        BattleRoundWideCardLayout(
+            presentation: card,
+            actions: .preview(model: model),
+            showCharacter: { _ in },
+            selectHitPoints: { _ in }
+        )
+        .frame(width: 700)
+        .padding()
+    }
+}

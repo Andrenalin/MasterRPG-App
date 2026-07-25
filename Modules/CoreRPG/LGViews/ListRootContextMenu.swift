@@ -19,6 +19,7 @@ struct ListRootContextMenu: View {
 
     @Environment(\.navigator) private var navigator
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.itemGenerationAction) private var itemGenerationAction
     
     var body: some View {
         let parent = self.parent
@@ -36,6 +37,9 @@ struct ListRootContextMenu: View {
         Divider()
         exportItemView
         groupEditView
+        if canGenerate {
+            generateItemView
+        }
         #if !os(tvOS)
         if root.viewControllable.supportsBatchExtraction {
             batchExtractionView
@@ -68,6 +72,29 @@ private extension ListRootContextMenu {
 
     var listDisplayModel: ListDisplayModel {
         listController?.listDisplayModel ?? ListDisplayModel()
+    }
+
+    var canGenerate: Bool {
+        guard itemGenerationAction.isEnabled,
+              let currentSelected,
+              let item = root.itemControllable.itemSync(for: currentSelected)
+        else {
+            return false
+        }
+        return root.configurable.module == .table && !item.specialCategory
+    }
+
+    var generateItemView: some View {
+        Button {
+            guard let currentSelected else { return }
+            itemGenerationAction(currentSelected)
+        } label: {
+            Label {
+                Text("Generate from \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "wand.and.stars")
+            }
+        }
     }
     
     var spaceActionView: some View {

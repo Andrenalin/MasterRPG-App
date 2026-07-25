@@ -75,6 +75,41 @@ struct PlayerControllerTestEnvironment {
 @MainActor
 struct PlayerControllerTests {
 
+    @Test("Generated table value from the game master is stored for presentation")
+    func handlesGeneratedTableValue() async throws {
+        let env = try await PlayerControllerTestEnvironment.create()
+        let selection = ItemGenerationSelection(
+            id: UUID(),
+            tableId: UUID(),
+            tableName: "Weapon",
+            entryId: UUID(),
+            entryName: "5",
+            content: "Mace"
+        )
+        let summary = ItemGenerationSummary(
+            name: "Weapon",
+            value: "Mace",
+            selections: [selection]
+        )
+        let data = NetworkCodableDataType(
+            id: summary.id,
+            type: .generator,
+            version: 1,
+            data: summary.encodeData()
+        )
+        let model = Self.networkModel(
+            type: .update,
+            subType: .generatedValue,
+            data: data,
+            gameConfig: Self.masterConfig()
+        )
+
+        let response = try await env.playerController.handle(model)
+
+        #expect(response == nil)
+        #expect(env.root.gameModel.receivedGenerationSummary == summary)
+    }
+
     @Test("Handle photo reveal with data and ID")
     func handlePhoto() async throws {
         // Arrange

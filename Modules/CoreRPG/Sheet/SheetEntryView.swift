@@ -38,6 +38,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.itemGenerationAction) private var itemGenerationAction
     @State private var isEditTypePickerPresented = false
 
     var body: some View {
@@ -370,7 +371,17 @@ private extension SheetEntryView {
     }
     
     var shareResult: ShareValueResult {
-        ShareValueResult(networkActions: networkActions, resultCategory: ResultCategory(id: entryModel.source.itemId, childId: entryModel.source.entryId, module: entryModel.source.typeId), showGame: appGameStateModel.isGameRunning, gameModus: appGameStateModel.gameModus)
+        ShareValueResult(
+            networkActions: networkActions,
+            resultCategory: ResultCategory(
+                id: entryModel.source.itemId,
+                childId: entryModel.source.entryId,
+                module: entryModel.source.typeId
+            ),
+            showGame: appGameStateModel.isGameRunning,
+            gameModus: appGameStateModel.gameModus,
+            generationAction: itemGenerationAction
+        )
     }
 
     var audioDisplayText: String {

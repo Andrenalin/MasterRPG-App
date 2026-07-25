@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import SwiftUI
+import TipKit
 
 struct SheetEntryAddButton: View {
     let rootModel: SheetRootModel
@@ -16,6 +17,9 @@ struct SheetEntryAddButton: View {
                     rootModel.updateParent(parentModel)
                 } completion: {
                     rootModel.setScrollEntryId(source: parentModel.source, entryId: entryId)
+                }
+                if entryId != nil {
+                    MasterRPGTips.refreshEligibility(rootManager: rootModel.rootManager)
                 }
             } label: {
                 Label {
@@ -34,6 +38,11 @@ struct SheetEntryAddButton: View {
                     .padding(4)
                     .contentShape(.circle)
             }
+            .popoverTip(
+                parentModel.level == 0 && parentModel.entries.isEmpty
+                    ? MasterRPGTips.firstEntry
+                    : nil
+            )
         }
     }
 

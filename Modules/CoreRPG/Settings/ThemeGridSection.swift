@@ -44,3 +44,14 @@ struct ThemeGridSection: View {
         }
     }
 }
+
+#Preview("Theme grid") {
+    ScrollView {
+        ThemeGridSection(
+            title: "Themes",
+            themeIDs: AppThemeID.allCases
+        )
+        .padding()
+    }
+    .environment(AppSettingsModel.previewFixture(appThemeID: .midnight))
+}

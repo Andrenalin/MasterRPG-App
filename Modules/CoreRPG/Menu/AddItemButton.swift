@@ -12,6 +12,10 @@ struct AddItemButton: View {
             Task {
                 guard let item = await root.editControllable.addNew(type: .item) else { return }
                 routeActions.routePage(root.configurable.module, item.id, nil)
+                await MasterRPGTips.donateItemCreated()
+                if let rootManager = root.rootManager {
+                    MasterRPGTips.refreshEligibility(rootManager: rootManager)
+                }
             }
         } label: {
             Label { Text("New \(root.configurable.module.title)", bundle: .module) } icon: { Image(systemName: "plus") }

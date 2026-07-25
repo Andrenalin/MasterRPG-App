@@ -25,6 +25,7 @@ struct MasterRPGApp: App {
 #endif
     
     init() {
+        MasterRPGTips.configure()
 #if !os(tvOS)
         // Register custom RealityKit components
         RealityKitInit.registerRealityKitComponents()

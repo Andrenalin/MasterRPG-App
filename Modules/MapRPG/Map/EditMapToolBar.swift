@@ -4,6 +4,7 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 import CharacterRPG
+import TipKit
 
 struct EditToolBarViewModifier: ViewModifier {
     let mapEditController: MapEditController
@@ -311,17 +312,20 @@ private extension EditToolBarViewModifier {
 #else
             showPinSelection.toggle()
 #endif
+            MasterRPGTips.recordMapToolUsed()
         } label: {
             let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .accessibilityLabel(Text("Choose Map Pins", bundle: .module))
         }
+        .popoverTip(MasterRPGTips.useMapTools)
     }
 
     @ViewBuilder var toggleDisplayModeButton: some View {
         Button {
             withAnimation(reduceMotion ? nil : .default) { editorModel.toggleDisplayMode() }
+            MasterRPGTips.recordMapToolUsed()
         } label: {
             Image(systemName: editorModel.iconDisplayMode)
                 .contentTransition(.symbolEffect(.replace.byLayer))

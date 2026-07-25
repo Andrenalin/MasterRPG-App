@@ -56,3 +56,33 @@ struct BattleRoundCard: View {
         .accessibilityElement(children: .contain)
     }
 }
+
+#Preview("Battle card", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    if let card = model.cardPresentations.first {
+        BattleRoundCard(
+            presentation: card,
+            actions: .preview(model: model),
+            showCharacter: { _ in },
+            selectHitPoints: { _ in }
+        )
+        .frame(maxWidth: 720)
+        .padding()
+    }
+}
+
+#Preview("Compact battle card", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    if let card = model.cardPresentations.first {
+        BattleRoundCard(
+            presentation: card,
+            actions: .preview(model: model),
+            showCharacter: { _ in },
+            selectHitPoints: { _ in }
+        )
+        .frame(width: 360)
+        .padding()
+    }
+}

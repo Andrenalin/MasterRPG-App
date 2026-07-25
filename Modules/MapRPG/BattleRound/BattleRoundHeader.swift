@@ -77,3 +77,35 @@ struct BattleRoundHeader: View {
         )
     }
 }
+
+#Preview("Battle header") {
+    @Previewable @State var isConfigurationExpanded = false
+    let model = BattleRoundPreviewData.model()
+
+    BattleRoundHeader(
+        isRunning: model.isRunning,
+        hasEntries: !model.entries.isEmpty,
+        round: model.roundCounter,
+        activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
+        initiativeOrder: model.initiativeOrder,
+        actions: .preview(model: model),
+        isConfigurationExpanded: $isConfigurationExpanded
+    )
+    .frame(width: 760)
+}
+
+#Preview("Compact battle header") {
+    @Previewable @State var isConfigurationExpanded = false
+    let model = BattleRoundPreviewData.model()
+
+    BattleRoundHeader(
+        isRunning: model.isRunning,
+        hasEntries: !model.entries.isEmpty,
+        round: model.roundCounter,
+        activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
+        initiativeOrder: model.initiativeOrder,
+        actions: .preview(model: model),
+        isConfigurationExpanded: $isConfigurationExpanded
+    )
+    .frame(width: 360)
+}

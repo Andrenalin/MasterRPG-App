@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import TipKit
 
 struct SplitVisionNavigation: View {
     @Environment(AppModel.self) private var appModel
@@ -51,7 +52,7 @@ struct SplitVisionNavigation: View {
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
             Button {
-                scenesManager.openWindow(SceneId.editor)
+                openEditorWindow()
             } label: {
                 Label {
                     Text("Editor", bundle: .module)
@@ -61,12 +62,18 @@ struct SplitVisionNavigation: View {
             }
             .padding([.top, .leading], 12)
             .environment(scenesManager)
+            .popoverTip(MasterRPGTips.openAnotherWindow)
         }
 #endif
     }
     
     var selectedModule: NetworkModules {
         (appModel.selectedExtendedModule?.module ?? appModel.selectedModule?.module) ?? .game
+    }
+
+    private func openEditorWindow() {
+        scenesManager.openWindow(.editor)
+        MasterRPGTips.recordWindowOpened()
     }
     
     @ViewBuilder func tabView(tab: RootRoute) -> some View {

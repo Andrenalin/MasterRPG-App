@@ -55,3 +55,16 @@ struct BattleAttackerDetails: View {
         actions.activateAttacker(combatant.id)
     }
 }
+
+#Preview("Active attacker") {
+    let model = BattleRoundPreviewData.model()
+
+    if let card = model.cardPresentations.first {
+        BattleAttackerDetails(
+            combatant: card.attacker.combatant,
+            isActive: card.isActive,
+            actions: .preview(model: model)
+        )
+        .padding()
+    }
+}

@@ -483,3 +483,22 @@ private struct MapPinLayerItem: View {
         }
     }
 }
+
+#Preview("Map editor canvas", traits: .mockData) {
+    let image = AKImage()
+    let session = MapEditorSession(
+        map: .preview,
+        image: image,
+        photoDegrees: 0,
+        containerSize: CGSize(width: 640, height: 480),
+        mapMode: .gameMaster
+    )
+
+    MapEditorCanvas(
+        session: session,
+        image: image,
+        degrees: 0,
+        map: .preview
+    )
+    .frame(width: 640, height: 480)
+}

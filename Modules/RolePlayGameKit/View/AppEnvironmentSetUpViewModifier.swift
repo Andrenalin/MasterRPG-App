@@ -50,6 +50,13 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.spaceRoot)
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: MasterRPGTips.importCampaignRequested
+                )
+            ) { _ in
+                appModel.presentImportScreen()
+            }
     }
 }
 

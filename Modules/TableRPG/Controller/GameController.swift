@@ -5,7 +5,10 @@ import DiceRPG
 import Foundation
 
 public protocol TableGameStorable {
-    @MainActor func addResult(_ result: ResultCategory, value: String)
+    @MainActor func addResult(
+        _ result: ResultCategory,
+        diceResult: DiceResultModel
+    )
     @MainActor func isTableAvailable(itemId: UUID, version: Int) -> Bool
     func receiveTable(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool
 }
@@ -30,10 +33,16 @@ private final class TableGameAvailabilityModel: Sendable {
 }
 
 struct GameController: Sendable {
-    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, exportController: ExportController) {
+    @MainActor init(
+        diceRoot: DiceRootModel,
+        itemController: ItemController,
+        exportController: ExportController,
+        generationSessionStore: TableGenerationSessionStore
+    ) {
         self.diceRoot = diceRoot
         self.itemController = itemController
         self.exportController = exportController
+        self.generationSessionStore = generationSessionStore
 
         self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.tableGameAvailabilityModel = TableGameAvailabilityModel()
@@ -42,6 +51,7 @@ struct GameController: Sendable {
     let diceRoot: DiceRootModel
     let itemController: ItemController
     let exportController: ExportController
+    let generationSessionStore: TableGenerationSessionStore
 
     let gameModel: ItemGameModel
     private let tableGameAvailabilityModel: TableGameAvailabilityModel
@@ -75,7 +85,22 @@ extension GameController: GameControllable {
 }
 
 extension GameController: TableGameStorable {
-    @MainActor public func addResult(_ result: ResultCategory, value: String) {
+    @MainActor public func addResult(
+        _ result: ResultCategory,
+        diceResult: DiceResultModel
+    ) {
+        guard result.module == .table else { return }
+        if generationSessionStore.consume(
+            category: result,
+            diceResult: diceResult
+        ) {
+            return
+        }
+        addResult(result, value: diceResult.values)
+    }
+
+    @MainActor
+    func addResult(_ result: ResultCategory, value: String) {
         guard result.module == .table else { return }
         let model = gameItem(for: result.id)
         if let childId = result.childId {

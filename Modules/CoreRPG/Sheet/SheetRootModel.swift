@@ -239,14 +239,14 @@ public final class SheetRootModel: Sendable {
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
-            let model = LinkHighlightTextModel(linkControllable: linkRootController, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1) }, shareResult: shareResults)
+            let model = LinkHighlightTextModel(linkControllable: linkRootController, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1, linkNumber: $2) }, shareResult: shareResults)
             linkTextModel[id] = model
             return model
         }
         return model
     }
     
-    func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules) {
+    func toggle(id: LinkHighlightTextModelId, itemId: UUID, module: NetworkModules, linkNumber: Int) {
         withAnimation {
             switch id {
             case .item(let uuid), .itemContent(let uuid):
@@ -254,12 +254,13 @@ public final class SheetRootModel: Sendable {
                     sheetModel: sheetModel,
                     sourceItemId: uuid,
                     linkId: itemId,
-                    module: module
+                    module: module,
+                    linkNumber: linkNumber
                 )
             case .entry(let uuid):
-                _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
+                _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module, linkNumber: linkNumber)
             case .entryContent(let uuid):
-                _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module)
+                _ = toggleShown(sheetModel: sheetModel, entryId: uuid, linkId: itemId, module: module, linkNumber: linkNumber)
             }
         }
     }
@@ -268,10 +269,15 @@ public final class SheetRootModel: Sendable {
         sheetModel: SheetModel,
         sourceItemId: UUID,
         linkId: UUID,
-        module: NetworkModules
+        module: NetworkModules,
+        linkNumber: Int
     ) -> Bool {
         if sheetModel.source.itemId == sourceItemId {
-            if let existingSheet = sheetModel.entries.first(where: { $0.source.itemId == linkId }) {
+            if let existingSheet = linkedSheet(
+                in: sheetModel.entries,
+                itemId: linkId,
+                linkNumber: linkNumber
+            ) {
                 unfold(sheetModel: existingSheet)
                 existingSheet.isShown.toggle()
                 return true
@@ -286,6 +292,7 @@ public final class SheetRootModel: Sendable {
                 moduleDepth: 0,
                 isEditor: isEditor
             )
+            newSheet.linkNumber = linkNumber
             unfold(sheetModel: newSheet)
             sheetModel.entries.append(newSheet)
             return true
@@ -294,19 +301,24 @@ public final class SheetRootModel: Sendable {
             sheetModel: entry,
             sourceItemId: sourceItemId,
             linkId: linkId,
-            module: module
+            module: module,
+            linkNumber: linkNumber
         ) {
             return true
         }
         return false
     }
     
-    func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules) -> Bool {
+    func toggleShown(sheetModel: SheetModel, entryId: UUID, linkId: UUID, module: NetworkModules, linkNumber: Int) -> Bool {
         for entrySheetModel in sheetModel.entries {
             // Compare entryId (UUID) with source.entryId or source.itemId
             let matchesEntry = entrySheetModel.source.entryId == entryId || entrySheetModel.source.itemId == entryId
             if matchesEntry {
-                if let existingSheet = entrySheetModel.entries.first(where: { $0.source.itemId == linkId }) {
+                if let existingSheet = linkedSheet(
+                    in: entrySheetModel.entries,
+                    itemId: linkId,
+                    linkNumber: linkNumber
+                ) {
                     unfold(sheetModel: existingSheet)
                     existingSheet.isShown.toggle()
                     return true
@@ -322,6 +334,7 @@ public final class SheetRootModel: Sendable {
                             moduleDepth: 0,
                             isEditor: isEditor
                         )
+                        newSheet.linkNumber = linkNumber
                         unfold(sheetModel: newSheet)
                         entrySheetModel.entries.append(newSheet)
                         return true
@@ -329,11 +342,28 @@ public final class SheetRootModel: Sendable {
                 }
                 return true
             }
-            if toggleShown(sheetModel: entrySheetModel, entryId: entryId, linkId: linkId, module: module) {
+            if toggleShown(sheetModel: entrySheetModel, entryId: entryId, linkId: linkId, module: module, linkNumber: linkNumber) {
                 return true
             }
         }
         return false
+    }
+
+    private func linkedSheet(
+        in entries: [SheetModel],
+        itemId: UUID,
+        linkNumber: Int
+    ) -> SheetModel? {
+        if let exactMatch = entries.first(where: {
+            $0.source.itemId == itemId && $0.linkNumber == linkNumber
+        }) {
+            return exactMatch
+        }
+
+        let unnumberedMatches = entries.filter {
+            $0.source.itemId == itemId && $0.linkNumber == nil
+        }
+        return unnumberedMatches.count == 1 ? unnumberedMatches[0] : nil
     }
     
     func unfold(sheetModel: SheetModel) {
@@ -768,6 +798,10 @@ public final class SheetRootModel: Sendable {
             setSelected(acceptedEntry, parent: parent)
         }
         editorModel.scrollEntryId = entryID
+        MasterRPGTips.recordEntryCreated()
+        Task {
+            await MasterRPGTips.donateAIAccepted()
+        }
         return entryID
     }
 

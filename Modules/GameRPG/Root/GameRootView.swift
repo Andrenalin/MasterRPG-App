@@ -26,6 +26,18 @@ struct GameRootView: View {
                     appGameStateModel.gameModus = newModus
                 }
             }
+            .overlay(alignment: .top) {
+                if let summary = root.gameModel.receivedGenerationSummary {
+                    GeneratedValueMessageView(
+                        summary: summary,
+                        dismissAction: {
+                            root.gameModel.receivedGenerationSummary = nil
+                        }
+                    )
+                    .padding()
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
     }
 
     private var gameView: some View {
@@ -61,6 +73,14 @@ struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
             .environment(\.networkActions, root.networkActions)
             .environment(\.sharingControlActions, root.sharingControlActions)
             .environment(\.sharingFeatureActions, root.sharingFeatureActions)
+            .environment(
+                \.itemGenerationResultAction,
+                ItemGenerationResultAction { summary in
+                    root.gameModel.generatedValueEntry = ValueEntryModel(
+                        generationSummary: summary
+                    )
+                }
+            )
     }
 }
 

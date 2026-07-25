@@ -69,10 +69,6 @@ struct GameToolbarContent: ToolbarContent {
                 GameSidebarToolbarMenu(role: role)
             }
         }
-
-        ToolbarItem(placement: .primaryAction) {
-            GameWindowSearchField()
-        }
     }
 }
 
@@ -100,5 +96,12 @@ private struct PlayerBattleRoundToolbarStatus: View {
             Text("No active battle", bundle: .module)
         }
     }
+}
+
+#Preview("Player battle status") {
+    PlayerBattleRoundToolbarStatus(
+        model: GameRoot.previewFixture().mapRoot.mapGameControllable.battleRoundModel
+    )
+    .padding()
 }
 #endif

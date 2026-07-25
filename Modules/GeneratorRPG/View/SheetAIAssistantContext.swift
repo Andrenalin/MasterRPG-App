@@ -50,59 +50,54 @@ public extension View {
     }
 }
 
-/// Places the assistant in the phone tab accessory, while larger screens keep its
-/// compact icon on the bottom trailing edge of the active editor.
-public extension View {
-    func sheetAIAssistantPlacement(
+/// Content supplied to `SheetRootView` when its assistant configuration is enabled.
+///
+/// The sheet owns this content's placement. On iPhone the zero-sized publisher lets
+/// the native tab accessory host the composer; larger platforms render the standard
+/// expandable control directly at the sheet's bottom edge.
+public struct SheetAIAssistantContent: View {
+    public init(
         module: NetworkModules,
         itemId: UUID,
-        rootModel: SheetRootModel?
-    ) -> some View {
-        modifier(
-            SheetAIAssistantPlacementModifier(
+        rootModel: SheetRootModel
+    ) {
+        self.module = module
+        self.itemId = itemId
+        self.rootModel = rootModel
+    }
+
+    let module: NetworkModules
+    let itemId: UUID
+    let rootModel: SheetRootModel
+
+    public var body: some View {
+        if SheetAIGenerationController.isAvailable {
+#if os(iOS)
+            if SheetAIGenerationController.usesPhoneTabAccessory {
+                Color.clear
+                    .frame(width: 0, height: 0)
+                    .accessibilityHidden(true)
+                    .sheetAIAssistantContext(
+                        module: module,
+                        itemId: itemId,
+                        rootModel: rootModel
+                    )
+            } else {
+                standardAssistant
+            }
+#else
+            standardAssistant
+#endif
+        }
+    }
+
+    private var standardAssistant: some View {
+        GlassEffectContainerAll {
+            SheetAIAssistantOverlayView(
                 module: module,
                 itemId: itemId,
                 rootModel: rootModel
             )
-        )
-    }
-}
-
-private struct SheetAIAssistantPlacementModifier: ViewModifier {
-    let module: NetworkModules
-    let itemId: UUID
-    let rootModel: SheetRootModel?
-
-    func body(content: Content) -> some View {
-#if os(iOS)
-        content
-            .sheetAIAssistantContext(
-                module: module,
-                itemId: itemId,
-                rootModel: SheetAIGenerationController.isAvailable ? rootModel : nil
-            )
-            .applyIf(!SheetAIGenerationController.usesPhoneTabAccessory && rootModel != nil && SheetAIGenerationController.isAvailable) {
-                $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
-                    assistant
-                }
-            }
-#elseif !os(tvOS)
-        content
-            .applyIf(rootModel != nil && SheetAIGenerationController.isAvailable) {
-                $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
-                    assistant
-                }
-            }
-#else
-        content
-#endif
-    }
-
-    @ViewBuilder private var assistant: some View {
-        if let rootModel {
-            GlassEffectContainerAll {
-                SheetAIAssistantOverlayView(module: module, itemId: itemId, rootModel: rootModel)
-            }
         }
     }
 }

@@ -21,6 +21,7 @@ public struct SettingsView: View {
     let store: AppModel
 
     @Environment(\.navigator) private var navigator
+    @State private var didReplayTips = false
     
     public var body: some View {
         CoreRPG.SettingsView(store: store.adventureRoot, exportController: store.adventureRoot.exportControllable, importController: store.adventureRoot.importControllable) {
@@ -65,6 +66,33 @@ public struct SettingsView: View {
                 }
             } header: {
                 Text("iCloud Sync Status", bundle: .module)
+            }
+
+            SectionGroupEditorView {
+                Button {
+                    Task {
+                        didReplayTips = await MasterRPGTips.replay()
+                    }
+                } label: {
+                    Label {
+                        Text("Show Tips Again", bundle: .module)
+                    } icon: {
+                        Image(systemName: "lightbulb")
+                    }
+                }
+            } header: {
+                Text("Tips", bundle: .module)
+            } footer: {
+                if didReplayTips {
+                    Label {
+                        Text("Tips are ready to show again.", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                    .foregroundStyle(.green)
+                } else {
+                    Text("Restores in-app guidance for creating, organizing, linking, and playing.", bundle: .module)
+                }
             }
             
             //            SectionGroupEditorView {

@@ -7,10 +7,6 @@ final class GameScreenModel {
 
     static let mapOverlaySpacing: CGFloat = 8
 
-    /// One search owner per game window. Adventure and Character sheets attach
-    /// their filtered result model while they are the active game sidebar.
-    let searchContext = SheetSearchContext()
-    
     private enum WidthValues {
 #if os(macOS)
         static let small: CGFloat = 350

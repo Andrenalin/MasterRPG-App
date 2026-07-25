@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import Foundation
 import SwiftUI
 
 struct BattleRoundSettingsView: View {
@@ -77,4 +78,20 @@ struct BattleRoundSettingsView: View {
             Label(title, systemImage: systemImage)
         }
     }
+}
+
+#Preview("Battle settings") {
+    let model = BattleRoundPreviewData.model()
+    let defaults = UserDefaults(suiteName: "BattleRoundSettingsPreview") ?? .standard
+    let settings = BattleRoundSettingsModel(defaults: defaults)
+
+    BattleRoundSettingsView(
+        settings: settings,
+        actions: .preview(model: model),
+        selectEntry: { _ in },
+        useDroppedEntry: { _, _ in },
+        refresh: {}
+    )
+    .frame(width: 560)
+    .padding()
 }

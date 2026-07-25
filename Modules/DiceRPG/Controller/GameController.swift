@@ -26,6 +26,11 @@ final class DiceGameModel: Sendable {
 public protocol DiceGameStorable {
     @MainActor func addGameDiceResult(data: NetworkCodableDataType, name: String, isGameMaster: Bool) -> (String?, ResultCategory?)
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType
+    func createVirtualGameData(
+        numberOfSides: Int,
+        name: String,
+        resultCategory: ResultCategory
+    ) async throws -> NetworkCodableDataType
     @MainActor func createGameDice(for diceId: UUID, gameDiceId: UUID?) -> UUID
     @MainActor func setFocusDice(on diceId: UUID?) async
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws
@@ -125,6 +130,37 @@ extension GameController: DiceGameStorable {
             model.resultCategory = oldResultCategory
         }
         return result
+    }
+
+    func createVirtualGameData(
+        numberOfSides: Int,
+        name: String,
+        resultCategory: ResultCategory
+    ) async throws -> NetworkCodableDataType {
+        let itemId = UUID()
+        await MainActor.run {
+            let dice = DiceModel(
+                id: itemId,
+                name: name,
+                category: .value,
+                dice: [
+                    DieModel(
+                        id: UUID(),
+                        die: RawDie(.number(max(numberOfSides, 1)))
+                    )
+                ],
+                resultCategory: resultCategory
+            )
+            itemController.replaceForGame(
+                model: dice,
+                isInsert: true,
+                policy: .memoryOnly
+            )
+        }
+        return try await createGameData(
+            for: itemId,
+            resultCategory: resultCategory
+        )
     }
     
     @MainActor

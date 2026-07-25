@@ -6,8 +6,10 @@ import RolePlayGameKit
 import SwiftUI
 
 import AdventureRPG
+import CharacterRPG
 import MapRPG
 import GameRPG
+import TableRPG
 
 struct WindowUtilityList: Scene {
     let appModel: AppModel
@@ -26,6 +28,35 @@ struct WindowUtilityList: Scene {
             .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
+
+#if os(macOS) || os(visionOS)
+            WindowGroup(
+                "Table Generator",
+                id: SceneId.tableGenerator.rawValue,
+                for: WindowItemSelection.self
+            ) { $selection in
+                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
+                    TableGeneratorWindowContent(
+                        appModel: appModel,
+                        selection: selection
+                    )
+                    .sceneTracker(for: SceneId.tableGenerator)
+                    .modifier(
+                        WindowViewerSetUpViewModifier(
+                            model: appModel,
+                            module: .table,
+                            showsWindowToolbarBackground: true
+                        )
+                    )
+                }
+                .environment(appModel.scenesManager)
+                .environment(appModel)
+            }
+            .windowResizability(.contentSize)
+            .defaultWindowPlacementAll(.below(NetworkModules.table.linkWindowId))
+            .restorationBehaviorAll(.disabled)
+            .defaultLaunchBehavior(.suppressed)
+#endif
 
             WindowGroup("Map Editor", id: SceneId.mapEditor.rawValue) {
                 DataBaseAppStoreAvailable(appModel: appModel) { appModel in
@@ -168,5 +199,49 @@ struct WindowUtilityList: Scene {
         .defaultSize(CGSize(width: 600, height: 800))
     }
 }
+
+#if os(macOS) || os(visionOS)
+private struct TableGeneratorWindowContent: View {
+    let appModel: AppModel
+    let selection: WindowItemSelection?
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Group {
+            if let itemId = selection?.itemId,
+               let generator = appModel.tableRoot.generationControllable {
+                generator.generationView(
+                    itemId: itemId,
+                    dismissAction: { dismiss() }
+                )
+            } else {
+                ContentUnavailableView(
+                    "Table Unavailable",
+                    systemImage: "tablecells",
+                    description: Text(
+                        "Choose a table to generate.",
+                        bundle: .main
+                    )
+                )
+            }
+        }
+        .environment(appModel.appGameStateModel)
+        .environment(\.networkActions, appModel.gameRoot.networkActions)
+        .environment(
+            \.sharingControlActions,
+            appModel.gameRoot.sharingControlActions
+        )
+        .environment(
+            \.itemGenerationResultAction,
+            ItemGenerationResultAction { summary in
+                appModel.generatedValueEntry = ValueEntryModel(
+                    generationSummary: summary
+                )
+            }
+        )
+    }
+}
+#endif
 
 #endif

@@ -2,21 +2,56 @@
 
 import SwiftUI
 
-public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+public struct SheetRootViewConfiguration: Equatable, Sendable {
+    public init(showsAIAssistant: Bool = false) {
+        self.showsAIAssistant = showsAIAssistant
+    }
+
+    public var showsAIAssistant: Bool
+}
+
+public struct SheetRootView<
+    LinkType: LinkDataTransferable,
+    DetailContent: View,
+    AIAssistantContent: View
+>: View {
     public init(
         root: ItemRootController,
         rootModel: SheetRootModel,
         isEditor: Bool = false,
         linkTypes: LinkType.Type = LinkDiceData.self,
         detailAction: ((SheetModel) -> Void)? = nil
+    ) where DetailContent == EmptyView, AIAssistantContent == EmptyView {
+        self.init(
+            root: root,
+            rootModel: rootModel,
+            isEditor: isEditor,
+            linkTypes: linkTypes,
+            configuration: .init(),
+            detailAction: detailAction,
+            detailContent: { _ in EmptyView() },
+            aiAssistantContent: { EmptyView() }
+        )
+    }
+
+    public init(
+        root: ItemRootController,
+        rootModel: SheetRootModel,
+        isEditor: Bool = false,
+        linkTypes: LinkType.Type = LinkDiceData.self,
+        configuration: SheetRootViewConfiguration,
+        detailAction: ((SheetModel) -> Void)? = nil,
+        @ViewBuilder aiAssistantContent: @escaping () -> AIAssistantContent
     ) where DetailContent == EmptyView {
         self.init(
             root: root,
             rootModel: rootModel,
             isEditor: isEditor,
             linkTypes: linkTypes,
+            configuration: configuration,
             detailAction: detailAction,
-            detailContent: { _ in EmptyView() }
+            detailContent: { _ in EmptyView() },
+            aiAssistantContent: aiAssistantContent
         )
     }
 
@@ -27,21 +62,47 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
         linkTypes: LinkType.Type = LinkDiceData.self,
         detailAction: ((SheetModel) -> Void)? = nil,
         @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+    ) where AIAssistantContent == EmptyView {
+        self.init(
+            root: root,
+            rootModel: rootModel,
+            isEditor: isEditor,
+            linkTypes: linkTypes,
+            configuration: .init(),
+            detailAction: detailAction,
+            detailContent: detailContent,
+            aiAssistantContent: { EmptyView() }
+        )
+    }
+
+    public init(
+        root: ItemRootController,
+        rootModel: SheetRootModel,
+        isEditor: Bool = false,
+        linkTypes: LinkType.Type = LinkDiceData.self,
+        configuration: SheetRootViewConfiguration,
+        detailAction: ((SheetModel) -> Void)? = nil,
+        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent,
+        @ViewBuilder aiAssistantContent: @escaping () -> AIAssistantContent
     ) {
         self.root = root
         self.rootModel = rootModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.configuration = configuration
         self.detailAction = detailAction
         self.detailContent = detailContent
+        self.aiAssistantContent = aiAssistantContent
     }
     
     let root: ItemRootController
     let rootModel: SheetRootModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let configuration: SheetRootViewConfiguration
     let detailAction: ((SheetModel) -> Void)?
     let detailContent: (SheetModel) -> DetailContent
+    let aiAssistantContent: () -> AIAssistantContent
 
     @Namespace private var generatedAcceptanceNamespace
     @Environment(\.navigationColumnFocus) private var navigationColumnFocus
@@ -60,6 +121,11 @@ public struct SheetRootView<LinkType: LinkDataTransferable, DetailContent: View>
             detailContent: detailContent
         )
         .id(rootModel.sheetModel.id)
+        .applyIf(configuration.showsAIAssistant) {
+            $0.safeAreaInset(edge: .bottom, alignment: .trailing) {
+                aiAssistantContent()
+            }
+        }
         .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
 #if !os(tvOS)
         // Makes the sheet a Tab stop so the user can jump here from the sidebar list.

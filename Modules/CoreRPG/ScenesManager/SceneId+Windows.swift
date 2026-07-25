@@ -21,6 +21,7 @@ extension SceneId {
     public static var settings: Self { .init(rawValue: "settings") }
     public static var spaceViewer: Self { .init(rawValue: "spaceViewer") }
     public static var tableViewer: Self { .init(rawValue: "tableViewer") }
+    public static var tableGenerator: Self { .init(rawValue: "tableGenerator") }
     public static var valueViewer: Self { .init(rawValue: "valueViewer") }
     public static var weatherViewer: Self { .init(rawValue: "weatherViewer") }
     

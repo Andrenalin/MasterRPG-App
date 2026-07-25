@@ -2,6 +2,7 @@
 
 import CoreRPG
 import SwiftUI
+import TipKit
 
 struct MapEditorButton: View {
     let model: MapModel
@@ -18,6 +19,7 @@ struct MapEditorButton: View {
 #else
             navigator.navigate(to: MapEditorRoute.mapEditor(model.id))
 #endif
+            MasterRPGTips.recordMapEditorOpened()
         } label: {
             Label {
                 Text("Map Editor", bundle: .module)
@@ -25,6 +27,7 @@ struct MapEditorButton: View {
                 Image(systemName: "mappin.and.ellipse")
             }
         }
+        .popoverTip(MasterRPGTips.openMapEditor)
     }
 }
 

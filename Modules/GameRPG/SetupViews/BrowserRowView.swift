@@ -14,7 +14,11 @@ struct BrowserRowView: View {
         if !isDeactivate {
             Button {
                 Task {
+                    let wasConnected = isConnected
                     await root.startGame(to: model, mode: gameType)
+                    if !wasConnected && root.gameModel.gameConfig.state == .started {
+                        await MasterRPGTips.donateGameStartedOrJoined()
+                    }
                 }
             } label: {
                 Label {

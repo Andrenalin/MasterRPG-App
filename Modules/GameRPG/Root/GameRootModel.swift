@@ -41,6 +41,8 @@ final class GameRootModel: Sendable {
     var logData: [Int: LogGameModel] = [:]
     var logs: [Int] = []
     var playerScreens: [UUID: Data] = [:]
+    var generatedValueEntry: ValueEntryModel?
+    var receivedGenerationSummary: ItemGenerationSummary?
     var attachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
     var metaDataAttachments: [NetworkModules: UUID] = [:]
     private var latestValueUpdateTimestamps: [ValueUpdateKey: TimeInterval] = [:]

@@ -42,13 +42,11 @@ struct AdventureSheet: View {
                 isEditor: false,
                 linkTypes: LinkAdventureModuleTransferable.self
             ) { sheetRootModel in
-                GlassEffectContainerAll {
-                    SheetAIAssistantOverlayView(
-                        module: root.configurable.module,
-                        itemId: model.id,
-                        rootModel: sheetRootModel
-                    )
-                }
+                SheetAIAssistantContent(
+                    module: root.configurable.module,
+                    itemId: model.id,
+                    rootModel: sheetRootModel
+                )
             }
             .id(model.id)
         } else {

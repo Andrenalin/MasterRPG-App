@@ -4,9 +4,11 @@
 
 import CoreRPG
 import SwiftUI
+import TipKit
 
 struct SplitNavigation: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
 
     private let restoresState: Bool
@@ -28,6 +30,23 @@ struct SplitNavigation: View {
             }
             .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
             .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
+#if os(macOS)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        scenesManager.openWindow(.editor)
+                        MasterRPGTips.recordWindowOpened()
+                    } label: {
+                        Label {
+                            Text("Open Editor Window", bundle: .module)
+                        } icon: {
+                            Image(systemName: NetworkModules.editor.icon)
+                        }
+                    }
+                    .popoverTip(MasterRPGTips.openAnotherWindow)
+                }
+            }
+#endif
     }
     
     var selectedModule: NetworkModules {

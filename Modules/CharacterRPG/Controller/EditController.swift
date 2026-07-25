@@ -178,6 +178,7 @@ extension EditController {
         default:
             return
         }
+        MasterRPGTips.recordContentLinked()
     }
     
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {

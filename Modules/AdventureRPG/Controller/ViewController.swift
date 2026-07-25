@@ -85,8 +85,7 @@ public extension ViewController {
     @MainActor func gameView(
         root: AdventureRootModel,
         focusedIds: [UUID],
-        searchContext: SheetSearchContext? = nil,
-        addsSearchable: Bool = true
+        inlineSearch: Bool = false
     ) -> some View {
         Group {
             if let select = focusedIds.first {
@@ -95,10 +94,10 @@ public extension ViewController {
                     itemId: select,
                     configuration: ViewerConfiguration(
                         closeButton: false,
-                        addToolbar: addsSearchable,
+                        addToolbar: !inlineSearch,
+                        inlineSearch: inlineSearch,
                         isGame: true
-                    ),
-                    searchContext: searchContext
+                    )
                 )
             } else {
                 LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())

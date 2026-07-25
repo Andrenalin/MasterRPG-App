@@ -3,6 +3,7 @@
 #if !os(tvOS)
 import CoreRPG
 import SwiftUI
+import TipKit
 
 /// A single, stable glass control for the regular Ask AI presentation.
 ///
@@ -34,6 +35,7 @@ struct SheetAIAssistantStandardControl: View {
             .buttonStyle(.plain)
             .foregroundStyle(theme.tint(for: module))
             .frame(minWidth: 44, minHeight: 44)
+            .popoverTip(MasterRPGTips.askAI)
 
             if isExpanded {
                 TextField(
@@ -100,6 +102,7 @@ struct SheetAIAssistantComposer: View {
                 axis: .vertical
             )
             .textFieldStyle(.plain)
+            .frame(maxWidth: .infinity)
             .focused($isTextFieldFocused)
             .onSubmit(submitAction)
 #if os(iOS)
@@ -174,6 +177,9 @@ struct SheetAIAssistantMiniComposer: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
+        .contentShape(.rect)
+        .allowsHitTesting(true)
+        .popoverTip(MasterRPGTips.askAI)
     }
 }
 

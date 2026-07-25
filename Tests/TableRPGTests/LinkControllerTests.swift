@@ -9,6 +9,11 @@ import Testing
 
 @MainActor
 struct LinkControllerTests {
+    @MainActor
+    private final class GenerationActionSpy {
+        var itemId: UUID?
+    }
+
     @Test func toggleTextLink() async throws {
         let root = try await MockRoot.importTestData()
         
@@ -42,6 +47,56 @@ struct LinkControllerTests {
         result = sut.toggleTextLink(linkNumber: LinkType.share.linkNumberAddition, itemId: firstItem.id, entryId: nil, command: LinkType.share.rawValue, in: result, shareResult: shareResult, toggler: nil, editAction: nil)
         expectedText = "\(text)➡️[Share](RPG://TABLES/500/6E013A18-1A45-415C-95B1-A7BB07ABDDBE/share) W20 -- 20 Entries⬅️"
         #expect(result.starts(with: expectedText))
+    }
+
+    @Test("A table link exposes and invokes Generate during a game")
+    func toggleWithGenerate() async throws {
+        // Given
+        let root = try await MockRoot.importTestData()
+        let spy = GenerationActionSpy()
+        let firstItem = root.itemController.itemOrEmpty(
+            for: root.itemController.itemDataModel.items[0]
+        )
+        let text = root.linkController.generateLink(itemId: firstItem.id)
+        let shareResult = ShareValueResult(
+            networkActions: NetworkActions(
+                shareId: { _ in },
+                send: { _ in },
+                game: { _, _, _ in }
+            ),
+            resultCategory: ResultCategory(id: firstItem.id, module: .table),
+            showGame: true,
+            gameModus: .master,
+            generationAction: ItemGenerationAction { itemId in
+                spy.itemId = itemId
+            }
+        )
+
+        // When
+        let expanded = root.linkController.toggleTextLink(
+            linkNumber: 0,
+            itemId: firstItem.id,
+            entryId: nil,
+            command: nil,
+            in: text,
+            shareResult: shareResult,
+            toggler: nil,
+            editAction: nil
+        )
+        _ = root.linkController.toggleTextLink(
+            linkNumber: LinkType.generate.linkNumberAddition,
+            itemId: firstItem.id,
+            entryId: nil,
+            command: LinkType.generate.rawValue,
+            in: expanded,
+            shareResult: shareResult,
+            toggler: nil,
+            editAction: nil
+        )
+
+        // Then
+        #expect(expanded.contains("/generate)"))
+        #expect(spy.itemId == firstItem.id)
     }
     
     @Test func toggleWithShareAndToggler() async throws {

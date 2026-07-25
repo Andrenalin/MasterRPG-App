@@ -59,3 +59,16 @@ private extension NetworkModules {
         }
     }
 }
+
+#Preview("Midnight miniature") {
+    ThemeMiniature(
+        theme: AppThemeCatalog.resolve(
+            .midnight,
+            colorScheme: .dark,
+            contrast: .standard
+        )
+    )
+    .frame(width: 180)
+    .padding()
+    .preferredColorScheme(.dark)
+}

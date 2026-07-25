@@ -26,3 +26,10 @@ struct BattleInitiativeOrderMenu: View {
         .disabled(isDisabled)
     }
 }
+
+#Preview("Initiative order") {
+    @Previewable @State var selection = BattleInitiativeOrder.descending
+
+    BattleInitiativeOrderMenu(selection: $selection, isDisabled: false)
+        .padding()
+}

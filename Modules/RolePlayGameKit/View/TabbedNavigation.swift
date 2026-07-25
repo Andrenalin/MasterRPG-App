@@ -51,6 +51,10 @@ struct TabbedNavigation: View {
                 aiAssistantContext: aiAssistantContext
             )
         }
+        .environment(
+            \.audioPlayerUsesTabAccessory,
+            SheetAIGenerationController.usesPhoneTabAccessory
+        )
         .tabBarMinimizeBehavior26(
             .onScrollDown
         )
@@ -90,25 +94,9 @@ struct TabbedNavigation: View {
     private var aiAssistantContext: SheetAIAssistantContext? {
         guard SheetAIGenerationController.isAvailable else { return nil }
 
-        if let publishedContext = aiAssistantContexts.last(where: {
+        return aiAssistantContexts.last(where: {
             $0.module == selectedModule && $0.rootModel.hasAIAssistantContent
-        }) {
-            return publishedContext
-        }
-
-        guard let rootController = appModel.itemRootController(for: selectedModule),
-              let itemId = rootController.navigationModel.selectedItemId,
-              let rootModel = rootController.editControllable.editorModel.sheetRootModel,
-              rootModel.sheetModel.source.itemId == itemId,
-              rootModel.hasAIAssistantContent else {
-            return nil
-        }
-
-        return SheetAIAssistantContext(
-            module: selectedModule,
-            itemId: itemId,
-            rootModel: rootModel
-        )
+        })
     }
 
     private var shouldShowPhoneBottomAccessory: Bool {
@@ -129,10 +117,14 @@ private struct PhoneTabBottomAccessory: View {
         if placement == .inline {
             HStack(spacing: 0) {
                 if showsAudioPlayer {
-                    AudioPlayerMiniBarView()
+                    AudioPlayerMiniBarView(showsMetadata: aiAssistantContext == nil)
                 }
                 if let aiAssistantContext {
                     aiAssistantView(aiAssistantContext)
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(1)
+                        .contentShape(.rect)
+                        .allowsHitTesting(true)
                 }
             }
         } else {

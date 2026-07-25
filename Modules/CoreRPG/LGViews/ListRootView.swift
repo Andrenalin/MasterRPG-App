@@ -18,6 +18,7 @@ struct ListRootView: View {
     @Environment(ScenesManager.self) private var scenesManager
 
     @State private var userScrollIsActive = false
+    @State private var generationSelection: WindowItemSelection?
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -79,7 +80,7 @@ struct ListRootView: View {
                               let firstEntry = sheetRootModel.firstSelectableEntry {
                         sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
                         navigationColumnFocus?.wrappedValue = .detail
-                        switchToDetailColumn?()
+                        switchToDetailColumn()
                     }
                     return .handled
                 }
@@ -130,6 +131,10 @@ struct ListRootView: View {
                     withAnimation(accessibilityReduceMotion ? nil : .default) { root.openFileWindowModel.showItem.toggle() }
                 }
         }
+        .itemGenerationPresentation(
+            root: root,
+            selection: $generationSelection
+        )
     }
 }
 

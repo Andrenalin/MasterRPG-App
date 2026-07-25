@@ -59,6 +59,9 @@ struct ItemRowsView: View {
             root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
             listController.scheduleDetailSearch()
             root.folderListControllable.resetFilter()
+            Task {
+                await MasterRPGTips.donateContentOrganized()
+            }
         }
     }
     

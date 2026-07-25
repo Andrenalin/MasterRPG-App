@@ -61,3 +61,25 @@ private struct BattleRoundAnnouncementID: Equatable {
     let isRunning: Bool
     let round: Int
 }
+
+private struct BattleRoundGameChromePreview: View {
+    @State private var root: GameRoot
+    @State private var screenModel: GameScreenModel
+
+    init() {
+        let screenModel = GameScreenModel()
+        screenModel.showsBattleRoundAnnouncement = true
+        _root = State(initialValue: GameRoot.previewFixture())
+        _screenModel = State(initialValue: screenModel)
+    }
+
+    var body: some View {
+        BattleRoundGameChrome(root: root)
+            .environment(screenModel)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+#Preview("Battle announcement") {
+    BattleRoundGameChromePreview()
+}

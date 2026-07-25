@@ -17,17 +17,22 @@ struct LinkController: Sendable {
 extension LinkController: LinkControllable {
     @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
-            if command == LinkType.remove.rawValue {
+            switch command {
+            case LinkType.remove.rawValue:
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
-            }
-            Task { @MainActor in
-                if command == LinkType.show.rawValue {
+            case LinkType.generate.rawValue:
+                shareResult?.generationAction(itemId)
+            case LinkType.show.rawValue:
+                Task { @MainActor in
                     await toggler?(itemId, itemControllable.config.module)
-                } else {
-                    // command share
+                }
+            case LinkType.share.rawValue:
+                Task { @MainActor in
                     await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
                 }
+            default:
+                break
             }
             return text
         } else {
@@ -38,6 +43,7 @@ extension LinkController: LinkControllable {
             }
             let item = itemController.itemOrEmpty(for: itemId)
             let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId) : ""
+            let generateAction = ((shareResult?.showGame ?? false) && (shareResult?.generationAction.isEnabled ?? false)) ? specialLink(linkType: .generate, linkNumber: linkNumber, itemId: itemId, entryId: entryId) : ""
             let showAction = (toggler != nil && entryId != nil) ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
@@ -47,7 +53,7 @@ extension LinkController: LinkControllable {
             } else {
                 description = formatInlineDescription(description: item.description, entryCount: item.entries.count)
             }
-            let result = "\(sendAction)\(showAction) \(description)\(removeAction)"
+            let result = "\(sendAction)\(generateAction)\(showAction) \(description)\(removeAction)"
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
             return text.toggleLink(url: url, with: result)
         }

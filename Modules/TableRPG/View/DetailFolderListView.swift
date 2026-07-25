@@ -2,9 +2,6 @@
 
 import CoreRPG
 import DiceRPG
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 import SwiftUI
 
 #Preview(traits: .mockData) {
@@ -30,13 +27,6 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-        #if !os(tvOS)
-        .sheetAIAssistantPlacement(
-            module: root.configurable.module,
-            itemId: model.id,
-            rootModel: root.editController.editorModel.sheetRootModel
-        )
-        #endif
         .overlay {
             overlayContent
         }

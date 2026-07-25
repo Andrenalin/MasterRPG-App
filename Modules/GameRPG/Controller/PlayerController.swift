@@ -1975,8 +1975,10 @@ extension PlayerController {
         locallyMirroredProxyPresentation: Bool = false
     ) async throws -> GameNetworkModel? {
         switch model.data.type {
-        case .none, .game, .rule, .setting, .editor, .generator, .search:
+        case .none, .game, .rule, .setting, .editor, .search:
             return nil
+        case .generator:
+            return await handleGeneratedValue(model)
         case .adventure:
             return handleAdventure(model)
         case .audio:
@@ -2016,6 +2018,19 @@ extension PlayerController {
     
     func handleAdventure(_ model: GameNetworkModel) -> GameNetworkModel? {
         nil
+    }
+
+    @MainActor
+    func handleGeneratedValue(_ model: GameNetworkModel) -> GameNetworkModel? {
+        guard model.sender.isMaster,
+              model.type == .update,
+              model.subType == .generatedValue,
+              let summary = ItemGenerationSummary.decodeData(model.data.data)
+        else {
+            return nil
+        }
+        root.gameModel.receivedGenerationSummary = summary
+        return nil
     }
     
     func handleAudio(

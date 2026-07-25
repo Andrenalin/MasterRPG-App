@@ -131,15 +131,14 @@ struct GameScreenModelTests {
         #expect(!GameMapContentType.externalPlayer.supportsInlineThreeDTable)
     }
 
-    @Test("Game window owns one stable sheet search context")
-    func gameWindowSearchOwnership() {
-        let model = GameScreenModel()
-        let searchContext = model.searchContext
+    @Test("Inline sheet search is explicitly configured by the viewer")
+    func inlineSheetSearchConfiguration() {
+        let standard = ViewerConfiguration()
+        let inline = ViewerConfiguration(addToolbar: false, inlineSearch: true)
 
-        searchContext.query = "initiative"
-
-        #expect(model.searchContext === searchContext)
-        #expect(model.searchContext.query == "initiative")
+        #expect(!standard.inlineSearch)
+        #expect(inline.inlineSearch)
+        #expect(!inline.addToolbar)
     }
 }
 #endif

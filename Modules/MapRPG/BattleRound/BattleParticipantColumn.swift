@@ -212,3 +212,20 @@ struct BattleParticipantColumn: View {
         actions.setDead(combatant.id, !combatant.isDead)
     }
 }
+
+#Preview("Battle participant", traits: .mockData) {
+    let model = BattleRoundPreviewData.model()
+
+    if let participant = model.cardPresentations.first?.defenders.first {
+        BattleParticipantColumn(
+            presentation: participant,
+            isAttacker: false,
+            isActive: true,
+            tint: .red,
+            actions: .preview(model: model),
+            showCharacter: { _ in },
+            selectHitPoints: { _ in }
+        )
+        .padding()
+    }
+}
