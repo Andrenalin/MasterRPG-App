@@ -28,8 +28,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Audiodateien"
+                  "state" : "translated",
+                  "value" : "%lld Audiodatei"
                 }
               },
               "other" : {
@@ -40,7 +40,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Audiodateien"
                 }
               }
@@ -98,7 +98,7 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Prozent"
                 }
               },
@@ -110,7 +110,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Prozent"
                 }
               }

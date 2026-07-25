@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "MapRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MapRPG"
+          }
         }
       },
       "shouldTranslate" : false

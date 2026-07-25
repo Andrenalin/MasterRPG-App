@@ -3,7 +3,6 @@
   "strings" : {
     "CFBundleDisplayName" : {
       "comment" : "Bundle display name",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -14,6 +13,12 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
+            "value" : "Master RPG"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "Master RPG"
           }
         }
@@ -21,7 +26,6 @@
     },
     "CFBundleName" : {
       "comment" : "Bundle name",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -34,34 +38,49 @@
             "state" : "machine_translated",
             "value" : "MasterRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
         }
       }
     },
     "MasterRPG Document" : {
-      "extractionState" : "stale",
       "localizations" : {
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "MasterRPG เอกสาร"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Dokument"
+          }
         }
       }
     },
     "MasterRPG Save Game" : {
-      "extractionState" : "stale",
       "localizations" : {
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "MasterRPG บันทึกเกม"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Spielstand"
+          }
         }
       }
     },
     "NSCameraUsageDescription" : {
       "comment" : "Privacy - Camera Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -74,12 +93,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้กล้องเพื่อถ่ายภาพสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG benutzt die Kamera um Fotos aufzunehmen und im Foto Modul hinzu zufügen. Diese Fotos können dann als Charakterbilder, Karten oder im Abenteuer verwendet werden."
+          }
         }
       }
     },
     "NSDesktopFolderUsageDescription" : {
       "comment" : "Privacy - Desktop Folder Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -92,12 +116,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เดสก์ท็อปเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Schreibtisch zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+          }
         }
       }
     },
     "NSDocumentsFolderUsageDescription" : {
       "comment" : "Privacy - Documents Folder Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -110,12 +139,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เอกสารเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Dokumenten Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+          }
         }
       }
     },
     "NSDownloadsFolderUsageDescription" : {
       "comment" : "Privacy - Downloads Folder Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -128,12 +162,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์ดาวน์โหลดเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf die Dateien von deinem Download Ordner zugreifen. Die ausgewählten Dateien können 3D Objekt Modelle, PDFs, Bilder oder Musik sein."
+          }
         }
       }
     },
     "NSHandsTrackingUsageDescription" : {
       "comment" : "Privacy - Hands Tracking Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -146,12 +185,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้การติดตามมือเพื่อทอยลูกเต๋าระหว่างเกม"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG verwendet Handerkennung, damit du den 3D-Spieltisch durch Zusammenkneifen beider Hände in der Größe verändern kannst."
+          }
         }
       }
     },
     "NSHumanReadableCopyright" : {
       "comment" : "Copyright (human-readable)",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -164,12 +208,17 @@
             "state" : "machine_translated",
             "value" : "© Copyright 2024-2026, Andre Trettin"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
         }
       }
     },
     "NSLocalNetworkUsageDescription" : {
       "comment" : "Privacy - Local Network Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -182,12 +231,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้เครือข่ายท้องถิ่นเพื่อเชื่อมต่อกับผู้เล่นคนอื่น ๆ รอบตัวคุณเพื่อแชร์แผนที่จาก GameMaster"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf dein lokales Netzwerk zugreifen um ein Spiel als Spielleiter anzukündigen. Andere Spieler von anderen Geräten können dann einem Spiel im lokalen Netzwerk beitreten."
+          }
         }
       }
     },
     "NSPhotoLibraryUsageDescription" : {
       "comment" : "Privacy - Photo Library Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -200,12 +254,17 @@
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้คลังภาพเพื่อนำเข้าภาพถ่ายสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG möchte auf deine Fotos in der Fotobibliothek zugreifen. Die ausgewählten Fotos können dann als Charakterbilder, Karten oder in Abenteuern verwendet werden."
+          }
         }
       }
     },
     "NSWorldSensingUsageDescription" : {
       "comment" : "Privacy - World Sensing Usage Description",
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -217,6 +276,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้ข้อมูลการรับรู้โลกเพื่อตรวจจับโต๊ะสำหรับการทอยลูกเต๋าระหว่างเกม"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
           }
         }
       }

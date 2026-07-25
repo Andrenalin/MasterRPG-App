@@ -28,19 +28,19 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Abenteuer"
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Abenteuer"
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Abenteuer"
                 }
               }
@@ -368,20 +368,20 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Abenteuer](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Abenteuer gelöscht."
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Abenteuer](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Abenteuer gelöscht."
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Abenteuer](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Abenteuer gelöscht."
                 }
               }
             }
@@ -537,6 +537,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปิด %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ öffnen"
           }
         }
       }

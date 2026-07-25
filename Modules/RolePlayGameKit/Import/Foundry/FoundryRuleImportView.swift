@@ -406,7 +406,10 @@ private struct FoundryImportReportSection: View {
                 let unresolved = package.resources.filter { $0.location != .packaged }
                 if !unresolved.isEmpty {
                     Label {
-                        Text("\(unresolved.count.formatted()) assets are remote, installation-relative, or missing and will not be fetched automatically.")
+                        Text(
+                            "\(unresolved.count.formatted()) assets are remote, installation-relative, or missing and will not be fetched automatically.",
+                            bundle: .module
+                        )
                     } icon: {
                         Image(systemName: "exclamationmark.triangle")
                     }
@@ -539,9 +542,15 @@ private struct FoundryExternalImportReviewView: View {
             }
         }
         .themedListSurface()
-        .alert("Replace every existing item?", isPresented: $showReplaceAllConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Replace all", role: .destructive) {
+        .alert(
+            Text("Replace every existing item?", bundle: .module),
+            isPresented: $showReplaceAllConfirmation
+        ) {
+            Button(String(localized: "Cancel", bundle: .module), role: .cancel) {}
+            Button(
+                String(localized: "Replace all", bundle: .module),
+                role: .destructive
+            ) {
                 session.setDecisionForAll(.replace)
             }
         } message: {
@@ -570,7 +579,7 @@ private struct FoundryImportDecisionRow: View {
                 }
             }
             Spacer()
-            Picker("Decision", selection: Binding(
+            Picker(String(localized: "Decision", bundle: .module), selection: Binding(
                 get: { session.decision(for: item) },
                 set: { session.setDecision($0, for: item) }
             )) {
@@ -706,7 +715,10 @@ private struct FoundryImportedItemProgressView: View {
         ) {
             Text("Importing items and assets", bundle: .module)
         } currentValueLabel: {
-            Text("\(completed.formatted()) of \(total.formatted())")
+            Text(
+                "\(completed.formatted()) of \(total.formatted())",
+                bundle: .module
+            )
         }
     }
 }
@@ -740,12 +752,30 @@ private struct FoundryImportCompletedView: View {
                     Image(systemName: "checkmark.circle")
                 }
                 if let result {
-                    LabeledContent("Inserted", value: result.insertedItemCount.formatted())
-                    LabeledContent("Merged", value: result.mergedItemCount.formatted())
-                    LabeledContent("Replaced", value: result.replacedItemCount.formatted())
-                    LabeledContent("Unchanged", value: result.unchangedItemCount.formatted())
-                    LabeledContent("Skipped", value: result.skippedItemCount.formatted())
-                    LabeledContent("Assets installed", value: result.installedAttachmentCount.formatted())
+                    LabeledContent(
+                        String(localized: "Inserted", bundle: .module),
+                        value: result.insertedItemCount.formatted()
+                    )
+                    LabeledContent(
+                        String(localized: "Merged", bundle: .module),
+                        value: result.mergedItemCount.formatted()
+                    )
+                    LabeledContent(
+                        String(localized: "Replaced", bundle: .module),
+                        value: result.replacedItemCount.formatted()
+                    )
+                    LabeledContent(
+                        String(localized: "Unchanged", bundle: .module),
+                        value: result.unchangedItemCount.formatted()
+                    )
+                    LabeledContent(
+                        String(localized: "Skipped", bundle: .module),
+                        value: result.skippedItemCount.formatted()
+                    )
+                    LabeledContent(
+                        String(localized: "Assets installed", bundle: .module),
+                        value: result.installedAttachmentCount.formatted()
+                    )
                 }
             }
             if let archiveWarning {
@@ -754,7 +784,7 @@ private struct FoundryImportCompletedView: View {
                 }
             }
             Section {
-                Button("Done", action: done)
+                Button(String(localized: "Done", bundle: .module), action: done)
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
             }

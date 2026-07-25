@@ -28,19 +28,19 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld PDFs"
+                  "state" : "translated",
+                  "value" : "%lld PDF"
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld PDFs"
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld PDFs"
                 }
               }
@@ -456,7 +456,6 @@
       }
     },
     "Create" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -479,19 +478,19 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Lesezeichen aus Abschnitten erstellen"
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Lesezeichen aus Abschnitten erstellen"
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Lesezeichen aus Abschnitten erstellen"
                 }
               }

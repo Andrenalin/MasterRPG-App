@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "AdventureRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "AdventureRPG"
+          }
         }
       },
       "shouldTranslate" : false

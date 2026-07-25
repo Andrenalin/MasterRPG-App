@@ -69,7 +69,10 @@ struct InlineSheetSearchControl: View {
 #endif
 
             if !searchText.isEmpty {
-                Button("Clear Search", systemImage: "xmark.circle.fill") {
+                Button(
+                    String(localized: "Clear Search", bundle: .module),
+                    systemImage: "xmark.circle.fill"
+                ) {
                     searchText.removeAll()
                 }
                 .labelStyle(.iconOnly)

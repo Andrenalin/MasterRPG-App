@@ -100,17 +100,19 @@ private struct RemoteFileURLImporterModifier: ViewModifier {
                 isPresented: $isPresented
             ) {
                 TextField(
-                    "https://example.com/file",
-                    text: $remoteURLText
-                )
+                    text: $remoteURLText,
+                    prompt: Text(verbatim: "https://example.com/file")
+                ) {
+                    Text("File URL", bundle: .module)
+                }
 #if os(iOS)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.URL)
 #endif
-                Button("Cancel", role: .cancel) {
+                Button(String(localized: "Cancel", bundle: .module), role: .cancel) {
                     remoteURLText = ""
                 }
-                Button("Import") {
+                Button(String(localized: "Import", bundle: .module)) {
                     guard let remoteURL else { return }
                     remoteURLText = ""
                     Task {

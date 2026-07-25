@@ -19,7 +19,10 @@ struct BattleRoundSettingsView: View {
                     isDisabled: false
                 )
             } label: {
-                Label("Initiative Order", systemImage: "arrow.up.arrow.down")
+                Label(
+                    String(localized: "Initiative Order", bundle: .module),
+                    systemImage: "arrow.up.arrow.down"
+                )
             }
 
             valueNameRow(
@@ -62,7 +65,10 @@ struct BattleRoundSettingsView: View {
                 TextField(title, text: text)
                     .onSubmit(refresh)
 
-                Button("Choose Value", systemImage: "person.crop.circle.badge.checkmark") {
+                Button(
+                    String(localized: "Choose Value", bundle: .module),
+                    systemImage: "person.crop.circle.badge.checkmark"
+                ) {
                     selectEntry(kind)
                 }
                 .labelStyle(.iconOnly)

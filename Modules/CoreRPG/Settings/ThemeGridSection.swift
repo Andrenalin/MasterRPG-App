@@ -34,7 +34,7 @@ struct ThemeGridSection: View {
                     .accessibilityValue(
                         settingsModel.appThemeID == themeID
                             ? Text("Selected", bundle: .module)
-                            : Text("")
+                            : Text(verbatim: "")
                     )
                     .accessibilityAddTraits(
                         settingsModel.appThemeID == themeID ? .isSelected : []

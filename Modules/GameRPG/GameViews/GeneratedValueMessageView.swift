@@ -21,7 +21,11 @@ struct GeneratedValueMessageView: View {
 
             Spacer()
 
-            Button("Dismiss", systemImage: "xmark", action: dismissAction)
+            Button(
+                String(localized: "Dismiss", bundle: .module),
+                systemImage: "xmark",
+                action: dismissAction
+            )
                 .labelStyle(.iconOnly)
 #if !os(visionOS)
                 .buttonStyle(.glass)

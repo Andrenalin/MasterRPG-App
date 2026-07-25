@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "PdfRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PdfRPG"
+          }
         }
       },
       "shouldTranslate" : false

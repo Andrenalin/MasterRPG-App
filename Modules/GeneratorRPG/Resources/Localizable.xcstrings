@@ -8,8 +8,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "… und %lld weitere"
+                  "state" : "translated",
+                  "value" : "… und %lld weiteres"
                 }
               },
               "other" : {
@@ -20,7 +20,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "… und %lld weitere"
                 }
               }
@@ -142,8 +142,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Anweisungen"
+                  "state" : "translated",
+                  "value" : "%lld Anweisung"
                 }
               },
               "other" : {
@@ -154,7 +154,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Anweisungen"
                 }
               }
@@ -228,20 +228,20 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Element](inflect: true)"
+                  "state" : "translated",
+                  "value" : "%lld Element"
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Element](inflect: true)"
+                  "state" : "translated",
+                  "value" : "%lld Elemente"
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Element](inflect: true)"
+                  "state" : "translated",
+                  "value" : "%lld Elemente"
                 }
               }
             }
@@ -1242,20 +1242,20 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Generator](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Generator gelöscht."
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Generator](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Generator gelöscht."
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Generator](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Generator gelöscht."
                 }
               }
             }
@@ -1732,8 +1732,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Tags gefunden"
+                  "state" : "translated",
+                  "value" : "%lld Tag gefunden"
                 }
               },
               "other" : {
@@ -1744,7 +1744,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Tags gefunden"
                 }
               }
@@ -1796,7 +1796,6 @@
       }
     },
     "Generate" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1852,6 +1851,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "กำลังสร้าง"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird generiert"
           }
         }
       }
@@ -1975,6 +1980,12 @@
             "state" : "machine_translated",
             "value" : "ซ่อนถาม AI"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„KI fragen“ ausblenden"
+          }
         }
       }
     },
@@ -1985,8 +1996,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Abschnitte erkannt"
+                  "state" : "translated",
+                  "value" : "%lld Abschnitt erkannt"
                 }
               },
               "other" : {
@@ -1997,7 +2008,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Abschnitte erkannt"
                 }
               }
@@ -2488,6 +2499,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "กด Return เพื่อสร้างเนื้อหาชีท"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drücke die Eingabetaste, um Tabelleninhalt zu generieren"
           }
         }
       }
@@ -3361,8 +3378,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "Gesamt: %lld Seiten"
+                  "state" : "translated",
+                  "value" : "Gesamt: %lld Seite"
                 }
               },
               "other" : {
@@ -3373,7 +3390,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "Gesamt: %lld Seiten"
                 }
               }
@@ -3740,6 +3757,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ภาษาปัจจุบันของคุณ: %@"
+          }
+        }
+      }
+    },
+    "Opens the AI request field" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet das KI-Eingabefeld"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิดช่องคำขอสำหรับ AI"
           }
         }
       }

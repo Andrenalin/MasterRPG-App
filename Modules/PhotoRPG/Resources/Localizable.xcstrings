@@ -24,8 +24,8 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld Fotos"
+                  "state" : "translated",
+                  "value" : "%lld Foto"
                 }
               },
               "other" : {
@@ -36,7 +36,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Fotos"
                 }
               }
@@ -316,20 +316,20 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Foto](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Foto gelöscht."
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Foto](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Fotos gelöscht."
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Foto](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Fotos gelöscht."
                 }
               }
             }
@@ -573,6 +573,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปิด %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ öffnen"
           }
         }
       }
@@ -820,6 +826,12 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
+            "value" : "URL"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "URL"
           }
         }

@@ -22,7 +22,11 @@ struct BattleRoundEmptyState: View {
             )
         } actions: {
             if !isRunning {
-                Button("Start Battle", systemImage: "play.fill", action: start)
+                Button(
+                    String(localized: "Start Battle", bundle: .module),
+                    systemImage: "play.fill",
+                    action: start
+                )
                     .buttonStyle(.borderedProminent)
             }
         }

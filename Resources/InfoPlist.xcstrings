@@ -176,7 +176,20 @@
       }
     },
     "MasterRPG Foundry Bridge Export" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Foundry-Bridge-Export"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การส่งออก MasterRPG Foundry Bridge"
+          }
+        }
+      }
     },
     "MasterRPG Map Link" : {
       "localizations" : {
@@ -245,7 +258,20 @@
       }
     },
     "MasterRPG Rule Link" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG-Regel-Link"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลิงก์กฎ MasterRPG"
+          }
+        }
+      }
     },
     "MasterRPG Save Game" : {
       "localizations" : {
@@ -594,7 +620,20 @@
       }
     },
     "Universal VTT Map" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Universal-VTT-Karte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แผนที่ Universal VTT"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

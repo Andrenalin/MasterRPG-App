@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "CharacterRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CharacterRPG"
+          }
         }
       },
       "shouldTranslate" : false

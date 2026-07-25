@@ -7,7 +7,10 @@ struct BattleInitiativeOrderMenu: View {
     let isDisabled: Bool
 
     var body: some View {
-        Picker("Initiative Order", selection: $selection) {
+        Picker(
+            String(localized: "Initiative Order", bundle: .module),
+            selection: $selection
+        ) {
             Label {
                 Text("Descending", bundle: .module)
             } icon: {

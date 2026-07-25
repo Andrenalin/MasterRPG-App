@@ -24,19 +24,19 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Charakter"
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Charakter"
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Charakter"
                 }
               }
@@ -190,7 +190,6 @@
       }
     },
     "Add to favorites" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -231,7 +230,6 @@
       }
     },
     "Adventure" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -462,20 +460,20 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Charakter](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Charakter gelöscht."
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Charakter](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Charakter gelöscht."
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "^[%lld Charakter](inflect: true) gelöscht."
+                  "state" : "translated",
+                  "value" : "%lld Charakter gelöscht."
                 }
               }
             }
@@ -644,7 +642,6 @@
       }
     },
     "Items sent from the gamemaster" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -716,6 +713,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เปิด %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ öffnen"
           }
         }
       }
@@ -803,7 +806,6 @@
       }
     },
     "Remove from favorites" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

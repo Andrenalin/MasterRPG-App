@@ -14,11 +14,18 @@ struct BattleInitiativeEditor: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Button("Decrease Initiative", systemImage: "minus", action: decrease)
+            Button(
+                String(localized: "Decrease Initiative", bundle: .module),
+                systemImage: "minus",
+                action: decrease
+            )
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
 
-            TextField("Initiative", text: $text)
+            TextField(
+                String(localized: "Initiative", bundle: .module),
+                text: $text
+            )
                 .battleInitiativeTextFieldStyle()
                 .multilineTextAlignment(.center)
                 .monospacedDigit()
@@ -27,7 +34,11 @@ struct BattleInitiativeEditor: View {
                 .battleNumberKeyboard()
                 .onSubmit(commit)
 
-            Button("Increase Initiative", systemImage: "plus", action: increase)
+            Button(
+                String(localized: "Increase Initiative", bundle: .module),
+                systemImage: "plus",
+                action: increase
+            )
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
         }

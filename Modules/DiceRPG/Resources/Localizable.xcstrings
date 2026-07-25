@@ -24,6 +24,12 @@
             "state" : "translated",
             "value" : "%@-Würfel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลูกเต๋า %@"
+          }
         }
       }
     },
@@ -76,7 +82,7 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Würfel"
                 }
               },
@@ -88,7 +94,7 @@
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "%lld Würfel"
                 }
               }
@@ -146,6 +152,12 @@
             "state" : "translated",
             "value" : "+/- 5"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "+/- 5"
+          }
         }
       }
     },
@@ -186,6 +198,12 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : ">"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : ">"
           }
         }
@@ -264,6 +282,12 @@
             "state" : "new",
             "value" : "💥 Critical Failure! Rolled %1$@: %2$lld"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "💥 ล้มเหลวร้ายแรง! ทอย %1$@: %2$lld"
+          }
         }
       }
     },
@@ -305,6 +329,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "8-seitiger Würfel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลูกเต๋า 8 หน้า"
           }
         }
       }
@@ -460,6 +490,12 @@
             "state" : "translated",
             "value" : "Immersieg hinzufügen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มตัวเลือกคริติคอล"
+          }
         }
       }
     },
@@ -469,6 +505,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hinzufügen Würfel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มลูกเต๋า"
           }
         }
       }
@@ -652,6 +694,12 @@
             "state" : "translated",
             "value" : "Würfel hinzufügen ändern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนการเพิ่มลูกเต๋า"
+          }
         }
       }
     },
@@ -661,6 +709,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Coup-Option ändern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนตัวเลือกคริติคอล"
           }
         }
       }
@@ -770,6 +824,12 @@
             "state" : "translated",
             "value" : "Vergleichswert geändert"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนค่าที่ใช้เปรียบเทียบแล้ว"
+          }
         }
       }
     },
@@ -795,6 +855,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Überprüfe auf"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตรวจสอบหา"
           }
         }
       }
@@ -1034,6 +1100,12 @@
             "state" : "translated",
             "value" : "W20"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "D20"
+          }
         }
       }
     },
@@ -1079,6 +1151,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "^[%lld Würfelset](inflect: true) gelöscht."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบชุดลูกเต๋า %lld ชุดแล้ว"
           }
         }
       }
@@ -1206,6 +1284,12 @@
             "state" : "translated",
             "value" : "%@ ablegen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "วาง %@"
+          }
         }
       }
     },
@@ -1231,6 +1315,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfelbearbeitung beenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เสร็จสิ้นการแก้ไขลูกเต๋า"
           }
         }
       }
@@ -1276,6 +1366,12 @@
             "state" : "translated",
             "value" : "Patzer"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฟัมเบิล"
+          }
         }
       }
     },
@@ -1302,6 +1398,12 @@
             "state" : "translated",
             "value" : "Patzer Einstellungen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวเลือกความล้มเหลวร้ายแรง"
+          }
         }
       }
     },
@@ -1313,6 +1415,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Versteckt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อน"
           }
         }
       }
@@ -1374,6 +1482,12 @@
             "state" : "translated",
             "value" : "Name"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อ"
+          }
         }
       }
     },
@@ -1383,6 +1497,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nicht gewürfelt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ยังไม่ได้ทอย"
           }
         }
       }
@@ -1412,6 +1532,12 @@
             "state" : "translated",
             "value" : "Aus: Wert mit allen Würfeln vergleichen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด: จับคู่ค่ากับลูกเต๋าทุกลูก"
+          }
         }
       }
     },
@@ -1424,6 +1550,12 @@
             "state" : "translated",
             "value" : "Aus: Mit Wert ersetzen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด: แทนที่ด้วยค่า"
+          }
         }
       }
     },
@@ -1435,6 +1567,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ein: Mit einem Würfel vergleichen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปิด: จับคู่กับลูกเต๋าหนึ่งลูก"
           }
         }
       }
@@ -1488,9 +1626,6 @@
           }
         }
       }
-    },
-    "Open %@" : {
-
     },
     "Open Dice" : {
       "localizations" : {
@@ -1549,6 +1684,12 @@
             "state" : "translated",
             "value" : "Prozent Wurf"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลูกเต๋าเปอร์เซ็นต์"
+          }
         }
       }
     },
@@ -1558,6 +1699,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erneutes würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยใหม่"
           }
         }
       }
@@ -1680,6 +1827,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entferne Patzer Einstellungen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบตัวเลือกความล้มเหลวร้ายแรง"
           }
         }
       }
@@ -1819,6 +1972,12 @@
             "state" : "translated",
             "value" : "%@-Würfel werfen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยลูกเต๋า %@"
+          }
         }
       }
     },
@@ -1828,6 +1987,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Würfeln und Ergebnis anzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยลูกเต๋าและแสดงผลลัพธ์"
           }
         }
       }
@@ -1967,6 +2132,12 @@
             "state" : "translated",
             "value" : "Gewürfelt"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอยแล้ว"
+          }
         }
       }
     },
@@ -1982,6 +2153,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Rolled %1$@: %2$lld"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ทอย %1$@: %2$lld"
           }
         }
       }
@@ -2043,6 +2220,12 @@
             "state" : "translated",
             "value" : "Setze Immersieg Einstellung"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตั้งค่าตัวเลือกคริติคอล"
+          }
         }
       }
     },
@@ -2052,6 +2235,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Setze Patzer Einstellung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตั้งค่าตัวเลือกความล้มเหลวร้ายแรง"
           }
         }
       }
@@ -2078,6 +2267,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mit allen teilen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แชร์ให้ทุกคน"
           }
         }
       }
@@ -2137,6 +2332,12 @@
             "state" : "translated",
             "value" : "Würfel im Raum anzeigen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงลูกเต๋าในพื้นที่ 3D"
+          }
         }
       }
     },
@@ -2162,6 +2363,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spielerwürfel anzeigen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แสดงลูกเต๋าของผู้เล่น"
           }
         }
       }

@@ -19,7 +19,11 @@ struct BattleCharacterSheetPresentationView: View {
             .battleInlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "xmark", action: dismissPresentation)
+                    Button(
+                        String(localized: "Done", bundle: .module),
+                        systemImage: "xmark",
+                        action: dismissPresentation
+                    )
                 }
             }
         }

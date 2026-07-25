@@ -19,7 +19,10 @@ struct DetailListView: View {
         .toolbar {
             if !model.specialCategory {
                 ToolbarItem(placement: .secondaryActionAll) {
-                    Button("Edit All Sections", systemImage: "list.bullet.rectangle") {
+                    Button(
+                        String(localized: "Edit All Sections", bundle: .ruleModule),
+                        systemImage: "list.bullet.rectangle"
+                    ) {
                         navigator.navigate(to: RuleEditorRoute.quickEditor(model.id))
                     }
                 }

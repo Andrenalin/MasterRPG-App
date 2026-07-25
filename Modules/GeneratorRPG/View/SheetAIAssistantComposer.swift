@@ -90,7 +90,11 @@ struct SheetAIAssistantComposer: View {
 
     var body: some View {
         HStack(alignment: .bottom) {
-            Button("Hide Ask AI", systemImage: NetworkModules.generator.icon, action: closeAction)
+            Button(
+                String(localized: "Hide Ask AI", bundle: .module),
+                systemImage: NetworkModules.generator.icon,
+                action: closeAction
+            )
                 .labelStyle(.iconOnly)
                 .buttonStyle(.plain)
                 .foregroundStyle(theme.tint(for: module))
@@ -149,7 +153,7 @@ struct SheetAIAssistantMiniComposer: View {
         if isActive {
             HStack(spacing: 4) {
                 Button(
-                    "Hide Ask AI",
+                    String(localized: "Hide Ask AI", bundle: .module),
                     systemImage: NetworkModules.generator.icon,
                     action: closeAction
                 )
@@ -193,7 +197,11 @@ struct SheetAIAssistantMiniComposer: View {
                 priority: .userInitiated
             )
         } else {
-            Button("Ask AI", systemImage: NetworkModules.generator.icon, action: activateAction)
+            Button(
+                String(localized: "Ask AI", bundle: .module),
+                systemImage: NetworkModules.generator.icon,
+                action: activateAction
+            )
                 .buttonStyle(.plain)
                 .foregroundStyle(.primary)
                 .imageScale(.large)

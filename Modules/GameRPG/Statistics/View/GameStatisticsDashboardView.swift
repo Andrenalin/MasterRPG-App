@@ -83,7 +83,7 @@ private struct GameStatisticsIOSDashboardView: View {
                 GameStatisticsCustomizationView(model: model)
             }
         }
-        .navigationTitle("")
+        .navigationTitle(Text(verbatim: ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -110,7 +110,10 @@ private struct GameStatisticsIOSDashboardView: View {
 
             ToolbarItem(placement: .confirmationAction) {
                 if showsDismissButton {
-                    Button("Done", systemImage: "checkmark") {
+                    Button(
+                        String(localized: "Done", bundle: .module),
+                        systemImage: "checkmark"
+                    ) {
                         dismiss()
                     }
                 }

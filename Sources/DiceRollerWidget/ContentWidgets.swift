@@ -96,11 +96,15 @@ private struct ContentWidgetView: View {
             }
             Divider()
             if entry.snapshot.items.isEmpty {
-                ContentUnavailableView(
-                    "No Items",
-                    systemImage: moduleIcon,
-                    description: Text("Create one in MasterRPG.")
-                )
+                ContentUnavailableView {
+                    Label {
+                        Text("No Items", bundle: .main)
+                    } icon: {
+                        Image(systemName: moduleIcon)
+                    }
+                } description: {
+                    Text("Create one in MasterRPG.", bundle: .main)
+                }
             } else {
                 ForEach(entry.snapshot.items.prefix(3)) { item in
                     if let destination = entry.snapshot.itemURL(for: item) {

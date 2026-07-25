@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "RuleRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RuleRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RuleRPG"
+          }
         }
       },
       "shouldTranslate" : false

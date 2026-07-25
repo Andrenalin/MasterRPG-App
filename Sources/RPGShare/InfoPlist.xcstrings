@@ -16,6 +16,12 @@
             "state" : "new",
             "value" : "Master RPG"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Master RPG"
+          }
         }
       }
     },
@@ -25,13 +31,19 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "MasterRPG"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "MasterRPG"
           }
         }
@@ -44,6 +56,12 @@
             "state" : "translated",
             "value" : "MasterRPG Dokument"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG เอกสาร"
+          }
         }
       }
     },
@@ -53,6 +71,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "MasterRPG Spielstand"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG บันทึกเกม"
           }
         }
       }
@@ -72,6 +96,12 @@
             "state" : "new",
             "value" : "MasterRPG uses the camera to take photos for the photo module and other modules to show photos and maps"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้กล้องเพื่อถ่ายภาพสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
+          }
         }
       }
     },
@@ -89,6 +119,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เดสก์ท็อปเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
         }
       }
@@ -108,6 +144,12 @@
             "state" : "new",
             "value" : "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game."
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์เอกสารเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
+          }
         }
       }
     },
@@ -125,6 +167,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG อ่านข้อมูลจากโฟลเดอร์ดาวน์โหลดเมื่อผู้ใช้เลือกไฟล์ เช่น PDF รูปภาพ หรือเสียงสำหรับเกม"
           }
         }
       }
@@ -144,6 +192,12 @@
             "state" : "new",
             "value" : "© Copyright 2024, Andre Trettin"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
         }
       }
     },
@@ -162,6 +216,12 @@
             "state" : "new",
             "value" : "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้เครือข่ายภายในเพื่อเชื่อมต่อกับผู้เล่นใกล้เคียงและแชร์แผนที่จากเกมมาสเตอร์"
+          }
         }
       }
     },
@@ -179,6 +239,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "MasterRPG ใช้คลังภาพเพื่อนำเข้าภาพถ่ายสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
           }
         }
       }

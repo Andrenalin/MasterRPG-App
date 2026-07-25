@@ -30,7 +30,10 @@ public struct ThemePickerView: View {
             .navigationTitle(Text("Choose Theme", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: dismiss.callAsFunction)
+                    Button(
+                        String(localized: "Done", bundle: .module),
+                        action: dismiss.callAsFunction
+                    )
                 }
             }
         }

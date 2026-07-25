@@ -56,7 +56,10 @@ struct BattleRoundHeader: View {
     }
 
     private var configurationButton: some View {
-        Button("Battle Settings", systemImage: "slider.horizontal.3") {
+        Button(
+            String(localized: "Battle Settings", bundle: .module),
+            systemImage: "slider.horizontal.3"
+        ) {
             isConfigurationExpanded.toggle()
         }
         .labelStyle(.iconOnly)

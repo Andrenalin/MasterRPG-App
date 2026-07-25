@@ -24,6 +24,12 @@
             "state" : "translated",
             "value" : "%lld Wetter"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สภาพอากาศ %lld รายการ"
+          }
         }
       }
     },
@@ -33,6 +39,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notiz zu ${target} hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มโน้ตไปยัง ${target}"
           }
         }
       }
@@ -45,6 +57,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wetternotiz hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มบันทึกสภาพอากาศ"
           }
         }
       }
@@ -74,6 +92,12 @@
             "state" : "translated",
             "value" : "Winkel"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มุม"
+          }
         }
       }
     },
@@ -102,6 +126,12 @@
             "state" : "translated",
             "value" : "Wolkendichte ändern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนความหนาของเมฆ"
+          }
         }
       }
     },
@@ -128,6 +158,12 @@
             "state" : "translated",
             "value" : "Blitz Frequenz ändern"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนความถี่ของฟ้าแลบ"
+          }
         }
       }
     },
@@ -137,6 +173,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Blitz max Spaltung ändern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เปลี่ยนจำนวนสายฟ้าสูงสุด"
           }
         }
       }
@@ -215,6 +257,12 @@
             "state" : "translated",
             "value" : "Wetter erstellen"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สร้างสภาพอากาศ"
+          }
         }
       }
     },
@@ -279,19 +327,19 @@
             "plural" : {
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "Es wurden %lld Wetterelemente gelöscht."
+                  "state" : "translated",
+                  "value" : "Es wurde %lld Wetterelement gelöscht."
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "Es wurden %lld Wetterelemente gelöscht."
                 }
               },
               "zero" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
+                  "state" : "translated",
                   "value" : "Es wurden %lld Wetterelemente gelöscht."
                 }
               }
@@ -399,6 +447,12 @@
             "state" : "translated",
             "value" : "Frequenz"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ความถี่"
+          }
         }
       }
     },
@@ -424,6 +478,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leicht"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สว่าง"
           }
         }
       }
@@ -570,6 +630,12 @@
             "state" : "translated",
             "value" : "Aus"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิด"
+          }
         }
       }
     },
@@ -647,6 +713,12 @@
             "state" : "translated",
             "value" : "Niederschlag"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หยาดน้ำฟ้า"
+          }
         }
       }
     },
@@ -688,6 +760,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Regenintensität"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ความแรงของฝน"
           }
         }
       }
@@ -732,6 +810,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Schnee"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หิมะ"
           }
         }
       }
@@ -960,6 +1044,12 @@
             "state" : "translated",
             "value" : "Welches Wetter?"
           }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สภาพอากาศใด?"
+          }
         }
       }
     },
@@ -969,6 +1059,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Welches Wetter?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สภาพอากาศใด?"
           }
         }
       }

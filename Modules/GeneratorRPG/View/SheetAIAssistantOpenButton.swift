@@ -13,7 +13,10 @@ struct SheetAIAssistantOpenButton: View {
 
     var body: some View {
         Button(action: action) {
-            Label("Ask AI", systemImage: NetworkModules.generator.icon)
+            Label(
+                String(localized: "Ask AI", bundle: .module),
+                systemImage: NetworkModules.generator.icon
+            )
                 .labelStyle(.iconOnly)
                 .frame(minWidth: 44, minHeight: 44)
         }

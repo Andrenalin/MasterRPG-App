@@ -8,20 +8,58 @@ struct RuleMetadataEditor: View {
 
     var body: some View {
         Section {
-            TextField("Source Identifier", text: binding(\.sourceIdentifier))
-            TextField("System", text: binding(\.systemTitle))
-            TextField("System ID", text: binding(\.systemID))
-            TextField("Version", text: binding(\.systemVersion))
-            TextField("Package", text: binding(\.packageName))
-            TextField("Package Identifier", text: binding(\.packageIdentifier))
-            TextField("Document ID", text: binding(\.documentID))
-            TextField("Document Type", text: binding(\.documentType))
-            TextField("Subtype", text: binding(\.subtype))
-            TextField("Rule Category", text: binding(\.ruleCategory))
-            TextField("Image Path", text: binding(\.imagePath))
+            TextField(
+                String(localized: "Source Identifier", bundle: .ruleModule),
+                text: binding(\.sourceIdentifier)
+            )
+            TextField(
+                String(localized: "System", bundle: .ruleModule),
+                text: binding(\.systemTitle)
+            )
+            TextField(
+                String(localized: "System ID", bundle: .ruleModule),
+                text: binding(\.systemID)
+            )
+            TextField(
+                String(localized: "Version", bundle: .ruleModule),
+                text: binding(\.systemVersion)
+            )
+            TextField(
+                String(localized: "Package", bundle: .ruleModule),
+                text: binding(\.packageName)
+            )
+            TextField(
+                String(localized: "Package Identifier", bundle: .ruleModule),
+                text: binding(\.packageIdentifier)
+            )
+            TextField(
+                String(localized: "Document ID", bundle: .ruleModule),
+                text: binding(\.documentID)
+            )
+            TextField(
+                String(localized: "Document Type", bundle: .ruleModule),
+                text: binding(\.documentType)
+            )
+            TextField(
+                String(localized: "Subtype", bundle: .ruleModule),
+                text: binding(\.subtype)
+            )
+            TextField(
+                String(localized: "Rule Category", bundle: .ruleModule),
+                text: binding(\.ruleCategory)
+            )
+            TextField(
+                String(localized: "Image Path", bundle: .ruleModule),
+                text: binding(\.imagePath)
+            )
             if model.sourcePayload != nil {
-                LabeledContent("Normalized Source") {
-                    Label("Retained", systemImage: "checkmark.shield")
+                LabeledContent(
+                    String(localized: "Normalized Source", bundle: .ruleModule)
+                ) {
+                    Label(
+                        String(localized: "Retained", bundle: .ruleModule),
+                        systemImage: "checkmark.shield"
+                    )
                         .foregroundStyle(.secondary)
                 }
             }

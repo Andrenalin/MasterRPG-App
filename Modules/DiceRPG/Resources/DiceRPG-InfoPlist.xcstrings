@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "DiceRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DiceRPG"
+          }
         }
       },
       "shouldTranslate" : false

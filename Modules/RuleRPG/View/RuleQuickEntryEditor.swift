@@ -36,7 +36,10 @@ struct RuleQuickEntryEditor: View {
                     Button(role: .cancel) {
                         navigator.dismiss()
                     } label: {
-                        Label("Cancel", systemImage: "xmark")
+                        Label(
+                            String(localized: "Cancel", bundle: .ruleModule),
+                            systemImage: "xmark"
+                        )
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -68,7 +71,10 @@ struct RuleQuickEntryEditor: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark") {
+                    Button(
+                        String(localized: "Save", bundle: .ruleModule),
+                        systemImage: "checkmark"
+                    ) {
                         entries = RuleEntryTree.normalized(entries)
                         let removedEntries = root.editController.merge(
                             itemId: model.id,
@@ -132,15 +138,24 @@ private struct RuleQuickEntrySectionEditor: View {
             )
 
             Section {
-                TextField("Title", text: entry.name)
+                TextField(
+                    String(localized: "Title", bundle: .ruleModule),
+                    text: entry.name
+                )
                 if entry.wrappedValue.kind != .group {
 #if os(tvOS)
-                    TextField("Content", text: entry.content)
+                    TextField(
+                        String(localized: "Content", bundle: .ruleModule),
+                        text: entry.content
+                    )
 #else
                     TextEditor(text: entry.content)
 #endif
                 }
-                Picker("Section", selection: kindSelection) {
+                Picker(
+                    String(localized: "Section", bundle: .ruleModule),
+                    selection: kindSelection
+                ) {
                     ForEach(RuleEntryKind.allCases, id: \.self) { kind in
                         Text(kind.localizedTitle).tag(kind)
                     }

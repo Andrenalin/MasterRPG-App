@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "AudioRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "AudioRPG"
+          }
         }
       },
       "shouldTranslate" : false
@@ -22,6 +34,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : ""
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
           }
         }
       },

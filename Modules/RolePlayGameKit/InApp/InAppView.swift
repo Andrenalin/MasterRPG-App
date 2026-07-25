@@ -37,7 +37,10 @@ public struct InAppView: View {
                 )
                 .foregroundStyle(.secondary)
 
-                Button("Restore Purchases", systemImage: "arrow.clockwise") {
+                Button(
+                    String(localized: "Restore Purchases", bundle: .module),
+                    systemImage: "arrow.clockwise"
+                ) {
                     Task {
                         await inAppController.restorePurchases()
                     }

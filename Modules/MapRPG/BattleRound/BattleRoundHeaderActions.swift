@@ -10,14 +10,14 @@ struct BattleRoundHeaderActions: View {
         HStack(spacing: 8) {
             if isRunning {
                 Button(
-                    "Next Turn",
+                    String(localized: "Next Turn", bundle: .module),
                     systemImage: "person.line.dotted.person.fill",
                     action: actions.nextAttacker
                 )
                 .buttonStyle(.bordered)
 
                 Button(
-                    "Next Round",
+                    String(localized: "Next Round", bundle: .module),
                     systemImage: "chevron.right.2",
                     action: actions.nextRound
                 )
@@ -25,19 +25,22 @@ struct BattleRoundHeaderActions: View {
 
                 Menu {
                     Button(
-                        "End Battle",
+                        String(localized: "End Battle", bundle: .module),
                         systemImage: "stop.fill",
                         role: .destructive,
                         action: actions.end
                     )
                 } label: {
-                    Label("More Battle Actions", systemImage: "ellipsis.circle")
+                    Label(
+                        String(localized: "More Battle Actions", bundle: .module),
+                        systemImage: "ellipsis.circle"
+                    )
                         .labelStyle(.iconOnly)
                 }
                 .buttonStyle(.bordered)
             } else {
                 Button(
-                    "Start Battle",
+                    String(localized: "Start Battle", bundle: .module),
                     systemImage: "play.fill",
                     action: actions.start
                 )

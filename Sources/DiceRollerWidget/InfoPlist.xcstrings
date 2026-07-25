@@ -16,6 +16,12 @@
             "state" : "machine_translated",
             "value" : "DiceRollerWidget"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Master RPG"
+          }
         }
       }
     },
@@ -34,6 +40,12 @@
             "state" : "machine_translated",
             "value" : "DiceRollerWidgetExtension"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
         }
       }
     },
@@ -50,7 +62,13 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : ""
+            "value" : "© Copyright 2024-2026, Andre Trettin"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© Copyright 2024-2026, Andre Trettin"
           }
         }
       }

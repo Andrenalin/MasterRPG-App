@@ -10,6 +10,18 @@
             "state" : "new",
             "value" : "WeatherRPG"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MasterRPG"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WeatherRPG"
+          }
         }
       },
       "shouldTranslate" : false

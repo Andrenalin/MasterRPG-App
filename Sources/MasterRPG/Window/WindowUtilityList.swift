@@ -216,14 +216,18 @@ private struct TableGeneratorWindowContent: View {
                     dismissAction: { dismiss() }
                 )
             } else {
-                ContentUnavailableView(
-                    "Table Unavailable",
-                    systemImage: "tablecells",
-                    description: Text(
+                ContentUnavailableView {
+                    Label {
+                        Text("Table Unavailable", bundle: .main)
+                    } icon: {
+                        Image(systemName: "tablecells")
+                    }
+                } description: {
+                    Text(
                         "Choose a table to generate.",
                         bundle: .main
                     )
-                )
+                }
             }
         }
         .environment(appModel.appGameStateModel)
