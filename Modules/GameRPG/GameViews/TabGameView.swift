@@ -25,10 +25,20 @@ struct TabGameView: View {
             alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
         )
 #if os(iOS)
-        .ignoresSafeArea(.container, edges: .bottom)
-        .clipShape(.rect(topLeadingRadius: 14, topTrailingRadius: 14))
-#endif
-#if !os(visionOS)
+        .ignoresSafeArea()
+        .clipShape(.rect(
+            topLeadingRadius: 14,
+            bottomLeadingRadius: 14,
+            bottomTrailingRadius: 0,
+            topTrailingRadius: 0
+        ))
+        .background(.ultraThinMaterial, in: .rect(
+            topLeadingRadius: 14,
+            bottomLeadingRadius: 14,
+            bottomTrailingRadius: 0,
+            topTrailingRadius: 0
+        ))
+#elseif !os(visionOS)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
 #endif
         .offset(

@@ -9,6 +9,7 @@ struct TabPlayerGameView: View {
 
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -27,10 +28,20 @@ struct TabPlayerGameView: View {
                 alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
             )
 #if os(iOS)
-            .ignoresSafeArea(.container, edges: .bottom)
-            .clipShape(.rect(topLeadingRadius: 14, topTrailingRadius: 14))
-#endif
-#if !os(visionOS)
+            .ignoresSafeArea()
+            .clipShape(.rect(
+                topLeadingRadius: 14,
+                bottomLeadingRadius: 14,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 0
+            ))
+            .background(.ultraThinMaterial, in: .rect(
+                topLeadingRadius: 14,
+                bottomLeadingRadius: 14,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 0
+            ))
+#elseif !os(visionOS)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
 #endif
             .offset(

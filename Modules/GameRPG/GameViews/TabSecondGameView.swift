@@ -18,7 +18,21 @@ struct TabSecondGameView: View {
                 maxHeight: .infinity,
                 alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
             )
-#if !os(visionOS)
+#if os(iOS)
+            .ignoresSafeArea()
+            .clipShape(.rect(
+                topLeadingRadius: 14,
+                bottomLeadingRadius: 14,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 0
+            ))
+            .background(.ultraThinMaterial, in: .rect(
+                topLeadingRadius: 14,
+                bottomLeadingRadius: 14,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 0
+            ))
+#elseif !os(visionOS)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
 #endif
             .offset(

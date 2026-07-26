@@ -20,7 +20,7 @@ struct GameScreenLayer<Surface: View, Chrome: View>: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        ManagedNavigationStack {
+        VStack {
             // The clear window-sized view is the only layout participant.
             // Both overlays receive the window proposal, but neither the map's
             // logical size nor a RealityView's ideal size can resize the chrome.

@@ -11,12 +11,18 @@ struct OverlayPlayerTabBar: View {
         ZStack(alignment: .trailing) {
 #if os(macOS) || os(visionOS)
             OnlyPlayerGameView(root: root)
+#elseif os(tvOS)
+            if root.gameModel.gameType != .observer {
+                TabPlayerGameView(root: root)
+                TabPlayerSecondGameView(root: root)
+            }
 #else
             TabPlayerGameView(root: root)
             TabPlayerSecondGameView(root: root)
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+        .ignoresSafeArea()
     }
 }
 

@@ -133,5 +133,4 @@ final class GameScreenModel {
         guard topGameMenuHeight != height else { return }
         topGameMenuHeight = height
     }
-
 }

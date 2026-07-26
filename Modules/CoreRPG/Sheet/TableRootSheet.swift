@@ -76,7 +76,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         TableSheetView(
             root: root,
             model: sheetRootModel,
-            addSearchable: configuration.addToolbar && !configuration.isGame,
+            addSearchable: valueFor(iOS: true, macOS: false, tvOS: true, visionOS: true),
             isEditor: isEditor,
             linkTypes: linkTypes
         )
@@ -88,7 +88,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             .glassBackgroundEffect()
 #endif
             .overlay(alignment: .topTrailing) {
-                if configuration.isGame {
+                if configuration.isGame && valueFor(iOS: false, macOS: true, tvOS: false, visionOS: false) {
                     InlineSheetSearchControl(
                         module: root.configurable.module,
                         searchText: $sheetRootModel.searchText
@@ -104,7 +104,10 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
             .toolbar {
                 toolbarContent
             }
-            .navigationTitle(Text(verbatim: sheetRootModel.sheetModel.name))
+            .applyIf(!configuration.isGame) {
+                $0.navigationTitle(Text(verbatim: sheetRootModel.sheetModel.name))
+            }
+            .navigationVisibility(true)
             .itemGenerationPresentation(
                 root: root,
                 selection: $generationSelection

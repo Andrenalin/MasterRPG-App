@@ -14,10 +14,8 @@ struct OverlayMasterTabBar: View {
 #if os(macOS) || os(visionOS)
             OnlyGameView(root: root, adventureId: adventureId)
 #else
-            ManagedNavigationStack {
-                TabGameView(root: root, adventureId: adventureId)
-                TabSecondGameView(root: root)
-            }
+            TabGameView(root: root, adventureId: adventureId)
+            TabSecondGameView(root: root)
 #endif
             BattleRoundSideOverlay(root: root)
         }

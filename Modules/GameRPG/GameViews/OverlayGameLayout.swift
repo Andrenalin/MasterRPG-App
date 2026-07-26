@@ -30,18 +30,13 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
     
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         ZStack(alignment: .topLeading) {
             sideOverlay()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-#if os(iOS)
-                // Keep sidebar content below the game menu while leaving the
-                // independent map surface visible beneath both layers.
-                .padding(.top, topContentInset)
-#endif
                 .zIndex(10)
 
             moduleMenuOverlay()

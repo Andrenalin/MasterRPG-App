@@ -11,7 +11,8 @@ struct IOSGameOverlayMenu: View {
     let isMaster: Bool
 
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
-
+    @Environment(GameScreenModel.self) private var gameScreenModel
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
@@ -40,6 +41,7 @@ struct IOSGameOverlayMenu: View {
                         spacing: itemSpacing
                     )
                 }
+                .padding(.trailing, gameScreenModel.isInlineSidebarVisible ? gameScreenModel.inlineMainOverlayWidth : 0)
             } else {
                 HStack(spacing: itemSpacing) {
                     IOSGameOverlayCloseButton()

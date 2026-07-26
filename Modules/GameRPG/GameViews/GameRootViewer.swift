@@ -28,6 +28,7 @@ struct GameRootViewer: View {
     let gameScreenModel: GameScreenModel?
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
     @Environment(ScenesManager.self) private var scenesManager
 #if os(iOS) || os(macOS)
     @Environment(AppSettingsModel.self) private var appSettingsModel
@@ -54,7 +55,7 @@ struct GameRootViewer: View {
                 mapView(for: mapId)
                     .id(mapId)
             } else {
-                Color.clear
+                GameSetupBackdrop()
             }
         } presentation: {
             if root.mapRoot.gameControllable.gameModel.currentItemId == nil {
@@ -67,14 +68,13 @@ struct GameRootViewer: View {
                 }
             } else if playerController.gameModel.gameUpdateType != .map {
                 ZStack {
-                    Color.black.opacity(0.80)
+                    GameSetupBackdrop()
                     otherViews { EmptyView() }
                 }
             }
         }
-#if os(iOS)
-        .background(colorScheme == .dark ? Color.black : Color.white)
-#endif
+        .themedSurface()
+        .moduleTint(.game)
         .ignoresSafeArea()
 #if os(visionOS)
         .onChange(of: root.photoRoot.gameControllable.gameModel.currentItemId) {
@@ -209,7 +209,7 @@ private struct EmptyGameContent: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         ZStack(alignment: .center) {
-            MeshAnimationView()
+            GameSetupBackdrop()
 
             VStack {
                 Spacer()
@@ -244,4 +244,6 @@ private struct EmptyGameContent: View {
         emptyTitle: "Game is running",
         contentType: .master
     )
+    .environment(ScenesManager())
+    .environment(AppSettingsModel())
 }
