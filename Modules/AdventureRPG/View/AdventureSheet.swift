@@ -29,22 +29,12 @@ struct AdventureSheet: View {
         readerSheet
 #else
         if configuration.isGame {
-            TableRootSheet(
-                root: root.rootController,
-                itemId: model.id,
-                module: root.config.module,
-                configuration: configuration,
-                dismissAction: dismissAction,
-                isEditor: false,
-                linkTypes: LinkAdventureModuleTransferable.self
-            ) { sheetRootModel in
-                SheetAIAssistantContent(
+            readerSheet
+                .sheetAIAssistant(
                     module: root.configurable.module,
                     itemId: model.id,
-                    rootModel: sheetRootModel
+                    rootModel: root.editController.editorModel.sheetRootModel
                 )
-            }
-            .id(model.id)
         } else {
             readerSheet
         }
@@ -63,4 +53,10 @@ struct AdventureSheet: View {
     }
 }
 
-#Preview(traits: .mockData) { AdventureSheet(model: .preview, configuration: .init(), dismissAction: nil) }
+#Preview("Reader Mode", traits: .mockData) {
+    AdventureSheet(model: .preview, configuration: .init(), dismissAction: nil)
+}
+
+#Preview("Game Mode", traits: .mockData) {
+    AdventureSheet(model: .preview, configuration: .init(isGame: true), dismissAction: nil)
+}

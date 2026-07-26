@@ -22,9 +22,15 @@ struct DetailListView: View {
 
     var body: some View {
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
+            .sheetAIAssistant(
+                module: root.configurable.module,
+                itemId: model.id,
+                rootModel: root.editController.editorModel.sheetRootModel
+            )
             .toolbar {
                 toolbarContent
             }
+            .themedSurface()
             .moduleTint(root.configurable.module)
             .userActivity(UserActivity.bundleIdentifierType, isActive: true) { activity in
                 UserActivity.addPayLoad(for: activity, title: model.name, module: root.config.module, itemId: model.id)
@@ -36,11 +42,6 @@ struct DetailListView: View {
             .task(id: model.id) {
                 await root.donateSiriViewingIntent(for: model.id)
             }
-            .sheetAIAssistant(
-                module: root.configurable.module,
-                itemId: model.id,
-                rootModel: root.editController.editorModel.sheetRootModel
-            )
 #endif
     }
 

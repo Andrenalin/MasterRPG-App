@@ -267,24 +267,39 @@ extension TableModel {
         entries: []
     )
 
-    /// Small deterministic list fixture that keeps snapshot output focused.
+    /// Roadside encounter list — five linked entries for visual testing of the sheet view.
     @MainActor
     static let previewShortList = TableModel(
         id: previewShortListId,
         name: "Roadside Encounters",
-        description: "Two concise encounter results.",
+        description: "d6 — Encounters on the road to Goblinburg.",
         tags: ["Preview", "Encounter"],
         tableType: .list,
         entries: [
             TableEntryModel(
                 id: UUID(uuid: (0xB5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
                 name: "1",
-                content: "A merchant asks for directions."
+                content: "A merchant fleeing [Das Geheimnis der Goblinburg](RPG://ADVENTURES/0/5F6D6D52-3DDB-4B20-8D45-DFB543799417) asks for escort."
             ),
             TableEntryModel(
                 id: UUID(uuid: (0xB5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)),
                 name: "2",
-                content: "Fresh tracks cross the road."
+                content: "Fresh tracks cross the road — [Thrak the Cruel](RPG://VALUES/0/1527140F-0101-46C3-912E-B02FE0FF7696) was spotted nearby. Check the [Goblinburg Map](RPG://MAPS/0/50DFDB6F-E8B1-41A4-A409-911D888119E8)."
+            ),
+            TableEntryModel(
+                id: UUID(uuid: (0xB5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5)),
+                name: "3",
+                content: "Ambush! Roll [d20](RPG://DICE/46339863-D29C-4B28-98BC-C6A20D5BCE0E) for initiative."
+            ),
+            TableEntryModel(
+                id: UUID(uuid: (0xB5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6)),
+                name: "4",
+                content: "Abandoned campfire still warm. Roll [d20](RPG://DICE/46339863-D29C-4B28-98BC-C6A20D5BCE0E) — on 10+ the owners return."
+            ),
+            TableEntryModel(
+                id: UUID(uuid: (0xB5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7)),
+                name: "5",
+                content: "Crossroads shrine. Roll on [Beutetabelle B](RPG://TABLES/0/25321D0A-CBAC-4A6C-944C-C8916049FC45) for offerings left behind."
             )
         ]
     )

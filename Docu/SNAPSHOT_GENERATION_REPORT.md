@@ -122,8 +122,6 @@ Generated: 33; skipped: 9.
 - Modules/GeneratorRPG/Root/ChatSheetRootView.swift — #Preview uses local dynamic state
 - Modules/GeneratorRPG/Root/DetailListView.swift — #Preview uses local dynamic state
 - Modules/GeneratorRPG/Root/DetailRootView.swift — #Preview uses local dynamic state
-- Modules/GeneratorRPG/View/SheetAIAssistantComposer.swift — #Preview uses local dynamic state
-- Modules/GeneratorRPG/View/SheetAIAssistantOpenButton.swift — #Preview uses local dynamic state
 - Modules/GeneratorRPG/View/TextSummaryUpdateView.swift — #Preview uses local dynamic state
 
 ## MapRPG

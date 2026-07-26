@@ -128,37 +128,23 @@ struct GeneratorRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GeneratorRPG::SheetAIAssistantComposer
-    @Test("SheetAIAssistantComposer")
+    // snapshot-root: GeneratorRPG::SheetAIAssistantStandardControl
+    @Test("SheetAIAssistantStandardControl")
     func sheetAIAssistantComposer() async throws {
-        try await assertDynamicSnapshot("SheetAIAssistantComposer") {
+        try await assertDynamicSnapshot("SheetAIAssistantStandardControl") {
             GeneratorNamespaceSnapshotHarness { namespace in
                 GeneratorFocusSnapshotHarness { focus in
-                    SheetAIAssistantComposer(
+                    SheetAIAssistantStandardControl(
                         module: .adventure,
                         messageText: .constant("Create a dramatic encounter"),
                         availability: SheetAIGenerationController().availability,
+                        isExpanded: true,
                         isGenerating: false,
                         isTextFieldFocused: focus,
-                        glassNamespace: namespace,
                         submitAction: {},
-                        closeAction: {}
+                        toggleAction: {}
                     )
                 }
-            }
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::SheetAIAssistantOpenButton
-    @Test("SheetAIAssistantOpenButton")
-    func sheetAIAssistantOpenButton() async throws {
-        try await assertDynamicSnapshot("SheetAIAssistantOpenButton") {
-            GeneratorNamespaceSnapshotHarness { namespace in
-                SheetAIAssistantOpenButton(
-                    module: .adventure,
-                    glassNamespace: namespace,
-                    action: {}
-                )
             }
         }
     }

@@ -137,9 +137,32 @@ extension MapModel {
         )
     }
 
+    nonisolated static let previewForestId = UUID.fixture("A2B3C4D5-E6F7-8901-A234-5678901ABCDE")
+
+    @MainActor
+    static var previewForest: MapModel {
+        MapModel(
+            id: previewForestId,
+            name: "Shadowfen Crossing",
+            description: "A weathered stone bridge over a haunted marsh.",
+            tags: ["Outdoor", "Ambient", "Boss"],
+            category: .building,
+            displayState: 0,
+            entries: [
+                MapEntryModel.previewFenPath,
+                MapEntryModel.previewAncientRuins,
+            ],
+            width: 900,
+            height: 600,
+            pinScale: 1.0,
+            scale: 1.0,
+            degrees: 0.0
+        )
+    }
+
     @MainActor
     static var previewFixtures: [MapModel] {
-        [preview, previewEmpty]
+        [preview, previewForest, previewEmpty]
     }
 }
 
@@ -249,7 +272,7 @@ extension MapEntryModel {
     static let previewEntrance = MapEntryModel(
         id: UUID.fixture("A1B2C3D4-E5F6-7890-ABCD-EF1234567890"),
         name: "Entrance",
-        content: "The dungeon entrance. Torches flicker on damp stone walls.",
+        content: "The dungeon entrance. Torches flicker on damp stone walls. [Andrenalin](RPG://VALUES/0/1527140F-0101-46C3-912E-B02FE0FF7696) guards this hall. Play [Storm over Emberkeep](RPG://AUDIOS/0/00000000-0000-0000-0000-000000000021) for atmosphere.",
         coordinates: [
             CGPoint(x: 50, y: 550),
             CGPoint(x: 250, y: 550),
@@ -264,7 +287,7 @@ extension MapEntryModel {
     static let previewGreatHall = MapEntryModel(
         id: UUID.fixture("B2C3D4E5-F6A7-8901-BCDE-F12345678901"),
         name: "Great Hall",
-        content: "A vast pillared hall. Ancient banners hang from the ceiling.",
+        content: "A vast pillared hall. Ancient banners hang from the ceiling. Roll on [Goblin Loot](RPG://TABLES/0/25321D0A-CBAC-4A6C-944C-C8916049FC45) for random encounters. See [Das Geheimnis der Goblinburg](RPG://ADVENTURES/0/5F6D6D52-3DDB-4B20-8D45-DFB543799417) for the plot hook.",
         coordinates: [
             CGPoint(x: 300, y: 200),
             CGPoint(x: 700, y: 200),
@@ -279,7 +302,7 @@ extension MapEntryModel {
     static let previewTreasureRoom = MapEntryModel(
         id: UUID.fixture("C3D4E5F6-A7B8-9012-CDEF-123456789012"),
         name: "Treasure Room",
-        content: "Glittering gold fills every corner. Beware the trap floor.",
+        content: "Glittering gold fills every corner. Beware the trap floor. Roll [Quick Strike](RPG://DICE/0/2201FBB7-0403-4A18-A361-CAD5A76A637D) to detect traps. Loot table: [Goblin Loot](RPG://TABLES/0/25321D0A-CBAC-4A6C-944C-C8916049FC45).",
         coordinates: [
             CGPoint(x: 720, y: 80),
             CGPoint(x: 940, y: 80),
@@ -294,7 +317,7 @@ extension MapEntryModel {
     static let previewCorridor = MapEntryModel(
         id: UUID.fixture("D4E5F6A7-B8C9-0123-DEF0-234567890123"),
         name: "Corridor",
-        content: "A narrow passage. The floor is slippery with moisture.",
+        content: "A narrow passage. The floor is slippery with moisture. [Thrak the Cruel](RPG://VALUES/0/1527140F-0101-46C3-912E-B02FE0FF7696) was spotted fleeing through here.",
         coordinates: [
             CGPoint(x: 250, y: 600),
             CGPoint(x: 300, y: 600),
@@ -303,6 +326,37 @@ extension MapEntryModel {
         ],
         isShown: true
     )
+
+    // Shadowfen Crossing — fen path
+    @MainActor
+    static let previewFenPath = MapEntryModel(
+        id: UUID.fixture("B3C4D5E6-F7A8-9012-B345-6789012ABCDE"),
+        name: "Fen Path",
+        content: "A crumbling path through the marsh. [Mira Swiftblade](RPG://VALUES/0/1527140F-0101-46C3-912E-B02FE0FF7696) scouts ahead. Play [Storm over Emberkeep](RPG://AUDIOS/0/00000000-0000-0000-0000-000000000021) for tension.",
+        coordinates: [
+            CGPoint(x: 50, y: 200),
+            CGPoint(x: 400, y: 200),
+            CGPoint(x: 400, y: 400),
+            CGPoint(x: 50, y: 400),
+        ],
+        isShown: true
+    )
+
+    // Shadowfen Crossing — ancient ruins
+    @MainActor
+    static let previewAncientRuins = MapEntryModel(
+        id: UUID.fixture("C4D5E6F7-A8B9-0123-C456-789012ABCDEF"),
+        name: "Ancient Ruins",
+        content: "Crumbled walls overgrown with vines. Roll [Quick Strike](RPG://DICE/0/2201FBB7-0403-4A18-A361-CAD5A76A637D) to ambush lurking wraiths. See [Asche der Drachen](RPG://ADVENTURES/0/8C94288B-4CDB-4109-B0AD-75B12530ED84) for the region lore.",
+        coordinates: [
+            CGPoint(x: 500, y: 100),
+            CGPoint(x: 850, y: 100),
+            CGPoint(x: 850, y: 350),
+            CGPoint(x: 500, y: 350),
+        ],
+        isShown: false
+    )
+
     func generateModel() -> String {
         """
             EntryViewModel(

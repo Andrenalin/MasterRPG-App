@@ -87,7 +87,27 @@ extension AdventureModel {
                 AdventureEntryModel(
                     id: entryUuid,
                     name: "Ground Floor",
-                    content: "The first room behind the ruined gate."
+                    content: "The first room behind the ruined gate. Study the [Goblinburg Map](RPG://MAPS/0/50DFDB6F-E8B1-41A4-A409-911D888119E8) before entering."
+                ),
+                AdventureEntryModel(
+                    id: entryUuid2,
+                    name: "The Boss Chamber",
+                    content: "[Thrak the Cruel](RPG://VALUES/0/1527140F-0101-46C3-912E-B02FE0FF7696) commands from the throne. Roll [Quick Strike](RPG://DICE/0/2201FBB7-0403-4A18-A361-CAD5A76A637D) to initiate combat."
+                ),
+                AdventureEntryModel(
+                    id: entryUuid3,
+                    name: "Loot & Rewards",
+                    content: "Roll on [Goblin Loot](RPG://TABLES/0/25321D0A-CBAC-4A6C-944C-C8916049FC45) for treasure after the fight."
+                ),
+                AdventureEntryModel(
+                    id: entryUuid4,
+                    name: "Atmosphere",
+                    content: "Dim torchlight and growls fill the halls. Play [Storm over Emberkeep](RPG://AUDIOS/0/00000000-0000-0000-0000-000000000021) to set the mood."
+                ),
+                AdventureEntryModel(
+                    id: entryUuid5,
+                    name: "Sequel Hook",
+                    content: "Survivors claim the overlord fled to [Asche der Drachen](RPG://ADVENTURES/0/\(uuid2.uuidString)) for refuge."
                 )
             ]
         )
@@ -143,7 +163,11 @@ extension LinkController {
 }
 
 extension AdventureModel {
-    static let entryUuid = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x11))
+    static let entryUuid  = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x11))
+    static let entryUuid2 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x14))
+    static let entryUuid3 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x15))
+    static let entryUuid4 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x16))
+    static let entryUuid5 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x17))
     static let testViewModel = AdventureModel(
         id: previewId,
         name: "Das Geheimnis der Goblinburg",

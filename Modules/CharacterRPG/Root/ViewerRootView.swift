@@ -35,7 +35,10 @@ struct ViewerRootView: View {
     }
 }
 
-#Preview {
-    ViewerRootView(model: .preview, configuration: ViewerConfiguration(), dismissAction: nil)
-        .environment(CharacterRootModel.previewWithData)
+#Preview("Andrenalin", traits: .mockData) {
+    ViewerRootView(model: .preview, configuration: .init(), dismissAction: nil)
+}
+
+#Preview("Mira", traits: .mockData) {
+    ViewerRootView(model: .previewAllEntryTypes, configuration: .init(), dismissAction: nil)
 }

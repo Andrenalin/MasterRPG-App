@@ -126,7 +126,15 @@ extension ValueModel {
     nonisolated static let previewEmptyId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x33))
 
     @MainActor
-    static let preview = ValueModel(id: previewId, name: "Andrenalin", description: "GameMaster forever", tags: ["Master", "Guide", "Coder"], category: .gameMaster, displayState: 0, photoId: PhotoRootModel.previewPhotoId, photos: [], entries: [.testEntryText, .testEntryNumber])
+    static let preview = ValueModel(
+        id: previewId,
+        name: "Andrenalin",
+        description: "GameMaster forever",
+        tags: ["Master", "Guide", "Coder"],
+        category: .gameMaster,
+        photoId: PhotoRootModel.previewPhotoId,
+        entries: [.testEntryText, .testEntryHP, .testEntryArmor, .testEntrySTR, .testEntryDecimal, .testEntrySelection, .testEntryBackground, .testEntryQuest]
+    )
 
     @MainActor
     static let previewAllEntryTypes = ValueModel(
@@ -134,7 +142,7 @@ extension ValueModel {
         name: "Mira the Cartographer",
         description: "Fixture containing every value-entry presentation.",
         tags: ["Player", "Explorer"],
-        entries: [.testEntryText, .testEntryNumber, .testEntryDecimal, .testEntrySelection]
+        entries: [.testEntryText, .testEntryNumber, .testEntryMiraHP, .testEntryDecimal, .testEntrySelection, .testEntryMapNote]
     )
 
     @MainActor
@@ -150,14 +158,14 @@ extension ValueModel {
                 tags: ["Master", "Guide", "Coder"],
                 category: .gameMaster,
                 photoId: PhotoRootModel.previewPhotoId,
-                entries: [.testEntryText, .testEntryNumber]
+                entries: [.testEntryText, .testEntryHP, .testEntryArmor, .testEntrySTR, .testEntryDecimal, .testEntrySelection, .testEntryBackground, .testEntryQuest]
             ),
             ValueModel(
                 id: previewAllEntryTypesId,
                 name: "Mira the Cartographer",
                 description: "Fixture containing every value-entry presentation.",
                 tags: ["Player", "Explorer"],
-                entries: [.testEntryText, .testEntryNumber, .testEntryDecimal, .testEntrySelection]
+                entries: [.testEntryText, .testEntryNumber, .testEntryMiraHP, .testEntryDecimal, .testEntrySelection, .testEntryMapNote]
             ),
             ValueModel(id: previewEmptyId, name: "Empty Character")
         ]
@@ -195,6 +203,71 @@ extension ValueEntryModel {
             name: "Inspired",
             type: .selection,
             value: "I"
+        )
+    }
+
+    static var testEntryHP: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x37)),
+            name: "HP",
+            type: .number,
+            value: "0|42",
+            diceId: UUID(uuid: (0x22, 0x01, 0xFB, 0xB7, 0x04, 0x03, 0x4A, 0x18, 0xA3, 0x61, 0xCA, 0xD5, 0xA7, 0x6A, 0x63, 0x7D))
+        )
+    }
+
+    static var testEntryArmor: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x38)),
+            name: "AC",
+            type: .number,
+            value: "0|16"
+        )
+    }
+
+    static var testEntrySTR: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x39)),
+            name: "STR",
+            type: .number,
+            value: "0|18"
+        )
+    }
+
+    static var testEntryBackground: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3A)),
+            name: "Background",
+            type: .text,
+            value: "Trained at the guild. Roll on [Goblin Loot](RPG://TABLES/0/25321D0A-CBAC-4A6C-944C-C8916049FC45) during downtime."
+        )
+    }
+
+    static var testEntryQuest: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3B)),
+            name: "Active Quest",
+            type: .text,
+            value: "[Das Geheimnis der Goblinburg](RPG://ADVENTURES/0/5F6D6D52-3DDB-4B20-8D45-DFB543799417)"
+        )
+    }
+
+    static var testEntryMiraHP: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3C)),
+            name: "HP",
+            type: .number,
+            value: "0|28",
+            diceId: UUID(uuid: (0x22, 0x01, 0xFB, 0xB7, 0x04, 0x03, 0x4A, 0x18, 0xA3, 0x61, 0xCA, 0xD5, 0xA7, 0x6A, 0x63, 0x7D))
+        )
+    }
+
+    static var testEntryMapNote: ValueEntryModel {
+        ValueEntryModel(
+            id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3D)),
+            name: "Explored Regions",
+            type: .text,
+            value: "Charted [Goblinburg Map](RPG://MAPS/0/50DFDB6F-E8B1-41A4-A409-911D888119E8) and three dungeon wings."
         )
     }
 }

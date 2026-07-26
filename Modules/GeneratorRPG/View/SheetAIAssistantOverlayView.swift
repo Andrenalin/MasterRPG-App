@@ -42,22 +42,20 @@ public struct SheetAIAssistantOverlayView: View {
 
     public var body: some View {
         Group {
-            if SheetAIGenerationController.isAvailable {
-                if presentation == .tabAccessory {
-                    SheetAIAssistantMiniComposer(
-                        module: module,
-                        messageText: $messageText,
-                        availability: availability,
-                        isActive: rootModel.isAIModeActive,
-                        isGenerating: rootModel.pendingGenerationRequest != nil,
-                        isTextFieldFocused: $isTextFieldFocused,
-                        submitAction: submitPrompt,
-                        activateAction: activateAIMode,
-                        closeAction: closeAIMode
-                    )
-                } else {
-                    standardAssistant
-                }
+            if presentation == .tabAccessory {
+                SheetAIAssistantMiniComposer(
+                    module: module,
+                    messageText: $messageText,
+                    availability: availability,
+                    isActive: rootModel.isAIModeActive,
+                    isGenerating: rootModel.pendingGenerationRequest != nil,
+                    isTextFieldFocused: $isTextFieldFocused,
+                    submitAction: submitPrompt,
+                    activateAction: activateAIMode,
+                    closeAction: closeAIMode
+                )
+            } else {
+                standardAssistant
             }
         }
         .alert(
@@ -215,6 +213,12 @@ public struct SheetAIAssistantOverlayView: View {
 }
 
 #Preview("Sheet AI Assistant") {
-    SheetAIAssistantOverlayView(module: .adventure, itemId: UUID(), rootModel: .fake)
+    @Previewable @Environment(\.appTheme) var theme
+    Rectangle().fill(theme.backgroundGradient)
+        .overlay {
+            SheetAIAssistantOverlayView(module: .adventure, itemId: UUID(), rootModel: .fake)
+                .padding()
+            
+        }
 }
 #endif

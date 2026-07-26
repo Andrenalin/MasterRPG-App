@@ -16,9 +16,14 @@ struct ViewerRootView: View {
     }
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Environment(TableRootModel.self) var root
+#Preview("Goblin Loot", traits: .mockData) {
     ManagedNavigationStack {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), configuration: ViewerConfiguration(), dismissAction: nil)
+        ViewerRootView(model: .preview, configuration: .init(), dismissAction: nil)
+    }
+}
+
+#Preview("Roadside Encounters", traits: .mockData) {
+    ManagedNavigationStack {
+        ViewerRootView(model: .previewShortList, configuration: .init(), dismissAction: nil)
     }
 }

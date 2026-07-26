@@ -16,10 +16,16 @@ struct ViewerRootView: View {
     }
 }
 
-#Preview(traits: .mockData) {
-    @Previewable @Environment(MapRootModel.self) var root
+#Preview("Mega Dungeon", traits: .mockData) {
     ManagedNavigationStack {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? MapModel.previewId), configuration: ViewerConfiguration())
+        ViewerRootView(model: .preview, configuration: .init())
+            .preferredColorScheme(.dark)
+    }
+}
+
+#Preview("Shadowfen Crossing", traits: .mockData) {
+    ManagedNavigationStack {
+        ViewerRootView(model: .previewForest, configuration: .init())
             .preferredColorScheme(.dark)
     }
 }
