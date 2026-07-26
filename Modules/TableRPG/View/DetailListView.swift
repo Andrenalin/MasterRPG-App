@@ -25,11 +25,6 @@ struct DetailListView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
-            .sheetAIAssistant(
-                module: root.configurable.module,
-                itemId: model.id,
-                rootModel: root.editController.editorModel.sheetRootModel
-            )
             .toolbar {
                 toolbarContent
             }
@@ -45,6 +40,11 @@ struct DetailListView: View {
             .task(id: model.id) {
                 await root.donateSiriViewingIntent(for: model.id)
             }
+            .sheetAIAssistant(
+                module: root.configurable.module,
+                itemId: model.id,
+                rootModel: root.editController.editorModel.sheetRootModel
+            )
 #endif
     }
 
