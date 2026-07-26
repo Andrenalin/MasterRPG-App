@@ -16,12 +16,8 @@ struct ViewerRootView: View {
             itemId: model.id,
             module: .rule,
             configuration: configuration,
-            dismissAction: dismissAction,
-            isEditor: false,
-            linkTypes: LinkRuleData.self
-        ) { _ in
-            EmptyView()
-        }
+            dismissAction: dismissAction
+        )
         .safeAreaInset(edge: .top) {
             if !model.sourceMetadata.isEmpty {
                 RuleSourceDisclosureView(metadata: model.sourceMetadata)

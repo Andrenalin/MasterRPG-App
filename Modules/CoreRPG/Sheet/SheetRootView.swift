@@ -70,18 +70,16 @@ public struct SheetRootView<
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        VStack(alignment: .leading, spacing: 4) {
-            SheetView(
-                root: root,
-                rootModel: rootModel,
-                sheetModel: rootModel.sheetModel,
-                isEditor: isEditor,
-                linkTypes: linkTypes,
-                generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                detailAction: detailAction,
-                detailContent: detailContent
-            )
-        }
+        SheetView(
+            root: root,
+            rootModel: rootModel,
+            sheetModel: rootModel.sheetModel,
+            isEditor: isEditor,
+            linkTypes: linkTypes,
+            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
+            detailAction: detailAction,
+            detailContent: detailContent
+        )
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)
         .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
@@ -117,4 +115,5 @@ public struct SheetRootView<
 #Preview {
     let fixture = FakeItemRootControllerFixture()
     SheetRootView(root: fixture.root, rootModel: fixture.sheetRootModel, linkTypes: EmptyLinkTransferable.self)
+        .environment(AppGameStateModel())
 }

@@ -567,10 +567,11 @@ private extension SheetEntryView {
     SheetEntryView(
         rootModel: .fake,
         parentModel: .empty,
-        entryModel: .empty,
-        isEditor: true,
+        entryModel: SheetRootModel.fake.sheetModel,
+        isEditor: false,
         linkTypes: EmptyLinkTransferable.self,
         generatedAcceptanceNamespace: namespace,
         detailContent: { _ in EmptyView() }
     )
+    .environment(AppGameStateModel())
 }

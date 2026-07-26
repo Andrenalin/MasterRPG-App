@@ -140,5 +140,8 @@ private extension TableRootSheet {
 }
 
 #Preview {
-    TableRootSheet(root: ItemRootController.fake, itemId: UUID(), module: .none, configuration: .init())
+    TableRootSheet(root: ItemRootController.fake, itemId: SheetRootModel.fake.sheetModel.id, module: .none, configuration: .init())
+        .environment(AppWindowSizeModel())
+        .environment(AppGameStateModel())
+        .environment(ScenesManager())
 }

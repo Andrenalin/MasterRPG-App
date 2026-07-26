@@ -195,19 +195,48 @@ private extension SheetView {
                     shareResults: shareResult
                 )
             )
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .font(.subheadline)
         }
     }
     
     @ViewBuilder var entryRows: some View {
-        entryRows(for: regularEntries(in: sheetModel.entries))
-
-        detailContent(sheetModel)
-
-        entryRows(for: generatedEntries(in: sheetModel.entries))
-
-        generatedPreviewRows(rootModel.trailingGeneratedEntries(in: sheetModel))
+        ForEach(sheetModel.entries) { entry in
+            if !entry.isHidden {
+                row(entry: entry)
+            }
+        }
+//        entryRows(for: regularEntries(in: sheetModel.entries))
+//
+//        detailContent(sheetModel)
+//
+//        entryRows(for: generatedEntries(in: sheetModel.entries))
+//
+//        generatedPreviewRows(rootModel.trailingGeneratedEntries(in: sheetModel))
+    }
+    
+    @ViewBuilder func row(entry: SheetModel) -> some View {
+        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace, detailAction: detailAction, detailContent: detailContent)
+            .frame(maxWidth: .infinity, alignment: .leading)
+#if !os(tvOS)
+            .applyIf(isEditor) {
+                $0
+                    .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
+                    .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
+                    .dropDestination(for: linkTypes) { items, location in
+                        handleDrop(items: items, targetEntry: entry)
+                    } isTargeted: { isTargeted in
+                        dropTargetEntryId = isTargeted ? entry.id : nil
+                    }
+            }
+#endif
+        
+        ForEach(entry.entries) { subEntry in
+            if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
+                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace, detailAction: detailAction, detailContent: detailContent)
+                    .padding(.leading, 2)
+            }
+        }
     }
 
     @ViewBuilder func entryRows(for entries: [SheetModel]) -> some View {
@@ -347,13 +376,17 @@ private extension SheetModel {
 #Preview("Sheet View Direct") {
     @Previewable @Namespace var namespace
     let fixture = FakeItemRootControllerFixture()
-    SheetView(
-        root: fixture.root,
-        rootModel: fixture.sheetRootModel,
-        sheetModel: .empty,
-        isEditor: true,
-        linkTypes: EmptyLinkTransferable.self,
-        generatedAcceptanceNamespace: namespace,
-        detailContent: { _ in EmptyView() }
-    )
+    ScrollView {
+        SheetView(
+            root: fixture.root,
+            rootModel: fixture.sheetRootModel,
+            sheetModel: fixture.sheetRootModel.sheetModel,
+            isEditor: true,
+            linkTypes: EmptyLinkTransferable.self,
+            generatedAcceptanceNamespace: namespace,
+            detailContent: { _ in EmptyView() }
+        )
+        .padding()
+    }
+    .environment(AppGameStateModel())
 }
