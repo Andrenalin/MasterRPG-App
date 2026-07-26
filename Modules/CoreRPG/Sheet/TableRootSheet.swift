@@ -2,36 +2,8 @@
 
 import SwiftUI
 
-public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: View>: View {
-    public init(
-        root: ItemRootController,
-        itemId: UUID,
-        module: NetworkModules,
-        configuration: ViewerConfiguration,
-        dismissAction: (() -> Void)? = nil
-    ) where LinkType == LinkDiceData, BottomAccessory == EmptyView {
-        self.init(
-            root: root,
-            itemId: itemId,
-            module: module,
-            configuration: configuration,
-            dismissAction: dismissAction,
-            isEditor: false,
-            linkTypes: LinkDiceData.self,
-            bottomAccessory: { _ in EmptyView() }
-        )
-    }
-
-    public init(
-        root: ItemRootController,
-        itemId: UUID,
-        module: NetworkModules,
-        configuration: ViewerConfiguration,
-        dismissAction: (() -> Void)? = nil,
-        isEditor: Bool,
-        linkTypes: LinkType.Type,
-        @ViewBuilder bottomAccessory: @escaping (SheetRootModel) -> BottomAccessory
-    ) {
+public struct TableRootSheet: View {
+    public init(root: ItemRootController, itemId: UUID, module: NetworkModules, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) {
         guard let rootManager = root.rootManager else {
             preconditionFailure("TableRootSheet requires ItemRootController.rootManager to be set before presentation.")
         }
@@ -39,16 +11,13 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         self.root = root
         self.configuration = configuration
         self.dismissAction = dismissAction
-        self.isEditor = isEditor
-        self.linkTypes = linkTypes
-        self.bottomAccessory = bottomAccessory
         self._sheetRootModel = State(
             wrappedValue: SheetRootModel(
                 rootManager: rootManager,
                 linkControllable: root.linkControllable,
                 sheetControllable: root.sheetControllable,
                 itemId: itemId,
-                isEditor: isEditor
+                isEditor: false
             )
         )
     }
@@ -56,16 +25,13 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
     let root: ItemRootController
     let configuration: ViewerConfiguration
     let dismissAction: (() -> Void)?
-    let isEditor: Bool
-    let linkTypes: LinkType.Type
-    let bottomAccessory: (SheetRootModel) -> BottomAccessory
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
     @Environment(\.dismiss) var dismiss
 
-    @State private var sheetRootModel: SheetRootModel
+    @State private var sheetRootModel: SheetRootModel    
     @State private var generationSelection: WindowItemSelection?
     
     public var body: some View {
@@ -73,13 +39,7 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
         
         @Bindable var sheetRootModel = sheetRootModel
 
-        TableSheetView(
-            root: root,
-            model: sheetRootModel,
-            addSearchable: valueFor(iOS: true, macOS: false, tvOS: true, visionOS: true),
-            isEditor: isEditor,
-            linkTypes: linkTypes
-        )
+        TableSheetView(root: root, model: sheetRootModel, addSearchable: valueFor(iOS: true, macOS: true, tvOS: true, visionOS: true))
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #endif
@@ -87,20 +47,15 @@ public struct TableRootSheet<LinkType: LinkDataTransferable, BottomAccessory: Vi
 #if os(visionOS)
             .glassBackgroundEffect()
 #endif
-            .overlay(alignment: .topTrailing) {
-                if configuration.isGame && valueFor(iOS: false, macOS: true, tvOS: false, visionOS: false) {
-                    InlineSheetSearchControl(
-                        module: root.configurable.module,
-                        searchText: $sheetRootModel.searchText
-                    )
-                    .padding()
-                }
-            }
-            .overlay(alignment: .bottomTrailing) {
-                bottomAccessory(sheetRootModel)
-                    .padding(.horizontal)
-                    .padding(.bottom)
-            }
+//            .overlay(alignment: .topTrailing) {
+//                if configuration.isGame && valueFor(iOS: false, macOS: true, tvOS: false, visionOS: false) {
+//                    InlineSheetSearchControl(
+//                        module: root.configurable.module,
+//                        searchText: $sheetRootModel.searchText
+//                    )
+//                    .padding()
+//                }
+//            }
             .toolbar {
                 toolbarContent
             }

@@ -335,14 +335,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GeneratorRPG::SheetAIAssistantComponentPreview
-    @Test("SheetAIAssistantComponentPreview")
-    func snapshotSheetAIAssistantComponentPreview() async throws {
-        try await assertPreviewSnapshot("SheetAIAssistantComponentPreview") {
-            GeneratorRPG.SheetAIAssistantComponentPreview()
-        }
-    }
-
     // snapshot-root: GeneratorRPG::SheetAIAssistantOverlayView
     @Test("SheetAIAssistantOverlayView")
     func snapshotSheetAIAssistantOverlayView() async throws {

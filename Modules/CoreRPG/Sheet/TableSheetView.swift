@@ -2,29 +2,13 @@
 
 import SwiftUI
 
-struct TableSheetView<LinkType: LinkDataTransferable>: View {
-    init(
-        root: ItemRootController,
-        model: SheetRootModel,
-        addSearchable: Bool = true,
-        isEditor: Bool,
-        linkTypes: LinkType.Type
-    ) {
-        self.root = root
-        self.model = model
-        self.addSearchable = addSearchable
-        self.isEditor = isEditor
-        self.linkTypes = linkTypes
-    }
-
-    @Environment(\.appTheme) private var theme
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-
+struct TableSheetView: View {
     let root: ItemRootController
     let model: SheetRootModel
     var addSearchable: Bool = true
-    let isEditor: Bool
-    let linkTypes: LinkType.Type
+
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
 
@@ -35,7 +19,7 @@ struct TableSheetView<LinkType: LinkDataTransferable>: View {
 
         listContentView
             .applyIf(addSearchable) {
-                $0.searchable(text: $model.searchText, placement: .toolbarPrincipalAll, prompt: Text("Find in", bundle: .module))
+                $0.searchable(text: $model.searchText, placement: .automatic, prompt: Text("Find in", bundle: .module))
             }
     }
 }
@@ -44,12 +28,7 @@ private extension TableSheetView {
     var listContentView: some View {
         ScrollView {
             LazyVStack(spacing: 4) {
-                SheetRootView(
-                    root: root,
-                    rootModel: model,
-                    isEditor: isEditor,
-                    linkTypes: linkTypes
-                )
+                SheetRootView(root: root, rootModel: model)
                     .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
             .scrollTargetLayout()
@@ -73,12 +52,8 @@ private extension TableSheetView {
 }
 
 #Preview {
-    TableSheetView(
-        root: ItemRootController.fake,
-        model: .fake,
-        isEditor: false,
-        linkTypes: LinkDiceData.self
-    )
+    TableSheetView(root: ItemRootController.fake,
+        model: .fake)
     .environment(AppWindowSizeModel())
     .environment(AppGameStateModel())
     .environment(ScenesManager())

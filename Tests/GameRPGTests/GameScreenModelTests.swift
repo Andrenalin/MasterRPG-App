@@ -130,15 +130,5 @@ struct GameScreenModelTests {
         #expect(GameMapContentType.player.supportsInlineThreeDTable)
         #expect(!GameMapContentType.externalPlayer.supportsInlineThreeDTable)
     }
-
-    @Test("Inline sheet search is explicitly configured by the viewer")
-    func inlineSheetSearchConfiguration() {
-        let standard = ViewerConfiguration()
-        let inline = ViewerConfiguration(addToolbar: false, inlineSearch: true)
-
-        #expect(!standard.inlineSearch)
-        #expect(inline.inlineSearch)
-        #expect(!inline.addToolbar)
-    }
 }
 #endif

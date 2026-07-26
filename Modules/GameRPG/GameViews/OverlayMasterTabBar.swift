@@ -20,6 +20,9 @@ struct OverlayMasterTabBar: View {
             BattleRoundSideOverlay(root: root)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+#if !os(macOS)
+        .ignoresSafeArea()
+#endif
     }
 }
 

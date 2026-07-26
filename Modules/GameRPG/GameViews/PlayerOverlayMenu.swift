@@ -23,7 +23,9 @@ struct PlayerOverlayMenu: View {
 #if os(macOS)
             if gameScreenModel.isSideMenuVisible {
                 PlayerSideMenu(root: root)
+                    .offset(x: gameScreenModel.isInlineSidebarVisible ? -gameScreenModel.inlineMainOverlayWidth : 0)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
+                    .animation(.default, value: gameScreenModel.inlineMainOverlayWidth)
             }
 #else
             EmptyView()

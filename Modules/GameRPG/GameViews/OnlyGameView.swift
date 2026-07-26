@@ -14,12 +14,13 @@ struct OnlyGameView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-
-        root.adventureRoot.viewController.gameView(
-            root: root.adventureRoot,
-            focusedIds: [adventureId]
-        )
-        .gameOverlayTabBarView(value: NetworkModules.game)
+        NavigationStack {
+            root.adventureRoot.viewController.gameView(
+                root: root.adventureRoot,
+                focusedIds: [adventureId]
+            )
+        }
+        //.gameOverlayTabBarView(value: NetworkModules.game)
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
         .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)

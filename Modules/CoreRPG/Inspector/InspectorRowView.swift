@@ -12,10 +12,9 @@ struct InspectorRowView: View {
     @Binding var showDetails: Bool
     @Binding var showDetailsView: (any NavigationDestination)?
 
-#if os(macOS)
     @Environment(ScenesManager.self) private var scenesManager
-#endif
-
+    @Environment(\.itemGenerationAction) private var itemGenerationAction
+    
     var body: some View {
         let model = item.model
 
@@ -167,6 +166,10 @@ struct InspectorRowView: View {
         } label: {
             Label { Text("Open Details", bundle: .module) } icon: { Image(systemName: "arrow.up.right.square") }
         }
+        
+        if canGenerate(model: model) {
+            generateItemView(model: model)
+        }
 
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: root.folderLinkControllable.listDisplayModel)
@@ -204,6 +207,24 @@ struct InspectorRowView: View {
             }
         }
     }
+    
+    func canGenerate(model: (any ItemDataAccessable)?) -> Bool {
+        guard itemGenerationAction.isEnabled, let model else { return false }
+        return root.configurable.module == .table && !model.specialCategory
+    }
+
+    func generateItemView(model: (any ItemDataAccessable)?) -> some View {
+        Button {
+            guard let model else { return }
+            itemGenerationAction(model.id)
+        } label: {
+            Label {
+                Text("Generate from \(model?.name ?? "")", bundle: .module)
+            } icon: {
+                Image(systemName: "gears")
+            }
+        }
+    }
 }
 
 #Preview {
@@ -232,4 +253,6 @@ struct InspectorRowView: View {
         showDetails: .constant(false),
         showDetailsView: .constant(nil)
     )
+    .environment(ScenesManager())
+    .environment(AppGameStateModel())
 }

@@ -27,7 +27,8 @@ public struct LinkItemListView: View {
     @State private var scrollPosition: UUID?
     @State private var showDetails: Bool = false
     @State private var showDetailsView: (any NavigationDestination)? = nil
-
+    @State private var generationSelection: WindowItemSelection?
+    
     private static let filterPrompt = Text("Filter", bundle: .module)
 
     public var body: some View {
@@ -121,17 +122,12 @@ public struct LinkItemListView: View {
                 guard let showDetailsView else { return }
                 navigator.navigate(to: showDetailsView, method: .push)
             }
+            .itemGenerationPresentation(
+                root: root,
+                selection: $generationSelection
+            )
         }
     }
-}
-
-#Preview {
-    LinkItemListView(
-        root: ItemRootController.fake,
-        type: .inspector,
-        selectionModel: ItemSelectionModel(),
-        parentModel: nil
-    )
 }
 
 // MARK: - Private helpers
@@ -199,4 +195,13 @@ private extension LinkItemListView {
             listModel.scrollId = newValue
         }
     }
+}
+
+#Preview {
+    LinkItemListView(
+        root: ItemRootController.fake,
+        type: .inspector,
+        selectionModel: ItemSelectionModel(),
+        parentModel: nil
+    )
 }

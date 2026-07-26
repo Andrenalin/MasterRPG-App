@@ -92,7 +92,7 @@ private extension ListRootContextMenu {
             Label {
                 Text("Generate from \(title)", bundle: .module)
             } icon: {
-                Image(systemName: "wand.and.stars")
+                Image(systemName: "gears")
             }
         }
     }

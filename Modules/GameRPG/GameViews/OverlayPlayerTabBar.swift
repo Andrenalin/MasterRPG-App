@@ -22,7 +22,9 @@ struct OverlayPlayerTabBar: View {
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+#if !os(macOS)
         .ignoresSafeArea()
+#endif
     }
 }
 

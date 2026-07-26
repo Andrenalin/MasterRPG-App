@@ -55,5 +55,10 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
 
 #Preview {
     let fixture = FakeItemRootControllerFixture()
-    SheetRootEditorView(root: fixture.root, sheetRootModel: fixture.sheetRootModel, headerTitle: "Entries", linkTypes: EmptyLinkTransferable.self)
+    ScrollView {
+        LazyVStack(spacing: 4) {
+            SheetRootEditorView(root: fixture.root, sheetRootModel: fixture.sheetRootModel, headerTitle: "Entries", linkTypes: EmptyLinkTransferable.self)
+                .environment(AppGameStateModel())
+        }
+    }
 }

@@ -17,10 +17,6 @@ struct GameToolbarContent: ToolbarContent {
     let playerController: PlayerController?
 
     var body: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            GameQuitToolbarButton()
-        }
-
         if role == .master || root.gameModel.gameType != .observer {
             ToolbarSpacer(.fixed, placement: .navigation)
 
@@ -36,6 +32,11 @@ struct GameToolbarContent: ToolbarContent {
                 GameElapsedTimerText(startDate: root.gameModel.startGameTime)
             }
         }
+        
+        ToolbarItem(placement: .navigation) {
+            GameQuitToolbarButton()
+        }
+
 
         ToolbarItemGroup(placement: .principal) {
             root.audioRoot.viewController.toolbarVolumeButton(root: root.audioRoot)

@@ -466,24 +466,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::SettingsView
-    @Test("SettingsView")
-    func snapshotSettingsView() async throws {
-        try await assertPreviewSnapshot("SettingsView") {
-            CoreRPG.SettingsView(
-                store: SettingsPreviewStore(),
-                exportController: FakeExportController.fake,
-                importController: FakeImportController.fake
-            ) {
-                Section {
-                    Text(verbatim: "Import data from a file")
-                } header: {
-                    Text(verbatim: "Import")
-                }
-            }
-        }
-    }
-
     // snapshot-root: CoreRPG::SingleItemReviewChoicesView
     @Test("SingleItemReviewChoicesView")
     func snapshotSingleItemReviewChoicesView() async throws {
@@ -672,9 +654,11 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("StorageOptionEditor")
     func snapshotStorageOptionEditor() async throws {
         try await assertPreviewSnapshot("StorageOptionEditor") {
-            CoreRPG.StorageOptionEditor()
-                .environment(AppSettingsModel.previewFixture())
-                .cloudKitAccountChecksEnabled(false)
+            CoreRPG.StorageOptionEditor {
+                Text("Sync is working")
+            }
+            .environment(AppSettingsModel.previewFixture())
+            .cloudKitAccountChecksEnabled(false)
         }
     }
 
@@ -1830,9 +1814,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("TableSheetView") {
             CoreRPG.TableSheetView(
                 root: ItemRootController.fake,
-                model: .fake,
-                isEditor: false,
-                linkTypes: LinkDiceData.self
+                model: .fake
             )
         }
     }

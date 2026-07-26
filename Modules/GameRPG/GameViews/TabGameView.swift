@@ -14,11 +14,12 @@ struct TabGameView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        root.adventureRoot.viewController.gameView(
-            root: root.adventureRoot,
-            focusedIds: [adventureId]
-        )
-        .gameOverlayTabBarView(value: NetworkModules.game)
+        NavigationStack {
+            root.adventureRoot.viewController.gameView(
+                root: root.adventureRoot,
+                focusedIds: [adventureId]
+            )
+        }
         .frame(
             maxWidth: gameScreenModel.sideBarWidth,
             maxHeight: .infinity,

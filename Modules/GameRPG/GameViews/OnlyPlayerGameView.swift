@@ -13,11 +13,13 @@ struct OnlyPlayerGameView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         if root.gameModel.gameType != .observer {
-            root.characterRoot.viewController.gameView(
-                root: root.characterRoot,
-                select: root.gameModel.selectedCharacter
-            )
-            .gameOverlayTabBarView(value: NetworkModules.game)
+            NavigationStack {
+                root.characterRoot.viewController.gameView(
+                    root: root.characterRoot,
+                    select: root.gameModel.selectedCharacter
+                )
+            }
+            //.gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
             .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)

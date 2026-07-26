@@ -167,4 +167,5 @@ private extension PlayerGameScreen {
         root: root,
         playerController: PlayerController(root: root, asGameMaster: false)
     )
+    .setAppSizeMode()
 }
