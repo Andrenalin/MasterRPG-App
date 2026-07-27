@@ -6,6 +6,7 @@ import PhotoRPG
 import SwiftUI
 
 struct BattleParticipantColumn: View {
+    let model: BattleModel
     let presentation: BattleRoundParticipantPresentation
     let isAttacker: Bool
     let isActive: Bool
@@ -197,7 +198,15 @@ struct BattleParticipantColumn: View {
     }
 
     private func openCharacter() {
-        showCharacter(combatant)
+        if let sheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
+            if model.sheet?.id != sheet.id {
+                model.sheet = sheet
+            } else {
+                model.sheet = nil
+            }
+        } else {
+            showCharacter(combatant)
+        }
     }
 
     private func selectRollRecipient() {
@@ -218,6 +227,7 @@ struct BattleParticipantColumn: View {
 
     if let participant = model.cardPresentations.first?.defenders.first {
         BattleParticipantColumn(
+            model: BattleModel(),
             presentation: participant,
             isAttacker: false,
             isActive: true,

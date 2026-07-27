@@ -3,7 +3,6 @@
 import CharacterRPG
 import CoreRPG
 import SwiftUI
-import CharacterRPG
 
 public struct BattleRoundView: View {
     public init(model: BattleRoundModel, actions: BattleRoundActions) {
@@ -32,7 +31,7 @@ public struct BattleRoundView: View {
     )
 
     public var body: some View {
-        NavigationStack {
+        ManagedNavigationStack(name: "BattleRound") {
             VStack(spacing: 0) {
                 BattleRoundHeader(
                     isRunning: model.isRunning,
@@ -53,19 +52,23 @@ public struct BattleRoundView: View {
                         refresh: refreshConfiguredValues
                     )
                 }
-
-                if model.isRunning, !model.entries.isEmpty {
-                    BattleRoundList(
-                        cards: model.cardPresentations,
-                        actions: actions,
-                        showCharacter: showCharacterSheet,
-                        selectHitPoints: selectHitPoints
-                    )
-                } else {
-                    BattleRoundEmptyState(
-                        isRunning: model.isRunning,
-                        start: actions.start
-                    )
+                
+                ScrollView {
+                    LazyVStack {
+                        if model.isRunning, !model.entries.isEmpty {
+                            BattleRoundList(
+                                cards: model.cardPresentations,
+                                actions: actions,
+                                showCharacter: showCharacterSheet,
+                                selectHitPoints: selectHitPoints
+                            )
+                        } else {
+                            BattleRoundEmptyState(
+                                isRunning: model.isRunning,
+                                start: actions.start
+                            )
+                        }
+                    }
                 }
             }
             .navigationTitle(Text("Battle Round", bundle: .module))
@@ -242,10 +245,4 @@ private enum PendingValueSelection {
 #Preview("Battle Round", traits: .mockData) {
     let model = BattleRoundPreviewData.model()
     BattleRoundView(model: model, actions: .preview(model: model))
-}
-
-#Preview("Battle Round Compact", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
-    BattleRoundView(model: model, actions: .preview(model: model))
-        .frame(width: 390, height: 700)
 }

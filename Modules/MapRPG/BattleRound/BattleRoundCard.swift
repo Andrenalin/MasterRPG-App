@@ -1,6 +1,15 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
+
+@MainActor @Observable
+final class BattleModel {
+    init() {
+    }
+    
+    var sheet: BattleCharacterSheetPresentation?
+}
 
 struct BattleRoundCard: View {
     let presentation: BattleRoundCardPresentation
@@ -9,10 +18,12 @@ struct BattleRoundCard: View {
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-
+    @State private var model: BattleModel = .init()
+    
     var body: some View {
         ViewThatFits(in: .horizontal) {
             BattleRoundWideCardLayout(
+                model: model,
                 presentation: presentation,
                 actions: actions,
                 showCharacter: showCharacter,
@@ -20,6 +31,7 @@ struct BattleRoundCard: View {
             )
 
             BattleRoundCompactCardLayout(
+                model: model,
                 presentation: presentation,
                 actions: actions,
                 showCharacter: showCharacter,
@@ -54,6 +66,10 @@ struct BattleRoundCard: View {
             value: presentation.isActive
         )
         .accessibilityElement(children: .contain)
+        
+        if let sheet = model.sheet {
+            SheetRootView(root: sheet.root, rootModel: sheet.sheet)
+        }
     }
 }
 
@@ -67,22 +83,7 @@ struct BattleRoundCard: View {
             showCharacter: { _ in },
             selectHitPoints: { _ in }
         )
-        .frame(maxWidth: 720)
-        .padding()
-    }
-}
-
-#Preview("Compact battle card", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
-
-    if let card = model.cardPresentations.first {
-        BattleRoundCard(
-            presentation: card,
-            actions: .preview(model: model),
-            showCharacter: { _ in },
-            selectHitPoints: { _ in }
-        )
-        .frame(width: 360)
+        //.frame(maxWidth: 720)
         .padding()
     }
 }

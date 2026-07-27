@@ -11,32 +11,26 @@ struct BattleRoundHeaderActions: View {
             if isRunning {
                 Button(
                     String(localized: "Next Turn", bundle: .module),
-                    systemImage: "person.line.dotted.person.fill",
+                    systemImage: "forward.fill",
                     action: actions.nextAttacker
                 )
                 .buttonStyle(.bordered)
 
                 Button(
                     String(localized: "Next Round", bundle: .module),
-                    systemImage: "chevron.right.2",
+                    systemImage: "arrow.uturn.backward",
                     action: actions.nextRound
                 )
                 .buttonStyle(.borderedProminent)
 
-                Menu {
-                    Button(
-                        String(localized: "End Battle", bundle: .module),
-                        systemImage: "stop.fill",
-                        role: .destructive,
-                        action: actions.end
-                    )
-                } label: {
-                    Label(
-                        String(localized: "More Battle Actions", bundle: .module),
-                        systemImage: "ellipsis.circle"
-                    )
-                        .labelStyle(.iconOnly)
-                }
+                Spacer(minLength: 4)
+                
+                Button(
+                    String(localized: "End", bundle: .module),
+                    systemImage: "stop.fill",
+                    role: .destructive,
+                    action: actions.end
+                )
                 .buttonStyle(.bordered)
             } else {
                 Button(
@@ -59,6 +53,7 @@ struct BattleRoundHeaderActions: View {
         actions: .preview(model: model)
     )
     .padding()
+    .environment(\.locale, Locale(identifier: "de"))
 }
 
 #Preview("Start battle action") {
@@ -69,4 +64,5 @@ struct BattleRoundHeaderActions: View {
         actions: .preview(model: model)
     )
     .padding()
+    .environment(\.locale, Locale(identifier: "de"))
 }

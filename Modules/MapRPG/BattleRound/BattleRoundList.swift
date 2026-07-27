@@ -14,49 +14,45 @@ struct BattleRoundList: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Turn Order", bundle: .module)
-                        .font(.headline)
+        HStack {
+            Text("Turn Order", bundle: .module)
+                .font(.headline)
 
-                    Spacer()
+            Spacer()
 
-                    Label {
-                        Text("Drag to reorder", bundle: .module)
-                    } icon: {
-                        Image(systemName: "arrow.up.arrow.down")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                ForEach(cards) { card in
-                    BattleRoundCard(
-                        presentation: card,
-                        actions: actions,
-                        showCharacter: showCharacter,
-                        selectHitPoints: selectHitPoints
-                    )
-                    .frame(maxWidth: .infinity)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-#if !os(tvOS)
-                    .draggable(dragPayload(for: card.id))
-                    .dropDestination(for: String.self) { payloads, _ in
-                        reorder(payloads, over: card.id)
-                    }
-#endif
-                }
+            Label {
+                Text("Drag to reorder", bundle: .module)
+            } icon: {
+                Image(systemName: "arrow.up.arrow.down")
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(
-                accessibilityReduceMotion ? nil : .snappy,
-                value: cards.map(\.id)
-            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity)
+        .padding(8)
+
+        ForEach(cards) { card in
+            BattleRoundCard(
+                presentation: card,
+                actions: actions,
+                showCharacter: showCharacter,
+                selectHitPoints: selectHitPoints
+            )
+            .frame(maxWidth: .infinity)
+            .transition(.move(edge: .trailing).combined(with: .opacity))
+#if !os(tvOS)
+            .draggable(dragPayload(for: card.id))
+            .dropDestination(for: String.self) { payloads, _ in
+                reorder(payloads, over: card.id)
+            }
+#endif
+        }
+        .padding(.horizontal, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(
+            accessibilityReduceMotion ? nil : .snappy,
+            value: cards.map(\.id)
+        )
     }
 
     private func dragPayload(for entryId: UUID) -> String {
@@ -83,11 +79,14 @@ struct BattleRoundList: View {
 #Preview("Turn order", traits: .mockData) {
     let model = BattleRoundPreviewData.model()
 
-    BattleRoundList(
-        cards: model.cardPresentations,
-        actions: .preview(model: model),
-        showCharacter: { _ in },
-        selectHitPoints: { _ in }
-    )
-    .frame(width: 720, height: 640)
+    ScrollView {
+        LazyVStack(alignment: .leading, spacing: 8) {
+            BattleRoundList(
+                cards: model.cardPresentations,
+                actions: .preview(model: model),
+                showCharacter: { _ in },
+                selectHitPoints: { _ in }
+            )
+        }
+    }
 }

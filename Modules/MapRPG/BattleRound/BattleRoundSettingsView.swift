@@ -12,57 +12,70 @@ struct BattleRoundSettingsView: View {
     let refresh: @MainActor () -> Void
 
     var body: some View {
-        Form {
-            LabeledContent {
-                BattleInitiativeOrderMenu(
-                    selection: initiativeOrder,
-                    isDisabled: false
+        GroupBoxTV {
+            VStack(alignment: .leading, spacing: 12) {
+                LabeledContent {
+                    BattleInitiativeOrderMenu(
+                        selection: $settings.initiativeOrder,
+                        isDisabled: false
+                    )
+                    .onChange(of: settings.initiativeOrder) { _, newOrder in
+                        actions.setInitiativeOrder(newOrder)
+                    }
+                } label: {
+                    Label(
+                        String(localized: "Initiative Order", bundle: .module),
+                        systemImage: "arrow.up.arrow.down"
+                    )
+                }
+                
+                BattleValueNameRow(
+                    title: String(localized: "Initiative Pattern", bundle: .module),
+                    systemImage: "list.number",
+                    text: $settings.initiativeName,
+                    kind: .initiative,
+                    selectEntry: selectEntry,
+                    useDroppedEntry: useDroppedEntry,
+                    refresh: refresh
                 )
-            } label: {
-                Label(
-                    String(localized: "Initiative Order", bundle: .module),
-                    systemImage: "arrow.up.arrow.down"
+                
+                BattleValueNameRow(
+                    title: String(localized: "Hit Points Pattern", bundle: .module),
+                    systemImage: "heart.text.square",
+                    text: $settings.hitPointsName,
+                    kind: .hitPoints,
+                    selectEntry: selectEntry,
+                    useDroppedEntry: useDroppedEntry,
+                    refresh: refresh
                 )
             }
+            .labeledContentStyle(AlignedLabelStyle(labelWidth: 180))
+            .padding()
 
-            valueNameRow(
-                title: String(localized: "Initiative Value", bundle: .module),
-                systemImage: "list.number",
-                text: $settings.initiativeName,
-                kind: .initiative
-            )
-
-            valueNameRow(
-                title: String(localized: "Hit Points Value", bundle: .module),
-                systemImage: "heart.text.square",
-                text: $settings.hitPointsName,
-                kind: .hitPoints
-            )
+        } label: {
+            Text("Settings", bundle: .module)
         }
-        .formStyle(.grouped)
-        .frame(maxHeight: 300)
+        .padding()
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
-    private var initiativeOrder: Binding<BattleInitiativeOrder> {
-        Binding(
-            get: { settings.initiativeOrder },
-            set: { value in
-                settings.initiativeOrder = value
-                actions.setInitiativeOrder(value)
-            }
-        )
-    }
+}
 
-    private func valueNameRow(
-        title: String,
-        systemImage: String,
-        text: Binding<String>,
-        kind: BattleValueKind
-    ) -> some View {
+private struct BattleValueNameRow: View {
+    let title: String
+    let systemImage: String
+    @Binding var text: String
+    let kind: BattleValueKind
+    let selectEntry: @MainActor (BattleValueKind) -> Void
+    let useDroppedEntry: @MainActor (LinkCharacterData, BattleValueKind) -> Void
+    let refresh: @MainActor () -> Void
+
+    var body: some View {
         LabeledContent {
             HStack {
-                TextField(title, text: text)
+                TextField(title, text: $text)
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
                     .onSubmit(refresh)
 
                 Button(
@@ -86,6 +99,21 @@ struct BattleRoundSettingsView: View {
     }
 }
 
+struct AlignedLabelStyle: LabeledContentStyle {
+    let labelWidth: CGFloat
+    
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            // Force the label to take up a rigid width, aligned to the leading edge
+            configuration.label
+                .frame(width: labelWidth, alignment: .leading)
+            
+            // Let the content fill the remaining space
+            configuration.content
+        }
+    }
+}
+
 #Preview("Battle settings") {
     let model = BattleRoundPreviewData.model()
     let defaults = UserDefaults(suiteName: "BattleRoundSettingsPreview") ?? .standard
@@ -98,6 +126,4 @@ struct BattleRoundSettingsView: View {
         useDroppedEntry: { _, _ in },
         refresh: {}
     )
-    .frame(width: 560)
-    .padding()
 }

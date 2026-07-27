@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct BattleRoundWideCardLayout: View {
+    let model: BattleModel
     let presentation: BattleRoundCardPresentation
     let actions: BattleRoundActions
     let showCharacter: @MainActor (BattleCombatant) -> Void
@@ -15,6 +16,7 @@ struct BattleRoundWideCardLayout: View {
                 isActive: presentation.isActive
             )
             BattleParticipantColumn(
+                model: model,
                 presentation: presentation.attacker,
                 isAttacker: true,
                 isActive: presentation.isActive,
@@ -34,6 +36,7 @@ struct BattleRoundWideCardLayout: View {
                 .padding(.top, 20)
                 .accessibilityHidden(true)
             BattleDefenderStrip(
+                model: model,
                 defenders: presentation.defenders,
                 isActiveEntry: presentation.isActive,
                 actions: actions,
@@ -49,6 +52,7 @@ struct BattleRoundWideCardLayout: View {
 
     if let card = model.cardPresentations.first {
         BattleRoundWideCardLayout(
+            model: BattleModel(),
             presentation: card,
             actions: .preview(model: model),
             showCharacter: { _ in },

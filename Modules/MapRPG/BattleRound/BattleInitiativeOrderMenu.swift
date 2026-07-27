@@ -26,6 +26,7 @@ struct BattleInitiativeOrderMenu: View {
             .tag(BattleInitiativeOrder.ascending)
         }
         .pickerStyle(.menu)
+        .labelsHidden()
         .disabled(isDisabled)
     }
 }

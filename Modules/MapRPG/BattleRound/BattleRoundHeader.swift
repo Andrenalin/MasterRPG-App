@@ -20,11 +20,7 @@ struct BattleRoundHeader: View {
                     activeAttackerName: activeAttackerName
                 )
                 Spacer(minLength: 8)
-                BattleInitiativeOrderMenu(
-                    selection: initiativeOrderBinding,
-                    isDisabled: isRunning && !hasEntries
-                )
-                configurationButton
+                BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
             }
 
@@ -36,11 +32,8 @@ struct BattleRoundHeader: View {
                         activeAttackerName: activeAttackerName
                     )
                     Spacer(minLength: 4)
-                    BattleInitiativeOrderMenu(
-                        selection: initiativeOrderBinding,
-                        isDisabled: isRunning && !hasEntries
-                    )
-                    configurationButton
+                    
+                    BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 }
                 BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -55,22 +48,6 @@ struct BattleRoundHeader: View {
 #endif
     }
 
-    private var configurationButton: some View {
-        Button(
-            String(localized: "Battle Settings", bundle: .module),
-            systemImage: "slider.horizontal.3"
-        ) {
-            isConfigurationExpanded.toggle()
-        }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.bordered)
-        .accessibilityValue(
-            isConfigurationExpanded
-                ? Text("Expanded", bundle: .module)
-                : Text("Collapsed", bundle: .module)
-        )
-    }
-
     private var initiativeOrderBinding: Binding<BattleInitiativeOrder> {
         Binding(
             get: { initiativeOrder },
@@ -81,21 +58,41 @@ struct BattleRoundHeader: View {
     }
 }
 
-#Preview("Battle header") {
-    @Previewable @State var isConfigurationExpanded = false
-    let model = BattleRoundPreviewData.model()
+private struct BattleRoundConfigurationButton: View {
+    @Binding var isExpanded: Bool
 
-    BattleRoundHeader(
-        isRunning: model.isRunning,
-        hasEntries: !model.entries.isEmpty,
-        round: model.roundCounter,
-        activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
-        initiativeOrder: model.initiativeOrder,
-        actions: .preview(model: model),
-        isConfigurationExpanded: $isConfigurationExpanded
-    )
-    .frame(width: 760)
+    var body: some View {
+        Button(
+            String(localized: "Battle Settings", bundle: .module),
+            systemImage: "slider.horizontal.3"
+        ) {
+            isExpanded.toggle()
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.bordered)
+        .accessibilityValue(
+            isExpanded
+                ? Text("Expanded", bundle: .module)
+                : Text("Collapsed", bundle: .module)
+        )
+    }
 }
+
+//#Preview("Battle header") {
+//    @Previewable @State var isConfigurationExpanded = false
+//    let model = BattleRoundPreviewData.model()
+//
+//    BattleRoundHeader(
+//        isRunning: model.isRunning,
+//        hasEntries: !model.entries.isEmpty,
+//        round: model.roundCounter,
+//        activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
+//        initiativeOrder: model.initiativeOrder,
+//        actions: .preview(model: model),
+//        isConfigurationExpanded: $isConfigurationExpanded
+//    )
+//    .frame(width: 760)
+//}
 
 #Preview("Compact battle header") {
     @Previewable @State var isConfigurationExpanded = false
@@ -110,5 +107,5 @@ struct BattleRoundHeader: View {
         actions: .preview(model: model),
         isConfigurationExpanded: $isConfigurationExpanded
     )
-    .frame(width: 360)
+    //.frame(width: 360)
 }
