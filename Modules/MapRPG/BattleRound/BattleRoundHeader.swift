@@ -32,7 +32,6 @@ struct BattleRoundHeader: View {
                         activeAttackerName: activeAttackerName
                     )
                     Spacer(minLength: 4)
-                    
                     BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 }
                 BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
@@ -41,10 +40,11 @@ struct BattleRoundHeader: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .overlay(alignment: .bottom) {
+            Divider()
+        }
 #if os(tvOS)
         .background(.black.opacity(0.35))
-#else
-        .background(.bar)
 #endif
     }
 
@@ -78,22 +78,6 @@ private struct BattleRoundConfigurationButton: View {
     }
 }
 
-//#Preview("Battle header") {
-//    @Previewable @State var isConfigurationExpanded = false
-//    let model = BattleRoundPreviewData.model()
-//
-//    BattleRoundHeader(
-//        isRunning: model.isRunning,
-//        hasEntries: !model.entries.isEmpty,
-//        round: model.roundCounter,
-//        activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
-//        initiativeOrder: model.initiativeOrder,
-//        actions: .preview(model: model),
-//        isConfigurationExpanded: $isConfigurationExpanded
-//    )
-//    .frame(width: 760)
-//}
-
 #Preview("Compact battle header") {
     @Previewable @State var isConfigurationExpanded = false
     let model = BattleRoundPreviewData.model()
@@ -107,5 +91,4 @@ private struct BattleRoundConfigurationButton: View {
         actions: .preview(model: model),
         isConfigurationExpanded: $isConfigurationExpanded
     )
-    //.frame(width: 360)
 }

@@ -25,8 +25,8 @@ struct BattleRoundAnnouncementCounter: View {
         }
         .padding(24)
         .frame(minWidth: 220)
-        .background(.regularMaterial, in: .rect(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.24), radius: 18, y: 8)
+        .glassEffect(in: .rect(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.18), radius: 16, y: 6)
         .accessibilityAddTraits(.isHeader)
     }
 }

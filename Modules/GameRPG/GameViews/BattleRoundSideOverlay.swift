@@ -31,11 +31,11 @@ struct BattleRoundSideOverlay: View {
         )
 #if os(iOS)
         .ignoresSafeArea(.container, edges: .bottom)
-        .clipShape(.rect(topLeadingRadius: 14, topTrailingRadius: 14))
+        .glassEffect(in: .rect(topLeadingRadius: 14, topTrailingRadius: 14))
+#elseif !os(visionOS)
+        .glassEffect(in: .rect(cornerRadius: 14))
 #endif
-#if !os(visionOS)
-        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-#endif
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
         .offset(
             x: gameScreenModel.showsBattleRoundSidebar
                 ? 0
@@ -44,7 +44,6 @@ struct BattleRoundSideOverlay: View {
         .opacity(gameScreenModel.showsBattleRoundSidebar ? 1 : 0)
         .allowsHitTesting(gameScreenModel.showsBattleRoundSidebar)
         .accessibilityHidden(!gameScreenModel.showsBattleRoundSidebar)
-        .shadow(radius: 8)
         .animation(
             accessibilityReduceMotion ? nil : .bouncy,
             value: gameScreenModel.showsBattleRoundSidebar
@@ -78,6 +77,7 @@ private struct BattleRoundSideOverlayPreview: View {
     }
 }
 
-#Preview("Battle sidebar") {
+#Preview("Battle sidebar", traits: .mockData) {
     BattleRoundSideOverlayPreview()
+        .environment(AppGameStateModel())
 }

@@ -5,9 +5,6 @@ import SwiftUI
 
 @MainActor @Observable
 final class BattleModel {
-    init() {
-    }
-    
     var sheet: BattleCharacterSheetPresentation?
 }
 
@@ -18,8 +15,8 @@ struct BattleRoundCard: View {
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @State private var model: BattleModel = .init()
-    
+    @State private var model = BattleModel()
+
     var body: some View {
         ViewThatFits(in: .horizontal) {
             BattleRoundWideCardLayout(
@@ -39,8 +36,10 @@ struct BattleRoundCard: View {
             )
         }
         .padding(10)
-        .background(
-            presentation.isActive ? Color.blue.opacity(0.14) : Color.gray.opacity(0.07),
+        .glassEffect(
+            presentation.isActive
+                ? .regular.tint(.blue)
+                : .regular,
             in: .rect(cornerRadius: 12)
         )
         .overlay(alignment: .leading) {
@@ -48,17 +47,9 @@ struct BattleRoundCard: View {
                 topLeadingRadius: 12,
                 bottomLeadingRadius: 12
             )
-            .fill(presentation.isActive ? .blue : .clear)
+            .fill(presentation.isActive ? Color.blue : .clear)
             .frame(width: 4)
             .accessibilityHidden(true)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(
-                    presentation.isActive ? Color.blue.opacity(0.65) : .clear,
-                    lineWidth: 1
-                )
-                .accessibilityHidden(true)
         }
         .opacity(presentation.attacker.combatant.isDead ? 0.58 : 1)
         .animation(
@@ -66,7 +57,7 @@ struct BattleRoundCard: View {
             value: presentation.isActive
         )
         .accessibilityElement(children: .contain)
-        
+
         if let sheet = model.sheet {
             SheetRootView(root: sheet.root, rootModel: sheet.sheet)
         }
@@ -83,7 +74,6 @@ struct BattleRoundCard: View {
             showCharacter: { _ in },
             selectHitPoints: { _ in }
         )
-        //.frame(maxWidth: 720)
         .padding()
     }
 }

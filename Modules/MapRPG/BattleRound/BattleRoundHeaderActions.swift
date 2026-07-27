@@ -14,7 +14,7 @@ struct BattleRoundHeaderActions: View {
                     systemImage: "forward.fill",
                     action: actions.nextAttacker
                 )
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
 
                 Button(
                     String(localized: "Next Round", bundle: .module),
@@ -24,14 +24,14 @@ struct BattleRoundHeaderActions: View {
                 .buttonStyle(.borderedProminent)
 
                 Spacer(minLength: 4)
-                
+
                 Button(
                     String(localized: "End", bundle: .module),
                     systemImage: "stop.fill",
                     role: .destructive,
                     action: actions.end
                 )
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
             } else {
                 Button(
                     String(localized: "Start Battle", bundle: .module),
