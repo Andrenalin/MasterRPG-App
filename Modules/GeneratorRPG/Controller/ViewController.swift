@@ -18,8 +18,4 @@ public extension ViewController {
             AdventureGenRootView(model: model, dismissAction: dismissAction)
         }
     }
-    
-    @MainActor @ViewBuilder func inlineChat(root: GeneratorRootModel, sheetModel: SheetModel) -> some View {
-        AdventureChatRootView(sheetModel: sheetModel, dismissAction: nil)
-    }
 }

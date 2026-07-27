@@ -136,32 +136,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GeneratorRPG::AdventureChatPreviewHarness
-    @Test("AdventureChatPreviewHarness")
-    func snapshotAdventureChatPreviewHarness() async throws {
-        try await assertPreviewSnapshot("AdventureChatPreviewHarness") {
-            NavigationStack {
-                GeneratorRPG.AdventureChatPreviewHarness()
-                    .frame(width: 430, height: 780)
-            }
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureChatRootView
-    @Test("AdventureChatRootView")
-    func snapshotAdventureChatRootView() async throws {
-        try await assertPreviewSnapshot("AdventureChatRootView") {
-            NavigationStack {
-                GeneratorRPG.AdventureChatRootView(
-                    sheetModel: AdventureChatPreviewData.sheetModel,
-                    usesAvailabilityGate: false,
-                    runsAutomaticGeneration: false,
-                    previewBlocks: AdventureChatPreviewData.blocks
-                )
-            }
-        }
-    }
-
     // snapshot-root: GeneratorRPG::AdventureCurrentAnswerCard
     @Test("AdventureCurrentAnswerCard")
     func snapshotAdventureCurrentAnswerCard() async throws {

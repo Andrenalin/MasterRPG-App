@@ -34,7 +34,6 @@ struct ViewControllerTests {
         _ = sut.dropChooseView(model: selectionModel)
         _ = sut.linkListView(type: .selection, itemSelectionModel: selectionModel)
         _ = sut.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: true), dismissAction: {})
-        _ = sut.generatorView(root: root, selection: WindowItemSelection(itemId: itemId))
         _ = sut.gameView(root: root, focusedIds: [itemId])
         _ = sut.gameView(root: root, focusedIds: [])
         _ = sut.gameModuleListView(root: root, isPlayer: true)

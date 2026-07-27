@@ -48,14 +48,6 @@ struct BattleRoundHeader: View {
 #endif
     }
 
-    private var initiativeOrderBinding: Binding<BattleInitiativeOrder> {
-        Binding(
-            get: { initiativeOrder },
-            set: { newOrder in
-                actions.setInitiativeOrder(newOrder)
-            }
-        )
-    }
 }
 
 private struct BattleRoundConfigurationButton: View {

@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct BattleDefenderStrip: View {
-    let model: BattleModel
+    let state: BattleRoundCardState
     let defenders: [BattleRoundParticipantPresentation]
     let isActiveEntry: Bool
     let actions: BattleRoundActions
@@ -26,7 +26,7 @@ struct BattleDefenderStrip: View {
                 LazyHStack(alignment: .top, spacing: 10) {
                     ForEach(defenders) { defender in
                         BattleParticipantColumn(
-                            model: model,
+                            state: state,
                             presentation: defender,
                             isAttacker: false,
                             isActive: isActiveEntry,
@@ -49,7 +49,7 @@ struct BattleDefenderStrip: View {
 
     if let card = model.cardPresentations.first {
         BattleDefenderStrip(
-            model: BattleModel(),
+            state: BattleRoundCardState(),
             defenders: card.defenders,
             isActiveEntry: card.isActive,
             actions: .preview(model: model),
@@ -64,7 +64,7 @@ struct BattleDefenderStrip: View {
     let model = BattleRoundPreviewData.model()
 
     BattleDefenderStrip(
-        model: BattleModel(),
+        state: BattleRoundCardState(),
         defenders: [],
         isActiveEntry: false,
         actions: .preview(model: model),

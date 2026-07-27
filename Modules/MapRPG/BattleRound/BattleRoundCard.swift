@@ -4,8 +4,12 @@ import CoreRPG
 import SwiftUI
 
 @MainActor @Observable
-final class BattleModel {
-    var sheet: BattleCharacterSheetPresentation?
+final class BattleRoundCardState {
+    var characterSheet: BattleCharacterSheetPresentation?
+}
+
+extension EnvironmentValues {
+    @Entry var battleRoundCardLayout: BattleRoundCardLayout = .wide
 }
 
 struct BattleRoundCard: View {
@@ -15,25 +19,29 @@ struct BattleRoundCard: View {
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @State private var model = BattleModel()
+    @Environment(\.battleRoundCardLayout) private var cardLayout
+    @State private var cardState = BattleRoundCardState()
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            BattleRoundWideCardLayout(
-                model: model,
-                presentation: presentation,
-                actions: actions,
-                showCharacter: showCharacter,
-                selectHitPoints: selectHitPoints
-            )
-
-            BattleRoundCompactCardLayout(
-                model: model,
-                presentation: presentation,
-                actions: actions,
-                showCharacter: showCharacter,
-                selectHitPoints: selectHitPoints
-            )
+        Group {
+            switch cardLayout {
+            case .wide:
+                BattleRoundWideCardLayout(
+                    state: cardState,
+                    presentation: presentation,
+                    actions: actions,
+                    showCharacter: showCharacter,
+                    selectHitPoints: selectHitPoints
+                )
+            case .compact:
+                BattleRoundCompactCardLayout(
+                    state: cardState,
+                    presentation: presentation,
+                    actions: actions,
+                    showCharacter: showCharacter,
+                    selectHitPoints: selectHitPoints
+                )
+            }
         }
         .padding(10)
         .glassEffect(
@@ -58,7 +66,7 @@ struct BattleRoundCard: View {
         )
         .accessibilityElement(children: .contain)
 
-        if let sheet = model.sheet {
+        if let sheet = cardState.characterSheet {
             SheetRootView(root: sheet.root, rootModel: sheet.sheet)
         }
     }

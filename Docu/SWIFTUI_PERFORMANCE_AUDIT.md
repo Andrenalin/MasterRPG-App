@@ -151,11 +151,6 @@ Proposed fix after proof:
 
 Evidence:
 
-- `AdventureChatRootView.swift:148` maps every partially generated element into a
-  composite string for `.onChange`.
-- `AdventureChatRootView.swift:263` rebuilds the active answer batch.
-- `AdventureChatRootView.swift:276` removes all generated entries for the batch, then
-  creates and appends all replacements.
 - `ChatSheetRootView.swift:145` and nearby properties recursively filter generated
   answers and selections during view evaluation.
 

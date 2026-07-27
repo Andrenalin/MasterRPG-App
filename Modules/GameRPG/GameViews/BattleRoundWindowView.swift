@@ -18,7 +18,8 @@ struct BattleRoundWindowView: View {
                     for: root
                 ) {
                     scenesManager.dismissWindow(.battleRound)
-                }
+                },
+                layout: .wide
             )
             .environment(root.mapRoot)
         } else {

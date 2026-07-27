@@ -1,9 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-#if !os(tvOS)
-import GeneratorRPG
-#endif
 import PdfRPG
 import SwiftUI
 
@@ -12,7 +9,6 @@ enum AdventureEditorRoute: Equatable, Hashable, Codable {
     case selectionPdf
     case linkSelection(ItemRowModel)
     case addLink(ItemRowModel)
-    case generator(UUID)
 }
 
 extension AdventureEditorRoute: NavigationDestination {
@@ -20,7 +16,7 @@ extension AdventureEditorRoute: NavigationDestination {
         switch self {
         case .quickEditor:
             return .managedCover
-        case .addLink, .generator:
+        case .addLink:
             return .managedSheet
         case .selectionPdf, .linkSelection:
             return .push
@@ -47,17 +43,6 @@ struct DestinationAdventureEditorRouteView: View {
             EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedEntryId: itemRowModel.entryId, destinationModule: itemRowModel.typeId)
         case .addLink(let itemRowModel):
             EditorLinkView(root: root.rootController, model: root.itemController.itemOrEmpty(for: itemRowModel.itemId), editorLinkModel: root.editorLinkModel, selectedModule: itemRowModel.typeId, selectedEntryId: root.editController.editorModel.sheetEditorModel.entryId, destinationModule: root.editController.editorModel.sheetEditorModel.module)
-        case .generator(let itemId):
-#if os(tvOS)
-            EmptyView()
-                .id(itemId)
-#else
-            if let generatorRoot = root.generatorRoot, let rootManager = root.rootManager {
-                let sheetModel = root.sheetController.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, moduleDepth: 0, isEditor: true)
-                generatorRoot.viewController.inlineChat(root: generatorRoot, sheetModel: sheetModel)
-            }
-#endif
-
         }
     }
 }

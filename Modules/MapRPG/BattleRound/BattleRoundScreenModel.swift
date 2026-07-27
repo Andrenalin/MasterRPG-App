@@ -11,8 +11,9 @@ import SwiftUI
 /// layout/observation surface.
 @MainActor @Observable
 final class BattleRoundScreenModel {
-    init(model: BattleRoundModel) {
+    init(model: BattleRoundModel, layout: BattleRoundCardLayout) {
         self.model = model
+        self.cardLayout = layout
         selectedCharacter = ItemSelectionModel(
             isSingleSelection: true,
             allowCollections: false
@@ -25,6 +26,7 @@ final class BattleRoundScreenModel {
         )
     }
 
+    let cardLayout: BattleRoundCardLayout
     var presentation: BattleRoundPresentation?
     var isConfigurationExpanded = false
 

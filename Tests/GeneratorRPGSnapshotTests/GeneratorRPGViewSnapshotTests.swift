@@ -23,23 +23,6 @@ struct GeneratorRPGViewSnapshotTests {
         )
     }
 
-    // snapshot-root: GeneratorRPG::AdventureChatRootView
-    @Test("Adventure chat with generated blocks")
-    func adventureChat() async throws {
-        try await assertMockSnapshot(
-            NavigationStack {
-                AdventureChatRootView(
-                    sheetModel: AdventureChatPreviewData.sheetModel,
-                    usesAvailabilityGate: false,
-                    runsAutomaticGeneration: false,
-                    previewBlocks: AdventureChatPreviewData.blocks
-                )
-            },
-            name: "AdventureChat",
-            height: 844
-        )
-    }
-
     // snapshot-root: GeneratorRPG::TextSummaryExtractionView
     @Test("Text summary extraction")
     func textSummaryExtraction() {

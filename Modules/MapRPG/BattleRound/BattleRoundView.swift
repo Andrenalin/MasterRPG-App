@@ -5,10 +5,10 @@ import CoreRPG
 import SwiftUI
 
 public struct BattleRoundView: View {
-    public init(model: BattleRoundModel, actions: BattleRoundActions) {
+    public init(model: BattleRoundModel, actions: BattleRoundActions, layout: BattleRoundCardLayout = .wide) {
         self.model = model
         self.actions = actions
-        _screenModel = State(wrappedValue: BattleRoundScreenModel(model: model))
+        _screenModel = State(wrappedValue: BattleRoundScreenModel(model: model, layout: layout))
     }
 
     let model: BattleRoundModel
@@ -32,6 +32,9 @@ public struct BattleRoundView: View {
                     actions: actions,
                     isConfigurationExpanded: $screenModel.isConfigurationExpanded
                 )
+#if os(tvOS)
+                .focusSection()
+#endif
 
                 if screenModel.isConfigurationExpanded {
                     BattleRoundSettingsView(
@@ -55,6 +58,9 @@ public struct BattleRoundView: View {
                             screenModel.refreshConfiguredValues(root: root)
                         }
                     )
+#if os(tvOS)
+                    .focusSection()
+#endif
                 }
 
                 ScrollView {
@@ -86,7 +92,11 @@ public struct BattleRoundView: View {
                         }
                     }
                 }
+#if os(tvOS)
+                .focusSection()
+#endif
             }
+            .environment(\.battleRoundCardLayout, screenModel.cardLayout)
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleInlineNavigationTitle()
         }

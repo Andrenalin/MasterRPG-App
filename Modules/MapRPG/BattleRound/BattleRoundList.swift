@@ -51,7 +51,7 @@ struct BattleRoundList: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(
             accessibilityReduceMotion ? nil : .snappy,
-            value: cards.map(\.id)
+            value: cards
         )
     }
 

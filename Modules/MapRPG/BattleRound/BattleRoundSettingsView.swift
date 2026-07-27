@@ -99,7 +99,7 @@ private struct BattleValueNameRow: View {
     }
 }
 
-struct AlignedLabelStyle: LabeledContentStyle {
+private struct AlignedLabelStyle: LabeledContentStyle {
     let labelWidth: CGFloat
     
     func makeBody(configuration: Configuration) -> some View {

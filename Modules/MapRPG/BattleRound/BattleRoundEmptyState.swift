@@ -9,17 +9,20 @@ struct BattleRoundEmptyState: View {
     var body: some View {
         ContentUnavailableView {
             Label {
-                Text(isRunning ? "No Combatants" : "No Battle Running", bundle: .module)
+                if isRunning {
+                    Text("No Combatants", bundle: .module)
+                } else {
+                    Text("No Battle Running", bundle: .module)
+                }
             } icon: {
                 Image(systemName: "shield.lefthalf.filled")
             }
         } description: {
-            Text(
-                isRunning
-                    ? "The selected map has no player or active-room combatants."
-                    : "Start a battle with player pins and the monsters in the selected room.",
-                bundle: .module
-            )
+            if isRunning {
+                Text("The selected map has no player or active-room combatants.", bundle: .module)
+            } else {
+                Text("Start a battle with player pins and the monsters in the selected room.", bundle: .module)
+            }
         } actions: {
             if !isRunning {
                 Button(

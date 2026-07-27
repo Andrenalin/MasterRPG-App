@@ -21,7 +21,8 @@ struct BattleRoundSideOverlay: View {
                 withAnimation(accessibilityReduceMotion ? nil : .default) {
                     gameScreenModel.showsBattleRoundSidebar = false
                 }
-            }
+            },
+            layout: .compact
         )
         .environment(root.mapRoot)
         .frame(

@@ -76,10 +76,6 @@ public extension ViewController {
         )
     }
     
-    @MainActor func generatorView(root: AdventureRootModel, selection: WindowItemSelection) -> some View {
-        AdventureEditorRoute.generator(selection.itemId)
-    }
-
     @MainActor func gameView(
         root: AdventureRootModel,
         focusedIds: [UUID]

@@ -16,19 +16,6 @@ struct WindowUtilityList: Scene {
     
     var body: some Scene {
         Group {
-            WindowGroup("Generator Adventure", id: SceneId.generateAdventure.rawValue, for: WindowItemSelection.self) { $selection in
-                DataBaseAppStoreAvailable(appModel: appModel) { appModel in
-                    GeneratorAdventureWindowContent(appModel: appModel, selection: selection)
-                }
-                .sceneTracker(for: SceneId.generateAdventure)
-                .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .adventure))
-                .environment(appModel.scenesManager)
-                .environment(appModel)
-            }
-            .windowResizability(.contentSize)
-            .defaultWindowPlacementAll(.below(SceneId.game.rawValue))
-            .restorationBehaviorAll(.disabled)
-
 #if os(macOS) || os(visionOS)
             WindowGroup(
                 "Table Generator",
