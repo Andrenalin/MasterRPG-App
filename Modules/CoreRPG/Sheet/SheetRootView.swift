@@ -20,49 +20,23 @@ import SwiftUI
 /// on top of these two modes. AI presentation belongs to the parent screen so
 /// it is anchored to that screen rather than to the recursive sheet content.
 /// See `Docu/SHEETS.md` for the full state and data-flow description.
-public struct SheetRootView<
-    LinkType: LinkDataTransferable,
-    DetailContent: View
->: View {
+public struct SheetRootView<LinkType: LinkDataTransferable>: View {
     public init(
         root: ItemRootController,
         rootModel: SheetRootModel,
         isEditor: Bool = false,
-        linkTypes: LinkType.Type = LinkDiceData.self,
-        detailAction: ((SheetModel) -> Void)? = nil
-    ) where DetailContent == EmptyView {
-        self.init(
-            root: root,
-            rootModel: rootModel,
-            isEditor: isEditor,
-            linkTypes: linkTypes,
-            detailAction: detailAction,
-            detailContent: { _ in EmptyView() }
-        )
-    }
-
-    public init(
-        root: ItemRootController,
-        rootModel: SheetRootModel,
-        isEditor: Bool = false,
-        linkTypes: LinkType.Type = LinkDiceData.self,
-        detailAction: ((SheetModel) -> Void)? = nil,
-        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+        linkTypes: LinkType.Type = LinkDiceData.self
     ) {
         self.root = root
         self.rootModel = rootModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
-        self.detailAction = detailAction
-        self.detailContent = detailContent
     }
     
     let root: ItemRootController
     let rootModel: SheetRootModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
-    let detailAction: ((SheetModel) -> Void)?
-    let detailContent: (SheetModel) -> DetailContent
 
     @Namespace private var generatedAcceptanceNamespace
     @Environment(\.navigationColumnFocus) private var navigationColumnFocus
@@ -76,9 +50,7 @@ public struct SheetRootView<
             sheetModel: rootModel.sheetModel,
             isEditor: isEditor,
             linkTypes: linkTypes,
-            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-            detailAction: detailAction,
-            detailContent: detailContent
+            generatedAcceptanceNamespace: generatedAcceptanceNamespace
         )
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)

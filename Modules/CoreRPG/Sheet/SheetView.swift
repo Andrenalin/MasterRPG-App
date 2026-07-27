@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+struct SheetView<LinkType: LinkDataTransferable>: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.networkActions) private var networkActions
@@ -15,9 +15,7 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
         sheetModel: SheetModel,
         isEditor: Bool = false,
         linkTypes: LinkType.Type = LinkDiceData.self,
-        generatedAcceptanceNamespace: Namespace.ID,
-        detailAction: ((SheetModel) -> Void)? = nil,
-        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+        generatedAcceptanceNamespace: Namespace.ID
     ) {
         self.root = root
         self.rootModel = rootModel
@@ -25,8 +23,6 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
         self.isEditor = isEditor
         self.linkTypes = linkTypes
         self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
-        self.detailAction = detailAction
-        self.detailContent = detailContent
     }
     
     let root: ItemRootController
@@ -35,8 +31,6 @@ struct SheetView<LinkType: LinkDataTransferable, DetailContent: View>: View {
     let isEditor: Bool
     let linkTypes: LinkType.Type
     let generatedAcceptanceNamespace: Namespace.ID
-    let detailAction: ((SheetModel) -> Void)?
-    let detailContent: (SheetModel) -> DetailContent
     
     @State private var dropTargetEntryId: UUID?
     
@@ -87,22 +81,23 @@ private extension SheetView {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.title)
 
-                if let detailAction {
-                    Button {
-                        detailAction(sheetModel)
-                    } label: {
-                        Label {
-                            Text("Next Question", bundle: .module)
-                        } icon: {
-                            Image(systemName: "questionmark.bubble")
-                        }
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .disabled(!sheetModel.hasDetailContent)
-                    .help(Text("Next question", bundle: .module))
-                }
+                // TODO
+//                if let detailAction {
+//                    Button {
+//                        detailAction(sheetModel)
+//                    } label: {
+//                        Label {
+//                            Text("Next Question", bundle: .module)
+//                        } icon: {
+//                            Image(systemName: "questionmark.bubble")
+//                        }
+//                    }
+//                    .labelStyle(.iconOnly)
+//                    .buttonStyle(.borderless)
+//                    .frame(minWidth: 44, minHeight: 44)
+//                    .disabled(!sheetModel.hasDetailContent)
+//                    .help(Text("Next question", bundle: .module))
+//                }
             }
         }
         .background {
@@ -216,7 +211,7 @@ private extension SheetView {
     }
     
     @ViewBuilder func row(entry: SheetModel) -> some View {
-        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace, detailAction: detailAction, detailContent: detailContent)
+        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace)
             .frame(maxWidth: .infinity, alignment: .leading)
 #if !os(tvOS)
             .applyIf(isEditor) {
@@ -233,7 +228,7 @@ private extension SheetView {
         
         ForEach(entry.entries) { subEntry in
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace, detailAction: detailAction, detailContent: detailContent)
+                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace)
                     .padding(.leading, 2)
             }
         }
@@ -247,9 +242,7 @@ private extension SheetView {
                 entryModel: entry,
                 isEditor: isEditor,
                 linkTypes: linkTypes,
-                generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                detailAction: detailAction,
-                detailContent: detailContent
+                generatedAcceptanceNamespace: generatedAcceptanceNamespace
             )
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .transition(entry.isGeneratedAnswer ? .generatedSheetEntry : .persistedSheetEntry)
@@ -287,9 +280,7 @@ private extension SheetView {
                         entryModel: subEntry,
                         isEditor: isEditor,
                         linkTypes: linkTypes,
-                        generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                        detailAction: detailAction,
-                        detailContent: detailContent
+                        generatedAcceptanceNamespace: generatedAcceptanceNamespace
                     )
                         .padding(.leading, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -301,9 +292,7 @@ private extension SheetView {
                         sheetModel: subEntry,
                         isEditor: isEditor,
                         linkTypes: linkTypes,
-                        generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                        detailAction: detailAction,
-                        detailContent: detailContent
+                        generatedAcceptanceNamespace: generatedAcceptanceNamespace
                     )
                         .padding(.leading, 2)
                 }
@@ -319,9 +308,7 @@ private extension SheetView {
                 entryModel: preview,
                 isEditor: isEditor,
                 linkTypes: linkTypes,
-                generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                detailAction: detailAction,
-                detailContent: detailContent
+                generatedAcceptanceNamespace: generatedAcceptanceNamespace
             )
             .frame(maxWidth: .infinity, alignment: .leading)
             .transition(.generatedSheetEntry)
@@ -383,8 +370,7 @@ private extension SheetModel {
             sheetModel: fixture.sheetRootModel.sheetModel,
             isEditor: true,
             linkTypes: EmptyLinkTransferable.self,
-            generatedAcceptanceNamespace: namespace,
-            detailContent: { _ in EmptyView() }
+            generatedAcceptanceNamespace: namespace
         )
         .padding()
     }

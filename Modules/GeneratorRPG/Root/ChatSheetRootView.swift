@@ -66,11 +66,7 @@ struct ChatSheetRootView: View {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     SheetRootView(
                         root: sheetRootController,
-                        rootModel: sheetRootModel,
-                        detailAction: requestSheetDetailAction
-                    ) { sheet in
-                        answerSection(for: sheet)
-                    }
+                        rootModel: sheetRootModel)
                 }
                 .padding()
             }

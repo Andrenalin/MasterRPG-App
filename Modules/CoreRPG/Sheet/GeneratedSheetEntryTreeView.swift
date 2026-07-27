@@ -2,16 +2,14 @@
 
 import SwiftUI
 
-struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable>: View {
     init(
         rootModel: SheetRootModel,
         parentModel: SheetModel,
         entryModel: SheetModel,
         isEditor: Bool,
         linkTypes: LinkType.Type,
-        generatedAcceptanceNamespace: Namespace.ID,
-        detailAction: ((SheetModel) -> Void)?,
-        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+        generatedAcceptanceNamespace: Namespace.ID
     ) {
         self.rootModel = rootModel
         self.parentModel = parentModel
@@ -19,8 +17,6 @@ struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent
         self.isEditor = isEditor
         self.linkTypes = linkTypes
         self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
-        self.detailAction = detailAction
-        self.detailContent = detailContent
     }
 
     let rootModel: SheetRootModel
@@ -29,8 +25,6 @@ struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent
     let isEditor: Bool
     let linkTypes: LinkType.Type
     let generatedAcceptanceNamespace: Namespace.ID
-    let detailAction: ((SheetModel) -> Void)?
-    let detailContent: (SheetModel) -> DetailContent
 
     var body: some View {
         SheetEntryView(
@@ -39,9 +33,7 @@ struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent
             entryModel: entryModel,
             isEditor: isEditor,
             linkTypes: linkTypes,
-            generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-            detailAction: detailAction,
-            detailContent: detailContent
+            generatedAcceptanceNamespace: generatedAcceptanceNamespace
         )
         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -53,9 +45,7 @@ struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent
                     entryModel: childEntry,
                     isEditor: isEditor,
                     linkTypes: linkTypes,
-                    generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                    detailAction: detailAction,
-                    detailContent: detailContent
+                    generatedAcceptanceNamespace: generatedAcceptanceNamespace
                 )
                 .padding(.leading, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -66,9 +56,7 @@ struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent
                     sheetModel: childEntry,
                     isEditor: isEditor,
                     linkTypes: linkTypes,
-                    generatedAcceptanceNamespace: generatedAcceptanceNamespace,
-                    detailAction: detailAction,
-                    detailContent: detailContent
+                    generatedAcceptanceNamespace: generatedAcceptanceNamespace
                 )
                 .padding(.leading, 2)
             }
@@ -88,8 +76,6 @@ struct GeneratedSheetEntryTreeView<LinkType: LinkDataTransferable, DetailContent
         entryModel: .empty,
         isEditor: true,
         linkTypes: EmptyLinkTransferable.self,
-        generatedAcceptanceNamespace: namespace,
-        detailAction: nil,
-        detailContent: { _ in EmptyView() }
+        generatedAcceptanceNamespace: namespace
     )
 }

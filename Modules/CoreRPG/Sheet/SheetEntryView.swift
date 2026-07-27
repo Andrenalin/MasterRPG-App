@@ -2,16 +2,14 @@
 
 import SwiftUI
 
-struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View {
+struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     init(
         rootModel: SheetRootModel,
         parentModel: SheetModel,
         entryModel: SheetModel,
         isEditor: Bool,
         linkTypes: LinkType.Type,
-        generatedAcceptanceNamespace: Namespace.ID,
-        detailAction: ((SheetModel) -> Void)? = nil,
-        @ViewBuilder detailContent: @escaping (SheetModel) -> DetailContent
+        generatedAcceptanceNamespace: Namespace.ID
     ) {
         self.rootModel = rootModel
         self.parentModel = parentModel
@@ -19,8 +17,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
         self.isEditor = isEditor
         self.linkTypes = linkTypes
         self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
-        self.detailAction = detailAction
-        self.detailContent = detailContent
     }
 
     let rootModel: SheetRootModel
@@ -29,8 +25,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
     let isEditor: Bool
     let linkTypes: LinkType.Type
     let generatedAcceptanceNamespace: Namespace.ID
-    let detailAction: ((SheetModel) -> Void)?
-    let detailContent: (SheetModel) -> DetailContent
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.appTheme) private var theme
@@ -62,7 +56,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable, DetailContent: View>: View
                     contentRow
                         .allowsHitTesting(!entryModel.isGeneratedAnswer)
 
-                    detailContent(entryModel)
+                    //detailContent(entryModel)
 
                     inlineEditorRow
 
@@ -221,9 +215,10 @@ private extension SheetEntryView {
                 SheetEntryReviewButton(model: reviewModel)
             }
 
-            if !entryModel.isGeneratedAnswer, let detailAction, canGoDeeper {
+            if !entryModel.isGeneratedAnswer, canGoDeeper {
                 Button {
-                    detailAction(entryModel)
+                    // TODO
+                    //detailAction(entryModel)
                 } label: {
                     Label {
                         Text("Next Question", bundle: .module)
@@ -570,8 +565,7 @@ private extension SheetEntryView {
         entryModel: SheetRootModel.fake.sheetModel,
         isEditor: false,
         linkTypes: EmptyLinkTransferable.self,
-        generatedAcceptanceNamespace: namespace,
-        detailContent: { _ in EmptyView() }
+        generatedAcceptanceNamespace: namespace
     )
     .environment(AppGameStateModel())
 }

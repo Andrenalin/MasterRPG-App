@@ -47,15 +47,6 @@ public struct TableRootSheet: View {
 #if os(visionOS)
             .glassBackgroundEffect()
 #endif
-//            .overlay(alignment: .topTrailing) {
-//                if configuration.isGame && valueFor(iOS: false, macOS: true, tvOS: false, visionOS: false) {
-//                    InlineSheetSearchControl(
-//                        module: root.configurable.module,
-//                        searchText: $sheetRootModel.searchText
-//                    )
-//                    .padding()
-//                }
-//            }
             .toolbar {
                 toolbarContent
             }

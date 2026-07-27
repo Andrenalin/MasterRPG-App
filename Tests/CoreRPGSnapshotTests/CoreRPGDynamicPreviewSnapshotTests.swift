@@ -443,9 +443,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     entryModel: .empty,
                     isEditor: true,
                     linkTypes: EmptyLinkTransferable.self,
-                    generatedAcceptanceNamespace: namespace,
-                    detailAction: nil,
-                    detailContent: { _ in EmptyView() }
+                    generatedAcceptanceNamespace: namespace
                 )
             }
             .environment(AppGameStateModel())
@@ -463,8 +461,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     entryModel: .empty,
                     isEditor: true,
                     linkTypes: EmptyLinkTransferable.self,
-                    generatedAcceptanceNamespace: namespace,
-                    detailContent: { _ in EmptyView() }
+                    generatedAcceptanceNamespace: namespace
                 )
             }
             .environment(AppGameStateModel())
@@ -482,8 +479,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     sheetModel: .empty,
                     isEditor: true,
                     linkTypes: EmptyLinkTransferable.self,
-                    generatedAcceptanceNamespace: namespace,
-                    detailContent: { _ in EmptyView() }
+                    generatedAcceptanceNamespace: namespace
                 )
             }
             .environment(AppGameStateModel())

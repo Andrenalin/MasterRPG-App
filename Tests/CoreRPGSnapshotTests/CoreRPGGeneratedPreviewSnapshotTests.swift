@@ -1686,14 +1686,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::SheetEntryPreview
-    @Test("SheetEntryPreview")
-    func snapshotSheetEntryPreview() async throws {
-        try await assertPreviewSnapshot("SheetEntryPreview") {
-            CoreRPG.SheetEntryPreview()
-        }
-    }
-
     // snapshot-root: CoreRPG::SheetEntryQuickEditButton
     @Test("SheetEntryQuickEditButton")
     func snapshotSheetEntryQuickEditButton() async throws {
@@ -1789,14 +1781,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("SheetRootView") {
             let fixture = FakeItemRootControllerFixture()
             CoreRPG.SheetRootView(root: fixture.root, rootModel: fixture.sheetRootModel, linkTypes: EmptyLinkTransferable.self)
-        }
-    }
-
-    // snapshot-root: CoreRPG::SheetViewPreview
-    @Test("SheetViewPreview")
-    func snapshotSheetViewPreview() async throws {
-        try await assertPreviewSnapshot("SheetViewPreview") {
-            CoreRPG.SheetViewPreview()
         }
     }
 
