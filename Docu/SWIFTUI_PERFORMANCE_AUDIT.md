@@ -149,11 +149,7 @@ Proposed fix after proof:
 
 ### P1 — Foundation extraction rebuilds the complete generated subtree per partial
 
-Evidence:
-
-- `ChatSheetRootView.swift:145` and nearby properties recursively filter generated
-  answers and selections during view evaluation.
-
+Evidence:`
 This compounds model-stream frequency, array mapping, string allocation, observable
 mutations, recursive sheet derivation, and SwiftUI invalidation.
 

@@ -31,9 +31,9 @@ struct AdventureSheet: View {
         if configuration.isGame {
             readerSheet
                 .sheetAIAssistant(
-                    module: root.configurable.module,
-                    itemId: model.id,
-                    rootModel: root.editController.editorModel.sheetRootModel
+                    generatorRoot: root.generatorRoot,
+                    rootModel: root.editController.editorModel.sheetRootModel,
+                    module: root.configurable.module
                 )
         } else {
             readerSheet

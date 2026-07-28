@@ -13,9 +13,7 @@ extension ViewController: ViewControllable {}
 
 public extension ViewController {
     @MainActor @ViewBuilder
-    func viewer(root: GeneratorRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {        
-        if let model = root.itemController.itemSync(for: itemId) {
-            AdventureGenRootView(model: model, dismissAction: dismissAction)
-        }
+    func viewer(root: GeneratorRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {
+        EmptyView()
     }
 }

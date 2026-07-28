@@ -104,6 +104,7 @@
       }
     },
     "%@ How can I help you?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -596,6 +597,7 @@
       }
     },
     "Answers / Ideas" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -628,6 +630,7 @@
       }
     },
     "Apple Intelligence is not enabled. Please enable it in Settings." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -836,6 +839,7 @@
       }
     },
     "Attached image" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1109,6 +1113,7 @@
       }
     },
     "Create a new campaign for DungeonSlayer under the mountain in an old deserted dwarven empire." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1488,6 +1493,7 @@
       }
     },
     "Extract" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1504,6 +1510,7 @@
       }
     },
     "Extract adventure blocks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1815,6 +1822,7 @@
       }
     },
     "Generate adventure" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1898,6 +1906,7 @@
       }
     },
     "Generation Error: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2787,6 +2796,7 @@
       }
     },
     "Send prompt" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3027,6 +3037,7 @@
       }
     },
     "The language model is not ready yet. Please try again later." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3043,6 +3054,7 @@
       }
     },
     "The language model is unavailable for an unknown reason." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3139,6 +3151,7 @@
       }
     },
     "This device is not eligible for Apple Intelligence. Please use a compatible device." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3361,6 +3374,7 @@
       }
     },
     "Tool Call Error: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3639,6 +3653,7 @@
       }
     },
     "Welcome to the AI Assistant." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

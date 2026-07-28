@@ -3,10 +3,6 @@
 import CoreRPG
 import SwiftUI
 
-public extension EnvironmentValues {
-    @Entry var audioPlayerUsesTabAccessory = false
-}
-
 struct AudioPlayerBarView: View {
     @Environment(AudioRootModel.self) private var root
 

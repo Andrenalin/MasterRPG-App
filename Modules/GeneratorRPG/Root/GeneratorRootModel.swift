@@ -134,24 +134,12 @@ public final class GeneratorRootModel {
     @ObservationIgnored var syncDataController: SyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
-    @MainActor @ObservationIgnored let generatorController: GeneratorController = GeneratorController()
-
-    @MainActor @ObservationIgnored private var generatorControllers: [NetworkModules: AdventureGeneratorController] = [:]
-
-    /// Lazily creates one conversation session per module, and clears the transcript
-    /// whenever the target item changes so unrelated items never share chat context.
-    @MainActor func generatorController(for module: NetworkModules, itemId: UUID) -> AdventureGeneratorController {
-        let controller = generatorControllers[module] ?? {
-            let created = AdventureGeneratorController()
-            generatorControllers[module] = created
-            return created
-        }()
-        if controller.model.lastItemId != itemId {
-            controller.clearChat()
-            controller.model.lastItemId = itemId
-        }
-        return controller
-    }
+    @MainActor @ObservationIgnored var generatorControllers: [NetworkModules: GeneratorController] = [
+        .adventure: GeneratorController(),
+        .value: GeneratorController(),
+        .map: GeneratorController(),
+        .table: GeneratorController()
+    ]
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel

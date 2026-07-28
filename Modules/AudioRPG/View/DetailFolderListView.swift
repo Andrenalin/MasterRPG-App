@@ -14,8 +14,6 @@ struct DetailFolderListView: View {
     let folderListController: FolderListController
     var isSubFolder: Bool = false
 
-    @Environment(\.audioPlayerUsesTabAccessory) private var audioPlayerUsesTabAccessory
-    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         
@@ -28,7 +26,7 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-        .applyIf(!audioPlayerUsesTabAccessory) {
+        .applyIf(!usesPhoneTabAccessory) {
             $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
                 Color.clear
                     .frame(height: 80)
@@ -56,5 +54,13 @@ struct DetailFolderListView: View {
                 root.openFileWindowModel.showItem = false
             }
         }
+    }
+    
+    private var usesPhoneTabAccessory: Bool {
+#if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .phone
+#else
+        false
+#endif
     }
 }
