@@ -56,11 +56,10 @@ struct GeneratorRPGDynamicPreviewSnapshotTests {
             GeneratorNamespaceSnapshotHarness { namespace in
                 GeneratorFocusSnapshotHarness { focus in
                     SheetAIAssistantStandardControl(
+                        generatorController: GeneratorController(),
                         module: .adventure,
                         messageText: .constant("Create a dramatic encounter"),
-                        availability: SheetAIGenerationController().availability,
                         isExpanded: true,
-                        isGenerating: false,
                         isTextFieldFocused: focus,
                         submitAction: {},
                         toggleAction: {}
