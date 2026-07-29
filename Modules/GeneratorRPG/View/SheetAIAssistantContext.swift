@@ -11,7 +11,12 @@ public extension View {
         rootModel: SheetRootModel?,
         module: NetworkModules
     ) -> some View {
-        overlay(alignment: .bottomTrailing) {
+        safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+            Color.clear
+                .frame(height: 80)
+                .allowsHitTesting(false)
+        }
+        .overlay(alignment: .bottomTrailing) {
             if let rootModel, let generatorController = generatorRoot?.generatorControllers[module], generatorController.availblity {
                 SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
                 .padding(.horizontal)

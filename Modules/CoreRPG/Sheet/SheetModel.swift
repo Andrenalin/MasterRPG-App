@@ -58,6 +58,10 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     public var isEditing: Bool = false
     public var hasChanged: Bool = false
 
+    // MARK: - AI streaming generation
+    public var aiPreviewEntry: SheetModel?
+    public var aiGeneratedEntries: [SheetModel] = []
+
     // MARK: Generated answer preview
     public var isGeneratedAnswer: Bool = false
     public var isGeneratedSelected: Bool = false

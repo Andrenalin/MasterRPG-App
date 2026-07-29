@@ -201,6 +201,14 @@ private extension SheetView {
                 row(entry: entry)
             }
         }
+        ForEach(sheetModel.aiGeneratedEntries) { entry in
+            row(entry: entry)
+                .transition(.generatedSheetEntry)
+        }
+        if let preview = sheetModel.aiPreviewEntry {
+            row(entry: preview)
+                .transition(.generatedSheetEntry)
+        }
 //        entryRows(for: regularEntries(in: sheetModel.entries))
 //
 //        detailContent(sheetModel)

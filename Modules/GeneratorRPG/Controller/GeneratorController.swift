@@ -210,14 +210,23 @@ struct GeneratorController: Sendable {
         session.prewarm()
     }
             
-    @MainActor func request(message: String, rootSheetModel: SheetModel) {
-        // Cancel any previous request
+    @MainActor func request(message: String, rootModel: SheetRootModel) {
         model.cancel()
         model.isLoading = true
-        
+
+        let rootSheetModel = rootModel.sheetModel
         let prompt = prompt(for: message, module: rootSheetModel.source.typeId, rootSheetModel: rootSheetModel, focusedContent: nil)
 
         PerformanceTrace.event("FoundationRequest", source: "conversation", count: message.count)
+
+        let previewEntry = SheetModel(
+            source: ItemRowModel(itemId: UUID(), typeId: rootSheetModel.source.typeId),
+            name: "Generating...",
+            description: "",
+            entries: []
+        )
+        previewEntry.isGeneratedAnswer = true
+        rootModel.updateAIPreview(previewEntry)
 
         model.currentTask = Task(name: "Foundation Conversation") {
             let trace = PerformanceTrace.begin(
@@ -228,21 +237,25 @@ struct GeneratorController: Sendable {
             defer { trace?.end() }
             defer { model.isLoading = model.session.isResponding }
             do {
-                let resonpse = try await model.conversationEngine.sendMessage(prompt, generationOptions: model.generationOptions)
+                let response = try await model.conversationEngine.sendStreamingMessage(
+                    prompt,
+                    generationOptions: model.generationOptions
+                ) { @MainActor partialText in
+                    previewEntry.description = partialText
+                    model.chatResponse = partialText
+                }
                 model.syncConversationState()
-                // Clear error on success
                 model.responseErrorContent = ""
-                
-                model.chatResponse = resonpse
-                extract(message: resonpse, rootSheetModel: rootSheetModel)
-                
+                extract(message: response, rootModel: rootModel)
             } catch is CancellationError {
-                // Clean cancellation - don't set error
+                rootModel.updateAIPreview(nil)
                 return
             } catch let error as LanguageModelSession.GenerationError {
+                rootModel.updateAIPreview(nil)
                 model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
                 model.showError = true
             } catch {
+                rootModel.updateAIPreview(nil)
                 model.responseErrorContent = error.localizedDescription
                 model.showError = true
             }
@@ -258,9 +271,10 @@ struct GeneratorController: Sendable {
         model.syncConversationState()
     }
 
-    @MainActor func extract(message: String, rootSheetModel: SheetModel) {
+    @MainActor func extract(message: String, rootModel: SheetRootModel) {
         model.cancelExtraction()
         model.isExtracting = true
+        let typeId = rootModel.sheetModel.source.typeId
         PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 
         model.currentExtractionTask = Task(name: "Foundation Extraction") {
@@ -271,6 +285,7 @@ struct GeneratorController: Sendable {
             )
             defer { trace?.end() }
             defer { model.isExtracting = model.extractSession.isResponding }
+            var isFirstPartial = true
             do {
                 let prompt = Prompt {
                     "\(message)"
@@ -283,16 +298,47 @@ struct GeneratorController: Sendable {
                 )
 
                 for try await partialResponse in stream {
-                    self.model.blockResponse = partialResponse.content
+                    let snapshot = partialResponse.content
+                    self.model.blockResponse = snapshot
+                    guard !snapshot.isEmpty else { continue }
+
+                    if isFirstPartial {
+                        isFirstPartial = false
+                        rootModel.updateAIPreview(nil)
+                    }
+
+                    let completedEntries = snapshot.dropLast().compactMap { partial -> SheetModel? in
+                        guard let name = partial.title, let content = partial.content else { return nil }
+                        return makeSheetEntry(name: name, content: content, typeId: typeId)
+                    }
+                    rootModel.updateAIGenerated(completedEntries)
+
+                    if let last = snapshot.last {
+                        if let existing = rootModel.sheetModel.aiPreviewEntry {
+                            existing.name = last.title ?? ""
+                            existing.description = last.content ?? ""
+                        } else {
+                            let preview = SheetModel(
+                                source: ItemRowModel(itemId: UUID(), typeId: typeId),
+                                name: last.title ?? "",
+                                description: last.content ?? "",
+                                entries: []
+                            )
+                            preview.isGeneratedAnswer = true
+                            rootModel.updateAIPreview(preview)
+                        }
+                    }
                 }
-                
-                let sheets = self.model.blockResponse.compactMap { block -> SheetModel? in
-                    guard let name = block.title, let content = block.content else { return nil }
-                    return drafts(from: BlockGenModel(name: name, information: content, blockCategory: .adventure, entries: []))
+
+                let finalEntries = self.model.blockResponse.compactMap { partial -> SheetModel? in
+                    guard let name = partial.title, let content = partial.content else { return nil }
+                    return makeSheetEntry(name: name, content: content, typeId: typeId)
                 }
-                rootSheetModel.entries.append(contentsOf: sheets)
-                
+                rootModel.updateAIGenerated(finalEntries)
+                rootModel.updateAIPreview(nil)
+
             } catch let error as LanguageModelSession.GenerationError {
+                rootModel.updateAIPreview(nil)
                 switch error {
                 case .guardrailViolation(let context):
                     model.responseErrorContent = String(
@@ -328,6 +374,7 @@ struct GeneratorController: Sendable {
                 }
                 model.showError = true
             } catch {
+                rootModel.updateAIPreview(nil)
                 model.responseErrorContent = error.localizedDescription
                 model.showError = true
             }
@@ -379,6 +426,20 @@ private extension GeneratorController {
     }
 
     
+    @MainActor func makeSheetEntry(name: String, content: String, typeId: NetworkModules) -> SheetModel? {
+        let trimmedName = cleaned(name)
+        let trimmedContent = cleaned(content)
+        guard !trimmedName.isEmpty || !trimmedContent.isEmpty else { return nil }
+        let entry = SheetModel(
+            source: ItemRowModel(itemId: UUID(), typeId: typeId),
+            name: trimmedName,
+            description: trimmedContent,
+            entries: []
+        )
+        entry.isGeneratedAnswer = true
+        return entry
+    }
+
     // focusedContent and rootSheetModel are reserved for the focused-entry feature (not yet wired).
     // Context is already in the conversation session's instructions; the prompt is just the user's message.
     @MainActor func prompt(for message: String, module: NetworkModules, rootSheetModel: SheetModel, focusedContent: SheetModel?, maxCharacters: Int = 2_800) -> String {

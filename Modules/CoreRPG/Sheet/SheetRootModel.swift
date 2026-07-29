@@ -183,6 +183,19 @@ public final class SheetRootModel: Sendable {
 
     public private(set) var isAIModeActive: Bool = false
 
+    public func updateAIPreview(_ entry: SheetModel?) {
+        sheetModel.aiPreviewEntry = entry
+    }
+
+    public func updateAIGenerated(_ entries: [SheetModel]) {
+        sheetModel.aiGeneratedEntries = entries
+    }
+
+    public func clearAIState() {
+        sheetModel.aiPreviewEntry = nil
+        sheetModel.aiGeneratedEntries = []
+    }
+
     @ObservationIgnored let rootManager: RootManager
     @ObservationIgnored let sheetControllable: SheetControllable
     @ObservationIgnored let linkControllable: any LinkControllable
@@ -214,6 +227,7 @@ public final class SheetRootModel: Sendable {
         inlineEditingEntryModel = nil
         inlineEditingEntryId = nil
         isAIModeActive = false
+        clearAIState()
     }
     
     func rootController(for module: NetworkModules) -> ItemRootController? {

@@ -111,7 +111,7 @@ struct SheetAIAssistantOverlayView: View {
         let prompt = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { return }
         
-        generatorController.request(message: prompt, rootSheetModel: rootModel.sheetModel)
+        generatorController.request(message: prompt, rootModel: rootModel)
 
         withAnimation(reduceMotion ? nil : .smooth) {
             messageText = ""
