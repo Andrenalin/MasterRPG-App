@@ -182,6 +182,7 @@ public final class SheetRootModel: Sendable {
     // MARK: - AI generation
 
     public private(set) var isAIModeActive: Bool = false
+    public var netxQuestionSheetModel: SheetModel? = nil
 
     public func updateAIPreview(_ entry: SheetModel?) {
         sheetModel.aiPreviewEntry = entry
@@ -546,6 +547,17 @@ public final class SheetRootModel: Sendable {
         isAIModeActive = isActive
     }
 
+    func commitAIEntry(_ entry: SheetModel, parent: SheetModel) {
+        _ = entryDataEditable(for: parent.source)?.insertEntry(
+            itemId: parent.source.itemId,
+            name: entry.name,
+            content: entry.description,
+            position: .end
+        )
+        sheetModel.aiGeneratedEntries.removeAll { $0 === entry }
+        updateParent(parent)
+    }
+
     // MARK: - Search
     
     private func findEntry(id: UUID, in model: SheetModel) -> SheetModel? {
@@ -579,6 +591,10 @@ public final class SheetRootModel: Sendable {
     // MARK: - Editor
     
     func removeEntry(entryModel: SheetModel, from parentModel: SheetModel) {
+        if entryModel.isGeneratedAnswer {
+            sheetModel.aiGeneratedEntries.removeAll { $0 === entryModel }
+            return
+        }
         entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source)
         // Use source identifiers to match and remove
         parentModel.entries.removeAll(where: { entry in

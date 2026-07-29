@@ -162,13 +162,13 @@ private extension SheetEntryView {
 
     var mainRow: some View {
         HStack {
-//            if usesGeneratedContextMenu {
-//                generatedTakeOverButton
-//            } else if entryModel.isGeneratedAnswer {
-//                Image(systemName: generatedIndicatorSystemImage)
-//                .foregroundStyle(entryModel.isGeneratedSelected ? .green : .secondary)
-//                .accessibilityHidden(true)
-//            }
+            if usesGeneratedContextMenu {
+                generatedTakeOverButton
+            } else if entryModel.isGeneratedAnswer {
+                Image(systemName: generatedIndicatorSystemImage)
+                    .foregroundStyle(entryModel.isGeneratedSelected ? .green : .secondary)
+                    .accessibilityHidden(true)
+            }
 
             if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
@@ -201,13 +201,9 @@ private extension SheetEntryView {
             }
             .allowsHitTesting(!entryModel.isGeneratedAnswer)
                             
-            if !entryModel.isGeneratedAnswer && isEditor && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
+            if isEditor && (entryModel.isGeneratedAnswer || entryModel.sheetType == .item || entryModel.sheetType == .group) {
                 SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
             }
-
-//            if usesGeneratedContextMenu {
-//                generatedDeleteButton
-//            }
 
             if !entryModel.isGeneratedAnswer,
                let reviewModel = entryModel.entryReviewModel,
@@ -400,34 +396,20 @@ private extension SheetEntryView {
         isEditor && entryModel.isGeneratedAnswer
     }
 
-//    var generatedTakeOverButton: some View {
-//        Button(action: takeOverGeneratedEntry) {
-//            Label {
-//                Text("Take Over", bundle: .module)
-//            } icon: {
-//                Image(systemName: "sparkles")
-//            }
-//        }
-//            .labelStyle(.iconOnly)
-//            .buttonStyle(.borderless)
-//            .frame(minWidth: 44, minHeight: 44)
-//            .foregroundStyle(.green)
-//            .help(Text("Take over generated content", bundle: .module))
-//    }
-//
-//    var generatedDeleteButton: some View {
-//        Button(role: .destructive, action: deleteGeneratedEntry) {
-//            Label {
-//                Text("Delete Generated Content", bundle: .module)
-//            } icon: {
-//                Image(systemName: "trash")
-//            }
-//        }
-//            .labelStyle(.iconOnly)
-//            .buttonStyle(.borderless)
-//            .frame(minWidth: 44, minHeight: 44)
-//            .help(Text("Delete generated content", bundle: .module))
-//    }
+    var generatedTakeOverButton: some View {
+        Button(action: takeOverGeneratedEntry) {
+            Label {
+                Text("Take Over", bundle: .module)
+            } icon: {
+                Image(systemName: "sparkles")
+            }
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .frame(minWidth: 44, minHeight: 44)
+        .foregroundStyle(.green)
+        .help(Text("Take over generated content", bundle: .module))
+    }
 
     @ViewBuilder var generatedSelectionBorder: some View {
         if entryModel.isGeneratedAnswer {
@@ -501,37 +483,13 @@ private extension SheetEntryView {
         }
     }
 
-//    func takeOverGeneratedEntry() {
-//        guard usesGeneratedContextMenu else { return }
-//
-//        let previewID = entryModel.source.entryId ?? entryModel.source.itemId
-//        let parentModelID = parentModel.id
-//        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
-//        _ = withAnimation(animation, completionCriteria: .removed) {
-//            rootModel.commitGeneratedEntry(entryModel, parent: parentModel)
-//        } completion: {
-//            rootModel.finishGeneratedAcceptanceTransition(
-//                previewID: previewID,
-//                parentModelID: parentModelID
-//            )
-//        }
-//    }
-//
-//    func refineGeneratedEntry() {
-//        guard usesGeneratedContextMenu else { return }
-//        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
-//        _ = withAnimation(animation) {
-//            rootModel.refineGeneratedPreview(entryModel, in: parentModel)
-//        }
-//    }
-//
-//    func deleteGeneratedEntry() {
-//        guard usesGeneratedContextMenu else { return }
-//        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
-//        _ = withAnimation(animation) {
-//            rootModel.discardGeneratedPreview(entryModel, in: parentModel)
-//        }
-//    }
+    func takeOverGeneratedEntry() {
+        guard usesGeneratedContextMenu else { return }
+        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
+        withAnimation(animation) {
+            rootModel.commitAIEntry(entryModel, parent: parentModel)
+        }
+    }
 
     var generatedIndicatorSystemImage: String {
         entryModel.isGeneratedSelected ? "checkmark.circle.fill" : "circle"

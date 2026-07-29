@@ -299,6 +299,7 @@ struct GeneratorController: Sendable {
             defer { trace?.end() }
             defer { model.isExtracting = model.extractSession.isResponding }
             var isFirstPartial = true
+            var stableCompletedEntries: [SheetModel] = []
             do {
                 let prompt = Prompt {
                     "\(message)"
@@ -320,11 +321,19 @@ struct GeneratorController: Sendable {
                         rootModel.updateAIPreview(nil)
                     }
 
-                    let completedEntries = snapshot.dropLast().compactMap { partial -> SheetModel? in
-                        guard let name = partial.title, let content = partial.content else { return nil }
-                        return makeSheetEntry(name: name, content: content, typeId: typeId)
+                    let completedSnapshot = snapshot.dropLast()
+                    if completedSnapshot.count > stableCompletedEntries.count {
+                        let newEntries = completedSnapshot
+                            .dropFirst(stableCompletedEntries.count)
+                            .compactMap { partial -> SheetModel? in
+                                guard let name = partial.title, let content = partial.content else { return nil }
+                                return makeSheetEntry(name: name, content: content, typeId: typeId)
+                            }
+                        if !newEntries.isEmpty {
+                            stableCompletedEntries.append(contentsOf: newEntries)
+                            rootModel.updateAIGenerated(stableCompletedEntries)
+                        }
                     }
-                    rootModel.updateAIGenerated(completedEntries)
 
                     if let last = snapshot.last {
                         let preview = SheetModel(

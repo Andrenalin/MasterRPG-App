@@ -8,7 +8,7 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(\.itemGenerationAction) private var itemGenerationAction
     @Environment(AppGameStateModel.self) private var appGameStateModel
-
+    
     init(
         root: ItemRootController,
         rootModel: SheetRootModel,
@@ -70,7 +70,7 @@ private extension SheetView {
                 if isEditor && sheetModel.canAdd {
                     SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
                 }
-
+                
                 LinkHighlightTextView(
                     model: rootModel.linkTextModel(
                         for: .item(sheetModel.source.itemId),
@@ -78,26 +78,8 @@ private extension SheetView {
                         shareResults: shareResult
                     )
                 )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .font(.title)
-
-                // TODO
-//                if let detailAction {
-//                    Button {
-//                        detailAction(sheetModel)
-//                    } label: {
-//                        Label {
-//                            Text("Next Question", bundle: .module)
-//                        } icon: {
-//                            Image(systemName: "questionmark.bubble")
-//                        }
-//                    }
-//                    .labelStyle(.iconOnly)
-//                    .buttonStyle(.borderless)
-//                    .frame(minWidth: 44, minHeight: 44)
-//                    .disabled(!sheetModel.hasDetailContent)
-//                    .help(Text("Next question", bundle: .module))
-//                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.title)
             }
         }
         .background {
@@ -115,7 +97,7 @@ private extension SheetView {
             }
         }
     }
-
+    
     /// Fills the name row so a plain tap anywhere that isn't already an interactive
     /// element (add button, links inside LinkHighlightTextView, "Next Question") selects it.
     /// The explicit frame + contentShape guarantee the whole row is tappable, independent
@@ -131,7 +113,7 @@ private extension SheetView {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
     }
-
+    
     @ViewBuilder var selectionBorder: some View {
         if sheetModel.isSelected {
             let tint = theme.tint(for: sheetModel.source.typeId)
@@ -169,7 +151,7 @@ private extension SheetView {
     func viewController(for source: ItemRowModel) -> ViewControllable? {
         rootModel.rootController(for: source.typeId)?.viewControllable
     }
-
+    
     var shareResult: ShareValueResult {
         ShareValueResult(
             networkActions: networkActions,
@@ -201,6 +183,7 @@ private extension SheetView {
                 row(entry: entry)
             }
         }
+        
         ForEach(sheetModel.aiGeneratedEntries) { entry in
             row(entry: entry)
                 .transition(.generatedSheetEntry)
@@ -209,13 +192,6 @@ private extension SheetView {
             row(entry: preview)
                 .transition(.generatedSheetEntry)
         }
-//        entryRows(for: regularEntries(in: sheetModel.entries))
-//
-//        detailContent(sheetModel)
-//
-//        entryRows(for: generatedEntries(in: sheetModel.entries))
-//
-//        generatedPreviewRows(rootModel.trailingGeneratedEntries(in: sheetModel))
     }
     
     @ViewBuilder func row(entry: SheetModel) -> some View {
@@ -241,100 +217,7 @@ private extension SheetView {
             }
         }
     }
-
-//    @ViewBuilder func entryRows(for entries: [SheetModel]) -> some View {
-//        ForEach(entries) { entry in
-//            SheetEntryView(
-//                rootModel: rootModel,
-//                parentModel: sheetModel,
-//                entryModel: entry,
-//                isEditor: isEditor,
-//                linkTypes: linkTypes,
-//                generatedAcceptanceNamespace: generatedAcceptanceNamespace
-//            )
-//                .frame(maxWidth: .infinity, alignment: .leading)
-//                .transition(entry.isGeneratedAnswer ? .generatedSheetEntry : .persistedSheetEntry)
-//                // .draggable() below installs its own gesture recognizer that can win
-//                // arbitration over the nested selection Button in editor mode, so taps
-//                // silently stop reaching it. simultaneousGesture is guaranteed to coexist
-//                // with .draggable's gesture rather than compete with it. Generated editor
-//                // rows deliberately omit tap handling and expose their actions by context menu.
-//                .applyIf(isEditor && !entry.isGeneratedAnswer && !entry.isReviewPlaceholder && entry.entryReviewModel == nil) {
-//                    $0.simultaneousGesture(TapGesture().onEnded {
-//                        rootModel.setSelected(entry, parent: sheetModel)
-//                    })
-//                }
-//#if !os(tvOS)
-//                .applyIf(isEditor && !entry.isGeneratedAnswer && !entry.isReviewPlaceholder) {
-//                    $0
-//                        .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
-//                        .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
-//                        .dropDestination(for: linkTypes) { items, location in
-//                            handleDrop(items: items, targetEntry: entry)
-//                        } isTargeted: { isTargeted in
-//                            dropTargetEntryId = isTargeted ? entry.id : nil
-//                        }
-//                }
-//#endif
-//
-//            generatedPreviewRows(rootModel.generatedEntries(after: entry, in: sheetModel))
-//
-//            let visibleSubEntries = visibleEntries(in: entry.entries)
-//            ForEach(visibleSubEntries) { subEntry in
-//                if subEntry.isGeneratedAnswer {
-//                    GeneratedSheetEntryTreeView(
-//                        rootModel: rootModel,
-//                        parentModel: entry,
-//                        entryModel: subEntry,
-//                        isEditor: isEditor,
-//                        linkTypes: linkTypes,
-//                        generatedAcceptanceNamespace: generatedAcceptanceNamespace
-//                    )
-//                        .padding(.leading, 8)
-//                        .frame(maxWidth: .infinity, alignment: .leading)
-//                        .transition(.generatedSheetEntry)
-//                } else if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-//                    SheetView(
-//                        root: root,
-//                        rootModel: rootModel,
-//                        sheetModel: subEntry,
-//                        isEditor: isEditor,
-//                        linkTypes: linkTypes,
-//                        generatedAcceptanceNamespace: generatedAcceptanceNamespace
-//                    )
-//                        .padding(.leading, 2)
-//                }
-//            }
-//        }
-//    }
-//
-//    @ViewBuilder func generatedPreviewRows(_ entries: [SheetModel]) -> some View {
-//        ForEach(entries) { preview in
-//            SheetEntryView(
-//                rootModel: rootModel,
-//                parentModel: sheetModel,
-//                entryModel: preview,
-//                isEditor: isEditor,
-//                linkTypes: linkTypes,
-//                generatedAcceptanceNamespace: generatedAcceptanceNamespace
-//            )
-//            .frame(maxWidth: .infinity, alignment: .leading)
-//            .transition(.generatedSheetEntry)
-//        }
-//    }
-
-//    func visibleEntries(in entries: [SheetModel]) -> [SheetModel] {
-//        entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
-//    }
-//
-//    func regularEntries(in entries: [SheetModel]) -> [SheetModel] {
-//        visibleEntries(in: entries).filter { !$0.isGeneratedAnswer }
-//    }
-//
-//    func generatedEntries(in entries: [SheetModel]) -> [SheetModel] {
-//        visibleEntries(in: entries).filter(\.isGeneratedAnswer)
-//    }
-
+    
     func handleDrop(items: [LinkType], targetEntry: SheetModel) -> Bool {
         rootModel.handleDrop(items: items, targetEntry: targetEntry, parentModel: sheetModel)
     }
@@ -352,7 +235,7 @@ private extension AnyTransition {
             removal: .scale(scale: 0.99).combined(with: .opacity)
         )
     }
-
+    
     static var generatedSheetEntry: AnyTransition {
         .asymmetric(
             insertion: .scale(scale: 0.96).combined(with: .opacity),
@@ -384,3 +267,99 @@ private extension SheetModel {
     }
     .environment(AppGameStateModel())
 }
+
+
+/*
+ //    @ViewBuilder func entryRows(for entries: [SheetModel]) -> some View {
+ //        ForEach(entries) { entry in
+ //            SheetEntryView(
+ //                rootModel: rootModel,
+ //                parentModel: sheetModel,
+ //                entryModel: entry,
+ //                isEditor: isEditor,
+ //                linkTypes: linkTypes,
+ //                generatedAcceptanceNamespace: generatedAcceptanceNamespace
+ //            )
+ //                .frame(maxWidth: .infinity, alignment: .leading)
+ //                .transition(entry.isGeneratedAnswer ? .generatedSheetEntry : .persistedSheetEntry)
+ //                // .draggable() below installs its own gesture recognizer that can win
+ //                // arbitration over the nested selection Button in editor mode, so taps
+ //                // silently stop reaching it. simultaneousGesture is guaranteed to coexist
+ //                // with .draggable's gesture rather than compete with it. Generated editor
+ //                // rows deliberately omit tap handling and expose their actions by context menu.
+ //                .applyIf(isEditor && !entry.isGeneratedAnswer && !entry.isReviewPlaceholder && entry.entryReviewModel == nil) {
+ //                    $0.simultaneousGesture(TapGesture().onEnded {
+ //                        rootModel.setSelected(entry, parent: sheetModel)
+ //                    })
+ //                }
+ //#if !os(tvOS)
+ //                .applyIf(isEditor && !entry.isGeneratedAnswer && !entry.isReviewPlaceholder) {
+ //                    $0
+ //                        .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
+ //                        .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
+ //                        .dropDestination(for: linkTypes) { items, location in
+ //                            handleDrop(items: items, targetEntry: entry)
+ //                        } isTargeted: { isTargeted in
+ //                            dropTargetEntryId = isTargeted ? entry.id : nil
+ //                        }
+ //                }
+ //#endif
+ //
+ //            generatedPreviewRows(rootModel.generatedEntries(after: entry, in: sheetModel))
+ //
+ //            let visibleSubEntries = visibleEntries(in: entry.entries)
+ //            ForEach(visibleSubEntries) { subEntry in
+ //                if subEntry.isGeneratedAnswer {
+ //                    GeneratedSheetEntryTreeView(
+ //                        rootModel: rootModel,
+ //                        parentModel: entry,
+ //                        entryModel: subEntry,
+ //                        isEditor: isEditor,
+ //                        linkTypes: linkTypes,
+ //                        generatedAcceptanceNamespace: generatedAcceptanceNamespace
+ //                    )
+ //                        .padding(.leading, 8)
+ //                        .frame(maxWidth: .infinity, alignment: .leading)
+ //                        .transition(.generatedSheetEntry)
+ //                } else if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
+ //                    SheetView(
+ //                        root: root,
+ //                        rootModel: rootModel,
+ //                        sheetModel: subEntry,
+ //                        isEditor: isEditor,
+ //                        linkTypes: linkTypes,
+ //                        generatedAcceptanceNamespace: generatedAcceptanceNamespace
+ //                    )
+ //                        .padding(.leading, 2)
+ //                }
+ //            }
+ //        }
+ //    }
+ //
+ //    @ViewBuilder func generatedPreviewRows(_ entries: [SheetModel]) -> some View {
+ //        ForEach(entries) { preview in
+ //            SheetEntryView(
+ //                rootModel: rootModel,
+ //                parentModel: sheetModel,
+ //                entryModel: preview,
+ //                isEditor: isEditor,
+ //                linkTypes: linkTypes,
+ //                generatedAcceptanceNamespace: generatedAcceptanceNamespace
+ //            )
+ //            .frame(maxWidth: .infinity, alignment: .leading)
+ //            .transition(.generatedSheetEntry)
+ //        }
+ //    }
+ 
+ //    func visibleEntries(in entries: [SheetModel]) -> [SheetModel] {
+ //        entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
+ //    }
+ //
+ //    func regularEntries(in entries: [SheetModel]) -> [SheetModel] {
+ //        visibleEntries(in: entries).filter { !$0.isGeneratedAnswer }
+ //    }
+ //
+ //    func generatedEntries(in entries: [SheetModel]) -> [SheetModel] {
+ //        visibleEntries(in: entries).filter(\.isGeneratedAnswer)
+ //    }
+ */
