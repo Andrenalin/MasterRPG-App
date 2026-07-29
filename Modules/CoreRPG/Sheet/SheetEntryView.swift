@@ -69,7 +69,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
         }
         .background {
-            if !usesGeneratedContextMenu && !entryModel.isReviewPlaceholder {
+            if !entryModel.isReviewPlaceholder {
                 selectionBackgroundButton
             }
         }
@@ -100,37 +100,25 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
-//        .applyIf(!entryModel.isReviewPlaceholder && !entryModel.isGeneratedAnswer && (isEditor || entryModel.isSelected)) {
-//            $0.contextMenuAll {
-//                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: false)
-//                SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
-//                SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
-//                    .tint(.red)
-//            }
-//        }
-//        .applyIf(usesGeneratedContextMenu) {
-//            $0
-//                .contextMenuAll {
-//                    GeneratedSheetEntryContextMenu(
-//                        canRefine: rootModel.canRefineGeneratedPreview(
-//                            entryModel,
-//                            in: parentModel
-//                        ),
-//                        takeOverAction: takeOverGeneratedEntry,
-//                        refineAction: refineGeneratedEntry,
-//                        deleteAction: deleteGeneratedEntry
-//                    )
-//                }
-//                .accessibilityAction(named: Text("Take Over", bundle: .module)) {
-//                    takeOverGeneratedEntry()
-//                }
-//                .accessibilityAction(named: Text("Refine with AI", bundle: .module)) {
-//                    refineGeneratedEntry()
-//                }
-//                .accessibilityAction(named: Text("Delete Generated Content", bundle: .module)) {
-//                    deleteGeneratedEntry()
-//                }
-//        }
+        .applyIf(!entryModel.isReviewPlaceholder && (entryModel.isGeneratedAnswer || isEditor || entryModel.isSelected)) {
+            $0.contextMenuAll {
+                if entryModel.isGeneratedAnswer {
+                    SheetEntryTakeOverButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
+                    Divider()
+                    SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
+                } else {
+                    SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: false)
+                    SheetContextMenuView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
+                    SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
+                        .tint(.red)
+                }
+            }
+        }
+        .applyIf(entryModel.isGeneratedAnswer) {
+            $0.accessibilityAction(named: Text("Take Over", bundle: .module)) {
+                rootModel.commitAIEntry(entryModel, parent: parentModel)
+            }
+        }
     }
 }
 
@@ -162,12 +150,8 @@ private extension SheetEntryView {
 
     var mainRow: some View {
         HStack {
-            if usesGeneratedContextMenu {
-                generatedTakeOverButton
-            } else if entryModel.isGeneratedAnswer {
-                Image(systemName: generatedIndicatorSystemImage)
-                    .foregroundStyle(entryModel.isGeneratedSelected ? .green : .secondary)
-                    .accessibilityHidden(true)
+            if entryModel.isGeneratedAnswer {
+                SheetEntryTakeOverButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
             }
 
             if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
@@ -392,25 +376,6 @@ private extension SheetEntryView {
         !entryModel.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    var usesGeneratedContextMenu: Bool {
-        isEditor && entryModel.isGeneratedAnswer
-    }
-
-    var generatedTakeOverButton: some View {
-        Button(action: takeOverGeneratedEntry) {
-            Label {
-                Text("Take Over", bundle: .module)
-            } icon: {
-                Image(systemName: "sparkles")
-            }
-        }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .frame(minWidth: 44, minHeight: 44)
-        .foregroundStyle(.green)
-        .help(Text("Take over generated content", bundle: .module))
-    }
-
     @ViewBuilder var generatedSelectionBorder: some View {
         if entryModel.isGeneratedAnswer {
             let green = Color.green
@@ -481,18 +446,6 @@ private extension SheetEntryView {
         } else {
             rootModel.setSelected(entryModel, parent: parentModel)
         }
-    }
-
-    func takeOverGeneratedEntry() {
-        guard usesGeneratedContextMenu else { return }
-        let animation: Animation? = accessibilityReduceMotion ? nil : .smooth
-        withAnimation(animation) {
-            rootModel.commitAIEntry(entryModel, parent: parentModel)
-        }
-    }
-
-    var generatedIndicatorSystemImage: String {
-        entryModel.isGeneratedSelected ? "checkmark.circle.fill" : "circle"
     }
 
     var primaryActionAccessibilityLabel: Text {
