@@ -4,6 +4,7 @@
 import CoreRPG
 import Foundation
 import SwiftUI
+import FoundationModels
 
 /// A compact composer for generating transient SheetModel previews in the visible sheet.
 /// The SheetRootModel owns focus, request identity, and preview lifetime; this view only
@@ -12,13 +13,11 @@ struct SheetAIAssistantOverlayView: View {
     let generatorController: GeneratorController
     let rootModel: SheetRootModel
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var isTextFieldFocused: Bool
 
     @State private var messageText = ""
     @State private var errorMessage: String?
-    @State private var availability = SheetAIGenerationController().availability
-    @FocusState private var isTextFieldFocused: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
 
     public var body: some View {
         standardAssistant
@@ -41,34 +40,33 @@ struct SheetAIAssistantOverlayView: View {
                 isTextFieldFocused = false
                 return
             }
+            if generatorController.availblity {
+                await generatorController.preparaEngine(module: rootModel.sheetModel.source.typeId)
+            }
 
             await Task.yield()
             guard !Task.isCancelled, rootModel.isAIModeActive else { return }
             isTextFieldFocused = true
         }
-        .task(id: rootModel.pendingGenerationRequest?.id) {
-            guard let request = rootModel.pendingGenerationRequest else { return }
-            await generate(request)
-        }
+//        .task(id: rootModel.pendingGenerationRequest?.id) {
+//            guard let request = rootModel.pendingGenerationRequest else { return }
+//            await generate(request)
+//        }
         .onChange(of: rootModel.sheetModel.source.itemId) { _, _ in
             resetForItemChange()
         }
         .task {
-            MasterRPGTips.setAIAvailable(availability.isAvailable)
-        }
-        .onChange(of: availability) { _, newAvailability in
-            MasterRPGTips.setAIAvailable(newAvailability.isAvailable)
+            MasterRPGTips.setAIAvailable(generatorController.availblity)
         }
     }
 
     @ViewBuilder
     private var standardAssistant: some View {
         SheetAIAssistantStandardControl(
+            generatorController: generatorController,
             module: rootModel.sheetModel.source.typeId,
             messageText: $messageText,
-            availability: availability,
             isExpanded: rootModel.isAIModeActive,
-            isGenerating: rootModel.pendingGenerationRequest != nil,
             isTextFieldFocused: $isTextFieldFocused,
             submitAction: submitPrompt,
             toggleAction: toggleAIMode
@@ -88,14 +86,12 @@ struct SheetAIAssistantOverlayView: View {
 
     private func activateAIMode() {
         withAnimation(reduceMotion ? nil : .smooth) {
-            //availability = generationController.availability
             rootModel.setAIModeActive(true)
         }
     }
 
     private func closeAIMode() {
         withAnimation(reduceMotion ? nil : .smooth) {
-            isTextFieldFocused = false
             rootModel.setAIModeActive(false)
         }
     }
@@ -111,32 +107,19 @@ struct SheetAIAssistantOverlayView: View {
     private func resetForItemChange() {
         messageText = ""
         errorMessage = nil
-        //availability = generationController.availability
-        isTextFieldFocused = false
         rootModel.setAIModeActive(false)
     }
 
     private func submitPrompt() {
         let prompt = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { return }
+        
+        generatorController.request(message: prompt, rootSheetModel: rootModel.sheetModel)
 
-        //availability = generationController.availability
-        guard availability.isAvailable else { return }
-        
-        let request = SheetGenerationRequest(prompt: prompt, sheetContext: SheetContentSnapshot(id: UUID(), source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: "", content: ""), focusedContent: nil, focus: SheetGenerationFocus(rootItemID: UUID(), parentModelID: UUID(), parentSource: ItemRowModel(itemId: UUID(), typeId: .adventure), selectedModelID: nil, selectedSource: nil, position: .end, module: .adventure))
-        
-//        Task {
-//            try await generationController.generateDrafts(for: request)
-//        }
-//        let didQueue = withAnimation(reduceMotion ? nil : .smooth) {
-//            guard rootModel.queueGeneration(prompt: prompt, module: module) != nil else {
-//                return false
-//            }
-//            messageText = ""
-//            errorMessage = nil
-//            return true
-//        }
-//        guard didQueue else { return }
+        withAnimation(reduceMotion ? nil : .smooth) {
+            messageText = ""
+            errorMessage = nil
+        }
         isTextFieldFocused = true
     }
 

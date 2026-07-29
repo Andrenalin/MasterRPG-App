@@ -52,7 +52,16 @@ final class GeneratorSessionModel {
         currentTask?.cancel()
         currentTask = nil
     }
-            
+
+    // Task management for cancellation extraction
+    var currentExtractionTask: Task<Void, Never>?
+
+    func cancelExtraction() {
+        currentExtractionTask?.cancel()
+        currentExtractionTask = nil
+    }
+
+    
     // MARK: - Generation Options
     
     var SamplingStrategyConfiguration: SamplingStrategyConfiguration = .default
@@ -155,6 +164,7 @@ struct GeneratorController: Sendable {
         let engine = ConversationEngine(configuration: configuration)
 
         self.model = GeneratorSessionModel(conversationEngine: engine)
+        self.foundationManager = FoundationManager()
     }
     
     
@@ -163,24 +173,55 @@ struct GeneratorController: Sendable {
         model.currentTask?.cancel()
     }
 
+    let model: GeneratorSessionModel
+    let foundationManager: FoundationManager
+
     static let defaultInstructions = """
         You are an assistant to support a game master for creating a fictional game story.
         In the game you have NPC and players characters they have to talk to each other.
         Add connections to other possible outcomes or stories.
         Keep your answer precise except the game master needed a detailed version.
+        Preserve the language used by the game master.
     """
 
-    let model: GeneratorSessionModel
-    let llm = SystemLanguageModel.default
-    
-    @MainActor func generate() async {
-        model.conversationEngine.prewarm()
+    @MainActor var availblity: Bool {
+        foundationManager.isModelAvailable
     }
     
-    @MainActor func request(message: String) {
+    @MainActor func preparaEngine(module: NetworkModules) async {
+        model.conversationEngine.prewarm()
+        
+        let introduction = """
+        Create structured RPG sheet content for module type \(module.title).
+        Return one coherent BlockGenModel. Put each selectable sheet row in its entries array.
+        Keep entry titles concise and make entry content immediately useful during play.
+        Preserve the language used by the game master.
+        """
+
+        let session = LanguageModelSession(instructions: introduction)
+        self.model.set(extractSession: session)
+        session.prewarm()
+    }
+    
+    @MainActor func generateExtractor() {
+        let instructions = """
+                Your job is to extyract the text into blocks that can be processed later as text blocks for a bigger story. 
+                """
+        let session = LanguageModelSession(instructions: instructions)
+        
+        self.model.set(extractSession: session)
+        session.prewarm()
+    }
+
+
+    
+    @MainActor func request(message: String, rootSheetModel: SheetModel) {
         // Cancel any previous request
         model.cancel()
         model.isLoading = true
+        
+        let prompt = prompt(for: message, module: rootSheetModel.source.typeId, rootSheetModel: rootSheetModel, focusedContent: nil)
+
         PerformanceTrace.event("FoundationRequest", source: "conversation", count: message.count)
 
         model.currentTask = Task(name: "Foundation Conversation") {
@@ -192,16 +233,13 @@ struct GeneratorController: Sendable {
             defer { trace?.end() }
             defer { model.isLoading = model.session.isResponding }
             do {
-                _ = try await model.conversationEngine.sendStreamingMessage(
-                    message,
-                    generationOptions: model.generationOptions
-                ) { partial in
-                    self.model.adventureChat = partial
-                }
+                let resonpse = try await model.conversationEngine.sendMessage(prompt, generationOptions: model.generationOptions)
                 model.syncConversationState()
-                
                 // Clear error on success
                 model.responseErrorContent = ""
+                
+                extract(message: resonpse, rootSheetModel: rootSheetModel)
+                
             } catch is CancellationError {
                 // Clean cancellation - don't set error
                 return
@@ -224,29 +262,19 @@ struct GeneratorController: Sendable {
         model.syncConversationState()
     }
 
-    @MainActor func generateExtractor() {
-        let instructions = """
-                Your job is to extyract the text into blocks that can be processed later as text blocks for a bigger story. 
-                """
-        let session = LanguageModelSession(instructions: instructions)
-        
-        self.model.set(extractSession: session)
-        session.prewarm()
-    }
-
-    @MainActor func extract(message: String) {
-        guard !model.extractSession.isResponding else { return }
+    @MainActor func extract(message: String, rootSheetModel: SheetModel) {
+        model.cancelExtraction()
         model.isExtracting = true
         PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 
-        Task(name: "Foundation Extraction") {
+        model.currentExtractionTask = Task(name: "Foundation Extraction") {
             let trace = PerformanceTrace.begin(
                 "FoundationExtraction",
                 source: "extraction",
                 count: message.count
             )
             defer { trace?.end() }
-            defer { model.isExtracting = false }
+            defer { model.isExtracting = model.extractSession.isResponding }
             do {
                 let prompt = Prompt {
                     "\(message)"
@@ -261,6 +289,13 @@ struct GeneratorController: Sendable {
                 for try await partialResponse in stream {
                     self.model.extracted = partialResponse.content
                 }
+                
+                let sheets = self.model.extracted.compactMap { block -> SheetModel? in
+                    guard let name = block.title, let content = block.content else { return nil }
+                    return drafts(from: BlockGenModel(name: name, information: content, blockCategory: .adventure, entries: []))
+                }
+                rootSheetModel.entries.append(contentsOf: sheets)
+                
             } catch let error as LanguageModelSession.GenerationError {
                 switch error {
                 case .guardrailViolation(let context):
@@ -302,6 +337,239 @@ struct GeneratorController: Sendable {
             }
         }
     }
+}
+
+private extension GeneratorController {
+    @MainActor func drafts(from block: BlockGenModel) -> SheetModel? {
+        let entryDrafts = block.entries.compactMap { entry -> SheetModel? in
+            let title = cleaned(entry.title)
+            let content = cleaned(entry.content)
+            guard !title.isEmpty || !content.isEmpty else { return nil }
+            var sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: [])
+            sheetModel.isGeneratedAnswer = true
+            return sheetModel
+        }
+
+        let title = cleaned(block.name)
+        let content = cleaned(block.information)
+        guard !title.isEmpty || !content.isEmpty else { return nil }
+        
+        var sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: entryDrafts)
+        sheetModel.isGeneratedAnswer = true
+        return sheetModel
+    }
+
+    
+    @MainActor func prompt(for message: String, module: NetworkModules, rootSheetModel: SheetModel, focusedContent: SheetModel?, maxCharacters: Int = 2_800) -> String {
+        let totalBudget = max(0, maxCharacters)
+        guard totalBudget > 0 else { return "" }
+
+        let userPrompt = message.isEmpty
+            ? "Generate useful new content from the summary."
+            : message
+        let introduction = """
+        Create structured RPG sheet content for module type \(module.title).
+        Return one coherent BlockGenModel. Put each selectable sheet row in its entries array.
+        Keep entry titles concise and make entry content immediately useful during play.
+        Preserve the language used by the game master.
+        """
+        let requestHeader = "\n\nGame master's request:\n"
+        let focusHeader = "\n\nFocused content:\n"
+        let contextHeader = "\n\nContaining sheet context:\n"
+        let fixedCharacterCount = introduction.count
+            + requestHeader.count
+            + focusHeader.count
+            + contextHeader.count
+        let contentBudget = max(0, totalBudget - fixedCharacterCount)
+
+        let requestedUserBudget = contentBudget / 5
+        let requestedFocusBudget = focusedContent == nil
+            ? min(80, max(0, contentBudget - requestedUserBudget))
+            : contentBudget * 3 / 10
+        let requestedContextBudget = max(
+            0,
+            contentBudget - requestedUserBudget - requestedFocusBudget
+        )
+
+        let limitedUserPrompt = limitedCleaned(
+            userPrompt,
+            maxCharacters: requestedUserBudget
+        )
+        let unusedUserBudget = max(0, requestedUserBudget - limitedUserPrompt.count)
+
+        let focusedText: String
+        if let focusedContent = focusedContent {
+            focusedText = render(
+                focusedContent,
+                maxCharacters: requestedFocusBudget
+            )
+        } else {
+            focusedText = limitedCleaned(
+                "None. Add content to the containing sheet.",
+                maxCharacters: requestedFocusBudget
+            )
+        }
+        let unusedFocusBudget = max(0, requestedFocusBudget - focusedText.count)
+
+        let contextText = render(
+            rootSheetModel,
+            maxCharacters: requestedContextBudget + unusedUserBudget + unusedFocusBudget
+        )
+        let combinedPrompt = introduction
+            + requestHeader
+            + limitedUserPrompt
+            + focusHeader
+            + focusedText
+            + contextHeader
+            + contextText
+
+        return limitedPrefix(combinedPrompt, maxCharacters: totalBudget)
+    }
+    
+    func limitedCleaned(_ value: String, maxCharacters: Int) -> String {
+        guard maxCharacters > 0 else { return "" }
+
+        let leadingTrimmed = value.drop(while: { $0.isWhitespace })
+        let limited = limitedPrefix(leadingTrimmed, maxCharacters: maxCharacters)
+        return limited.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func limitedPrefix<S: StringProtocol>(
+        _ value: S,
+        maxCharacters: Int
+    ) -> String {
+        guard maxCharacters > 0 else { return "" }
+
+        let boundedProbe = String(value.prefix(maxCharacters + 1))
+        return FoundationModelInputLimiter.limitedText(
+            boundedProbe,
+            maxCharacters: maxCharacters
+        )
+    }
+
+    func cleaned(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    @MainActor func render(
+        _ snapshot: SheetModel,
+        maxCharacters: Int
+    ) -> String {
+        guard maxCharacters > 0 else { return "" }
+
+        var builder = SheetAIBoundedStringBuilder(maxCharacters: maxCharacters)
+        var stack = [SheetAISnapshotTraversalFrameSheet(snapshot: snapshot, depth: 0)]
+        var snapshotsVisited = 0
+        let snapshotVisitLimit = max(1, min(256, maxCharacters / 8))
+
+        while !stack.isEmpty,
+              builder.remainingCharacters > 0,
+              snapshotsVisited < snapshotVisitLimit {
+            var frame = stack.removeLast()
+
+            if !frame.didRenderSnapshot {
+                snapshotsVisited += 1
+                appendSnapshot(frame.snapshot, depth: frame.depth, to: &builder)
+                frame.didRenderSnapshot = true
+            }
+
+            guard builder.remainingCharacters > 0 else {
+                stack.append(frame)
+                break
+            }
+
+//            if frame.nextChildIndex < frame.snapshot.children.count {
+//                let child = frame.snapshot.children[frame.nextChildIndex]
+//                frame.nextChildIndex += 1
+//                stack.append(frame)
+//                stack.append(
+//                    SheetAISnapshotTraversalFrameSheet(
+//                        snapshot: child,
+//                        depth: frame.depth + 1
+//                    )
+//                )
+//            }
+        }
+
+        if !stack.isEmpty {
+            builder.markTruncated()
+        }
+
+        return builder.text
+    }
+
+    @MainActor func appendSnapshot(
+        _ snapshot: SheetModel,
+        depth: Int,
+        to builder: inout SheetAIBoundedStringBuilder
+    ) {
+        let indentation = String(repeating: "  ", count: min(depth, 6))
+        appendField(
+            snapshot.name,
+            prefix: "\(indentation)Title: ",
+            maximumValueCharacters: 160,
+            to: &builder
+        )
+        appendField(
+            snapshot.description,
+            prefix: "\(indentation)Content: ",
+            maximumValueCharacters: 420,
+            to: &builder
+        )
+    }
+
+    @MainActor func appendField(
+        _ value: String,
+        prefix: String,
+        maximumValueCharacters: Int,
+        to builder: inout SheetAIBoundedStringBuilder
+    ) {
+        let separatorCharacterCount = builder.text.isEmpty ? 0 : 1
+        let availableValueCharacters = max(
+            0,
+            builder.remainingCharacters - prefix.count - separatorCharacterCount
+        )
+        let valueBudget = min(maximumValueCharacters, availableValueCharacters)
+        let limitedValue = limitedCleaned(value, maxCharacters: valueBudget)
+        guard !limitedValue.isEmpty else { return }
+        builder.appendLine(prefix + limitedValue)
+    }
+}
+
+
+struct SheetAIBoundedStringBuilder {
+    init(maxCharacters: Int) {
+        self.maxCharacters = max(0, maxCharacters)
+    }
+
+    let maxCharacters: Int
+    private(set) var text = ""
+
+    var remainingCharacters: Int {
+        max(0, maxCharacters - text.count)
+    }
+
+    mutating func appendLine(_ line: String) {
+        guard remainingCharacters > 0 else { return }
+
+        let value = text.isEmpty ? line : "\n" + line
+        let boundedValue = String(value.prefix(remainingCharacters))
+        text += boundedValue
+    }
+
+    mutating func markTruncated() {
+        text = FoundationModelInputLimiter.limitedText(
+            text + FoundationModelInputLimiter.truncationMarker,
+            maxCharacters: maxCharacters
+        )
+    }
+}
+
+struct SheetAISnapshotTraversalFrameSheet {
+    let snapshot: SheetModel
+    let depth: Int
+    var nextChildIndex = 0
+    var didRenderSnapshot = false
 }
 
 #endif

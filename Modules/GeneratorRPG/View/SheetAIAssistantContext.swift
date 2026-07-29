@@ -12,7 +12,7 @@ public extension View {
         module: NetworkModules
     ) -> some View {
         overlay(alignment: .bottomTrailing) {
-            if let rootModel, let generatorController = generatorRoot?.generatorControllers[module], generatorController.llm.isAvailable {
+            if let rootModel, let generatorController = generatorRoot?.generatorControllers[module], generatorController.availblity {
                 SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
                 .padding(.horizontal)
                 .padding(.bottom)

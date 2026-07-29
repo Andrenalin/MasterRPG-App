@@ -12,11 +12,10 @@ import TipKit
 /// That lifecycle could leave Liquid Glass continuously rendering after rapid
 /// open/close/open interactions.
 struct SheetAIAssistantStandardControl: View {
+    let generatorController: GeneratorController
     let module: NetworkModules
     @Binding var messageText: String
-    let availability: SheetAIGenerationAvailability
     let isExpanded: Bool
-    let isGenerating: Bool
     @FocusState.Binding var isTextFieldFocused: Bool
     let submitAction: () -> Void
     let toggleAction: () -> Void
@@ -54,9 +53,9 @@ struct SheetAIAssistantStandardControl: View {
 #if os(iOS)
                 .submitLabel(.send)
 #endif
-                .disabled(!availability.isAvailable || isGenerating)
+                .disabled(!generatorController.availblity || generatorController.model.isLoading)
                 .overlay(alignment: .trailing) {
-                    if isGenerating {
+                    if generatorController.model.isLoading {
                         ProgressView()
                             .controlSize(.small)
                             .accessibilityLabel(Text("Generating sheet content", bundle: .module))
@@ -87,7 +86,7 @@ struct SheetAIAssistantStandardControl: View {
     @Previewable @FocusState var isFocused: Bool
     
     VStack {
-        SheetAIAssistantStandardControl(module: .adventure, messageText: $message, availability: SheetAIGenerationAvailability.available, isExpanded: true, isGenerating: false, isTextFieldFocused: $isFocused, submitAction: {}, toggleAction: {})
+        SheetAIAssistantStandardControl(generatorController: GeneratorController(), module: .adventure, messageText: $message, isExpanded: true, isTextFieldFocused: $isFocused, submitAction: {}, toggleAction: {})
     }
 }
 #endif

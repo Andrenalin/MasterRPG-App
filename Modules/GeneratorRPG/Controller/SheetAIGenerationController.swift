@@ -347,39 +347,12 @@ public struct SheetAIGenerationController: Sendable {
     }
 }
 
-private struct SheetAISnapshotTraversalFrame {
+struct SheetAISnapshotTraversalFrame {
     let snapshot: SheetContentSnapshot
     let depth: Int
     var nextChildIndex = 0
     var didRenderSnapshot = false
 }
 
-private struct SheetAIBoundedStringBuilder {
-    init(maxCharacters: Int) {
-        self.maxCharacters = max(0, maxCharacters)
-    }
-
-    let maxCharacters: Int
-    private(set) var text = ""
-
-    var remainingCharacters: Int {
-        max(0, maxCharacters - text.count)
-    }
-
-    mutating func appendLine(_ line: String) {
-        guard remainingCharacters > 0 else { return }
-
-        let value = text.isEmpty ? line : "\n" + line
-        let boundedValue = String(value.prefix(remainingCharacters))
-        text += boundedValue
-    }
-
-    mutating func markTruncated() {
-        text = FoundationModelInputLimiter.limitedText(
-            text + FoundationModelInputLimiter.truncationMarker,
-            maxCharacters: maxCharacters
-        )
-    }
-}
 
 #endif
