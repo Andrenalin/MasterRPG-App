@@ -5,6 +5,7 @@
 import CoreRPG
 import Foundation
 import FoundationModels
+import SwiftUI
 
 @Observable
 @MainActor
@@ -261,14 +262,14 @@ struct GeneratorController: Sendable {
                 model.chatResponse = response
                 extract(message: response, rootModel: rootModel)
             } catch is CancellationError {
-                rootModel.updateAIPreview(nil)
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 return
             } catch let error as LanguageModelSession.GenerationError {
-                rootModel.updateAIPreview(nil)
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
                 model.showError = true
             } catch {
-                rootModel.updateAIPreview(nil)
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 model.responseErrorContent = error.localizedDescription
                 model.showError = true
             }
@@ -318,7 +319,7 @@ struct GeneratorController: Sendable {
 
                     if isFirstPartial {
                         isFirstPartial = false
-                        rootModel.updateAIPreview(nil)
+                        withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                     }
 
                     let completedSnapshot = snapshot.dropLast()
@@ -331,7 +332,7 @@ struct GeneratorController: Sendable {
                             }
                         if !newEntries.isEmpty {
                             stableCompletedEntries.append(contentsOf: newEntries)
-                            rootModel.updateAIGenerated(stableCompletedEntries)
+                            withAnimation(.smooth) { rootModel.updateAIGenerated(stableCompletedEntries) }
                         }
                     }
 
@@ -351,11 +352,11 @@ struct GeneratorController: Sendable {
                     guard let name = partial.title, let content = partial.content else { return nil }
                     return makeSheetEntry(name: name, content: content, typeId: typeId)
                 }
-                rootModel.updateAIGenerated(finalEntries)
-                rootModel.updateAIPreview(nil)
+                withAnimation(.smooth) { rootModel.updateAIGenerated(finalEntries) }
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
 
             } catch let error as LanguageModelSession.GenerationError {
-                rootModel.updateAIPreview(nil)
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 switch error {
                 case .guardrailViolation(let context):
                     model.responseErrorContent = String(
@@ -391,7 +392,7 @@ struct GeneratorController: Sendable {
                 }
                 model.showError = true
             } catch {
-                rootModel.updateAIPreview(nil)
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 model.responseErrorContent = error.localizedDescription
                 model.showError = true
             }
@@ -428,7 +429,7 @@ private extension GeneratorController {
             let title = cleaned(entry.title)
             let content = cleaned(entry.content)
             guard !title.isEmpty || !content.isEmpty else { return nil }
-            var sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: [])
+            let sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: [])
             sheetModel.isGeneratedAnswer = true
             return sheetModel
         }

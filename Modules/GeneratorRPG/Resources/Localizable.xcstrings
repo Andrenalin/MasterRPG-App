@@ -2668,9 +2668,6 @@
         }
       }
     },
-    "Refine and expand the story around '%@'." : {
-
-    },
     "Response generation failed: %@" : {
       "localizations" : {
         "de" : {

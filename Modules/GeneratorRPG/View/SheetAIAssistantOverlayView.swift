@@ -115,6 +115,7 @@ struct SheetAIAssistantOverlayView: View {
     }
 
     private func submitFocusedEntry(_ entry: SheetModel) {
+        rootModel.focusAISheetModel = nil
         let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let content = entry.description.trimmingCharacters(in: .whitespacesAndNewlines)
         let message: String
