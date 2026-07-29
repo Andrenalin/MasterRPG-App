@@ -42,12 +42,8 @@ final class GeneratorSessionModel {
         showError = false
     }
     
-    // chat
-    var adventureChat: String?
-
     // Task management for cancellation
     var currentTask: Task<Void, Never>?
-
     func cancel() {
         currentTask?.cancel()
         currentTask = nil
@@ -55,15 +51,12 @@ final class GeneratorSessionModel {
 
     // Task management for cancellation extraction
     var currentExtractionTask: Task<Void, Never>?
-
     func cancelExtraction() {
         currentExtractionTask?.cancel()
         currentExtractionTask = nil
     }
-
     
     // MARK: - Generation Options
-    
     var SamplingStrategyConfiguration: SamplingStrategyConfiguration = .default
     var useFixedSeed: Bool = false
     var usePermissiveGuardrails: Bool = false
@@ -124,15 +117,17 @@ final class GeneratorSessionModel {
     
     // extracting
     var extractSession = LanguageModelSession()
-    var extracted: [BlockEntryGenModel.PartiallyGenerated] = []
     /// True while a stream is actively producing partial results. Callers that need to
     /// persist the final blocks (rather than every partial update) should watch for the
     /// true → false transition.
     var isExtracting: Bool = false
-    
     func set(extractSession: LanguageModelSession) {
         self.extractSession = extractSession
     }
+    
+    // response
+    var chatResponse: String?
+    var blockResponse: [BlockEntryGenModel.PartiallyGenerated] = []
 }
 
 struct GeneratorController: Sendable {
@@ -166,7 +161,6 @@ struct GeneratorController: Sendable {
         self.model = GeneratorSessionModel(conversationEngine: engine)
         self.foundationManager = FoundationManager()
     }
-    
     
     @MainActor func tearDown() {
         model.conversationEngine.cancelActiveResponse()
@@ -215,19 +209,7 @@ struct GeneratorController: Sendable {
         self.model.set(extractSession: session)
         session.prewarm()
     }
-    
-    @MainActor func generateExtractor() {
-        let instructions = """
-                Your job is to extyract the text into blocks that can be processed later as text blocks for a bigger story. 
-                """
-        let session = LanguageModelSession(instructions: instructions)
-        
-        self.model.set(extractSession: session)
-        session.prewarm()
-    }
-
-
-    
+            
     @MainActor func request(message: String, rootSheetModel: SheetModel) {
         // Cancel any previous request
         model.cancel()
@@ -251,6 +233,7 @@ struct GeneratorController: Sendable {
                 // Clear error on success
                 model.responseErrorContent = ""
                 
+                model.chatResponse = resonpse
                 extract(message: resonpse, rootSheetModel: rootSheetModel)
                 
             } catch is CancellationError {
@@ -300,10 +283,10 @@ struct GeneratorController: Sendable {
                 )
 
                 for try await partialResponse in stream {
-                    self.model.extracted = partialResponse.content
+                    self.model.blockResponse = partialResponse.content
                 }
                 
-                let sheets = self.model.extracted.compactMap { block -> SheetModel? in
+                let sheets = self.model.blockResponse.compactMap { block -> SheetModel? in
                     guard let name = block.title, let content = block.content else { return nil }
                     return drafts(from: BlockGenModel(name: name, information: content, blockCategory: .adventure, entries: []))
                 }
