@@ -49,6 +49,13 @@ struct SheetAIAssistantOverlayView: View {
             guard !Task.isCancelled, rootModel.isAIModeActive else { return }
             isTextFieldFocused = true
         }
+        .onChange(of: rootModel.focusAISheetModel) { _, focused in
+            guard let focused else { return }
+            if !rootModel.isAIModeActive {
+                activateAIMode()
+            }
+            submitFocusedEntry(focused)
+        }
         .onChange(of: rootModel.sheetModel.source.itemId) { _, _ in
             resetForItemChange()
         }
@@ -107,6 +114,21 @@ struct SheetAIAssistantOverlayView: View {
         rootModel.setAIModeActive(false)
     }
 
+    private func submitFocusedEntry(_ entry: SheetModel) {
+        let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = entry.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let message: String
+        if content.isEmpty {
+            message = String("Refine and expand the story around '\(name)'")
+        } else {
+            message = String("Refine and expand the story around '\(name)': \(content)")
+        }
+        generatorController.request(message: message, rootModel: rootModel)
+        withAnimation(reduceMotion ? nil : .smooth) {
+            errorMessage = nil
+        }
+    }
+
     private func submitPrompt() {
         let prompt = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { return }
@@ -118,46 +140,6 @@ struct SheetAIAssistantOverlayView: View {
             errorMessage = nil
         }
         isTextFieldFocused = true
-    }
-
-    @MainActor
-    private func generate(_ request: SheetGenerationRequest) async {
-//        guard request.focus.rootItemID == itemId else {
-//            rootModel.finishGenerationRequest(request.id)
-//            return
-//        }
-//
-//        availability = generationController.availability
-//        withAnimation(reduceMotion ? nil : .smooth) {
-//            errorMessage = nil
-//        }
-//
-//        do {
-//            let drafts = try await generationController.generateDrafts(for: request)
-//            try Task.checkCancellation()
-//            guard rootModel.pendingGenerationRequest?.id == request.id else { return }
-//
-//            let installed = withAnimation(reduceMotion ? nil : .smooth) {
-//                rootModel.installGeneratedDrafts(drafts, for: request.id)
-//            }
-//            if !installed {
-//                withAnimation(reduceMotion ? nil : .smooth) {
-//                    errorMessage = SheetAIGenerationError.emptyResponse.localizedDescription
-//                    rootModel.finishGenerationRequest(request.id)
-//                }
-//            }
-//        } catch is CancellationError {
-//            guard rootModel.pendingGenerationRequest?.id == request.id else { return }
-//            withAnimation(reduceMotion ? nil : .smooth) {
-//                rootModel.finishGenerationRequest(request.id)
-//            }
-//        } catch {
-//            guard rootModel.pendingGenerationRequest?.id == request.id else { return }
-//            withAnimation(reduceMotion ? nil : .smooth) {
-//                errorMessage = error.localizedDescription
-//                rootModel.finishGenerationRequest(request.id)
-//            }
-//        }
     }
 }
 

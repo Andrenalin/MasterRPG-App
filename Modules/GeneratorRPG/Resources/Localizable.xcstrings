@@ -2658,6 +2658,19 @@
         }
       }
     },
+    "Refine and expand the story around '%@': %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Refine and expand the story around '%1$@': %2$@"
+          }
+        }
+      }
+    },
+    "Refine and expand the story around '%@'." : {
+
+    },
     "Response generation failed: %@" : {
       "localizations" : {
         "de" : {

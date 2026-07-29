@@ -158,6 +158,23 @@ private extension SheetEntryView {
                 SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
             }
 
+            if !entryModel.isGeneratedAnswer, rootModel.isAIModeActive, canGoDeeper {
+                Button {
+                    rootModel.focusAISheetModel = entryModel
+                } label: {
+                    Label {
+                        Text("Ask AI about this entry", bundle: .module)
+                    } icon: {
+                        Image(systemName: "questionmark.bubble")
+                    }
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .frame(minWidth: 44, minHeight: 44)
+                .disabled(!hasDetailContent)
+                .help(Text("Ask AI about this entry", bundle: .module))
+            }
+
             Group {
                 switch entryModel.sheetType {
                 case .item, .group:
@@ -195,23 +212,6 @@ private extension SheetEntryView {
                 SheetEntryReviewButton(model: reviewModel)
             }
 
-            if !entryModel.isGeneratedAnswer, canGoDeeper {
-                Button {
-                    // TODO
-                    //detailAction(entryModel)
-                } label: {
-                    Label {
-                        Text("Next Question", bundle: .module)
-                    } icon: {
-                        Image(systemName: "questionmark.bubble")
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .frame(minWidth: 44, minHeight: 44)
-                .disabled(!hasDetailContent)
-                .help(Text("Next question", bundle: .module))
-            }
         }
     }
 
