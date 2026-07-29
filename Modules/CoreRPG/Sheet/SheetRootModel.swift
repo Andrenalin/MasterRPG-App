@@ -182,14 +182,22 @@ public final class SheetRootModel: Sendable {
     // MARK: - AI generation
 
     public private(set) var isAIModeActive: Bool = false
-    public var netxQuestionSheetModel: SheetModel? = nil
+    public var focusAISheetModel: SheetModel? = nil
 
     public func updateAIPreview(_ entry: SheetModel?) {
+        let wasNil = sheetModel.aiPreviewEntry == nil
         sheetModel.aiPreviewEntry = entry
+        if wasNil, let entry {
+            setScrollEntryId(source: entry.source, entryId: entry.source.itemId)
+        }
     }
 
     public func updateAIGenerated(_ entries: [SheetModel]) {
+        let previousCount = sheetModel.aiGeneratedEntries.count
         sheetModel.aiGeneratedEntries = entries
+        if entries.count > previousCount, let last = entries.last {
+            setScrollEntryId(source: last.source, entryId: last.source.itemId)
+        }
     }
 
     public func clearAIState() {

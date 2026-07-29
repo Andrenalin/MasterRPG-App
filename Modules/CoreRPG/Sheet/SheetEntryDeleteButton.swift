@@ -27,6 +27,7 @@ struct SheetEntryDeleteButton: View {
         }
         .foregroundStyle(.white, .red, .red)
         .borderLessTVBottonStyle()
+        .applyIf(onlyIcon) { $0.frame(minWidth: 44, minHeight: 44) }
         .keyboardShortcutAll("r", modifiers: .shift)
     }
 }
