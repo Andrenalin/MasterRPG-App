@@ -126,6 +126,7 @@ final class GeneratorSessionModel {
     }
     
     // response
+    var streamingResponse: String = ""
     var chatResponse: String?
     var blockResponse: [BlockEntryGenModel.PartiallyGenerated] = []
 }
@@ -171,10 +172,11 @@ struct GeneratorController: Sendable {
     let foundationManager: FoundationManager
 
     static let defaultInstructions = """
-        You are an assistant to support a game master for creating a fictional game story.
-        In the game you have NPC and players characters they have to talk to each other.
-        Add connections to other possible outcomes or stories.
-        Keep your answer precise except the game master needed a detailed version.
+        You are a creative RPG content generator for a game master.
+        Your sole purpose is to CREATE new fictional story elements, scenes, NPCs, items, or events — never to answer questions or summarize existing content.
+        Every response must be original, generated fiction ready to use at the table.
+        Add hooks to other possible outcomes or story threads.
+        Keep responses concise unless the game master asks for detail.
         Preserve the language used by the game master.
     """
 
@@ -191,7 +193,7 @@ struct GeneratorController: Sendable {
         guard !sheetIndex.isEmpty else { return }
 
         let enrichedInstructions = Self.defaultInstructions
-            + "\n\nSheet index (names only — use as context for the user's requests):\n"
+            + "\n\nExisting sheet entries (for consistency only — do NOT summarize or answer from these; always generate NEW content):\n"
             + sheetIndex
         model.conversationEngine.rebuild(baseInstructions: enrichedInstructions)
     }
@@ -200,8 +202,10 @@ struct GeneratorController: Sendable {
         model.conversationEngine.prewarm()
         
         let extractInstructions = """
-        Extract the response into sheet entries for module type \(module.title).
-        Each entry is one standalone row: a concise title and its content.
+        Extract the response into individual sheet entries for module type \(module.title).
+        Split every numbered item, bullet point, or distinct topic into its own entry.
+        Never combine multiple items into a single entry.
+        Each entry needs a concise title and its full content.
         Preserve the language of the source text.
         """
 
@@ -219,14 +223,14 @@ struct GeneratorController: Sendable {
 
         PerformanceTrace.event("FoundationRequest", source: "conversation", count: message.count)
 
-        let previewEntry = SheetModel(
+        let initialPreview = SheetModel(
             source: ItemRowModel(itemId: UUID(), typeId: rootSheetModel.source.typeId),
-            name: "Generating...",
+            name: "",
             description: "",
             entries: []
         )
-        previewEntry.isGeneratedAnswer = true
-        rootModel.updateAIPreview(previewEntry)
+        initialPreview.isGeneratedAnswer = true
+        rootModel.updateAIPreview(initialPreview)
 
         model.currentTask = Task(name: "Foundation Conversation") {
             let trace = PerformanceTrace.begin(
@@ -237,15 +241,24 @@ struct GeneratorController: Sendable {
             defer { trace?.end() }
             defer { model.isLoading = model.session.isResponding }
             do {
+                let typeId = rootSheetModel.source.typeId
                 let response = try await model.conversationEngine.sendStreamingMessage(
                     prompt,
                     generationOptions: model.generationOptions
                 ) { @MainActor partialText in
-                    previewEntry.description = partialText
-                    model.chatResponse = partialText
+                    let updated = SheetModel(
+                        source: ItemRowModel(itemId: UUID(), typeId: typeId),
+                        name: "",
+                        description: partialText,
+                        entries: []
+                    )
+                    updated.isGeneratedAnswer = true
+                    rootModel.updateAIPreview(updated)
+                    model.streamingResponse = partialText
                 }
                 model.syncConversationState()
                 model.responseErrorContent = ""
+                model.chatResponse = response
                 extract(message: response, rootModel: rootModel)
             } catch is CancellationError {
                 rootModel.updateAIPreview(nil)
@@ -293,7 +306,7 @@ struct GeneratorController: Sendable {
                 let stream = model.extractSession.streamResponse(
                     to: prompt,
                     generating: [BlockEntryGenModel].self,
-                    includeSchemaInPrompt: false,
+                    includeSchemaInPrompt: true,
                     options: GenerationOptions(maximumResponseTokens: 1200)
                 )
 
@@ -314,19 +327,14 @@ struct GeneratorController: Sendable {
                     rootModel.updateAIGenerated(completedEntries)
 
                     if let last = snapshot.last {
-                        if let existing = rootModel.sheetModel.aiPreviewEntry {
-                            existing.name = last.title ?? ""
-                            existing.description = last.content ?? ""
-                        } else {
-                            let preview = SheetModel(
-                                source: ItemRowModel(itemId: UUID(), typeId: typeId),
-                                name: last.title ?? "",
-                                description: last.content ?? "",
-                                entries: []
-                            )
-                            preview.isGeneratedAnswer = true
-                            rootModel.updateAIPreview(preview)
-                        }
+                        let preview = SheetModel(
+                            source: ItemRowModel(itemId: UUID(), typeId: typeId),
+                            name: last.title ?? "",
+                            description: last.content ?? "",
+                            entries: []
+                        )
+                        preview.isGeneratedAnswer = true
+                        rootModel.updateAIPreview(preview)
                     }
                 }
 
@@ -385,27 +393,27 @@ struct GeneratorController: Sendable {
 private extension GeneratorController {
     @MainActor func compactSheetIndex(from sheetModel: SheetModel, maxCharacters: Int = 600) -> String {
         var parts: [String] = []
-
+        
         let name = sheetModel.name.trimmingCharacters(in: .whitespacesAndNewlines)
         if !name.isEmpty {
             parts.append("Sheet: \"\(name)\"")
         }
-
+        
         let entryNames = sheetModel.entries
             .filter { !$0.isGeneratedAnswer }
             .compactMap { entry -> String? in
                 let n = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 return n.isEmpty ? nil : n
             }
-
+        
         if !entryNames.isEmpty {
             parts.append("Entries: " + entryNames.joined(separator: ", "))
         }
-
+        
         let text = parts.joined(separator: "\n")
         return String(text.prefix(maxCharacters))
     }
-
+    
     @MainActor func drafts(from block: BlockGenModel) -> SheetModel? {
         let entryDrafts = block.entries.compactMap { entry -> SheetModel? in
             let title = cleaned(entry.title)
@@ -415,16 +423,16 @@ private extension GeneratorController {
             sheetModel.isGeneratedAnswer = true
             return sheetModel
         }
-
+        
         let title = cleaned(block.name)
         let content = cleaned(block.information)
         guard !title.isEmpty || !content.isEmpty else { return nil }
         
-        var sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: entryDrafts)
+        let sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: entryDrafts)
         sheetModel.isGeneratedAnswer = true
         return sheetModel
     }
-
+    
     
     @MainActor func makeSheetEntry(name: String, content: String, typeId: NetworkModules) -> SheetModel? {
         let trimmedName = cleaned(name)
@@ -439,18 +447,17 @@ private extension GeneratorController {
         entry.isGeneratedAnswer = true
         return entry
     }
-
-    // focusedContent and rootSheetModel are reserved for the focused-entry feature (not yet wired).
-    // Context is already in the conversation session's instructions; the prompt is just the user's message.
+    
+    // focusedContent is reserved for the focused-entry feature (not yet wired).
     @MainActor func prompt(for message: String, module: NetworkModules, rootSheetModel: SheetModel, focusedContent: SheetModel?, maxCharacters: Int = 2_800) -> String {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Generate useful content for this sheet." : trimmed
+        let userRequest = trimmed.isEmpty ? "Generate useful new content for this sheet." : trimmed
+        return "Generate new fictional RPG content for the \(module.title) sheet.\nGame master's request: \(userRequest)"
     }
     
     func cleaned(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
 }
 
 
