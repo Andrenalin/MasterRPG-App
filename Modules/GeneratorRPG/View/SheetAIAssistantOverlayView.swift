@@ -41,6 +41,7 @@ struct SheetAIAssistantOverlayView: View {
                 return
             }
             if generatorController.availblity {
+                generatorController.seedConversationContext(sheetModel: rootModel.sheetModel)
                 await generatorController.preparaEngine(module: rootModel.sheetModel.source.typeId)
             }
 
@@ -48,10 +49,6 @@ struct SheetAIAssistantOverlayView: View {
             guard !Task.isCancelled, rootModel.isAIModeActive else { return }
             isTextFieldFocused = true
         }
-//        .task(id: rootModel.pendingGenerationRequest?.id) {
-//            guard let request = rootModel.pendingGenerationRequest else { return }
-//            await generate(request)
-//        }
         .onChange(of: rootModel.sheetModel.source.itemId) { _, _ in
             resetForItemChange()
         }
