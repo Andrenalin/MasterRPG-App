@@ -54,7 +54,7 @@ struct AdventureRPGDynamicPreviewSnapshotTests {
     ) async throws {
         let root = AdventureRootModel.previewFixture()
         let container = try await MockData.makeSharedContext()
-
+        
         assertRepositorySnapshot(
             of: content(root)
                 .environment(root)

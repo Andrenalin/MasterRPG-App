@@ -29,12 +29,13 @@ public final class ResourcesDebug {
     public static let adventurePhoto = "Adventure"
     public static let paladinPhoto = "Paladin"
     public static let wizardPhoto = "Zauberer"
-    public static let wisyardPhoto = wizardPhoto
 
     public static let audioExample = "AudioExample"
     public static let pdfExample = "PdfExample"
     public static let spaceExample = "ScaeExample"
 
+    public static let vttExample = "ds4"
+    
     public static let photoPreviewNames = [
         adventurePhoto,
         paladinPhoto,
@@ -65,5 +66,9 @@ public final class ResourcesDebug {
 
     public static var spaceExampleURL: URL? {
         bundle.url(forResource: spaceExample, withExtension: "usdz")
+    }
+    
+    public static var vttExampleURL: URL? {
+        bundle.url(forResource: vttExample, withExtension: "zip")
     }
 }

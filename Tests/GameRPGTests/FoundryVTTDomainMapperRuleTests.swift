@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import RuleRPG
+import RPGResourcesDebug
 import Testing
 
 @testable import RolePlayGameKit
@@ -275,15 +276,14 @@ struct FoundryVTTDomainMapperRuleTests {
     @Test("The supplied DungeonSlayers system package imports into RuleRPG")
     func mapsSuppliedDungeonSlayersPackage() async throws {
         // Given
-        let projectRoot = URL(filePath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        let packageURL = projectRoot.appending(path: "VTT/ds4.zip")
-        #expect(FileManager.default.fileExists(atPath: packageURL.path()))
+        let bundle = ResourcesDebug.bundle
+        let packageURL = bundle.url(forResource: ResourcesDebug.vttExample, withExtension: "zip")
+
+        try #require(packageURL != nil)
+        #expect(FileManager.default.fileExists(atPath: packageURL!.path()))
 
         let reader = FoundryVTTImportReader()
-        let package = try await reader.read(from: packageURL)
+        let package = try await reader.read(from: packageURL!)
         let sourceScopeID = try #require(
             UUID(uuidString: "9773E23D-BB3E-463D-9CC0-15726C2D5D24")
         )
@@ -291,11 +291,11 @@ struct FoundryVTTDomainMapperRuleTests {
         // When
         let mapped = try await FoundryVTTDomainMapper().map(
             package: package,
-            sourceURL: packageURL,
+            sourceURL: packageURL!,
             sourceScopeID: sourceScopeID,
             selectedCategories: [.rules],
             resourceLoader: { resource in
-                try await reader.resourceData(for: resource, from: packageURL).data
+                try await reader.resourceData(for: resource, from: packageURL!).data
             }
         )
         let rulePackage = try #require(package.rulePackage)
