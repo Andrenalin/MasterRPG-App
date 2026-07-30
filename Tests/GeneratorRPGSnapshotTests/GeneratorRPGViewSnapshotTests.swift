@@ -64,13 +64,7 @@ struct GeneratorRPGViewSnapshotTests {
     @Test("Sheet AI assistant")
     func sheetAIAssistant() {
         assertViewSnapshot(
-            SheetAIAssistantOverlayView(
-                module: .adventure,
-                itemId: UUID(
-                    uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x91, 0x01)
-                ),
-                rootModel: .fake
-            ),
+            SheetAIAssistantOverlayView(generatorController: GeneratorController(), rootModel: .fake),
             name: "SheetAIAssistant",
             height: 720
         )

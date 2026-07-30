@@ -211,17 +211,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GeneratorRPG::GenericSegmentsView
-    @Test("GenericSegmentsView")
-    func snapshotGenericSegmentsView() async throws {
-        try await assertPreviewSnapshot("GenericSegmentsView") {
-            GeneratorRPG.GenericSegmentsView(
-                segments: [.text(.init(content: "A ruined fortress waits above the stormy coast."))],
-                isUser: true
-            )
-        }
-    }
-
     // snapshot-root: GeneratorRPG::LinkRootView
     @Test("LinkRootView")
     func snapshotLinkRootView() async throws {
@@ -313,7 +302,7 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
     @Test("SheetAIAssistantOverlayView")
     func snapshotSheetAIAssistantOverlayView() async throws {
         try await assertPreviewSnapshot("SheetAIAssistantOverlayView") {
-            GeneratorRPG.SheetAIAssistantOverlayView(module: .adventure, itemId: UUID(), rootModel: .fake)
+            GeneratorRPG.SheetAIAssistantOverlayView(generatorController: GeneratorController(), rootModel: .fake)
         }
     }
 

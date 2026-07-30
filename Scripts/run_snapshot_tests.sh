@@ -181,14 +181,14 @@ run_tests() {
     echo "Destination: $destination"
     echo "Derived data: $derived_data"
 
-    # The SnapshotTests plan expands these build settings into the simulator
+    # The MasterSnapshot plan expands these build settings into the simulator
     # test process. Shell-prefixed variables are intentionally not used because
     # xcodebuild does not forward arbitrary parent-process variables to tests.
     DEVELOPER_DIR="$xcode_app/Contents/Developer" \
         xcodebuild test \
             -project "$ROOT_DIR/MasterRPG.xcodeproj" \
             -scheme MasterRPG \
-            -testPlan SnapshotTests \
+            -testPlan MasterSnapshot \
             -configuration Debug \
             -destination "$destination" \
             -derivedDataPath "$derived_data" \
