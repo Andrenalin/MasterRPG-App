@@ -11,7 +11,6 @@ import GeneratorRPG
 struct TabbedNavigation: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.appTheme) private var theme
-    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
 
     private let restoresState: Bool
 
@@ -40,7 +39,7 @@ struct TabbedNavigation: View {
             AudioPlayerMiniBarView()
         }
 #endif
-        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+        .applyIf(restoresState) {
             $0.modifier(TabbedNavigationRestorationModifier(appModel: appModel))
         }
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)

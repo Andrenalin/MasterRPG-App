@@ -7,7 +7,6 @@ import SwiftUI
 struct ExtendedTabBar: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.appTheme) private var theme
-    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
 
@@ -49,7 +48,7 @@ struct ExtendedTabBar: View {
             }
         }
         .navigationAutoReceive(ExtendedTabRoute.self)
-        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+        .applyIf(restoresState) {
             $0.modifier(ExtendedTabBarRestorationModifier(
                 appModel: appModel,
                 tabSelectedModule: $tabSelectedModule

@@ -34,7 +34,8 @@ struct SplitDetailView: View {
             AudioFactory.detailView(root: appModel.audioRoot)
         case .dice:
             DiceFactory.detailView(root: appModel.diceRoot)
-        case .game: EmptyView()
+        case .game:
+            EmptyView()
         case .generator:
 #if os(tvOS)
             EmptyView()
@@ -58,7 +59,8 @@ struct SplitDetailView: View {
             CharacterRootFactory.detailView(root: appModel.characterRoot)
         case .weather:
             WeatherRootFactory.detailView(root: appModel.weatherRoot)
-        case .setting: EmptyView()
+        case .setting:
+            EmptyView()
         default:
             ContentUnavailableView {
                 Label {
@@ -67,6 +69,7 @@ struct SplitDetailView: View {
                     Image(systemName: module.icon)
                 }
             }
+            .frame(maxWidth: .infinity)
         }
     }
 }

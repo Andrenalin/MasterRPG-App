@@ -9,7 +9,6 @@ struct ExtendedSplitBar: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.navigator) private var navigator
-    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
 
     private let restoresState: Bool
 
@@ -26,7 +25,7 @@ struct ExtendedSplitBar: View {
         allCustomTabs
             .navigationAutoReceive(ExtendedTabRoute.self)
             .focusedSceneValue(\.selectedModule, $tabSelectedModule)
-            .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+            .applyIf(restoresState) {
                 $0.modifier(ExtendedSplitBarRestorationModifier(
                     appModel: appModel,
                     tabSelectedModule: $tabSelectedModule

@@ -334,7 +334,6 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
                 .environmentSetUp(appModel)
                 .cloudKitAccountChecksEnabled(false)
                 .itemStateRestorationEnabled(false)
-                .rolePlayStateRestorationEnabled(false)
                 .rolePlayDatabaseInitializationEnabled(false)
                 .meshAnimationEnabled(false)
                 .deterministicSnapshotEnvironment()

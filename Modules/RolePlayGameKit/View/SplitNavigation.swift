@@ -9,7 +9,6 @@ import TipKit
 struct SplitNavigation: View {
     @Environment(AppModel.self) private var appModel
     @Environment(ScenesManager.self) private var scenesManager
-    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
 
     private let restoresState: Bool
     
@@ -25,7 +24,7 @@ struct SplitNavigation: View {
         @Bindable var appModel = appModel
 
         allTabs
-            .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+            .applyIf(restoresState) {
                 $0.modifier(SplitNavigationRestorationModifier(appModel: appModel))
             }
             .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)

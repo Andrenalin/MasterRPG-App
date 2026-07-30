@@ -5,7 +5,6 @@ import SwiftUI
 
 struct TabSidebar: View {
     @Environment(AppModel.self) private var appModel
-    @Environment(\.rolePlayStateRestorationEnabled) private var rolePlayStateRestorationEnabled
     @Environment(\.navigationColumnFocus) private var navigationColumnFocus
 
     private let restoresState: Bool
@@ -25,7 +24,7 @@ struct TabSidebar: View {
             navigationColumnFocus?.wrappedValue = .list
             return .handled
         }
-        .applyIf(restoresState && rolePlayStateRestorationEnabled) {
+        .applyIf(restoresState) {
             $0.modifier(TabSidebarRestorationModifier(appModel: appModel))
         }
     }
