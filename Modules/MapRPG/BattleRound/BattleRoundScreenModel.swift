@@ -162,6 +162,7 @@ final class BattleRoundScreenModel {
         scenesManager: ScenesManager
     ) {
         selectedValue.onlyChildrenFrom = characterId
+        selectedValue.onlyEntrySelection = true
         selectedValue.resetSelection(itemId: nil, entryId: nil)
 #if os(macOS)
         root.characterRoot.itemSelectionModel = selectedValue

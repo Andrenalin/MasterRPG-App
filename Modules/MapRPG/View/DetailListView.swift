@@ -37,11 +37,11 @@ struct DetailListView: View {
             .task(id: model.id) {
                 await root.donateSiriViewingIntent(for: model.id)
             }
-//            .sheetAIAssistant(
-//                generatorRoot: root.generatorRoot,
-//                rootModel: root.editController.editorModel.sheetRootModel,
-//                module: root.configurable.module
-//            )
+            .sheetAIAssistant(
+                generatorRoot: root.generatorRoot,
+                rootModel: root.editController.editorModel.sheetRootModel,
+                module: root.configurable.module
+            )
 #endif
     }
 

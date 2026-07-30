@@ -4,6 +4,9 @@ import CoreRPG
 import CoreData
 import DiceRPG
 import AudioRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PdfRPG
 import PhotoRPG
 import TableRPG
@@ -28,7 +31,7 @@ public final class RootModel: Sendable {
 public final class MapRootModel {
 
     @MainActor
-    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {
+    init(tagController: TagController, audioRoot: AudioRootModel, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel? = nil, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel) {
         let config = ModuleConfiguration()
         self.config = config
 
@@ -46,6 +49,7 @@ public final class MapRootModel {
 
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
+        self.generatorRoot = generatorRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
@@ -111,6 +115,7 @@ public final class MapRootModel {
 
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
+    let generatorRoot: GeneratorRootModel?
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel

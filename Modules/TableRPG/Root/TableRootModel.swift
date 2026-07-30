@@ -3,13 +3,16 @@
 import CoreRPG
 import CoreData
 import DiceRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PdfRPG
 import SwiftData
 import SwiftUI
 
 @MainActor @Observable
 public final class TableRootModel {
-    @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) {
+    @MainActor init(tagController: TagController, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel? = nil, pdfRoot: PdfRootModel) {
         let config = ModuleConfiguration()
         self.config = config
 
@@ -26,6 +29,7 @@ public final class TableRootModel {
         self.listDisplayModel = listDisplayModel
 
         self.diceRoot = diceRoot
+        self.generatorRoot = generatorRoot
         self.pdfRoot = pdfRoot
 
         let itemController = ItemController(config: config)
@@ -143,6 +147,7 @@ public final class TableRootModel {
     let listDisplayModel: ListDisplayModel
 
     let diceRoot: DiceRootModel
+    let generatorRoot: GeneratorRootModel?
     let pdfRoot: PdfRootModel
 
     let itemController: ItemController

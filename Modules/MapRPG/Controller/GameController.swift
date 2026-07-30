@@ -964,7 +964,7 @@ extension GameController: MapGameStorable {
     ) -> Bool {
         guard battleRoundModel.mapId == itemId,
               let combatant = battleRoundModel.combatant(id: combatantId),
-              combatant.sourceCharacterId == sourceCharacterId,
+              //combatant.sourceCharacterId == sourceCharacterId,
               let gameCharacterId = combatant.gameCharacterId,
               let sourceEntry = root.characterRoot.valueGameControllable.gameEntry(
                   characterId: sourceCharacterId,

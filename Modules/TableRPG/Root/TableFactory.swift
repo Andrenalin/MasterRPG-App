@@ -2,13 +2,16 @@
 
 import CoreRPG
 import DiceRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PdfRPG
 import SwiftData
 import SwiftUI
 
 public enum TableFactory {
-    @MainActor public static func root(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
-        TableRootModel(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot)
+    @MainActor public static func root(tagController: TagController, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel? = nil, pdfRoot: PdfRootModel) -> TableRootModel {
+        TableRootModel(tagController: tagController, diceRoot: diceRoot, generatorRoot: generatorRoot, pdfRoot: pdfRoot)
     }
 
     @MainActor public static func rootView() -> some View {

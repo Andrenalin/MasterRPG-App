@@ -2,6 +2,9 @@
 
 import CoreRPG
 import DiceRPG
+#if !os(tvOS)
+import GeneratorRPG
+#endif
 import PdfRPG
 import PhotoRPG
 import TableRPG
@@ -11,7 +14,7 @@ import SwiftUI
 
 @MainActor @Observable
 public final class CharacterRootModel {
-    @MainActor init(tagController: TagController, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
+    @MainActor init(tagController: TagController, diceRoot: DiceRootModel, generatorRoot: GeneratorRootModel? = nil, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) {
         let config = ModuleConfiguration()
         self.config = config
 
@@ -28,6 +31,7 @@ public final class CharacterRootModel {
         self.listDisplayModel = listDisplayModel
 
         self.diceRoot = diceRoot
+        self.generatorRoot = generatorRoot
         self.pdfRoot = pdfRoot
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
@@ -87,6 +91,7 @@ public final class CharacterRootModel {
     }
 
     let diceRoot: DiceRootModel
+    let generatorRoot: GeneratorRootModel?
     let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
