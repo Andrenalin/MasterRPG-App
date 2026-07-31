@@ -33,6 +33,7 @@ public final class AppModel: Sendable {
     // App State Models
     @ObservationIgnored public let appGameStateModel: AppGameStateModel
     @ObservationIgnored public let scenesManager: ScenesManager
+    @ObservationIgnored public let appFocusModel: AppFocusModel
 
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
@@ -127,6 +128,7 @@ public final class AppModel: Sendable {
         let gameStateModel = AppGameStateModel()
         self.appGameStateModel = gameStateModel
         self.scenesManager = ScenesManager()
+        self.appFocusModel = AppFocusModel()
         self.optionKeyDownModel = OptionKeyDownModel()
         self.settingsModel = settingsModelOverride ?? AppSettingsModel()
         

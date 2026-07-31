@@ -8,13 +8,15 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         parentModel: SheetModel,
         entryModel: SheetModel,
         isEditor: Bool,
-        linkTypes: LinkType.Type
+        linkTypes: LinkType.Type,
+        focusedEntryId: FocusState<UUID?>.Binding
     ) {
         self.rootModel = rootModel
         self.parentModel = parentModel
         self.entryModel = entryModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.focusedEntryId = focusedEntryId
     }
 
     let rootModel: SheetRootModel
@@ -22,6 +24,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     let entryModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let focusedEntryId: FocusState<UUID?>.Binding
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.appTheme) private var theme
@@ -397,6 +400,14 @@ private extension SheetEntryView {
         .buttonStyle(.plain)
         .contentShape(.rect)
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .focused(focusedEntryId, equals: entryModel.id)
+        // Covers focus reaching this row without going through `performPrimaryAction()` (e.g.
+        // Tab-key navigation onto it) — keeps focusId and selectedId the same regardless of how
+        // focus got here, using this row's own already-known `parentModel` for `setSelected`.
+        .onChange(of: focusedEntryId.wrappedValue) {
+            guard focusedEntryId.wrappedValue == entryModel.id, rootModel.selectedEntryId != entryModel.id else { return }
+            rootModel.setSelected(entryModel, parent: parentModel)
+        }
         .accessibilityLabel(primaryActionAccessibilityLabel)
         .accessibilityValue(generatedSelectionAccessibilityValue)
     }
@@ -453,12 +464,14 @@ private extension SheetEntryView {
 
 #Preview("Sheet Entry Direct") {
     @Previewable @Namespace var namespace
+    @Previewable @FocusState var focusedEntryId: UUID?
     SheetEntryView(
         rootModel: .fake,
         parentModel: .empty,
         entryModel: SheetRootModel.fake.sheetModel,
         isEditor: false,
-        linkTypes: EmptyLinkTransferable.self
+        linkTypes: EmptyLinkTransferable.self,
+        focusedEntryId: $focusedEntryId
     )
     .environment(AppGameStateModel())
 }

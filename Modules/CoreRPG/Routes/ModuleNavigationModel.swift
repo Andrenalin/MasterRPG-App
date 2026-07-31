@@ -14,9 +14,6 @@ import SwiftUI
     @ObservationIgnored public var navigator: Navigator?
     @ObservationIgnored public var folderModels: [UUID: FolderListModel] = [:]
 
-    // Focus
-    public var navigationColumnFocus: NavigationColumnFocus = .none
-    
     // Inspector
     public var selectedInspectorItemId: UUID?
     public var showInspector: Bool = false

@@ -41,5 +41,6 @@ struct BattleCharacterSheetPresentationView: View {
     if let combatant = model.combatants.first(where: { $0.sourceCharacterId != nil }),
        let presentation = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
         BattleCharacterSheetPresentationView(presentation: presentation)
+            .environment(AppFocusModel())
     }
 }

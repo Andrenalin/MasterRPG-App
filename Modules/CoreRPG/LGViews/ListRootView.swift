@@ -15,11 +15,17 @@ struct ListRootView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.switchToDetailColumn) private var switchToDetailColumn
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(AppFocusModel.self) private var appFocusModel
 
-    @State private var scrollPosition: UUID?
+    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
     @State private var generationSelection: WindowItemSelection?
     
-    @FocusState private var focusList: Bool
+    /// Per-row focus target — not a container-level bool. A single `.focusable()` on the
+    /// `ScrollView` would compete with each row's own `Button` for the click, since the
+    /// container and the row are two separate focusable targets (see swift-focusengine-pro
+    /// anti-pattern #25/#3): the container can win the click and just take focus instead of
+    /// activating the row's button, silently breaking tap-to-select.
+    @FocusState private var focusedRowId: UUID?
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -30,14 +36,6 @@ struct ListRootView: View {
             listView
                 .animation(accessibilityReduceMotion ? nil : .smooth, value: listModel.list.count)
                 .frame(minWidth: 250, idealWidth: 350)
-#if !os(tvOS)
-            // Always-present modifier: empty closure = no menu; avoids applyIf identity break
-                .contextMenu(forSelectionType: FolderListItemModel.ID.self) { _ in
-                    if listController.listDisplayModel.isSelectionMode {
-                        ListRootContextMenu(root: root, controller: menuController, parentItem: parentModel, listController: listController)
-                    }
-                }
-#endif
                 .scrollIndicatorsFlash(onAppear: true)
                 .scrollIndicatorsFlash(trigger: listModel.list.count)
 #if !os(visionOS)
@@ -51,6 +49,8 @@ struct ListRootView: View {
                 }
 #endif
 #if !os(tvOS)
+                .onKeyPress(.upArrow, phases: .down) { _ in moveSelection(by: -1) }
+                .onKeyPress(.downArrow, phases: .down) { _ in moveSelection(by: 1) }
                 .onKeyPress(.space, phases: .down) { keyPress in
                     guard keyPress.modifiers.isEmpty,
                           listController.canToggleFolder(itemId: listModel.selectedItemId) else {
@@ -70,16 +70,19 @@ struct ListRootView: View {
                     return .handled
                 }
                 .onKeyPress(.leftArrow, phases: .down) { _ in
-                    root.navigationModel.navigationColumnFocus = .tabs
+                    appFocusModel.navigationColumnFocus = .tabs
                     return .handled
                 }
                 .onKeyPress(.rightArrow, phases: .down) { _ in
                     if listController.canOpenFolder(itemId: listModel.selected) {
                         withAnimation(accessibilityReduceMotion ? nil : .default) { listController.openSelectedFolder() }
                     } else if let sheetRootModel = root.editControllable.editorModel.sheetRootModel,
-                              sheetRootModel.sheetModel.source.itemId == listModel.selectedItemId,
-                              let firstEntry = sheetRootModel.firstSelectableEntry {
-                        sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
+                              sheetRootModel.sheetModel.source.itemId == listModel.selectedItemId {
+                        // Selecting the first entry when nothing is selected yet, and focusing
+                        // whichever entry ends up selected, is `SheetRootView`'s job — it owns
+                        // that decision so re-entering a sheet keeps an existing selection
+                        // instead of always resetting to the first entry.
+                        appFocusModel.navigationColumnFocus = .detail
                     }
                     return .handled
                 }
@@ -175,68 +178,93 @@ private extension ListRootView {
     
     @ViewBuilder
     var listView: some View {
-        @Bindable var listModel = listModel
-        ScrollViewReader { scrollProxy in
-            Group {
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: []) {
+                ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController, focusedRowId: $focusedRowId)
+            }
+            .frame(maxWidth: .infinity)
+            .scrollTargetLayout()
+        }
 #if os(macOS)
-                Group {
-                    if listController.listDisplayModel.isSelectionMode {
-                        List(selection: $listModel.listSelection) {
-                            ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                        }
-                        .frame(minHeight: 300, maxHeight: .infinity)
-                    } else {
-                        List(selection: $listModel.selected) {
-                            ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                        }
-                        .frame(minHeight: 300, maxHeight: .infinity)
-                    }
-                }
-                .applyIf(parentModel != nil) {
-                    $0.listStyle(.bordered)
-                }
-#else
-                List(selection: $listModel.listSelection) {
-                    ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                }
-                
+        .applyIf(parentModel != nil) {
+            $0.frame(minHeight: 300, maxHeight: .infinity)
+        }
 #endif
+        .scrollPosition($scrollPosition)
+        // Always record where the list is actually scrolled to, regardless of what moved it —
+        // this is the persisted "come back to where you left off" state. Skipped while a search
+        // is active so `lastNonNilScrollId` keeps remembering the pre-search browsing position
+        // instead of wherever the filtered results happen to be scrolled to.
+        .onChange(of: scrollPosition) {
+            guard let id = scrollPosition.viewID(type: UUID.self), listModel.scrollId != id else { return }
+            listModel.scrollId = id
+            if listController.searchModel.searchText.isEmpty {
+                listModel.recordVisibleScrollPosition(id)
             }
-            .onAppear {
-                Task {
-                    await Task.yield()
-                    try? await Task.sleep(for: .milliseconds(150))
-                    if let selectedId = listModel.selected {
-                        listController.applyPostUpdateSelection(previousSelectedId: selectedId, selectionGeneration: 0)
-                    }
-                    
-                    if let savedPosition = listModel.scrollId {
-                        scrollProxy.scrollTo(savedPosition, anchor: .top)
-                    }
+        }
+        // Generic follow for scrollId writes from elsewhere (keyboard column-focus switch,
+        // post-search restoration) — minimal-disruption `.top` anchor. Backs off while a new
+        // item is being added so the dedicated `addedModelId` handler below (which wants
+        // `.center`) owns that scroll instead.
+        .onChange(of: listModel.scrollId) {
+            guard listModel.addedModelId == nil,
+                  let id = listModel.scrollId,
+                  scrollPosition.viewID(type: UUID.self) != id else { return }
+            scrollPosition = ScrollPosition(id: id, anchor: .top)
+        }
+        // A newly added entry/group becomes selected — reveal it centered rather than at the edge.
+        .onChange(of: listModel.addedModelId) {
+            guard let addedId = listModel.addedModelId else { return }
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
+                scrollPosition = ScrollPosition(id: addedId, anchor: .center)
+            }
+        }
+        // Starting a search shows the current selection at the top; clearing it returns to
+        // wherever the list was scrolled to before the search began.
+        .onChange(of: listController.searchModel.searchText) { oldValue, newValue in
+            if oldValue.isEmpty, !newValue.isEmpty, let selected = listModel.selected {
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
+                    scrollPosition = ScrollPosition(id: selected, anchor: .top)
+                }
+            } else if !oldValue.isEmpty, newValue.isEmpty, let restoreId = listModel.lastNonNilScrollId {
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
+                    scrollPosition = ScrollPosition(id: restoreId, anchor: .top)
                 }
             }
-            .onChange(of: listModel.scrollId) {
-                guard let id = listModel.scrollId else { return }
-                Task {
-                    await Task.yield()
-                    try? await Task.sleep(for: .milliseconds(150))
-                    scrollProxy.scrollTo(id, anchor: .top)
+        }
+        .onAppear {
+            // Snapshot the exact recorded position (not just whether one exists) before
+            // `applyPostUpdateSelection` runs below — it can itself derive a fresh `scrollId`,
+            // which would silently move the restore target away from where the list actually
+            // was before this appearance. Applies on every platform: switching away to another
+            // module and back can recreate this view (fresh `@State`), so the scroll offset
+            // isn't always preserved for free.
+            let recordedScrollId = listModel.scrollId
+            let initialSelected = listModel.selected
+            Task {
+                await Task.yield()
+                if let selectedId = initialSelected {
+                    listController.applyPostUpdateSelection(previousSelectedId: selectedId, selectionGeneration: 0)
                 }
-
+                if let recordedScrollId {
+                    scrollPosition = ScrollPosition(id: recordedScrollId, anchor: .top)
+                } else if let selected = listModel.selected {
+                    // First-ever appearance with a selection restored from persisted state
+                    // (no scroll memory yet) — reveal it centered.
+                    scrollPosition = ScrollPosition(id: selected, anchor: .center)
+                }
             }
-            .focusedValue(\.moduleListIsFocused, true)
-            .focused($focusList)
-            .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
-            .themedListSurface()
-            .onChange(of: root.navigationModel.navigationColumnFocus) {
-                guard root.navigationModel.navigationColumnFocus == .list else { return }
-                focusPreferredListRow()
-            }
+        }
+        .focusedValue(\.moduleListIsFocused, true)
+        .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
+        .themedListSurface()
+        .onChange(of: appFocusModel.navigationColumnFocus) {
+            guard appFocusModel.navigationColumnFocus == .list else { return }
+            focusPreferredListRow()
         }
     }
 
     func focusPreferredListRow() {
-        focusList = true
         let target = listModel.selected.flatMap { selected in
             listModel.list.first(where: { $0.id == selected })?.id
         } ?? listModel.list.first?.id
@@ -245,6 +273,30 @@ private extension ListRootView {
         listModel.listSelection = [target]
         listModel.scrollId = target
         listModel.recordVisibleScrollPosition(target)
+        focusedRowId = target
+    }
+
+    /// Replaces the row-to-row up/down arrow navigation `List` gave for free. Ignored while
+    /// `isSelectionMode` is active so keyboard navigation never collapses a multi-selection.
+    func moveSelection(by offset: Int) -> KeyPress.Result {
+        guard !listController.listDisplayModel.isSelectionMode else { return .ignored }
+        let ids = listModel.list.map(\.id)
+        guard !ids.isEmpty else { return .ignored }
+        let nextIndex: Int
+        if let selected = listModel.selected, let currentIndex = ids.firstIndex(of: selected) {
+            nextIndex = min(max(currentIndex + offset, 0), ids.count - 1)
+        } else {
+            nextIndex = offset > 0 ? 0 : ids.count - 1
+        }
+        let target = ids[nextIndex]
+        listModel.selected = target
+        listModel.scrollId = target
+        listModel.recordVisibleScrollPosition(target)
+        focusedRowId = target
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            scrollPosition = ScrollPosition(id: target)
+        }
+        return .handled
     }
     
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
@@ -264,4 +316,5 @@ private extension ListRootView {
 #Preview("Item List") {
     let fixture = FakeItemRootControllerFixture()
     ListRootView(root: fixture.root, listController: fixture.folderListController, parentModel: nil, isSubFolder: false)
+        .environment(AppFocusModel())
 }

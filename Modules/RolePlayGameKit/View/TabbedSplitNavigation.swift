@@ -71,4 +71,5 @@ struct TabbedSplitNavigation: View {
         .environment(appModel)
         .environment(appModel.appNavigationModel)
         .environment(AppWindowSizeModel())
+        .environment(AppFocusModel())
 }

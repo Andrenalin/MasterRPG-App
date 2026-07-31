@@ -83,5 +83,6 @@ struct BattleRoundCard: View {
             selectHitPoints: { _ in }
         )
         .padding()
+        .environment(AppFocusModel())
     }
 }

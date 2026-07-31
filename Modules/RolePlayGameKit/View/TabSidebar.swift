@@ -5,6 +5,7 @@ import SwiftUI
 
 struct TabSidebar: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(AppFocusModel.self) private var appFocusModel
 
     private let restoresState: Bool
 
@@ -12,17 +13,24 @@ struct TabSidebar: View {
         self.restoresState = restoresState
     }
 
+    @FocusState private var focusTabs: Bool
+
     var body: some View {
         @Bindable var appModel = appModel
         List(selection: $appModel.selectedModule) {
             allTabs
         }
         .themedListSurface()
+        .focused($focusTabs)
+        .onChange(of: appFocusModel.navigationColumnFocus) {
+            focusTabs = appFocusModel.navigationColumnFocus == .tabs
+        }
+#if !os(tvOS)
         .onKeyPress(.rightArrow, phases: .down) { _ in
-            //how to go to list?
-            //navigationColumnFocus?.wrappedValue = .list
+            appFocusModel.navigationColumnFocus = .list
             return .handled
         }
+#endif
         .applyIf(restoresState) {
             $0.modifier(TabSidebarRestorationModifier(appModel: appModel))
         }
@@ -68,6 +76,7 @@ struct TabSidebar: View {
 #Preview("Library sidebar") {
     TabSidebar(restoresState: false)
         .environment(AppModel.previewWithoutDatabase)
+        .environment(AppFocusModel())
 }
 
 private struct TabSidebarRestorationModifier: ViewModifier {

@@ -59,6 +59,7 @@ public struct SheetRootEditorView<LinkType: LinkDataTransferable>: View {
         LazyVStack(spacing: 4) {
             SheetRootEditorView(root: fixture.root, sheetRootModel: fixture.sheetRootModel, headerTitle: "Entries", linkTypes: EmptyLinkTransferable.self)
                 .environment(AppGameStateModel())
+                .environment(AppFocusModel())
         }
     }
 }

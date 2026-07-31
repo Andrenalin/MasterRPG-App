@@ -14,20 +14,23 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
         rootModel: SheetRootModel,
         sheetModel: SheetModel,
         isEditor: Bool = false,
-        linkTypes: LinkType.Type = LinkDiceData.self
+        linkTypes: LinkType.Type = LinkDiceData.self,
+        focusedEntryId: FocusState<UUID?>.Binding
     ) {
         self.root = root
         self.rootModel = rootModel
         self.sheetModel = sheetModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
+        self.focusedEntryId = focusedEntryId
     }
-    
+
     let root: ItemRootController
     let rootModel: SheetRootModel
     let sheetModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
+    let focusedEntryId: FocusState<UUID?>.Binding
     
     @State private var dropTargetEntryId: UUID?
     
@@ -192,7 +195,7 @@ private extension SheetView {
     }
     
     @ViewBuilder func row(entry: SheetModel) -> some View {
-        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
+        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
             .frame(maxWidth: .infinity, alignment: .leading)
 #if !os(tvOS)
             .applyIf(isEditor) {
@@ -206,10 +209,10 @@ private extension SheetView {
                     }
             }
 #endif
-        
+
         ForEach(entry.entries) { subEntry in
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)
+                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
                     .padding(.leading, 2)
             }
         }
@@ -243,6 +246,7 @@ private extension AnyTransition {
 
 #Preview("Sheet View Direct") {
     @Previewable @Namespace var namespace
+    @Previewable @FocusState var focusedEntryId: UUID?
     let fixture = FakeItemRootControllerFixture()
     ScrollView {
         SheetView(
@@ -250,7 +254,8 @@ private extension AnyTransition {
             rootModel: fixture.sheetRootModel,
             sheetModel: fixture.sheetRootModel.sheetModel,
             isEditor: true,
-            linkTypes: EmptyLinkTransferable.self
+            linkTypes: EmptyLinkTransferable.self,
+            focusedEntryId: $focusedEntryId
         )
         .padding()
     }

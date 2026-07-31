@@ -94,4 +94,5 @@ struct ItemEditorForegroundView<Editor: View>: View {
         shouldShowContent: true,
         isSubFolder: false
     )
+    .environment(AppFocusModel())
 }

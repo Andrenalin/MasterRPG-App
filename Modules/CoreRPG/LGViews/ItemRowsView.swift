@@ -8,31 +8,36 @@ struct ItemRowsView: View {
     let parentModel: (any ItemDataAccessable)?
     let listModel: FolderListModel
     let menuController: ContextMenuMultiController
-    
+    var focusedRowId: FocusState<UUID?>.Binding
+
     @Environment(\.appTheme) private var theme
-    @Environment(\.navigator) private var navigator
-    
+
     var body: some View {
         if listModel.list.isEmpty && parentModel != nil {
             dropHereView
         }
-        
+
         ForEach(listModel.list) { item in
-            ListRowItemView(
-                root: root,
-                item: item,
-                listController: listController,
-                parentModel: parentModel,
-                menuController: menuController,
-                leadingPadding: leadingPadding
-            )
+            VStack(spacing: 0) {
+                ListRowItemView(
+                    root: root,
+                    item: item,
+                    listController: listController,
+                    parentModel: parentModel,
+                    listModel: listModel,
+                    menuController: menuController,
+                    leadingPadding: leadingPadding,
+                    focusedRowId: focusedRowId
+                )
+
+                if item.isOpen {
+                    Divider().padding(.leading, 8)
+                }
+            }
+            .id(item.id)
         }
-        .onDelete(perform: deleteItems)
-        .onMove(perform: moveItems)
-        .moveDisabled(parentModel == nil || parentModel?.category == .folder)
-        .deleteDisabled(listController.listDisplayModel.isSelectionMode)
     }
-    
+
     private var dropHereView: some View {
         VStack(spacing: 0) {
             Text("Drop here", bundle: .module)
@@ -65,23 +70,6 @@ struct ItemRowsView: View {
         }
     }
     
-    private func deleteItems(offsets: IndexSet) {
-        if let parentModel {
-            root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
-            listModel.deleteItems(offsets: offsets)
-        } else {
-            let removingItems = listController.delete(offsets: offsets)
-            guard !removingItems.isEmpty else { return }
-            root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
-            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
-        }
-    }
-    
-    private func moveItems(source: IndexSet, destination: Int) {
-        guard let parentModel else { return }
-        root.editControllable.moveItems(source: source, destination: destination, itemId: parentModel.id)
-    }
-    
     private var leadingPadding: CGFloat {
         let value = listController.listDisplayModel.isSelectionMode ? 12 : 8
         return CGFloat(valueFor(iOS: value, macOS: 4, tvOS: value, visionOS: value))
@@ -89,6 +77,7 @@ struct ItemRowsView: View {
 }
 
 #Preview("Item Rows") {
+    @Previewable @FocusState var focusedRowId: UUID?
     let fixture = FakeItemRootControllerFixture()
     ItemRowsView(
         root: fixture.root,
@@ -99,6 +88,7 @@ struct ItemRowsView: View {
             editController: fixture.editController,
             itemController: fixture.itemController,
             listModel: fixture.folderListController.listModel
-        )
+        ),
+        focusedRowId: $focusedRowId
     )
 }

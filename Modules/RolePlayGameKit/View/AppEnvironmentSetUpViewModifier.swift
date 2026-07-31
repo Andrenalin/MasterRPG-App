@@ -33,6 +33,7 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.optionKeyDownModel)
             .environment(appModel.settingsModel)
             .environment(appModel.scenesManager)
+            .environment(appModel.appFocusModel)
             .environment(appModel.appNavigationModel)
             .environment(\.supporterTier, appModel.supporterTier)
         

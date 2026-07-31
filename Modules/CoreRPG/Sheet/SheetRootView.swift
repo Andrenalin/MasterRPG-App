@@ -38,8 +38,13 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
     let isEditor: Bool
     let linkTypes: LinkType.Type
 
-    @FocusState private var focusSheetEntry: Bool
-    
+    @Environment(AppFocusModel.self) private var appFocusModel
+    // Per-entry focus target — not a container-level bool. Mirrors `ListRootView`'s
+    // `focusedRowId`: a single `.focusable()` container competes with each entry row's own
+    // `Button` for the click/Tab target, which is exactly what let focus and selection drift
+    // apart (a tap could select one entry while system focus landed — or stayed — elsewhere).
+    @FocusState private var focusedEntryId: UUID?
+
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -48,25 +53,37 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
             rootModel: rootModel,
             sheetModel: rootModel.sheetModel,
             isEditor: isEditor,
-            linkTypes: linkTypes
+            linkTypes: linkTypes,
+            focusedEntryId: $focusedEntryId
         )
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)
         .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
 #if !os(tvOS)
-        // Makes the sheet a Tab stop so the user can jump here from the sidebar list.
-        // onKeyPress bubbles from any focused descendant, so arrow keys work whether
-        // focus is on this container or on a child button — and TextFields consume
-        // arrow keys themselves, so editing is never interrupted.
-        .focusable()
-        .focused($focusSheetEntry)
-        .onChange(of: root.navigationModel.navigationColumnFocus) {
-            focusSheetEntry <=> root.navigationModel.navigationColumnFocus == .detail
-        }
-        .onChange(of: root.navigationModel.selectedEntryId) {
-            if root.navigationModel.selectedEntryId != nil {
-                root.navigationModel.navigationColumnFocus <=> .detail
+        // onKeyPress bubbles from whichever entry row is focused up through this ancestor, so
+        // arrow keys work no matter which row (or nesting depth) currently holds focus — and
+        // TextFields consume arrow keys themselves, so editing is never interrupted.
+        .onChange(of: appFocusModel.navigationColumnFocus) {
+            guard appFocusModel.navigationColumnFocus == .detail else {
+                focusedEntryId = nil
+                return
             }
+            // Arriving with nothing selected (e.g. fresh from the list) selects and focuses
+            // the first entry; arriving with an existing selection just focuses it in place.
+            if rootModel.selectedEntryId == nil, let first = rootModel.firstSelectableEntry {
+                rootModel.setSelected(first, parent: rootModel.sheetModel)
+            }
+            focusedEntryId = rootModel.selectedEntryId
+        }
+        // Keeps focusId and selectedId the same in both directions. Selection can change without
+        // going through a focus change (up/down arrow, an external route); this half keeps focus
+        // following it. The other half — focus changing without going through `setSelected`, e.g.
+        // Tab-key navigation onto a row — is handled per-row in `SheetEntryView`, which already
+        // knows its own correct parent for the `setSelected(_:parent:)` call.
+        .onChange(of: rootModel.selectedEntryId) {
+            guard rootModel.selectedEntryId != nil else { return }
+            appFocusModel.navigationColumnFocus <=> .detail
+            focusedEntryId <=> rootModel.selectedEntryId
         }
         .onKeyPress(.downArrow, phases: .down) { _ in
             rootModel.selectNextEntry()
@@ -79,11 +96,13 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
         .onKeyPress(.escape, phases: .down) { _ in
             guard rootModel.selectedEntryId != nil else { return .ignored }
             rootModel.clearSelection()
+            focusedEntryId = nil
             return .handled
         }
         .onKeyPress(.leftArrow, phases: .down) { _ in
             rootModel.clearSelection()
-            root.navigationModel.navigationColumnFocus <=> .list
+            focusedEntryId = nil
+            appFocusModel.navigationColumnFocus <=> .list
             return .handled
         }
 #endif
@@ -94,4 +113,5 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
     let fixture = FakeItemRootControllerFixture()
     SheetRootView(root: fixture.root, rootModel: fixture.sheetRootModel, linkTypes: EmptyLinkTransferable.self)
         .environment(AppGameStateModel())
+        .environment(AppFocusModel())
 }

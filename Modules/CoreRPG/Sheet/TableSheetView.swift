@@ -57,5 +57,6 @@ private extension TableSheetView {
     .environment(AppWindowSizeModel())
     .environment(AppGameStateModel())
     .environment(ScenesManager())
+    .environment(AppFocusModel())
 
 }

@@ -140,4 +140,5 @@ struct ImportReviewSheetDetailView: View {
         rootManager: nil,
         reviewModel: .preview
     )
+    .environment(AppFocusModel())
 }
