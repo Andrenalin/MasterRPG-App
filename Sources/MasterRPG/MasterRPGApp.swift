@@ -121,7 +121,7 @@ struct MasterRPGApp: App {
             .environmentSetUp(appModel)
             .appSettingsSetUp(appModel)
         }
-        .windowResizability(.contentSize)
+        //.windowResizability(.contentSize)
         .defaultWindowPlacementAll(.leading(SceneId.game.rawValue))
         .restorationBehaviorAll(.disabledOnlyVisionOS)
 #if os(visionOS)
