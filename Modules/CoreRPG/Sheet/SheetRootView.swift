@@ -73,7 +73,14 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
             if rootModel.selectedEntryId == nil, let first = rootModel.firstSelectableEntry {
                 rootModel.setSelected(first, parent: rootModel.sheetModel)
             }
-            focusedEntryId = rootModel.selectedEntryId
+            // Deferred: the target entry's Button may not exist in the hierarchy yet (e.g.
+            // scrolled out of view in the enclosing ScrollView) — assigning @FocusState
+            // synchronously in that case is silently dropped. One runloop tick gives layout
+            // time to settle first.
+            let target = rootModel.selectedEntryId
+            Task { @MainActor in
+                focusedEntryId = target
+            }
         }
         // Keeps focusId and selectedId the same in both directions. Selection can change without
         // going through a focus change (up/down arrow, an external route); this half keeps focus

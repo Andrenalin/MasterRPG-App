@@ -14,7 +14,6 @@ struct SplitWithDetailView: View {
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     @Environment(AppNavigationModel.self) private var appNavigationModel
     @State private var fallbackNavigationModel = ModuleNavigationModel()
-    @State private var detailColumnSwitchAction: DetailColumnSwitchAction
 
     init(
         tab: RootRoute,
@@ -26,11 +25,6 @@ struct SplitWithDetailView: View {
         self._column = column
         self._preferredCompactColumn = preferredCompactColumn
         self.appModel = appModel
-        self._detailColumnSwitchAction = State(
-            initialValue: DetailColumnSwitchAction {
-                preferredCompactColumn.wrappedValue = .detail
-            }
-        )
     }
 
     var body: some View {
@@ -48,7 +42,6 @@ struct SplitWithDetailView: View {
                 tab
             }
             .environment(controller)
-            .environment(\.switchToDetailColumn, detailColumnSwitchAction)
 #if os(iOS)
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 800)
 #endif

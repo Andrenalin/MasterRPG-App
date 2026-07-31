@@ -28,6 +28,8 @@ public struct LinkItemRootView: View {
     @State private var parentModel: (any ItemDataAccessable)?
         
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         LinkItemListView(root: root, type: type, selectionModel: itemSelectionModel, parentModel: parentModel)
             .task(id: itemSelectionModel.onlyChildrenFrom) {
                 // Using task instead of onChange for better lifecycle management

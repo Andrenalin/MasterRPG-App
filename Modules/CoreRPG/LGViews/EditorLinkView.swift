@@ -20,6 +20,8 @@ public struct EditorLinkView: View {
     let destinationModule: NetworkModules?
     
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         VStack {
 #if os(tvOS)
             if selectionMode {

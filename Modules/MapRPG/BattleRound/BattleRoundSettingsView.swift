@@ -75,7 +75,7 @@ private struct BattleValueNameRow: View {
             HStack {
                 TextField(title, text: $text)
                     .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.automatic)
                     .onSubmit(refresh)
 
                 Button(

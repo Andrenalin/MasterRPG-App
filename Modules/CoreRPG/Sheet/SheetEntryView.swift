@@ -36,34 +36,34 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @State private var isEditTypePickerPresented = false
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(alignment: .leading) {
-                if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
-                    SheetEntryReviewPlaceholderView(
-                        entryModel: entryModel,
-                        reviewModel: reviewModel
-                    )
-                } else {
-                    beforeInline
-
-                    mainRow
-
-                    contentRow
-                        .allowsHitTesting(!entryModel.isGeneratedAnswer)
-
-                    inlineEditorRow
-
-                    afterInline
+        Group {
+            // Review placeholders have no tap-to-select behavior — same as before.
+            if entryModel.isReviewPlaceholder {
+                rowContent
+            } else {
+                // A `Button` wrapping the row content directly, not an invisible
+                // `.background()` button behind it — a background button never reliably
+                // received taps inside the containing ScrollView/LazyVStack (confirmed
+                // live on-device; same root cause fixed for `ListRowItemView`). Nested
+                // interactive elements (link buttons in `LinkHighlightTextView`, edit/
+                // delete/take-over buttons) keep working independently — SwiftUI resolves
+                // a tap to whichever button is topmost/most specific at that point.
+                Button(action: performPrimaryAction) {
+                    rowContent
+                        .contentShape(.rect)
                 }
-
-                if let reviewModel = entryModel.entryReviewModel, reviewModel.hasDifferences {
-                    SheetEntryReviewAlternativesView(reviewModel: reviewModel)
+                .buttonStyle(.plain)
+                .focused(focusedEntryId, equals: entryModel.id)
+                // Covers focus reaching this row without going through `performPrimaryAction()`
+                // (e.g. Tab-key navigation onto it) — keeps focusId and selectedId the same
+                // regardless of how focus got here, using this row's own already-known
+                // `parentModel` for `setSelected`.
+                .onChange(of: focusedEntryId.wrappedValue) {
+                    guard focusedEntryId.wrappedValue == entryModel.id, rootModel.selectedEntryId != entryModel.id else { return }
+                    rootModel.setSelected(entryModel, parent: parentModel)
                 }
-            }
-        }
-        .background {
-            if !entryModel.isReviewPlaceholder {
-                selectionBackgroundButton
+                .accessibilityLabel(primaryActionAccessibilityLabel)
+                .accessibilityValue(generatedSelectionAccessibilityValue)
             }
         }
         .id(entryModel.source.entryId ?? entryModel.source.itemId)
@@ -75,7 +75,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
             .allowsHitTesting(false)
         }
-        .contentShape(.rect)
         .zIndex(entryModel.isGeneratedAnswer ? 1 : 0)
         .animation(accessibilityReduceMotion ? nil : .smooth, value: entryModel.isGeneratedAnswer)
         .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
@@ -112,7 +111,33 @@ private extension SheetEntryView {
     func viewController(for source: ItemRowModel) -> ViewControllable? {
         rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
     }
-    
+
+    @ViewBuilder var rowContent: some View {
+        VStack(alignment: .leading) {
+            if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
+                SheetEntryReviewPlaceholderView(
+                    entryModel: entryModel,
+                    reviewModel: reviewModel
+                )
+            } else {
+                beforeInline
+
+                mainRow
+
+                contentRow
+                    .allowsHitTesting(!entryModel.isGeneratedAnswer)
+
+                inlineEditorRow
+
+                afterInline
+            }
+
+            if let reviewModel = entryModel.entryReviewModel, reviewModel.hasDifferences {
+                SheetEntryReviewAlternativesView(reviewModel: reviewModel)
+            }
+        }
+    }
+
     @ViewBuilder var beforeInline: some View {
         if entryModel.entryReviewModel != nil {
             ForEach(entryModel.inlineEntries) { inlineSheet in
@@ -386,31 +411,6 @@ private extension SheetEntryView {
         }
     }
 
-    /// Fills regular and non-editor rows so a plain tap anywhere that isn't already an
-    /// interactive element selects it. Editor previews intentionally omit this button
-    /// because they expose explicit Take Over/Delete controls (and a context menu).
-    /// It is installed as a background, so it adopts the row's finite size without
-    /// contributing an infinite-height child to the containing ScrollView.
-    var selectionBackgroundButton: some View {
-        Button {
-            performPrimaryAction()
-        } label: {
-            Rectangle().fill(.clear)
-        }
-        .buttonStyle(.plain)
-        .contentShape(.rect)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .focused(focusedEntryId, equals: entryModel.id)
-        // Covers focus reaching this row without going through `performPrimaryAction()` (e.g.
-        // Tab-key navigation onto it) — keeps focusId and selectedId the same regardless of how
-        // focus got here, using this row's own already-known `parentModel` for `setSelected`.
-        .onChange(of: focusedEntryId.wrappedValue) {
-            guard focusedEntryId.wrappedValue == entryModel.id, rootModel.selectedEntryId != entryModel.id else { return }
-            rootModel.setSelected(entryModel, parent: parentModel)
-        }
-        .accessibilityLabel(primaryActionAccessibilityLabel)
-        .accessibilityValue(generatedSelectionAccessibilityValue)
-    }
 
     @ViewBuilder var selectionBorder: some View {
         if entryModel.isSelected {

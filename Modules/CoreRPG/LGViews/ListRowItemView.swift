@@ -15,6 +15,8 @@ struct ListRowItemView: View {
     @State private var isDropTargeted = false
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         // The row's tap target is a `Button` wrapping the content directly (not an invisible
         // `.background()` button behind it). A background button never reliably received taps
         // in this ScrollView/LazyVStack context — confirmed live on-device with a debugger

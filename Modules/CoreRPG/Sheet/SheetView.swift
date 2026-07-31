@@ -64,13 +64,17 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension SheetView {
+    /// A `Button` wrapping the row content directly, not an invisible `.background()` button
+    /// behind it — see `SheetEntryView` for the full rationale (same fix, same root cause).
     var nameRow: some View {
-        ZStack(alignment: .topLeading) {
+        Button {
+            rootModel.setSelected(sheetModel, parent: sheetModel)
+        } label: {
             HStack {
                 if isEditor && sheetModel.canAdd {
                     SheetEntryAddButton(rootModel: rootModel, parentModel: sheetModel, onlyIcon: true)
                 }
-                
+
                 LinkHighlightTextView(
                     model: rootModel.linkTextModel(
                         for: .item(sheetModel.source.itemId),
@@ -81,15 +85,22 @@ private extension SheetView {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
             }
+            .contentShape(.rect)
         }
-        .background {
-            selectionBackgroundButton
+        .buttonStyle(.plain)
+        .focused(focusedEntryId, equals: sheetModel.id)
+        // Covers focus reaching this row without going through the tap action (e.g. Tab-key
+        // navigation onto it) — keeps focusId and selectedId the same regardless of how focus
+        // got here.
+        .onChange(of: focusedEntryId.wrappedValue) {
+            guard focusedEntryId.wrappedValue == sheetModel.id, rootModel.selectedEntryId != sheetModel.id else { return }
+            rootModel.setSelected(sheetModel, parent: sheetModel)
         }
+        .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
         .overlay {
             selectionBorder
                 .allowsHitTesting(false)
         }
-        .contentShape(.rect)
         .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: sheetModel.isSelected)
         .applyIf((isEditor && sheetModel.canAdd) || sheetModel.isSelected) {
             $0.contextMenuAll {
@@ -97,23 +108,7 @@ private extension SheetView {
             }
         }
     }
-    
-    /// Fills the name row so a plain tap anywhere that isn't already an interactive
-    /// element (add button, links inside LinkHighlightTextView, "Next Question") selects it.
-    /// The explicit frame + contentShape guarantee the whole row is tappable, independent
-    /// of how the sibling row content happens to size the surrounding ZStack.
-    var selectionBackgroundButton: some View {
-        Button {
-            rootModel.setSelected(sheetModel, parent: sheetModel)
-        } label: {
-            Rectangle().fill(.clear)
-        }
-        .buttonStyle(.plain)
-        .contentShape(.rect)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
-    }
-    
+
     @ViewBuilder var selectionBorder: some View {
         if sheetModel.isSelected {
             let tint = theme.tint(for: sheetModel.source.typeId)

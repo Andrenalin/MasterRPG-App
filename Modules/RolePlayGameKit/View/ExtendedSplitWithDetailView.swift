@@ -12,7 +12,6 @@ struct ExtendedSplitWithDetailView: View {
     let appModel: AppModel
 
     @State private var fallbackNavigationModel = ModuleNavigationModel()
-    @State private var detailColumnSwitchAction: DetailColumnSwitchAction
 
     init(
         tab: ExtendedTabRoute,
@@ -24,11 +23,6 @@ struct ExtendedSplitWithDetailView: View {
         self._column = column
         self._preferredCompactColumn = preferredCompactColumn
         self.appModel = appModel
-        self._detailColumnSwitchAction = State(
-            initialValue: DetailColumnSwitchAction {
-                preferredCompactColumn.wrappedValue = .detail
-            }
-        )
     }
 
     var body: some View {
@@ -39,7 +33,6 @@ struct ExtendedSplitWithDetailView: View {
                 tab
             }
             .environment(controller)
-            .environment(\.switchToDetailColumn, detailColumnSwitchAction)
         } detail: {
             SplitDetailView(module: tab.module)
                 .environment(controller)

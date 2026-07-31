@@ -12,6 +12,8 @@ struct UnavailableGlassOverlay<Content: View>: View {
     }
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         content
             .disabled(isUnavailable)
             .overlay {

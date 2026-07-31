@@ -32,6 +32,8 @@ public struct LinkItemListView: View {
     private static let filterPrompt = Text("Filter", bundle: .module)
 
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         ManagedNavigationStack(name: "LinkInspector") { navigator in
             VStack {
                 if type == .inspector {

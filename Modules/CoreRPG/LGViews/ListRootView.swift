@@ -13,7 +13,6 @@ struct ListRootView: View {
     
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @Environment(\.switchToDetailColumn) private var switchToDetailColumn
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(AppFocusModel.self) private var appFocusModel
 
@@ -273,7 +272,13 @@ private extension ListRootView {
         listModel.listSelection = [target]
         listModel.scrollId = target
         listModel.recordVisibleScrollPosition(target)
-        focusedRowId = target
+        // Deferred: the target row's Button may not exist in the LazyVStack's hierarchy yet
+        // (offscreen, not yet laid out from the scroll this same call just triggered) —
+        // assigning @FocusState synchronously in that case is silently dropped. One runloop
+        // tick gives the scroll and layout time to settle first.
+        Task { @MainActor in
+            focusedRowId = target
+        }
     }
 
     /// Replaces the row-to-row up/down arrow navigation `List` gave for free. Ignored while

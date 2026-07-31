@@ -16,6 +16,8 @@ struct InspectorRowView: View {
     @Environment(\.itemGenerationAction) private var itemGenerationAction
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         let model = item.model
 
         HStack(spacing: 0) {

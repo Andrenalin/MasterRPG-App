@@ -20,6 +20,8 @@ struct TabbedSplitNavigation: View {
     @State private var fallbackNavigationModel = ModuleNavigationModel()
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         @Bindable var appModel = appModel
         let controller = appModel.itemRootController(for: selectedModule)
         @Bindable var model = controller?.navigationModel ?? fallbackNavigationModel
@@ -31,19 +33,19 @@ struct TabbedSplitNavigation: View {
 
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $preferredCompactColumn) {
             TabSidebar(restoresState: restoresState)
-                .navigationSplitViewColumnWidth(min: 96, ideal: 140, max: 180)
+                .navigationSplitViewColumnWidth(min: 96, ideal: 120, max: 180)
         } content: {
             ManagedPresentationView {
                 appModel.selectedModule
             }
-            .frame(maxWidth: 450)
-            .navigationSplitViewColumnWidth(min: 250, ideal: 350, max: 450)
+            .frame(maxWidth: 400)
+            .navigationSplitViewColumnWidth(min: 150, ideal: 250, max: 400)
             .environment(appModel.itemRootController(for: selectedModule))
         } detail: {
             SplitDetailView(module: selectedModule)
                 .environment(appModel.itemRootController(for: selectedModule))
                 .frame(maxWidth: .infinity)
-                .navigationSplitViewColumnWidth(min: 450, ideal: 750)
+                .navigationSplitViewColumnWidth(min: 200, ideal: 450)
         }
         .inspectorAll(isPresented: inspectorBinding) {
             if canShow && model.showInspector {
