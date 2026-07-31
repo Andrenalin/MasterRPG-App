@@ -5,7 +5,6 @@ import SwiftUI
 
 struct TabSidebar: View {
     @Environment(AppModel.self) private var appModel
-    @Environment(\.navigationColumnFocus) private var navigationColumnFocus
 
     private let restoresState: Bool
 
@@ -19,9 +18,9 @@ struct TabSidebar: View {
             allTabs
         }
         .themedListSurface()
-        .navigationColumnFocused(navigationColumnFocus, equals: .tabs)
         .onKeyPress(.rightArrow, phases: .down) { _ in
-            navigationColumnFocus?.wrappedValue = .list
+            //how to go to list?
+            //navigationColumnFocus?.wrappedValue = .list
             return .handled
         }
         .applyIf(restoresState) {

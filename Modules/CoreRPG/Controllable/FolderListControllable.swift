@@ -155,7 +155,7 @@ public extension FolderListControllable {
     }
 
     /// Restores selection/scroll after `update()`'s search has rebuilt the list.
-    private func applyPostUpdateSelection(
+    func applyPostUpdateSelection(
         previousSelectedId: UUID?,
         selectionGeneration: Int
     ) {

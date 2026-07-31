@@ -8,15 +8,13 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         parentModel: SheetModel,
         entryModel: SheetModel,
         isEditor: Bool,
-        linkTypes: LinkType.Type,
-        generatedAcceptanceNamespace: Namespace.ID
+        linkTypes: LinkType.Type
     ) {
         self.rootModel = rootModel
         self.parentModel = parentModel
         self.entryModel = entryModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
-        self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
     }
 
     let rootModel: SheetRootModel
@@ -24,7 +22,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     let entryModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
-    let generatedAcceptanceNamespace: Namespace.ID
     
     @Environment(\.networkActions) private var networkActions
     @Environment(\.appTheme) private var theme
@@ -36,11 +33,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     @State private var isEditTypePickerPresented = false
 
     var body: some View {
-//        let geometryMatch = rootModel.sheetRowGeometryMatch(
-//            for: entryModel,
-//            parent: parentModel
-//        )
-
         ZStack(alignment: .topLeading) {
             VStack(alignment: .leading) {
                 if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
@@ -55,8 +47,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
 
                     contentRow
                         .allowsHitTesting(!entryModel.isGeneratedAnswer)
-
-                    //detailContent(entryModel)
 
                     inlineEditorRow
 
@@ -82,13 +72,6 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
             }
             .allowsHitTesting(false)
         }
-//        .matchedGeometryEffect(
-//            id: geometryMatch.id,
-//            in: generatedAcceptanceNamespace,
-//            properties: .frame,
-//            anchor: .center,
-//            isSource: geometryMatch.isSource
-//        )
         .contentShape(.rect)
         .zIndex(entryModel.isGeneratedAnswer ? 1 : 0)
         .animation(accessibilityReduceMotion ? nil : .smooth, value: entryModel.isGeneratedAnswer)
@@ -475,8 +458,7 @@ private extension SheetEntryView {
         parentModel: .empty,
         entryModel: SheetRootModel.fake.sheetModel,
         isEditor: false,
-        linkTypes: EmptyLinkTransferable.self,
-        generatedAcceptanceNamespace: namespace
+        linkTypes: EmptyLinkTransferable.self
     )
     .environment(AppGameStateModel())
 }

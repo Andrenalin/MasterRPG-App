@@ -18,7 +18,6 @@ struct TabbedSplitNavigation: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
 
     @State private var fallbackNavigationModel = ModuleNavigationModel()
-    @FocusState private var navigationColumnFocus: NavigationColumnFocus?
 
     var body: some View {
         @Bindable var appModel = appModel
@@ -58,7 +57,6 @@ struct TabbedSplitNavigation: View {
         .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
         .onNavigationReceive(assign: $appModel.selectedModule)
         .navigationSplitViewStyle(.balanced)
-        .environment(\.navigationColumnFocus, $navigationColumnFocus)
     }
     
     var selectedModule: NetworkModules {

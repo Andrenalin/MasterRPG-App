@@ -14,15 +14,13 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
         rootModel: SheetRootModel,
         sheetModel: SheetModel,
         isEditor: Bool = false,
-        linkTypes: LinkType.Type = LinkDiceData.self,
-        generatedAcceptanceNamespace: Namespace.ID
+        linkTypes: LinkType.Type = LinkDiceData.self
     ) {
         self.root = root
         self.rootModel = rootModel
         self.sheetModel = sheetModel
         self.isEditor = isEditor
         self.linkTypes = linkTypes
-        self.generatedAcceptanceNamespace = generatedAcceptanceNamespace
     }
     
     let root: ItemRootController
@@ -30,7 +28,6 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     let sheetModel: SheetModel
     let isEditor: Bool
     let linkTypes: LinkType.Type
-    let generatedAcceptanceNamespace: Namespace.ID
     
     @State private var dropTargetEntryId: UUID?
     
@@ -195,7 +192,7 @@ private extension SheetView {
     }
     
     @ViewBuilder func row(entry: SheetModel) -> some View {
-        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace)
+        SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes)
             .frame(maxWidth: .infinity, alignment: .leading)
 #if !os(tvOS)
             .applyIf(isEditor) {
@@ -212,7 +209,7 @@ private extension SheetView {
         
         ForEach(entry.entries) { subEntry in
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
-                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, generatedAcceptanceNamespace: generatedAcceptanceNamespace)
+                SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes)
                     .padding(.leading, 2)
             }
         }
@@ -253,8 +250,7 @@ private extension AnyTransition {
             rootModel: fixture.sheetRootModel,
             sheetModel: fixture.sheetRootModel.sheetModel,
             isEditor: true,
-            linkTypes: EmptyLinkTransferable.self,
-            generatedAcceptanceNamespace: namespace
+            linkTypes: EmptyLinkTransferable.self
         )
         .padding()
     }

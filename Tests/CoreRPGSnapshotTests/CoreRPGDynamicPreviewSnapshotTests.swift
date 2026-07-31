@@ -432,24 +432,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::GeneratedSheetEntryTreeView
-    @Test("GeneratedSheetEntryTreeView")
-    func generatedSheetEntryTreeView() {
-        assertCoreSnapshot("GeneratedSheetEntryTreeView") {
-            CoreRPGNamespaceSnapshotHarness { namespace in
-                GeneratedSheetEntryTreeView(
-                    rootModel: .fake,
-                    parentModel: .empty,
-                    entryModel: .empty,
-                    isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self,
-                    generatedAcceptanceNamespace: namespace
-                )
-            }
-            .environment(AppGameStateModel())
-        }
-    }
-
     // snapshot-root: CoreRPG::SheetEntryView
     @Test("SheetEntryView")
     func sheetEntryView() {
@@ -460,8 +442,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     parentModel: .empty,
                     entryModel: .empty,
                     isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self,
-                    generatedAcceptanceNamespace: namespace
+                    linkTypes: EmptyLinkTransferable.self
                 )
             }
             .environment(AppGameStateModel())
@@ -478,8 +459,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     rootModel: .fake,
                     sheetModel: .empty,
                     isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self,
-                    generatedAcceptanceNamespace: namespace
+                    linkTypes: EmptyLinkTransferable.self
                 )
             }
             .environment(AppGameStateModel())

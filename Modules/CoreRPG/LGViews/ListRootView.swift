@@ -14,12 +14,13 @@ struct ListRootView: View {
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.switchToDetailColumn) private var switchToDetailColumn
-    @Environment(\.navigationColumnFocus) private var navigationColumnFocus
     @Environment(ScenesManager.self) private var scenesManager
 
-    @State private var userScrollIsActive = false
+    @State private var scrollPosition: UUID?
     @State private var generationSelection: WindowItemSelection?
     
+    @FocusState private var focusList: Bool
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         
@@ -69,7 +70,7 @@ struct ListRootView: View {
                     return .handled
                 }
                 .onKeyPress(.leftArrow, phases: .down) { _ in
-                    navigationColumnFocus?.wrappedValue = .tabs
+                    root.navigationModel.navigationColumnFocus = .tabs
                     return .handled
                 }
                 .onKeyPress(.rightArrow, phases: .down) { _ in
@@ -79,8 +80,6 @@ struct ListRootView: View {
                               sheetRootModel.sheetModel.source.itemId == listModel.selectedItemId,
                               let firstEntry = sheetRootModel.firstSelectableEntry {
                         sheetRootModel.setSelected(firstEntry, parent: sheetRootModel.sheetModel)
-                        navigationColumnFocus?.wrappedValue = .detail
-                        switchToDetailColumn()
                     }
                     return .handled
                 }
@@ -177,77 +176,67 @@ private extension ListRootView {
     @ViewBuilder
     var listView: some View {
         @Bindable var listModel = listModel
-        Group {
-#if os(macOS)
+        ScrollViewReader { scrollProxy in
             Group {
-                if listController.listDisplayModel.isSelectionMode {
-                    List(selection: $listModel.listSelection) {
-                        ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
+#if os(macOS)
+                Group {
+                    if listController.listDisplayModel.isSelectionMode {
+                        List(selection: $listModel.listSelection) {
+                            ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
+                        }
+                        .frame(minHeight: 300, maxHeight: .infinity)
+                    } else {
+                        List(selection: $listModel.selected) {
+                            ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
+                        }
+                        .frame(minHeight: 300, maxHeight: .infinity)
                     }
-                    .frame(minHeight: 300, maxHeight: .infinity)
-                } else {
-                    List(selection: $listModel.selected) {
-                        ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-                    }
-                    .frame(minHeight: 300, maxHeight: .infinity)
                 }
-            }
-            .applyIf(parentModel != nil) {
-                $0.listStyle(.bordered)
-            }
+                .applyIf(parentModel != nil) {
+                    $0.listStyle(.bordered)
+                }
 #else
-            List(selection: $listModel.listSelection) {
-                ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
-            }
-#endif
-        }
-        .scrollPosition(id: $listModel.scrollId, anchor: .center)
-        .navigationColumnFocused(navigationColumnFocus, equals: .list)
-        .focusedValue(\.moduleListIsFocused, true)
-        .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
-        .themedListSurface()
-        .onChange(of: navigationColumnFocus?.wrappedValue) { _, newValue in
-            guard newValue == .list else { return }
-            focusPreferredListRow()
-        }
-#if os(macOS)
-        .onScrollPhaseChange { _, newPhase in
-            switch newPhase {
-            case .tracking, .interacting, .decelerating:
-                userScrollIsActive = true
-            case .idle:
-                if userScrollIsActive {
-                    listModel.recordVisibleScrollPosition(listModel.scrollId)
+                List(selection: $listModel.listSelection) {
+                    ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController)
                 }
-                userScrollIsActive = false
-            case .animating:
-                break
-            }
-        }
-        .onAppear {
-            restoreMacScrollPosition()
-        }
-        .onDisappear {
-            if userScrollIsActive {
-                listModel.recordVisibleScrollPosition(listModel.scrollId)
-            }
-            userScrollIsActive = false
-        }
-        .onChange(of: listModel.list.map(\.id)) {
-            restoreMacScrollPosition()
-        }
+                
 #endif
-    }
+            }
+            .onAppear {
+                Task {
+                    await Task.yield()
+                    try? await Task.sleep(for: .milliseconds(150))
+                    if let selectedId = listModel.selected {
+                        listController.applyPostUpdateSelection(previousSelectedId: selectedId, selectionGeneration: 0)
+                    }
+                    
+                    if let savedPosition = listModel.scrollId {
+                        scrollProxy.scrollTo(savedPosition, anchor: .top)
+                    }
+                }
+            }
+            .onChange(of: listModel.scrollId) {
+                guard let id = listModel.scrollId else { return }
+                Task {
+                    await Task.yield()
+                    try? await Task.sleep(for: .milliseconds(150))
+                    scrollProxy.scrollTo(id, anchor: .top)
+                }
 
-#if os(macOS)
-    func restoreMacScrollPosition() {
-        listModel.scrollId = listModel.restoredScrollTarget(
-            selection: listModel.selected
-        )
+            }
+            .focusedValue(\.moduleListIsFocused, true)
+            .focused($focusList)
+            .accessibilityIdentifier("module.list.\(root.configurable.module.token)")
+            .themedListSurface()
+            .onChange(of: root.navigationModel.navigationColumnFocus) {
+                guard root.navigationModel.navigationColumnFocus == .list else { return }
+                focusPreferredListRow()
+            }
+        }
     }
-#endif
 
     func focusPreferredListRow() {
+        focusList = true
         let target = listModel.selected.flatMap { selected in
             listModel.list.first(where: { $0.id == selected })?.id
         } ?? listModel.list.first?.id

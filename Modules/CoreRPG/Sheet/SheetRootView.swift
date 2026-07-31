@@ -38,9 +38,8 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
     let isEditor: Bool
     let linkTypes: LinkType.Type
 
-    @Namespace private var generatedAcceptanceNamespace
-    @Environment(\.navigationColumnFocus) private var navigationColumnFocus
-
+    @FocusState private var focusSheetEntry: Bool
+    
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -49,8 +48,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
             rootModel: rootModel,
             sheetModel: rootModel.sheetModel,
             isEditor: isEditor,
-            linkTypes: linkTypes,
-            generatedAcceptanceNamespace: generatedAcceptanceNamespace
+            linkTypes: linkTypes
         )
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)
@@ -61,7 +59,15 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
         // focus is on this container or on a child button — and TextFields consume
         // arrow keys themselves, so editing is never interrupted.
         .focusable()
-        .navigationColumnFocused(navigationColumnFocus, equals: .detail)
+        .focused($focusSheetEntry)
+        .onChange(of: root.navigationModel.navigationColumnFocus) {
+            focusSheetEntry <=> root.navigationModel.navigationColumnFocus == .detail
+        }
+        .onChange(of: root.navigationModel.selectedEntryId) {
+            if root.navigationModel.selectedEntryId != nil {
+                root.navigationModel.navigationColumnFocus <=> .detail
+            }
+        }
         .onKeyPress(.downArrow, phases: .down) { _ in
             rootModel.selectNextEntry()
             return .handled
@@ -77,7 +83,7 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
         }
         .onKeyPress(.leftArrow, phases: .down) { _ in
             rootModel.clearSelection()
-            navigationColumnFocus?.wrappedValue = .list
+            root.navigationModel.navigationColumnFocus <=> .list
             return .handled
         }
 #endif
