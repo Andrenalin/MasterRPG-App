@@ -2,34 +2,34 @@
 
 import CharacterRPG
 import CoreRPG
+import MapRPG
 import SwiftUI
 
-public struct BattleRoundView: View {
-    public init(model: BattleRoundModel, actions: BattleRoundActions, layout: BattleRoundCardLayout = .wide) {
-        self.model = model
-        self.actions = actions
-        _screenModel = State(wrappedValue: BattleRoundScreenModel(model: model, layout: layout))
+struct BattleRoundView: View {
+    init(controller: BattleRoundController, layout: BattleRoundCardLayout = .wide) {
+        self.controller = controller
+        _screenModel = State(wrappedValue: BattleRoundScreenModel(model: controller.model, layout: layout))
     }
 
-    let model: BattleRoundModel
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
 
-    @Environment(MapRootModel.self) private var root
     @Environment(ScenesManager.self) private var scenesManager
     @State private var screenModel: BattleRoundScreenModel
 
-    public var body: some View {
+    private var root: MapRootModel { controller.root.mapRoot }
+
+    var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var screenModel = screenModel
         ManagedNavigationStack(name: "BattleRound") {
             VStack(spacing: 0) {
                 BattleRoundHeader(
-                    isRunning: model.isRunning,
-                    hasEntries: !model.entries.isEmpty,
-                    round: model.roundCounter,
+                    isRunning: controller.model.isRunning,
+                    hasEntries: !controller.model.entries.isEmpty,
+                    round: controller.model.roundCounter,
                     activeAttackerName: screenModel.activeAttackerName,
-                    initiativeOrder: model.initiativeOrder,
-                    actions: actions,
+                    initiativeOrder: controller.model.initiativeOrder,
+                    controller: controller,
                     isConfigurationExpanded: $screenModel.isConfigurationExpanded
                 )
 #if os(tvOS)
@@ -39,11 +39,11 @@ public struct BattleRoundView: View {
                 if screenModel.isConfigurationExpanded {
                     BattleRoundSettingsView(
                         settings: root.mapGameControllable.battleRoundSettings,
-                        actions: actions,
+                        controller: controller,
                         selectEntry: { kind in
                             screenModel.selectConfiguredValue(
                                 kind,
-                                root: root,
+                                controller: controller,
                                 scenesManager: scenesManager
                             )
                         },
@@ -51,11 +51,11 @@ public struct BattleRoundView: View {
                             screenModel.useDroppedConfiguredValue(
                                 value,
                                 kind: kind,
-                                root: root
+                                controller: controller
                             )
                         },
                         refresh: {
-                            screenModel.refreshConfiguredValues(root: root)
+                            screenModel.refreshConfiguredValues(controller: controller)
                         }
                     )
 #if os(tvOS)
@@ -65,29 +65,29 @@ public struct BattleRoundView: View {
 
                 ScrollView {
                     LazyVStack {
-                        if model.isRunning, !model.entries.isEmpty {
+                        if controller.model.isRunning, !controller.model.entries.isEmpty {
                             BattleRoundList(
-                                cards: model.cardPresentations,
-                                actions: actions,
+                                cards: controller.model.cardPresentations,
+                                controller: controller,
                                 showCharacter: { combatant in
                                     screenModel.showCharacterSheet(
                                         combatant,
-                                        root: root,
+                                        controller: controller,
                                         scenesManager: scenesManager
                                     )
                                 },
                                 selectHitPoints: { combatant in
                                     screenModel.selectHitPoints(
                                         combatant,
-                                        root: root,
+                                        controller: controller,
                                         scenesManager: scenesManager
                                     )
                                 }
                             )
                         } else {
                             BattleRoundEmptyState(
-                                isRunning: model.isRunning,
-                                start: actions.start
+                                isRunning: controller.model.isRunning,
+                                start: { controller.start() }
                             )
                         }
                     }
@@ -106,9 +106,9 @@ public struct BattleRoundView: View {
                 BattleCharacterSheetPresentationView(presentation: sheet)
             case .selection:
                 ManagedPresentationView {
-                    root.viewController.characterSelection(
-                        root: root,
-                        selectionModel: screenModel.pendingValueSelection == nil
+                    controller.root.characterRoot.viewController.linkListView(
+                        type: .selection,
+                        itemSelectionModel: screenModel.pendingValueSelection == nil
                             ? screenModel.selectedCharacter
                             : screenModel.selectedValue
                     )
@@ -116,15 +116,14 @@ public struct BattleRoundView: View {
             }
         }
         .onChange(of: screenModel.selectedCharacter.selection) { old, new in
-            screenModel.selectionDidChange(old, new, actions: actions)
+            screenModel.selectionDidChange(old, new, controller: controller)
         }
         .onChange(of: screenModel.selectedValue.selection) { old, new in
-            screenModel.valueSelectionDidChange(old, new, root: root)
+            screenModel.valueSelectionDidChange(old, new, controller: controller)
         }
     }
 }
 
 #Preview("Battle Round", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
-    BattleRoundView(model: model, actions: .preview(model: model))
+    BattleRoundView(controller: .preview())
 }

@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 struct BattleRoundCompactCardLayout: View {
     let state: BattleRoundCardState
     let presentation: BattleRoundCardPresentation
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
@@ -22,14 +23,14 @@ struct BattleRoundCompactCardLayout: View {
                     isAttacker: true,
                     isActive: presentation.isActive,
                     tint: presentation.isActive ? .blue : .gray,
-                    actions: actions,
+                    controller: controller,
                     showCharacter: showCharacter,
                     selectHitPoints: selectHitPoints
                 )
                 BattleAttackerDetails(
                     combatant: presentation.attacker.combatant,
                     isActive: presentation.isActive,
-                    actions: actions
+                    controller: controller
                 )
                 Spacer(minLength: 0)
             }
@@ -45,7 +46,7 @@ struct BattleRoundCompactCardLayout: View {
                     state: state,
                     defenders: presentation.defenders,
                     isActiveEntry: presentation.isActive,
-                    actions: actions,
+                    controller: controller,
                     showCharacter: showCharacter,
                     selectHitPoints: selectHitPoints
                 )
@@ -56,13 +57,14 @@ struct BattleRoundCompactCardLayout: View {
 }
 
 #Preview("Compact card layout", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     if let card = model.cardPresentations.first {
         BattleRoundCompactCardLayout(
             state: BattleRoundCardState(),
             presentation: card,
-            actions: .preview(model: model),
+            controller: controller,
             showCharacter: { _ in },
             selectHitPoints: { _ in }
         )

@@ -5,6 +5,7 @@ import Foundation
 import Testing
 
 @testable import CharacterRPG
+@testable import GameRPG
 @testable import MapRPG
 
 @MainActor
@@ -23,7 +24,7 @@ struct BattleRoundInlineCharacterTests {
             sourceCharacterId: sourceId,
             gameCharacterId: UUID()
         )
-        let factory = BattleCharacterSheetFactory(root: root)
+        let factory = BattleCharacterSheetFactory(characterRoot: root.characterRoot)
 
         let presentation = try #require(
             factory.presentation(for: combatant)
@@ -52,7 +53,7 @@ struct BattleRoundInlineCharacterTests {
             sourceCharacterId: sourceId,
             gameCharacterId: runtimeId
         )
-        let factory = BattleCharacterSheetFactory(root: root)
+        let factory = BattleCharacterSheetFactory(characterRoot: root.characterRoot)
 
         let presentation = try #require(
             factory.presentation(for: combatant)
@@ -64,7 +65,7 @@ struct BattleRoundInlineCharacterTests {
     @Test("Nil and stale Character ids cannot create an empty inline sheet")
     func rejectsMissingAndStaleCharacters() async throws {
         let root = try await emptyRoot()
-        let factory = BattleCharacterSheetFactory(root: root)
+        let factory = BattleCharacterSheetFactory(characterRoot: root.characterRoot)
         let missing = makeCombatant(
             name: "Unassigned token",
             sourceCharacterId: nil,
@@ -94,7 +95,7 @@ struct BattleRoundInlineCharacterTests {
             gameCharacterId: nil
         )
         let sheet = try #require(
-            BattleCharacterSheetFactory(root: root).presentation(for: combatant)
+            BattleCharacterSheetFactory(characterRoot: root.characterRoot).presentation(for: combatant)
         )
         let sheetPresentation = BattleRoundPresentation.sheet(sheet)
         let selectionPresentation = BattleRoundPresentation.selection(combatant.id)
@@ -103,10 +104,8 @@ struct BattleRoundInlineCharacterTests {
         #expect(selectionPresentation.id == combatant.id)
     }
 
-    private func emptyRoot() async throws -> MapRootModel {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-        return root
+    private func emptyRoot() async throws -> GameRoot {
+        try await MockRoot.createGameRoot()
     }
 
     private func makeCombatant(

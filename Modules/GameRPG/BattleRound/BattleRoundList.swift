@@ -1,13 +1,14 @@
 // @copyright André Trettin
 
 import Foundation
+import MapRPG
 import SwiftUI
 
 struct BattleRoundList: View {
     private static let dragPayloadPrefix = "masterrpg-battle-entry:"
 
     let cards: [BattleRoundCardPresentation]
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
@@ -34,7 +35,7 @@ struct BattleRoundList: View {
         ForEach(cards) { card in
             BattleRoundCard(
                 presentation: card,
-                actions: actions,
+                controller: controller,
                 showCharacter: showCharacter,
                 selectHitPoints: selectHitPoints
             )
@@ -72,18 +73,19 @@ struct BattleRoundList: View {
         guard sourceIndex != targetIndex else { return }
 
         let destination = sourceIndex < targetIndex ? targetIndex + 1 : targetIndex
-        actions.moveEntries(IndexSet(integer: sourceIndex), destination)
+        controller.moveEntries(IndexSet(integer: sourceIndex), destination)
     }
 }
 
 #Preview("Turn order", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     ScrollView {
         LazyVStack(alignment: .leading, spacing: 8) {
             BattleRoundList(
                 cards: model.cardPresentations,
-                actions: .preview(model: model),
+                controller: controller,
                 showCharacter: { _ in },
                 selectHitPoints: { _ in }
             )

@@ -63,15 +63,15 @@ struct BattleRoundDiceAttributionTests {
             initiativeOrder: .descending
         ))
 
-        let battle = root.battleRoundModel
+        let battle = root.battleRoundController.model
         let player = try #require(battle.combatant(pinId: playerPin.id))
         let monster = try #require(battle.combatant(pinId: monsterPin.id))
         let playerRoll = result(characterId: playerCharacterId, total: 17)
         let monsterRoll = result(characterId: monsterCharacterId, total: 11)
 
         // When
-        root.recordBattleDiceResult(playerRoll, senderId: playerId, isMaster: false)
-        root.recordBattleDiceResult(monsterRoll, senderId: masterId, isMaster: true)
+        root.battleRoundController.recordDiceResult(playerRoll, senderId: playerId, isMaster: false)
+        root.battleRoundController.recordDiceResult(monsterRoll, senderId: masterId, isMaster: true)
 
         // Then: Surprise stores each result on that combatant's own row.
         let playerEntry = try #require(battle.entries.first { $0.attackerId == player.id })
@@ -80,8 +80,8 @@ struct BattleRoundDiceAttributionTests {
         #expect(battle.rolls(for: monster.id, in: monsterEntry).map(\.total) == [11])
 
         // An unlinked master die uses a manually selected non-player target.
-        #expect(root.selectBattleRollRecipient(monster.id))
-        root.recordBattleDiceResult(
+        #expect(root.battleRoundController.selectRollRecipient(monster.id))
+        root.battleRoundController.recordDiceResult(
             result(characterId: nil, total: 8),
             senderId: masterId,
             isMaster: true

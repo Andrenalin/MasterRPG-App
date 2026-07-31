@@ -1,28 +1,31 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 struct BattleRoundHeaderActions: View {
     let isRunning: Bool
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
 
     var body: some View {
         HStack(spacing: 8) {
             if isRunning {
                 Button(
                     String(localized: "Next Turn", bundle: .module),
-                    systemImage: "forward.fill",
-                    action: actions.nextAttacker
-                )
+                    systemImage: "forward.fill"
+                ) {
+                    controller.nextAttacker()
+                }
 #if !os(visionOS)
                 .buttonStyle(.glass)
 #endif
-                
+
                 Button(
                     String(localized: "Next Round", bundle: .module),
-                    systemImage: "arrow.uturn.backward",
-                    action: actions.nextRound
-                )
+                    systemImage: "arrow.uturn.backward"
+                ) {
+                    controller.nextRound()
+                }
                 .buttonStyle(.borderedProminent)
 
                 Spacer(minLength: 4)
@@ -30,18 +33,20 @@ struct BattleRoundHeaderActions: View {
                 Button(
                     String(localized: "End", bundle: .module),
                     systemImage: "stop.fill",
-                    role: .destructive,
-                    action: actions.end
-                )
+                    role: .destructive
+                ) {
+                    controller.end()
+                }
 #if !os(visionOS)
                 .buttonStyle(.glass)
 #endif
             } else {
                 Button(
                     String(localized: "Start Battle", bundle: .module),
-                    systemImage: "play.fill",
-                    action: actions.start
-                )
+                    systemImage: "play.fill"
+                ) {
+                    controller.start()
+                }
                 .buttonStyle(.borderedProminent)
             }
         }
@@ -50,22 +55,20 @@ struct BattleRoundHeaderActions: View {
 }
 
 #Preview("Running battle actions") {
-    let model = BattleRoundPreviewData.model()
-
     BattleRoundHeaderActions(
         isRunning: true,
-        actions: .preview(model: model)
+        controller: .preview()
     )
     .padding()
     .environment(\.locale, Locale(identifier: "de"))
 }
 
 #Preview("Start battle action") {
-    let model = BattleRoundModel()
-
+    // The preview fixture always installs a running battle; `isRunning` is
+    // passed explicitly here to render the "not started" branch regardless.
     BattleRoundHeaderActions(
         isRunning: false,
-        actions: .preview(model: model)
+        controller: .preview()
     )
     .padding()
     .environment(\.locale, Locale(identifier: "de"))

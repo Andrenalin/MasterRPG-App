@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 struct BattleRoundHeader: View {
@@ -8,7 +9,7 @@ struct BattleRoundHeader: View {
     let round: Int
     let activeAttackerName: String?
     let initiativeOrder: BattleInitiativeOrder
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     @Binding var isConfigurationExpanded: Bool
 
     var body: some View {
@@ -21,7 +22,7 @@ struct BattleRoundHeader: View {
                 )
                 Spacer(minLength: 8)
                 BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
-                BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
+                BattleRoundHeaderActions(isRunning: isRunning, controller: controller)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -34,7 +35,7 @@ struct BattleRoundHeader: View {
                     Spacer(minLength: 4)
                     BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 }
-                BattleRoundHeaderActions(isRunning: isRunning, actions: actions)
+                BattleRoundHeaderActions(isRunning: isRunning, controller: controller)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
@@ -72,7 +73,8 @@ private struct BattleRoundConfigurationButton: View {
 
 #Preview("Compact battle header") {
     @Previewable @State var isConfigurationExpanded = false
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     BattleRoundHeader(
         isRunning: model.isRunning,
@@ -80,7 +82,7 @@ private struct BattleRoundConfigurationButton: View {
         round: model.roundCounter,
         activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
         initiativeOrder: model.initiativeOrder,
-        actions: .preview(model: model),
+        controller: controller,
         isConfigurationExpanded: $isConfigurationExpanded
     )
 }

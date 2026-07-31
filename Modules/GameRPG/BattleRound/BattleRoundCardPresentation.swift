@@ -1,8 +1,9 @@
 // @copyright André Trettin
 
 import Foundation
+import MapRPG
 
-public enum BattleRoundCardLayout: Sendable {
+enum BattleRoundCardLayout: Sendable {
     case compact
     case wide
 }

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import MapRPG
 import SwiftUI
 
 struct BattleCharacterSheetPresentationView: View {
@@ -35,11 +36,10 @@ struct BattleCharacterSheetPresentationView: View {
 }
 
 #Preview("Battle character sheet", traits: .mockData) {
-    let root = MapRootModel.previewFixture()
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
 
-    if let combatant = model.combatants.first(where: { $0.sourceCharacterId != nil }),
-       let presentation = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
+    if let combatant = controller.model.combatants.first(where: { $0.sourceCharacterId != nil }),
+       let presentation = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
         BattleCharacterSheetPresentationView(presentation: presentation)
             .environment(AppFocusModel())
     }

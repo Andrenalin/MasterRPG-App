@@ -351,6 +351,13 @@ public final class GameRoot {
         SearchGlobalController(root: self)
     }()
 
+    /// The single battle-round controller for this game session. Owning it
+    /// here (rather than rebuilding its action closures on every render of
+    /// the window/sidebar host views) means restarting a battle keeps using
+    /// the same `BattleRoundModel` instance, so retained player identity and
+    /// initiative carry over as already implemented in `BattleRoundModel`.
+    lazy var battleRoundController = BattleRoundController(root: self)
+
     public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
         guard let store = self?.gameModel.masterController else { return }
         self?.scheduleNetworkAction {

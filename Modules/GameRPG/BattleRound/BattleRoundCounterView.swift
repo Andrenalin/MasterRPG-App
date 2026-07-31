@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 /// A presentation-only round label shared by the game chrome and the battle
 /// window. The containing chrome decides whether it is interactive.
-public struct BattleRoundCounterView: View {
-    public init(model: BattleRoundModel, style: BattleRoundCounterStyle) {
+struct BattleRoundCounterView: View {
+    init(model: BattleRoundModel, style: BattleRoundCounterStyle) {
         self.model = model
         self.style = style
     }
@@ -13,7 +14,7 @@ public struct BattleRoundCounterView: View {
     let model: BattleRoundModel
     let style: BattleRoundCounterStyle
 
-    public var body: some View {
+    var body: some View {
         Group {
             switch style {
             case .compact:

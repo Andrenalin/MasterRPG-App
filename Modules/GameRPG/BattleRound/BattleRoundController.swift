@@ -1,0 +1,282 @@
+// @copyright André Trettin
+
+import CoreRPG
+import DiceRPG
+import Foundation
+import MapRPG
+
+/// The single owner of every Battle Round mutation. Views observe
+/// `BattleRoundModel` directly for display data (via `controller.model`);
+/// this controller is the only thing that manipulates it. It holds `root`
+/// directly — the same shape as MapRPG's own `GameController` holding
+/// `root: MapRootModel` — so every action is a real method instead of an
+/// injected closure.
+@MainActor
+struct BattleRoundController: Sendable {
+    let root: GameRoot
+
+    var model: BattleRoundModel {
+        root.mapRoot.mapGameControllable.battleRoundModel
+    }
+
+    @discardableResult
+    func start() -> Bool {
+        guard let mapId = root.mapRoot.gameControllable.gameModel.currentItemId,
+              root.gameModel.gameConfig.isMaster,
+              root.gameModel.masterController != nil,
+              root.mapRoot.mapGameControllable.startBattle(
+                  itemId: mapId,
+                  initiativeOrder: model.initiativeOrder
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func end() -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.endBattle(itemId: mapId) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func setInitiative(_ combatantId: UUID, _ value: Int?) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId else {
+            return false
+        }
+        return root.mapRoot.mapGameControllable.setBattleInitiative(
+            itemId: mapId,
+            combatantId: combatantId,
+            value: value
+        )
+    }
+
+    @discardableResult
+    func adjustInitiative(_ combatantId: UUID, _ amount: Int) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId else {
+            return false
+        }
+        return root.mapRoot.mapGameControllable.adjustBattleInitiative(
+            itemId: mapId,
+            combatantId: combatantId,
+            amount: amount
+        )
+    }
+
+    @discardableResult
+    func setInitiativeOrder(_ order: BattleInitiativeOrder) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId else {
+            return false
+        }
+        return root.mapRoot.mapGameControllable.setBattleInitiativeOrder(
+            itemId: mapId,
+            order: order
+        )
+    }
+
+    func moveEntries(_ source: IndexSet, _ destination: Int) {
+        guard root.gameModel.gameConfig.isMaster else { return }
+        root.mapRoot.mapGameControllable.moveBattleEntries(from: source, to: destination)
+    }
+
+    @discardableResult
+    func activateAttacker(_ combatantId: UUID) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.activateBattleAttacker(
+                  itemId: mapId,
+                  combatantId: combatantId
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func nextAttacker() -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.nextBattleAttacker(itemId: mapId) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func nextRound() -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.nextBattleRound(itemId: mapId) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func addCombatant(pinId: UUID) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.addBattleCombatant(
+                  itemId: mapId,
+                  pinId: pinId
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func addRoll(
+        combatantId: UUID,
+        total: Int,
+        expression: String? = nil
+    ) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId else {
+            return false
+        }
+        return root.mapRoot.mapGameControllable.addBattleRoll(
+            itemId: mapId,
+            combatantId: combatantId,
+            total: total,
+            expression: expression
+        )
+    }
+
+    @discardableResult
+    func selectRollRecipient(_ combatantId: UUID) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId else {
+            return false
+        }
+        return root.mapRoot.mapGameControllable.selectBattleRollRecipient(
+            itemId: mapId,
+            combatantId: combatantId
+        )
+    }
+
+    @discardableResult
+    func setDead(_ combatantId: UUID, _ isDead: Bool) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.setBattleCombatantDead(
+                  itemId: mapId,
+                  combatantId: combatantId,
+                  isDead: isDead
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func assignCharacter(_ combatantId: UUID, _ characterId: UUID) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.assignBattleCharacter(
+                  itemId: mapId,
+                  combatantId: combatantId,
+                  characterId: characterId
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    /// Associates a normal game dice message with the matching battle photo.
+    /// Character-linked dice are exact, player rolls fall back to the
+    /// sender's pin, and an unlinked master roll uses the selected
+    /// non-player target.
+    func recordDiceResult(
+        _ diceResult: DiceResultModel,
+        senderId: UUID,
+        isMaster: Bool
+    ) {
+        guard model.isRunning else { return }
+        let eligible = model.rollEligibleCombatants
+        let characterId = diceResult.diceModel.resultCategory.flatMap { category in
+            category.module == .value ? category.id : nil
+        }
+        let characterCombatant = characterId.flatMap { characterId in
+            eligible.first { $0.gameCharacterId == characterId }
+                ?? eligible.first { $0.sourceCharacterId == characterId }
+        }
+        let playerCombatant = eligible.first { combatant in
+            combatant.isPlayer
+                && (combatant.pinId == senderId
+                    || combatant.pin.players.contains(senderId))
+        }
+        let combatantId = characterCombatant?.id
+            ?? (isMaster ? model.masterRollRecipientCombatantId : playerCombatant?.id)
+        guard let combatantId else { return }
+        _ = addRoll(
+            combatantId: combatantId,
+            total: diceResult.sum,
+            expression: diceResult.values
+        )
+    }
+
+    /// Local, non-broadcast map-level mutations. These never leave the
+    /// device, so they call the map controller directly instead of going
+    /// through `broadcast(mapId:)`.
+    @discardableResult
+    func assignValueEntry(
+        combatantId: UUID,
+        sourceCharacterId: UUID,
+        sourceEntryId: UUID,
+        kind: BattleValueKind
+    ) -> Bool {
+        guard let itemId = model.mapId else { return false }
+        return root.mapRoot.mapGameControllable.assignBattleValueEntry(
+            itemId: itemId,
+            combatantId: combatantId,
+            sourceCharacterId: sourceCharacterId,
+            sourceEntryId: sourceEntryId,
+            kind: kind
+        )
+    }
+
+    func refreshConfiguredValues() {
+        guard let mapId = model.mapId else { return }
+        root.mapRoot.mapGameControllable.refreshBattleConfiguredValues(itemId: mapId)
+    }
+
+    private func broadcast(mapId: UUID) {
+        #if !os(tvOS)
+        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        #endif
+        root.networkActions.game(
+            root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId),
+            .mapState,
+            nil
+        )
+        if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(for: mapId) {
+            root.networkActions.game(battleUpdate, .battleRound, nil)
+        }
+    }
+}
+
+extension BattleRoundController {
+    /// `GameRoot.previewFixture()` already installs a running battle (via
+    /// MapRPG's `BattleRoundPreviewData.apply(to:)`) and a master
+    /// `MasterController`, so the returned controller's actions work in a
+    /// live Xcode preview canvas, not just for static rendering.
+    static func preview() -> BattleRoundController {
+        GameRoot.previewFixture().battleRoundController
+    }
+}

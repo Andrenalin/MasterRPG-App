@@ -1,12 +1,13 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 struct BattleDefenderStrip: View {
     let state: BattleRoundCardState
     let defenders: [BattleRoundParticipantPresentation]
     let isActiveEntry: Bool
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
@@ -31,7 +32,7 @@ struct BattleDefenderStrip: View {
                             isAttacker: false,
                             isActive: isActiveEntry,
                             tint: isActiveEntry ? .red : .gray,
-                            actions: actions,
+                            controller: controller,
                             showCharacter: showCharacter,
                             selectHitPoints: selectHitPoints
                         )
@@ -45,14 +46,15 @@ struct BattleDefenderStrip: View {
 }
 
 #Preview("Defenders", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     if let card = model.cardPresentations.first {
         BattleDefenderStrip(
             state: BattleRoundCardState(),
             defenders: card.defenders,
             isActiveEntry: card.isActive,
-            actions: .preview(model: model),
+            controller: controller,
             showCharacter: { _ in },
             selectHitPoints: { _ in }
         )
@@ -61,13 +63,11 @@ struct BattleDefenderStrip: View {
 }
 
 #Preview("No defenders") {
-    let model = BattleRoundPreviewData.model()
-
     BattleDefenderStrip(
         state: BattleRoundCardState(),
         defenders: [],
         isActiveEntry: false,
-        actions: .preview(model: model),
+        controller: .preview(),
         showCharacter: { _ in },
         selectHitPoints: { _ in }
     )

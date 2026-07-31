@@ -15,16 +15,14 @@ struct BattleRoundSideOverlay: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        BattleRoundView(
-            model: root.battleRoundModel,
-            actions: BattleRoundActionFactory.actions(for: root) {
-                withAnimation(accessibilityReduceMotion ? nil : .default) {
-                    gameScreenModel.showsBattleRoundSidebar = false
-                }
-            },
-            layout: .compact
-        )
+        BattleRoundView(controller: root.battleRoundController, layout: .compact)
         .environment(root.mapRoot)
+        .onChange(of: root.battleRoundController.model.isRunning) { wasRunning, isRunning in
+            guard wasRunning, !isRunning else { return }
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
+                gameScreenModel.showsBattleRoundSidebar = false
+            }
+        }
         .frame(
             maxWidth: gameScreenModel.sideBarWidth,
             maxHeight: .infinity,

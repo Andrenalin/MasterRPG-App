@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 struct BattleRollResults: View {

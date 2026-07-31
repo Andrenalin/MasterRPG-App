@@ -2,6 +2,7 @@
 
 import Testing
 
+@testable import GameRPG
 @testable import MapRPG
 
 @MainActor

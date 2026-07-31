@@ -3,6 +3,7 @@
 import CharacterRPG
 import CoreRPG
 import Foundation
+import MapRPG
 import Observation
 import SwiftUI
 
@@ -46,12 +47,12 @@ final class BattleRoundScreenModel {
     func selectionDidChange(
         _ oldSelection: [WindowItemSelection],
         _ newSelection: [WindowItemSelection],
-        actions: BattleRoundActions
+        controller: BattleRoundController
     ) {
         guard oldSelection != newSelection,
               let combatantId = pendingCharacterCombatantId,
               let characterId = newSelection.first?.itemId else { return }
-        actions.assignCharacter(combatantId, characterId)
+        controller.assignCharacter(combatantId, characterId)
         pendingCharacterCombatantId = nil
         selectedCharacter.resetSelection(itemId: nil, entryId: nil)
         if case .selection = presentation { presentation = nil }
@@ -60,7 +61,7 @@ final class BattleRoundScreenModel {
     func valueSelectionDidChange(
         _ oldSelection: [WindowItemSelection],
         _ newSelection: [WindowItemSelection],
-        root: MapRootModel
+        controller: BattleRoundController
     ) {
         guard oldSelection != newSelection,
               let target = pendingValueSelection,
@@ -73,12 +74,10 @@ final class BattleRoundScreenModel {
                 characterId: selection.itemId,
                 entryId: entryId,
                 kind: kind,
-                root: root
+                controller: controller
             )
         case let .combatant(combatantId, kind):
-            guard let itemId = model.mapId else { break }
-            _ = root.gameController.assignBattleValueEntry(
-                itemId: itemId,
+            _ = controller.assignValueEntry(
                 combatantId: combatantId,
                 sourceCharacterId: selection.itemId,
                 sourceEntryId: entryId,
@@ -94,17 +93,17 @@ final class BattleRoundScreenModel {
 
     func showCharacterSheet(
         _ combatant: BattleCombatant,
-        root: MapRootModel,
+        controller: BattleRoundController,
         scenesManager: ScenesManager
     ) {
-        if let sheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
+        if let sheet = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
             presentation = .sheet(sheet)
             return
         }
         pendingCharacterCombatantId = combatant.id
         selectedCharacter.resetSelection(itemId: nil, entryId: nil)
 #if os(macOS)
-        root.characterRoot.itemSelectionModel = selectedCharacter
+        controller.root.characterRoot.itemSelectionModel = selectedCharacter
         scenesManager.openWindow(SceneId.sceneId(for: .value))
 #else
         presentation = .selection(combatant.id)
@@ -113,26 +112,26 @@ final class BattleRoundScreenModel {
 
     func selectConfiguredValue(
         _ kind: BattleValueKind,
-        root: MapRootModel,
+        controller: BattleRoundController,
         scenesManager: ScenesManager
     ) {
         pendingValueSelection = .setting(kind)
-        presentValueSelection(onlyChildrenFrom: nil, root: root, scenesManager: scenesManager)
+        presentValueSelection(onlyChildrenFrom: nil, controller: controller, scenesManager: scenesManager)
     }
 
     func selectHitPoints(
         _ combatant: BattleCombatant,
-        root: MapRootModel,
+        controller: BattleRoundController,
         scenesManager: ScenesManager
     ) {
         guard let sourceCharacterId = combatant.sourceCharacterId else {
-            showCharacterSheet(combatant, root: root, scenesManager: scenesManager)
+            showCharacterSheet(combatant, controller: controller, scenesManager: scenesManager)
             return
         }
         pendingValueSelection = .combatant(combatantId: combatant.id, kind: .hitPoints)
         presentValueSelection(
             onlyChildrenFrom: sourceCharacterId,
-            root: root,
+            controller: controller,
             scenesManager: scenesManager
         )
     }
@@ -140,32 +139,31 @@ final class BattleRoundScreenModel {
     func useDroppedConfiguredValue(
         _ value: LinkCharacterData,
         kind: BattleValueKind,
-        root: MapRootModel
+        controller: BattleRoundController
     ) {
         guard let entryId = value.entryId else { return }
         applySettingEntry(
             characterId: value.itemId,
             entryId: entryId,
             kind: kind,
-            root: root
+            controller: controller
         )
     }
 
-    func refreshConfiguredValues(root: MapRootModel) {
-        guard let mapId = model.mapId else { return }
-        root.gameController.refreshBattleConfiguredValues(itemId: mapId)
+    func refreshConfiguredValues(controller: BattleRoundController) {
+        controller.refreshConfiguredValues()
     }
 
     private func presentValueSelection(
         onlyChildrenFrom characterId: UUID?,
-        root: MapRootModel,
+        controller: BattleRoundController,
         scenesManager: ScenesManager
     ) {
         selectedValue.onlyChildrenFrom = characterId
         selectedValue.onlyEntrySelection = true
         selectedValue.resetSelection(itemId: nil, entryId: nil)
 #if os(macOS)
-        root.characterRoot.itemSelectionModel = selectedValue
+        controller.root.characterRoot.itemSelectionModel = selectedValue
         scenesManager.openWindow(SceneId.sceneId(for: .value))
 #else
         presentation = .selection(UUID())
@@ -176,19 +174,19 @@ final class BattleRoundScreenModel {
         characterId: UUID,
         entryId: UUID,
         kind: BattleValueKind,
-        root: MapRootModel
+        controller: BattleRoundController
     ) {
-        guard let entry = root.characterRoot.valueGameControllable.gameEntry(
+        guard let entry = controller.root.characterRoot.valueGameControllable.gameEntry(
             characterId: characterId,
             entryId: entryId
         ) else { return }
         switch kind {
         case .initiative:
-            root.mapGameControllable.battleRoundSettings.initiativeName = entry.name
+            controller.root.mapRoot.mapGameControllable.battleRoundSettings.initiativeName = entry.name
         case .hitPoints:
-            root.mapGameControllable.battleRoundSettings.hitPointsName = entry.name
+            controller.root.mapRoot.mapGameControllable.battleRoundSettings.hitPointsName = entry.name
         }
-        refreshConfiguredValues(root: root)
+        refreshConfiguredValues(controller: controller)
     }
 }
 

@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreRPG
+import MapRPG
 import SwiftUI
 
 @MainActor @Observable
@@ -14,7 +15,7 @@ extension EnvironmentValues {
 
 struct BattleRoundCard: View {
     let presentation: BattleRoundCardPresentation
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
@@ -29,7 +30,7 @@ struct BattleRoundCard: View {
                 BattleRoundWideCardLayout(
                     state: cardState,
                     presentation: presentation,
-                    actions: actions,
+                    controller: controller,
                     showCharacter: showCharacter,
                     selectHitPoints: selectHitPoints
                 )
@@ -37,7 +38,7 @@ struct BattleRoundCard: View {
                 BattleRoundCompactCardLayout(
                     state: cardState,
                     presentation: presentation,
-                    actions: actions,
+                    controller: controller,
                     showCharacter: showCharacter,
                     selectHitPoints: selectHitPoints
                 )
@@ -75,12 +76,13 @@ struct BattleRoundCard: View {
 }
 
 #Preview("Battle card", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     if let card = model.cardPresentations.first {
         BattleRoundCard(
             presentation: card,
-            actions: .preview(model: model),
+            controller: controller,
             showCharacter: { _ in },
             selectHitPoints: { _ in }
         )

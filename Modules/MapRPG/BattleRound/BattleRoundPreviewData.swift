@@ -174,25 +174,3 @@ public enum BattleRoundPreviewData {
         UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, finalByte))
     }
 }
-
-@MainActor
-extension BattleRoundActions {
-    static func preview(model: BattleRoundModel) -> BattleRoundActions {
-        BattleRoundActions(
-            start: { BattleRoundPreviewData.apply(to: model) },
-            end: { model.end() },
-            nextAttacker: { _ = model.nextAttacker() },
-            nextRound: { _ = model.nextRound() },
-            setInitiative: { id, value in _ = model.setInitiative(value, for: id) },
-            adjustInitiative: { id, amount in
-                _ = model.adjustInitiative(by: amount, for: id)
-            },
-            setInitiativeOrder: { order in _ = model.setInitiativeOrder(order) },
-            moveEntries: model.moveEntries,
-            activateAttacker: { _ = model.activateAttacker($0) },
-            selectRollRecipient: { _ = model.selectRollRecipient($0) },
-            setDead: { _, _ in },
-            assignCharacter: { _, _ in }
-        )
-    }
-}

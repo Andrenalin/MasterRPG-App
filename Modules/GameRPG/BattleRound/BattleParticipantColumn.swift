@@ -2,6 +2,7 @@
 
 import CharacterRPG
 import CoreRPG
+import MapRPG
 import PhotoRPG
 import SwiftUI
 
@@ -11,18 +12,18 @@ struct BattleParticipantColumn: View {
     let isAttacker: Bool
     let isActive: Bool
     let tint: Color
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
 
-    @Environment(MapRootModel.self) private var root
+    private var root: MapRootModel { controller.root.mapRoot }
 
     var body: some View {
         VStack(spacing: 4) {
             Button(action: openCharacter) {
                 ZStack {
-                    root.photoRoot.viewController.mapImage(
-                        root: root.photoRoot,
+                    controller.root.photoRoot.viewController.mapImage(
+                        root: controller.root.photoRoot,
                         for: combatant.photoId,
                         size: CGSize(width: 48, height: 48),
                         color: combatant.color
@@ -81,7 +82,7 @@ struct BattleParticipantColumn: View {
 #if os(iOS) || os(macOS) || os(visionOS)
             .battleLinkCharacterDropDestination { characters, _ in
                 guard let character = characters.first else { return false }
-                actions.assignCharacter(combatant.id, character.itemId)
+                controller.assignCharacter(combatant.id, character.itemId)
                 return true
             }
 #endif
@@ -104,12 +105,10 @@ struct BattleParticipantColumn: View {
                 guard let value = values.first,
                       let entryId = value.entryId,
                       let sourceCharacterId = combatant.sourceCharacterId,
-                      value.itemId == sourceCharacterId,
-                      let mapId = root.mapGameControllable.battleRoundModel.mapId else {
+                      value.itemId == sourceCharacterId else {
                     return false
                 }
-                return root.gameController.assignBattleValueEntry(
-                    itemId: mapId,
+                return controller.assignValueEntry(
                     combatantId: combatant.id,
                     sourceCharacterId: sourceCharacterId,
                     sourceEntryId: entryId,
@@ -191,14 +190,14 @@ struct BattleParticipantColumn: View {
               let entryId = combatant.hitPointsEntryId else {
             return nil
         }
-        return root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+        return controller.root.characterRoot.valueGameControllable.gameEntryDisplayValue(
             characterId: characterId,
             entryId: entryId
         )
     }
 
     private func openCharacter() {
-        if let sheet = BattleCharacterSheetFactory(root: root).presentation(for: combatant) {
+        if let sheet = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
             if state.characterSheet?.id != sheet.id {
                 state.characterSheet = sheet
             } else {
@@ -210,7 +209,7 @@ struct BattleParticipantColumn: View {
     }
 
     private func selectRollRecipient() {
-        actions.selectRollRecipient(combatant.id)
+        controller.selectRollRecipient(combatant.id)
     }
 
     private func selectHitPointsEntry() {
@@ -218,12 +217,13 @@ struct BattleParticipantColumn: View {
     }
 
     private func toggleDead() {
-        actions.setDead(combatant.id, !combatant.isDead)
+        controller.setDead(combatant.id, !combatant.isDead)
     }
 }
 
 #Preview("Battle participant", traits: .mockData) {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     if let participant = model.cardPresentations.first?.defenders.first {
         BattleParticipantColumn(
@@ -232,7 +232,7 @@ struct BattleParticipantColumn: View {
             isAttacker: false,
             isActive: true,
             tint: .red,
-            actions: .preview(model: model),
+            controller: controller,
             showCharacter: { _ in },
             selectHitPoints: { _ in }
         )

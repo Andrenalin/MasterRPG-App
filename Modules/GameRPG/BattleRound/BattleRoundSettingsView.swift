@@ -2,11 +2,12 @@
 
 import CoreRPG
 import Foundation
+import MapRPG
 import SwiftUI
 
 struct BattleRoundSettingsView: View {
     @Bindable var settings: BattleRoundSettingsModel
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
     let selectEntry: @MainActor (BattleValueKind) -> Void
     let useDroppedEntry: @MainActor (LinkCharacterData, BattleValueKind) -> Void
     let refresh: @MainActor () -> Void
@@ -20,7 +21,7 @@ struct BattleRoundSettingsView: View {
                         isDisabled: false
                     )
                     .onChange(of: settings.initiativeOrder) { _, newOrder in
-                        actions.setInitiativeOrder(newOrder)
+                        controller.setInitiativeOrder(newOrder)
                     }
                 } label: {
                     Label(
@@ -115,13 +116,14 @@ private struct AlignedLabelStyle: LabeledContentStyle {
 }
 
 #Preview("Battle settings") {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
     let defaults = UserDefaults(suiteName: "BattleRoundSettingsPreview") ?? .standard
     let settings = BattleRoundSettingsModel(defaults: defaults)
 
     BattleRoundSettingsView(
         settings: settings,
-        actions: .preview(model: model),
+        controller: controller,
         selectEntry: { _ in },
         useDroppedEntry: { _, _ in },
         refresh: {}

@@ -667,7 +667,7 @@ extension MasterController {
         if message.type == .dice,
            actionType == .generic,
            let diceResult = DiceResultModel.decodeData(of: message.data) {
-            await root.recordBattleDiceResult(
+            await root.battleRoundController.recordDiceResult(
                 diceResult,
                 senderId: root.gameModel.gameConfig.id,
                 isMaster: true
@@ -1402,7 +1402,7 @@ extension MasterController {
             guard await root.gameModel.gameControl.features.dicePlayers else { return nil }
             guard model.sender.isMaster || model.isPlayerDiceGroupEvent else { return nil }
             if let diceResult = DiceResultModel.decodeData(of: model.data.data) {
-                await root.recordBattleDiceResult(
+                await root.battleRoundController.recordDiceResult(
                     diceResult,
                     senderId: model.sender.id,
                     isMaster: model.sender.isMaster

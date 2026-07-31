@@ -3,13 +3,13 @@
 import CharacterRPG
 import CoreRPG
 import Foundation
+import MapRPG
 
 @MainActor
 struct BattleCharacterSheetFactory {
-    let root: MapRootModel
+    let characterRoot: CharacterRootModel
 
     func presentation(for combatant: BattleCombatant) -> BattleCharacterSheetPresentation? {
-        let characterRoot = root.characterRoot
         guard let baseRootManager = characterRoot.rootManager else { return nil }
 
         let itemId: UUID

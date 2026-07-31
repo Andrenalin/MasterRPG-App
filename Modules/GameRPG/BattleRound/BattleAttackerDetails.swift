@@ -1,11 +1,12 @@
 // @copyright André Trettin
 
+import MapRPG
 import SwiftUI
 
 struct BattleAttackerDetails: View {
     let combatant: BattleCombatant
     let isActive: Bool
-    let actions: BattleRoundActions
+    let controller: BattleRoundController
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -34,8 +35,8 @@ struct BattleAttackerDetails: View {
             BattleInitiativeEditor(
                 combatantId: combatant.id,
                 value: combatant.initiative,
-                setValue: actions.setInitiative,
-                adjust: actions.adjustInitiative
+                setValue: { controller.setInitiative($0, $1) },
+                adjust: { controller.adjustInitiative($0, $1) }
             )
 
             Button(
@@ -52,18 +53,19 @@ struct BattleAttackerDetails: View {
     }
 
     private func activateAttacker() {
-        actions.activateAttacker(combatant.id)
+        controller.activateAttacker(combatant.id)
     }
 }
 
 #Preview("Active attacker") {
-    let model = BattleRoundPreviewData.model()
+    let controller = BattleRoundController.preview()
+    let model = controller.model
 
     if let card = model.cardPresentations.first {
         BattleAttackerDetails(
             combatant: card.attacker.combatant,
             isActive: card.isActive,
-            actions: .preview(model: model)
+            controller: controller
         )
         .padding()
     }
