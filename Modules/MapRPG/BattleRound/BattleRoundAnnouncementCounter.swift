@@ -25,7 +25,9 @@ struct BattleRoundAnnouncementCounter: View {
         }
         .padding(24)
         .frame(minWidth: 220)
+#if !os(visionOS)
         .glassEffect(in: .rect(cornerRadius: 24))
+#endif
         .shadow(color: .black.opacity(0.18), radius: 16, y: 6)
         .accessibilityAddTraits(.isHeader)
     }

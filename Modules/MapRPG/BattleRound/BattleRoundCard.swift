@@ -44,12 +44,14 @@ struct BattleRoundCard: View {
             }
         }
         .padding(10)
+        #if !os(visionOS)
         .glassEffect(
             presentation.isActive
                 ? .regular.tint(.blue)
                 : .regular,
             in: .rect(cornerRadius: 12)
         )
+        #endif
         .overlay(alignment: .leading) {
             UnevenRoundedRectangle(
                 topLeadingRadius: 12,

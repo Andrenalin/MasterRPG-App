@@ -14,8 +14,10 @@ struct BattleRoundHeaderActions: View {
                     systemImage: "forward.fill",
                     action: actions.nextAttacker
                 )
+#if !os(visionOS)
                 .buttonStyle(.glass)
-
+#endif
+                
                 Button(
                     String(localized: "Next Round", bundle: .module),
                     systemImage: "arrow.uturn.backward",
@@ -31,7 +33,9 @@ struct BattleRoundHeaderActions: View {
                     role: .destructive,
                     action: actions.end
                 )
+#if !os(visionOS)
                 .buttonStyle(.glass)
+#endif
             } else {
                 Button(
                     String(localized: "Start Battle", bundle: .module),

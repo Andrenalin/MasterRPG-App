@@ -435,6 +435,8 @@ struct CoreRPGDynamicPreviewSnapshotTests {
     // snapshot-root: CoreRPG::SheetEntryView
     @Test("SheetEntryView")
     func sheetEntryView() {
+        @FocusState var focusedEntryId: UUID?
+        
         assertCoreSnapshot("SheetEntryView") {
             CoreRPGNamespaceSnapshotHarness { namespace in
                 SheetEntryView(
@@ -442,7 +444,8 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     parentModel: .empty,
                     entryModel: .empty,
                     isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self
+                    linkTypes: EmptyLinkTransferable.self,
+                    focusedEntryId: $focusedEntryId
                 )
             }
             .environment(AppGameStateModel())
@@ -452,6 +455,8 @@ struct CoreRPGDynamicPreviewSnapshotTests {
     // snapshot-root: CoreRPG::SheetView
     @Test("SheetView")
     func sheetView() {
+        @FocusState var focusedEntryId: UUID?
+        
         assertCoreSnapshot("SheetView") {
             CoreRPGNamespaceSnapshotHarness { namespace in
                 SheetView(
@@ -459,7 +464,8 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                     rootModel: .fake,
                     sheetModel: .empty,
                     isEditor: true,
-                    linkTypes: EmptyLinkTransferable.self
+                    linkTypes: EmptyLinkTransferable.self,
+                    focusedEntryId: $focusedEntryId
                 )
             }
             .environment(AppGameStateModel())
@@ -729,6 +735,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                 .environment(AppNavigationModel(appGameStateModel: appGameStateModel))
                 .environment(AppSettingsModel.previewFixture())
                 .environment(AppWindowSizeModel())
+                .environment(AppFocusModel())
                 .environment(ScenesManager())
                 .environment(OptionKeyDownModel())
                 .environment(GroupItemSelectionModel())
