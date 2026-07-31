@@ -34,7 +34,7 @@ struct ListRootView: View {
             
             listView
                 .animation(accessibilityReduceMotion ? nil : .smooth, value: listModel.list.count)
-                .frame(minWidth: 250, idealWidth: 350)
+                .frame(minWidth: 200, idealWidth: 350)
                 .scrollIndicatorsFlash(onAppear: true)
                 .scrollIndicatorsFlash(trigger: listModel.list.count)
 #if !os(visionOS)

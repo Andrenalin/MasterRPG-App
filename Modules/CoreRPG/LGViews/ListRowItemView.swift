@@ -30,6 +30,7 @@ struct ListRowItemView: View {
         }
         .buttonStyle(.plain)
         .focused(focusedRowId, equals: item.id)
+        .padding(.trailing, 8)
         .padding(.leading, CGFloat(item.level * 16))
         .selectListItem(
             isActive: listController.listDisplayModel.isSelectionMode,

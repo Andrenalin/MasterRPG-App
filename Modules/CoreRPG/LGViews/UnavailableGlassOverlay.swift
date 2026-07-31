@@ -11,23 +11,24 @@ struct UnavailableGlassOverlay<Content: View>: View {
         self.content = content()
     }
     
+    @Environment(\.appTheme) private var theme
+    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         
         content
             .disabled(isUnavailable)
             .overlay {
-                Color.primary.opacity(isUnavailable ? 0.2 : 0)
-                    .accessibilityHidden(true)
                 
                 ContentUnavailableView.search
                     .padding()
 #if os(visionOS)
                     .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
 #else
-                    .glassEffect(.regular.interactive())
+                    .glassEffect(.clear.tint(theme.accentColor))
 #endif
                     .padding()
+                    .frame(width: 200, height: 400)
                     .opacity(isUnavailable ? 1 : 0)
                     .allowsHitTesting(isUnavailable)
                     .accessibilityHidden(!isUnavailable)
@@ -37,7 +38,11 @@ struct UnavailableGlassOverlay<Content: View>: View {
 
 #Preview {
     UnavailableGlassOverlay(isUnavailable: true) {
-        Text(verbatim: "Search results")
-            .padding()
+        ZStack {
+            Color.blue
+            
+            Text(verbatim: "Search results")
+                .padding()
+        }
     }
 }

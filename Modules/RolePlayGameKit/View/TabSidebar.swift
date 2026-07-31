@@ -13,7 +13,9 @@ struct TabSidebar: View {
         self.restoresState = restoresState
     }
 
+#if os(macOS)
     @FocusState private var focusTabs: Bool
+#endif
 
     var body: some View {
         @Bindable var appModel = appModel
@@ -21,11 +23,16 @@ struct TabSidebar: View {
             allTabs
         }
         .themedListSurface()
+        // macOS only: the sidebar competing for keyboard focus alongside the list/detail
+        // columns is the point (Tab/arrow-key navigation across all three panes). On iPad,
+        // this same claim fought the search field for focus — tapping search never actually
+        // won it because the sidebar kept reasserting itself — so the sidebar doesn't
+        // participate in `appFocusModel` there; it's touch-only, like the rest of iPadOS.
+#if os(macOS)
         .focused($focusTabs)
         .onChange(of: appFocusModel.navigationColumnFocus) {
             focusTabs = appFocusModel.navigationColumnFocus == .tabs
         }
-#if !os(tvOS)
         .onKeyPress(.rightArrow, phases: .down) { _ in
             appFocusModel.navigationColumnFocus = .list
             return .handled
