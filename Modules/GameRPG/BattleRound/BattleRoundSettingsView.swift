@@ -8,13 +8,27 @@ import SwiftUI
 struct BattleRoundSettingsView: View {
     @Bindable var settings: BattleRoundSettingsModel
     let controller: BattleRoundController
-    let selectEntry: @MainActor (BattleValueKind) -> Void
-    let useDroppedEntry: @MainActor (LinkCharacterData, BattleValueKind) -> Void
-    let refresh: @MainActor () -> Void
+    let screenModel: BattleRoundScreenModel
 
     var body: some View {
-        GroupBoxTV {
-            VStack(alignment: .leading, spacing: 12) {
+                BattleRoundPatternSection(
+                    title: String(localized: "Initiative Pattern", bundle: .module),
+                    systemImage: "list.number",
+                    kind: .initiative,
+                    settings: settings,
+                    controller: controller,
+                    screenModel: screenModel
+                )
+
+                BattleRoundPatternSection(
+                    title: String(localized: "Hit Points Pattern", bundle: .module),
+                    systemImage: "heart.text.square",
+                    kind: .hitPoints,
+                    settings: settings,
+                    controller: controller,
+                    screenModel: screenModel
+                )
+
                 LabeledContent {
                     BattleInitiativeOrderMenu(
                         selection: $settings.initiativeOrder,
@@ -29,103 +43,103 @@ struct BattleRoundSettingsView: View {
                         systemImage: "arrow.up.arrow.down"
                     )
                 }
-                
-                BattleValueNameRow(
-                    title: String(localized: "Initiative Pattern", bundle: .module),
-                    systemImage: "list.number",
-                    text: $settings.initiativeName,
-                    kind: .initiative,
-                    selectEntry: selectEntry,
-                    useDroppedEntry: useDroppedEntry,
-                    refresh: refresh
-                )
-                
-                BattleValueNameRow(
-                    title: String(localized: "Hit Points Pattern", bundle: .module),
-                    systemImage: "heart.text.square",
-                    text: $settings.hitPointsName,
-                    kind: .hitPoints,
-                    selectEntry: selectEntry,
-                    useDroppedEntry: useDroppedEntry,
-                    refresh: refresh
-                )
-            }
-            .labeledContentStyle(AlignedLabelStyle(labelWidth: 180))
-            .padding()
-
-        } label: {
-            Text("Settings", bundle: .module)
-        }
-        .padding()
-        .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(8)
     }
-
 }
 
-private struct BattleValueNameRow: View {
+private struct BattleRoundPatternSection: View {
     let title: String
     let systemImage: String
-    @Binding var text: String
     let kind: BattleValueKind
-    let selectEntry: @MainActor (BattleValueKind) -> Void
-    let useDroppedEntry: @MainActor (LinkCharacterData, BattleValueKind) -> Void
-    let refresh: @MainActor () -> Void
+    let settings: BattleRoundSettingsModel
+    let controller: BattleRoundController
+    let screenModel: BattleRoundScreenModel
+
+    @Environment(ScenesManager.self) private var scenesManager
+    @State private var newName = ""
 
     var body: some View {
-        LabeledContent {
-            HStack {
-                TextField(title, text: $text)
-                    .labelsHidden()
-                    .textFieldStyle(.automatic)
-                    .onSubmit(refresh)
+        Label(title, systemImage: systemImage)
+            .font(.headline)
 
-                Button(
-                    String(localized: "Choose Value", bundle: .module),
-                    systemImage: "person.crop.circle.badge.checkmark"
-                ) {
-                    selectEntry(kind)
-                }
-                .labelStyle(.iconOnly)
-            }
-            .battleLinkCharacterDropDestination { values, _ in
-                guard let value = values.first, value.entryId != nil else {
-                    return false
-                }
-                useDroppedEntry(value, kind)
-                return true
-            }
-        } label: {
-            Label(title, systemImage: systemImage)
+        ForEach(settings.names(for: kind), id: \.self) { name in
+            BattleRoundPatternRow(name: name, kind: kind, settings: settings)
         }
+
+        addRow
+    }
+
+    private var addRow: some View {
+        HStack {
+            TextField(String(localized: "Add Pattern", bundle: .module), text: $newName)
+                .onSubmit(addTypedName)
+
+            Button(
+                String(localized: "Add Pattern", bundle: .module),
+                systemImage: "plus.circle.fill",
+                action: addTypedName
+            )
+            .labelStyle(.iconOnly)
+            .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            Button(
+                String(localized: "Choose Value", bundle: .module),
+                systemImage: "person.crop.circle.badge.checkmark"
+            ) {
+                screenModel.selectConfiguredValue(kind, controller: controller, scenesManager: scenesManager)
+            }
+            .labelStyle(.iconOnly)
+        }
+        .padding(8)
+        .battleLinkCharacterDropDestination { values, _ in
+            guard let value = values.first, value.entryId != nil else {
+                return false
+            }
+            screenModel.useDroppedConfiguredValue(value, kind: kind, controller: controller)
+            return true
+        }
+    }
+
+    private func addTypedName() {
+        guard settings.addName(newName, for: kind) else { return }
+        newName = ""
+        screenModel.refreshConfiguredValues(controller: controller)
     }
 }
 
-private struct AlignedLabelStyle: LabeledContentStyle {
-    let labelWidth: CGFloat
-    
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            // Force the label to take up a rigid width, aligned to the leading edge
-            configuration.label
-                .frame(width: labelWidth, alignment: .leading)
-            
-            // Let the content fill the remaining space
-            configuration.content
+private struct BattleRoundPatternRow: View {
+    let name: String
+    let kind: BattleValueKind
+    let settings: BattleRoundSettingsModel
+
+    var body: some View {
+        HStack {
+            Text(verbatim: name)
+            Spacer()
+            Button(
+                String(localized: "Remove Pattern", bundle: .module),
+                systemImage: "minus.circle.fill"
+            ) {
+                settings.removeName(name, for: kind)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .foregroundStyle(.red)
         }
+        .padding(8)
+        .background(.fill.tertiary, in: .rect(cornerRadius: 8))
     }
 }
 
-#Preview("Battle settings") {
+#Preview("Battle settings", traits: .mockData) {
     let controller = BattleRoundController.preview()
-    let model = controller.model
+    let screenModel = BattleRoundScreenModel(model: controller.model, layout: .wide)
     let defaults = UserDefaults(suiteName: "BattleRoundSettingsPreview") ?? .standard
     let settings = BattleRoundSettingsModel(defaults: defaults)
 
     BattleRoundSettingsView(
         settings: settings,
         controller: controller,
-        selectEntry: { _ in },
-        useDroppedEntry: { _, _ in },
-        refresh: {}
+        screenModel: screenModel
     )
 }

@@ -424,6 +424,9 @@
         }
       }
     },
+    "Add Pattern" : {
+
+    },
     "Add Pin to Battle Round" : {
       "localizations" : {
         "de" : {
@@ -3558,6 +3561,9 @@
         }
       }
     },
+    "Remove Pattern" : {
+
+    },
     "Reorder" : {
       "comment" : "A menu for changing the order of dashboard sections.",
       "localizations" : {
@@ -4119,9 +4125,6 @@
           }
         }
       }
-    },
-    "Settings" : {
-
     },
     "Share" : {
       "localizations" : {

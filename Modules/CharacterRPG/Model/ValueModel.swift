@@ -116,7 +116,7 @@ public final class ValueModel: nonisolated Identifiable {
     public var parentId: UUID?
     public var diceId: UUID?
     public var groupId: UUID?
-    
+
     public var quickEditEntries: Set<UUID> = []
 }
 

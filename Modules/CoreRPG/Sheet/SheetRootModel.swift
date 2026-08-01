@@ -647,6 +647,27 @@ public final class SheetRootModel: Sendable {
         return entryId
     }
 
+    func convertibleGroupCandidates(source: ItemRowModel) -> [FolderRepresentable] {
+        guard let entryId = source.entryId, let editable = entryDataEditable(for: source) else { return [] }
+        let content = editable.entryContent(itemId: source.itemId, entryId: entryId)
+        var seen: Set<UUID> = []
+        return LinkReplaceController.links(for: content).compactMap { link -> FolderRepresentable? in
+            guard link.entryId == nil,
+                  link.module == source.typeId,
+                  editable.canBecomeGroup(itemId: link.itemId),
+                  seen.insert(link.itemId).inserted else { return nil }
+            return FolderRepresentable(id: link.itemId, name: editable.itemControllable.nameSync(itemId: link.itemId))
+        }
+    }
+
+    @MainActor func convertEntryToGroup(source: ItemRowModel, existingItemId: UUID?) async -> (any ItemDataAccessable)? {
+        guard let entryId = source.entryId,
+              let editable = entryDataEditable(for: source) else { return nil }
+        let groupId = await editable.convertToGroup(itemId: source.itemId, entryId: entryId, existingItemId: existingItemId)
+        updateFromRoot()
+        return editable.itemControllable.itemSync(for: groupId)
+    }
+
     public func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {
         guard let editController = editControllable(for: source) else { return }
         editController.editorModel.sheetEditorModel.scrollEntryId = entryId

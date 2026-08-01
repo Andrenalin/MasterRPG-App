@@ -7,6 +7,7 @@ enum InternalRoute: Equatable, Codable {
     case groupEditor(ids: [UUID])
     case removeAlert
     case batchExtraction(ids: [UUID])
+    case convertGroup(source: ItemRowModel)
 }
 
 extension InternalRoute: NavigationDestination {
@@ -38,6 +39,8 @@ struct InternalRouteDestinationView: View {
                 editController: root.editControllable,
                 ids: ids
             ) ?? AnyView(EmptyView())
+        case .convertGroup(let source):
+            SheetEntryConvertToGroupView(rootModel: root.editControllable.editorModel.sheetRootModel, source: source)
         }
     }
 }

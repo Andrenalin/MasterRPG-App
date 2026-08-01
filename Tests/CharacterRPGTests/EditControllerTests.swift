@@ -57,6 +57,69 @@ struct EditControllerTests {
         #expect(groupItem.displayState == 1)
     }
 
+    // MARK: - canBecomeGroup / convertToGroup
+
+    @Test func canBecomeGroup() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        #expect(sut.canBecomeGroup(itemId: itemId))
+
+        let entryId = await sut.addNewGroup(itemId: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let groupItemId = try #require(item.entries.first(where: { $0.id == entryId })?.valueId)
+
+        #expect(sut.canBecomeGroup(itemId: groupItemId) == false)
+    }
+
+    @Test func convertToGroupCreatesNewGroupFromEntry() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "A collection of skills.")
+        sut.add(entry: entry, itemId: itemId)
+
+        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let updatedEntry = try #require(item.entries.first(where: { $0.id == entry.id }))
+        #expect(updatedEntry.valueId == groupId)
+
+        let groupItem = root.itemController.itemOrEmpty(for: groupId)
+        #expect(groupItem.groupId == itemId)
+        #expect(groupItem.name == "Skills")
+        #expect(groupItem.description == "A collection of skills.")
+        #expect(groupItem.displayState == 1)
+    }
+
+    @Test func convertToGroupReusesExistingItem() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entry = ValueEntryModel(id: UUID(), name: "Old Name", type: .text, value: "Old content.")
+        sut.add(entry: entry, itemId: itemId)
+
+        let existingItemId = await root.itemController.addNew(type: .item)
+        sut.reset(name: "Inventory", itemId: existingItemId)
+        sut.reset(description: "All carried items.", itemId: existingItemId)
+
+        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: existingItemId)
+        #expect(groupId == existingItemId)
+
+        let updatedExisting = root.itemController.itemOrEmpty(for: existingItemId)
+        #expect(updatedExisting.groupId == itemId)
+        #expect(updatedExisting.displayState == 1)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let updatedEntry = try #require(item.entries.first(where: { $0.id == entry.id }))
+        #expect(updatedEntry.valueId == existingItemId)
+        #expect(updatedEntry.name == "Inventory")
+        #expect(updatedEntry.value == "All carried items.")
+    }
+
     @Test func inlineValueEditingAndMergeHelpers() async throws {
         let root = Self.makeRoot()
         let sut = root.editController

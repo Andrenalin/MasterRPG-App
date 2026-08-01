@@ -36,35 +36,24 @@ struct BattleRoundView: View {
                 .focusSection()
 #endif
 
-                if screenModel.isConfigurationExpanded {
-                    BattleRoundSettingsView(
-                        settings: root.mapGameControllable.battleRoundSettings,
-                        controller: controller,
-                        selectEntry: { kind in
-                            screenModel.selectConfiguredValue(
-                                kind,
-                                controller: controller,
-                                scenesManager: scenesManager
-                            )
-                        },
-                        useDroppedEntry: { value, kind in
-                            screenModel.useDroppedConfiguredValue(
-                                value,
-                                kind: kind,
-                                controller: controller
-                            )
-                        },
-                        refresh: {
-                            screenModel.refreshConfiguredValues(controller: controller)
-                        }
-                    )
-#if os(tvOS)
-                    .focusSection()
-#endif
-                }
-
                 ScrollView {
                     LazyVStack {
+                        if screenModel.isConfigurationExpanded {
+                            BattleRoundSettingsView(
+                                settings: root.mapGameControllable.battleRoundSettings,
+                                controller: controller,
+                                screenModel: screenModel
+                            )
+                            // Capped rather than left to grow: this panel sits above the battle
+                            // card ScrollView in the same VStack, so an unbounded height would
+                            // starve the card list below it.
+                            .frame(maxHeight: 280)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+        #if os(tvOS)
+                            .focusSection()
+        #endif
+                        }
+
                         if controller.model.isRunning, !controller.model.entries.isEmpty {
                             BattleRoundList(
                                 cards: controller.model.cardPresentations,
@@ -100,6 +89,7 @@ struct BattleRoundView: View {
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleInlineNavigationTitle()
         }
+        .themedSurface()
         .sheet(item: $screenModel.presentation) { presentation in
             switch presentation {
             case .sheet(let sheet):

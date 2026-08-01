@@ -332,6 +332,113 @@ struct BattleRoundControllerTests {
         #expect(root.characterRoot.gameController.gameModel.currentItemId == initialCharacterId)
     }
 
+    @Test("Battle start detects initiative nested in a group and hit points via a content-link alias pattern")
+    func resolvesConfiguredValuesForNestedAndAliasedEntries() async throws {
+        // Given: a player whose Initiative is a table-rolled value nested inside
+        // a "Stats" group, plus a plain top-level HP entry.
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let playerCharacterId = UUID()
+        let monsterCharacterId = UUID()
+
+        let statsGroupId = UUID()
+        let iniEntryId = UUID()
+        let iniTableRefId = UUID()
+        let iniEntry = ValueEntryModel(
+            id: iniEntryId,
+            name: "Ini",
+            type: .number,
+            value: "[Ini Roll](RPG://TABLES/0/\(iniTableRefId.uuidString))|15"
+        )
+        let statsGroup = ValueModel(id: statsGroupId, name: "Stats", entries: [iniEntry])
+        root.characterRoot.itemController.replace(model: statsGroup, isInsert: true)
+
+        let statsLinkEntry = ValueEntryModel(
+            id: UUID(),
+            name: "Stats",
+            type: .text,
+            value: "",
+            valueId: statsGroupId
+        )
+        let hpEntry = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "20")
+        let player = ValueModel(
+            id: playerCharacterId,
+            name: "Hero",
+            entries: [statsLinkEntry, hpEntry]
+        )
+        root.characterRoot.itemController.replace(model: player, isInsert: true)
+
+        // And: a monster whose HP lives in an entry named "current" whose
+        // content links to a "HitPoints" reference rather than being named
+        // "HP" itself — only found once the settings pattern includes it.
+        let currentEntryId = UUID()
+        let hpLinkTableRefId = UUID()
+        let currentEntry = ValueEntryModel(
+            id: currentEntryId,
+            name: "current",
+            type: .number,
+            value: "[HitPoints](RPG://TABLES/0/\(hpLinkTableRefId.uuidString))|8"
+        )
+        let monster = ValueModel(id: monsterCharacterId, name: "Goblin", entries: [currentEntry])
+        root.characterRoot.itemController.replace(model: monster, isInsert: true)
+
+        sut.battleRoundSettings.hitPointsNames = ["HP", "HitPoints"]
+
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: square(x: 0),
+            focused: true
+        )
+        let playerPin = MapPinModel(
+            id: UUID(),
+            name: "Hero",
+            characterId: playerCharacterId,
+            location: CGPoint(x: 20, y: 20),
+            isPlayer: true
+        )
+        let monsterPin = MapPinModel(
+            id: UUID(),
+            name: "Goblin",
+            characterId: monsterCharacterId,
+            location: CGPoint(x: 60, y: 60)
+        )
+        let map = MapModel(
+            id: mapId,
+            name: "Dungeon",
+            entries: [room],
+            mapPins: [playerPin, monsterPin]
+        )
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        // When
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+
+        // Then: initiative is preset from the table-linked entry nested in the group.
+        let playerCombatant = try #require(sut.battleRoundModel.combatant(pinId: playerPin.id))
+        #expect(playerCombatant.initiativeEntryId == iniEntryId)
+        #expect(playerCombatant.initiative == 15)
+        #expect(playerCombatant.hitPointsEntryId == hpEntry.id)
+
+        // And: the monster's HP entry is found via the "HitPoints" alias
+        // matching a link embedded in its content, not its own name. The
+        // monster is a fresh battle-character copy, so both its game
+        // character id and its entry ids are re-minted — re-resolve the
+        // linked entry by id rather than comparing against the template's.
+        let monsterCombatant = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
+        let monsterGameCharacterId = try #require(monsterCombatant.gameCharacterId)
+        let monsterHitPointsEntryId = try #require(monsterCombatant.hitPointsEntryId)
+        let linkedEntry = root.characterRoot.valueGameControllable.gameEntry(
+            characterId: monsterGameCharacterId,
+            entryId: monsterHitPointsEntryId
+        )
+        #expect(linkedEntry?.name == "current")
+    }
+
     @Test("Assigning an empty battle token creates one memory-only Character and reuses it")
     func assignsCharacterToEmptyCombatant() async throws {
         let root = try await MockRoot.importTestData()

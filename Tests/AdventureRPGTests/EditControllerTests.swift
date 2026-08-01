@@ -159,4 +159,98 @@ struct EditControllerTests {
         #expect(root.itemController.itemOrEmpty(for: itemId).name == "Extracted Adventure")
 
     }
+
+    // MARK: - canBecomeGroup / convertToGroup
+
+    @Test func canBecomeGroup() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        #expect(sut.canBecomeGroup(itemId: itemId))
+
+        let entryId = await sut.addNewGroup(itemId: itemId)
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let groupItemId = try #require(item.entries.first(where: { $0.id == entryId })?.adventureId)
+
+        #expect(sut.canBecomeGroup(itemId: groupItemId) == false)
+    }
+
+    @Test func convertToGroupCreatesNewGroupFromEntry() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entry = AdventureEntryModel(id: UUID(), name: "Rumors", content: "A collection of rumors.")
+        sut.add(entry: entry, itemId: itemId)
+
+        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let updatedEntry = try #require(item.entries.first(where: { $0.id == entry.id }))
+        #expect(updatedEntry.adventureId == groupId)
+
+        let groupItem = root.itemController.itemOrEmpty(for: groupId)
+        #expect(groupItem.groupId == itemId)
+        #expect(groupItem.name == "Rumors")
+        #expect(groupItem.description == "A collection of rumors.")
+        #expect(groupItem.displayState == 1)
+    }
+
+    @Test func convertToGroupReusesExistingItem() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let itemId = await root.itemController.addNew(type: .item)
+        let entry = AdventureEntryModel(id: UUID(), name: "Old Name", content: "Old content.")
+        sut.add(entry: entry, itemId: itemId)
+
+        let existingItemId = await root.itemController.addNew(type: .item)
+        sut.reset(name: "Locations", itemId: existingItemId)
+        sut.reset(description: "All known locations.", itemId: existingItemId)
+
+        let groupId = await sut.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: existingItemId)
+        #expect(groupId == existingItemId)
+
+        let updatedExisting = root.itemController.itemOrEmpty(for: existingItemId)
+        #expect(updatedExisting.groupId == itemId)
+        #expect(updatedExisting.displayState == 1)
+
+        let item = root.itemController.itemOrEmpty(for: itemId)
+        let updatedEntry = try #require(item.entries.first(where: { $0.id == entry.id }))
+        #expect(updatedEntry.adventureId == existingItemId)
+        #expect(updatedEntry.name == "Locations")
+        #expect(updatedEntry.content == "All known locations.")
+    }
+
+    @Test func convertToGroupViaLinkedItemSetsGroupIdAndHidesReusedItem() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        // Item 1 has a normal entry whose content links to item 2.
+        let item1Id = await root.itemController.addNew(type: .item)
+        let item2Id = await root.itemController.addNew(type: .item)
+        sut.reset(name: "Rumors", itemId: item2Id)
+        sut.reset(description: "All known rumors.", itemId: item2Id)
+
+        let item2 = root.itemController.itemOrEmpty(for: item2Id)
+        let entry = AdventureEntryModel(id: UUID(), name: "Old Name", content: "See \(item2.url(linkNumber: 0))")
+        sut.add(entry: entry, itemId: item1Id)
+
+        // Convert entry 1's entry to a group, reusing item 2 (the linked item) as the group.
+        let groupId = await sut.convertToGroup(itemId: item1Id, entryId: entry.id, existingItemId: item2Id)
+        #expect(groupId == item2Id)
+
+        // Item 1's entry now carries item 2's name/content.
+        let updatedItem1 = root.itemController.itemOrEmpty(for: item1Id)
+        let updatedEntry = try #require(updatedItem1.entries.first(where: { $0.id == entry.id }))
+        #expect(updatedEntry.adventureId == item2Id)
+        #expect(updatedEntry.name == "Rumors")
+        #expect(updatedEntry.content == "All known rumors.")
+
+        // Item 2 now belongs to item 1's group and is hidden, like a freshly created group item.
+        let updatedItem2 = root.itemController.itemOrEmpty(for: item2Id)
+        #expect(updatedItem2.groupId == item1Id)
+        #expect(updatedItem2.displayState == 1, "Reusing an existing item as a group should hide it")
+    }
 }

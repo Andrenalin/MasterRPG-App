@@ -44,8 +44,13 @@ public protocol ValueGameStorable {
     /// of another monster placed from the same template.
     @MainActor func createBattleCharacterCopy(for characterId: UUID) -> UUID?
     @MainActor func battleCharacterCopy(for gameCharacterId: UUID) -> ValueModel?
+    /// Searches `characterId`'s entries — including nested value "group"
+    /// tables (`ValueModel.valueId`) — for one whose name matches any of
+    /// `names`, falling back to an entry whose content contains an embedded
+    /// link display-named after any of `names` (e.g. an entry named
+    /// "current" that links to a "HitPoints" reference).
     @MainActor func gameEntry(
-        named name: String,
+        matchingAny names: [String],
         characterId: UUID
     ) -> ValueEntryModel?
     @MainActor func gameEntry(
@@ -215,15 +220,51 @@ extension GameController: ValueGameStorable {
 
     @MainActor
     public func gameEntry(
-        named name: String,
+        matchingAny names: [String],
         characterId: UUID
     ) -> ValueEntryModel? {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedName.isEmpty else { return nil }
-        return gameItem(for: characterId).entries.first {
-            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                .localizedCaseInsensitiveCompare(normalizedName) == .orderedSame
+        gameEntry(matchingAny: names, characterId: characterId, depth: 0)
+    }
+
+    @MainActor
+    private func gameEntry(
+        matchingAny names: [String],
+        characterId: UUID,
+        depth: Int
+    ) -> ValueEntryModel? {
+        guard depth < 10 else { return nil }
+        let normalizedNames = names
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !normalizedNames.isEmpty else { return nil }
+
+        let item = gameItem(for: characterId)
+        if let direct = item.entries.first(where: { entry in
+            let entryName = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return normalizedNames.contains {
+                entryName.localizedCaseInsensitiveCompare($0) == .orderedSame
+            }
+        }) {
+            return direct
         }
+        if let linked = item.entries.first(where: { entry in
+            entry.links(for: entry.value).contains { link in
+                let linkName = link.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                return normalizedNames.contains {
+                    linkName.localizedCaseInsensitiveCompare($0) == .orderedSame
+                }
+            }
+        }) {
+            return linked
+        }
+        for entry in item.entries {
+            guard let valueId = entry.valueId,
+                  let found = gameEntry(matchingAny: names, characterId: valueId, depth: depth + 1) else {
+                continue
+            }
+            return found
+        }
+        return nil
     }
 
     /// Searches `characterId`'s own entries first, then descends into any

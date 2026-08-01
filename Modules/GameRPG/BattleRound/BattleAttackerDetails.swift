@@ -21,7 +21,7 @@ struct BattleAttackerDetails: View {
                         .accessibilityLabel(Text("Player", bundle: .module))
                 }
                 if combatant.isDead {
-                    Image(systemName: "skull.fill")
+                    Image(systemName: "person.slash")
                         .foregroundStyle(.red)
                         .accessibilityLabel(Text("Dead", bundle: .module))
                 }

@@ -15,6 +15,7 @@ struct SheetContextMenuView: View {
         Divider()
         SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
         addGroupButton
+        convertToGroupButton
         Divider()
         moveIntoButton
         moveOutOfGroupButton
@@ -39,6 +40,14 @@ private extension SheetContextMenuView {
         if let editable = rootModel.entryDataEditable(for: parentModel.source), editable.canAddGroups {
             SheetEntryAddGroupButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
         }
+    }
+
+    @ViewBuilder var convertToGroupButton: some View {
+#if !os(tvOS)
+        if entryModel.source.entryId != nil, let editable = rootModel.entryDataEditable(for: entryModel.source), editable.canAddGroups {
+            SheetEntryConvertToGroupButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
+        }
+#endif
     }
 
     var duplicateButton: some View {

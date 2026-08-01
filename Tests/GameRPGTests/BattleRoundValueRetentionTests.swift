@@ -22,8 +22,8 @@ struct BattleRoundValueRetentionTests {
             master: MasterGameModel(id: masterId, type: .master, name: "Master")
         )
         let sut = root.mapRoot.gameController
-        sut.battleRoundSettings.initiativeName = "Ini"
-        sut.battleRoundSettings.hitPointsName = "HP"
+        sut.battleRoundSettings.initiativeNames = ["Ini"]
+        sut.battleRoundSettings.hitPointsNames = ["HP"]
 
         let player1CharacterId = UUID()
         let player2CharacterId = UUID()

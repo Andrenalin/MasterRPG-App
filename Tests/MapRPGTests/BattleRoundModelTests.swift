@@ -386,17 +386,17 @@ struct BattleRoundModelTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let settings = BattleRoundSettingsModel(defaults: defaults)
 
-        #expect(settings.initiativeName == "Ini")
-        #expect(settings.hitPointsName == "HP")
+        #expect(settings.initiativeNames == ["Ini"])
+        #expect(settings.hitPointsNames == ["HP"])
         #expect(settings.initiativeOrder == .descending)
 
-        settings.initiativeName = "Speed"
-        settings.hitPointsName = "Health"
+        settings.initiativeNames = ["Speed"]
+        settings.hitPointsNames = ["Health"]
         settings.initiativeOrder = .ascending
 
         let restored = BattleRoundSettingsModel(defaults: defaults)
-        #expect(restored.initiativeName == "Speed")
-        #expect(restored.hitPointsName == "Health")
+        #expect(restored.initiativeNames == ["Speed"])
+        #expect(restored.hitPointsNames == ["Health"])
         #expect(restored.initiativeOrder == .ascending)
     }
 

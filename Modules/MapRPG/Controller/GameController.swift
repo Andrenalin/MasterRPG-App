@@ -1372,7 +1372,7 @@ private extension GameController {
 
             if remap || combatant.initiativeEntryId == nil,
                let entry = root.characterRoot.valueGameControllable.gameEntry(
-                   named: battleRoundSettings.initiativeName,
+                   matchingAny: battleRoundSettings.initiativeNames,
                    characterId: gameCharacterId
                ) {
                 _ = battleRoundModel.setValueEntry(
@@ -1398,7 +1398,7 @@ private extension GameController {
 
             if remap || combatant.hitPointsEntryId == nil,
                let entry = root.characterRoot.valueGameControllable.gameEntry(
-                   named: battleRoundSettings.hitPointsName,
+                   matchingAny: battleRoundSettings.hitPointsNames,
                    characterId: gameCharacterId
                ) {
                 _ = battleRoundModel.setValueEntry(

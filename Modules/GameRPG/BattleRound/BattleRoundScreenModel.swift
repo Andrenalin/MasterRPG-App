@@ -180,12 +180,7 @@ final class BattleRoundScreenModel {
             characterId: characterId,
             entryId: entryId
         ) else { return }
-        switch kind {
-        case .initiative:
-            controller.root.mapRoot.mapGameControllable.battleRoundSettings.initiativeName = entry.name
-        case .hitPoints:
-            controller.root.mapRoot.mapGameControllable.battleRoundSettings.hitPointsName = entry.name
-        }
+        controller.root.mapRoot.mapGameControllable.battleRoundSettings.addName(entry.name, for: kind)
         refreshConfiguredValues(controller: controller)
     }
 }
