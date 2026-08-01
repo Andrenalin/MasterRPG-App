@@ -2905,6 +2905,9 @@
         }
       }
     },
+    "Extract information for %@" : {
+
+    },
     "Extract Information for %@" : {
       "localizations" : {
         "de" : {
@@ -3189,6 +3192,9 @@
           }
         }
       }
+    },
+    "Group editor for %@" : {
+
     },
     "Group Editor for %@" : {
       "localizations" : {

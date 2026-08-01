@@ -32,13 +32,6 @@ struct BattleAttackerDetails: View {
                 }
             }
 
-            BattleInitiativeEditor(
-                combatantId: combatant.id,
-                value: combatant.initiative,
-                setValue: { controller.setInitiative($0, $1) },
-                adjust: { controller.adjustInitiative($0, $1) }
-            )
-
             Button(
                 isActive ? "Active Attacker" : "Make Active",
                 systemImage: "scope",

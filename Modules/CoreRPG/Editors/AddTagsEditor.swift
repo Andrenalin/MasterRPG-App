@@ -55,8 +55,10 @@ private extension AddTagsEditor {
                         Image(systemName: "plus")
                     }
                     .labelStyle(.iconOnly)
-                    .frame(minWidth: 44, minHeight: 44)
                 }
+                .buttonSizing(.fitted)
+                .buttonBorderShape(.circle)
+                .controlSize(.large)
                 .disabled(currentTag.isEmpty)
             }
         }

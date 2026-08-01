@@ -1045,7 +1045,9 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                     category: .album,
                     description: "A weathered map showing the road to the lost keep.",
                     tags: ["Map", "Quest"]
-                )
+                ),
+                module: .space,
+                dismiss: {}
             )
             .moduleTint(.space)
             .environment(AppSettingsModel.previewFixture())

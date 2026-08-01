@@ -30,6 +30,7 @@ final class BattleRoundScreenModel {
     let cardLayout: BattleRoundCardLayout
     var presentation: BattleRoundPresentation?
     var isConfigurationExpanded = false
+    var isInspectorPresented = false
 
     let selectedCharacter: ItemSelectionModel
     let selectedValue: ItemSelectionModel
@@ -102,9 +103,14 @@ final class BattleRoundScreenModel {
         }
         pendingCharacterCombatantId = combatant.id
         selectedCharacter.resetSelection(itemId: nil, entryId: nil)
+        // Switching back to character-assignment mode must drop any pending
+        // value-selection state, or the inspector stays stuck showing the
+        // previous combatant's value list instead of the full character list.
+        pendingValueSelection = nil
+        selectedValue.onlyChildrenFrom = nil
+        selectedValue.resetSelection(itemId: nil, entryId: nil)
 #if os(macOS)
-        controller.root.characterRoot.itemSelectionModel = selectedCharacter
-        scenesManager.openWindow(SceneId.sceneId(for: .value))
+        isInspectorPresented = true
 #else
         presentation = .selection(combatant.id)
 #endif
@@ -129,6 +135,23 @@ final class BattleRoundScreenModel {
             return
         }
         pendingValueSelection = .combatant(combatantId: combatant.id, kind: .hitPoints)
+        presentValueSelection(
+            onlyChildrenFrom: sourceCharacterId,
+            controller: controller,
+            scenesManager: scenesManager
+        )
+    }
+
+    func selectInitiative(
+        _ combatant: BattleCombatant,
+        controller: BattleRoundController,
+        scenesManager: ScenesManager
+    ) {
+        guard let sourceCharacterId = combatant.sourceCharacterId else {
+            showCharacterSheet(combatant, controller: controller, scenesManager: scenesManager)
+            return
+        }
+        pendingValueSelection = .combatant(combatantId: combatant.id, kind: .initiative)
         presentValueSelection(
             onlyChildrenFrom: sourceCharacterId,
             controller: controller,
@@ -162,9 +185,11 @@ final class BattleRoundScreenModel {
         selectedValue.onlyChildrenFrom = characterId
         selectedValue.onlyEntrySelection = true
         selectedValue.resetSelection(itemId: nil, entryId: nil)
+        // Mirror of the reset above: leaving character-assignment mode.
+        pendingCharacterCombatantId = nil
+        selectedCharacter.resetSelection(itemId: nil, entryId: nil)
 #if os(macOS)
-        controller.root.characterRoot.itemSelectionModel = selectedValue
-        scenesManager.openWindow(SceneId.sceneId(for: .value))
+        isInspectorPresented = true
 #else
         presentation = .selection(UUID())
 #endif

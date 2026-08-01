@@ -26,7 +26,7 @@ struct ItemEditorBackgroundView<Editor: View>: View {
                             onlyDescription: true,
                             lines: 3
                         )
-                        .padding(.vertical)
+                        .padding(6)
 #if !os(visionOS)
                         .glassEffectAll(.regular)
 #endif

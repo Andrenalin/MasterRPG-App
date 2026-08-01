@@ -8,14 +8,22 @@ import SwiftUI
 /// Character game views. The full-window game surface remains a sibling, so
 /// showing this panel never changes the map or RealityView layout proposal.
 struct BattleRoundSideOverlay: View {
+    init(root: GameRoot) {
+        self.root = root
+        _screenModel = State(
+            wrappedValue: BattleRoundScreenModel(model: root.battleRoundController.model, layout: .compact)
+        )
+    }
+
     let root: GameRoot
 
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var screenModel: BattleRoundScreenModel
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        BattleRoundView(controller: root.battleRoundController, layout: .compact)
+        BattleRoundView(controller: root.battleRoundController, screenModel: screenModel)
         .environment(root.mapRoot)
         .onChange(of: root.battleRoundController.model.isRunning) { wasRunning, isRunning in
             guard wasRunning, !isRunning else { return }

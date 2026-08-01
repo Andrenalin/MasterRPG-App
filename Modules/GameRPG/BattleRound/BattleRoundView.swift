@@ -6,15 +6,10 @@ import MapRPG
 import SwiftUI
 
 struct BattleRoundView: View {
-    init(controller: BattleRoundController, layout: BattleRoundCardLayout = .wide) {
-        self.controller = controller
-        _screenModel = State(wrappedValue: BattleRoundScreenModel(model: controller.model, layout: layout))
-    }
-
     let controller: BattleRoundController
+    let screenModel: BattleRoundScreenModel
 
     @Environment(ScenesManager.self) private var scenesManager
-    @State private var screenModel: BattleRoundScreenModel
 
     private var root: MapRootModel { controller.root.mapRoot }
 
@@ -71,6 +66,13 @@ struct BattleRoundView: View {
                                         controller: controller,
                                         scenesManager: scenesManager
                                     )
+                                },
+                                selectInitiative: { combatant in
+                                    screenModel.selectInitiative(
+                                        combatant,
+                                        controller: controller,
+                                        scenesManager: scenesManager
+                                    )
                                 }
                             )
                         } else {
@@ -115,7 +117,11 @@ struct BattleRoundView: View {
 }
 
 #Preview("Battle Round", traits: .mockData) {
-    BattleRoundView(controller: .preview())
-        .setAppSizeMode()
-        .environment(AppFocusModel())
+    let controller = BattleRoundController.preview()
+    BattleRoundView(
+        controller: controller,
+        screenModel: BattleRoundScreenModel(model: controller.model, layout: .wide)
+    )
+    .setAppSizeMode()
+    .environment(AppFocusModel())
 }

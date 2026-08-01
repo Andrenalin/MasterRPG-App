@@ -57,13 +57,11 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     let configuration: Configuration
     let editor: Editor
     
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
     @State private var headerModel = HeaderScrollModel()
-    @Namespace private var editSheetNamespace
-    
+
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.navigator) private var navigator
     
@@ -77,8 +75,7 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
             editor: editor,
             headerModel: headerModel,
             folderListController: folderListController,
-            editingItem: $editingItem,
-            editSheetNamespace: editSheetNamespace
+            editingItem: $editingItem
         )
         .moduleTint(root.configurable.module)
         .onChange(of: selectedModel.id, initial: true) {
@@ -101,11 +98,6 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         }
         .onDisappear {
             clearCompactSelectionAfterPop()
-        }
-        .sheet(item: $editingItem) { item in
-            ManagedPresentationView {
-                editingSheet(model: item.model)
-            }
         }
     }
 }
@@ -157,24 +149,6 @@ private extension ItemDetailRootView {
     }
 }
 
-// MARK: - Presentation Views
-
-private extension ItemDetailRootView {
-    func editingSheet(model: any ItemDataAccessable) -> some View {
-        ItemHeaderEditorView(editControllable: root.editControllable, model: model)
-            .colorScheme(colorScheme)
-            .preferredColorScheme(colorScheme)
-            .presentationContentInteraction(.resizes)
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-            .presentationBackgroundInteraction(.enabled)
-            .moduleTint(root.configurable.module)
-#if os(iOS)
-            .navigationTransition(.zoom(sourceID: "edit", in: editSheetNamespace))
-#endif
-    }
-}
-
 // MARK: - Content View (Extracted)
 
 
@@ -222,9 +196,8 @@ struct ItemDetailToolbarContent: ToolbarContent {
     let root: any ItemRootControllable
     let model: any ItemDataAccessable
     let shouldShowContent: Bool
-    let editSheetNamespace: Namespace.ID
     let onEdit: () -> Void
-    
+
     var body: some ToolbarContent {
         if !root.openFileWindowModel.showItem {
             ToolbarItem(placement: .primaryAction) {
@@ -241,10 +214,7 @@ struct ItemDetailToolbarContent: ToolbarContent {
                     .accessibilityHint(Text("Edit item details", bundle: .module))
                 }
             }
-#if os(iOS)
-            .matchedTransitionSource(id: "edit", in: editSheetNamespace)
-#endif
-            
+
             ToolbarItemGroup(placement: .secondaryActionAll) {
                 MenuUndoRedoButton(root: root)
             }

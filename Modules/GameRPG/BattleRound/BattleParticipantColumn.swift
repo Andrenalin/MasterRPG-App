@@ -15,6 +15,7 @@ struct BattleParticipantColumn: View {
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     private var root: MapRootModel { controller.root.mapRoot }
 
@@ -87,6 +88,48 @@ struct BattleParticipantColumn: View {
             }
 #endif
 
+            Button(
+                combatant.isDead ? "Mark Alive" : "Mark Dead",
+                systemImage: combatant.isDead ? "heart.fill" : "skull.fill",
+                action: toggleDead
+            )
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .foregroundStyle(combatant.isDead ? .green : .red)
+            .help(
+                Text(
+                    combatant.isDead ? "Mark Alive" : "Mark Dead",
+                    bundle: .module
+                )
+            )
+
+            Button(action: selectInitiativeEntry) {
+                HStack(spacing: 2) {
+                    Text("Ini", bundle: .module)
+                    Text(verbatim: initiativeValue ?? "")
+                        .monospacedDigit()
+                }
+                .font(.caption2)
+                .frame(minWidth: 48, minHeight: 20)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
+            .help(Text("Choose the Initiative value", bundle: .module))
+#if os(iOS) || os(macOS) || os(visionOS)
+            .battleLinkCharacterDropDestination { values, _ in
+                guard let value = values.first, let entryId = value.entryId else {
+                    return false
+                }
+                return controller.assignValueEntry(
+                    combatantId: combatant.id,
+                    sourceCharacterId: value.itemId,
+                    sourceEntryId: entryId,
+                    kind: .initiative
+                )
+            }
+#endif
+
             Button(action: selectHitPointsEntry) {
                 HStack(spacing: 2) {
                     Text("HP", bundle: .module)
@@ -141,21 +184,6 @@ struct BattleParticipantColumn: View {
                         )
                     )
                 }
-
-                Button(
-                    combatant.isDead ? "Mark Alive" : "Mark Dead",
-                    systemImage: combatant.isDead ? "heart.fill" : "skull.fill",
-                    action: toggleDead
-                )
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .foregroundStyle(combatant.isDead ? .green : .red)
-                .help(
-                    Text(
-                        combatant.isDead ? "Mark Alive" : "Mark Dead",
-                        bundle: .module
-                    )
-                )
             }
 
             BattleRollResults(results: presentation.rolls, tint: tint)
@@ -196,6 +224,10 @@ struct BattleParticipantColumn: View {
         )
     }
 
+    private var initiativeValue: String? {
+        combatant.initiative.map(String.init)
+    }
+
     private func openCharacter() {
         if let sheet = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
             if state.characterSheet?.id != sheet.id {
@@ -216,6 +248,10 @@ struct BattleParticipantColumn: View {
         selectHitPoints(combatant)
     }
 
+    private func selectInitiativeEntry() {
+        selectInitiative(combatant)
+    }
+
     private func toggleDead() {
         controller.setDead(combatant.id, !combatant.isDead)
     }
@@ -234,7 +270,8 @@ struct BattleParticipantColumn: View {
             tint: .red,
             controller: controller,
             showCharacter: { _ in },
-            selectHitPoints: { _ in }
+            selectHitPoints: { _ in },
+            selectInitiative: { _ in }
         )
         .padding()
     }

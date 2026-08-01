@@ -74,7 +74,7 @@ struct ItemFileImporterView: View {
                      String(localized: "No file is set", bundle: .module).localizedString)
                     .font(.callout)
             }
-            .padding(.vertical)
+            .padding(6)
 #if !os(visionOS)
             .glassEffectAll(.regular.interactive())
 #endif

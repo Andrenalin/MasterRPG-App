@@ -11,6 +11,7 @@ struct BattleRoundList: View {
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -37,7 +38,8 @@ struct BattleRoundList: View {
                 presentation: card,
                 controller: controller,
                 showCharacter: showCharacter,
-                selectHitPoints: selectHitPoints
+                selectHitPoints: selectHitPoints,
+                selectInitiative: selectInitiative
             )
             .frame(maxWidth: .infinity)
             .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -87,7 +89,8 @@ struct BattleRoundList: View {
                 cards: model.cardPresentations,
                 controller: controller,
                 showCharacter: { _ in },
-                selectHitPoints: { _ in }
+                selectHitPoints: { _ in },
+                selectInitiative: { _ in }
             )
         }
     }

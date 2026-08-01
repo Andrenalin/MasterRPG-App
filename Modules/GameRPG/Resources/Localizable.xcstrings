@@ -835,6 +835,9 @@
     "Choose the Hit Points value" : {
 
     },
+    "Choose the Initiative value" : {
+
+    },
     "Choose Value" : {
 
     },
@@ -1278,9 +1281,6 @@
       }
     },
     "Dead" : {
-
-    },
-    "Decrease Initiative" : {
 
     },
     "Delete all game statistics?" : {
@@ -2494,7 +2494,7 @@
         }
       }
     },
-    "Increase Initiative" : {
+    "Ini" : {
 
     },
     "Initiative" : {
@@ -2507,6 +2507,9 @@
 
     },
     "Initiative position %lld" : {
+
+    },
+    "Inspector" : {
 
     },
     "Join" : {
