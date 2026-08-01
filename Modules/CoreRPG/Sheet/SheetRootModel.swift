@@ -665,7 +665,34 @@ public final class SheetRootModel: Sendable {
               let editable = entryDataEditable(for: source) else { return nil }
         let groupId = await editable.convertToGroup(itemId: source.itemId, entryId: entryId, existingItemId: existingItemId)
         updateFromRoot()
+
+        // The entry's rendered name now contains a freshly materialized link (or lost one).
+        // A cached LinkHighlightTextModel doesn't re-scan on its own when handed new text
+        // through `linkTextModel(for:text:)` (it only seeds the cache on first access), so
+        // without this the row keeps rendering the pre-conversion text until its view is
+        // torn down and rebuilt.
+        if let entryModel = findEntryModel(entryId: entryId, in: sheetModel) {
+            linkTextModel[.entry(entryId)]?.reset(text: entryModel.name)
+            linkTextModel[.entryContent(entryId)]?.reset(text: entryModel.description)
+        }
+
+        // Turning an existing item into a hidden group (or creating a new hidden one) only
+        // mutates that item's own fields (groupId/displayState) — it doesn't touch
+        // itemDataModel.items. ListModelUpdatesViewModifier's observation stream only watches
+        // that array, so it never notices, and the item lingers in the root list until an
+        // unrelated search rebuilds it. Ask the list explicitly, like ListRootContextMenu's
+        // move/add/remove actions already do for the same class of field-only mutation.
+        rootController(for: source.typeId)?.folderListControllable.update(debounce: false)
+
         return editable.itemControllable.itemSync(for: groupId)
+    }
+
+    private func findEntryModel(entryId: UUID, in model: SheetModel) -> SheetModel? {
+        if model.source.entryId == entryId { return model }
+        for entry in model.entries {
+            if let found = findEntryModel(entryId: entryId, in: entry) { return found }
+        }
+        return nil
     }
 
     public func setScrollEntryId(source: ItemRowModel, entryId: UUID?) {

@@ -152,6 +152,10 @@ extension SheetController: SheetControllable {
                     moduleDepth: 0,
                     isEditor: isEditor
                 )
+                if existingSheetModel.sheetType != projectedEntry.sheetType {
+                    existingSheetModel.sheetType = projectedEntry.sheetType
+                    existingSheetModel.hasChanged = true
+                }
                 var unmatchedExisting = existingSheetModel.entries
                 let reconciledEntries = projectedEntry.entries.map { projectedChild in
                     guard let existingIndex = unmatchedExisting.firstIndex(where: {

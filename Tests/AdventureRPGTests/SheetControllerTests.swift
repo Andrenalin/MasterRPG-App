@@ -562,6 +562,65 @@ struct SheetControllerTests {
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "Updated text")
     }
 
+    @Test func adventureUpdateRefreshesEntryConvertedToGroup() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = SheetController(itemController: root.itemController)
+        let itemId = UUID()
+        let entry = AdventureEntryModel.fixture(name: "Rumors", content: "A collection of rumors.")
+
+        root.itemController.replace(
+            model: AdventureModel(id: itemId, name: "Adventure", description: "", entries: [entry]),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: try rootManager(for: root), itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+        let entrySheet = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(entrySheet.sheetType == .item)
+
+        let groupId = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+
+        sut.update(root: try rootManager(for: root), sheetModel: sheetModel, isEditor: false)
+
+        let updatedEntrySheet = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(updatedEntrySheet.sheetType == .group, "Converting an entry to a group must refresh its sheetType")
+        #expect(updatedEntrySheet.entries.contains(where: { $0.source.itemId == groupId }), "Converting an entry to a group must surface the new group's nested sheet")
+    }
+
+    @Test func convertToGroupResetsCachedLinkHighlightTextModel() async throws {
+        let root = try await MockRoot.importTestData()
+        let itemId = UUID()
+        let entry = AdventureEntryModel.fixture(name: "Rumors", content: "A collection of rumors.")
+
+        root.itemController.replace(
+            model: AdventureModel(id: itemId, name: "Adventure", description: "", entries: [entry]),
+            isInsert: true
+        )
+
+        let sheetController = SheetController(itemController: root.itemController)
+        let sheetRootModel = SheetRootModel(
+            rootManager: try rootManager(for: root),
+            linkControllable: try adventureRootController(for: root).linkControllable,
+            sheetControllable: sheetController,
+            itemId: itemId,
+            isEditor: false
+        )
+
+        // Simulate the row already having been rendered (and its name text cached) before conversion.
+        let nameModel = sheetRootModel.linkTextModel(for: .entry(entry.id), text: "Rumors")
+        #expect(nameModel.text == "Rumors")
+
+        let groupId = await sheetRootModel.convertEntryToGroup(
+            source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: .adventure),
+            existingItemId: nil
+        )
+        #expect(groupId != nil)
+
+        // The cached model must pick up the new link text on its own, without requiring the
+        // owning view to be torn down and rebuilt.
+        #expect(nameModel.text != "Rumors", "Cached LinkHighlightTextModel must be reset after converting an entry to a group")
+        #expect(nameModel.text.contains("\(URL.appScheme)://"), "Cached LinkHighlightTextModel must reflect the entry's new link text")
+    }
+
     @Test func adventureUpdateLeavesFoldedEntriesCollapsed() async throws {
         let root = try await MockRoot.importTestData()
         let sut = SheetController(itemController: root.itemController)
