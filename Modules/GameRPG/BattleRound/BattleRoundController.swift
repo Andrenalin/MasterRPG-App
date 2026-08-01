@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CharacterRPG
 import CoreRPG
 import DiceRPG
 import Foundation
@@ -21,13 +22,34 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func start() -> Bool {
-        guard let mapId = root.mapRoot.gameControllable.gameModel.currentItemId,
-              root.gameModel.gameConfig.isMaster,
+        guard root.gameModel.gameConfig.isMaster,
               root.gameModel.masterController != nil,
-              root.mapRoot.mapGameControllable.startBattle(
-                  itemId: mapId,
-                  initiativeOrder: model.initiativeOrder
-              ) else {
+              let mapId = root.mapRoot.gameControllable.gameModel.currentItemId,
+              let pins = root.mapRoot.mapGameControllable.battleStartPins(itemId: mapId) else {
+            return false
+        }
+
+        let playerCombatants = pins.playerPins.map { pin in
+            BattleCombatant(
+                pin: pin,
+                sourceCharacterId: pin.characterId,
+                // A player's Character is already the authoritative game
+                // identity. Never clone it merely because a battle starts.
+                gameCharacterId: pin.characterId,
+                isPlayer: true
+            )
+        }
+        let roomCombatants = pins.roomPins.compactMap { pin in
+            root.mapRoot.mapGameControllable.makeBattleCombatant(itemId: mapId, pinId: pin.id)
+        }
+
+        root.mapRoot.mapGameControllable.clearBattleHighlights(itemId: mapId)
+        guard root.mapRoot.mapGameControllable.beginBattle(
+            itemId: mapId,
+            playerCombatants: playerCombatants,
+            roomCombatants: roomCombatants,
+            initiativeOrder: model.initiativeOrder
+        ) else {
             return false
         }
         broadcast(mapId: mapId)
@@ -231,8 +253,9 @@ struct BattleRoundController: Sendable {
         )
     }
 
-    /// Local, non-broadcast map-level mutations. These never leave the
-    /// device, so they call the map controller directly instead of going
+    /// Local, non-broadcast map-level mutation. Maps a dropped/picked value
+    /// entry onto a combatant's initiative or hit-points slot. Never leaves
+    /// the device, so it calls the map controller directly instead of going
     /// through `broadcast(mapId:)`.
     @discardableResult
     func assignValueEntry(
@@ -241,19 +264,62 @@ struct BattleRoundController: Sendable {
         sourceEntryId: UUID,
         kind: BattleValueKind
     ) -> Bool {
-        guard let itemId = model.mapId else { return false }
-        return root.mapRoot.mapGameControllable.assignBattleValueEntry(
-            itemId: itemId,
+        guard let mapId = model.mapId,
+              let combatant = model.combatant(id: combatantId),
+              // `sourceCharacterId`/`sourceEntryId` are whatever was
+              // dropped/picked, which may sit inside a nested value "group"
+              // table (ValueModel.groupId) rather than directly on the
+              // top-level Character. Resolve the full root-to-leaf path so
+              // it can be replayed against the combatant's own battle copy.
+              let path = root.characterRoot.valueGameControllable.gameEntryPath(
+                  itemId: sourceCharacterId,
+                  entryId: sourceEntryId
+              ),
+              path.rootCharacterId == combatant.sourceCharacterId,
+              let gameCharacterId = combatant.gameCharacterId,
+              // The battle copy's own top-level entries always get fresh ids
+              // (see `ValueEntryModel.duplicate()`), so the equivalent entry
+              // on the combatant's own runtime copy must be re-found by
+              // replaying the same index path, verified by name at the end.
+              let gameEntry = root.characterRoot.valueGameControllable.gameEntry(
+                  matching: path,
+                  characterId: gameCharacterId
+              ) else {
+            return false
+        }
+
+        let mappingChanged = root.mapRoot.mapGameControllable.setBattleValueEntry(
+            itemId: mapId,
             combatantId: combatantId,
-            sourceCharacterId: sourceCharacterId,
-            sourceEntryId: sourceEntryId,
+            entryId: gameEntry.id,
             kind: kind
         )
+        if kind == .initiative,
+           let value = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+               characterId: gameCharacterId,
+               entryId: gameEntry.id
+           ),
+           let initiative = battleInitiative(from: value) {
+            return setInitiative(combatantId, initiative) || mappingChanged
+        }
+        return mappingChanged
     }
 
     func refreshConfiguredValues() {
         guard let mapId = model.mapId else { return }
         root.mapRoot.mapGameControllable.refreshBattleConfiguredValues(itemId: mapId)
+    }
+
+    private func battleInitiative(from value: String) -> Int? {
+        if let value = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
+            return max(1, value)
+        }
+        guard let value = Double(
+            value.trimmingCharacters(in: .whitespacesAndNewlines)
+        ), value.isFinite else {
+            return nil
+        }
+        return max(1, Int(value))
     }
 
     private func broadcast(mapId: UUID) {

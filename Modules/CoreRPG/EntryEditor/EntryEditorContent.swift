@@ -9,7 +9,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
         self.itemId = itemId
         self.entry = entry
         self.linkTypes = linkTypes
-
+        
         self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: editController.linkRegisterController))
     }
     
@@ -23,55 +23,55 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
+    
     @State private var editModel: TextEditModel
-
+    
     var body: some View {
         GlassEffectContainerAll {
             editorCard
         }
-            .frame(maxWidth: 800)
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            // Optimization: Combine onChange modifiers to prevent duplicate updates
-            .onChange(of: entry.content, initial: true) { _, newContent in
-                let source = ItemRowModel(
-                    itemId: itemId,
-                    entryId: entry.id,
-                    typeId: editorModel.module
-                )
-                // Check if we actually need to update to prevent unnecessary work
-                if editModel.source != source ||
-                    editModel.text != newContent ||
-                    editModel.name != entry.name {
-                    updateEditModel(entry: entry, itemId: itemId)
-                }
+        .frame(maxWidth: 800)
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        // Optimization: Combine onChange modifiers to prevent duplicate updates
+        .onChange(of: entry.content, initial: true) { _, newContent in
+            let source = ItemRowModel(
+                itemId: itemId,
+                entryId: entry.id,
+                typeId: editorModel.module
+            )
+            // Check if we actually need to update to prevent unnecessary work
+            if editModel.source != source ||
+                editModel.text != newContent ||
+                editModel.name != entry.name {
+                updateEditModel(entry: entry, itemId: itemId)
             }
-            .onChange(of: entry.name) { _, newName in
-                // Only update if name actually changed and content didn't already trigger update
-                if editModel.name != newName {
-                    updateEditModel(entry: entry, itemId: itemId)
-                }
+        }
+        .onChange(of: entry.name) { _, newName in
+            // Only update if name actually changed and content didn't already trigger update
+            if editModel.name != newName {
+                updateEditModel(entry: entry, itemId: itemId)
             }
-            .background {
-                Button {
-                    withAnimation(reduceMotion ? nil : .default) {
-                        editorModel.entryId = nil
-                    }
-                } label: {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
+        }
+        .background {
+            Button {
+                withAnimation(reduceMotion ? nil : .default) {
+                    editorModel.entryId = nil
                 }
-                .buttonStyle(.plain)
-                .accessibilityHidden(true)
+            } label: {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
             }
-            .task {
+            .buttonStyle(.plain)
+            .accessibilityHidden(true)
+        }
+        .task {
 #if !os(tvOS)
-                // Small delay to ensure smooth appearance
-                try? await Task.sleep(for: .milliseconds(100))
-                currentFocus = .name
+            // Small delay to ensure smooth appearance
+            try? await Task.sleep(for: .milliseconds(100))
+            currentFocus = .name
 #endif
-            }
+        }
     }
     
     private var editorCard: some View {

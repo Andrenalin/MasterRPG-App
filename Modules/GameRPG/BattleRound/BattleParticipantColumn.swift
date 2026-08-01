@@ -102,15 +102,15 @@ struct BattleParticipantColumn: View {
             .help(Text("Choose the Hit Points value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
             .battleLinkCharacterDropDestination { values, _ in
-                guard let value = values.first,
-                      let entryId = value.entryId,
-                      let sourceCharacterId = combatant.sourceCharacterId,
-                      value.itemId == sourceCharacterId else {
+                guard let value = values.first, let entryId = value.entryId else {
                     return false
                 }
+                // `assignValueEntry` resolves `value.itemId` up through any
+                // value-group ownership chain and rejects it unless that
+                // resolves to this combatant's own source Character.
                 return controller.assignValueEntry(
                     combatantId: combatant.id,
-                    sourceCharacterId: sourceCharacterId,
+                    sourceCharacterId: value.itemId,
                     sourceEntryId: entryId,
                     kind: .hitPoints
                 )

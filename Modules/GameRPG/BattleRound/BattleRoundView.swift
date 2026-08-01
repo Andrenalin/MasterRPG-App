@@ -126,4 +126,6 @@ struct BattleRoundView: View {
 
 #Preview("Battle Round", traits: .mockData) {
     BattleRoundView(controller: .preview())
+        .setAppSizeMode()
+        .environment(AppFocusModel())
 }
