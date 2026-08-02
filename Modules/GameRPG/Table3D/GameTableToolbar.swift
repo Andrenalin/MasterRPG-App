@@ -11,6 +11,8 @@ struct GameTableToolbar: View {
 
     var body: some View {
         HStack {
+            GameTableWindowButton()
+
             if game.isGameMaster {
                 RoomVisibilityMenu(game: game)
 
@@ -128,7 +130,7 @@ private struct GameTableToolbarBackground: ViewModifier {
     }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     @Previewable @State var game: GameTableModel?
 
     Group {

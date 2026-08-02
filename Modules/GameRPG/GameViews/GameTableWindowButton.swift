@@ -66,28 +66,6 @@ struct GameTableWindowButton: View {
     }
 }
 
-#if os(iOS) || os(macOS)
-/// The portable table is a presentation preference, so it belongs with the
-/// other game-view choices instead of occupying a status/toolbar slot.
-@MainActor
-struct GameTableMenuToggle: View {
-    @Environment(AppSettingsModel.self) private var appSettingsModel
-
-    var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-        @Bindable var appSettingsModel = appSettingsModel
-
-        Toggle(isOn: $appSettingsModel.showGameTableVolume) {
-            Label {
-                Text("3D Map", bundle: .module)
-            } icon: {
-                Image(systemName: "cube.transparent")
-            }
-        }
-    }
-}
-#endif
-
 #Preview(traits: .mockData) {
     GameTableWindowButton()
 }

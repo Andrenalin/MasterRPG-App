@@ -59,8 +59,6 @@ struct GameSidebarToolbarMenu: View {
 
             Divider()
 
-            GameTableMenuToggle()
-
             if role == .master {
                 Toggle(isOn: battleRoundBinding) {
                     Label {

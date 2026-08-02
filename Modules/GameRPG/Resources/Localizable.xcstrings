@@ -340,6 +340,7 @@
       }
     },
     "3D Map" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
