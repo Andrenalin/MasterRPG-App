@@ -12,17 +12,39 @@ struct SelectedPlayerView: View {
     private var playerUUID: String = ""
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
+
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
     
+    @Environment(\.navigator) private var navigator
+
+    private var sharePlayStore: RPGSharePlayController {
+        root.networkStore.sharePlayStore
+    }
+
+    private var isCompactLayout: Bool {
+        appSizeModel.mode == .compact
+    }
+
     var body: some View {
-        GroupBoxTV(isCard: true) {
+        GroupBoxTV(isCard: true, withoutGroup: true) {
 #if os(tvOS)
             VStack {
                 TipView(MasterRPGTips.chooseCharacter)
                 characterSelection
             }
 #else
-            characterSelection
-                .popoverTip(MasterRPGTips.chooseCharacter)
+            Group {
+                if isCompactLayout {
+                    VStack(alignment: .leading, spacing: 12) {
+                        characterSelection
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 12) {
+                        characterSelection
+                    }
+                }
+            }
+            .popoverTip(MasterRPGTips.chooseCharacter)
 #endif
         } label: {
             Label {
@@ -33,6 +55,7 @@ struct SelectedPlayerView: View {
                     .imageScale(.large)
             }
         }
+        .themedSurface()
         .task {
             root.resetSelectedCharacter(uuidString: playerUUID)
             selection.resetSelection(itemId: root.gameModel.selectedCharacter, entryId: nil)
@@ -53,12 +76,17 @@ struct SelectedPlayerView: View {
         }
     }
 
-    private var characterSelection: some View {
+    @ViewBuilder private var characterSelection: some View {
         root.characterRoot.viewController.dropChooseView(model: selection)
             .frame(maxWidth: .infinity)
 #if os(macOS)
             .padding()
 #endif
+        
+        if root.gameModel.selectedCharacter != nil {
+            sharePlayStart
+        }
+
     }
 
     private func updateTipSelection(_ characterID: UUID?) {
@@ -68,8 +96,20 @@ struct SelectedPlayerView: View {
             await MasterRPGTips.donateCharacterSelected()
         }
     }
+
+    var sharePlayStart: some View {
+        VStack(alignment: .trailing, spacing: 12) {
+#if !os(tvOS)
+            SharePlayButton("Play RPG Online", activity: RPGActivity())
+                .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+                .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+                .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+#endif
+        }
+        .padding(12)
+    }
 }
 
-#Preview {
+#Preview(traits: .mockData) {
     SelectedPlayerView(root: .preview)
 }

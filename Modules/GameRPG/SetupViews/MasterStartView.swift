@@ -2,7 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import AdventureRPG
 import TipKit
 
 struct MasterStartView: View {
@@ -43,19 +42,6 @@ struct MasterStartView: View {
             .popoverTip(
                 navigator.isPresenting ? nil : MasterRPGTips.startOrJoinGame
             )
-            
-#if !os(tvOS)
-            SharePlayButton("Play RPG Online", activity: RPGActivity())
-                .opacity(startSharePlayAnimation ? 0 : 1)
-                .allowsHitTesting(!startSharePlayAnimation)
-                .accessibilityHidden(startSharePlayAnimation)
-#endif
-            
-            Button {
-                navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
-            } label: {
-                Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
-            }
         }
     }
     

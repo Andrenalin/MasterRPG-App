@@ -665,20 +665,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::SelectorView
-    @Test("SelectorView")
-    func snapshotSelectorView() async throws {
-        try await assertPreviewSnapshot("SelectorView") {
-            ManagedNavigationStack {
-            #if os(tvOS)
-                    GameRPG.SelectorView(root: .preview, previewSelection: .proxy)
-            #else
-                    SelectorView(root: .preview, previewSelection: .player)
-            #endif
-                }
-        }
-    }
-
     // snapshot-root: GameRPG::SharePlayButton
     @Test("SharePlayButton")
     func snapshotSharePlayButton() async throws {
