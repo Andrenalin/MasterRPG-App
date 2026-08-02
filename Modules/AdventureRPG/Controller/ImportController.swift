@@ -33,20 +33,20 @@ extension ImportController: ImportControllable {
 
     var editControllable: any EditControllable { editController }
 
-    public func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {
+    public func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {
         await logImport(title: "additional", count: 0, importModel: importModel)
-        try await root.audioRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.diceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.mapRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.pdfRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.photoRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.spaceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.tableRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.characterRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-        try await root.weatherRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await root.audioRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.diceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.mapRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.pdfRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.photoRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.spaceRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.tableRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.characterRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
+        try await root.weatherRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
     }
 
-    public func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {
-        try await root.ruleRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
+    public func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {
+        try await root.ruleRoot.importControllable.importStream(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
     }
 }

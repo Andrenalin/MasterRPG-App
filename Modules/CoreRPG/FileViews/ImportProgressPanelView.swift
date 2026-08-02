@@ -142,7 +142,7 @@ public struct ImportProgressPanelView: View {
 
                         outcome = .running
                         let task = importController.importUrl(
-                            from: loadUrl, importModel: importModel)
+                            from: loadUrl, importModel: importModel, gameMemoryOnly: isSaveGame)
                         guard mutationSession.trackImportTask(task) else {
                             task.cancel()
                             outcome = .failed(dataMutationUnavailableMessage)

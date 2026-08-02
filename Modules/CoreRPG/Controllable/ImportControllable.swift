@@ -55,8 +55,8 @@ public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var editControllable: any EditControllable { get }
 
-    func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
-    func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws
+    func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws
+    func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws
 }
 
 public enum ItemDataImportableError: Error {
@@ -70,14 +70,17 @@ public enum ItemDataImportableError: Error {
 public extension ImportControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
-    func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {}
+    func additionalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {}
 
-    func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {}
+    func finalImport(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {}
 
-    // Import from file URL with caller-owned model (progress UI); mode is read from importModel.importMode
-    func importUrl(from url: URL, importModel: ItemDataImportModel) -> Task<Void, any Error> {
+    // Import from file URL with caller-owned model (progress UI); mode is read from importModel.importMode.
+    // `gameMemoryOnly` writes every imported item straight into that module's game memory
+    // (`ItemControllable.replaceForGame(policy: .memoryOnly)`), leaving the permanent library and
+    // `isGameMode` untouched — used to load a saved game without requiring a game to be running.
+    func importUrl(from url: URL, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false) -> Task<Void, any Error> {
         Task.detached(priority: .userInitiated) {
-            try await self.performImport(from: url, importModel: importModel)
+            try await self.performImport(from: url, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
         }
     }
 
@@ -86,14 +89,14 @@ public extension ImportControllable {
         Task.detached(priority: .userInitiated) {
             let importModel = await MainActor.run { ItemDataImportModel() }
             await MainActor.run { importModel.importMode = withOverwrite ? .overwrite : .merge }
-            try await self.performImport(from: url, importModel: importModel)
+            try await self.performImport(from: url, importModel: importModel, gameMemoryOnly: false)
         }
     }
 
-    func importStream(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel) async throws {
+    func importStream(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false) async throws {
         guard !Task.isCancelled && inputStream.hasBytesAvailable else { return }
 
-        try await additionalImport(from: inputStream, forceSave: forceSave, importModel: importModel)
+        try await additionalImport(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
 
         let token = await self.token()
         var itemCount = 0
@@ -111,7 +114,8 @@ public extension ImportControllable {
             try await finalImport(
                 from: inputStream,
                 forceSave: forceSave,
-                importModel: importModel
+                importModel: importModel,
+                gameMemoryOnly: gameMemoryOnly
             )
             return
         }
@@ -153,7 +157,7 @@ public extension ImportControllable {
                         if await itemControllable.shouldDeferGameModeFolderImport(newItem, forceSave: forceSave) {
                             deferredFolderItems.append((newItem, newItem.id))
                         } else {
-                            try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel, locallyReusedFileIds: locallyReusedFileIds)
+                            try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly, locallyReusedFileIds: locallyReusedFileIds)
                         }
                         importedIds.insert(newItem.id)
                     } catch {
@@ -176,6 +180,7 @@ public extension ImportControllable {
                     id: deferredFolderItem.id,
                     forceSave: forceSave,
                     importModel: importModel,
+                    gameMemoryOnly: gameMemoryOnly,
                     locallyReusedFileIds: locallyReusedFileIds
                 )
             } catch {
@@ -208,7 +213,7 @@ public extension ImportControllable {
                     }
                 }
             }
-        } else {
+        } else if !gameMemoryOnly {
             let cc = ConvertController(itemController: itemControllable, editController: editControllable)
             await cc.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds)
         }
@@ -216,7 +221,8 @@ public extension ImportControllable {
         try await finalImport(
             from: inputStream,
             forceSave: forceSave,
-            importModel: importModel
+            importModel: importModel,
+            gameMemoryOnly: gameMemoryOnly
         )
     }
 
@@ -240,7 +246,7 @@ private extension ImportControllable {
         itemControllable.config.module.rawValue
     }
 
-    func performImport(from url: URL, importModel: ItemDataImportModel) async throws {
+    func performImport(from url: URL, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {
         _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         guard let inputStream = InputStream(url: url) else { throw ItemDataImportableError.openError }
@@ -259,7 +265,7 @@ private extension ImportControllable {
         }
 
         do {
-            try await self.importStream(from: inputStream, forceSave: true, importModel: importModel)
+            try await self.importStream(from: inputStream, forceSave: true, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
             await MainActor.run {
                 importModel.isImportRunning = false
                 if importModel.importMode == .manual { importModel.finalizeReview() }
@@ -270,13 +276,24 @@ private extension ImportControllable {
         }
     }
 
-    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, locallyReusedFileIds: Set<UUID> = []) async throws {
+    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false, locallyReusedFileIds: Set<UUID> = []) async throws {
         let mode = await importModel.importMode
         let itemController = itemControllable
         let editCtrl = editControllable
         let normalizedImportedItem = await itemController.normalizedImportedItem(from: importedItem)
         guard let importableItem = await itemController.gameModeImportedItem(from: normalizedImportedItem, forceSave: forceSave, locallyReusedFileIds: locallyReusedFileIds) else {
             await MainActor.run { importModel.importedItems += 1 }
+            try Task.checkCancellation()
+            return
+        }
+
+        // A saved-game load never touches the permanent library — write straight into this
+        // module's game memory regardless of merge/overwrite mode or isGameMode.
+        guard !gameMemoryOnly else {
+            await MainActor.run {
+                itemController.replaceForGame(model: importableItem, isInsert: true, policy: .memoryOnly)
+                importModel.importedItems += 1
+            }
             try Task.checkCancellation()
             return
         }
