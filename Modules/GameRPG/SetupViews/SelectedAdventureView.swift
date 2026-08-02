@@ -2,6 +2,7 @@
 
 import AdventureRPG
 import CoreRPG
+import MapRPG
 import SwiftUI
 import TipKit
 
@@ -54,6 +55,9 @@ struct SelectedAdventureView: View {
                 Image(systemName: "wand.and.stars")
                     .imageScale(.large)
             }
+#if os(macOS)
+            .padding()
+#endif
         }
         .themedSurface()
         .task {
@@ -78,9 +82,7 @@ struct SelectedAdventureView: View {
     
     @ViewBuilder private var content: some View {
         adventureSelection
-        if root.gameModel.selectedAdventure != nil {
-            optionView
-        }
+        optionView
     }
 
     private var adventureSelection: some View {
@@ -101,22 +103,42 @@ struct SelectedAdventureView: View {
     
     var optionView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
-            } label: {
-                Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
+            if hasMapGameItems {
+                Button {
+                    clearMapGameItems()
+                } label: {
+                    Label { Text("Clear Saved Game", bundle: .module) } icon: { Image(systemName: "trash") }
+                }
+            } else {
+                Button {
+                    navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
+                } label: {
+                    Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
+                }
             }
 
 #if !os(tvOS)
-            SharePlayButton("Play RPG Online", activity: RPGActivity())
-                .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
-                .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
-                .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+            if root.gameModel.selectedAdventure != nil {
+                SharePlayButton("Play RPG Online", activity: RPGActivity())
+                    .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+                    .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+                    .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+            }
 #endif
         }
         .padding(12)
     }
 
+    private var hasMapGameItems: Bool {
+        !root.mapRoot.gameControllable.gameModel.items.isEmpty
+    }
+
+    private func clearMapGameItems() {
+        let mapGameControllable = root.mapRoot.gameControllable
+        Task {
+            await mapGameControllable.reset()
+        }
+    }
 }
 
 #Preview(traits: .mockData) {
