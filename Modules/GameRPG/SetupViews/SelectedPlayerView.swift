@@ -54,6 +54,9 @@ struct SelectedPlayerView: View {
                 Image(systemName: "theatermasks.fill")
                     .imageScale(.large)
             }
+#if os(macOS)
+            .padding()
+#endif
         }
         .themedSurface()
         .task {

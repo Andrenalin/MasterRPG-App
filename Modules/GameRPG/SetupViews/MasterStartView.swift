@@ -26,9 +26,15 @@ struct MasterStartView: View {
                     await startGame()
                 }
             } label: {
-                Text(title(), bundle: .module)
-                    .padding(8)
+                Label {
+                    Text(title(), bundle: .module)
+                } icon: {
+                    Image(systemName: "play.square.stack")
+                        .imageScale(.large)
+                }
+                .padding()
             }
+            .borderLessTVBottonStyle()
             .overlay {
                 overlayAnimation
             }
@@ -56,9 +62,9 @@ struct MasterStartView: View {
     @MainActor
     func title() -> LocalizedStringKey {
         if sharePlayStore.canActivateSharePlay {
-            return "Share"
+            return "Host Game"
         } else {
-            return "Start"
+            return "Start Game"
         }
     }
     

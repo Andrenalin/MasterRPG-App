@@ -67,15 +67,16 @@ struct PlayerStartView: View {
                         }
                     } label: {
                         Label {
-                            Text(root.gameModel.gameConfig.state == .stopped ? "Join Game" : "Cancel Game", bundle: .module)
+                            Text("Join Game", bundle: .module)
                         } icon: {
                             Image(systemName: "person.2.fill")
                                 .imageScale(.large)
                         }
+                        .padding()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .borderLessTVBottonStyle()
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
+                        Capsule()
                             .stroke(Color.accentColor, lineWidth: 4)
                             .scaleEffect(startSharePlayAnimation && !accessibilityReduceMotion ? 2 : 1)
                             .opacity(startSharePlayAnimation && !accessibilityReduceMotion ? 0 : 1)
@@ -96,9 +97,6 @@ struct PlayerStartView: View {
                 }
 
                 if joinOptions.availableTransports.contains(.localNetwork), let playerNetworkController {
-                    Text("Local Network", bundle: .module)
-                        .bold()
-                        .accessibilityAddTraits(.isHeader)
                     BrowserView(root: root, playerNetworkControllable: playerNetworkController)
                         .onChange(of: playerNetworkController.networkModel.isConnected) {
                             if playerNetworkController.networkModel.isConnected {

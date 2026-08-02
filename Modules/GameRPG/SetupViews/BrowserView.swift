@@ -20,12 +20,21 @@ struct BrowserView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            if !playerNetworkControllable.browserManager.games.isEmpty {
-                Text("Found \(playerNetworkControllable.browserManager.games.count) Players", bundle: .module)
-            }
-            ForEach(playerNetworkControllable.browserManager.games) { browser in
-                BrowserRowView(root: root, playerNetworkControllable: playerNetworkControllable, model: browser)
+        VStack {
+            Text("Local Network", bundle: .module)
+                .bold()
+                .accessibilityAddTraits(.isHeader)
+
+            if playerNetworkControllable.browserManager.games.isEmpty {
+                Text("No hosted games found", bundle: .module)
+                    .bold()
+                    .accessibilityAddTraits(.isHeader)
+                    .padding()
+                
+            } else {
+                ForEach(playerNetworkControllable.browserManager.games) { browser in
+                    BrowserRowView(root: root, playerNetworkControllable: playerNetworkControllable, model: browser)
+                }
             }
         }
         .onAppear {
