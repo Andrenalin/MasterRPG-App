@@ -2012,6 +2012,7 @@ private func assertPreviewSnapshot<Content: View>(
             .environment(AppNavigationModel(appGameStateModel: appGameStateModel))
             .environment(AppSettingsModel.previewFixture())
             .environment(AppWindowSizeModel())
+            .environment(AppFocusModel())
             .environment(ScenesManager())
             .environment(OptionKeyDownModel())
             .environment(GroupItemSelectionModel())
