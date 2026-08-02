@@ -114,9 +114,23 @@ final class BrowserManager {
         games.removeAll { !newNames.contains($0.endpointName) }
         let existing = Set(games.map { $0.endpointName })
         for endpoint in endpoints where !existing.contains(endpoint.name) {
-            games.append(BrowserGameModel(id: UUID(), endpointName: endpoint.name, connectionMode: serviceType.connectionMode))
+            games.append(
+                BrowserGameModel(
+                    id: UUID(),
+                    endpointName: endpoint.name,
+                    connectionMode: serviceType.connectionMode,
+                    supporterTier: Self.supporterTier(from: endpoint.txtRecord)
+                )
+            )
             Logger.browserController.log("Found endpoint: \(endpoint.name)")
         }
+    }
+
+    private static func supporterTier(from txtRecord: NWTXTRecord) -> SupporterTier {
+        guard let rawString = txtRecord[NWTXTRecord.supporterTierKey], let rawValue = Int(rawString) else {
+            return .none
+        }
+        return SupporterTier(rawValue: rawValue) ?? .none
     }
 }
 
@@ -125,15 +139,17 @@ final class BrowserGameModel: Identifiable {
     let id: UUID
     let endpointName: String
     let connectionMode: BrowserConnectionMode
+    let supporterTier: SupporterTier
 
     var deviceName: String {
         String(endpointName.prefix(while: { $0 != "." }))
     }
 
-    init(id: UUID, endpointName: String, connectionMode: BrowserConnectionMode) {
+    init(id: UUID, endpointName: String, connectionMode: BrowserConnectionMode, supporterTier: SupporterTier = .none) {
         self.id = id
         self.endpointName = endpointName
         self.connectionMode = connectionMode
+        self.supporterTier = supporterTier
     }
 }
 

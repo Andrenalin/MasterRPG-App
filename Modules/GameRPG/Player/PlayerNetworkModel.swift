@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Network
 import os.log
@@ -31,6 +32,7 @@ final class PlayerNetworkNodel {
     }
     
     var name: String
+    var supporterTier: SupporterTier = .none
     var model: PlayerBrowserModel?
     var playerConnectionId: UUID?
     

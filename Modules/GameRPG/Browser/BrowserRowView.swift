@@ -34,18 +34,17 @@ struct BrowserRowView: View {
                             .foregroundStyle(.secondary)
                     }
                 } icon: {
-                    Image(systemName: connectionModeIcon)
-                        .imageScale(.large)
+                    switch model.connectionMode {
+                    case .observer:
+                        SupporterCrownView(tier: model.supporterTier)
+                            .imageScale(.large)
+                    case .proxy:
+                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                            .imageScale(.large)
+                    }
                 }
             }
             .buttonStyle(.borderedProminent)
-        }
-    }
-
-    private var connectionModeIcon: String {
-        switch model.connectionMode {
-        case .observer: "crown.fill"
-        case .proxy: "arrow.uturn.backward.circle.fill"
         }
     }
 
@@ -93,7 +92,8 @@ private extension BrowserRowView {
         model: BrowserGameModel(
             id: GamePreviewData.masterID,
             endpointName: "Morgan.MasterRPG",
-            connectionMode: .observer
+            connectionMode: .observer,
+            supporterTier: .gold
         )
     )
 }

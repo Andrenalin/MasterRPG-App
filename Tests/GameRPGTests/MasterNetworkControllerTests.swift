@@ -26,7 +26,7 @@ struct MasterNetworkControllerTestEnvironment {
         let controller = MasterNetworkController(
             name: name,
             delegate: delegateSpy,
-            listnerBuilder: { _, _, _ in listenerSpy as any ListenerManaging },
+            listnerBuilder: { _, _, _, _ in listenerSpy as any ListenerManaging },
             browserConnectionBuilder: browserConnectionBuilder
         )
 

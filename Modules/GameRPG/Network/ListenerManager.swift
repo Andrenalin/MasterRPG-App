@@ -5,6 +5,10 @@ import os.log
 import CoreRPG
 import Foundation
 
+extension NWTXTRecord {
+    static let supporterTierKey = "tier"
+}
+
 fileprivate enum ListenerEvent: Sendable {
     case ready
     case failed(NWError)
@@ -27,6 +31,7 @@ protocol ListenerManaging: AnyObject, Sendable {
 final class ListenerManager: ListenerManaging {
     let serviceType: GameServiceType
     let name: String
+    let supporterTier: SupporterTier
 
     private(set) var state: NetworkState = .cancelled
 
@@ -34,8 +39,9 @@ final class ListenerManager: ListenerManaging {
     @ObservationIgnored private var networkTask: Task<Void, Never>?
     weak var delegate: (any ListenerManagerDelegate)?
 
-    init(name: String, serviceType: GameServiceType) {
+    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType) {
         self.name = name
+        self.supporterTier = supporterTier
         self.serviceType = serviceType
         Logger.listenerController.debug("ListenerManager: Init \(name, privacy: .public)")
     }
@@ -51,7 +57,7 @@ final class ListenerManager: ListenerManaging {
         cancelTasks()
         state = .connecting
 
-        let controller = ListenerServerController(name: name, serviceType: serviceType)
+        let controller = ListenerServerController(name: name, supporterTier: supporterTier, serviceType: serviceType)
 
         monitorTask = Task { @MainActor [weak self] in
             for await event in controller.events {
@@ -104,17 +110,20 @@ actor ListenerServerController {
     fileprivate let events: AsyncStream<ListenerEvent>
     private let continuation: AsyncStream<ListenerEvent>.Continuation
     private let name: String
+    private let supporterTier: SupporterTier
     private let serviceType: GameServiceType
 
-    init(name: String, serviceType: GameServiceType) {
+    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType) {
         self.name = name
+        self.supporterTier = supporterTier
         self.serviceType = serviceType
         (self.events, self.continuation) = AsyncStream.makeStream(of: ListenerEvent.self)
     }
 
     func run() async throws {
         let listener = try NWListener(using: NWParameters(passcode: GameSecurity.passcode))
-        listener.service = NWListener.Service(name: name, type: serviceType.serviceName)
+        let txtRecord = NWTXTRecord([NWTXTRecord.supporterTierKey: String(supporterTier.rawValue)])
+        listener.service = NWListener.Service(name: name, type: serviceType.serviceName, txtRecord: txtRecord)
         defer {
             listener.cancel()
             continuation.finish()

@@ -1172,9 +1172,11 @@ extension GameNetworkController {
     }
 
     @MainActor
-    func resetName(name: String) {
+    func resetName(name: String, supporterTier: SupporterTier = .none) {
         model.masterStore?.networkModel.name = name
+        model.masterStore?.networkModel.supporterTier = supporterTier
         model.playerStore?.networkModel.name = name
+        model.playerStore?.networkModel.supporterTier = supporterTier
     }
 
 }

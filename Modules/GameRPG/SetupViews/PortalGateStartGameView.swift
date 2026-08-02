@@ -53,8 +53,6 @@ struct PortalGateStartGameView: View {
 
                 GameSetupRoleContent(root: root, selection: role)
                 
-                //SupporterWelcomeCard(openSupporter: openSupporter)
-
                 HStack {
                     GameSetupStatisticsCard(
                         sessionCount: root.statisticsModel.summary.sessionCount,

@@ -492,13 +492,14 @@ extension GameRoot {
         guard let id = gameModel.selectedAdventure else {
             return
         }
-        
+
+        let adventureTitle = adventureRoot.networkTitle(for: id)
         let masterGameModel = MasterGameModel(
             id: UUID(),
             type: .master,
             name: gameMasterName,
             adventureId: id,
-            adventureTitle: adventureRoot.networkTitle(for: id),
+            adventureTitle: adventureTitle,
             supporterTier: supporterTier
         )
         var newConfig = gameModel.gameConfig
@@ -509,9 +510,13 @@ extension GameRoot {
         #if os(visionOS)
         gameModel.shareState.isMaster = true
         #endif
-        
-        networkStore.resetName(name: gameMasterName)
-        networkProxyStore.resetName(name: gameMasterName)
+
+        // Bonjour advertises the adventure title (falling back to "GameMaster"
+        // when it's empty) plus the supporter tier, so browsing players see
+        // what adventure they're joining rather than a generic device label.
+        let advertisedName = adventureTitle.isEmpty ? gameMasterName : adventureTitle
+        networkStore.resetName(name: advertisedName, supporterTier: supporterTier)
+        networkProxyStore.resetName(name: advertisedName, supporterTier: supporterTier)
         networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
 
         await adventureRoot.adventureGameControllable.startGame(with: id)
@@ -571,9 +576,9 @@ extension GameRoot {
         newConfig.id = playerGameModel.id
         newConfig.state = .prepare
         gameModel.gameConfig = newConfig
-        networkStore.resetName(name: name(for: mode))
+        networkStore.resetName(name: name(for: mode), supporterTier: supporterTier)
         if mode == .player {
-            networkProxyStore.resetName(name: characterName)
+            networkProxyStore.resetName(name: characterName, supporterTier: supporterTier)
             networkStore.sharePlayStore.setup(audioCoordinator: audioRoot.audioCoordinatorPlayback)
         }
 
