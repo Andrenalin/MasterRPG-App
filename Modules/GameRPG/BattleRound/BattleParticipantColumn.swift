@@ -72,13 +72,6 @@ struct BattleParticipantColumn: View {
                     ? Text("Open character sheet for \(combatant.name)", bundle: .module)
                     : Text("Choose a Character for \(combatant.name)", bundle: .module)
             )
-            .contextMenu {
-                Button(
-                    combatant.isDead ? "Mark Alive" : "Mark Dead",
-                    systemImage: combatant.isDead ? "heart.fill" : "skull.fill",
-                    action: toggleDead
-                )
-            }
 #if os(iOS) || os(macOS) || os(visionOS)
             .battleLinkCharacterDropDestination { characters, _ in
                 guard let character = characters.first else { return false }
@@ -181,9 +174,7 @@ struct BattleParticipantColumn: View {
         presentation.isRollRecipient || isActive ? 3 : 1
     }
 
-    private var hasCharacter: Bool {
-        combatant.gameCharacterId != nil || combatant.sourceCharacterId != nil
-    }
+    private var hasCharacter: Bool { combatant.hasCharacter }
 
     private var hitPointsValue: String? {
         guard let characterId = combatant.gameCharacterId,
@@ -197,15 +188,7 @@ struct BattleParticipantColumn: View {
     }
 
     private func openCharacter() {
-        if let sheet = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
-            if state.characterSheet?.id != sheet.id {
-                state.characterSheet = sheet
-            } else {
-                state.characterSheet = nil
-            }
-        } else {
-            showCharacter(combatant)
-        }
+        state.openCharacter(combatant, controller: controller, showCharacter: showCharacter)
     }
 
     private func selectRollRecipient() {

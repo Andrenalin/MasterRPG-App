@@ -109,6 +109,63 @@ struct BattleRoundModelTests {
         #expect(activeEntry.attackerId == first.id)
     }
 
+    @Test("Next attacker skips fallen combatants and rolls over when none remain alive")
+    func nextAttackerSkipsDeadCombatants() throws {
+        // Given: second is already dead when the round begins.
+        let sut = BattleRoundModel()
+        let first = combatant(name: "First", initiative: 18)
+        let second = combatant(name: "Second", initiative: 12, isDead: true)
+        let third = combatant(name: "Third", initiative: 4)
+        sut.begin(
+            mapId: UUID(),
+            players: [second],
+            roomCombatants: [third, first],
+            initiativeOrder: .descending
+        )
+        #expect(sut.nextRound())
+        #expect(sut.activeAttackerId == first.id)
+
+        // When: advancing from first should skip the dead second entirely.
+        #expect(sut.nextAttacker())
+
+        // Then
+        #expect(sut.roundCounter == 1)
+        #expect(sut.activeAttackerId == third.id)
+
+        // When: third was the last entry, and second (the only remaining
+        // one) is dead, so the round rolls over and lands back on first.
+        #expect(sut.nextAttacker())
+
+        // Then
+        #expect(sut.roundCounter == 2)
+        #expect(sut.activeAttackerId == first.id)
+        #expect(sut.rollRecipientCombatantId == first.id)
+    }
+
+    @Test("Next attacker falls back to the first entry when everyone has fallen")
+    func nextAttackerFallsBackWhenAllDead() throws {
+        // Given
+        let sut = BattleRoundModel()
+        let first = combatant(name: "First", initiative: 18, isDead: true)
+        let second = combatant(name: "Second", initiative: 12, isDead: true)
+        sut.begin(
+            mapId: UUID(),
+            players: [second],
+            roomCombatants: [first],
+            initiativeOrder: .descending
+        )
+        #expect(sut.nextRound())
+        #expect(sut.activeAttackerId == first.id)
+
+        // When: nobody is alive, so there is no living entry to advance to.
+        #expect(sut.nextAttacker())
+
+        // Then: the round still advances, falling back to the first entry
+        // rather than leaving nobody active.
+        #expect(sut.roundCounter == 2)
+        #expect(sut.activeAttackerId == first.id)
+    }
+
     @Test("Manual initiative order becomes the turn sequence")
     func manualOrderDrivesTurnSequence() {
         // Given
@@ -407,6 +464,7 @@ struct BattleRoundModelTests {
         sourceCharacterId: UUID? = UUID(),
         gameCharacterId: UUID? = UUID(),
         isPlayer: Bool = false,
+        isDead: Bool = false,
         pinId: UUID = UUID()
     ) -> BattleCombatant {
         BattleCombatant(
@@ -416,6 +474,7 @@ struct BattleRoundModelTests {
                 color: .blue,
                 characterId: sourceCharacterId,
                 isPlayer: isPlayer,
+                isDead: isDead,
                 isHighlighted: highlighted
             ),
             sourceCharacterId: sourceCharacterId,

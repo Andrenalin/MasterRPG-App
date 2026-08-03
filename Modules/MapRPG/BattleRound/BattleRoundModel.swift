@@ -354,17 +354,33 @@ public final class BattleRoundModel: Sendable {
         guard isRunning, !entries.isEmpty else { return false }
         guard let activeAttackerId,
               let index = entries.firstIndex(where: { $0.attackerId == activeAttackerId }) else {
-            return activateAttacker(entries[0].attackerId)
+            return activateAttacker(firstLivingAttackerId(from: 0) ?? entries[0].attackerId)
         }
-        if entries.indices.contains(index + 1) {
-            return activateAttacker(entries[index + 1].attackerId)
+        if let nextId = firstLivingAttackerId(from: index + 1) {
+            return activateAttacker(nextId)
         }
+        // Nobody alive remains later in this round's order: advance the round
+        // and search again from the top, so a fallen combatant is skipped
+        // there too instead of ending up active again.
         roundCounter += 1
-        self.activeAttackerId = entries[0].attackerId
-        rollRecipientCombatantId = entries[0].attackerId
-        presentedActivePinId = combatant(id: entries[0].attackerId)?.pinId
+        let firstId = firstLivingAttackerId(from: 0) ?? entries[0].attackerId
+        self.activeAttackerId = firstId
+        rollRecipientCombatantId = firstId
+        presentedActivePinId = combatant(id: firstId)?.pinId
         bumpNetworkSequence()
         return true
+    }
+
+    /// The id of the first entry's attacker at or after `startIndex` who
+    /// isn't dead. `nil` when nobody in that range is alive (e.g. everyone
+    /// remaining in the round has fallen).
+    private func firstLivingAttackerId(from startIndex: Int) -> UUID? {
+        guard startIndex < entries.count else { return nil }
+        for index in startIndex..<entries.count {
+            guard let attacker = attacker(for: entries[index]), !attacker.isDead else { continue }
+            return entries[index].attackerId
+        }
+        return nil
     }
 
     @discardableResult

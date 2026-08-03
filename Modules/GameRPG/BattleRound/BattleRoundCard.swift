@@ -7,10 +7,26 @@ import SwiftUI
 @MainActor @Observable
 final class BattleRoundCardState {
     var characterSheet: BattleCharacterSheetPresentation?
+
+    func openCharacter(
+        _ combatant: BattleCombatant,
+        controller: BattleRoundController,
+        showCharacter: @MainActor (BattleCombatant) -> Void
+    ) {
+        if let sheet = BattleCharacterSheetFactory(characterRoot: controller.root.characterRoot).presentation(for: combatant) {
+            characterSheet = characterSheet?.id == sheet.id ? nil : sheet
+        } else {
+            showCharacter(combatant)
+        }
+    }
 }
 
 extension EnvironmentValues {
     @Entry var battleRoundCardLayout: BattleRoundCardLayout = .wide
+}
+
+extension BattleCombatant {
+    var hasCharacter: Bool { gameCharacterId != nil || sourceCharacterId != nil }
 }
 
 struct BattleRoundCard: View {
@@ -68,6 +84,32 @@ struct BattleRoundCard: View {
             value: presentation.isActive
         )
         .accessibilityElement(children: .contain)
+        .onChange(of: presentation.isActive) { wasActive, isActive in
+            // A turn moving on should never leave a stale character sheet
+            // open on the card that was just active.
+            guard wasActive, !isActive else { return }
+            cardState.characterSheet = nil
+        }
+        .contextMenu {
+            BattleRoundParticipantActionsMenu(
+                role: .attacker,
+                presentation: presentation.attacker,
+                cardState: cardState,
+                controller: controller,
+                showCharacter: showCharacter,
+                selectHitPoints: selectHitPoints
+            )
+            ForEach(presentation.defenders) { defender in
+                BattleRoundParticipantActionsMenu(
+                    role: .defender,
+                    presentation: defender,
+                    cardState: cardState,
+                    controller: controller,
+                    showCharacter: showCharacter,
+                    selectHitPoints: selectHitPoints
+                )
+            }
+        }
 
         if let sheet = cardState.characterSheet {
             SheetRootView(root: sheet.root, rootModel: sheet.sheet)
