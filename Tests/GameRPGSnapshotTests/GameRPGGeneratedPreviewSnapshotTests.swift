@@ -26,14 +26,6 @@ import WeatherRPG
 @MainActor
 @Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
 struct GameRPGGeneratedPreviewSnapshotTests {
-    // snapshot-root: GameRPG::GameBrowserView
-    @Test("GameBrowserView")
-    func snapshotGameBrowserView() async throws {
-        try await assertPreviewSnapshot("GameBrowserView") {
-            GameRPG.GameBrowserView(startsServices: false)
-        }
-    }
-
     // snapshot-root: GameRPG::ExternalGameRootView
     @Test("ExternalGameRootView")
     func snapshotExternalGameRootView() async throws {
@@ -670,20 +662,6 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     func snapshotSelectedPlayerView() async throws {
         try await assertPreviewSnapshot("SelectedPlayerView") {
             GameRPG.SelectedPlayerView(root: .preview)
-        }
-    }
-
-    // snapshot-root: GameRPG::SelectorView
-    @Test("SelectorView")
-    func snapshotSelectorView() async throws {
-        try await assertPreviewSnapshot("SelectorView") {
-            ManagedNavigationStack {
-            #if os(tvOS)
-                    GameRPG.SelectorView(root: .preview, previewSelection: .proxy)
-            #else
-                    SelectorView(root: .preview, previewSelection: .player)
-            #endif
-                }
         }
     }
 

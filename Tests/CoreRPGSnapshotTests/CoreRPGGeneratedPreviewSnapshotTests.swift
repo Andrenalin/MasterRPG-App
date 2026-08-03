@@ -1045,7 +1045,9 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                     category: .album,
                     description: "A weathered map showing the road to the lost keep.",
                     tags: ["Map", "Quest"]
-                )
+                ),
+                module: .space,
+                dismiss: {}
             )
             .moduleTint(.space)
             .environment(AppSettingsModel.previewFixture())
@@ -2010,6 +2012,7 @@ private func assertPreviewSnapshot<Content: View>(
             .environment(AppNavigationModel(appGameStateModel: appGameStateModel))
             .environment(AppSettingsModel.previewFixture())
             .environment(AppWindowSizeModel())
+            .environment(AppFocusModel())
             .environment(ScenesManager())
             .environment(OptionKeyDownModel())
             .environment(GroupItemSelectionModel())

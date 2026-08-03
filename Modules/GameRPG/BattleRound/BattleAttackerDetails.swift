@@ -21,7 +21,7 @@ struct BattleAttackerDetails: View {
                         .accessibilityLabel(Text("Player", bundle: .module))
                 }
                 if combatant.isDead {
-                    Image(systemName: "skull.fill")
+                    Image(systemName: "person.slash")
                         .foregroundStyle(.red)
                         .accessibilityLabel(Text("Dead", bundle: .module))
                 }
@@ -31,13 +31,6 @@ struct BattleAttackerDetails: View {
                         .accessibilityLabel(Text("Highlighted", bundle: .module))
                 }
             }
-
-            BattleInitiativeEditor(
-                combatantId: combatant.id,
-                value: combatant.initiative,
-                setValue: { controller.setInitiative($0, $1) },
-                adjust: { controller.adjustInitiative($0, $1) }
-            )
 
             Button(
                 isActive ? "Active Attacker" : "Make Active",

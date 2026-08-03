@@ -112,7 +112,7 @@ private extension PlayerNetworkController {
         Logger.networking.debug("PlayerNetworkController: Create Listener")
         await MainActor.run { [weak self] in
             guard let self else { return }
-            let manager = ListenerManager(name: networkModel.name, serviceType: fallbackServiceType)
+            let manager = ListenerManager(name: networkModel.name, supporterTier: networkModel.supporterTier, serviceType: fallbackServiceType)
             manager.delegate = self
             networkModel.reset(listener: manager)
             manager.startListening()

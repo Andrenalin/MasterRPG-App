@@ -43,6 +43,7 @@ struct WindowUtilityList: Scene {
             .defaultWindowPlacementAll(.below(NetworkModules.table.linkWindowId))
             .restorationBehaviorAll(.disabled)
             .defaultLaunchBehavior(.suppressed)
+            .defaultSize(CGSize(width: 600, height: 800))
 #endif
 
             WindowGroup("Map Editor", id: SceneId.mapEditor.rawValue) {
@@ -135,21 +136,21 @@ struct WindowUtilityList: Scene {
                     ManagedNavigationStack(name: String(localized: "Game Statistics", bundle: .main)) {
                         GameFactory.statisticsView(root: appModel.gameRoot)
                     }
-#if os(macOS)
-                    .frame(
-                        minWidth: 680,
-                        idealWidth: 900,
-                        minHeight: 480,
-                        idealHeight: 680
-                    )
-#endif
                     .sceneTracker(for: SceneId.gameStatistics)
                     .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .game))
                 }
                 .environment(appModel.scenesManager)
                 .environment(appModel)
+#if os(macOS)
+                    .frame(
+                        minWidth: 700,
+                        idealWidth: 900,
+                        minHeight: 480,
+                        idealHeight: 680
+                    )
+#endif
             }
-            .windowResizability(.contentMinSize)
+            .windowResizability(.contentSize)
             .defaultWindowPlacementAll(.trailing(SceneId.game.rawValue))
             .restorationBehaviorAll(.disabled)
             .defaultLaunchBehavior(.suppressed)
@@ -183,7 +184,6 @@ struct WindowUtilityList: Scene {
             .keyboardShortcut("S", modifiers: [.command, .shift, .option])
 #endif
         }
-        .defaultSize(CGSize(width: 600, height: 800))
     }
 }
 

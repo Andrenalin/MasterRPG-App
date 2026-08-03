@@ -18,12 +18,13 @@ enum ImportOutcome: Equatable, Sendable {
 }
 
 public struct ImportProgressPanelView: View {
-    public init(importController: any ImportControllable) {
+    public init(importController: any ImportControllable, onImported: (@MainActor (URL) -> Void)? = nil) {
         self.rootManager = nil
         self.urlProvider = nil
         self.importController = importController
         self.isSaveGame = true
         self.initialURL = nil
+        self.onImported = onImported
         _mutationSession = State(initialValue: ImportMutationSession())
     }
 
@@ -41,6 +42,7 @@ public struct ImportProgressPanelView: View {
         self.importController = importController
         self.isSaveGame = false
         self.initialURL = initialURL
+        self.onImported = nil
         _mutationSession = State(
             initialValue: ImportMutationSession(
                 beginDataMutationHandler: beginDataMutationHandler,
@@ -55,6 +57,7 @@ public struct ImportProgressPanelView: View {
     let importController: any ImportControllable
     let isSaveGame: Bool
     let initialURL: URL?
+    let onImported: (@MainActor (URL) -> Void)?
 
     @Environment(\.navigator) private var navigator
 
@@ -139,7 +142,7 @@ public struct ImportProgressPanelView: View {
 
                         outcome = .running
                         let task = importController.importUrl(
-                            from: loadUrl, importModel: importModel)
+                            from: loadUrl, importModel: importModel, gameMemoryOnly: isSaveGame)
                         guard mutationSession.trackImportTask(task) else {
                             task.cancel()
                             outcome = .failed(dataMutationUnavailableMessage)
@@ -222,6 +225,10 @@ public struct ImportProgressPanelView: View {
             guard let newURL, loadUrl == nil, proposedUrl == nil else { return }
             proposedUrl = newURL
             importModel.importMode = .manual
+        }
+        .onChange(of: outcome, initial: false) { old, new in
+            guard old != .finished, new == .finished, let loadUrl else { return }
+            onImported?(loadUrl)
         }
         .onDisappear {
             mutationSession.cancelImportAndReleaseInBackground()

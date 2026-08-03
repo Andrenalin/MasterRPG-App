@@ -47,7 +47,11 @@ struct MasterGameScreen: View {
         .focusSectionAll()
         .sheet(isPresented: $gameScreenModel.showExport) {
             if gameScreenModel.showExport {
-                ExportProgressPanelView(exportController: root.adventureRoot.exportControllable, isSaveGame: true) {
+                ExportProgressPanelView(
+                    exportController: root.adventureRoot.exportControllable,
+                    isSaveGame: true,
+                    saveGameName: root.adventureRoot.networkTitle(for: adventureId)
+                ) {
                     root.saveGame()
                 } finishedAction: {
                     gameScreenModel.showExport = false

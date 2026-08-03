@@ -6,15 +6,10 @@ import MapRPG
 import SwiftUI
 
 struct BattleRoundView: View {
-    init(controller: BattleRoundController, layout: BattleRoundCardLayout = .wide) {
-        self.controller = controller
-        _screenModel = State(wrappedValue: BattleRoundScreenModel(model: controller.model, layout: layout))
-    }
-
     let controller: BattleRoundController
+    let screenModel: BattleRoundScreenModel
 
     @Environment(ScenesManager.self) private var scenesManager
-    @State private var screenModel: BattleRoundScreenModel
 
     private var root: MapRootModel { controller.root.mapRoot }
 
@@ -36,35 +31,24 @@ struct BattleRoundView: View {
                 .focusSection()
 #endif
 
-                if screenModel.isConfigurationExpanded {
-                    BattleRoundSettingsView(
-                        settings: root.mapGameControllable.battleRoundSettings,
-                        controller: controller,
-                        selectEntry: { kind in
-                            screenModel.selectConfiguredValue(
-                                kind,
-                                controller: controller,
-                                scenesManager: scenesManager
-                            )
-                        },
-                        useDroppedEntry: { value, kind in
-                            screenModel.useDroppedConfiguredValue(
-                                value,
-                                kind: kind,
-                                controller: controller
-                            )
-                        },
-                        refresh: {
-                            screenModel.refreshConfiguredValues(controller: controller)
-                        }
-                    )
-#if os(tvOS)
-                    .focusSection()
-#endif
-                }
-
                 ScrollView {
                     LazyVStack {
+                        if screenModel.isConfigurationExpanded {
+                            BattleRoundSettingsView(
+                                settings: root.mapGameControllable.battleRoundSettings,
+                                controller: controller,
+                                screenModel: screenModel
+                            )
+                            // Capped rather than left to grow: this panel sits above the battle
+                            // card ScrollView in the same VStack, so an unbounded height would
+                            // starve the card list below it.
+                            .frame(maxHeight: 280)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+        #if os(tvOS)
+                            .focusSection()
+        #endif
+                        }
+
                         if controller.model.isRunning, !controller.model.entries.isEmpty {
                             BattleRoundList(
                                 cards: controller.model.cardPresentations,
@@ -78,6 +62,13 @@ struct BattleRoundView: View {
                                 },
                                 selectHitPoints: { combatant in
                                     screenModel.selectHitPoints(
+                                        combatant,
+                                        controller: controller,
+                                        scenesManager: scenesManager
+                                    )
+                                },
+                                selectInitiative: { combatant in
+                                    screenModel.selectInitiative(
                                         combatant,
                                         controller: controller,
                                         scenesManager: scenesManager
@@ -100,6 +91,7 @@ struct BattleRoundView: View {
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleInlineNavigationTitle()
         }
+        .themedSurface()
         .sheet(item: $screenModel.presentation) { presentation in
             switch presentation {
             case .sheet(let sheet):
@@ -125,5 +117,11 @@ struct BattleRoundView: View {
 }
 
 #Preview("Battle Round", traits: .mockData) {
-    BattleRoundView(controller: .preview())
+    let controller = BattleRoundController.preview()
+    BattleRoundView(
+        controller: controller,
+        screenModel: BattleRoundScreenModel(model: controller.model, layout: .wide)
+    )
+    .setAppSizeMode()
+    .environment(AppFocusModel())
 }

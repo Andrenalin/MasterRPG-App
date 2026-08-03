@@ -26,19 +26,14 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
     @State
     private var isActivationErrorViewPresented = false
     
-    private let activitySharingView: ActivitySharingView<ActivityType>
-    
     let text: any StringProtocol
     let activity: ActivityType
-    
+
     init(_ text: any StringProtocol, activity: ActivityType) {
         self.text = text
         self.activity = activity
-        self.activitySharingView = ActivitySharingView {
-            activity
-        }
     }
-    
+
     var body: some View {
         ZStack {
 #if !os(tvOS)
@@ -64,7 +59,9 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
             .tint(.green)
             .sheet(isPresented: $isActivitySharingViewPresented) {
                 ManagedPresentationView {
-                    activitySharingView
+                    ActivitySharingView(preparationHandler: { activity }) {
+                        isActivitySharingViewPresented = false
+                    }
                 }
             }
             .alert(Text("Unable to start game", bundle: .module), isPresented: $isActivationErrorViewPresented) {
@@ -79,19 +76,31 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
 #if os(macOS)
 struct ActivitySharingView<ActivityType: GroupActivity & Sendable>: NSViewControllerRepresentable {
     let preparationHandler: () async throws -> ActivityType
-  
+    let onCompletion: () -> Void
+
     func makeNSViewController(context: Context) -> GroupActivitySharingController {
-        GroupActivitySharingController(preparationHandler: preparationHandler)
+        let controller = GroupActivitySharingController(preparationHandler: preparationHandler)
+        Task {
+            _ = await controller.result
+            onCompletion()
+        }
+        return controller
     }
-    
+
     func updateNSViewController(_ nsViewController: GroupActivitySharingController, context: Context) {}
 }
 #else
 struct ActivitySharingView<ActivityType: GroupActivity & Sendable>: UIViewControllerRepresentable {
     let preparationHandler: () async throws -> ActivityType
+    let onCompletion: () -> Void
 
     func makeUIViewController(context: Context) -> GroupActivitySharingController {
-        GroupActivitySharingController(preparationHandler: preparationHandler)
+        let controller = GroupActivitySharingController(preparationHandler: preparationHandler)
+        Task {
+            _ = await controller.result
+            onCompletion()
+        }
+        return controller
     }
 
     func updateUIViewController(_: GroupActivitySharingController, context: Context) {}

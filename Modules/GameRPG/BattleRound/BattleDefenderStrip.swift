@@ -10,6 +10,7 @@ struct BattleDefenderStrip: View {
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     var body: some View {
         if defenders.isEmpty {
@@ -34,7 +35,8 @@ struct BattleDefenderStrip: View {
                             tint: isActiveEntry ? .red : .gray,
                             controller: controller,
                             showCharacter: showCharacter,
-                            selectHitPoints: selectHitPoints
+                            selectHitPoints: selectHitPoints,
+                            selectInitiative: selectInitiative
                         )
                     }
                 }
@@ -56,7 +58,8 @@ struct BattleDefenderStrip: View {
             isActiveEntry: card.isActive,
             controller: controller,
             showCharacter: { _ in },
-            selectHitPoints: { _ in }
+            selectHitPoints: { _ in },
+            selectInitiative: { _ in }
         )
         .padding()
     }
@@ -69,7 +72,8 @@ struct BattleDefenderStrip: View {
         isActiveEntry: false,
         controller: .preview(),
         showCharacter: { _ in },
-        selectHitPoints: { _ in }
+        selectHitPoints: { _ in },
+        selectInitiative: { _ in }
     )
     .padding()
 }

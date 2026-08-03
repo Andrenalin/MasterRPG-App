@@ -34,6 +34,7 @@ struct BattleRoundCard: View {
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.battleRoundCardLayout) private var cardLayout
@@ -48,7 +49,8 @@ struct BattleRoundCard: View {
                     presentation: presentation,
                     controller: controller,
                     showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints
+                    selectHitPoints: selectHitPoints,
+                    selectInitiative: selectInitiative
                 )
             case .compact:
                 BattleRoundCompactCardLayout(
@@ -56,7 +58,8 @@ struct BattleRoundCard: View {
                     presentation: presentation,
                     controller: controller,
                     showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints
+                    selectHitPoints: selectHitPoints,
+                    selectInitiative: selectInitiative
                 )
             }
         }
@@ -126,7 +129,8 @@ struct BattleRoundCard: View {
             presentation: card,
             controller: controller,
             showCharacter: { _ in },
-            selectHitPoints: { _ in }
+            selectHitPoints: { _ in },
+            selectInitiative: { _ in }
         )
         .padding()
         .environment(AppFocusModel())

@@ -11,6 +11,8 @@ public struct InAppView: View {
     
     public let inAppController: InAppController
     
+    @Environment(\.navigator) private var navigator
+    
     public var body: some View {
         ScrollView {
             VStack {
@@ -20,6 +22,7 @@ public struct InAppView: View {
                     SupporterCrownView(
                         tier: SupporterProduct(productID: product.id)?.tier ?? .none
                     )
+                    .font(.largeTitle)
                 }
 #if os(tvOS)
                 .productViewStyle(.regular)
@@ -65,6 +68,15 @@ public struct InAppView: View {
             await inAppController.prepare()
         }
         .themedSurface()
+        #if os(macOS)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(role: .confirm) {
+                    navigator.dismiss()
+                }
+            }
+        }
+        #endif
     }
 }
 
@@ -100,8 +112,10 @@ private struct SupporterStatusView: View {
 }
 
 #Preview("Supporter store") {
-    InAppView(inAppController: InAppController(model: InAppModel()))
-        .preferredColorScheme(.dark)
+    ManagedNavigationStack {
+        InAppView(inAppController: InAppController(model: InAppModel()))
+            .preferredColorScheme(.dark)
+    }
 }
 
 #Preview("Supporter status") {

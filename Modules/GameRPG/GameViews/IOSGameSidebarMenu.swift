@@ -30,15 +30,6 @@ struct IOSGameSidebarMenu: View {
                 }
             }
 
-            Toggle(isOn: primaryViewBinding) {
-                Label {
-                    Text(verbatim: currentSidebarViewTitle)
-                } icon: {
-                    Image(systemName: currentSidebarViewIcon)
-                }
-            }
-            .disabled(!isSidebarVisible || !allowsPrimaryView)
-
             Button {
                 withAnimation(accessibilityReduceMotion ? nil : .default) {
                     gameScreenModel.toggleSideBarWidth()
@@ -61,17 +52,29 @@ struct IOSGameSidebarMenu: View {
 
             Divider()
 
-            GameTableMenuToggle()
+            Toggle(isOn: primaryViewBinding) {
+                Label {
+                    Text(primaryViewTitle)
+                } icon: {
+                    Image(systemName: primaryModule.icon)
+                }
+            }
+            .disabled(!allowsPrimaryView)
+
+            Toggle(isOn: otherViewBinding) {
+                Label {
+                    Text("Other View", bundle: .module)
+                } icon: {
+                    Image(systemName: NetworkModules.setting.icon)
+                }
+            }
 
             if isMaster {
-                Button(action: toggleBattleRoundSidebar) {
+                Toggle(isOn: battleRoundBinding) {
                     Label {
                         Text("Battle Round", bundle: .module)
                     } icon: {
                         Image(systemName: "shield.lefthalf.filled")
-                            .symbolVariant(
-                                gameScreenModel.showsBattleRoundSidebar ? .fill : .none
-                            )
                     }
                 }
             }
@@ -101,40 +104,14 @@ struct IOSGameSidebarMenu: View {
         isMaster ? .game : .value
     }
 
+    private var primaryViewTitle: LocalizedStringResource {
+        isMaster
+            ? LocalizedStringResource("Game View", bundle: .module)
+            : LocalizedStringResource("Character View", bundle: .module)
+    }
+
     private var isSidebarVisible: Bool {
         gameScreenModel.isInlineSidebarVisible
-    }
-
-    private var isShowingPrimaryView: Bool {
-        if gameScreenModel.showsBattleRoundSidebar {
-            return false
-        }
-        if gameScreenModel.showMainTab != .none {
-            return true
-        }
-        if gameScreenModel.showSettingTab != .none {
-            return false
-        }
-        return allowsPrimaryView && gameScreenModel.iOSSidebarShowsPrimaryView
-    }
-
-    private var currentSidebarViewTitle: String {
-        if gameScreenModel.showsBattleRoundSidebar {
-            return String(localized: "Battle Round", bundle: .module)
-        }
-        if isShowingPrimaryView {
-            return isMaster
-                ? String(localized: "Game View", bundle: .module)
-                : String(localized: "Character View", bundle: .module)
-        }
-        return String(localized: "Other View", bundle: .module)
-    }
-
-    private var currentSidebarViewIcon: String {
-        if gameScreenModel.showsBattleRoundSidebar {
-            return "shield.lefthalf.filled"
-        }
-        return isShowingPrimaryView ? primaryModule.icon : NetworkModules.setting.icon
     }
 
     private var sidebarVisibilityBinding: Binding<Bool> {
@@ -148,9 +125,27 @@ struct IOSGameSidebarMenu: View {
 
     private var primaryViewBinding: Binding<Bool> {
         Binding(
-            get: { isShowingPrimaryView },
-            set: { showsPrimaryView in
-                setPrimaryViewVisible(showsPrimaryView)
+            get: { gameScreenModel.showMainTab == primaryModule },
+            set: { isOn in
+                setPrimaryView(isOn)
+            }
+        )
+    }
+
+    private var otherViewBinding: Binding<Bool> {
+        Binding(
+            get: { gameScreenModel.showSettingTab == .setting },
+            set: { isOn in
+                setOtherView(isOn)
+            }
+        )
+    }
+
+    private var battleRoundBinding: Binding<Bool> {
+        Binding(
+            get: { gameScreenModel.showsBattleRoundSidebar },
+            set: { isOn in
+                setBattleRound(isOn)
             }
         )
     }
@@ -173,15 +168,6 @@ struct IOSGameSidebarMenu: View {
         }
     }
 
-    private func setPrimaryViewVisible(_ showsPrimaryView: Bool) {
-        guard allowsPrimaryView else { return }
-        gameScreenModel.iOSSidebarShowsPrimaryView = showsPrimaryView
-        guard isSidebarVisible else { return }
-        withAnimation(accessibilityReduceMotion ? nil : .default) {
-            showSelectedSidebarView()
-        }
-    }
-
     private func showSelectedSidebarView() {
         if allowsPrimaryView && gameScreenModel.iOSSidebarShowsPrimaryView {
             gameScreenModel.showSettingTab = .none
@@ -192,10 +178,28 @@ struct IOSGameSidebarMenu: View {
         }
     }
 
-    private func toggleBattleRoundSidebar() {
+    private func setPrimaryView(_ isOn: Bool) {
+        guard allowsPrimaryView else { return }
+        gameScreenModel.iOSSidebarShowsPrimaryView = isOn
         withAnimation(accessibilityReduceMotion ? nil : .default) {
-            gameScreenModel.toggleBattleRoundSidebar()
+            gameScreenModel.showMainTab = isOn ? primaryModule : .none
         }
+        gameScreenModel.showMainTabIOS = gameScreenModel.isInlineSidebarVisible
+    }
+
+    private func setOtherView(_ isOn: Bool) {
+        gameScreenModel.iOSSidebarShowsPrimaryView = !isOn
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.showSettingTab = isOn ? .setting : .none
+        }
+        gameScreenModel.showMainTabIOS = gameScreenModel.isInlineSidebarVisible
+    }
+
+    private func setBattleRound(_ isOn: Bool) {
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            gameScreenModel.showsBattleRoundSidebar = isOn
+        }
+        gameScreenModel.showMainTabIOS = gameScreenModel.isInlineSidebarVisible
     }
 }
 

@@ -3,10 +3,11 @@
 import SwiftUI
 
 public struct ExportProgressPanelView: View {
-    public init(exportController: any ExportControllable, showOptions: Bool = false, isSaveGame: Bool = false, exporter: @escaping () -> ItemModuleIds, finishedAction: @escaping () -> Void = {}) {
+    public init(exportController: any ExportControllable, showOptions: Bool = false, isSaveGame: Bool = false, saveGameName: String? = nil, exporter: @escaping () -> ItemModuleIds, finishedAction: @escaping () -> Void = {}) {
         self.exportController = exportController
         self.showOptions = showOptions
         self.isSaveGame = isSaveGame
+        self.saveGameName = saveGameName
         self.exporter = exporter
         self.finishAction = finishedAction
         self._outcome = State(wrappedValue: showOptions ? .notStarted : .running)
@@ -15,6 +16,7 @@ public struct ExportProgressPanelView: View {
     let exportController: any ExportControllable
     let showOptions: Bool
     let isSaveGame: Bool
+    let saveGameName: String?
     let exporter: () -> (ItemModuleIds)
     let finishAction: () -> Void
 
@@ -92,7 +94,7 @@ private extension ExportProgressPanelView {
         do {
             try await Task.sleep(for: .seconds(0.5))
             if isSaveGame {
-                let url = exportController.exportUrl(isSaveGame: true)
+                let url = exportController.exportUrl(isSaveGame: true, adventureTitle: saveGameName)
                 let task = exportController.createExport(itemIds: exporter(), into: url, exportModel: exportModel)
                 exportTask = task
                 saveUrl = url

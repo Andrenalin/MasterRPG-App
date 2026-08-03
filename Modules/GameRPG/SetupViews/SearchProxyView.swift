@@ -14,21 +14,30 @@ struct SearchProxyView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack {
-                #if !os(tvOS)
-                GroupBoxTV(isCard: true, withoutGroup: true) {
-                    Text("Observe any hosted game in the local network, or connect as proxy to extend a player to a second screen and audio source.", bundle: .module)
-                        .lineLimit(10)
-                } label: {
-                    Label {
-                        Text("Find a game", bundle: .module)
-                            .font(.headline)
-                    } icon: {
-                        Image(systemName: "magnifyingglass.circle.fill")
-                            .imageScale(.large)
+            VStack {
+                Text("Local Network", bundle: .module)
+                    .bold()
+                    .accessibilityAddTraits(.isHeader)
+
+                if empty {
+#if os(tvOS)
+                    Button {
+                        Task {
+                            await root.startDemo(supporterTier: .gold)
+                        }
+                    } label: {
+                        Label {
+                            Text("Demo", bundle: .module)
+                        } icon: {
+                            Image(systemName: "play.rectangle")
+                        }
                     }
+#else
+                    Text("No hosted games found", bundle: .module)
+                        .bold()
+                        .accessibilityAddTraits(.isHeader)
+#endif
                 }
-                #endif
                 
                 if let observerController = root.networkStore.model.playerStore {
                     ForEach(observerController.browserManager.games) { browser in
@@ -51,6 +60,17 @@ struct SearchProxyView: View {
             root.networkStore.model.playerStore?.browserManager.start()
             root.networkProxyStore.model.playerStore?.browserManager.start()
         }
+    }
+    
+    var empty: Bool {
+        var isEmpty = true
+        if let observerController = root.networkStore.model.playerStore {
+            isEmpty = isEmpty && observerController.browserManager.games.isEmpty
+        }
+        if let proxyController = root.networkProxyStore.model.playerStore, isEmpty == true {
+            isEmpty = isEmpty && visibleProxyBrowsers(for: proxyController).isEmpty
+        }
+        return isEmpty
     }
 }
 

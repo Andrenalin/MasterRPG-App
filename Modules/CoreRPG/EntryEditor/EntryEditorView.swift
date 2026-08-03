@@ -34,9 +34,20 @@ public struct EntryEditorView<LinkType: LinkDataTransferable>: View {
                 linkTypes: linkTypes
             )
             .id(itemId)
-            .transition(.scale)
+            .transition(editorTransition)
             .animation(accessibilityReduceMotion ? nil : .bouncy, value: editorModel.entryId)
         }
+    }
+
+    // AppKit doesn't reliably redraw the NSTextView backing a TextEditor when it's caught in
+    // a SwiftUI scale-transform transition on macOS: the text can stay blank or mis-sized until
+    // something else (e.g. a window resize) forces a relayout. A plain fade avoids the transform.
+    private var editorTransition: AnyTransition {
+#if os(macOS)
+        .opacity
+#else
+        .scale
+#endif
     }
 }
 

@@ -283,18 +283,15 @@ struct CoreRPGDynamicPreviewSnapshotTests {
     @Test("ItemDetailContentView")
     func itemDetailContentView() {
         assertCoreSnapshot("ItemDetailContentView") {
-            CoreRPGNamespaceSnapshotHarness { namespace in
-                ItemDetailContentView<Text, EmptyLinkTransferable>(
-                    root: ItemRootController.fake,
-                    model: FakeItemModel.empty,
-                    configuration: .init(),
-                    editor: Text("Editor content"),
-                    headerModel: HeaderScrollModel(),
-                    folderListController: FakeFolderListController.fake,
-                    editingItem: .constant(nil),
-                    editSheetNamespace: namespace
-                )
-            }
+            ItemDetailContentView<Text, EmptyLinkTransferable>(
+                root: ItemRootController.fake,
+                model: FakeItemModel.empty,
+                configuration: .init(),
+                editor: Text("Editor content"),
+                headerModel: HeaderScrollModel(),
+                folderListController: FakeFolderListController.fake,
+                editingItem: .constant(nil)
+            )
             .environment(AppGameStateModel())
         }
     }

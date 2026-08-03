@@ -227,6 +227,14 @@ public extension GameControllable {
     }
 
     func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
+        // `exporting(ids:)` silently drops an id it cannot find instead of
+        // failing, so an absent item would otherwise export as an empty-but-
+        // valid payload. Callers such as MasterController's reveal handlers
+        // depend on `try?` turning "master does not own this item" into a
+        // clean `nil` rather than a corrupt canonical broadcast.
+        guard await itemControllable.item(for: itemId) != nil else {
+            throw ItemGameStorableError.itemMissing
+        }
         // Persist a deterministic content hash before exporting so the sender's
         // version and the metadata imported by the receiver describe the same
         // bytes.

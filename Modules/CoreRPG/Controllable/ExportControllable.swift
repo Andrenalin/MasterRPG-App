@@ -49,8 +49,11 @@ public extension ExportControllable {
 
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
-    func exportUrl(isSaveGame: Bool) -> URL {
+    func exportUrl(isSaveGame: Bool, adventureTitle: String? = nil) -> URL {
         let now = Date.now.formatted(.iso8601.year().month().day().dateSeparator(.omitted))
+        if isSaveGame, let sanitized = adventureTitle?.sanitizedFileNameComponent, !sanitized.isEmpty {
+            return URL.cachesDirectory.appending(path: "\(sanitized)-\(now).gms")
+        }
         let name = isSaveGame ? "SavedGame.gms" : "Export.gmz"
         return URL.cachesDirectory.appending(path: "\(now)-\(name)")
     }
@@ -216,5 +219,16 @@ public extension ExportControllable {
 
     @MainActor private func token() async -> NetworkModules {
         itemControllable.config.module
+    }
+}
+
+private extension String {
+    /// A version of the string safe to use as a single path component, for filenames
+    /// built from user-entered titles (e.g. an adventure name).
+    var sanitizedFileNameComponent: String {
+        let invalidCharacters: Set<Character> = ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"]
+        let cleaned = String(map { invalidCharacters.contains($0) ? " " : $0 })
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(cleaned.prefix(80))
     }
 }

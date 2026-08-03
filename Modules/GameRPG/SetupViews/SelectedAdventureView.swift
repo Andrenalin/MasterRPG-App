@@ -2,6 +2,7 @@
 
 import AdventureRPG
 import CoreRPG
+import MapRPG
 import SwiftUI
 import TipKit
 
@@ -11,18 +12,40 @@ struct SelectedAdventureView: View {
     @AppStorage("lastAdventureUUID", store: .standard)
     private var lastAdventureUUID: String = ""
 
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
+    @Environment(\.navigator) private var navigator
+
+
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
-    
+
+    private var sharePlayStore: RPGSharePlayController {
+        root.networkStore.sharePlayStore
+    }
+
+    private var isCompactLayout: Bool {
+        appSizeModel.mode == .compact
+    }
+
     var body: some View {
-        GroupBoxTV(isCard: true) {
+        GroupBoxTV(isCard: true, withoutGroup: true) {
 #if os(tvOS)
             VStack {
                 TipView(MasterRPGTips.chooseAdventure)
-                adventureSelection
+                content
             }
 #else
-            adventureSelection
-                .popoverTip(MasterRPGTips.chooseAdventure)
+            Group {
+                if isCompactLayout {
+                    VStack(alignment: .leading, spacing: 12) {
+                        content
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 12) {
+                        content
+                    }
+                }
+            }
+            .popoverTip(MasterRPGTips.chooseAdventure)
 #endif
         } label: {
             Label {
@@ -32,7 +55,11 @@ struct SelectedAdventureView: View {
                 Image(systemName: "wand.and.stars")
                     .imageScale(.large)
             }
+#if os(macOS)
+            .padding()
+#endif
         }
+        .themedSurface()
         .task {
             root.resetSelectedAdventure(uuidString: lastAdventureUUID)
             selection.resetSelection(itemId: root.gameModel.selectedAdventure, entryId: nil)
@@ -52,6 +79,11 @@ struct SelectedAdventureView: View {
             updateTipSelection(newAdventure)
         }
     }
+    
+    @ViewBuilder private var content: some View {
+        adventureSelection
+        optionView
+    }
 
     private var adventureSelection: some View {
         root.adventureRoot.viewController.dropChooseView(model: selection)
@@ -68,6 +100,48 @@ struct SelectedAdventureView: View {
             await MasterRPGTips.donateAdventureSelected()
         }
     }
+    
+    var optionView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if hasMapGameItems {
+                Button {
+                    clearMapGameItems()
+                } label: {
+                    Label { Text("Clear Saved Game", bundle: .module) } icon: { Image(systemName: "trash") }
+                }
+            } else {
+                Button {
+                    navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
+                } label: {
+                    Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
+                }
+            }
+
+#if !os(tvOS)
+            if root.gameModel.selectedAdventure != nil {
+                SharePlayButton("Play RPG Online", activity: RPGActivity())
+                    .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+                    .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+                    .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+            }
+#endif
+        }
+        .padding(12)
+    }
+
+    private var hasMapGameItems: Bool {
+        !root.mapRoot.gameControllable.gameModel.items.isEmpty
+    }
+
+    private func clearMapGameItems() {
+        let mapGameControllable = root.mapRoot.gameControllable
+        Task {
+            await mapGameControllable.reset()
+        }
+    }
 }
 
-#Preview { SelectedAdventureView(root: .preview) }
+#Preview(traits: .mockData) {
+    SelectedAdventureView(root: .preview)
+        .setAppSizeMode()
+}

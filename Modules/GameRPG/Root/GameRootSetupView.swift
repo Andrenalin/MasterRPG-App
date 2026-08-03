@@ -49,8 +49,10 @@ struct GameRootSetupView: View {
                         scenesManager.openWindow(SceneId.editor)
                     } label: {
                         Label { Text("Editor Window", bundle: .module) } icon: { Image(systemName: "square.and.pencil") }
+                            .padding()
                     }
-                    .padding()
+                    .clipShape(.capsule)
+                    .padding(.trailing)
 #endif
                 }
             }

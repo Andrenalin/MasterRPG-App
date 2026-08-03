@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Network
 import os.log
@@ -34,6 +35,7 @@ final class MasterNetworkNodel {
     }
     
     var name: String
+    var supporterTier: SupporterTier = .none
     var connections: [any ConnectionControllable] = []
     var isStreaming: Bool = false
     

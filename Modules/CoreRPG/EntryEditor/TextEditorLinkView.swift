@@ -42,17 +42,17 @@ struct AttributedTextEditorSurface: View {
         case singleLine
         case multiline
     }
-
+    
     @Binding var text: AttributedString
-
+    
     let links: [LinkRegisterModel]
     let minHeight: CGFloat
     let maxHeight: CGFloat
     let isFocused: Bool
     var layout: Layout = .multiline
-
+    
     @Environment(\.appTheme) private var theme
-
+    
     var body: some View {
 #if os(tvOS)
         EmptyView()
@@ -71,8 +71,15 @@ struct AttributedTextEditorSurface: View {
             .scrollContentBackground(.hidden)
             .background(.clear)
             .writingToolsBehavior(.complete)
-            .contentMargins(.horizontal, 12, for: .scrollContent)
+#if os(macOS)
+            // contentMargins(_:_:for:.scrollContent) has no visible effect on the vertical
+            // axis for TextEditor on macOS; padding is the reliable way to inset the text here.
+            .padding(.vertical, verticalContentMargin)
+            .padding(.horizontal, layout == .multiline ? 4 : 8)
+#else
             .contentMargins(.vertical, verticalContentMargin, for: .scrollContent)
+            .contentMargins(.horizontal, 8, for: .scrollContent)
+#endif
             .scrollIndicators(.hidden)
             .frame(
                 minHeight: minHeight,
@@ -87,21 +94,24 @@ struct AttributedTextEditorSurface: View {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(
                         isFocused
-                            ? Color.accentColor
-                            : theme.secondaryForegroundColor.opacity(0.35),
+                        ? Color.accentColor
+                        : theme.secondaryForegroundColor.opacity(0.35),
                         lineWidth: isFocused ? 2 : 1
                     )
             }
+#if !os(macOS)
             .clipShape(.rect(cornerRadius: 14, style: .continuous))
+#endif
+
 #endif
     }
 
     private var verticalContentMargin: CGFloat {
         switch layout {
         case .singleLine:
-            valueFor(iOS: 10, macOS: 11, tvOS: 0, visionOS: 10)
+            valueFor(iOS: 10, macOS: 12, tvOS: 0, visionOS: 10)
         case .multiline:
-            10
+            8
         }
     }
 }

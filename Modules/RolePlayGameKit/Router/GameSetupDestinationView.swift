@@ -23,21 +23,21 @@ struct GameSetupDestinationView: View {
         scenesManager.openWindow(.gameStatistics)
 #elseif os(iOS)
         navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
-
-//        if appWindowSizeModel.mode == .compact {
-//            navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
-//        } else {
-//            navigator.present(sheet: GameStatisticsRoute.dashboard, managed: true)
-//        }
 #else
         navigator.navigate(to: GameStatisticsRoute.dashboard, method: .managedSheet)
-
-//        navigator.navigate(to: GameStatisticsRoute.dashboard)
 #endif
     }
 
     private func openSupporter() {
-        navigator.navigate(to: SettingsRoute.supporter, method: .managedSheet)
+        var method: NavigationMethod
+        
+#if os(macOS)
+        method = .managedSheet
+#else
+        method = .sheet
+#endif
+        
+        navigator.navigate(to: SettingsRoute.supporter, method: method)
     }
 }
 
@@ -48,4 +48,5 @@ struct GameSetupDestinationView: View {
         .environment(appModel)
         .environment(AppWindowSizeModel())
         .environment(appModel.scenesManager)
+        .environment(AppGameStateModel())
 }

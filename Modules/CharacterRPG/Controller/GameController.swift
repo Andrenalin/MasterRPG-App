@@ -19,6 +19,22 @@ final class ValueGameModel: Sendable {
     }
 }
 
+/// A resolved route from a top-level Character down to one of its entries,
+/// through zero or more nested value "group" tables (`ValueModel.groupId`).
+/// `duplicateWithoutCopy()` only mints fresh ids for a Character's own
+/// top-level entries — nested group tables are shared, not duplicated — so
+/// this path lets `gameEntry(matching:characterId:)` relocate the
+/// structurally-equivalent entry on a different (e.g. battle-copy) Character
+/// without relying on the id, which may not carry over.
+public struct GameEntryPath: Sendable {
+    /// Root-to-leaf entry indices: `indices[0]` is the index of the
+    /// top-level entry (possibly a group link) on the root Character;
+    /// each subsequent index is within the group the previous entry links to.
+    public let indices: [Int]
+    public let rootCharacterId: UUID
+    public let name: String
+}
+
 public protocol ValueGameStorable {
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func imageIds(for id: UUID) -> [UUID]
@@ -28,14 +44,29 @@ public protocol ValueGameStorable {
     /// of another monster placed from the same template.
     @MainActor func createBattleCharacterCopy(for characterId: UUID) -> UUID?
     @MainActor func battleCharacterCopy(for gameCharacterId: UUID) -> ValueModel?
+    /// Searches `characterId`'s entries — including nested value "group"
+    /// tables (`ValueModel.valueId`) — for one whose name matches any of
+    /// `names`, falling back to an entry whose content contains an embedded
+    /// link display-named after any of `names` (e.g. an entry named
+    /// "current" that links to a "HitPoints" reference).
     @MainActor func gameEntry(
-        named name: String,
+        matchingAny names: [String],
         characterId: UUID
     ) -> ValueEntryModel?
     @MainActor func gameEntry(
         characterId: UUID,
         entryId: UUID
     ) -> ValueEntryModel?
+    /// Walks `entryId`'s containing item up through its `groupId` chain to
+    /// the owning root Character, recording the entry index needed at each
+    /// level. `itemId` is whichever item directly contains `entryId` — the
+    /// root Character itself if the entry isn't nested in a group.
+    @MainActor func gameEntryPath(itemId: UUID, entryId: UUID) -> GameEntryPath?
+    /// Replays a `GameEntryPath` against `characterId`, bounds-checking each
+    /// index while descending, then verifying the resolved entry's name
+    /// matches as a final guard against structural drift between the two
+    /// Characters.
+    @MainActor func gameEntry(matching path: GameEntryPath, characterId: UUID) -> ValueEntryModel?
     @MainActor func gameEntryDisplayValue(
         characterId: UUID,
         entryId: UUID
@@ -189,23 +220,126 @@ extension GameController: ValueGameStorable {
 
     @MainActor
     public func gameEntry(
-        named name: String,
+        matchingAny names: [String],
         characterId: UUID
     ) -> ValueEntryModel? {
-        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedName.isEmpty else { return nil }
-        return gameItem(for: characterId).entries.first {
-            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                .localizedCaseInsensitiveCompare(normalizedName) == .orderedSame
-        }
+        gameEntry(matchingAny: names, characterId: characterId, depth: 0)
     }
 
+    @MainActor
+    private func gameEntry(
+        matchingAny names: [String],
+        characterId: UUID,
+        depth: Int
+    ) -> ValueEntryModel? {
+        guard depth < 10 else { return nil }
+        let normalizedNames = names
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !normalizedNames.isEmpty else { return nil }
+
+        let item = gameItem(for: characterId)
+        if let direct = item.entries.first(where: { entry in
+            let entryName = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return normalizedNames.contains {
+                entryName.localizedCaseInsensitiveCompare($0) == .orderedSame
+            }
+        }) {
+            return direct
+        }
+        if let linked = item.entries.first(where: { entry in
+            entry.links(for: entry.value).contains { link in
+                let linkName = link.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                return normalizedNames.contains {
+                    linkName.localizedCaseInsensitiveCompare($0) == .orderedSame
+                }
+            }
+        }) {
+            return linked
+        }
+        for entry in item.entries {
+            guard let valueId = entry.valueId,
+                  let found = gameEntry(matchingAny: names, characterId: valueId, depth: depth + 1) else {
+                continue
+            }
+            return found
+        }
+        return nil
+    }
+
+    /// Searches `characterId`'s own entries first, then descends into any
+    /// nested value "group" tables (linked via `valueId`) — HP and other
+    /// tracked values are frequently grouped, not top-level.
     @MainActor
     public func gameEntry(
         characterId: UUID,
         entryId: UUID
     ) -> ValueEntryModel? {
-        gameItem(for: characterId).entries.first { $0.id == entryId }
+        gameEntry(characterId: characterId, entryId: entryId, depth: 0)
+    }
+
+    @MainActor
+    private func gameEntry(characterId: UUID, entryId: UUID, depth: Int) -> ValueEntryModel? {
+        guard depth < 10 else { return nil }
+        let item = gameItem(for: characterId)
+        if let direct = item.entries.first(where: { $0.id == entryId }) {
+            return direct
+        }
+        for entry in item.entries {
+            guard let valueId = entry.valueId,
+                  let found = gameEntry(characterId: valueId, entryId: entryId, depth: depth + 1) else {
+                continue
+            }
+            return found
+        }
+        return nil
+    }
+
+    @MainActor
+    public func gameEntryPath(itemId: UUID, entryId: UUID) -> GameEntryPath? {
+        var currentItem = gameItem(for: itemId)
+        var currentItemId = itemId
+        guard let leafIndex = currentItem.entries.firstIndex(where: { $0.id == entryId }) else {
+            return nil
+        }
+        let name = currentItem.entries[leafIndex].name
+        var indices = [leafIndex]
+
+        while let ownerId = currentItem.groupId {
+            let owner = gameItem(for: ownerId)
+            guard let linkIndex = owner.entries.firstIndex(where: { $0.valueId == currentItemId }) else {
+                return nil
+            }
+            indices.append(linkIndex)
+            currentItem = owner
+            currentItemId = ownerId
+        }
+
+        return GameEntryPath(indices: Array(indices.reversed()), rootCharacterId: currentItemId, name: name)
+    }
+
+    @MainActor
+    public func gameEntry(matching path: GameEntryPath, characterId: UUID) -> ValueEntryModel? {
+        guard !path.indices.isEmpty else { return nil }
+        var currentItem = gameItem(for: characterId)
+        var candidate: ValueEntryModel?
+        for (offset, index) in path.indices.enumerated() {
+            guard currentItem.entries.indices.contains(index) else { return nil }
+            let entry = currentItem.entries[index]
+            candidate = entry
+            if offset < path.indices.count - 1 {
+                guard let valueId = entry.valueId else { return nil }
+                currentItem = gameItem(for: valueId)
+            }
+        }
+        guard let candidate,
+              candidate.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                  .localizedCaseInsensitiveCompare(
+                      path.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                  ) == .orderedSame else {
+            return nil
+        }
+        return candidate
     }
 
     @MainActor
@@ -216,11 +350,7 @@ extension GameController: ValueGameStorable {
         guard let entry = gameEntry(characterId: characterId, entryId: entryId) else {
             return nil
         }
-        if entry.canCalculate {
-            let expression = entry.value.replacing("|", with: "+")
-            return entry.calculate(on: expression)
-        }
-        return entry.value
+        return root.linkController.calculate(entry: entry) ?? entry.value
     }
 
     @MainActor

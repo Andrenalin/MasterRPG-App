@@ -16,30 +16,6 @@ struct ContentFormattingDefinition: AttributedTextFormattingDefinition {
     }
 }
 
-struct NormalizeFonts: AttributedTextValueConstraint {
-    typealias Scope = ContentFormattingDefinition.Scope
-    typealias AttributeKey = AttributeScopes.SwiftUIAttributes.FontAttribute
-
-    func constrain(_ container: inout Attributes) {
-        guard container.paragraphFormat != .section else {
-            container.font = .title
-            return
-        }
-
-        guard let font = container.font, font != .default.bold() else { return }
-
-        // Resolve the font in the default environment, because how the original font
-        // looks in the editor is less important than how it looks in a generic context.
-        let resolved = font.resolve(in: EnvironmentValues().fontResolutionContext)
-
-        if resolved.isBold || resolved.isItalic {
-            container.font = .default.bold()
-        } else {
-            container.font = nil
-        }
-    }
-}
-
 struct LinksHaveThemeForeground: AttributedTextValueConstraint {
     typealias Scope = ContentFormattingDefinition.Scope
     typealias AttributeKey = AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute

@@ -170,16 +170,24 @@ extension SheetController: SheetControllable {
         guard let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) else {
             return sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor)
         }
-        
-        let (name, description) = entryNameDescription(entry: entry, root: root)
-        unequalSet(lhs: &existingSheetModel.name, rhs: name) { changed in
+
+        // Re-project the entry from scratch so a newly attached/removed sub-value or link
+        // (e.g. converting the entry to a group) is reflected in sheetType and entries,
+        // not just in name/description.
+        let projectedEntry = sheet(entry: entry, root: root, itemId: item.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor)
+
+        unequalSet(lhs: &existingSheetModel.name, rhs: projectedEntry.name) { changed in
             existingSheetModel.hasChanged = changed
         }
-        unequalSet(lhs: &existingSheetModel.description, rhs: description) { changed in
+        unequalSet(lhs: &existingSheetModel.description, rhs: projectedEntry.description) { changed in
             existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
         }
         unequalSet(lhs: &existingSheetModel.editType, rhs: entry.editType) { changed in
             existingSheetModel.hasChanged = existingSheetModel.hasChanged || changed
+        }
+        if existingSheetModel.sheetType != projectedEntry.sheetType {
+            existingSheetModel.sheetType = projectedEntry.sheetType
+            existingSheetModel.hasChanged = true
         }
         // Update per-entry dice inline
         if let diceId = entry.diceId {
@@ -191,9 +199,27 @@ extension SheetController: SheetControllable {
         } else {
             existingSheetModel.inlineEntries = []
         }
-        existingSheetModel.entries.forEach { subSheetModel in
-            root.rootModel(for: subSheetModel.source.typeId)?.sheetControllable.update(root: root, sheetModel: subSheetModel, isEditor: isEditor)
+
+        var unmatchedExisting = existingSheetModel.entries
+        let reconciledEntries = projectedEntry.entries.map { projectedChild -> SheetModel in
+            guard let existingIndex = unmatchedExisting.firstIndex(where: {
+                $0.source == projectedChild.source && $0.linkNumber == projectedChild.linkNumber
+            }) else {
+                existingSheetModel.hasChanged = true
+                return projectedChild
+            }
+
+            let existingChild = unmatchedExisting.remove(at: existingIndex)
+            existingChild.destination = projectedChild.destination
+            existingChild.linkNumber = projectedChild.linkNumber
+            root.rootModel(for: existingChild.source.typeId)?.sheetControllable.update(root: root, sheetModel: existingChild, isEditor: isEditor)
+            return existingChild
         }
+        if !unmatchedExisting.isEmpty {
+            existingSheetModel.hasChanged = true
+        }
+        existingSheetModel.entries = reconciledEntries
+
         return existingSheetModel
     }
 }

@@ -11,6 +11,7 @@ struct PortalGateStartGameView: View {
     let openSupporter: @MainActor () -> Void
 
     @Environment(\.appTheme) private var theme
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     var body: some View {
         ScrollView {
@@ -34,37 +35,20 @@ struct PortalGateStartGameView: View {
                 Text("How will you enter tonight’s story?", bundle: .module)
                     .foregroundStyle(.secondary)
 
-#if os(tvOS)
-            Button {
-                Task {
-                    await root.startDemo(supporterTier: .gold)
-                }
-            } label: {
-                Label {
-                    Text("Demo", bundle: .module)
-                } icon: {
-                    Image(systemName: "play.rectangle")
-                }
-            }
-#else
-
+#if !os(tvOS)
                 GameSetupRoleCards(selection: $role)
 #endif
 
                 GameSetupRoleContent(root: root, selection: role)
                 
-                //SupporterWelcomeCard(openSupporter: openSupporter)
-
-                HStack {
-                    GameSetupStatisticsCard(
-                        sessionCount: root.statisticsModel.summary.sessionCount,
-                        openStatistics: openStatistics
-                    )
-#if !os(tvOS)
-                    GameSetupTipCard()
-#endif
+                if appSizeModel.mode == .compact {
+                    afterContent
+                } else {
+                    HStack {
+                        afterContent
+                    }
                 }
-                
+                                
                 SupporterWelcomeCard(openSupporter: openSupporter)
             }
             .frame(maxWidth: 1100)
@@ -73,6 +57,17 @@ struct PortalGateStartGameView: View {
         }
         .background { GameSetupBackdrop() }
         .moduleTint(.game)
+    }
+    
+    
+    @ViewBuilder private var afterContent: some View {
+        GameSetupStatisticsCard(
+            sessionCount: root.statisticsModel.summary.sessionCount,
+            openStatistics: openStatistics
+        )
+#if !os(tvOS)
+        GameSetupTipCard()
+#endif
     }
 }
 

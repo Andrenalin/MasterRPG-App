@@ -11,7 +11,6 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
     let headerModel: HeaderScrollModel
     let folderListController: FolderListControllable
     @Binding var editingItem: EditingItem?
-    let editSheetNamespace: Namespace.ID
 
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
@@ -36,10 +35,13 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                     subFolderDetail
                 }
         }
-        .allowsHitTesting(!isEntryEditorPresented)
-        .accessibilityHidden(isEntryEditorPresented)
+        .allowsHitTesting(!isEntryEditorPresented && editingItem == nil)
+        .accessibilityHidden(isEntryEditorPresented || editingItem != nil)
         .overlay(alignment: .center) {
             entryEditor
+        }
+        .overlay(alignment: .center) {
+            itemHeaderEditor
         }
         .animation(accessibilityReduceMotion ? nil : .easeInOut, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -55,7 +57,6 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                     root: root,
                     model: model,
                     shouldShowContent: shouldShowContent,
-                    editSheetNamespace: editSheetNamespace,
                     onEdit: { openEditingSheet() }
                 )
             }
@@ -129,7 +130,33 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
             )
         }
     }
-    
+
+    @ViewBuilder
+    private var itemHeaderEditor: some View {
+        if let editingItem {
+            ItemHeaderEditorView(
+                editControllable: root.editControllable,
+                model: editingItem.model,
+                module: root.configurable.module,
+                dismiss: { self.editingItem = nil }
+            )
+            .id(editingItem.id)
+            .transition(itemHeaderEditorTransition)
+            .animation(accessibilityReduceMotion ? nil : .bouncy, value: editingItem.id)
+        }
+    }
+
+    // AppKit doesn't reliably redraw the NSTextView backing a TextEditor when it's caught in
+    // a SwiftUI scale-transform transition on macOS: the text can stay blank or mis-sized until
+    // something else (e.g. a window resize) forces a relayout. A plain fade avoids the transform.
+    private var itemHeaderEditorTransition: AnyTransition {
+#if os(macOS)
+        .opacity
+#else
+        .scale
+#endif
+    }
+
     private var fileTypes: [UTType] {
         root.editControllable.fileUrlDataController?.fileTypes ?? []
     }
@@ -182,7 +209,6 @@ private extension View {
 }
 
 #Preview("Item Detail Content Direct") {
-    @Previewable @Namespace var namespace
     let fixture = FakeItemRootControllerFixture()
     ItemDetailContentView<Text, EmptyLinkTransferable>(
         root: fixture.root,
@@ -191,7 +217,6 @@ private extension View {
         editor: Text(verbatim: "Editor content"),
         headerModel: HeaderScrollModel(),
         folderListController: fixture.folderListController,
-        editingItem: .constant(nil),
-        editSheetNamespace: namespace
+        editingItem: .constant(nil)
     )
 }

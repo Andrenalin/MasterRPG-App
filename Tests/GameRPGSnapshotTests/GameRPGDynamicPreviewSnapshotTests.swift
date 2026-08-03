@@ -42,19 +42,6 @@ struct GameRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::GameOptionView
-    @Test("GameOptionView")
-    func gameOptionView() async throws {
-        let root = GameRoot.previewFixture()
-
-        try await assertDynamicSnapshot("GameOptionView", root: root) {
-            ManagedNavigationStack {
-                GameOptionView(root: root)
-            }
-            .environment(root.characterRoot.rootController)
-        }
-    }
-
     // snapshot-root: GameRPG::GameStatisticsFilterView
     @Test("GameStatisticsFilterView")
     func gameStatisticsFilterView() async throws {

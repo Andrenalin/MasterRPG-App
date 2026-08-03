@@ -224,6 +224,18 @@ final class MasterControllerModel: Sendable {
         )
     }
 
+    /// Lifts a prior retirement for exactly the physical ID GroupSession just
+    /// reported as newly active. SharePlay can reissue a departed
+    /// participant's UUID to the same device on rejoin (unlike Bonjour/proxy
+    /// connection IDs, which are always freshly minted); without this, a
+    /// crash-and-relaunch permanently locks that player out because
+    /// `retiredConnectionIDs` never otherwise forgets an ID. Only an
+    /// OS-confirmed `activeParticipants` addition may call this — never a
+    /// claim carried inside message content.
+    func reinstateConnection(_ connectionId: ConnectionController.ID) {
+        retiredConnectionIDs.remove(connectionId)
+    }
+
     func remove(connectionId: ConnectionController.ID) -> UUID? {
         retiredConnectionIDs.insert(connectionId)
         connectionRoles[connectionId] = nil
@@ -934,6 +946,14 @@ extension MasterController: MasterNetworkStoreDelegate {
 
     func ready(for origin: GameMessageOrigin) async {
         Logger.networking.debug("MasterController: Participant ready")
+        if let participantId = origin.sharePlayParticipantId {
+            // GroupSession can reissue this participant's UUID to the same
+            // device after a crash/relaunch rejoin. Trust only this
+            // OS-confirmed join to clear an earlier retirement so the
+            // reconnected player's messages bind again instead of being
+            // rejected forever.
+            await gameModel.reinstateConnection(participantId)
+        }
         await replayCurrentPresentation(to: origin)
     }
     

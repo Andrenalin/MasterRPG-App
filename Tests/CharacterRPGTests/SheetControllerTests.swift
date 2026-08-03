@@ -1,11 +1,11 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
-import CoreRPG
 import Foundation
 import RPGResourcesDebug
 import Testing
 
+@testable import CoreRPG
 @testable import CharacterRPG
 
 @MainActor
@@ -307,6 +307,126 @@ struct SheetControllerTests {
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.name == "Updated Value")
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.description == "Updated text")
         #expect(sheetModel.entries.first { $0.source.entryId == keptEntry.id }?.inlineEntries.map(\.source.itemId) == [updatedDiceId])
+    }
+
+    @Test func characterUpdateRefreshesEntryConvertedToGroup() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let itemId = UUID()
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "A collection of skills.")
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+
+        root.itemController.replace(
+            model: ValueModel(id: itemId, name: "Character", description: "", category: .character, entries: [entry]),
+            isInsert: true
+        )
+
+        let sheetModel = sut.sheet(root: rootManager, itemId: itemId, destination: nil, level: 0, isShown: true, isEditor: false)
+        let entrySheet = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(entrySheet.sheetType == .item)
+
+        let groupId = await root.editController.convertToGroup(itemId: itemId, entryId: entry.id, existingItemId: nil)
+
+        sut.update(root: rootManager, sheetModel: sheetModel, isEditor: false)
+
+        let updatedEntrySheet = try #require(sheetModel.entries.first(where: { $0.source.entryId == entry.id }))
+        #expect(updatedEntrySheet.sheetType == .group, "Converting an entry to a group must refresh its sheetType")
+        #expect(updatedEntrySheet.entries.contains(where: { $0.source.itemId == groupId }), "Converting an entry to a group must surface the new group's nested sheet")
+    }
+
+    @Test func convertToGroupResetsCachedLinkHighlightTextModel() async throws {
+        let root = try await MockRoot.importTestData()
+        let itemId = UUID()
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "A collection of skills.")
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+
+        root.itemController.replace(
+            model: ValueModel(id: itemId, name: "Character", description: "", category: .character, entries: [entry]),
+            isInsert: true
+        )
+
+        let sheetController = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sheetRootModel = SheetRootModel(rootManager: rootManager, linkControllable: root.linkController, sheetControllable: sheetController, itemId: itemId, isEditor: false)
+
+        // Simulate the row already having been rendered (and its name text cached) before conversion.
+        let nameModel = sheetRootModel.linkTextModel(for: .entry(entry.id), text: "Skills")
+        #expect(nameModel.text == "Skills")
+
+        let groupId = await sheetRootModel.convertEntryToGroup(
+            source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: .value),
+            existingItemId: nil
+        )
+        #expect(groupId != nil)
+
+        // The cached model must pick up the new link text on its own, without requiring the
+        // owning view to be torn down and rebuilt.
+        #expect(nameModel.text != "Skills", "Cached LinkHighlightTextModel must be reset after converting an entry to a group")
+        #expect(nameModel.text.contains("\(URL.appScheme)://"), "Cached LinkHighlightTextModel must reflect the entry's new link text")
+    }
+
+    @Test func convertToGroupRefreshesFolderList() async throws {
+        let root = try await MockRoot.importTestData()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Character", itemId: itemId)
+        let entry = ValueEntryModel(id: UUID(), name: "Skills", type: .text, value: "A collection of skills.")
+        root.editController.add(entry: entry, itemId: itemId)
+
+        let existingItemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Inventory", itemId: existingItemId)
+
+        await root.folderListController.performSearch(source: "test")
+        #expect(root.folderListController.listModel.list.contains(where: { $0.source.itemId == existingItemId }), "Precondition: the reused item starts out visible in the root list")
+
+        let rootManager = RootManager(
+            adventureRoot: root,
+            audioRoot: root,
+            characterRoot: root,
+            diceRoot: root.diceRoot,
+            generatorRoot: root,
+            mapRoot: root,
+            pdfRoot: root.pdfRoot,
+            photoRoot: root.photoRoot,
+            spaceRoot: root,
+            tableRoot: root.tableRoot,
+            weatherRoot: root
+        )
+        let sheetController = SheetController(itemController: root.itemController, linkController: root.linkController)
+        let sheetRootModel = SheetRootModel(rootManager: rootManager, linkControllable: root.linkController, sheetControllable: sheetController, itemId: itemId, isEditor: false)
+
+        _ = await sheetRootModel.convertEntryToGroup(
+            source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: .value),
+            existingItemId: existingItemId
+        )
+
+        // `FolderListControllable.update(debounce:)` refreshes via a detached Task; give it a
+        // moment to complete (same pattern used elsewhere in SheetRootModel for post-move resync).
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(!root.folderListController.listModel.list.contains(where: { $0.source.itemId == existingItemId }), "Converting an entry to a group must refresh the item list so the now-hidden item disappears")
     }
 
     @Test func characterUpdateLeavesFoldedEntriesCollapsed() async throws {

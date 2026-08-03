@@ -165,7 +165,7 @@ private extension ListRootContextMenu {
             withAnimation { listController?.closeParentFolder(of: currentSelected ?? UUID()) }
         } label: {
             Label {
-                Text("Close Parent Folder", bundle: .module)
+                Text("Close parent folder", bundle: .module)
             } icon: {
                 Image(systemName: "chevron.up")
             }
@@ -233,7 +233,7 @@ private extension ListRootContextMenu {
             navigator.navigate(to: route, method: .sheet)
         } label: {
             Label {
-                Text("Group Editor for \(title)", bundle: .module)
+                Text("Group editor for \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "long.text.page.and.pencil")
             }
@@ -250,7 +250,7 @@ private extension ListRootContextMenu {
             navigator.navigate(to: InternalRoute.batchExtraction(ids: ids), method: .sheet)
         } label: {
             Label {
-                Text("Extract Information for \(title)", bundle: .module)
+                Text("Extract information for \(title)", bundle: .module)
             } icon: {
                 Image(systemName: "sparkles")
             }

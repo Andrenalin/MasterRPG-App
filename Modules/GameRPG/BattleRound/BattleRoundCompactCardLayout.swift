@@ -9,6 +9,7 @@ struct BattleRoundCompactCardLayout: View {
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -25,7 +26,8 @@ struct BattleRoundCompactCardLayout: View {
                     tint: presentation.isActive ? .blue : .gray,
                     controller: controller,
                     showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints
+                    selectHitPoints: selectHitPoints,
+                    selectInitiative: selectInitiative
                 )
                 BattleAttackerDetails(
                     combatant: presentation.attacker.combatant,
@@ -48,7 +50,8 @@ struct BattleRoundCompactCardLayout: View {
                     isActiveEntry: presentation.isActive,
                     controller: controller,
                     showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints
+                    selectHitPoints: selectHitPoints,
+                    selectInitiative: selectInitiative
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -66,7 +69,8 @@ struct BattleRoundCompactCardLayout: View {
             presentation: card,
             controller: controller,
             showCharacter: { _ in },
-            selectHitPoints: { _ in }
+            selectHitPoints: { _ in },
+            selectInitiative: { _ in }
         )
         .frame(width: 340)
         .padding()

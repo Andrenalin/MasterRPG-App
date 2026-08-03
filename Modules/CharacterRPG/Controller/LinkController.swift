@@ -226,7 +226,14 @@ extension LinkController {
             result = result.replacingOccurrences(of: linkTable.url(linkNumber: link.linkNumber, entryId: entryId), with: "\(linkValue)")
         }
         
-        guard valid else { return result }
+        guard valid else {
+            // A link outside the `.value` module (e.g. a Table roll kept for
+            // provenance) can't be re-evaluated here, but the entry still
+            // carries its last rolled result after the "|" separator — the
+            // same cached-value convention `valueCalculated` reads.
+            let cached = entry.valueCalculated
+            return cached == "0" ? result : cached
+        }
         result = result.replacingOccurrences(of: "|", with: "+")
         return entry.calculate(on: result)
     }

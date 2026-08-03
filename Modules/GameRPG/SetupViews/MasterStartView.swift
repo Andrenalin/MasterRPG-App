@@ -2,7 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import AdventureRPG
 import TipKit
 
 struct MasterStartView: View {
@@ -27,9 +26,15 @@ struct MasterStartView: View {
                     await startGame()
                 }
             } label: {
-                Text(title(), bundle: .module)
-                    .padding(8)
+                Label {
+                    Text(title(), bundle: .module)
+                } icon: {
+                    Image(systemName: "play.square.stack")
+                        .imageScale(.large)
+                }
+                .padding()
             }
+            .borderLessTVBottonStyle()
             .overlay {
                 overlayAnimation
             }
@@ -43,19 +48,6 @@ struct MasterStartView: View {
             .popoverTip(
                 navigator.isPresenting ? nil : MasterRPGTips.startOrJoinGame
             )
-            
-#if !os(tvOS)
-            SharePlayButton("Play RPG Online", activity: RPGActivity())
-                .opacity(startSharePlayAnimation ? 0 : 1)
-                .allowsHitTesting(!startSharePlayAnimation)
-                .accessibilityHidden(startSharePlayAnimation)
-#endif
-            
-            Button {
-                navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
-            } label: {
-                Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
-            }
         }
     }
     
@@ -70,9 +62,9 @@ struct MasterStartView: View {
     @MainActor
     func title() -> LocalizedStringKey {
         if sharePlayStore.canActivateSharePlay {
-            return "Share"
+            return "Host Game"
         } else {
-            return "Start"
+            return "Start Game"
         }
     }
     

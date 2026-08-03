@@ -27,14 +27,14 @@ actor MasterNetworkControllerDelegateBox {
 
 final class MasterNetworkController: Sendable {
     private let delegate: MasterNetworkControllerDelegateBox
-    let listnerBuilder: @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging
+    let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkNodel
     @MainActor private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
 
-    static func gameListnerBuilder() -> @MainActor @Sendable (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging {
-        return { name, proxy, delegate in
-            let manager = ListenerManager(name: name, serviceType: proxy ? .proxyServer : .player)
+    static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, any ListenerManagerDelegate) -> any ListenerManaging {
+        return { name, supporterTier, proxy, delegate in
+            let manager = ListenerManager(name: name, supporterTier: supporterTier, serviceType: proxy ? .proxyServer : .player)
             manager.delegate = delegate
             return manager
         }
@@ -50,7 +50,7 @@ final class MasterNetworkController: Sendable {
     init(
         name: String,
         delegate: MasterNetworkControllerDelegate? = nil,
-        listnerBuilder: @MainActor @Sendable @escaping (String, Bool, any ListenerManagerDelegate) -> any ListenerManaging,
+        listnerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, any ListenerManagerDelegate) -> any ListenerManaging,
         browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
     ) {
         self.networkModel = MasterNetworkNodel(name: name)
@@ -75,7 +75,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         resetConntections()
         networkModel.isStreaming = true
 
-        networkModel.listener = listnerBuilder(networkModel.name, false, self)
+        networkModel.listener = listnerBuilder(networkModel.name, networkModel.supporterTier, false, self)
         networkModel.listener?.startListening()
 
         networkModel.browserManager = BrowserManager(serviceType: .master)
@@ -90,7 +90,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         resetConntections()
         networkModel.isStreaming = true
 
-        networkModel.listener = listnerBuilder(networkModel.name, true, self)
+        networkModel.listener = listnerBuilder(networkModel.name, networkModel.supporterTier, true, self)
         networkModel.listener?.startListening()
 
         networkModel.browserManager = BrowserManager(serviceType: .proxyClient)

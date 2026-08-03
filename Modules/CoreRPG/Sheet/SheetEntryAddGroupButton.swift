@@ -22,7 +22,7 @@ struct SheetEntryAddGroupButton: View {
                 Image(systemName: "plus.square.fill.on.square.fill")
             } else {
                 Label {
-                    Text("New Group in \(parentModel.name.withoutLink())", bundle: .module)
+                    Text("New group in \(parentModel.name.withoutLink())", bundle: .module)
                 } icon: {
                     Image(systemName: "plus.square.fill.on.square.fill")
                 }

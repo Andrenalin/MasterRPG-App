@@ -136,6 +136,36 @@ extension EditController {
         return entry.id
     }
 
+    @MainActor func canBecomeGroup(itemId: UUID) -> Bool {
+        guard let item = itemControllable.itemSync(for: itemId) as? AdventureModel else { return false }
+        return item.groupId == nil
+    }
+
+    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
+        guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return UUID() }
+
+        let groupId: UUID        
+        if let existingItemId, let existingGroup = editModel(for: existingItemId) {
+            groupId = existingItemId
+            existingGroup.groupId = itemId
+            existingGroup.isGroupHiddenToggle = true
+            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module).localizedString)
+            item.entries[index].name = existingGroup.name
+            item.entries[index].content = existingGroup.description
+        } else {
+            groupId = await itemController.addNew(type: .item)
+            reset(hidden: true, itemId: groupId)
+            guard let group = editModel(for: groupId) else { return groupId }
+            group.name = item.entries[index].name.withoutLink()
+            group.description = item.entries[index].content
+            group.groupId = itemId
+            save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+        }
+        item.entries[index].adventureId = groupId
+        save(updated: item, message: String(localized: "Convert to group", bundle: .module).localizedString)
+        return groupId
+    }
+
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {
         guard let item = itemControllable.itemSync(for: itemId) as? Model else { return [] }
         return item.entries.compactMap {
