@@ -289,9 +289,16 @@ private extension ImportControllable {
 
         // A saved-game load never touches the permanent library — write straight into this
         // module's game memory regardless of merge/overwrite mode or isGameMode.
+        // `replaceForGame(policy: .memoryOnly)` only fills the game-shadow dictionary
+        // (`gameItemData`); nothing considers the item "in the running game" — `gameItems`
+        // stays the authority for that (see `ItemGameModel.currentItemId`/`.items`) — until it's
+        // in that id list too, so add it there ourselves.
         guard !gameMemoryOnly else {
             await MainActor.run {
                 itemController.replaceForGame(model: importableItem, isInsert: true, policy: .memoryOnly)
+                if !itemController.itemDataModel.gameItems.contains(id) {
+                    itemController.itemDataModel.gameItems.insert(id, at: 0)
+                }
                 importModel.importedItems += 1
             }
             try Task.checkCancellation()

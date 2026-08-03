@@ -75,6 +75,10 @@ struct SavedGameRoundTripTests {
         #expect(root.mapRoot.itemController.itemDataModel.items.isEmpty)
         #expect(root.mapRoot.itemController.itemDataModel.itemData.isEmpty)
 
+        // ...the map is now the running game's active item...
+        #expect(root.mapRoot.gameController.gameModel.items.contains(mapId))
+        #expect(root.mapRoot.gameController.gameModel.currentItemId == mapId)
+
         // ...and the map's in-memory game item carries the saved pins.
         let restoredMap = root.mapRoot.gameController.gameItem(for: mapId)
         let restoredPin = try #require(restoredMap.mapPins.first)
