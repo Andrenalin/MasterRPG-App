@@ -192,6 +192,7 @@ extension AdventureModel: nonisolated ItemDiffComparable {
             tags == other.tags &&
             category == other.category &&
             photoId == other.photoId &&
+            diceId == other.diceId &&
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
             groupId == other.groupId &&
