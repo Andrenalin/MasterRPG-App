@@ -20,9 +20,33 @@ struct BattleParticipantColumn: View {
     private var root: MapRootModel { controller.root.mapRoot }
 
     var body: some View {
-        VStack(spacing: 4) {
-            Button(action: openCharacter) {
-                ZStack {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 2) {
+                Button(
+                    combatant.isDead ? "Mark Alive" : "Mark Dead",
+                    systemImage: combatant.isDead ? "heart.fill" : "figure.fall",
+                    action: toggleDead
+                )
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(combatant.isDead ? .green : .red)
+                .help(
+                    Text(
+                        combatant.isDead ? "Mark Alive" : "Mark Dead",
+                        bundle: .module
+                    )
+                )
+                
+                //if !isAttacker {
+                    Text(combatant.name)
+                        .font(.caption2)
+                        .lineLimit(1)
+                        .frame(maxWidth: 90)
+                //}
+            }
+            
+            HStack(alignment: .center, spacing: 8) {
+                Button(action: openCharacter) {
                     controller.root.photoRoot.viewController.mapImage(
                         root: controller.root.photoRoot,
                         for: combatant.photoId,
@@ -31,127 +55,113 @@ struct BattleParticipantColumn: View {
                     )
                     .frame(width: 48, height: 48)
                     .clipShape(.circle)
-
-                    if combatant.isDead {
-                        Circle()
-                            .fill(.black.opacity(0.54))
-                        Image(systemName: "xmark")
-                            .font(.title2.bold())
-                            .foregroundStyle(.white)
-                    } else if !hasCharacter {
-                        Image(systemName: "person.badge.plus")
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, combatant.color)
-                            .padding(3)
-                            .background(.black.opacity(0.55), in: .circle)
-                            .frame(
-                                maxWidth: .infinity,
-                                maxHeight: .infinity,
-                                alignment: .bottomTrailing
-                            )
+                    .overlay {
+                        if combatant.isDead {
+                            Circle()
+                                .fill(.black.opacity(0.54))
+                            Image(systemName: "xmark")
+                                .font(.title2.bold())
+                                .foregroundStyle(.white)
+                        } else if !hasCharacter {
+                            Image(systemName: "person.badge.plus")
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, combatant.color)
+                                .padding(3)
+                                .background(.black.opacity(0.55), in: .circle)
+//                                .frame(
+//                                    maxWidth: .infinity,
+//                                    maxHeight: .infinity,
+//                                    alignment: .bottomTrailing
+//                                )
+                        }
                     }
+                    .overlay {
+                        Circle()
+                            .strokeBorder(haloColor, lineWidth: haloWidth)
+                    }
+                    .shadow(
+                        color: isActive ? tint.opacity(0.5) : .black.opacity(0.2),
+                        radius: isActive ? 6 : 2,
+                        y: 2
+                    )
                 }
-                .overlay {
-                    Circle()
-                        .strokeBorder(haloColor, lineWidth: haloWidth)
-                }
-                .shadow(
-                    color: isActive ? tint.opacity(0.5) : .black.opacity(0.2),
-                    radius: isActive ? 6 : 2,
-                    y: 2
+                .buttonStyle(.plain)
+                .help(
+                    Text(
+                        hasCharacter ? "Open character sheet" : "Choose a Character",
+                        bundle: .module
+                    )
                 )
-            }
-            .buttonStyle(.plain)
-            .help(
-                Text(
-                    hasCharacter ? "Open character sheet" : "Choose a Character",
-                    bundle: .module
-                )
-            )
-            .accessibilityLabel(
-                hasCharacter
+                .accessibilityLabel(
+                    hasCharacter
                     ? Text("Open character sheet for \(combatant.name)", bundle: .module)
                     : Text("Choose a Character for \(combatant.name)", bundle: .module)
-            )
-#if os(iOS) || os(macOS) || os(visionOS)
-            .battleLinkCharacterDropDestination { characters, _ in
-                guard let character = characters.first else { return false }
-                controller.assignCharacter(combatant.id, character.itemId)
-                return true
-            }
-#endif
-
-            Button(
-                combatant.isDead ? "Mark Alive" : "Mark Dead",
-                systemImage: combatant.isDead ? "heart.fill" : "skull.fill",
-                action: toggleDead
-            )
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-            .foregroundStyle(combatant.isDead ? .green : .red)
-            .help(
-                Text(
-                    combatant.isDead ? "Mark Alive" : "Mark Dead",
-                    bundle: .module
                 )
-            )
-
-            Button(action: selectInitiativeEntry) {
-                HStack(spacing: 2) {
-                    Text("Ini", bundle: .module)
-                    Text(verbatim: initiativeValue ?? "")
-                        .monospacedDigit()
-                }
-                .font(.caption2)
-                .frame(minWidth: 48, minHeight: 20)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
-            .help(Text("Choose the Initiative value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
-            .battleLinkCharacterDropDestination { values, _ in
-                guard let value = values.first, let entryId = value.entryId else {
-                    return false
+                .battleLinkCharacterDropDestination { characters, _ in
+                    guard let character = characters.first else { return false }
+                    controller.assignCharacter(combatant.id, character.itemId)
+                    return true
                 }
-                return controller.assignValueEntry(
-                    combatantId: combatant.id,
-                    sourceCharacterId: value.itemId,
-                    sourceEntryId: entryId,
-                    kind: .initiative
-                )
-            }
 #endif
-
-            Button(action: selectHitPointsEntry) {
-                HStack(spacing: 2) {
-                    Text("HP", bundle: .module)
-                    Text(verbatim: hitPointsValue ?? "")
-                        .monospacedDigit()
-                }
-                .font(.caption2)
-                .frame(minWidth: 48, minHeight: 20)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(hitPointsValue == nil ? .tertiary : .primary)
-            .help(Text("Choose the Hit Points value", bundle: .module))
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Button(action: selectInitiativeEntry) {
+                        HStack(spacing: 2) {
+                            Text("Ini:", bundle: .module)
+                            Text(verbatim: initiativeValue ?? "")
+                                .monospacedDigit()
+                        }
+                        .font(.caption2)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
+                    .help(Text("Choose the Initiative value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
-            .battleLinkCharacterDropDestination { values, _ in
-                guard let value = values.first, let entryId = value.entryId else {
-                    return false
-                }
-                // `assignValueEntry` resolves `value.itemId` up through any
-                // value-group ownership chain and rejects it unless that
-                // resolves to this combatant's own source Character.
-                return controller.assignValueEntry(
-                    combatantId: combatant.id,
-                    sourceCharacterId: value.itemId,
-                    sourceEntryId: entryId,
-                    kind: .hitPoints
-                )
-            }
+                    .battleLinkCharacterDropDestination { values, _ in
+                        guard let value = values.first, let entryId = value.entryId else {
+                            return false
+                        }
+                        return controller.assignValueEntry(
+                            combatantId: combatant.id,
+                            sourceCharacterId: value.itemId,
+                            sourceEntryId: entryId,
+                            kind: .initiative
+                        )
+                    }
 #endif
+                    
+                    Button(action: selectHitPointsEntry) {
+                        HStack(spacing: 2) {
+                            Text("HP:", bundle: .module)
+                            Text(verbatim: hitPointsValue ?? "")
+                                .monospacedDigit()
+                        }
+                        .font(.caption2)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(hitPointsValue == nil ? .tertiary : .primary)
+                    .help(Text("Choose the Hit Points value", bundle: .module))
+#if os(iOS) || os(macOS) || os(visionOS)
+                    .battleLinkCharacterDropDestination { values, _ in
+                        guard let value = values.first, let entryId = value.entryId else {
+                            return false
+                        }
+                        // `assignValueEntry` resolves `value.itemId` up through any
+                        // value-group ownership chain and rejects it unless that
+                        // resolves to this combatant's own source Character.
+                        return controller.assignValueEntry(
+                            combatantId: combatant.id,
+                            sourceCharacterId: value.itemId,
+                            sourceEntryId: entryId,
+                            kind: .hitPoints
+                        )
+                    }
+#endif
+                }
+            }
 
             HStack(spacing: 6) {
                 if presentation.canReceiveRoll {
@@ -177,15 +187,8 @@ struct BattleParticipantColumn: View {
                         )
                     )
                 }
-            }
 
-            BattleRollResults(results: presentation.rolls, tint: tint)
-
-            if !isAttacker {
-                Text(combatant.name)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .frame(maxWidth: 72)
+                BattleRollResults(results: presentation.rolls, tint: tint)
             }
         }
         .opacity(combatant.isDead ? 0.62 : 1)
@@ -244,18 +247,20 @@ struct BattleParticipantColumn: View {
     let controller = BattleRoundController.preview()
     let model = controller.model
 
-    if let participant = model.cardPresentations.first?.defenders.first {
-        BattleParticipantColumn(
-            state: BattleRoundCardState(),
-            presentation: participant,
-            isAttacker: false,
-            isActive: true,
-            tint: .red,
-            controller: controller,
-            showCharacter: { _ in },
-            selectHitPoints: { _ in },
-            selectInitiative: { _ in }
-        )
-        .padding()
+    VStack {
+        if let participant = model.cardPresentations.first?.defenders.first {
+            BattleParticipantColumn(
+                state: BattleRoundCardState(),
+                presentation: participant,
+                isAttacker: false,
+                isActive: true,
+                tint: .red,
+                controller: controller,
+                showCharacter: { _ in },
+                selectHitPoints: { _ in },
+                selectInitiative: { _ in }
+            )
+            .padding()
+        }
     }
 }

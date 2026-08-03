@@ -25,7 +25,7 @@ struct BattleRollResults: View {
                 }
             }
             .scrollIndicators(.hidden)
-            .frame(width: 76)
+            .frame(width: 76, height: 25)
             .accessibilityLabel(Text("Dice results", bundle: .module))
         }
     }

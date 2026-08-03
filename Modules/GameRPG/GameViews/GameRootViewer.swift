@@ -139,6 +139,8 @@ struct GameRootViewer: View {
                     root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
                 case .table:
                     root.tableRoot.viewController.gameViewer(root: root.tableRoot)
+                    .padding(20)
+                    .padding(.top, 32)
                 case .weather:
                     root.weatherRoot.viewController.gameViewer(root: root.weatherRoot)
                 default:

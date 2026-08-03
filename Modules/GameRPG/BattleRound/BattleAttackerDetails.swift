@@ -11,9 +11,9 @@ struct BattleAttackerDetails: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
-                Text(combatant.name)
-                    .font(.headline)
-                    .lineLimit(1)
+//                Text(combatant.name)
+//                    .font(.headline)
+//                    .lineLimit(1)
 
                 if combatant.isPlayer {
                     Image(systemName: "person.fill")
@@ -33,7 +33,7 @@ struct BattleAttackerDetails: View {
             }
 
             Button(
-                isActive ? "Active Attacker" : "Make Active",
+                isActive ? "Attacker" : "Activate",
                 systemImage: "scope",
                 action: activateAttacker
             )

@@ -53,6 +53,7 @@ struct BattleRoundView: View {
                             BattleRoundList(
                                 cards: controller.model.cardPresentations,
                                 controller: controller,
+                                screenModel: screenModel,
                                 showCharacter: { combatant in
                                     screenModel.showCharacterSheet(
                                         combatant,

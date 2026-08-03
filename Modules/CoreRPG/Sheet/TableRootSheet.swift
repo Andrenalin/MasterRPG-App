@@ -39,7 +39,7 @@ public struct TableRootSheet: View {
         
         @Bindable var sheetRootModel = sheetRootModel
 
-        TableSheetView(root: root, model: sheetRootModel, addSearchable: valueFor(iOS: true, macOS: true, tvOS: true, visionOS: true))
+        TableSheetView(root: root, model: sheetRootModel, addSearchable: valueFor(iOS: true, macOS: configuration.addToolbar, tvOS: true, visionOS: true))
 #if os(macOS) || os(visionOS)
             .padding(.top)
 #endif

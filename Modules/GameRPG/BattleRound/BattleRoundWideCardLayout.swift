@@ -33,7 +33,7 @@ struct BattleRoundWideCardLayout: View {
                 isActive: presentation.isActive,
                 controller: controller
             )
-            Spacer(minLength: 8)
+            //Spacer(minLength: 8)
             Image(systemName: "arrow.right")
                 .foregroundStyle(.tertiary)
                 .padding(.top, 20)

@@ -9,6 +9,8 @@ struct BattleRoundList: View {
 
     let cards: [BattleRoundCardPresentation]
     let controller: BattleRoundController
+    let screenModel: BattleRoundScreenModel
+    
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
     let selectInitiative: @MainActor (BattleCombatant) -> Void
@@ -82,12 +84,14 @@ struct BattleRoundList: View {
 #Preview("Turn order", traits: .mockData) {
     let controller = BattleRoundController.preview()
     let model = controller.model
+    let screenModel = BattleRoundScreenModel(model: controller.model, layout: .wide)
 
     ScrollView {
         LazyVStack(alignment: .leading, spacing: 8) {
             BattleRoundList(
                 cards: model.cardPresentations,
                 controller: controller,
+                screenModel: screenModel,
                 showCharacter: { _ in },
                 selectHitPoints: { _ in },
                 selectInitiative: { _ in }
