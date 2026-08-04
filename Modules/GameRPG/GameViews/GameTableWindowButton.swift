@@ -23,7 +23,15 @@ struct GameTableWindowButton: View {
             }
         }
         .labelStyle(.iconOnly)
-        .selectedBorderedStype(isSelected: isPresented)
+        .imageScale(.large)
+        .padding(8)
+        .contentShape(.circle)
+        .modifier(
+            GameWindowButtonAppearance(
+                module: .map,
+                isWindowPresented: isPresented
+            )
+        )
         .help(Text(actionTitle))
         .accessibilityLabel(Text(actionTitle))
     }

@@ -25,15 +25,26 @@ struct InlineRowViewer: View, Equatable {
                 } icon: {
                     Image(systemName: root.configurable.module.icon)
                 }
-                .labelStyle(.iconOnly)
-                .imageScale(.large)
             }
-            .frame(minWidth: 44, minHeight: 44)
+            .labelStyle(.iconOnly)
+            .imageScale(.large)
+            .padding(8)
+            .contentShape(.circle)
+            .modifier(
+                GameWindowButtonAppearance(
+                    module: .map,
+                    isWindowPresented: isPresented
+                )
+            )
         }
     }
         
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source
+    }
+    
+    var isPresented: Bool {
+        scenesManager.getSceneState(for: SceneId(rawValue: root.configurable.module.viewerWindowId)) == .opened
     }
     
     private func actionHandler() {

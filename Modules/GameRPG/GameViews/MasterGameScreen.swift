@@ -194,36 +194,6 @@ extension ScenesManager.SceneState {
     }
 }
 
-struct GameWindowButtonAppearance: ViewModifier {
-    let module: NetworkModules
-    let isWindowPresented: Bool
-
-    @Environment(\.appTheme) private var theme
-
-    func body(content: Content) -> some View {
-        let tint = theme.tint(for: module)
-#if os(visionOS)
-        content
-            .buttonStyle(.bordered)
-            .tint(isWindowPresented ? tint : .accentColor)
-            .background(
-                isWindowPresented ? tint.opacity(0.35) : Color.clear,
-                in: .circle
-            )
-#else
-        let glass: Glass = if isWindowPresented {
-            .regular.tint(tint.opacity(0.7)).interactive()
-        } else {
-            .regular.interactive()
-        }
-
-        content
-            .buttonStyle(.plain)
-            .glassEffect(glass, in: .circle)
-#endif
-    }
-}
-
 #Preview("iPad", traits: .mockData) {
     let root = GameRoot.previewFixture()
     MasterGameScreen(
