@@ -38,7 +38,7 @@ public struct GameShareView<Content: View>: View {
             content
         case .share:
             content
-                .shareListItem(isActive: canShare, allReported: !statuses.isEmpty && statuses.allSatisfy(\.reported), feedBackEnabled: true, action: shareAction)
+                .shareListItem(isActive: canShare, allReported: !statuses.isEmpty && statuses.allSatisfy(\.reported), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
         case .custom:
             root.viewControllable.sharingView(for: itemId)
         }
@@ -142,11 +142,7 @@ private struct PlayerReportStatus {
 
 #Preview {
     GameShareView(root: ItemRootController.previewFixture(), itemId: .fixture1) {
-        Label {
-            Text(verbatim: "Share item")
-        } icon: {
-            Image(systemName: "square.and.arrow.up")
-        }
+        Text(verbatim: "Share item")
     }
     .environment(AppGameStateModel())
 }
@@ -174,11 +170,7 @@ private struct PlayerReportStatus {
     }()
 
     GameShareView(root: fixture.root, itemId: fixture.itemId) {
-        Label {
-            Text(verbatim: "Share item")
-        } icon: {
-            Image(systemName: "square.and.arrow.up")
-        }
+        Text(verbatim: "Some content")
     }
     .padding()
     .environment(fixture.gameState)

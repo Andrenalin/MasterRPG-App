@@ -74,7 +74,7 @@ private extension ListRowItemView {
     }
 
     var rowContent: some View {
-        HStack {
+        HStack(alignment: .bottom) {
             ItemRowView(
                 root: root,
                 model: model,

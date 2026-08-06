@@ -22,7 +22,7 @@ struct SharingActionView: View, Equatable {
     var body: some View {
         if appGameStateModel.isGameRunning {
             EmptyView()
-                .shareListItem(isActive: canShare, allReported: allReported, feedBackEnabled: true, secondActionIcon: playIcon) {
+                .shareListItem(isActive: canShare, allReported: allReported, feedBackEnabled: true, module: .audio, secondActionIcon: playIcon) {
                     shareAudio()
                 } secondAction: {
                     if allReported {

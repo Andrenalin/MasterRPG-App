@@ -8,6 +8,7 @@ struct ShareItemViewModifier: ViewModifier {
     let isActive: Bool
     let allReported: Bool
     let feedBackEnabled: Bool
+    let module: NetworkModules
     let secondActionIcon: String?
     let action: () -> Void
     let secondAction: (() -> Void)?
@@ -16,15 +17,9 @@ struct ShareItemViewModifier: ViewModifier {
         HStack(spacing: 8) {
             if isActive {
                 if feedBackEnabled {
-                    SendFeedbackButton(allReported: allReported, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction)
+                    SendFeedbackButton(allReported: allReported, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction)
                 } else {
-                    if allReported {
-                        buttonView
-                            .buttonStyle(.bordered)
-                    } else {
-                        buttonView
-                            .buttonStyle(.borderedProminent)
-                    }
+                    buttonView
                 }
             }
 
@@ -42,15 +37,14 @@ struct ShareItemViewModifier: ViewModifier {
                 action()
             }
         } label: {
-            Image(systemName: allReported ? secondActionIcon ?? "square.and.arrow.up" : "square.and.arrow.up")
+            Image(systemName: allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up")
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(allReported ? .teal : .white, .white)
             #if !os(macOS)
                 .frame(height: 24)
             #endif
         }
-        .frame(minWidth: 44, minHeight: 44)
-        .contentShape(.rect)
+        .selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)
         .accessibilityLabel(
             allReported && secondAction != nil
                 ? Text("Perform follow-up action", bundle: .module)
@@ -60,7 +54,7 @@ struct ShareItemViewModifier: ViewModifier {
 }
 
 public extension View {
-    func shareListItem(isActive: Bool = false, allReported: Bool = false, feedBackEnabled: Bool = false, secondActionIcon: String? = nil, action: @escaping () -> Void, secondAction: (() -> Void)? = nil) -> some View {
-        modifier(ShareItemViewModifier(isActive: isActive, allReported: allReported, feedBackEnabled: feedBackEnabled, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction))
+    func shareListItem(isActive: Bool = false, allReported: Bool = false, feedBackEnabled: Bool = false, module: NetworkModules, secondActionIcon: String? = nil, action: @escaping () -> Void, secondAction: (() -> Void)? = nil) -> some View {
+        modifier(ShareItemViewModifier(isActive: isActive, allReported: allReported, feedBackEnabled: feedBackEnabled, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction))
     }
 }

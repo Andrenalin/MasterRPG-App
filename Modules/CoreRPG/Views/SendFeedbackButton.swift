@@ -6,6 +6,7 @@ struct SendFeedbackButton: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     let allReported: Bool
+    let module: NetworkModules
     let secondActionIcon: String?
     let action: () -> Void
     let secondAction: (() -> Void)?
@@ -37,7 +38,7 @@ struct SendFeedbackButton: View {
                 }
             }
         } label: {
-            Image(systemName: allReported ? secondActionIcon ?? "square.and.arrow.up" : "square.and.arrow.up")
+            Image(systemName: allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up")
                 .imageScale(.large)
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(allReported ? .teal : .white, .white)
@@ -48,7 +49,7 @@ struct SendFeedbackButton: View {
                         .symbolEffect(.disappear, isActive: !isSending)
                 }
         }
-        .frame(minWidth: 44, minHeight: 44)
+        .selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)
         .accessibilityLabel(
             allReported && secondAction != nil
                 ? Text("Perform follow-up action", bundle: .module)
@@ -87,5 +88,5 @@ struct SendFeedbackButton: View {
 }
 
 #Preview {
-    SendFeedbackButton(allReported: false, secondActionIcon: "gear") {} secondAction: {}
+    SendFeedbackButton(allReported: false, module: .audio, secondActionIcon: "gear") {} secondAction: {}
 }
