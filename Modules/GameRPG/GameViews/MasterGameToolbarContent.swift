@@ -63,6 +63,8 @@ struct GameToolbarContent: ToolbarContent {
                 )
                 PlayerConnectionStatusView(status: connectionStatus)
             }
+
+            BatteryView()
         }
 
         if role == .master || root.gameModel.gameType != .observer {

@@ -31,7 +31,7 @@ struct SelectedAdventureView: View {
 #if os(tvOS)
             VStack {
                 TipView(MasterRPGTips.chooseAdventure)
-                content
+                adventureSelection
             }
 #else
             Group {

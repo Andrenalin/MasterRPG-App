@@ -37,6 +37,8 @@ struct IOSGameOverlayControlField: View {
             if playerController != nil {
                 IOSGameConnectionStatusView(status: presentation.connectionStatus)
             }
+
+            BatteryView()
         }
         .buttonStyle(.plain)
         .imageScale(.large)

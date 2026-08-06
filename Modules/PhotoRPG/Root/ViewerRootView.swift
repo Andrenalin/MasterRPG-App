@@ -28,6 +28,7 @@ struct ViewerRootView: View {
                 contentView
                     .overlay(alignment: .bottomLeading) {
                         rotateButton
+                            .selectedRoundButton(title: String(localized: "Rotate image", bundle: .module), module: .photo, isSelected: false)
                             .padding()
                     }
             } else {
@@ -163,9 +164,6 @@ private extension ViewerRootView {
             }
             .labelStyle(.iconOnly)
         }
-#if !os(visionOS)
-        .buttonStyle(.glass)
-#endif
         .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
         .transaction { transaction in
             if reduceMotion {
