@@ -74,14 +74,17 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         
         editModel.resetNameText()
         editModel.resetText()
-        
+
         editController.update(
             itemId: itemId,
             entryId: entry.id,
             name: editModel.name,
-            content: editModel.text
+            content: editModel.text,
+            // The standalone item editor always persists, even while a game is
+            // running — unlike in-game quick-edit surfaces, which stay memory-only.
+            forceSave: true
         )
-        
+
         withAnimation(accessibilityReduceMotion ? nil : .default) { editorModel.entryId = nil }
     }
     
@@ -151,9 +154,12 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
             itemId: itemId,
             entryId: entry.id,
             name: editModel.name,
-            content: editModel.text
+            content: editModel.text,
+            // The standalone item editor always persists, even while a game is
+            // running — unlike in-game quick-edit surfaces, which stay memory-only.
+            forceSave: true
         )
-        
+
         items.forEach { link in
             editController.add(
                 link: link.name,

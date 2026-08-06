@@ -120,7 +120,7 @@ extension EditController {
         }
     }
 
-    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
@@ -143,7 +143,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module))
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module), forceSave: forceSave)
             return []
         }
         return itemRowModels

@@ -1970,7 +1970,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     @Test("SendFeedbackButton")
     func snapshotSendFeedbackButton() async throws {
         try await assertPreviewSnapshot("SendFeedbackButton") {
-            CoreRPG.SendFeedbackButton(allReported: false, secondActionIcon: "gear") {} secondAction: {}
+            CoreRPG.SendFeedbackButton(allReported: false, module: .map, secondActionIcon: "gear") {} secondAction: {}
         }
     }
 

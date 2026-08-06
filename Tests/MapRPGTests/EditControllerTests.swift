@@ -188,6 +188,73 @@ struct EditControllerTests {
         #expect(map.entries.last?.content == "saved")
     }
 
+    /// Map content (entries/pins/rooms) must always stay in game memory while a
+    /// game is running — even when the standalone item editor asks to force-save
+    /// — matching MapRPG's live-game invariant that map changes never persist
+    /// until the game ends.
+    @Test func mapMergeStaysMemoryOnlyDuringGameEvenWithForceSave() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let keepId = UUID()
+        let map = MapModel(
+            id: UUID(),
+            name: "Battle Map",
+            entries: [MapEntryModel(id: keepId, name: "Keep", content: "old", coordinates: [])]
+        )
+        root.itemController.replace(model: map, isInsert: true)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        let incoming = [MapEntryModel(id: keepId, name: "Keep", content: "updated mid-game", coordinates: [])]
+        _ = sut.merge(itemId: map.id, entries: incoming, recoverEntries: nil, forceSave: true)
+
+        #expect(root.itemController.itemSync(for: map.id, noGame: true)?.entries.first?.content == "old")
+        #expect(root.itemController.itemSync(for: map.id)?.entries.first?.content == "updated mid-game")
+    }
+
+    /// A map item's own metadata (name/description/tags) is edited through the
+    /// shared, generic `EditControllable` surface — not MapRPG's own merge/pin
+    /// mutations — so it persists like any other module when the standalone
+    /// item editor requests it, even while a game is running.
+    @Test func mapMetadataPersistsDuringGameWhenForceSaved() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .item)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        sut.reset(name: "Renamed mid-game", itemId: itemId, forceSave: true)
+
+        #expect(root.itemController.itemSync(for: itemId, noGame: true)?.name == "Renamed mid-game")
+    }
+
+    /// Regression test: once an item is already loaded into game memory (e.g.
+    /// shown to players), a force-saved standalone-editor edit must update BOTH
+    /// the permanent store and the game-memory snapshot — otherwise the default
+    /// read path (used by views, including the live game view) keeps showing
+    /// the stale game-memory copy even though the edit was "successfully"
+    /// persisted underneath.
+    @Test func mapMetadataSyncsGameMemoryWhenItemAlreadyLoadedInGame() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .item)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        root.itemController.replaceInGameMemory(model: root.itemController.itemOrEmpty(for: itemId).copy())
+
+        sut.reset(name: "Renamed mid-game", itemId: itemId, forceSave: true)
+
+        #expect(root.itemController.itemSync(for: itemId, noGame: true)?.name == "Renamed mid-game")
+        #expect(root.itemController.itemSync(for: itemId)?.name == "Renamed mid-game")
+    }
+
     @Test func addLinkAppendsSimpleModuleMarkdownToDestinationEntry() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

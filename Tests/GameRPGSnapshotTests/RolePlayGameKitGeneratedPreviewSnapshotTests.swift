@@ -332,6 +332,7 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content(appModel)
                 .environmentSetUp(appModel)
+                .environment(AppFocusModel())
                 .cloudKitAccountChecksEnabled(false)
                 .itemStateRestorationEnabled(false)
                 .rolePlayDatabaseInitializationEnabled(false)

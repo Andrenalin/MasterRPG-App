@@ -139,7 +139,8 @@ extension EditController: EntryDataEditable {
     func merge(
         itemId: UUID,
         entries: [RuleEntryModel],
-        recoverEntries: [ItemRowModel]?
+        recoverEntries: [ItemRowModel]?,
+        forceSave: Bool
     ) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var merged = merge(itemId: itemId, entries: entries)
@@ -156,7 +157,7 @@ extension EditController: EntryDataEditable {
             merged.append(contentsOf: recoverEntries.compactMap(\.entryId).map { item[$0] })
         }
         item.entries = merged
-        save(updated: item, message: String(localized: "Rule sections replaced", bundle: .ruleModule))
+        save(updated: item, message: String(localized: "Rule sections replaced", bundle: .ruleModule), forceSave: forceSave)
         return []
     }
 

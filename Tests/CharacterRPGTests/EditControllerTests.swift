@@ -180,6 +180,104 @@ struct EditControllerTests {
         #expect(root.itemController.itemOrEmpty(for: itemId).entries.contains { $0.id == numberEntry.id })
     }
 
+    /// The standalone entry editor (`EntryEditorHeaderView`) always persists,
+    /// even while a game is running — unlike `updateValue`'s live in-game quick
+    /// editor above, which stays memory-only except for its own explicit,
+    /// entry-scoped force-persist (`saveGameDataToPermanent`).
+    @Test func entryStructuralEditPersistsDuringGameWhenForceSaved() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let entry = ValueEntryModel(id: UUID(), name: "Note", type: .text, value: "old")
+        sut.add(entry: entry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        sut.update(itemId: itemId, entryId: entry.id, name: "Renamed", content: "new content", forceSave: true)
+
+        let permanent = try #require(root.itemController.itemSync(for: itemId, noGame: true))
+        let updatedEntry = try #require(permanent.entries.first(where: { $0.id == entry.id }))
+        #expect(updatedEntry.name == "Renamed")
+        #expect(updatedEntry.content == "new content")
+    }
+
+    /// Regression test: an edit made through one `SheetRootModel` instance (e.g.
+    /// the standalone item editor's singleton) must reconcile every other live
+    /// `SheetRootModel` instance currently showing the same item (e.g. a live
+    /// game view's own instance) — not just the underlying domain data. Each
+    /// instance owns a materialized `SheetModel` tree that only resyncs itself
+    /// in response to its own local edit flow (see `Docu/SHEETS.md`), so
+    /// without `ItemDataModel.publishItemChanged(itemId:)` the second instance
+    /// would keep showing stale content indefinitely.
+    @Test func editReconcilesEveryLiveSheetRootModelShowingTheSameItem() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        sut.reset(name: "Original Name", itemId: itemId)
+
+        let rootManager = try #require(root.rootManager)
+        let editorSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: true
+        )
+        let gameSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: false
+        )
+        #expect(editorSheet.sheetModel.name == "Original Name")
+        #expect(gameSheet.sheetModel.name == "Original Name")
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        // Edit through the shared editor controller — mirroring the standalone
+        // item editor's `forceSave: true` — without ever touching `gameSheet`.
+        sut.reset(name: "Renamed mid-game", itemId: itemId, forceSave: true)
+
+        #expect(editorSheet.sheetModel.name == "Renamed mid-game")
+        #expect(gameSheet.sheetModel.name == "Renamed mid-game")
+    }
+
+    /// Regression test: once an item is already loaded into game memory (e.g.
+    /// because it was shown to players), a force-saved standalone-editor edit
+    /// must update BOTH the permanent store and the game-memory snapshot.
+    /// `ItemDataModel.item(for:)` always prefers game memory over the permanent
+    /// store whenever an entry exists there — so leaving the stale game-memory
+    /// copy untouched would make the edit invisible to every reader (the
+    /// editor's own re-render, and the live game view) even though it was
+    /// "successfully" persisted underneath.
+    @Test func entryStructuralEditSyncsGameMemoryWhenItemAlreadyLoadedInGame() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let entry = ValueEntryModel(id: UUID(), name: "Note", type: .text, value: "old")
+        sut.add(entry: entry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        // Simulate the character having been loaded into game memory (e.g.
+        // shown to players) independently of the permanent copy.
+        root.itemController.replaceInGameMemory(model: root.itemController.itemOrEmpty(for: itemId).copy())
+
+        sut.update(itemId: itemId, entryId: entry.id, name: "Renamed", content: "new content", forceSave: true)
+
+        let permanent = try #require(root.itemController.itemSync(for: itemId, noGame: true))
+        #expect(permanent.entries.first(where: { $0.id == entry.id })?.content == "new content")
+
+        // The default read path — used by views, including the editor's own
+        // re-render and the live game view — must agree with the permanent store.
+        let defaultRead = try #require(root.itemController.itemSync(for: itemId))
+        #expect(defaultRead.entries.first(where: { $0.id == entry.id })?.content == "new content")
+    }
+
     @Test func linkHelpersAndSelectionEditing() async throws {
         let root = Self.makeRoot()
         let sut = root.editController

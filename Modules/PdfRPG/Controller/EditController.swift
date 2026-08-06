@@ -55,7 +55,7 @@ extension EditController: EntryDataEditable {
         entries
     }
 
-    func merge(itemId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?) -> [ItemRowModel] {
+    func merge(itemId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         []
     }
     

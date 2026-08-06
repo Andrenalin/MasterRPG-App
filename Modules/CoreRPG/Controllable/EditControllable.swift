@@ -37,27 +37,27 @@ public extension EditControllable {
 // MARK: - Editor Basic Properties
 
 public extension EditControllable {
-    @MainActor func update(id: UUID, name: String, description: String, category: ItemListCategory, tags: [String]) {
-        reset(name: name, itemId: id)
-        reset(description: description, itemId: id)
-        reset(name: name, itemId: id)
-        reset(category: category, itemId: id)
-        reset(tags: tags, itemId: id)
+    @MainActor func update(id: UUID, name: String, description: String, category: ItemListCategory, tags: [String], forceSave: Bool = false) {
+        reset(name: name, itemId: id, forceSave: forceSave)
+        reset(description: description, itemId: id, forceSave: forceSave)
+        reset(name: name, itemId: id, forceSave: forceSave)
+        reset(category: category, itemId: id, forceSave: forceSave)
+        reset(tags: tags, itemId: id, forceSave: forceSave)
     }
 
-    @MainActor func reset(category: ItemListCategory, itemId: UUID) {
+    @MainActor func reset(category: ItemListCategory, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.category != category else { return }
         item.category = category
-        save(updated: item, message: String(localized: "Change to \(category.title)", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change to \(category.title)", bundle: .module).localizedString, forceSave: forceSave)
     }
 
-    @MainActor func reset(description: String, itemId: UUID) {
+    @MainActor func reset(description: String, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.description != description else { return }
         item.description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .description, itemId: item.id, text: item.description.markDownText())
-        save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString, forceSave: forceSave)
     }
     
     @MainActor func reset(displayState: Int, itemId: UUID) {
@@ -67,15 +67,15 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Change Display", bundle: .module).localizedString)
     }
 
-    @MainActor func reset(name: String, itemId: UUID) {
+    @MainActor func reset(name: String, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.name != name else { return }
         item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
-        save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString, forceSave: forceSave)
     }
 
-    @MainActor func reset(tags: [String], itemId: UUID) {
+    @MainActor func reset(tags: [String], itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         let sortedTags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
         guard item.tags != sortedTags else { return }
@@ -83,7 +83,7 @@ public extension EditControllable {
         let removedTags = Array(Set(item.tags).subtracting(sortedTags))
         updateTags(addedTags: addedTags, removedTags: removedTags)
         item.tags = sortedTags
-        save(updated: item, message: String(localized: "Changed tags", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Changed tags", bundle: .module).localizedString, forceSave: forceSave)
     }
     
     @MainActor func reset(hidden: Bool, itemId: UUID) {
@@ -598,26 +598,26 @@ public extension EditControllable {
         return itemControllable.itemSync(for: itemId)?.copy() as? Model
     }
 
-    @MainActor func saveChanges(to newValue: Model, name: String) {
+    @MainActor func saveChanges(to newValue: Model, name: String, forceSave: Bool = false) {
         Task {
             await CloudKitOperationCounter.shared.recordOperation(
                 function: "EditControllable.saveChanges(to:name:\(name))",
                 file: "EditControllable.swift"
             )
         }
-        
+
         if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
             let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
-            
+
             linkRegisterController.deregister(links: removed)
             linkRegisterController.register(links: added)
         } else {
             let added = newValue.linkRegisterModels
             linkRegisterController.register(links: added)
         }
-        
+
         editorModel.undoManaged.previousValue(itemControllable.itemOrEmpty(for: newValue.id).copy(), title: name)
-        itemControllable.replace(model: newValue, isInsert: false)
+        itemControllable.replace(model: newValue, isInsert: false, forceSave: forceSave)
     }
 
     @MainActor func save(updated: any Observable) {
@@ -625,8 +625,8 @@ public extension EditControllable {
         save(with: String(localized: "update from sync", bundle: .module).localizedString, currentModel: updated)
     }
 
-    @MainActor func save(updated: Model, message: String) {
-        save(with: message, currentModel: updated)
+    @MainActor func save(updated: Model, message: String, forceSave: Bool = false) {
+        save(with: message, currentModel: updated, forceSave: forceSave)
     }
 
     @MainActor func setCurrentItem(to item: ItemRowTreeModel) {
@@ -649,10 +649,10 @@ public extension EditControllable {
         editorModel.sheetEditorModel.module = module ?? itemControllable.config.module
     }
 
-    @MainActor func save(with name: String, currentModel: Model) {
+    @MainActor func save(with name: String, currentModel: Model, forceSave: Bool = false) {
         validateBeforeSave(model: currentModel)
         guard !itemControllable.isEqual(with: currentModel) else { return }
-        saveChanges(to: currentModel, name: name)
+        saveChanges(to: currentModel, name: name, forceSave: forceSave)
     }
 }
 

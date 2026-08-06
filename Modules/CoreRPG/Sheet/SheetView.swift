@@ -176,6 +176,7 @@ private extension SheetView {
         ForEach(sheetModel.entries) { entry in
             if !entry.isHidden {
                 row(entry: entry)
+                    .transition(.persistedSheetEntry)
             }
         }
         
@@ -209,6 +210,7 @@ private extension SheetView {
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
                 SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
                     .padding(.leading, 2)
+                    .transition(.persistedSheetEntry)
             }
         }
     }

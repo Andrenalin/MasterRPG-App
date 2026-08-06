@@ -107,7 +107,10 @@ public struct ItemHeaderEditorView: View {
             name: trimmedName,
             description: String(attributedInformation.characters),
             category: category,
-            tags: tags
+            tags: tags,
+            // The standalone item editor always persists, even while a game is
+            // running — unlike in-game quick-edit surfaces, which stay memory-only.
+            forceSave: true
         )
 
 #if os(iOS)

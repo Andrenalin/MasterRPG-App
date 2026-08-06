@@ -48,14 +48,22 @@ public protocol EntryDataEditable: EditControllable {
     // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
-    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) -> [ItemRowModel]
+    /// `forceSave` is not defaulted here because protocol requirements cannot carry
+    /// default argument values; use the 3-argument convenience overload in the
+    /// extension below (`forceSave: false`) unless the caller needs to opt into
+    /// persisting regardless of an active game (the standalone item editor does).
+    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel]
     @MainActor func merge(itemId: UUID, entries: [Model.Entry]) -> [Model.Entry]
     @MainActor func remove(itemId: UUID, entryId: UUID)
     func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
-    
+
     // MARK: - Entry Editor
-    
-    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String)
+
+    /// `forceSave` is not defaulted here because protocol requirements cannot carry
+    /// default argument values; use the 4-argument convenience overload in the
+    /// extension below (`forceSave: false`) unless the caller needs to opt into
+    /// persisting regardless of an active game (the standalone item editor does).
+    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool)
     @MainActor func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID?
     
     // MARK: - Inline Quick Editor
@@ -205,8 +213,20 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Remove entry", bundle: .module).localizedString)
     }
     
+    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)
+    }
+
+    /// Convenience overload preserving every pre-existing 4-argument call site
+    /// (memory-only during an active game, matching historical behavior).
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
-        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false)
+        update(itemId: itemId, entryId: entryId, name: name, content: content, forceSave: false)
+    }
+
+    /// Convenience overload preserving every pre-existing 3-argument call site
+    /// (memory-only during an active game, matching historical behavior).
+    @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+        merge(itemId: itemId, entries: entries, recoverEntries: recoverEntries, forceSave: false)
     }
 
     @MainActor
@@ -227,7 +247,7 @@ public extension EntryDataEditable {
         return entry.id
     }
     
-    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool) {
+    @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         let validedName = nameWithLink ? name : name.withoutLink()
         var changed = item[entryId].name != validedName
@@ -251,7 +271,7 @@ public extension EntryDataEditable {
         if changed {
             cacheItemListModel.reset(cacheType: .row, itemId: entryId, text: rowText(itemId: item.id, entry: item[entryId]))
         }
-        save(updated: item, message: String(localized: "Edit entry", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Edit entry", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor func move(itemId: UUID, entryIds: [UUID]) {

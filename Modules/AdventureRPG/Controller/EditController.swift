@@ -103,13 +103,13 @@ extension EditController {
         true
     }
 
-    @MainActor public func update(itemId: UUID, entryId: UUID, name: String, content: String) {
+    @MainActor public func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         if let adventureId = item[entryId].adventureId {
-            reset(name: name, itemId: adventureId)
-            reset(description: content, itemId: adventureId)
+            reset(name: name, itemId: adventureId, forceSave: forceSave)
+            reset(description: content, itemId: adventureId, forceSave: forceSave)
         } else {
-            updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false)
+            updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)
         }
     }
 
@@ -295,7 +295,7 @@ extension EditController {
     }
 
     @MainActor
-    func merge(itemId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+    func merge(itemId: UUID, entries: [AdventureEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
@@ -318,7 +318,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString, forceSave: forceSave)
             return []
         }
         return itemRowModels

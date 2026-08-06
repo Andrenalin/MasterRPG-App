@@ -267,6 +267,7 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext))
+                .environment(AppFocusModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

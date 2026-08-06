@@ -145,6 +145,7 @@ struct AudioRPGDynamicPreviewSnapshotTests {
                 .environment(root)
                 .environment(AppGameStateModel())
                 .environment(AppWindowSizeModel())
+                .environment(AppFocusModel())
                 .environment(CacheItemListModel())
                 .environment(ScenesManager())
                 .modifier(MockRootViewModifier())

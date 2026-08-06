@@ -226,6 +226,7 @@ struct PhotoRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext, root: root))
+                .environment(AppFocusModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

@@ -61,6 +61,7 @@ struct AdventureRPGDynamicPreviewSnapshotTests {
                 .environment(AppGameStateModel())
                 .environment(AppWindowSizeModel())
                 .environment(CacheItemListModel())
+                .environment(AppFocusModel())
                 .environment(ScenesManager())
                 .environment(root.audioRoot)
                 .environment(root.characterRoot)

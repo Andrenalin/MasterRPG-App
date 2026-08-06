@@ -39,7 +39,7 @@ extension FakeEditController: EntryDataEditable {
         entries
     }
     
-    func merge(itemId: UUID, entries: [FakeEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+    func merge(itemId: UUID, entries: [FakeEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         []
     }
 }

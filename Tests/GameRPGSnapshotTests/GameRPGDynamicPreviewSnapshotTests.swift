@@ -60,6 +60,7 @@ struct GameRPGDynamicPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(root: root))
+                .environment(AppFocusModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -70,7 +70,7 @@ public extension ViewController {
                     itemId: select,
                     configuration: ViewerConfiguration(
                         closeButton: false,
-                        addToolbar: false,
+                        addToolbar: true,
                         isGame: true
                     )
                 )

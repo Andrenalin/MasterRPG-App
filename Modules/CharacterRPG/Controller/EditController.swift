@@ -405,19 +405,19 @@ extension EditController {
         return groupId
     }
     
-    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String) {
+    @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         let old = item[entryId].type
         let newType = termineType(content: content, currentType: old)
         if old != newType {
             item[entryId].type = newType
-            save(updated: item, message: String(localized: "update value type", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "update value type", bundle: .module).localizedString, forceSave: forceSave)
         }
-        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true)
+        updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: true, forceSave: forceSave)
         guard let valueId = item[entryId].valueId else { return }
         let fixedName = name.withoutLink()
-        reset(name: fixedName, itemId: valueId)
-        reset(description: content, itemId: valueId)
+        reset(name: fixedName, itemId: valueId, forceSave: forceSave)
+        reset(description: content, itemId: valueId, forceSave: forceSave)
     }
 
     private func parseDouble(from string: String) -> Double? {
@@ -547,7 +547,7 @@ extension EditController {
         }
     }
 
-    @MainActor func merge(itemId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+    @MainActor func merge(itemId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var newEntries = merge(itemId: itemId, entries: entries)
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
@@ -566,7 +566,7 @@ extension EditController {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
             item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString)
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString, forceSave: forceSave)
             return []
         }
         return itemRowModels

@@ -79,6 +79,7 @@ struct GeneratorRPGViewSnapshotTests {
         assertViewSnapshot(
             content
                 .modifier(MockRootViewModifier())
+                .environment(AppFocusModel())
                 .modelContainer(container),
             name: name,
             height: height

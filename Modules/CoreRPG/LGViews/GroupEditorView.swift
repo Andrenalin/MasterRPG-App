@@ -72,16 +72,18 @@ struct GroupEditorController {
                 !model.description.isEmpty && model.description != model.descriptionPlaceHolder ||
                 !model.tags.isEmpty && model.tags.joined(separator: " ") != model.tagsPlaceHolder else { return }
         for itemId in ids {
+            // The standalone item editor always persists, even while a game is
+            // running — unlike in-game quick-edit surfaces, which stay memory-only.
             if !model.name.isEmpty {
-                editController.reset(name: model.name, itemId: itemId)
+                editController.reset(name: model.name, itemId: itemId, forceSave: true)
             }
 
             if !model.description.isEmpty {
-                editController.reset(description: model.description, itemId: itemId)
+                editController.reset(description: model.description, itemId: itemId, forceSave: true)
             }
-            
+
             if !model.tags.isEmpty {
-                editController.reset(tags: model.tags, itemId: itemId)
+                editController.reset(tags: model.tags, itemId: itemId, forceSave: true)
             }
         }
     }

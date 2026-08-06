@@ -189,6 +189,7 @@ struct PdfRPGDynamicPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext))
+                .environment(AppFocusModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

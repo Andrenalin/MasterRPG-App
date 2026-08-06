@@ -157,6 +157,8 @@ public extension ItemControllable {
                 }
                 itemDataModel.publishContentWidgetSnapshot()
             }
+            syncGameMemoryIfLoaded(with: original)
+            itemDataModel.publishItemChanged(itemId: original.id)
         } else {
             if isInsert {
                 do {
@@ -166,7 +168,31 @@ public extension ItemControllable {
                 }
             }
             resetModel(with: model)
+            syncGameMemoryIfLoaded(with: model)
+            itemDataModel.publishItemChanged(itemId: model.id)
         }
+    }
+
+    /// Keeps a live game session's in-memory snapshot of this item consistent with
+    /// a just-persisted write.
+    ///
+    /// `ItemDataModel.item(for:)` always prefers `gameItemData` over the permanent
+    /// store whenever an entry exists there, regardless of `isGameMode` — so a
+    /// `forceSave: true` edit (e.g. from the standalone item editor while a game is
+    /// running) that only updated the permanent store would otherwise stay invisible
+    /// to every reader — the editor's own re-render, the live game view, and any
+    /// other view — for as long as this item remains loaded into game memory, and
+    /// even after the game ends if `gameItemData` is never cleared for it.
+    ///
+    /// Mutates the existing game-memory instance in place (like the permanent-store
+    /// branch above does via `original.replace(with: model)`) rather than replacing
+    /// it with a fresh copy: any view or model already holding a reference to that
+    /// exact `@Observable` instance — e.g. a live game view rendered from a
+    /// different `SheetRootModel` — must see the change through its own reference,
+    /// not just through a fresh dictionary lookup.
+    @MainActor private func syncGameMemoryIfLoaded(with model: Model) {
+        guard let gameItem = itemDataModel.gameItemData[model.id] as? Model else { return }
+        _ = gameItem.replace(with: model)
     }
 
     /// Replaces an imported item and keeps the cross-module link register in sync with
@@ -250,11 +276,23 @@ public extension ItemControllable {
         }
     }
 
+    /// Mutates the existing game-memory instance in place when this item is
+    /// already loaded (preserving its object identity, like
+    /// `syncGameMemoryIfLoaded` above does for the reverse direction) rather
+    /// than replacing it with the incoming reference, then tells every other
+    /// live `SheetRootModel` showing this item to reconcile — this is the path
+    /// every in-game live edit (e.g. the inline quick editor) takes, so it must
+    /// propagate just as reliably as a force-saved standalone-editor edit does.
     @MainActor func replaceInGameMemory(model: ModelType?) {
         guard let model = model as? Model else { return }
-        itemDataModel.gameItemData[model.id] = model
+        if let existing = itemDataModel.gameItemData[model.id] as? Model {
+            _ = existing.replace(with: model)
+        } else {
+            itemDataModel.gameItemData[model.id] = model
+        }
+        itemDataModel.publishItemChanged(itemId: model.id)
     }
-    
+
     @MainActor func mergeUpdates(model: ModelType) {
         guard let model = model as? Model, let original = self.itemSync(for: model.id, noGame: true) else { return }
         let resort = original.name != model.name
@@ -263,6 +301,7 @@ public extension ItemControllable {
                 resortItem(changed: original)
             }
             itemDataModel.publishContentWidgetSnapshot()
+            itemDataModel.publishItemChanged(itemId: original.id)
         }
     }
 }
@@ -353,6 +392,7 @@ public extension ItemControllable {
         setModel(with: model)
         insertIntoItems(model: model)
         itemDataModel.publishContentWidgetSnapshot()
+        itemDataModel.publishItemChanged(itemId: model.id)
     }
 }
 

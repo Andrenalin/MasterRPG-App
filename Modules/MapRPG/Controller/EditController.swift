@@ -444,7 +444,11 @@ extension EditController {
         }
     }
 
-    @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?) -> [ItemRowModel] {
+    /// `forceSave` is intentionally not threaded through: map changes made while a
+    /// game is running must always stay in game memory, even when this is invoked
+    /// from the standalone item editor — matching every other mutation in this
+    /// controller (e.g. `addMonsters`), which relies on the same `isGameMode` gate.
+    @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
         var newEntries = entries.map { entry in
             var foundEntry = item.entries.first(where: { $0.name == entry.name })
