@@ -2474,6 +2474,18 @@ extension PlayerController {
 
         guard model.sender.isMaster else { return nil }
 
+        if await root.gameModel.gameConfig.isMaster {
+            // The game master's own co-located screen (and any external
+            // display reading the same state) is always seeing its own
+            // broadcast here: master and player share one `GameRoot`, so
+            // `model.data` merely echoes state this device's `root.mapRoot`
+            // already holds as the single source of truth. None of the
+            // asset/content-generation matching, import, or repair
+            // machinery below is meaningful when sender and receiver are
+            // literally the same object — just present it.
+            return await handleLocalMasterMap(model)
+        }
+
         switch model.type {
         case .reveal:
             let isRepairPayload = model.targetId != nil || model.subType == .store
@@ -2739,6 +2751,47 @@ extension PlayerController {
         return nil
     }
 
+    /// Handles every Map message `handleMap` routes here because
+    /// `root.gameModel.gameConfig.isMaster` is true — i.e. this
+    /// `PlayerController` is the game master's own co-located mirror,
+    /// talking to itself. `root.mapRoot` is this device's single source of
+    /// truth for the map regardless of any message describing it, so this
+    /// never imports, compares generations, or requests a repair: it only
+    /// ever updates this controller's own presentation bookkeeping
+    /// (`gameUpdateType`, the current map, visuals) to match what the
+    /// master already broadcast.
+    private func handleLocalMasterMap(_ model: GameNetworkModel) async -> GameNetworkModel? {
+        switch model.type {
+        case .reveal, .store:
+            await presentMap(itemId: model.data.id)
+            return await response(for: model, isSuccess: true, requestData: false)
+        case .update:
+            switch model.subType {
+            case .mapState:
+                await retryDeferredMapPins(itemId: model.data.id)
+                await MainActor.run { gameModel.gameUpdateType = .map }
+                await refreshMapVisuals(itemId: model.data.id)
+            case .battleRound:
+                await MainActor.run {
+                    gameModel.gameUpdateType = .map
+                    #if !os(tvOS)
+                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                    #endif
+                }
+            case .generic, .mapPin:
+                // A structural/content resync or a player-authored pin move:
+                // this device's own map already reflects it. Neither one is
+                // a presentation intent on its own (`.generic` in particular
+                // must not force the map to the front over whatever the
+                // master currently has shown, e.g. a Photo).
+                break
+            default:
+                break
+            }
+            return nil
+        }
+    }
+
     func handleMapContentUpdate(_ model: GameNetworkModel) async -> GameNetworkModel? {
         guard model.sender.isMaster,
               model.data.type == .map,
@@ -2957,6 +3010,12 @@ extension PlayerController {
         _ = await root.mapRoot.gameControllable.setCurrent(itemId: itemId)
         if await root.gameModel.gameConfig.isMaster {
             _ = await root.mapRoot.mapGameControllable.synchronizePlayerPins(for: itemId)
+            // Pin reconciliation just above can change this map's structural
+            // content right after this reveal recorded its generation's
+            // fingerprint. Refresh it so the game master's own co-located
+            // screen keeps recognizing this exact, unedited map on a later
+            // reference-only reshow instead of chasing a phantom repair.
+            await root.mapRoot.mapGameControllable.refreshAuthoritativeMapContentVersion(for: itemId)
         }
         await retryDeferredMapPins(itemId: itemId)
         await MainActor.run { gameModel.gameUpdateType = .map }

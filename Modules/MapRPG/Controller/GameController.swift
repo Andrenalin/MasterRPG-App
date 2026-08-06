@@ -80,6 +80,7 @@ public protocol MapGameStorable {
     func mapAssetVersion(for itemId: UUID) async -> Int
     @MainActor func mapContentVersion(for itemId: UUID) -> Int
     @MainActor func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType)
+    @MainActor func refreshAuthoritativeMapContentVersion(for itemId: UUID)
     func shareMap(id: UUID) async -> NetworkCodableDataType
     func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType
     func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType
@@ -272,6 +273,33 @@ extension GameController: MapGameStorable {
     @MainActor
     func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType) {
         mapGameModel.recordAuthoritativeGeneration(data)
+    }
+
+    /// Re-stamps the recorded generation's content fingerprint from the map's
+    /// current live structure, keeping `assetVersion`/`version` untouched.
+    ///
+    /// `presentMap()` reconciles session player pins into a freshly revealed
+    /// map on the game master's own co-located device right after this
+    /// device recorded that reveal's content-version fingerprint. Left alone,
+    /// that reconciliation silently invalidates the fingerprint it just
+    /// recorded: the master's own screen would then see every later
+    /// reference-only reshow of that same, unedited map as a missed
+    /// structural edit and stall on an unnecessary repair round trip instead
+    /// of presenting it again.
+    @MainActor
+    func refreshAuthoritativeMapContentVersion(for itemId: UUID) {
+        guard let previous = mapGameModel.authoritativeGeneration(for: itemId) else { return }
+        let refreshedContentVersion = mapContentVersion(for: itemId)
+        guard refreshedContentVersion != previous.contentVersion else { return }
+        mapGameModel.recordAuthoritativeGeneration(
+            NetworkCodableDataType(
+                id: itemId,
+                type: .map,
+                version: gameItem(for: itemId).version,
+                assetVersion: previous.assetVersion,
+                contentVersion: refreshedContentVersion
+            )
+        )
     }
 
     func shareMap(id: UUID) async -> NetworkCodableDataType {

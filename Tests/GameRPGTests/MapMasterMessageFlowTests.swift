@@ -943,6 +943,44 @@ struct MapMasterMessageFlowTests {
         #expect(broadcasts.first?.data.contentVersion == broadcasts.last?.data.contentVersion)
     }
 
+    @Test("Reshowing a Map after a Photo restores map presentation for the co-located master player")
+    func reshowingMapAfterPhotoRestoresLocalMasterPresentation() async throws {
+        // Given - a master with a co-located local player, mirroring a single
+        // device running the game master and its own display/external screen.
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let backgroundPhotoId = try #require(
+            fixture.root.mapRoot.gameController.gameItem(for: mapId).photoId
+        )
+        let localMasterPlayer = PlayerController(root: fixture.root, asGameMaster: true)
+        fixture.root.gameModel.playerController = localMasterPlayer
+
+        // When - the master shows the Map (first full send).
+        let mapReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        await fixture.master.show(for: mapReference)
+
+        // Then - the co-located player presents the Map.
+        #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
+        #expect(fixture.root.mapRoot.gameControllable.gameModel.currentItemId == mapId)
+
+        // When - the master shows a Photo, covering the Map.
+        let photoReference = await fixture.root.photoRoot.gameControllable.share(id: backgroundPhotoId)
+        await fixture.master.show(for: photoReference)
+        #expect(localMasterPlayer.gameModel.gameUpdateType == .photo)
+
+        // When - the master re-shows the same Map. It was already sent in
+        // full, so this reshow carries only the reference.
+        let reshowReference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        await fixture.master.show(for: reshowReference)
+
+        // Then - the co-located master's own screen (and any external
+        // screen driven by the same state) must present the Map again,
+        // without falling back to an unnecessary repair round trip.
+        #expect(localMasterPlayer.gameModel.gameUpdateType == .map)
+        #expect(fixture.root.mapRoot.gameControllable.gameModel.currentItemId == mapId)
+        #expect(localMasterPlayer.gameModel.pendingMapRepairRequirement(itemId: mapId) == nil)
+    }
+
     private static func insertCharacter(id: UUID, photoId: UUID, into root: GameRoot) {
         root.photoRoot.itemController.replace(
             model: PhotoModel(id: photoId, name: "Player portrait"),
