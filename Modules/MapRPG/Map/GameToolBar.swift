@@ -33,8 +33,11 @@ struct GameToolBar: View {
                     pinScaleView
                         .padding(.horizontal)
 
-                    hexMapScaleView
-                        .padding([.horizontal, .bottom])
+                    HStack(spacing: 8) {
+                        reshareButtonView
+                        hexMapScaleView
+                    }
+                    .padding([.horizontal, .bottom])
                 }
                 .offset(x: hideScales || !showToolBar ? -500 : 0)
                 .allowsHitTesting(!hideScales && showToolBar)
@@ -87,15 +90,17 @@ struct GameToolBar: View {
                             if appWindowSizeModel.mode == .regular {
                                 hideScaleButtonView
 
-                                reshareButtonView
-
-                                hexMapScaleView
-                                pinScaleView
+                                if !hideScales {
+                                    HStack(spacing: 8) {
+                                        reshareButtonView
+                                        hexMapScaleView
+                                    }
+                                    pinScaleView
+                                }
                             }
                             Spacer()
                             if appWindowSizeModel.mode == .compact {
                                 hideScaleButtonView
-                                reshareButtonView
                             }
                         }
                     }
@@ -221,9 +226,6 @@ struct GameToolBar: View {
             )
 #endif
         }
-        .opacity(hideScales ? 0 : 1)
-        .allowsHitTesting(!hideScales)
-        .accessibilityHidden(hideScales)
     }
 
     @ViewBuilder
@@ -236,15 +238,12 @@ struct GameToolBar: View {
             },
             onScaleChanged: { _ in }
         )
-        .opacity(hideScales ? 0 : 1)
-        .allowsHitTesting(!hideScales)
-        .accessibilityHidden(hideScales)
     }
 
     @ViewBuilder
     var hideScaleButtonView: some View {
         Button {
-            hideScales.toggle()
+            withAnimation(reduceMotion ? nil : .default) { hideScales.toggle() }
         } label: {
             let symbolName = "square.arrowtriangle.4.outward"
             Image(systemName: symbolName)
@@ -273,9 +272,9 @@ struct GameToolBar: View {
                 .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
         }
         .disabled(!model.canReshare)
-        .opacity(!hideScales && model.canReshare ? 1 : 0)
-        .allowsHitTesting(!hideScales && model.canReshare)
-        .accessibilityHidden(hideScales || !model.canReshare)
+        .opacity(model.canReshare ? 1 : 0)
+        .allowsHitTesting(model.canReshare)
+        .accessibilityHidden(!model.canReshare)
         .frame(minWidth: 44, minHeight: 44)
         .gameOverlayControlStyle()
     }

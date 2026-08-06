@@ -1732,9 +1732,13 @@ extension MasterController {
                 return nil
             }
 
-            // Peer bytes never establish or replace the game master's PDF.
+            // A mismatched sender with a master-owned baseline is a request
+            // for that baseline, published as the authoritative group
+            // reveal — a player's competing version of a known PDF never
+            // replaces the master's own.
             guard await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id) else { return nil }
-            if let canonical = try? await root.pdfRoot.gameControllable.createGameData(for: model.data.id) {
+            do {
+                let canonical = try await root.pdfRoot.gameControllable.createGameData(for: model.data.id)
                 await gameModel.markSentGameItem(
                     type: .pdf,
                     id: canonical.id,
@@ -1746,8 +1750,29 @@ extension MasterController {
                     updated: canonical,
                     replyToMessageID: model.messageID
                 )
+                return nil
+            } catch ItemGameStorableError.itemMissing {
+                // The master has no copy at all — there is no baseline to
+                // defend. Mirror handlePhoto/handleSpace's `.itemMissing`
+                // import fallback: import the player's bytes as the master's
+                // own canonical copy, then relay exactly what was received.
+                guard model.data.data != nil else { return nil }
+                try await root.pdfRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+                await gameModel.markSentGameItem(
+                    type: .pdf,
+                    id: model.data.id,
+                    version: model.data.effectiveAssetVersion
+                )
+                await send(
+                    type: .reveal,
+                    subtype: .show,
+                    updated: model.data,
+                    replyToMessageID: model.messageID
+                )
+                return nil
+            } catch {
+                return nil
             }
-            return nil
         case .store:
             guard await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id) else { return nil }
             return try await root.pdfRoot.gameControllable.createGameData(for: model.data.id)
@@ -1851,10 +1876,12 @@ extension MasterController {
                 return nil
             }
 
-            // Never import a player's competing version into the master. An
-            // absent/mismatched sender is a request for the master's baseline,
-            // which is published as the authoritative group reveal.
-            if let canonical = try? await root.photoRoot.gameControllable.createGameData(for: model.data.id) {
+            // A mismatched sender with a master-owned baseline is a request
+            // for that baseline, published as the authoritative group
+            // reveal — a player's competing version of a known item never
+            // replaces the master's own.
+            do {
+                let canonical = try await root.photoRoot.gameControllable.createGameData(for: model.data.id)
                 await gameModel.markSentGameItem(
                     type: .photo,
                     id: canonical.id,
@@ -1866,8 +1893,31 @@ extension MasterController {
                     updated: canonical,
                     replyToMessageID: model.messageID
                 )
+                return nil
+            } catch ItemGameStorableError.itemMissing {
+                // The master has no copy at all — unlike a competing edit of
+                // a known item, there is no baseline to defend. Mirror the
+                // audio `.update/.generic` path: import the player's bytes as
+                // the master's own canonical copy, then relay exactly what
+                // was received so the group (and the master's own display)
+                // converge on it without a redundant re-export round trip.
+                guard model.data.data != nil else { return nil }
+                try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+                await gameModel.markSentGameItem(
+                    type: .photo,
+                    id: model.data.id,
+                    version: model.data.effectiveAssetVersion
+                )
+                await send(
+                    type: .reveal,
+                    subtype: .show,
+                    updated: model.data,
+                    replyToMessageID: model.messageID
+                )
+                return nil
+            } catch {
+                return nil
             }
-            return nil
         case .store:
             return try await root.photoRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
@@ -2107,9 +2157,12 @@ extension MasterController {
                 return try? await root.spaceRoot.gameControllable.createGameData(for: model.data.id)
             }
 
-            // The game master's file/version is always canonical. A peer with no
-            // matching availability report is asking the master to publish it.
-            if let canonical = try? await root.spaceRoot.gameControllable.createGameData(for: model.data.id) {
+            // A mismatched sender with a master-owned baseline is a request
+            // for that baseline, published as the authoritative group
+            // reveal — a player's competing version of a known Space never
+            // replaces the master's own.
+            do {
+                let canonical = try await root.spaceRoot.gameControllable.createGameData(for: model.data.id)
                 await gameModel.markSentGameItem(
                     type: .space,
                     id: canonical.id,
@@ -2121,8 +2174,33 @@ extension MasterController {
                     updated: canonical,
                     replyToMessageID: model.messageID
                 )
+                return nil
+            } catch ItemGameStorableError.itemMissing {
+                // The master has no copy at all — this is the player-sharing
+                // path (`playerSharingEnabled` above), so unlike a competing
+                // edit of a known Space, there is no baseline to defend.
+                // Mirror handlePhoto/handleAudio's `.update/.generic` path:
+                // import the player's bytes as the master's own canonical
+                // copy, then relay exactly what was received so the group
+                // (and the master's own display) converge on it without a
+                // redundant re-export round trip.
+                guard model.data.data != nil else { return nil }
+                try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+                await gameModel.markSentGameItem(
+                    type: .space,
+                    id: model.data.id,
+                    version: model.data.effectiveAssetVersion
+                )
+                await send(
+                    type: .reveal,
+                    subtype: .show,
+                    updated: model.data,
+                    replyToMessageID: model.messageID
+                )
+                return nil
+            } catch {
+                return nil
             }
-            return nil
         case .store:
             return try await root.spaceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:

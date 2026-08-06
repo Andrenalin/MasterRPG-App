@@ -1147,6 +1147,14 @@ extension PlayerController {
             if await root.photoRoot.gameControllable.setCurrent(itemId: fullData.id) {
                 await MainActor.run { gameModel.gameUpdateType = .photo }
             }
+        } else if baseline == nil {
+            // The master has no copy at all — unlike a mismatched/competing
+            // edit of an item the master already owns, there is no canonical
+            // baseline to defer to. Attach the full bytes so the master can
+            // adopt them as its own copy (mirrors MasterController.handlePhoto's
+            // `.itemMissing` import fallback, which otherwise has nothing to
+            // import and silently drops the reveal).
+            outgoing = fullData
         } else {
             // The master owns the canonical version. A player whose report is
             // absent or mismatched sends only that baseline reference; the
@@ -1198,6 +1206,14 @@ extension PlayerController {
             if await root.pdfRoot.gameControllable.setCurrent(itemId: fullData.id) {
                 await MainActor.run { gameModel.gameUpdateType = .pdf }
             }
+        } else if baseline == nil {
+            // The master has no copy at all — unlike a mismatched/competing
+            // edit of an item the master already owns, there is no canonical
+            // baseline to defer to. Attach the full bytes so the master can
+            // adopt them as its own copy (mirrors MasterController.handlePdf's
+            // `.itemMissing` import fallback, which otherwise has nothing to
+            // import and silently drops the reveal).
+            outgoing = fullData
         } else {
             // The game master's file/version is canonical. A missing or stale
             // player report is a request for that asset, never an upload.
@@ -1249,6 +1265,14 @@ extension PlayerController {
             if await root.spaceRoot.gameControllable.setCurrent(itemId: fullData.id) {
                 await MainActor.run { gameModel.gameUpdateType = .space }
             }
+        } else if baseline == nil {
+            // The master has no copy at all — unlike a mismatched/competing
+            // edit of an item the master already owns, there is no canonical
+            // baseline to defer to. Attach the full bytes so the master can
+            // adopt them as its own copy (mirrors MasterController.handleSpace's
+            // `.itemMissing` import fallback, which otherwise has nothing to
+            // import and silently drops the reveal).
+            outgoing = fullData
         } else {
             // A peer never establishes a competing baseline. A missing or stale
             // report becomes a request for the game master's canonical asset.

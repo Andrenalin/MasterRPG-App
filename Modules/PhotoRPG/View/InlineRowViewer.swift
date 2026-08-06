@@ -13,21 +13,23 @@ struct InlineRowViewer: View, Equatable {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
-        HStack {
-            root.viewController.photoRow(root: root, for: source.itemId)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .overlay(alignment: .trailing) {
-            Button {
-                actionHandler()
-            } label: {
-                Label {
-                    Text(title)
-                } icon: {
-                    Image(systemName: root.configurable.module.icon)
-                }
+        GameShareView(root: root.rootController, itemId: source.itemId) {
+            HStack {
+                root.viewController.photoRow(root: root, for: source.itemId)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
-            .selectedRoundButton(title: title, module: .photo, isSelected: isPresented)
+            .overlay(alignment: .trailing) {
+                Button {
+                    actionHandler()
+                } label: {
+                    Label {
+                        Text(title)
+                    } icon: {
+                        Image(systemName: root.configurable.module.icon)
+                    }
+                }
+                .selectedRoundButton(title: title, module: .photo, isSelected: isPresented)
+            }
         }
     }
     
