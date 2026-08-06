@@ -319,7 +319,6 @@ public final class SheetRootModel: Sendable {
             ) {
                 unfold(sheetModel: existingSheet)
                 existingSheet.isShown.toggle()
-                scrollToRevealedLink(existingSheet)
                 return true
             }
             guard let rootModel = rootManager.rootModel(for: module) else { return false }
@@ -335,7 +334,6 @@ public final class SheetRootModel: Sendable {
             newSheet.linkNumber = linkNumber
             unfold(sheetModel: newSheet)
             sheetModel.entries.append(newSheet)
-            scrollToRevealedLink(newSheet)
             return true
         }
         for entry in sheetModel.entries where toggleItemLink(
@@ -410,25 +408,6 @@ public final class SheetRootModel: Sendable {
     func unfold(sheetModel: SheetModel) {
         guard let sheetController = rootManager.rootModel(for: sheetModel.source.typeId)?.sheetControllable else { return }
         sheetController.unfold(root: rootManager, sheetModel: sheetModel)
-    }
-
-    /// Scrolls a just-revealed linked sheet into view once its content has had a chance to
-    /// lay out. `toggleItemLink`/`toggleShown` insert (or reveal) a whole new `SheetView`
-    /// subtree inside `withAnimation`; without an explicit scroll target, the hosting
-    /// ScrollView's own view-identity position tracking (`.scrollPosition(_:anchor:)`) keeps
-    /// whichever row happens to be nearest its anchor in view — not the row the user just
-    /// tapped — and animates a correction for it in the same transaction as the insertion,
-    /// which reads as an unrelated jump. Writing `editorModel.scrollEntryId` here instead
-    /// gives the ScrollView a deliberate target. The write is deferred a moment (matching
-    /// the pattern already used by the various "add entry" actions) so it lands after the
-    /// newly revealed subtree has been laid out rather than racing it.
-    private func scrollToRevealedLink(_ entry: SheetModel) {
-        guard entry.isShown else { return }
-        let targetId = entry.source.entryId ?? entry.source.itemId
-        Task {
-            try? await Task.sleep(for: .seconds(0.25))
-            editorModel.scrollEntryId = targetId
-        }
     }
 
     // MARK: - Selection
