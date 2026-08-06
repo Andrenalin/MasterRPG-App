@@ -48,7 +48,7 @@ struct SharingActionView: View, Equatable {
             } label: {
                 Image(systemName: "play.rectangle.on.rectangle")
             }
-            .accessibilityLabel(String(localized: "Play", bundle: .module))
+            .selectedRoundButton(title: String(localized: "Play", bundle: .module), module: .audio, isSelected: false)
             .disabled(!root.itemController.hasAudio(itemId: itemId))
         }
     }

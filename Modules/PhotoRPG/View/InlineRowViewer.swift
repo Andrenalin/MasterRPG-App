@@ -16,27 +16,23 @@ struct InlineRowViewer: View, Equatable {
         HStack {
             root.viewController.photoRow(root: root, for: source.itemId)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            
+        }
+        .overlay(alignment: .trailing) {
             Button {
                 actionHandler()
             } label: {
                 Label {
-                    Text("Open Photo", bundle: .module)
+                    Text(title)
                 } icon: {
                     Image(systemName: root.configurable.module.icon)
                 }
             }
-            .labelStyle(.iconOnly)
-            .imageScale(.large)
-            .padding(8)
-            .contentShape(.circle)
-            .modifier(
-                GameWindowButtonAppearance(
-                    module: .map,
-                    isWindowPresented: isPresented
-                )
-            )
+            .selectedRoundButton(title: title, module: .photo, isSelected: isPresented)
         }
+    }
+    
+    var title: String {
+        String(localized: "Open Photo", bundle: .module)
     }
         
     static func == (lhs: Self, rhs: Self) -> Bool {

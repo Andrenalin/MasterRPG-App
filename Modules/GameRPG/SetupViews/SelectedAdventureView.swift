@@ -37,11 +37,15 @@ struct SelectedAdventureView: View {
             Group {
                 if isCompactLayout {
                     VStack(alignment: .leading, spacing: 12) {
-                        content
+                        adventureSelection
+                        optionView
                     }
                 } else {
                     HStack(alignment: .top, spacing: 12) {
-                        content
+                        adventureSelection
+                    }
+                    .overlay(alignment: .trailing) {
+                        optionView
                     }
                 }
             }
@@ -80,11 +84,6 @@ struct SelectedAdventureView: View {
         }
     }
     
-    @ViewBuilder private var content: some View {
-        adventureSelection
-        optionView
-    }
-
     private var adventureSelection: some View {
         root.adventureRoot.viewController.dropChooseView(model: selection)
             .frame(maxWidth: .infinity)

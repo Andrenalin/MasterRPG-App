@@ -37,10 +37,19 @@ struct SelectedPlayerView: View {
                 if isCompactLayout {
                     VStack(alignment: .leading, spacing: 12) {
                         characterSelection
+                        
+                        if root.gameModel.selectedCharacter != nil {
+                            sharePlayStart
+                        }
                     }
                 } else {
                     HStack(alignment: .top, spacing: 12) {
                         characterSelection
+                    }
+                    .overlay(alignment: .trailing) {
+                        if root.gameModel.selectedCharacter != nil {
+                            sharePlayStart
+                        }
                     }
                 }
             }
@@ -85,11 +94,6 @@ struct SelectedPlayerView: View {
 #if os(macOS)
             .padding()
 #endif
-        
-        if root.gameModel.selectedCharacter != nil {
-            sharePlayStart
-        }
-
     }
 
     private func updateTipSelection(_ characterID: UUID?) {
