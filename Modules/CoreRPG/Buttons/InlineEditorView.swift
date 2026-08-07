@@ -6,13 +6,21 @@ struct InlineEditorView: View {
     let entryDataEditable: (any EntryDataEditable)
     let updateHandler: (String) -> Void
     let entry: SheetModel
-    
+
+    init(entryDataEditable: any EntryDataEditable, updateHandler: @escaping (String) -> Void, entry: SheetModel) {
+        self.entryDataEditable = entryDataEditable
+        self.updateHandler = updateHandler
+        self.entry = entry
+        self._editModel = State(wrappedValue: TextEditModel(linkRegisterController: entryDataEditable.linkRegisterController))
+    }
+
     @State private var selectedValue: Bool = false
-    @State private var textValue: String = ""
-    
+    @State private var editModel: TextEditModel
+    @FocusState private var currentFocus: EntryEditorFocusField?
+
     @State private var intValue: Int = 0
     @State private var doubleValue: Double = 0.0
-    
+
     var body: some View {
         VStack {
             switch entry.editType {
@@ -32,7 +40,7 @@ struct InlineEditorView: View {
         }
         .onChange(of: entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId), initial: true) {
             withAnimation {
-                textValue <=> entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId)
+                syncEditModel(with: entryDataEditable.entryValue(itemId: entry.source.itemId, entryId: entry.source.entryId))
                 doubleValue <=> entryDataEditable.entryValueAsDecimal(itemId: entry.source.itemId, entryId: entry.source.entryId)
                 intValue <=> entryDataEditable.entryValueAsNumber(itemId: entry.source.itemId, entryId: entry.source.entryId)
                 selectedValue <=> entryDataEditable.entryValueAsSelected(itemId: entry.source.itemId, entryId: entry.source.entryId)
@@ -65,10 +73,26 @@ struct InlineEditorView: View {
                 )
             }
         }
+        // EntryNameEditor debounces attributedName → name internally
+        // (TextEditModel.updateNameLinks(), ~100ms) — this piggybacks on that
+        // existing signal to commit the value rather than adding a second,
+        // separate debounce.
+        .onChange(of: editModel.name) {
+            commitValue(editModel.name.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
     }
 }
 
 private extension InlineEditorView {
+    /// Reflects an externally-changed value (from `entryDataEditable`, e.g. a
+    /// network sync) into the edit model without going through the debounced
+    /// name/link update path — mirrors the old `textValue <=> value` sync.
+    func syncEditModel(with value: String) {
+        editModel.source = ItemRowModel(itemId: entry.source.itemId, entryId: entry.source.entryId, typeId: entry.source.typeId)
+        editModel.name = value
+        editModel.resetAttributedName()
+    }
+
     func updateValue(_ mutation: () -> Void) {
         let previousValue = entryDataEditable.entryValue(
             itemId: entry.source.itemId,
@@ -80,13 +104,23 @@ private extension InlineEditorView {
             entryId: entry.source.entryId
         )
         withAnimation {
-            textValue <=> updatedValue
+            syncEditModel(with: updatedValue)
         }
         if updatedValue != previousValue {
             updateHandler(updatedValue)
         }
     }
-    
+
+    func commitValue(_ value: String) {
+        updateValue {
+            entryDataEditable.updateValue(
+                itemId: entry.source.itemId,
+                entryId: entry.source.entryId,
+                value: value
+            )
+        }
+    }
+
     var selectionEditor: some View {
         Toggle(isOn: $selectedValue) {
             Label { Text("Selected", bundle: .module) } icon: { Image(systemName: "checkmark.square") }
@@ -96,39 +130,19 @@ private extension InlineEditorView {
         .toggleStyle(.automatic)
         .fixedSize(horizontal: true, vertical: true)
     }
-    
+
+    /// Uses the same attributed-string editor as the full entry editor
+    /// (`EntryNameEditor`/`TextEditModel`) instead of a plain `TextField`, so
+    /// a markdown link typed into a live value gets rendered specially
+    /// instead of showing as raw "[Name](scheme://...)" text.
     func textFieldEditor() -> some View {
-        TextField(text: $textValue) {
-            Text("Value", bundle: .module)
-        }
+        EntryNameEditor(editModel: editModel, currentFocus: $currentFocus, showLabel: false, showClearButton: false)
+            .padding(.horizontal, 8)
 #if os(iOS)
-        .autocapitalization(.none)
-        .textContentType(.name)
-        .applyIf(entry.editType == .number || entry.editType == .decimal) { content in
-            content
-                .keyboardType(.numbersAndPunctuation)
-        }
-#endif
-        .disableAutocorrection(true)
-        .labelsHidden()
-        .submitLabel(.return)
-        .textFieldStyle(.plain)
-        .padding(6)
-        .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(.secondary, lineWidth: 1)
-        }
-        .padding(.horizontal)
-        .onSubmit {
-            textValue = textValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            updateValue {
-                entryDataEditable.updateValue(
-                    itemId: entry.source.itemId,
-                    entryId: entry.source.entryId,
-                    value: textValue
-                )
+            .applyIf(entry.editType == .number || entry.editType == .decimal) { content in
+                content.keyboardType(.numbersAndPunctuation)
             }
-        }
+#endif
     }
 }
 

@@ -5,14 +5,18 @@ import SwiftUI
 struct EntryNameEditor: View {
     @Bindable var editModel: TextEditModel
     @FocusState.Binding var currentFocus: EntryEditorFocusField?
+    var showLabel: Bool = true
+    var showClearButton: Bool = true
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Name", bundle: .module)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if showLabel {
+                Text("Name", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             HStack(spacing: 8) {
                 AttributedTextEditorSurface(
@@ -39,7 +43,7 @@ struct EntryNameEditor: View {
                     editModel.updateNameLinks()
                 }
 
-                if !editModel.attributedName.characters.isEmpty {
+                if showClearButton && !editModel.attributedName.characters.isEmpty {
                     Button {
                         editModel.name = ""
                         editModel.attributedName = AttributedString("")

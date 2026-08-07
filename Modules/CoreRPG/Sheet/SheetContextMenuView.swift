@@ -17,8 +17,8 @@ struct SheetContextMenuView: View {
             SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
             addGroupButton
             convertToGroupButton
-            Divider()
         }
+        Divider()
         moveIntoButton
         moveOutOfGroupButton
         moveUpButton
