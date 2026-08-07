@@ -33,6 +33,7 @@ struct PlayerGameScreen: View {
             PlayerOverlayMenu(root: root, playerController: playerController)
                 .environment(diceShowOptionModel)
                 .environment(gameScreenModel)
+                .environment(gameScreenModel.searchBarVisibleModel)
         }
         .overlay {
             BattleRoundGameChrome(root: root)

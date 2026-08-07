@@ -32,6 +32,7 @@ public final class AppModel: Sendable {
     
     // App State Models
     @ObservationIgnored public let appGameStateModel: AppGameStateModel
+    @ObservationIgnored public let searchBarVisibleModel: SearchBarVisibleModel
     @ObservationIgnored public let scenesManager: ScenesManager
     @ObservationIgnored public let appFocusModel: AppFocusModel
 
@@ -127,6 +128,7 @@ public final class AppModel: Sendable {
     ) {
         let gameStateModel = AppGameStateModel()
         self.appGameStateModel = gameStateModel
+        self.searchBarVisibleModel = SearchBarVisibleModel()
         self.scenesManager = ScenesManager()
         self.appFocusModel = AppFocusModel()
         self.optionKeyDownModel = OptionKeyDownModel()

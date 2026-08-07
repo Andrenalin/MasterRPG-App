@@ -9,16 +9,17 @@ struct TableSheetView: View {
 
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(SearchBarVisibleModel.self) private var searchBarVisibleModel
 
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
+
         @Bindable var model = model
 
         listContentView
-            .applyIf(addSearchable) {
+            .applyIf(addSearchable && searchBarVisibleModel.isVisible) {
                 $0.searchable(text: $model.searchText, placement: .automatic, prompt: Text("Find in", bundle: .module))
             }
     }
@@ -58,5 +59,6 @@ private extension TableSheetView {
     .environment(AppGameStateModel())
     .environment(ScenesManager())
     .environment(AppFocusModel())
+    .environment(SearchBarVisibleModel())
 
 }

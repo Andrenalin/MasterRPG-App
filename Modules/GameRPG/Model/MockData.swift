@@ -53,6 +53,7 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.weatherRoot)
             .environment(diceDisplayModel)
             .environment(appGameStateModel)
+            .environment(SearchBarVisibleModel())
             .environment(appWindowSizeModel)
             .environment(cacheItemListModel)
             .environment(appSettingsModel)

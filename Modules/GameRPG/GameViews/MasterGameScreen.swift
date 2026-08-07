@@ -39,6 +39,7 @@ struct MasterGameScreen: View {
             )
             .environment(diceShowOptionModel)
             .environment(gameScreenModel)
+            .environment(gameScreenModel.searchBarVisibleModel)
         }
         .overlay {
             BattleRoundGameChrome(root: root)

@@ -41,6 +41,15 @@ final class GameScreenModel {
 
     var isSideMenuVisible: Bool = true
 
+    /// Owned so it stays derived from `showMainTab` instead of being toggled
+    /// separately by each call site — `showMainTab` changes from several
+    /// places (window restore, tab buttons, the sidebar menu), and a
+    /// second, manually-set flag drifted out of sync with those. `TableSheetView`
+    /// reads this to detach its `.searchable` toolbar item, since the sidebar's
+    /// content view stays mounted (just hidden via opacity/offset) rather than
+    /// being removed from the tree.
+    @ObservationIgnored let searchBarVisibleModel = SearchBarVisibleModel()
+
     var showMainTab: NetworkModules = .none {
         didSet {
             if showMainTab == .none, !showsBattleRoundSidebar {
@@ -49,6 +58,7 @@ final class GameScreenModel {
                 showSettingTab = .none
                 showsBattleRoundSidebar = false
             }
+            searchBarVisibleModel.isVisible = showMainTab != .none
         }
     }
     func resetToMainTab(toggle: Bool = true) {

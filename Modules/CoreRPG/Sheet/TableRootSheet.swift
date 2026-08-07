@@ -114,4 +114,5 @@ private extension TableRootSheet {
         .environment(AppWindowSizeModel())
         .environment(AppGameStateModel())
         .environment(ScenesManager())
+        .environment(SearchBarVisibleModel())
 }
