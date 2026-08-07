@@ -122,15 +122,15 @@ struct EditToolBarViewModifier: ViewModifier {
                 }
             }
             .animation(reduceMotion ? nil : .bouncy, value: hideScales)
+#if !os(macOS)
             .fullScreenCover(isPresented: $showPinSelection) {
             //.sheet(isPresented: $showPinSelection) {
                 ManagedPresentationView {
                     root.viewController.characterSelection(root: root, selectionModel: selectedPin)
-#if !os(macOS)
                         .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))
-#endif
                 }
             }
+#endif
             .onChange(of: showPinSelection, initial: false) { _, newValue in
                 guard !newValue, !selectedPin.selection.isEmpty else { return }
                 let entryId = mapEditController.editController.editorModel.sheetEditorModel.entryId
