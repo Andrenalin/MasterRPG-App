@@ -78,6 +78,8 @@ private struct TableGenerationPanelView: View {
                 controller: controller
             )
 
+            TableGenerationResultView(model: model)
+
             Divider()
 
             ScrollView {
@@ -90,7 +92,6 @@ private struct TableGenerationPanelView: View {
                         )
                     }
                 }
-                .padding()
             }
             .scrollIndicators(.hidden)
 
@@ -211,6 +212,46 @@ private struct TableGenerationHeaderView: View {
             .generatedValue,
             playerId
         )
+    }
+}
+
+private struct TableGenerationResultView: View {
+    let model: TableGenerationModel
+
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
+        HStack(alignment: .top) {
+            Image(systemName: "wand.and.stars")
+                .foregroundStyle(theme.tint(for: .table))
+
+            VStack(alignment: .leading) {
+                Text("Outcome", bundle: .module)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let summary = model.summary {
+                    Text(summary.value)
+                        .bold()
+                } else {
+                    Text(
+                        "Choose or roll every table to see the outcome.",
+                        bundle: .module
+                    )
+                    .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            theme.tint(for: .table).opacity(model.summary == nil ? 0.08 : 0.18),
+            in: .rect(cornerRadius: 20, style: .continuous)
+        )
+        //.padding(.horizontal)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -603,4 +644,34 @@ private struct TableGenerationFooterView: View {
         }
         .padding()
     }
+}
+
+private struct TableGenerationPreviewContainer: View {
+    let itemId: UUID
+
+    @Environment(TableRootModel.self) private var root
+
+    var body: some View {
+        TableGenerationRootView(
+            itemId: itemId,
+            controller: root.generationController,
+            sessionStore: root.generationSessionStore,
+            dismissAction: {}
+        )
+    }
+}
+
+#Preview("Dice Table", traits: .mockData) {
+    TableGenerationPreviewContainer(itemId: TableModel.previewId)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("List Table", traits: .mockData) {
+    TableGenerationPreviewContainer(itemId: TableModel.previewShortListId)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Empty Table", traits: .mockData) {
+    TableGenerationPreviewContainer(itemId: TableModel.previewEmptyId)
+        .preferredColorScheme(.dark)
 }

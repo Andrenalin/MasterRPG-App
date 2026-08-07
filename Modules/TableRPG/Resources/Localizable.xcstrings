@@ -247,6 +247,9 @@
         }
       }
     },
+    "Choose or roll every table to see the outcome." : {
+
+    },
     "Choose the results for each generated table." : {
       "localizations" : {
         "de" : {
@@ -727,6 +730,9 @@
         }
       }
     },
+    "Outcome" : {
+
+    },
     "Player Roll" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -794,16 +800,16 @@
     },
     "Roll %lld does not match an entry in %@." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Roll %1$lld does not match an entry in %2$@."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wurf %1$lld stimmt mit keinem Eintrag in %2$@ überein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Roll %1$lld does not match an entry in %2$@."
           }
         },
         "th" : {
