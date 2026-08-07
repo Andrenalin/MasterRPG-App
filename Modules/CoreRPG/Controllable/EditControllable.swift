@@ -503,13 +503,13 @@ public extension EditControllable {
 // MARK: - New Entry Editor
 
 public extension EditControllable {
-    @MainActor func removeEntry(source: ItemRowModel) {
+    @MainActor func removeEntry(source: ItemRowModel, forceSave: Bool = false) {
         guard source.typeId == itemControllable.config.module, let entryId = source.entryId, let updatedModel = editModel(for: source.itemId) else { return }
-        
+
         var entries = updatedModel.entries
         entries.removeAll(where: { $0.id == entryId})
         updatedModel.entries = entries
-        save(updated: updatedModel, message: String(localized: "Delete Entry", bundle: .module).localizedString)
+        save(updated: updatedModel, message: String(localized: "Delete Entry", bundle: .module).localizedString, forceSave: forceSave)
     }
 }
 

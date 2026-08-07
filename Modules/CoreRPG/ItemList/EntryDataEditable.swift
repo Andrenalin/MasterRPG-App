@@ -55,7 +55,11 @@ public protocol EntryDataEditable: EditControllable {
     /// persisting regardless of an active game (the standalone item editor does).
     @MainActor func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel]
     @MainActor func merge(itemId: UUID, entries: [Model.Entry]) -> [Model.Entry]
-    @MainActor func remove(itemId: UUID, entryId: UUID)
+    /// `forceSave` is not defaulted here because protocol requirements cannot carry
+    /// default argument values; use the 2-argument convenience overload in the
+    /// extension below (`forceSave: false`) unless the caller needs to opt into
+    /// persisting regardless of an active game (the standalone item editor does).
+    @MainActor func remove(itemId: UUID, entryId: UUID, forceSave: Bool)
     func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
 
     // MARK: - Entry Editor
@@ -65,7 +69,11 @@ public protocol EntryDataEditable: EditControllable {
     /// extension below (`forceSave: false`) unless the caller needs to opt into
     /// persisting regardless of an active game (the standalone item editor does).
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool)
-    @MainActor func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID?
+    /// `forceSave` is not defaulted here because protocol requirements cannot carry
+    /// default argument values; use the 4-argument convenience overload in the
+    /// extension below (`forceSave: false`) unless the caller needs to opt into
+    /// persisting regardless of an active game (the standalone item editor does).
+    @MainActor func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition, forceSave: Bool) -> UUID?
     
     // MARK: - Inline Quick Editor
     
@@ -155,66 +163,72 @@ public extension EntryDataEditable {
         model.entries = entries
     }
     
-    @MainActor func addNewEntry(itemId: UUID) -> UUID {
+    @MainActor func addNewEntry(itemId: UUID, forceSave: Bool = false) -> UUID {
         let entry = Model.Entry.empty
-        add(entry: entry, itemId: itemId)
+        add(entry: entry, itemId: itemId, forceSave: forceSave)
         MasterRPGTips.recordEntryCreated()
         return entry.id
     }
-    
+
     @MainActor
-    func add(entry: Model.Entry, itemId: UUID) {
+    func add(entry: Model.Entry, itemId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
-        add(entry: entry, into: item)
+        add(entry: entry, into: item, forceSave: forceSave)
     }
-    
+
     @MainActor
-    func add(entry: Model.Entry, into itemId: UUID, index: Int? = nil) {
+    func add(entry: Model.Entry, into itemId: UUID, index: Int? = nil, forceSave: Bool = false) {
         guard let editModel = editModel(for: itemId) else { return }
-        add(entry: entry, into: editModel, index: index)
+        add(entry: entry, into: editModel, index: index, forceSave: forceSave)
     }
-    
+
     @MainActor
-    private func add(entry: Model.Entry, into item: Model, index: Int? = nil) {
+    private func add(entry: Model.Entry, into item: Model, index: Int? = nil, forceSave: Bool = false) {
         let validatedIndex = index ?? editEntries(for: item).count
         item.entries.insert(entry, at: validatedIndex)
-        save(updated: item, message: String(localized: "Add entry", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Add entry", bundle: .module).localizedString, forceSave: forceSave)
     }
-    
-    @MainActor func copy(itemId: UUID, entryIds: [UUID]) {
+
+    @MainActor func copy(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
         for entryId in entryIds {
-            _ = copy(itemId: itemId, entryId: entryId)
+            _ = copy(itemId: itemId, entryId: entryId, forceSave: forceSave)
         }
     }
-    
-    @MainActor func copy(itemId: UUID, entryId: UUID) -> UUID? {
+
+    @MainActor func copy(itemId: UUID, entryId: UUID, forceSave: Bool = false) -> UUID? {
         guard let item = editModel(for: itemId) else { return nil }
         let duplicate = item[entryId].duplicate()
         item.entries.append(duplicate)
         let name = String(duplicate.name.prefix(16))
-        save(updated: item, message: String(localized: "Copy entry \(name)", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Copy entry \(name)", bundle: .module).localizedString, forceSave: forceSave)
         return duplicate.id
     }
-    
-    @MainActor func remove(itemId: UUID, entryIndexSet: IndexSet) {
+
+    @MainActor func remove(itemId: UUID, entryIndexSet: IndexSet, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         let ids = entryIndexSet.map { item.entries[$0].id }
-        remove(itemId: itemId, entryIds: ids)
+        remove(itemId: itemId, entryIds: ids, forceSave: forceSave)
     }
-    
-    @MainActor func remove(itemId: UUID, entryIds: [UUID]) {
+
+    @MainActor func remove(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
         for entryId in entryIds {
-            remove(itemId: itemId, entryId: entryId)
+            remove(itemId: itemId, entryId: entryId, forceSave: forceSave)
         }
     }
-    
-    @MainActor func remove(itemId: UUID, entryId: UUID) {
+
+    @MainActor func remove(itemId: UUID, entryId: UUID, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         item.entries.remove(at: index)
-        save(updated: item, message: String(localized: "Remove entry", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Remove entry", bundle: .module).localizedString, forceSave: forceSave)
     }
-    
+
+    /// Convenience overload preserving every pre-existing 2-argument call site
+    /// (memory-only during an active game, matching historical behavior).
+    @MainActor func remove(itemId: UUID, entryId: UUID) {
+        remove(itemId: itemId, entryId: entryId, forceSave: false)
+    }
+
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
         updateDefault(itemId: itemId, entryId: entryId, name: name, content: content, nameWithLink: false, forceSave: forceSave)
     }
@@ -232,7 +246,7 @@ public extension EntryDataEditable {
     }
 
     @MainActor
-    func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID? {
+    func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition, forceSave: Bool) -> UUID? {
         guard let item = editModel(for: itemId) else { return nil }
 
         let entry = create(name: name, content: content)
@@ -245,10 +259,17 @@ public extension EntryDataEditable {
                 .map { $0 + 1 } ?? item.entries.count
         }
 
-        add(entry: entry, into: itemId, index: insertionIndex)
+        add(entry: entry, into: itemId, index: insertionIndex, forceSave: forceSave)
         return entry.id
     }
-    
+
+    /// Convenience overload preserving every pre-existing 4-argument call site
+    /// (memory-only during an active game, matching historical behavior).
+    @MainActor
+    func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition) -> UUID? {
+        insertEntry(itemId: itemId, name: name, content: content, position: position, forceSave: false)
+    }
+
     @MainActor func updateDefault(itemId: UUID, entryId: UUID, name: String, content: String, nameWithLink: Bool, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         let validedName = nameWithLink ? name : name.withoutLink()
@@ -276,14 +297,14 @@ public extension EntryDataEditable {
         save(updated: item, message: String(localized: "Edit entry", bundle: .module).localizedString, forceSave: forceSave)
     }
 
-    @MainActor func move(itemId: UUID, entryIds: [UUID]) {
+    @MainActor func move(itemId: UUID, entryIds: [UUID], forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         let entries = entryIds.compactMap { id in item.entries.first { $0.id == id }}
         item.entries = entries
-        save(updated: item, message: String(localized: "Reorder entries", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Reorder entries", bundle: .module).localizedString, forceSave: forceSave)
     }
 
-    @MainActor func move(itemId: UUID, entryId: UUID, up: Bool) {
+    @MainActor func move(itemId: UUID, entryId: UUID, up: Bool, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         guard let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return }
         if up {
@@ -293,39 +314,39 @@ public extension EntryDataEditable {
             guard index < item.entries.count - 1 else { return }
             item.entries.move(fromOffsets: IndexSet(integer: index + 1), toOffset: index)
         }
-        save(updated: item, message: String(localized: up ? "Move entry up" : "Move entry down", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: up ? "Move entry up" : "Move entry down", bundle: .module).localizedString, forceSave: forceSave)
     }
-    
-    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel) -> Bool {
+
+    @MainActor func move(itemId: UUID, entryId: UUID, into: ItemRowModel, forceSave: Bool = false) -> Bool {
         guard let item = editModel(for: into.itemId) else { return false }
         guard let otherItem = editModel(for: itemId), let index = otherItem.entries.firstIndex(where: { $0.id == entryId }) else { return false }
         let entry = otherItem.entries.remove(at: index)
         item.entries.append(entry)
-        save(updated: otherItem, message: String(localized: "remove entry", bundle: .module).localizedString)
-        save(updated: item, message: String(localized: "add entry", bundle: .module).localizedString)
+        save(updated: otherItem, message: String(localized: "remove entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: item, message: String(localized: "add entry", bundle: .module).localizedString, forceSave: forceSave)
         return true
     }
-    
+
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] { [] }
 
-    @MainActor func move(itemId: UUID, sourceEntryId: UUID, into folder: FolderRepresentable) {
+    @MainActor func move(itemId: UUID, sourceEntryId: UUID, into folder: FolderRepresentable, forceSave: Bool = false) {
         guard let item = editModel(for: itemId), let group = editModel(for: folder.id) else { return }
         let entry = item[sourceEntryId]
         item.entries.removeAll(where: { $0.id == sourceEntryId })
         group.entries.append(entry)
-        save(updated: item, message: String(localized: "remove entry", bundle: .module).localizedString)
-        save(updated: group, message: String(localized: "move entry", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "remove entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: group, message: String(localized: "move entry", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? { nil }
 
-    @MainActor func moveOutOfGroup(itemId: UUID, sourceEntryId: UUID, parent: FolderRepresentable) {
+    @MainActor func moveOutOfGroup(itemId: UUID, sourceEntryId: UUID, parent: FolderRepresentable, forceSave: Bool = false) {
         guard let group = editModel(for: itemId), let parentItem = editModel(for: parent.id) else { return }
         let entry = group[sourceEntryId]
         group.entries.removeAll(where: { $0.id == sourceEntryId })
         parentItem.entries.append(entry)
-        save(updated: group, message: String(localized: "remove entry", bundle: .module).localizedString)
-        save(updated: parentItem, message: String(localized: "move entry out", bundle: .module).localizedString)
+        save(updated: group, message: String(localized: "remove entry", bundle: .module).localizedString, forceSave: forceSave)
+        save(updated: parentItem, message: String(localized: "move entry out", bundle: .module).localizedString, forceSave: forceSave)
     }
 }
 

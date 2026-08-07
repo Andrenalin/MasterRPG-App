@@ -337,6 +337,76 @@ struct EditControllerTests {
         #expect(editorSheetB.sheetModel.name == "Character B")
     }
 
+    /// Regression test: `remove(itemId:entryId:)`/`move(itemId:entryId:up:)` —
+    /// previously the only entry mutators with no `forceSave` parameter at all
+    /// — now persist when the standalone editor is the one performing them,
+    /// exactly like `update(itemId:entryId:...)` already does.
+    @Test func removeAndMoveEntryPersistDuringGameWhenForceSaved() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let entryA = ValueEntryModel(id: UUID(), name: "A", type: .text, value: "1")
+        let entryB = ValueEntryModel(id: UUID(), name: "B", type: .text, value: "2")
+        sut.add(entry: entryA, itemId: itemId)
+        sut.add(entry: entryB, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        sut.move(itemId: itemId, entryId: entryB.id, up: true, forceSave: true)
+        var permanent = try #require(root.itemController.itemSync(for: itemId, noGame: true))
+        #expect(permanent.entries.map(\.id) == [entryB.id, entryA.id])
+
+        sut.remove(itemId: itemId, entryId: entryA.id, forceSave: true)
+        permanent = try #require(root.itemController.itemSync(for: itemId, noGame: true))
+        #expect(permanent.entries.map(\.id) == [entryB.id])
+    }
+
+    /// Regression test: `SheetRootModel.removeEntry`/`moveEntry(entryModel:in:up:)`
+    /// previously never called `updateParent`/`updateFromRoot` at all, so
+    /// deleting or reordering an entry through the editor never reconciled the
+    /// game view's counterpart sheet — even after the domain data changed
+    /// correctly. This directly reproduces the reported "delete an entry did
+    /// not update the sync" bug.
+    @Test func removeAndMoveEntryReconcileGameCounterpartSheet() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let entryA = ValueEntryModel(id: UUID(), name: "A", type: .text, value: "1")
+        let entryB = ValueEntryModel(id: UUID(), name: "B", type: .text, value: "2")
+        sut.add(entry: entryA, itemId: itemId)
+        sut.add(entry: entryB, itemId: itemId)
+
+        let rootManager = try #require(root.rootManager)
+        let editorSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: true
+        )
+        let gameSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: false
+        )
+        root.editController.editorModel.sheetRootModel = editorSheet
+        root.editController.editorModel.gameSheetRootModel = gameSheet
+
+        #expect(editorSheet.sheetModel.entries.count == 2)
+        #expect(gameSheet.sheetModel.entries.count == 2)
+
+        let entryModel = try #require(editorSheet.sheetModel.entries.first { $0.source.entryId == entryA.id })
+        editorSheet.removeEntry(entryModel: entryModel, from: editorSheet.sheetModel)
+
+        #expect(editorSheet.sheetModel.entries.count == 1)
+        #expect(gameSheet.needsExternalReconcile)
+        gameSheet.reconcileIfNeeded()
+        #expect(gameSheet.sheetModel.entries.count == 1)
+    }
+
     /// Regression test: once an item is already loaded into game memory (e.g.
     /// because it was shown to players), a force-saved standalone-editor edit
     /// must update BOTH the permanent store and the game-memory snapshot.

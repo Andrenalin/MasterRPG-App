@@ -8,8 +8,10 @@ import SwiftUI
 /// Mirrors the position and interaction of `sheetAIAssistant` (Ask AI) used by other
 /// modules' game views, but performs no AI generation: the typed text is split into
 /// a name/content pair and saved directly as a new `ValueEntryModel` via the
-/// `EditController`. The character's own `SheetRootModel` observes item changes and
-/// refreshes itself automatically, so no manual resync is needed after saving.
+/// `EditController`. Bypasses `EntryDataEditable.add(entry:itemId:)`, so it must
+/// reconcile the live game view's `SheetRootModel` itself afterward — per
+/// `Docu/SHEETS.md`, a `SheetModel` tree never re-derives from domain changes on
+/// its own — see `addForcingPersistence(entry:)`.
 extension View {
     func characterAddEntryOverlay(root: CharacterRootModel, itemId: UUID) -> some View {
         safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
@@ -149,6 +151,9 @@ struct CharacterAddEntryControl: View {
             message: String(localized: "Add entry", bundle: .module).localizedString,
             forceSave: true
         )
+        // Reconcile the live game view's own SheetRootModel — this bypassed
+        // EntryDataEditable.add(entry:itemId:), so nothing else does it.
+        root.editController.editorModel.gameSheetRootModel?.updateFromRoot()
     }
 }
 

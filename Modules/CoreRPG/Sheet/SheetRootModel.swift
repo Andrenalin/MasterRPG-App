@@ -601,7 +601,8 @@ public final class SheetRootModel: Sendable {
             itemId: parent.source.itemId,
             name: entry.name,
             content: entry.description,
-            position: .end
+            position: .end,
+            forceSave: isEditor
         )
         sheetModel.aiGeneratedEntries.removeAll { $0 === entry }
         updateParent(parent)
@@ -639,12 +640,12 @@ public final class SheetRootModel: Sendable {
     
     // MARK: - Editor
     
-    func removeEntry(entryModel: SheetModel, from parentModel: SheetModel) {
+    public func removeEntry(entryModel: SheetModel, from parentModel: SheetModel) {
         if entryModel.isGeneratedAnswer {
             sheetModel.aiGeneratedEntries.removeAll { $0 === entryModel }
             return
         }
-        entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source)
+        entryDataEditable(for: entryModel.source)?.removeEntry(source: entryModel.source, forceSave: isEditor)
         // Use source identifiers to match and remove
         parentModel.entries.removeAll(where: { entry in
             entry.source.itemId == entryModel.source.itemId &&
@@ -658,6 +659,7 @@ public final class SheetRootModel: Sendable {
             linkTextModel[.entry(entryModel.source.itemId)] = nil
         }
         updateFilteredEntries()
+        updateParent(parentModel)
     }
 
     /// Update the sheet model after inline edits
@@ -743,7 +745,7 @@ public final class SheetRootModel: Sendable {
 
     private func addNewEntry(to source: ItemRowModel) -> UUID? {
         guard let editable = entryDataEditable(for: source) else { return nil }
-        return editable.addNewEntry(itemId: source.itemId)
+        return editable.addNewEntry(itemId: source.itemId, forceSave: isEditor)
     }
 
     func update(sheetModel: SheetModel, previousEntryId: UUID?, currentEntryId: UUID?) {
@@ -770,7 +772,7 @@ public final class SheetRootModel: Sendable {
     func duplicateEntry(entryModel: SheetModel, in parentModel: SheetModel) {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source),
-              let newId = editable.copy(itemId: entryModel.source.itemId, entryId: entryId) else { return }
+              let newId = editable.copy(itemId: entryModel.source.itemId, entryId: entryId, forceSave: isEditor) else { return }
         editorModel.setEdit(source: ItemRowModel(itemId: entryModel.source.itemId, entryId: newId, typeId: entryModel.source.typeId))
         updateParent(parentModel)
     }
@@ -784,10 +786,11 @@ public final class SheetRootModel: Sendable {
         let newIndex = up ? index - 1 : index + 2
         guard newIndex >= 0, newIndex <= parentModel.entries.count else { return }
         parentModel.entries.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex)
-        editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId })
+        editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId }, forceSave: isEditor)
         if !searchText.isEmpty {
             updateFilteredEntries()
         }
+        updateParent(parentModel)
     }
 
     func reorderEntry(from sourceIndex: Int, to targetIndex: Int, in parentModel: SheetModel) {
@@ -803,17 +806,18 @@ public final class SheetRootModel: Sendable {
         let insertIndex = sourceIndex < targetIndex ? targetIndex : targetIndex
         parentModel.entries.insert(entry, at: insertIndex)
 
-        editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId })
+        editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId }, forceSave: isEditor)
         if !searchText.isEmpty {
             updateFilteredEntries()
         }
+        updateParent(parentModel)
     }
 
     func moveEntry(fromItemId: UUID, entryId: UUID, toItemId: UUID, afterEntry: SheetModel) {
         guard let sourceEditable = entryDataEditable(for: ItemRowModel(itemId: fromItemId, typeId: afterEntry.source.typeId)) else { return }
 
         // Move the entry from source item to target item
-        let success = sourceEditable.move(itemId: fromItemId, entryId: entryId, into: ItemRowModel(itemId: toItemId, typeId: afterEntry.source.typeId))
+        let success = sourceEditable.move(itemId: fromItemId, entryId: entryId, into: ItemRowModel(itemId: toItemId, typeId: afterEntry.source.typeId), forceSave: isEditor)
 
         guard success else { return }
 
@@ -895,7 +899,7 @@ public final class SheetRootModel: Sendable {
     func moveEntry(_ entryModel: SheetModel, in parentModel: SheetModel, into folder: FolderRepresentable) {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }
-        editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder)
+        editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder, forceSave: isEditor)
         Task {
             try? await Task.sleep(for: .milliseconds(100))
             updateParent(parentModel)
@@ -909,7 +913,7 @@ public final class SheetRootModel: Sendable {
     func moveEntryOutOfGroup(_ entryModel: SheetModel, in parentModel: SheetModel, parent: FolderRepresentable) {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }
-        editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent)
+        editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent, forceSave: isEditor)
         Task {
             try? await Task.sleep(for: .milliseconds(100))
             updateParent(parentModel)
