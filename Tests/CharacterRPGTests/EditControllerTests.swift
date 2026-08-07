@@ -407,6 +407,41 @@ struct EditControllerTests {
         #expect(gameSheet.sheetModel.entries.count == 1)
     }
 
+    /// Regression test: CharacterRPG's live game view is deliberately treated
+    /// as an editor too (`isGameEditor: true`, see
+    /// `ViewerRootView.gameSheetRootModel`) — deleting an entry FROM THE GAME
+    /// VIEW must persist to the database, not stay memory-only for the
+    /// session, matching "changes on character are saved." Before
+    /// `isGameEditor`, only the standalone editor's `sheetRootModel`
+    /// (`isEditor: true`) force-saved; the game view's own sheet always used
+    /// `forceSave: false` and the deletion never reached permanent storage.
+    @Test func removeEntryFromGameEditorPersistsToDatabase() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let entryA = ValueEntryModel(id: UUID(), name: "A", type: .text, value: "1")
+        sut.add(entry: entryA, itemId: itemId)
+
+        let rootManager = try #require(root.rootManager)
+        let gameSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: false,
+            isGameEditor: true
+        )
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        let entryModel = try #require(gameSheet.sheetModel.entries.first { $0.source.entryId == entryA.id })
+        gameSheet.removeEntry(entryModel: entryModel, from: gameSheet.sheetModel)
+
+        let permanent = try #require(root.itemController.itemSync(for: itemId, noGame: true))
+        #expect(permanent.entries.isEmpty)
+    }
+
     /// Regression test: once an item is already loaded into game memory (e.g.
     /// because it was shown to players), a force-saved standalone-editor edit
     /// must update BOTH the permanent store and the game-memory snapshot.

@@ -102,7 +102,9 @@ private extension SheetView {
                 .allowsHitTesting(false)
         }
         .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: sheetModel.isSelected)
-        .applyIf((isEditor && sheetModel.canAdd) || sheetModel.isSelected) {
+        // See SheetEntryView's matching comment: the context menu carries
+        // structural edit actions, only available where edits actually persist.
+        .applyIf(rootModel.persistsEdits && sheetModel.canAdd) {
             $0.contextMenuAll {
                 SheetContextMenuView(rootModel: rootModel, parentModel: sheetModel, entryModel: sheetModel, isEditor: isEditor)
             }

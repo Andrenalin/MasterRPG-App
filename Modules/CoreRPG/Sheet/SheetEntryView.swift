@@ -85,7 +85,12 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .onChange(of: entryModel.description) {
             rootModel.updateParent(parentModel)
         }
-        .applyIf(!entryModel.isReviewPlaceholder && (entryModel.isGeneratedAnswer || isEditor || entryModel.isSelected)) {
+        // The context menu carries structural edit actions (add/duplicate/move/
+        // delete) — only available where edits actually persist: the standalone
+        // editor, or a game view deliberately treated as an editor too (see
+        // `SheetRootModel.isGameEditor`/`persistsEdits`). `isGeneratedAnswer`
+        // stays as its own allowance for the AI-draft Take Over/Delete actions.
+        .applyIf(!entryModel.isReviewPlaceholder && (entryModel.isGeneratedAnswer || rootModel.persistsEdits)) {
             $0.contextMenuAll {
                 if entryModel.isGeneratedAnswer {
                     SheetEntryTakeOverButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)

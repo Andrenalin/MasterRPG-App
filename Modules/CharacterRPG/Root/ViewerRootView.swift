@@ -74,6 +74,11 @@ struct ViewerRootView: View {
     /// `model.id` directly rather than a throwaway placeholder, and stores it
     /// back for the next selection/reappearance to reuse. Cleared again in
     /// `GameController.resetGameState()` when the game ends.
+    ///
+    /// `isGameEditor: true` — unlike a typical live game view, character edits
+    /// made here (add/remove/move an entry, etc.) are meant to persist just
+    /// like the standalone editor's, not stay memory-only for the session; see
+    /// `SheetRootModel.persistsEdits`.
     private var gameSheetRootModel: SheetRootModel {
         if let existing = root.editController.editorModel.gameSheetRootModel {
             existing.reset(itemId: model.id)
@@ -87,7 +92,8 @@ struct ViewerRootView: View {
             linkControllable: root.rootController.linkControllable,
             sheetControllable: root.rootController.sheetControllable,
             itemId: model.id,
-            isEditor: false
+            isEditor: false,
+            isGameEditor: true
         )
         root.editController.editorModel.gameSheetRootModel = created
         return created

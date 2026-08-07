@@ -62,6 +62,13 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable {
         exportController as ExportControllable
     }
+
+    /// Clears the live game view's persistent sheet slot when the game ends,
+    /// so a later, unrelated presentation never reuses a stale instance.
+    /// See `AdventureSheet.gameSheetRootModel` for construction.
+    @MainActor func resetGameState() {
+        root.editController.editorModel.gameSheetRootModel = nil
+    }
 }
 
 extension GameController: AdventureStoreGameable {
