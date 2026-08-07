@@ -22,8 +22,22 @@ struct ViewerRootView: View {
     
     @Environment(CharacterRootModel.self) private var root
 
+    @ViewBuilder
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
+#if os(tvOS)
+        readerSheet
+#else
+        if configuration.isGame {
+            readerSheet
+                .characterAddEntryOverlay(root: root, itemId: model.id)
+        } else {
+            readerSheet
+        }
+#endif
+    }
+
+    private var readerSheet: some View {
         TableRootSheet(
             root: root.rootController,
             itemId: model.id,

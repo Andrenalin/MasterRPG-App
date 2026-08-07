@@ -121,6 +121,12 @@
         }
       }
     },
+    "Add entry" : {
+
+    },
+    "Add Entry" : {
+
+    },
     "Add entry ${entryName} to ${target}" : {
       "localizations" : {
         "de" : {
@@ -646,6 +652,9 @@
         }
       }
     },
+    "Hide Add Entry" : {
+
+    },
     "Items sent from the gamemaster" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -696,6 +705,9 @@
           }
         }
       }
+    },
+    "Name: content" : {
+
     },
     "Number" : {
       "localizations" : {

@@ -24,7 +24,7 @@ struct SheetAIAssistantStandardControl: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .center, spacing: isExpanded ? 8 : 0) {
+        HStack(alignment: .center, spacing: 0) {
             Button {
                 toggleAction()
             } label: {
@@ -32,13 +32,13 @@ struct SheetAIAssistantStandardControl: View {
                     Text(isExpanded ? "Hide Ask AI" : "Ask AI", bundle: .module)
                 } icon: {
                     Image(systemName: NetworkModules.generator.icon)
+                        .imageScale(.large)
+                        .padding(10)
                 }
             }
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
-            .imageScale(.large)
-            .frame(minWidth: 44, minHeight: 44)
             .popoverTip(MasterRPGTips.askAI)
 
             if isExpanded {
@@ -54,11 +54,19 @@ struct SheetAIAssistantStandardControl: View {
                 .submitLabel(.send)
 #endif
                 .disabled(!generatorController.availblity || generatorController.model.isLoading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(theme.background(for: .value), in: .capsule)
+                .overlay {
+                    Capsule()
+                        .strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
+                }
                 .overlay(alignment: .trailing) {
                     if generatorController.model.isLoading {
                         ProgressView()
                             .controlSize(.small)
                             .accessibilityLabel(Text("Generating sheet content", bundle: .module))
+                            .padding(.trailing)
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
