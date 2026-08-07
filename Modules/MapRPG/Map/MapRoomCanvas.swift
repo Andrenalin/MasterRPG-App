@@ -203,7 +203,7 @@ struct MapRoomHitLayer: View {
 
     var body: some View {
         if isEnabled {
-            ForEach(rooms.roomInteractionNodes) { node in
+            ForEach(rooms.roomNodes) { node in
                 if node.id != excludingEntryId {
                     MapRoomHitTarget(
                         node: node,

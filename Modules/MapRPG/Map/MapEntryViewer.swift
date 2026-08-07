@@ -65,16 +65,13 @@ final class MapEntryViewerModel {
     init(mapId: UUID, entries: [MapEntryModel] = []) {
         self.mapId = mapId
         self.entries = entries
-        let nodes = entries.map(MapRoomNode.init(entry:))
-        roomNodes = nodes
-        roomInteractionNodes = nodes.filter { !$0.entry.isHexGrid }
+        roomNodes = entries.map(MapRoomNode.init(entry:))
         reconcileNeedlePoints(with: entries)
     }
 
     var mapId: UUID
     private(set) var entries: [MapEntryModel]
     private(set) var roomNodes: [MapRoomNode]
-    private(set) var roomInteractionNodes: [MapRoomNode]
     let needleInteraction = MapNeedleInteractionModel()
 
     private var needlePointsByEntry: [UUID: [MapNeedlePointModel]] = [:]
@@ -99,7 +96,6 @@ final class MapEntryViewerModel {
         guard let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
         entries[index] = entry
         roomNodes.first(where: { $0.id == entry.id })?.update(entry: entry)
-        reconcileRoomInteractionNodes()
         reconcileNeedlePoints(for: entry)
     }
 
@@ -219,16 +215,6 @@ final class MapEntryViewerModel {
             || zip(reconciled, roomNodes).contains { $0.id != $1.id }
         if structureChanged {
             roomNodes = reconciled
-        }
-        reconcileRoomInteractionNodes()
-    }
-
-    private func reconcileRoomInteractionNodes() {
-        let reconciled = roomNodes.filter { !$0.entry.isHexGrid }
-        let structureChanged = reconciled.count != roomInteractionNodes.count
-            || zip(reconciled, roomInteractionNodes).contains { $0.id != $1.id }
-        if structureChanged {
-            roomInteractionNodes = reconciled
         }
     }
 

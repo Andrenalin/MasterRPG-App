@@ -215,6 +215,81 @@ struct MapModelTests {
         #expect(abs(result.y - imagePoint.y) < 0.001)
     }
 
+    @Test func showingAHexCellRevealsAnIntersectingHiddenRoomBeneathIt() throws {
+        let roomId = UUID()
+        let otherRoomId = UUID()
+        let hexId = UUID()
+        let map = MapModel(
+            id: UUID(),
+            name: "Hex map",
+            entries: [
+                MapEntryModel(
+                    id: roomId,
+                    name: "Room under the hex",
+                    content: "",
+                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 40)],
+                    isShown: false
+                ),
+                MapEntryModel(
+                    id: otherRoomId,
+                    name: "Unrelated hidden room",
+                    content: "",
+                    coordinates: [CGPoint(x: 500, y: 500), CGPoint(x: 540, y: 540)],
+                    isShown: false
+                ),
+                MapEntryModel(
+                    id: hexId,
+                    name: "Hex cell",
+                    content: "",
+                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 30, y: 30)],
+                    isHexGrid: true,
+                    isShown: false
+                )
+            ],
+            width: 1000,
+            height: 1000
+        )
+
+        map.toggle(hexId)
+
+        #expect(map.entries.first { $0.id == hexId }?.isShown == true)
+        #expect(map.entries.first { $0.id == roomId }?.isShown == true)
+        #expect(map.entries.first { $0.id == otherRoomId }?.isShown == false)
+    }
+
+    @Test func hidingAShownHexCellDoesNotHideTheRoomBeneathIt() throws {
+        let roomId = UUID()
+        let hexId = UUID()
+        let map = MapModel(
+            id: UUID(),
+            name: "Hex map",
+            entries: [
+                MapEntryModel(
+                    id: roomId,
+                    name: "Room under the hex",
+                    content: "",
+                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 40, y: 40)],
+                    isShown: true
+                ),
+                MapEntryModel(
+                    id: hexId,
+                    name: "Hex cell",
+                    content: "",
+                    coordinates: [CGPoint(x: 0, y: 0), CGPoint(x: 30, y: 30)],
+                    isHexGrid: true,
+                    isShown: true
+                )
+            ],
+            width: 1000,
+            height: 1000
+        )
+
+        map.toggle(hexId)
+
+        #expect(map.entries.first { $0.id == hexId }?.isShown == false)
+        #expect(map.entries.first { $0.id == roomId }?.isShown == true)
+    }
+
     @Test func geometryChangesAreIncludedInSameness() async throws {
         let original = try await setUp()
 
