@@ -2,10 +2,90 @@
   "sourceLanguage" : "en",
   "strings" : {
     "%@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
     },
     "%lld rules" : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rule"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rules"
+                }
+              }
+            }
+          }
+        },
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Regel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Regeln"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Regeln"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld กฎ"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld กฎ"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Add" : {
       "localizations" : {
@@ -40,7 +120,20 @@
       }
     },
     "Add Rule Section" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regelabschnitt hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เพิ่มส่วนของกฎ"
+          }
+        }
+      }
     },
     "Add Section" : {
       "localizations" : {
@@ -59,7 +152,20 @@
       }
     },
     "Add section ${sectionName} to ${target}" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abschnitt ${sectionName} zu ${target} hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เพิ่มส่วน ${sectionName} ไปยัง ${target}"
+          }
+        }
+      }
     },
     "Added \"%@\" to \"%@\"." : {
       "localizations" : {
@@ -67,6 +173,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Added \"%1$@\" to \"%2$@\"."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%1$@“ zu „%2$@“ hinzugefügt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เพิ่ม \"%1$@\" ไปยัง \"%2$@\" แล้ว"
           }
         }
       }
@@ -88,7 +206,20 @@
       }
     },
     "Category" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kategorie"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "หมวดหมู่"
+          }
+        }
+      }
     },
     "Content" : {
       "localizations" : {
@@ -107,22 +238,154 @@
       }
     },
     "Create Rule" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regel erstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สร้างกฎ"
+          }
+        }
+      }
     },
     "Create rule named ${name}" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regel mit dem Namen ${name} erstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สร้างกฎชื่อ ${name}"
+          }
+        }
+      }
     },
     "Created \"%@\"." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ erstellt."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สร้าง \"%@\" แล้ว"
+          }
+        }
+      }
     },
     "Delete Rule" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regel löschen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ลบกฎ"
+          }
+        }
+      }
     },
     "Deleted ^[%lld rule](inflect: true)." : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Deleted %lld rule."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Deleted %lld rules."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Deleted %lld rules."
+                }
+              }
+            }
+          }
+        },
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Regel gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Regeln gelöscht."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Regeln gelöscht."
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "ลบกฎ %lld รายการแล้ว"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "ลบกฎ %lld รายการแล้ว"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Description" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beschreibung"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คำอธิบาย"
+          }
+        }
+      }
     },
     "Document ID" : {
       "localizations" : {
@@ -189,13 +452,52 @@
       }
     },
     "Effects" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effekte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เอฟเฟกต์"
+          }
+        }
+      }
     },
     "Embedded Rules" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingebettete Regeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กฎที่ฝังอยู่"
+          }
+        }
+      }
     },
     "Groups" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กลุ่ม"
+          }
+        }
+      }
     },
     "Image Path" : {
       "localizations" : {
@@ -214,7 +516,20 @@
       }
     },
     "Name" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อ"
+          }
+        }
+      }
     },
     "Normalized Source" : {
       "localizations" : {
@@ -233,10 +548,36 @@
       }
     },
     "Open Rule" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regel öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เปิดกฎ"
+          }
+        }
+      }
     },
     "Open When Created" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Erstellen öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เปิดเมื่อสร้าง"
+          }
+        }
+      }
     },
     "Package" : {
       "localizations" : {
@@ -287,7 +628,20 @@
       }
     },
     "References" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referenzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การอ้างอิง"
+          }
+        }
+      }
     },
     "Retained" : {
       "localizations" : {
@@ -306,7 +660,20 @@
       }
     },
     "Rule" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regel"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กฎ"
+          }
+        }
+      }
     },
     "Rule Category" : {
       "localizations" : {
@@ -421,7 +788,20 @@
       }
     },
     "Rules" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กฎ"
+          }
+        }
+      }
     },
     "Save" : {
       "localizations" : {
@@ -440,7 +820,20 @@
       }
     },
     "Search Rules" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regeln suchen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ค้นหากฎ"
+          }
+        }
+      }
     },
     "Section" : {
       "localizations" : {
@@ -459,13 +852,52 @@
       }
     },
     "Section Name" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abschnittsname"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ชื่อส่วน"
+          }
+        }
+      }
     },
     "Sections" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abschnitte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ส่วน"
+          }
+        }
+      }
     },
     "Source" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelle"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แหล่งที่มา"
+          }
+        }
+      }
     },
     "Source Identifier" : {
       "localizations" : {
@@ -532,7 +964,20 @@
       }
     },
     "The selected rule is no longer available." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die ausgewählte Regel ist nicht mehr verfügbar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กฎที่เลือกไม่พร้อมใช้งานอีกต่อไป"
+          }
+        }
+      }
     },
     "Title" : {
       "localizations" : {
@@ -583,7 +1028,20 @@
       }
     },
     "Values" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ค่า"
+          }
+        }
+      }
     },
     "Version" : {
       "localizations" : {
@@ -602,13 +1060,52 @@
       }
     },
     "What should the rule be called?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie soll die Regel heißen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ควรตั้งชื่อกฎว่าอะไร?"
+          }
+        }
+      }
     },
     "What should the section be called?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie soll der Abschnitt heißen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ควรตั้งชื่อส่วนว่าอะไร?"
+          }
+        }
+      }
     },
     "Which rule?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welche Regel?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กฎใด?"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

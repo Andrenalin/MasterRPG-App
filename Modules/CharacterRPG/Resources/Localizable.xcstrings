@@ -122,10 +122,36 @@
       }
     },
     "Add entry" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eintrag hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เพิ่มรายการ"
+          }
+        }
+      }
     },
     "Add Entry" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eintrag hinzufügen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เพิ่มรายการ"
+          }
+        }
+      }
     },
     "Add entry ${entryName} to ${target}" : {
       "localizations" : {
@@ -374,7 +400,20 @@
       }
     },
     "Convert to group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Gruppe konvertieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แปลงเป็นกลุ่ม"
+          }
+        }
+      }
     },
     "Create Character" : {
       "comment" : "Title of an intent that creates a new character.",
@@ -653,7 +692,20 @@
       }
     },
     "Hide Add Entry" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinzufügen ausblenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ซ่อนการเพิ่มรายการ"
+          }
+        }
+      }
     },
     "Items sent from the gamemaster" : {
       "extractionState" : "stale",
@@ -707,7 +759,20 @@
       }
     },
     "Name: content" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name: Inhalt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ชื่อ: เนื้อหา"
+          }
+        }
+      }
     },
     "Number" : {
       "localizations" : {

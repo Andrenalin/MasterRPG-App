@@ -64,10 +64,36 @@
       }
     },
     "%@ entry version" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Eintragsversion"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เวอร์ชันรายการ %@"
+          }
+        }
+      }
     },
     "%@ is already a group." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ist bereits eine Gruppe."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ เป็นกลุ่มอยู่แล้ว"
+          }
+        }
+      }
     },
     "%@ to %@" : {
       "comment" : "A label describing the action of removing an item from a folder, including the name of the folder and the name of the folder it will be moved to. The first argument is the name of the folder the item is currently in. The second argument is the name of the folder the item will be moved to.",
@@ -866,7 +892,20 @@
       }
     },
     "Ask AI about this entry" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI zu diesem Eintrag fragen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ถาม AI เกี่ยวกับรายการนี้"
+          }
+        }
+      }
     },
     "Ask AI for a starting point" : {
       "localizations" : {
@@ -896,40 +935,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เสียง"
-          }
-        }
-      }
-    },
-    "Becareful this removes all data and resets the database." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sei vorsichtig! Das wird alle Daten löschen und die Datenbank zurücksetzen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ระวัง! การดำเนินการนี้จะลบข้อมูลทั้งหมดและรีเซ็ตฐานข้อมูล"
-          }
-        }
-      }
-    },
-    "Becareful this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sei vorsichtig! Dies löscht alle Daten aus der Datenbank, alle Dateien im Lokalen und AppCloud Ordner. Dateien in iCloud und Anderen Ordnern werden nicht gelöscht.."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ระวัง! การดำเนินการนี้จะลบข้อมูลทั้งหมดในฐานข้อมูล รวมถึงไฟล์ทั้งหมดในพื้นที่จัดเก็บ Local และ appCloud ที่เกี่ยวข้องกับฐานข้อมูล ไฟล์ใน iCloud หรือที่อื่น ๆ จะไม่ถูกลบ"
           }
         }
       }
@@ -1481,7 +1486,20 @@
       }
     },
     "Close %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปิด %@"
+          }
+        }
+      }
     },
     "Close editor" : {
       "localizations" : {
@@ -1500,7 +1518,20 @@
       }
     },
     "Close Folder" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordner schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปิดโฟลเดอร์"
+          }
+        }
+      }
     },
     "Close parent folder" : {
       "comment" : "A button label that closes a folder section in a list view.",
@@ -1537,7 +1568,20 @@
       }
     },
     "Close Search" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปิดการค้นหา"
+          }
+        }
+      }
     },
     "Collapse children" : {
       "localizations" : {
@@ -1752,13 +1796,52 @@
       }
     },
     "Convert %@ to group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ zu Gruppe konvertieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แปลง %@ เป็นกลุ่ม"
+          }
+        }
+      }
     },
     "Convert to Group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Gruppe konvertieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แปลงเป็นกลุ่ม"
+          }
+        }
+      }
     },
     "Converted to group." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Gruppe konvertiert."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แปลงเป็นกลุ่มแล้ว"
+          }
+        }
+      }
     },
     "Copy" : {
       "localizations" : {
@@ -1793,7 +1876,20 @@
       }
     },
     "Create New Group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Gruppe erstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สร้างกลุ่มใหม่"
+          }
+        }
+      }
     },
     "Create your first item" : {
       "localizations" : {
@@ -2906,7 +3002,20 @@
       }
     },
     "Extract information for %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informationen für %@ extrahieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ดึงข้อมูลสำหรับ %@"
+          }
+        }
+      }
     },
     "Extract Information for %@" : {
       "localizations" : {
@@ -3124,7 +3233,20 @@
       }
     },
     "Generate from %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von %@ generieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สร้างจาก %@"
+          }
+        }
+      }
     },
     "Generating" : {
       "comment" : "A label displayed when the system is refining an entry with AI.",
@@ -3194,7 +3316,20 @@
       }
     },
     "Group editor for %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppeneditor für %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ตัวแก้ไขกลุ่มสำหรับ %@"
+          }
+        }
+      }
     },
     "Group Editor for %@" : {
       "localizations" : {
@@ -4295,7 +4430,20 @@
       }
     },
     "New Collection in %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Sammlung in %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คอลเลกชันใหม่ใน %@"
+          }
+        }
+      }
     },
     "New entry in %@" : {
       "comment" : "A label that adds a new entry to a folder. The argument is the name of the folder.",
@@ -4316,14 +4464,23 @@
       }
     },
     "New Folder in %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Ordner in %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "โฟลเดอร์ใหม่ใน %@"
+          }
+        }
+      }
     },
     "New group in %@" : {
-
-    },
-    "New Group in %@" : {
       "comment" : "A label that opens a sheet to add a new group.",
-      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -5181,23 +5338,6 @@
         }
       }
     },
-    "Really Reset?" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wirklich Zurücksetzen?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ต้องการรีเซ็ตจริงหรือ?"
-          }
-        }
-      }
-    },
     "Recent" : {
       "localizations" : {
         "de" : {
@@ -5536,40 +5676,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แทนที่ด้วยรายการที่นำเข้า"
-          }
-        }
-      }
-    },
-    "Reset" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurücksetzen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รีเซ็ต"
-          }
-        }
-      }
-    },
-    "Reset Data" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurücksetzen der Daten"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รีเซ็ตข้อมูล"
           }
         }
       }
@@ -6895,7 +7001,20 @@
       }
     },
     "Use an existing link as the group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einen bestehenden Link als Gruppe verwenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ใช้ลิงก์ที่มีอยู่เป็นกลุ่ม"
+          }
+        }
+      }
     },
     "Use generated content %@" : {
       "comment" : "A label for a button that lets the user select an answer from a list of generated options. The argument is the name of the question.",

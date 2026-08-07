@@ -2665,6 +2665,18 @@
             "state" : "new",
             "value" : "Refine and expand the story around '%1$@': %2$@"
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Geschichte um '%1$@' verfeinern und erweitern: %2$@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปรับปรุงและขยายเรื่องราวเกี่ยวกับ '%1$@': %2$@"
+          }
         }
       }
     },

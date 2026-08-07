@@ -290,7 +290,20 @@
       }
     },
     "Convert to group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu Gruppe konvertieren"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แปลงเป็นกลุ่ม"
+          }
+        }
+      }
     },
     "Create Adventure" : {
       "comment" : "Short title for the \"Create Adventure\" app shortcut.",

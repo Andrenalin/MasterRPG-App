@@ -20,7 +20,20 @@
       }
     },
     "%@ has no entries." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hat keine Einträge."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ไม่มีรายการ"
+          }
+        }
+      }
     },
     "%lld tables" : {
       "comment" : "A localized string that describes the type of entity, suitable for display in a list or menu.",
@@ -187,7 +200,20 @@
       }
     },
     "All Players" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Spieler"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ผู้เล่นทั้งหมด"
+          }
+        }
+      }
     },
     "Auto Roll" : {
       "localizations" : {
@@ -221,25 +247,21 @@
         }
       }
     },
-    "Choose one result from each generated table." : {
-      "extractionState" : "stale",
+    "Choose the results for each generated table." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wähle aus jeder generierten Tabelle ein Ergebnis aus."
+            "value" : "Wähle die Ergebnisse für jede generierte Tabelle aus."
           }
         },
         "th" : {
           "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือกหนึ่งผลลัพธ์จากแต่ละตารางที่สร้างขึ้น"
+            "state" : "translated",
+            "value" : "เลือกผลลัพธ์ของแต่ละตารางที่สร้างขึ้น"
           }
         }
       }
-    },
-    "Choose the results for each generated table." : {
-
     },
     "Confirm" : {
       "localizations" : {
@@ -276,7 +298,20 @@
       }
     },
     "Could not share the dice with %@." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Würfel konnten nicht mit %@ geteilt werden."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถแชร์ลูกเต๋ากับ %@ ได้"
+          }
+        }
+      }
     },
     "Create Table" : {
       "comment" : "Title of the intent to create a new table.",
@@ -439,7 +474,20 @@
       }
     },
     "Deselect this generated result" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses generierte Ergebnis abwählen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ยกเลิกการเลือกผลลัพธ์ที่สร้างขึ้นนี้"
+          }
+        }
+      }
     },
     "Deselect to show the other entries" : {
       "localizations" : {
@@ -506,7 +554,20 @@
       }
     },
     "Exclude this entry from the generated result" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diesen Eintrag vom generierten Ergebnis ausschließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ยกเว้นรายการนี้จากผลลัพธ์ที่สร้างขึ้น"
+          }
+        }
+      }
     },
     "Extract Information" : {
       "localizations" : {
@@ -525,7 +586,20 @@
       }
     },
     "Hide" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausblenden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ซ่อน"
+          }
+        }
+      }
     },
     "Link" : {
       "comment" : "A button that opens a selection view for linking to another item.",
@@ -687,10 +761,36 @@
       }
     },
     "Reset" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ต"
+          }
+        }
+      }
     },
     "Roll" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ทอย"
+          }
+        }
+      }
     },
     "Roll %lld does not match an entry in %@." : {
       "localizations" : {
@@ -699,17 +799,68 @@
             "state" : "new",
             "value" : "Roll %1$lld does not match an entry in %2$@."
           }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wurf %1$lld stimmt mit keinem Eintrag in %2$@ überein."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ผลทอย %1$lld ไม่ตรงกับรายการใน %2$@"
+          }
         }
       }
     },
     "Roll or Share Dice" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfeln oder Würfel teilen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ทอยหรือแชร์ลูกเต๋า"
+          }
+        }
+      }
     },
     "Roll or share dice for %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für %@ würfeln oder Würfel teilen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ทอยหรือแชร์ลูกเต๋าสำหรับ %@"
+          }
+        }
+      }
     },
     "Rolled %lld" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld gewürfelt"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ทอยได้ %lld"
+          }
+        }
+      }
     },
     "Row Name" : {
       "comment" : "Label for the row name parameter in the Add Table Row intent.",
@@ -748,7 +899,20 @@
       }
     },
     "Select every entry you need. Hide any unwanted entries." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle jeden benötigten Eintrag aus. Blende nicht gewünschte Einträge aus."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เลือกทุกรายการที่คุณต้องการ ซ่อนรายการที่ไม่ต้องการ"
+          }
+        }
+      }
     },
     "Select this generated result" : {
       "localizations" : {
@@ -799,16 +963,68 @@
       }
     },
     "Share to %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An %@ teilen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แชร์ไปยัง %@"
+          }
+        }
+      }
     },
     "Share to all" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An alle teilen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แชร์ไปยังทั้งหมด"
+          }
+        }
+      }
     },
     "Share with %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit %@ teilen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "แชร์กับ %@"
+          }
+        }
+      }
     },
     "Skipped recursive link: %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekursiver Link übersprungen: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ข้ามลิงก์แบบวนซ้ำ: %@"
+          }
+        }
+      }
     },
     "Table" : {
       "localizations" : {
@@ -925,7 +1141,20 @@
       }
     },
     "Waiting for %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warte auf %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "กำลังรอ %@"
+          }
+        }
+      }
     },
     "What should the row be called?" : {
       "comment" : "Label for the row name parameter in the Add Table Row intent.",

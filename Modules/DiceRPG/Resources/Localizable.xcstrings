@@ -1628,7 +1628,20 @@
       }
     },
     "Open %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ öffnen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เปิด %@"
+          }
+        }
+      }
     },
     "Open Dice" : {
       "localizations" : {

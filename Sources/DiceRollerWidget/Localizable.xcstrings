@@ -248,10 +248,36 @@
       }
     },
     "adventures" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การผจญภัย"
+          }
+        }
+      }
     },
     "Adventures" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abenteuer"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การผจญภัย"
+          }
+        }
+      }
     },
     "Attack Roll" : {
       "extractionState" : "stale",
@@ -323,7 +349,20 @@
       }
     },
     "Characters" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charaktere"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ตัวละคร"
+          }
+        }
+      }
     },
     "Clear" : {
       "extractionState" : "stale",
@@ -904,23 +943,6 @@
         }
       }
     },
-    "Name" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ชื่อ"
-          }
-        }
-      }
-    },
     "No Items" : {
       "localizations" : {
         "de" : {
@@ -1200,10 +1222,36 @@
       }
     },
     "See your adventures and open them in MasterRPG." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sieh deine Abenteuer und öffne sie in MasterRPG."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ดูการผจญภัยของคุณและเปิดใน MasterRPG"
+          }
+        }
+      }
     },
     "See your characters and open them in MasterRPG." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sieh deine Charaktere und öffne sie in MasterRPG."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ดูตัวละครของคุณและเปิดใน MasterRPG"
+          }
+        }
+      }
     },
     "Select Dice" : {
       "extractionState" : "stale",

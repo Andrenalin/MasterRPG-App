@@ -276,10 +276,36 @@
       }
     },
     "Becareful this removes all data and resets the database." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei vorsichtig! Das wird alle Daten löschen und die Datenbank zurücksetzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ระวัง! การดำเนินการนี้จะลบข้อมูลทั้งหมดและรีเซ็ตฐานข้อมูล"
+          }
+        }
+      }
     },
     "Becareful this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei vorsichtig! Dies löscht alle Daten aus der Datenbank, alle Dateien im Lokalen und AppCloud Ordner. Dateien in iCloud und Anderen Ordnern werden nicht gelöscht.."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ระวัง! การดำเนินการนี้จะลบข้อมูลทั้งหมดในฐานข้อมูล รวมถึงไฟล์ทั้งหมดในพื้นที่จัดเก็บ Local และ appCloud ที่เกี่ยวข้องกับฐานข้อมูล ไฟล์ใน iCloud หรือที่อื่น ๆ จะไม่ถูกลบ"
+          }
+        }
+      }
     },
     "Bronze, Silver, and Gold are one-time support purchases. Every feature remains available to everyone; the only benefit is a colored crown beside your player name." : {
       "localizations" : {
@@ -1795,7 +1821,20 @@
       }
     },
     "Really Reset?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wirklich Zurücksetzen?"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ต้องการรีเซ็ตจริงหรือ?"
+          }
+        }
+      }
     },
     "References" : {
       "localizations" : {
@@ -1919,10 +1958,36 @@
       }
     },
     "Reset" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ต"
+          }
+        }
+      }
     },
     "Reset Data" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen der Daten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รีเซ็ตข้อมูล"
+          }
+        }
+      }
     },
     "Restore Purchases" : {
       "localizations" : {
@@ -2181,7 +2246,20 @@
       }
     },
     "Settings" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "การตั้งค่า"
+          }
+        }
+      }
     },
     "Show Tips Again" : {
       "localizations" : {
@@ -2900,7 +2978,20 @@
       }
     },
     "Welcome back, %@." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Willkommen zurück, %@."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ยินดีต้อนรับกลับมา %@"
+          }
+        }
+      }
     },
     "When disabled, User documents and common ownership identifiers are removed from the RuleRPG archive." : {
       "comment" : "A description of a checkbox that can be toggled to disable the removal of User documents and common ownership identifiers from the RuleRPG archive.",
