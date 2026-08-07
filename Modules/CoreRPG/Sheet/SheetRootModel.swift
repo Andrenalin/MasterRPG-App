@@ -928,6 +928,12 @@ public final class SheetRootModel: Sendable {
         entryDataEditable(for: entryModel.source)?.parentFolder(itemId: entryModel.source.itemId)
     }
 
+    /// Whether `parentGroup(for:)`'s result is a true value-group parent this
+    /// entry can move back out to — see `EntryDataEditable.isValueGroupParent(itemId:)`.
+    func canMoveOutOfGroup(for entryModel: SheetModel) -> Bool {
+        entryDataEditable(for: entryModel.source)?.isValueGroupParent(itemId: entryModel.source.itemId) ?? true
+    }
+
     func moveEntryOutOfGroup(_ entryModel: SheetModel, in parentModel: SheetModel, parent: FolderRepresentable) {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }

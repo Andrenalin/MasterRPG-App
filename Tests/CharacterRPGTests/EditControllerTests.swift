@@ -705,6 +705,44 @@ struct EditControllerTests {
         #expect(folder!.id == folderId)
     }
 
+    /// Regression test: `parentFolder(itemId:)` still falls back to `parentId`
+    /// (a value entry directly on a character can sit inside a library
+    /// folder), but `isValueGroupParent(itemId:)` must say `false` in that
+    /// case — that's what disables "Move out to X" in the context menu for a
+    /// root-level character value entry, since it has no value-group to move
+    /// back out to (see `SheetContextMenuView.moveOutOfGroupButton`).
+    @Test func isValueGroupParentIsFalseWhenParentFolderFallsBackToParentId() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let folderId = await root.itemController.addNew(type: .folder)
+        let childId = await root.itemController.addNew(type: .item)
+        let child = root.itemController.itemOrEmpty(for: childId)
+        child.parentId = folderId
+        child.groupId = nil
+        root.itemController.replace(model: child, isInsert: false)
+
+        #expect(sut.parentFolder(itemId: childId) != nil)
+        #expect(!sut.isValueGroupParent(itemId: childId))
+    }
+
+    /// Regression test: when `parentFolder(itemId:)` resolves through a real
+    /// value-group (`groupId`), `isValueGroupParent(itemId:)` must say `true`
+    /// — "Move out to X" stays enabled for an entry actually inside a group.
+    @Test func isValueGroupParentIsTrueWhenParentFolderResolvesGroupId() async throws {
+        let root = try await MockRoot.importTestData()
+        let sut = root.editController
+
+        let parentId = await root.itemController.addNew(type: .item)
+        let entryId = await sut.addNewGroup(itemId: parentId)
+        let parent = root.itemController.itemOrEmpty(for: parentId)
+        let groupEntry = try #require(parent.entries.first(where: { $0.id == entryId }))
+        let childId = try #require(groupEntry.valueId)
+
+        #expect(sut.parentFolder(itemId: childId) != nil)
+        #expect(sut.isValueGroupParent(itemId: childId))
+    }
+
     @Test func parentFolderReturnsNilWhenNeitherGroupIdNorParentId() async throws {
         let root = try await MockRoot.importTestData()
         let sut = root.editController

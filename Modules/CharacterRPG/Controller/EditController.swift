@@ -208,6 +208,16 @@ extension EditController {
         guard let resolvedParentId, let parent = itemControllable.itemSync(for: resolvedParentId) as? Model else { return nil }
         return FolderRepresentable(id: parent.id, name: parent.name)
     }
+
+    /// Whether `parentFolder(itemId:)` resolved via the value-group hierarchy
+    /// (`groupId` — e.g. an entry inside a "Skills" sub-group, whose owning
+    /// character it can legitimately move back out to) as opposed to falling
+    /// back to the unrelated item-list folder hierarchy (`parentId`). A value
+    /// entry has nowhere valid to "move out" to when the only resolvable
+    /// parent is a folder — see `SheetContextMenuView.moveOutOfGroupButton`.
+    @MainActor func isValueGroupParent(itemId: UUID) -> Bool {
+        (itemControllable.itemSync(for: itemId) as? Model)?.groupId != nil
+    }
     
     public func quickEditorDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         CharacterEditorRoute.quickEditor(itemRowModel.itemId)

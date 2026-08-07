@@ -45,7 +45,14 @@ public protocol EntryDataEditable: EditControllable {
     
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable]
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable?
-    
+    /// Whether `parentFolder(itemId:)`'s result is a true value-group parent
+    /// this entry can move back out to, as opposed to some other resolvable
+    /// parent (e.g. an item-list folder) that isn't a valid destination for an
+    /// entry. Defaults to `true` (no restriction); a module whose `parentFolder`
+    /// can resolve through an unrelated hierarchy overrides this to distinguish
+    /// the two — see `SheetContextMenuView.moveOutOfGroupButton`.
+    @MainActor func isValueGroupParent(itemId: UUID) -> Bool
+
     // MARK: - QuickEntryEditor
     
     @MainActor func create(name: String, content: String) -> Model.Entry
@@ -339,6 +346,7 @@ public extension EntryDataEditable {
     }
 
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? { nil }
+    @MainActor func isValueGroupParent(itemId: UUID) -> Bool { true }
 
     @MainActor func moveOutOfGroup(itemId: UUID, sourceEntryId: UUID, parent: FolderRepresentable, forceSave: Bool = false) {
         guard let group = editModel(for: itemId), let parentItem = editModel(for: parent.id) else { return }

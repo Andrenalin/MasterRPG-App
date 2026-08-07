@@ -11,12 +11,14 @@ struct SheetContextMenuView: View {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
-        SheetEntryQuickEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, onlyIcon: false)
-        Divider()
-        SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
-        addGroupButton
-        convertToGroupButton
-        Divider()
+        if isEditor {
+            SheetEntryQuickEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, onlyIcon: false)
+            Divider()
+            SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
+            addGroupButton
+            convertToGroupButton
+            Divider()
+        }
         moveIntoButton
         moveOutOfGroupButton
         moveUpButton
@@ -24,7 +26,9 @@ struct SheetContextMenuView: View {
         Divider()
         duplicateButton
 #if os(iOS)
-        linkButton
+        if isEditor {
+            linkButton
+        }
 #endif
         Divider()
     }
@@ -115,6 +119,12 @@ private extension SheetContextMenuView {
                     Image(systemName: "list.bullet")
                 }
             }
+            // Some modules' parentFolder(itemId:) can resolve through an
+            // unrelated hierarchy (e.g. CharacterRPG falling back to a
+            // library folder for a root-level value entry) — disabled rather
+            // than hidden there, since the entry can't actually move outside
+            // its character.
+            .disabled(!rootModel.canMoveOutOfGroup(for: entryModel))
         }
     }
 
