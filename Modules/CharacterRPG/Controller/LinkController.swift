@@ -31,9 +31,6 @@ extension LinkController: LinkControllable {
                 }
                 return text
             }
-            Task { @MainActor in
-                await shareResult?.networkActions?.shareId(root.gameControllable.share(id: itemId))
-            }
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
@@ -43,7 +40,9 @@ extension LinkController: LinkControllable {
                 }
             }
             let item = itemController.itemOrEmpty(for: itemId)
-            let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? "\(specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
+            // Character values never offer a per-link "Share" affordance —
+            // there is nothing for a player to share to on their own sheet,
+            // and it made no player/master distinction on its own.
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
             let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
             let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
@@ -53,7 +52,7 @@ extension LinkController: LinkControllable {
             } else {
                 description = formatInlineDescription(description: item.description, entryCount: item.entries.count)
             }
-            let result = "\(sendAction)\(showAction) \(description)\(removeAction)"
+            let result = "\(showAction) \(description)\(removeAction)"
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
             return text.toggleLink(url: url, with: result)
         }
