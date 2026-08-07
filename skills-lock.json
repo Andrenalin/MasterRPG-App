@@ -39,6 +39,12 @@
       "skillPath": "skills/foundation-models-on-device/SKILL.md",
       "computedHash": "0f750ac04c1325572749ee9270aad7f4f56852f6919ae18e719e15768ed97d26"
     },
+    "ios-code-audit": {
+      "source": "jazzychad/ios-code-audit",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "d8191834ebb34c0e15e67a6d8f4e375afb598a11423164444921ac9375c4f0b1"
+    },
     "ipados-design-guidelines": {
       "source": "ehmo/platform-design-skills",
       "sourceType": "github",

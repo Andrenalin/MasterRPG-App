@@ -159,14 +159,16 @@ struct EditToolBarViewModifier: ViewModifier {
 #if os(macOS)
                 ToolbarSpacer(.fixed, placement: bottomBarPlacement)
 #else
-                ToolbarItem(placement: titlePlacement) {
-                    Text(verbatim: titlename)
-                        .foregroundStyle(.primary)
-                }
-
-                ToolbarItem(placement: subtitlePlacement) {
-                    Text(verbatim: subtitleName)
-                        .foregroundStyle(.secondary)
+                Group {
+                    ToolbarItem(placement: titlePlacement) {
+                        Text(verbatim: titlename)
+                            .foregroundStyle(.primary)
+                    }
+                    
+                    ToolbarItem(placement: subtitlePlacement) {
+                        Text(verbatim: subtitleName)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 #endif
 
@@ -178,14 +180,15 @@ struct EditToolBarViewModifier: ViewModifier {
                 ToolbarSpacer(.fixed, placement: bottomBarPlacement)
 #endif
 
-                ToolbarItem(placement: bottomBarPlacement) {
-                    hideScaleButton
+                Group {
+                    ToolbarItem(placement: bottomBarPlacement) {
+                        hideScaleButton
+                    }
+                    
+                    ToolbarItem(placement: bottomBarPlacement) {
+                        refreshSharedMapButton
+                    }
                 }
-
-                ToolbarItem(placement: bottomBarPlacement) {
-                    refreshSharedMapButton
-                }
-
 #if !os(visionOS) && !os(tvOS)
                 ToolbarSpacer(.fixed, placement: bottomBarPlacement)
 #endif
