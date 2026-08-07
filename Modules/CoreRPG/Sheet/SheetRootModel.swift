@@ -54,7 +54,6 @@ public final class SheetRootModel: Sendable {
         self.editorModel = SheetEditorModel(itemId: itemId, module: sheetModel.source.typeId)
         // Initialize lastIsShown to match isShown so first search clear works correctly
         initializeLastIsShownState(sheetModel: sheetModel)
-        registerForExternalChanges()
     }
 
     public init(rootManager: RootManager, linkControllable: any LinkControllable, sheetControllable: SheetControllable, itemId: UUID, isEditor: Bool, editorModel: SheetEditorModel) {
@@ -67,7 +66,6 @@ public final class SheetRootModel: Sendable {
         self.editorModel = editorModel
         // Initialize lastIsShown to match isShown so first search clear works correctly
         initializeLastIsShownState(sheetModel: sheetModel)
-        registerForExternalChanges()
     }
 
     /// Builds a materialized import sheet and decorates its direct entries with
@@ -239,18 +237,47 @@ public final class SheetRootModel: Sendable {
         inlineEditingEntryId = nil
         isAIModeActive = false
         clearAIState()
-        registerForExternalChanges()
+        needsExternalReconcile = false
     }
 
-    /// Registers this instance so `updateFromRoot()` runs whenever the item it
-    /// currently shows changes through any other code path — e.g. an edit made
-    /// from a different window/instance (standalone editor vs. live game view)
-    /// showing the same item. See `ItemDataModel.publishItemChanged(itemId:)`.
-    /// Safe to call repeatedly (e.g. from `reset(itemId:)`); stale registrations
-    /// under a previously-shown itemId are harmless and pruned lazily.
-    private func registerForExternalChanges() {
-        rootController(for: sheetModel.source.typeId)?.itemControllable.itemDataModel
-            .registerItemChangeObserver(self, itemId: sheetModel.source.itemId)
+    /// Set when the counterpart `SheetRootModel` for this module — the editor's
+    /// `sheetRootModel` if this instance is the game view's `gameSheetRootModel`,
+    /// or vice versa (see `ItemEditorModel`) — just reconciled and this item may
+    /// be the one it shows. Deliberately cheap: it's just a flag. The actual
+    /// reconcile is deferred to `SheetRootView`'s `.onChange`, so an instance
+    /// that isn't currently being rendered never pays for it — it catches up
+    /// the moment it's shown again. Public (but externally read-only) so other
+    /// views hosting a `SheetRootModel` outside `SheetRootView` can opt into the
+    /// same deferred-reconcile pattern.
+    public private(set) var needsExternalReconcile = false
+
+    /// Called by a counterpart `SheetRootModel` (see `syncCounterpart()`) when
+    /// the item it just reconciled might be the one this instance shows.
+    public func syncFrom(itemId: UUID) {
+        guard sheetModel.source.itemId == itemId else { return }
+        needsExternalReconcile = true
+    }
+
+    /// Called from `SheetRootView`'s `.onChange(of: needsExternalReconcile)`.
+    /// Performs the deferred reconcile from `syncFrom(itemId:)` if one is
+    /// pending — a no-op otherwise.
+    public func reconcileIfNeeded() {
+        guard needsExternalReconcile else { return }
+        needsExternalReconcile = false
+        performReconcile()
+    }
+
+    /// Tells this module's other live sheet slot (editor ↔ game — see
+    /// `ItemEditorModel.sheetRootModel`/`gameSheetRootModel`) that this root
+    /// item just reconciled, in case it's showing the same item.
+    private func syncCounterpart() {
+        guard let editorModel = rootController(for: sheetModel.source.typeId)?.editControllable.editorModel else { return }
+        let itemId = sheetModel.source.itemId
+        if isEditor {
+            editorModel.gameSheetRootModel?.syncFrom(itemId: itemId)
+        } else {
+            editorModel.sheetRootModel?.syncFrom(itemId: itemId)
+        }
     }
 
     func rootController(for module: NetworkModules) -> ItemRootController? {
@@ -914,10 +941,16 @@ public final class SheetRootModel: Sendable {
         if !searchText.isEmpty {
             updateFilteredEntries()
         }
+        syncCounterpart()
     }
 
     /// Updates from the root SheetModel down - use when changes may affect calculated values throughout the tree
-    func updateFromRoot() {
+    public func updateFromRoot() {
+        performReconcile()
+        syncCounterpart()
+    }
+
+    private func performReconcile() {
         rootController(for: sheetModel.source.typeId)?.sheetControllable.update(root: rootManager, sheetModel: sheetModel, isEditor: isEditor)
         resetChangedLinkModels(in: sheetModel)
         if !searchText.isEmpty {

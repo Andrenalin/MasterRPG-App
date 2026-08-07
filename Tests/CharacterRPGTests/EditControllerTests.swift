@@ -203,14 +203,14 @@ struct EditControllerTests {
     }
 
     /// Regression test: an edit made through one `SheetRootModel` instance (e.g.
-    /// the standalone item editor's singleton) must reconcile every other live
-    /// `SheetRootModel` instance currently showing the same item (e.g. a live
-    /// game view's own instance) — not just the underlying domain data. Each
-    /// instance owns a materialized `SheetModel` tree that only resyncs itself
-    /// in response to its own local edit flow (see `Docu/SHEETS.md`), so
-    /// without `ItemDataModel.publishItemChanged(itemId:)` the second instance
-    /// would keep showing stale content indefinitely.
-    @Test func editReconcilesEveryLiveSheetRootModelShowingTheSameItem() async throws {
+    /// the standalone item editor's singleton) tells its counterpart instance
+    /// (e.g. the live game view's own instance) that this item may have
+    /// changed, so it can catch up — via the direct `sheetRootModel` /
+    /// `gameSheetRootModel` link on `ItemEditorModel`, not a general registry.
+    /// Each instance owns a materialized `SheetModel` tree that only resyncs
+    /// itself in response to its own local edit flow (see `Docu/SHEETS.md`);
+    /// `syncCounterpart()` is what closes that gap between the two slots.
+    @Test func editorEditNotifiesGameCounterpartSheet() async throws {
         let root = Self.makeRoot()
         let sut = root.editController
         let itemId = await root.itemController.addNew(type: .character)
@@ -231,6 +231,12 @@ struct EditControllerTests {
             itemId: itemId,
             isEditor: false
         )
+        // syncCounterpart() looks the other side up through these two named
+        // slots — not a registry — so the test must occupy them exactly like
+        // production code does (see CharacterRootModel.setUp()).
+        root.editController.editorModel.sheetRootModel = editorSheet
+        root.editController.editorModel.gameSheetRootModel = gameSheet
+
         #expect(editorSheet.sheetModel.name == "Original Name")
         #expect(gameSheet.sheetModel.name == "Original Name")
 
@@ -238,11 +244,97 @@ struct EditControllerTests {
         defer { root.itemController.itemDataModel.isGameMode = false }
 
         // Edit through the shared editor controller — mirroring the standalone
-        // item editor's `forceSave: true` — without ever touching `gameSheet`.
+        // item editor's `forceSave: true` — then reconcile the editor's own
+        // sheet, exactly as the real editor view does right after a save.
         sut.reset(name: "Renamed mid-game", itemId: itemId, forceSave: true)
-
+        editorSheet.updateFromRoot()
         #expect(editorSheet.sheetModel.name == "Renamed mid-game")
+
+        // The game view's sheet only catches up once its own render loop
+        // notices the pending flag (`SheetRootView`'s `.onChange`) — simulated
+        // directly here, since this instance isn't attached to a live view.
+        #expect(gameSheet.needsExternalReconcile)
+        #expect(gameSheet.sheetModel.name == "Original Name")
+        gameSheet.reconcileIfNeeded()
         #expect(gameSheet.sheetModel.name == "Renamed mid-game")
+    }
+
+    /// Regression test: a `SheetRootModel` that never calls
+    /// `reconcileIfNeeded()` (e.g. because its view isn't currently on screen
+    /// to trigger `.onChange`) must not do any reconcile work in response to
+    /// its counterpart's edit — that's exactly the redundant, invisible work
+    /// that made in-game editing noticeably slow. It just remembers it's stale
+    /// via `needsExternalReconcile` until something actually asks it to catch up.
+    @Test func gameSheetStaysUnreconciledUntilAskedToCatchUp() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        sut.reset(name: "Original Name", itemId: itemId)
+
+        let rootManager = try #require(root.rootManager)
+        let editorSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: true
+        )
+        let gameSheet = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: false
+        )
+        root.editController.editorModel.sheetRootModel = editorSheet
+        root.editController.editorModel.gameSheetRootModel = gameSheet
+
+        sut.reset(name: "Renamed", itemId: itemId)
+        editorSheet.updateFromRoot()
+
+        // Never call gameSheet.reconcileIfNeeded() — simulating a game view
+        // that isn't currently rendering (e.g. a different tab/window).
+        #expect(gameSheet.sheetModel.name == "Original Name")
+        #expect(gameSheet.needsExternalReconcile)
+    }
+
+    /// Regression test: editing character A must have zero effect on a
+    /// counterpart `SheetRootModel` currently showing an unrelated character B
+    /// — `syncFrom(itemId:)` only marks the flag when the ids actually match.
+    @Test func editDoesNotAffectCounterpartShowingADifferentCharacter() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemIdA = await root.itemController.addNew(type: .character)
+        let itemIdB = await root.itemController.addNew(type: .character)
+        sut.reset(name: "Character A", itemId: itemIdA)
+        sut.reset(name: "Character B", itemId: itemIdB)
+
+        let rootManager = try #require(root.rootManager)
+        let gameSheetA = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemIdA,
+            isEditor: false
+        )
+        let editorSheetB = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: root.rootController.linkControllable,
+            sheetControllable: root.rootController.sheetControllable,
+            itemId: itemIdB,
+            isEditor: true
+        )
+        root.editController.editorModel.gameSheetRootModel = gameSheetA
+        root.editController.editorModel.sheetRootModel = editorSheetB
+
+        // Edit character A through the game view's own sheet.
+        sut.reset(name: "Renamed A", itemId: itemIdA)
+        gameSheetA.updateFromRoot()
+
+        // The editor's sheet is showing a completely different character (B)
+        // — it must not be marked as needing a reconcile at all.
+        #expect(!editorSheetB.needsExternalReconcile)
+        #expect(editorSheetB.sheetModel.name == "Character B")
     }
 
     /// Regression test: once an item is already loaded into game memory (e.g.

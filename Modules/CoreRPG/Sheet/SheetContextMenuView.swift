@@ -44,7 +44,7 @@ private extension SheetContextMenuView {
 
     @ViewBuilder var convertToGroupButton: some View {
 #if !os(tvOS)
-        if entryModel.source.entryId != nil, let editable = rootModel.entryDataEditable(for: entryModel.source), editable.canAddGroups {
+        if entryModel.source.entryId != nil, let editable = rootModel.entryDataEditable(for: entryModel.source), editable.canConvertGroups {
             SheetEntryConvertToGroupButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
         }
 #endif

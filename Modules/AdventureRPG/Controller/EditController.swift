@@ -94,6 +94,7 @@ extension EditController: EntryDataEditable {
     @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 
     var canAddGroups: Bool { true }
+    var canConvertGroups: Bool { true }
 }
     
 // MARK: - EntryList editor

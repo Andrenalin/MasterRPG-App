@@ -158,7 +158,6 @@ public extension ItemControllable {
                 itemDataModel.publishContentWidgetSnapshot()
             }
             syncGameMemoryIfLoaded(with: original)
-            itemDataModel.publishItemChanged(itemId: original.id)
         } else {
             if isInsert {
                 do {
@@ -169,7 +168,6 @@ public extension ItemControllable {
             }
             resetModel(with: model)
             syncGameMemoryIfLoaded(with: model)
-            itemDataModel.publishItemChanged(itemId: model.id)
         }
     }
 
@@ -279,10 +277,10 @@ public extension ItemControllable {
     /// Mutates the existing game-memory instance in place when this item is
     /// already loaded (preserving its object identity, like
     /// `syncGameMemoryIfLoaded` above does for the reverse direction) rather
-    /// than replacing it with the incoming reference, then tells every other
-    /// live `SheetRootModel` showing this item to reconcile — this is the path
-    /// every in-game live edit (e.g. the inline quick editor) takes, so it must
-    /// propagate just as reliably as a force-saved standalone-editor edit does.
+    /// than replacing it with the incoming reference: any view or model
+    /// already holding a reference to that exact `@Observable` instance must
+    /// see the change through its own reference, not just through a fresh
+    /// dictionary lookup.
     @MainActor func replaceInGameMemory(model: ModelType?) {
         guard let model = model as? Model else { return }
         if let existing = itemDataModel.gameItemData[model.id] as? Model {
@@ -290,7 +288,6 @@ public extension ItemControllable {
         } else {
             itemDataModel.gameItemData[model.id] = model
         }
-        itemDataModel.publishItemChanged(itemId: model.id)
     }
 
     @MainActor func mergeUpdates(model: ModelType) {
@@ -301,7 +298,6 @@ public extension ItemControllable {
                 resortItem(changed: original)
             }
             itemDataModel.publishContentWidgetSnapshot()
-            itemDataModel.publishItemChanged(itemId: original.id)
         }
     }
 }
@@ -392,7 +388,6 @@ public extension ItemControllable {
         setModel(with: model)
         insertIntoItems(model: model)
         itemDataModel.publishContentWidgetSnapshot()
-        itemDataModel.publishItemChanged(itemId: model.id)
     }
 }
 

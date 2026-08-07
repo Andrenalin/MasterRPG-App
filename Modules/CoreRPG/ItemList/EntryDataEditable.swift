@@ -31,6 +31,7 @@ public protocol EntryDataEditable: EditControllable {
     func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination
 
     var canAddGroups: Bool { get }
+    var canConvertGroups: Bool { get }
     @MainActor func addNewGroup(itemId: UUID) async -> UUID
     @MainActor func canBecomeGroup(itemId: UUID) -> Bool
     @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID
@@ -91,6 +92,7 @@ public extension EntryDataEditable {
     func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool { false }
 
     var canAddGroups: Bool { false }
+    var canConvertGroups: Bool { false }
 
     @MainActor func addNewGroup(itemId: UUID) async -> UUID {
         UUID() // Default implementation does nothing, returns empty UUID

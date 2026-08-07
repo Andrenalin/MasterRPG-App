@@ -80,6 +80,11 @@ public final class CharacterRootModel {
             isEditor: true,
             editorModel: editController.editorModel.sheetEditorModel
         )
+        // `gameSheetRootModel` (the live game view's persistent counterpart) is
+        // deliberately not created here — it only exists while an actual game
+        // view is on screen. See `ViewerRootView.gameSheetRootModel`, which
+        // creates and stores it lazily, and `GameController.resetGameState()`,
+        // which clears it again when the game ends.
         editorLinkModel.rootManager = rootManager
 
         syncTask?.cancel()

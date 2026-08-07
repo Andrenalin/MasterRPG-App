@@ -21,6 +21,15 @@ public final class ItemEditorModel: Sendable {
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
 
     public var sheetRootModel: SheetRootModel?
+
+    /// The live game view's persistent counterpart to `sheetRootModel` — reused
+    /// across character selections the same way `sheetRootModel` is, instead of
+    /// being rebuilt from scratch on every selection (`TableRootSheet` used to
+    /// construct a throwaway `SheetRootModel` per item via `.id(model.id)`).
+    /// Keeping one long-lived instance per side is what lets `SheetRootModel`
+    /// tell its counterpart directly ("I just reconciled item X") in
+    /// `syncCounterpart()` instead of needing a general registry.
+    public var gameSheetRootModel: SheetRootModel?
     public let sheetEditorModel: SheetEditorModel
 
     

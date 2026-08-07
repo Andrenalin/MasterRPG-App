@@ -59,6 +59,14 @@ public struct SheetRootView<LinkType: LinkDataTransferable>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .id(rootModel.sheetModel.id)
         .focusedSceneValue(\.selectedSheetEntry, rootModel.selectedSheetEntryFocusValue)
+        // Catches up on a reconcile requested by this module's counterpart sheet
+        // (editor ↔ game, see `SheetRootModel.syncFrom(itemId:)`). Runs on the
+        // next render this view actually gets — `initial: true` also covers the
+        // case where the flag was already set before this view first appeared —
+        // so an instance that isn't currently being rendered never pays for it.
+        .onChange(of: rootModel.needsExternalReconcile, initial: true) {
+            rootModel.reconcileIfNeeded()
+        }
 #if !os(tvOS)
         // onKeyPress bubbles from whichever entry row is focused up through this ancestor, so
         // arrow keys work no matter which row (or nesting depth) currently holds focus — and
