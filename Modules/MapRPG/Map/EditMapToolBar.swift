@@ -16,6 +16,7 @@ struct EditToolBarViewModifier: ViewModifier {
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(MapRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     @State private var exitReady: Bool = false
     @State private var hideScales: Bool = true
@@ -43,14 +44,14 @@ struct EditToolBarViewModifier: ViewModifier {
                     }
 #endif
                     ToolbarItem(placement: bottomBarPlacement) {
-                        cancelButtonView
+                        confirmTileButtonView
                     }
                     ToolbarItemGroup(placement: bottomBarPlacement) {
                         undoButton
                         redoButton
                     }
                     ToolbarItem(placement: bottomBarPlacement) {
-                        confirmTileButtonView
+                        cancelButtonView
                     }
                 }
 #if os(macOS)
@@ -64,6 +65,18 @@ struct EditToolBarViewModifier: ViewModifier {
                 if !hideScales {
                     GlassEffectContainerView {
                         VStack(spacing: 8) {
+                            if appSizeModel.mode == .compact {
+                                HStack(spacing: 24) {
+                                    Spacer()
+                                    undoButton
+                                        .frame(width: 24, height: 24)
+                                    redoButton
+                                        .frame(width: 24, height: 24)
+                                    Spacer()
+                                }
+                                .buttonStyle(.bordered)
+                            }
+
                             PinScaleView(model: editorModel) { isEditing in
                                 guard !isEditing else { return }
                                 mapEditController.updatePinScale(
@@ -85,16 +98,19 @@ struct EditToolBarViewModifier: ViewModifier {
                                 mapEditController.commitHexScale(editorModel: editorModel)
                             }
 
-                            MaxSizeScaleView(model: editorModel) { ratio in
-                                mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
-                            } onMaxHeightChanged: { ratio in
-                                mapEditController.updateMaxHeight(ratio, editorModel: editorModel)
-                            } onEditingChanged: { isEditing in
-                                guard !isEditing else { return }
-                                mapEditController.commitBoundaryScale(editorModel: editorModel)
+                            if editorModel.maxWidthRatio != 1 || editorModel.maxHeightRatio != 1 {
+                                MaxSizeScaleView(model: editorModel) { ratio in
+                                    mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
+                                } onMaxHeightChanged: { ratio in
+                                    mapEditController.updateMaxHeight(ratio, editorModel: editorModel)
+                                } onEditingChanged: { isEditing in
+                                    guard !isEditing else { return }
+                                    mapEditController.commitBoundaryScale(editorModel: editorModel)
+                                }
                             }
                         }
                         .padding()
+                        .padding(.horizontal, 20)
                         .frame(maxWidth: 520)
 #if !os(visionOS)
                         .glassEffect(.regular)
@@ -154,6 +170,14 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
 
                 ToolbarItem(placement: bottomBarPlacement) {
+                    closeButtonView
+                }
+
+#if !os(visionOS) && !os(tvOS)
+                ToolbarSpacer(.fixed, placement: bottomBarPlacement)
+#endif
+
+                ToolbarItem(placement: bottomBarPlacement) {
                     hideScaleButton
                 }
 
@@ -166,8 +190,10 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
 
                 ToolbarItemGroup(placement: bottomBarPlacement) {
-                    undoButton
-                    redoButton
+                    if appSizeModel.mode != .compact {
+                        undoButton
+                        redoButton
+                    }
 
                     toggleDisplayModeButton
 
@@ -179,13 +205,8 @@ struct EditToolBarViewModifier: ViewModifier {
                 ToolbarSpacer(.flexible, placement: bottomBarPlacement)
 #endif
 
-                Group {
-                    ToolbarItem(placement: bottomBarPlacement) {
-                        cancelButtonView
-                    }
-                    ToolbarItem(placement: bottomBarPlacement) {
-                        closeButtonView
-                    }
+                ToolbarItem(placement: bottomBarPlacement) {
+                    cancelButtonView
                 }
             }
 #if os(macOS)
