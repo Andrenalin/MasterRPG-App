@@ -166,6 +166,51 @@ struct BattleRoundModelTests {
         #expect(sut.activeAttackerId == first.id)
     }
 
+    @Test("Removing a combatant drops its own entry and every defender appearance")
+    func removeCombatantDropsEntryAndDefenderReferences() throws {
+        // Given: second is highlighted, so synchronizing while third is
+        // active picks it up as a defender on third's entry.
+        let sut = BattleRoundModel()
+        let first = combatant(name: "First", initiative: 18)
+        let second = combatant(name: "Second", initiative: 12, highlighted: true)
+        let third = combatant(name: "Third", initiative: 4)
+        sut.begin(
+            mapId: UUID(),
+            players: [second],
+            roomCombatants: [third, first],
+            initiativeOrder: .descending
+        )
+        #expect(sut.activateAttacker(third.id))
+        #expect(sut.synchronize(pins: []))
+        let thirdEntryId = try #require(sut.activeEntry).id
+        #expect(try #require(sut.activeEntry).defenderIds.contains(second.id))
+
+        // When: second — a defender on third's entry, not third itself — is
+        // removed.
+        #expect(sut.removeCombatant(second.id))
+
+        // Then: second is gone entirely, and the surviving entry that
+        // listed it as a defender no longer does. Third, untouched, is
+        // still active.
+        #expect(sut.combatant(id: second.id) == nil)
+        #expect(Set(sut.entries.map(\.attackerId)) == Set([first.id, third.id]))
+        let thirdEntry = try #require(sut.entries.first { $0.id == thirdEntryId })
+        #expect(!thirdEntry.defenderIds.contains(second.id))
+        #expect(sut.activeAttackerId == third.id)
+
+        // When: the active attacker itself is removed.
+        #expect(sut.removeCombatant(third.id))
+
+        // Then: its own entry is gone too, and nobody is left active.
+        #expect(sut.combatant(id: third.id) == nil)
+        #expect(sut.entries.map(\.attackerId) == [first.id])
+        #expect(sut.activeAttackerId == nil)
+
+        // When: removing an id that no longer exists.
+        // Then: it reports failure rather than silently succeeding.
+        #expect(!sut.removeCombatant(third.id))
+    }
+
     @Test("Manual initiative order becomes the turn sequence")
     func manualOrderDrivesTurnSequence() {
         // Given

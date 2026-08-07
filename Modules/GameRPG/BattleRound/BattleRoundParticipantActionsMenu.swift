@@ -98,6 +98,22 @@ struct BattleRoundParticipantActionsMenu: View {
                     Image(systemName: combatant.isDead ? "heart.fill" : "skull.fill")
                 }
             }
+
+            // Room combatants only: a player's token comes back automatically
+            // whenever the next battle starts, not by re-highlighting a pin.
+            if !combatant.isPlayer {
+                Divider()
+
+                Button(role: .destructive) {
+                    controller.removeCombatant(combatant.id)
+                } label: {
+                    Label {
+                        Text("Remove from Battle", bundle: .module)
+                    } icon: {
+                        Image(systemName: "trash")
+                    }
+                }
+            }
         } label: {
             Label {
                 title

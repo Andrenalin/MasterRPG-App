@@ -230,6 +230,33 @@ public final class BattleRoundModel: Sendable {
         return true
     }
 
+    /// Drops a combatant from the battle entirely — its own turn entry and
+    /// every appearance as another entry's defender — rather than just
+    /// flagging it dead. The map pin itself is untouched, so highlighting it
+    /// again re-adds it as a fresh combatant.
+    @discardableResult
+    func removeCombatant(_ combatantId: UUID) -> Bool {
+        guard let combatant = combatant(id: combatantId) else { return false }
+        combatants.removeAll { $0.id == combatantId }
+        entries.removeAll { $0.attackerId == combatantId }
+        for index in entries.indices {
+            entries[index].defenderIds.removeAll { $0 == combatantId }
+        }
+        if activeAttackerId == combatantId {
+            activeAttackerId = nil
+            presentedActivePinId = nil
+        }
+        if rollRecipientCombatantId == combatantId {
+            rollRecipientCombatantId = nil
+        }
+        if combatant.isPlayer {
+            retainedPlayerCombatants.removeValue(forKey: combatant.pinId)
+            retainedPlayerInitiatives.removeValue(forKey: retentionKey(for: combatant))
+        }
+        bumpNetworkSequence()
+        return true
+    }
+
     func begin(
         mapId: UUID,
         players: [BattleCombatant],

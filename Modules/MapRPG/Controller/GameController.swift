@@ -158,6 +158,7 @@ public protocol MapGameStorable {
     @MainActor func nextBattleAttacker(itemId: UUID) -> Bool
     @MainActor func nextBattleRound(itemId: UUID) -> Bool
     @MainActor func addBattleCombatant(itemId: UUID, pinId: UUID) -> Bool
+    @MainActor func removeBattleCombatant(itemId: UUID, combatantId: UUID) -> Bool
     @MainActor func addBattleRoll(
         itemId: UUID,
         combatantId: UUID,
@@ -972,6 +973,19 @@ extension GameController: MapGameStorable {
             return false
         }
         resolveBattleConfiguredValues(for: combatant.id)
+        return true
+    }
+
+    /// Drops a combatant from the battle roster entirely, distinct from
+    /// `setBattleCombatantDead` which only flags it. The map pin itself is
+    /// untouched, so highlighting it again re-adds a fresh combatant.
+    @MainActor
+    func removeBattleCombatant(itemId: UUID, combatantId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.removeCombatant(combatantId) else {
+            return false
+        }
+        applyActiveBattleHighlights(itemId: itemId)
         return true
     }
 

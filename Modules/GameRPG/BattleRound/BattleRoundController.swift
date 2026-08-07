@@ -160,6 +160,22 @@ struct BattleRoundController: Sendable {
         return true
     }
 
+    /// Removes a combatant from the battle entirely. The map pin is left
+    /// alone, so highlighting it again re-adds it as a fresh combatant.
+    @discardableResult
+    func removeCombatant(_ combatantId: UUID) -> Bool {
+        guard root.gameModel.gameConfig.isMaster,
+              let mapId = model.mapId,
+              root.mapRoot.mapGameControllable.removeBattleCombatant(
+                  itemId: mapId,
+                  combatantId: combatantId
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
     @discardableResult
     func addRoll(
         combatantId: UUID,
