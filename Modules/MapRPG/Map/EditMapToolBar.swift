@@ -122,7 +122,8 @@ struct EditToolBarViewModifier: ViewModifier {
                 }
             }
             .animation(reduceMotion ? nil : .bouncy, value: hideScales)
-            .sheet(isPresented: $showPinSelection) {
+            .fullScreenCover(isPresented: $showPinSelection) {
+            //.sheet(isPresented: $showPinSelection) {
                 ManagedPresentationView {
                     root.viewController.characterSelection(root: root, selectionModel: selectedPin)
 #if !os(macOS)

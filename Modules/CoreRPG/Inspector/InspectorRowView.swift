@@ -223,7 +223,7 @@ struct InspectorRowView: View {
             Label {
                 Text("Generate from \(model?.name ?? "")", bundle: .module)
             } icon: {
-                Image(systemName: "gears")
+                Image(systemName: "gear")
             }
         }
     }
