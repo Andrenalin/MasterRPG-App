@@ -113,7 +113,10 @@ private extension TextDoubleEditor {
         .submitLabel(.next)
         .focused($focusState)
         .onSubmit {
-            if let value = try? Double(text, format: .number.locale(Locale.current)) {
+            // `wholeMatch(of:)` requires the entire string to match, unlike
+            // `Double(_:format:)`'s prefix-matching parse — see Calculator.swift's
+            // fix for the same issue.
+            if let value = text.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale.current))?.output {
                 model.value <=> value
             }
             model.save()

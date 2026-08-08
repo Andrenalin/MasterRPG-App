@@ -6,6 +6,7 @@ import CoreRPG
 import AppIntents
 
 import Foundation
+import os.log
 import SwiftUI
 
 struct OpenCharacterIntent: OpenIntent {
@@ -46,7 +47,9 @@ extension CharacterRootModel {
         intent.target = CharacterEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {}
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenCharacterIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

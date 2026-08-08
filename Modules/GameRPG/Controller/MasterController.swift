@@ -1271,10 +1271,11 @@ extension MasterController {
         case .space:
             return try await handleSpace(model)
         @unknown default:
-            fatalError()
+            Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) has an unrecognized module \(model.data.type.token, privacy: .public); ignoring. \(model.debugDescription, privacy: .public)")
+            return nil
         }
     }
-    
+
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
             await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)

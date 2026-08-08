@@ -2041,10 +2041,11 @@ extension PlayerController {
                 locallyMirroredProxyPresentation: locallyMirroredProxyPresentation
             )
         @unknown default:
-            fatalError()
+            Logger.networking.error("PlayerController: Received unsupported module \(model.data.type.token, privacy: .public); ignoring.")
+            return nil
         }
     }
-    
+
     func handleAdventure(_ model: GameNetworkModel) -> GameNetworkModel? {
         nil
     }

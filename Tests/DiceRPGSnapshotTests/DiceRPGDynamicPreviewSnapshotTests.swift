@@ -247,6 +247,7 @@ struct DiceRPGDynamicPreviewSnapshotTests {
             of: content(root)
                 .modifier(MockRootViewModifier(root: root))
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .transaction { transaction in
                     transaction.animation = nil

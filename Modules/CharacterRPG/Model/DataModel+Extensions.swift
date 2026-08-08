@@ -26,10 +26,10 @@ extension RPGValue {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
         }
-        if let context = managedObjectContext {
-            return RPGValueEntry(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGValue must belong to a managed object context before adding entries.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGValueEntry(context: managedObjectContext)
     }
     
     // MARK: Photos
@@ -52,10 +52,10 @@ extension RPGValue {
         if let photo = photoIds.first(where: { $0.uuid == id }) {
             return photo
         }
-        if let context = managedObjectContext {
-            return RPGValuePhoto(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGValue must belong to a managed object context before adding a photo.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGValuePhoto(context: managedObjectContext)
     }
 }
 

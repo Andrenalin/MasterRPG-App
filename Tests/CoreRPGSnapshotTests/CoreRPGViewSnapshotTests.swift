@@ -18,6 +18,7 @@ struct CoreRPGViewSnapshotTests {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
         .environment(AppFocusModel())
+        .environment(SearchBarVisibleModel())
 
         assertRepositorySnapshot(
             of: view.deterministicSnapshotEnvironment(),

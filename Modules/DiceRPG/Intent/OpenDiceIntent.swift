@@ -5,6 +5,7 @@
 import CoreRPG
 import AppIntents
 import Foundation
+import os.log
 import SwiftUI
 
 struct OpenDiceIntent: OpenIntent {
@@ -45,7 +46,9 @@ extension DiceRootModel {
         intent.target = DiceEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {}
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenDiceIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

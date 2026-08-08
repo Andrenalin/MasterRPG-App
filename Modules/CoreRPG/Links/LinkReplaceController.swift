@@ -63,8 +63,13 @@ public final class LinkReplaceController: Sendable {
                     let newMarkDown = updatedLink.markDown(for: scheme)
                     let ranges = text.ranges(of: prevMarkDown)
                     if linkNumber < ranges.count {
+                        // `.replacing(_:with:subrange:)` was tried here first but discovered
+                        // (via a failing test) to replace every occurrence in the whole
+                        // string, silently ignoring `subrange`, in this Swift toolchain —
+                        // not a scoped search at all. `replaceSubrange(_:with:)`
+                        // unambiguously replaces only this one occurrence.
                         let replaceRange = ranges[linkNumber]
-                        text = text.replacing(prevMarkDown, with: newMarkDown, subrange: replaceRange)
+                        text.replaceSubrange(replaceRange, with: newMarkDown)
                     } else {
                         text = text.replacing(prevMarkDown, with: newMarkDown)
                     }
@@ -91,8 +96,13 @@ public final class LinkReplaceController: Sendable {
                     let newMarkDown = updatedLink.markDown(for: scheme)
                     let ranges = text.ranges(of: prevMarkDown)
                     if linkNumber < ranges.count {
+                        // `.replacing(_:with:subrange:)` was tried here first but discovered
+                        // (via a failing test) to replace every occurrence in the whole
+                        // string, silently ignoring `subrange`, in this Swift toolchain —
+                        // not a scoped search at all. `replaceSubrange(_:with:)`
+                        // unambiguously replaces only this one occurrence.
                         let replaceRange = ranges[linkNumber]
-                        text = text.replacing(prevMarkDown, with: newMarkDown, subrange: replaceRange)
+                        text.replaceSubrange(replaceRange, with: newMarkDown)
                     } else {
                         text = text.replacing(prevMarkDown, with: newMarkDown)
                     }

@@ -74,6 +74,7 @@ struct SpaceRPGDynamicPreviewSnapshotTests {
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext))
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

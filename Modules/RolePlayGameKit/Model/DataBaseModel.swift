@@ -161,7 +161,10 @@ public final class DataBaseModel {
                 bundle: .module
             )
         @unknown default:
-            fatalError()
+            errorMessage = String(
+                localized: "The database could not be loaded due to an unrecognized error. Please update the app and try again.",
+                bundle: .module
+            )
         }
         hasError = true
     }

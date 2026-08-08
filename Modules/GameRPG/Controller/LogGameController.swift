@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import CharacterRPG
 import PhotoRPG
 import MapRPG
 import TableRPG
@@ -187,7 +188,7 @@ struct LogGameController: Sendable {
         case .game:
             return itemId.uuidString
         case .value:
-            return root?.photoRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
+            return root?.characterRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
         case .audio:
             return root?.audioRoot.itemControllable.nameSync(itemId: itemId) ?? itemId.uuidString
         case .pdf:
@@ -201,7 +202,7 @@ struct LogGameController: Sendable {
         case .generator, .search:
             return itemId.uuidString
         @unknown default:
-            fatalError()
+            return itemId.uuidString
         }
     }
 

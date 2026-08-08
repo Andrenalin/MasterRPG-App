@@ -13,7 +13,12 @@ struct ExportController: Sendable {
 
     let exportModel: ExportModel
     var hubControllable: any RootExportControllable {
-        get { exportModel.hubControllable! }
+        get {
+            guard let hub = exportModel.hubControllable else {
+                preconditionFailure("WeatherRPG export requires its Adventure export hub after setup.")
+            }
+            return hub
+        }
         set { exportModel.hubControllable = newValue }
     }
     let photoRoot: PhotoRootModel

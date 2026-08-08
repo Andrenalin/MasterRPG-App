@@ -333,6 +333,7 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
             of: content(appModel)
                 .environmentSetUp(appModel)
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .cloudKitAccountChecksEnabled(false)
                 .itemStateRestorationEnabled(false)
                 .rolePlayDatabaseInitializationEnabled(false)

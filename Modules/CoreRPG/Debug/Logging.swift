@@ -18,6 +18,7 @@ public enum LogScreenCategory: String {
 public extension Logger {
     static let subsystem = Bundle.main.bundleIdentifier!
 
+    static let appIntents = Logger(subsystem: subsystem, category: "AppIntents")
     static let bootStrap = Logger(subsystem: subsystem, category: "BootStrap")
     static let bookmarkStore = Logger(subsystem: subsystem, category: "BookmarkController")
     static let cacheController = Logger(subsystem: subsystem, category: "CacheController")
@@ -36,6 +37,7 @@ public extension Logger {
     static let scenesManager = Logger(subsystem: subsystem, category: "ScenesManager")
     static let sheetController = Logger(subsystem: subsystem, category: "SheetController")
     static let sharePlay = Logger(subsystem: subsystem, category: "sharePlay")
+    static let syncDataControllable = Logger(subsystem: subsystem, category: "SyncDataControllable")
     static let tipKit = Logger(subsystem: subsystem, category: "TipKit")
     static let widget = Logger(subsystem: subsystem, category: "widget")
 }

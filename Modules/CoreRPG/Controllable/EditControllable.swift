@@ -582,8 +582,13 @@ public extension EditControllable {
         if !folder.isEmpty {
             folder.append("/")
         }
-        let filePath = item.name.isEmpty ? "\(folder)NewData-\(item.id.uuidString).\(itemControllable.config.filenameExtension)" : "\(folder)\(item.name).\(itemControllable.config.filenameExtension)"
-        var dataFileUrl = FileUrl(fileId: item.id, url: URL(string: filePath)!, location: .newCloud, module: module, relativeUrl: nil)
+        let baseName = item.name.isEmpty ? "NewData-\(item.id.uuidString)" : item.name
+        let fileName = "\(baseName).\(itemControllable.config.filenameExtension)"
+        // `baseName` comes from a user-editable item name, which can contain characters
+        // (`#`, unencoded `%`/`?`, ...) that aren't valid in a URL string; `.appending(component:)`
+        // percent-encodes it so this can never fail, unlike `URL(string:)`.
+        let dataUrl = URL(string: "/")!.appending(path: folder).appending(component: fileName)
+        var dataFileUrl = FileUrl(fileId: item.id, url: dataUrl, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
         let fileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension)

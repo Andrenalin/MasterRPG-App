@@ -362,7 +362,10 @@ private extension CoreDataController {
 private extension CoreDataController {
     func fetchAndDelete<T>(request: NSFetchRequest<NSFetchRequestResult>, mapper: @escaping @Sendable (DataType) -> T?) -> [T] {
         do {
-            let data = try self.context.fetch(request) as! [DataType]
+            guard let data = try self.context.fetch(request) as? [DataType] else {
+                Logger.coreDataController.error("fetch returned an unexpected object type; expected \(DataType.self)")
+                return []
+            }
             var seenId: Set<UUID> = []
             var foundDuplicates = false
             let models = data.compactMap { item -> T? in
@@ -390,7 +393,10 @@ private extension CoreDataController {
 
     func fetchId(request: NSFetchRequest<NSFetchRequestResult>) -> [UUID] {
         do {
-            let data = try self.context.fetch(request) as! [DataType]
+            guard let data = try self.context.fetch(request) as? [DataType] else {
+                Logger.coreDataController.error("fetch returned an unexpected object type; expected \(DataType.self)")
+                return []
+            }
             var seenId: Set<UUID> = []
             var foundDuplicates = false
             let ids = data.compactMap { item -> UUID? in
@@ -424,7 +430,10 @@ private extension CoreDataController {
         let fetchId = DataType.fetchRequest()
         fetchId.predicate = NSPredicate(format: "uuid == %@", uuid as NSUUID)
         do {
-            let objects = try context.fetch(fetchId) as! [DataType]
+            guard let objects = try context.fetch(fetchId) as? [DataType] else {
+                Logger.coreDataController.error("fetch id \(uuid, privacy: .public) returned an unexpected object type; expected \(DataType.self)")
+                return nil
+            }
             let result = objects.first
             if objects.count > 1 {
                 // Log only. This runs on every sync-triggered read — deleting here would

@@ -179,67 +179,63 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 
 ## 5. Bugs / logic errors
 
-### 5.1 Game log resolves Character-tied entries against the wrong module root
-- **Location:** `Modules/GameRPG/Controller/LogGameController.swift:189-190`
-- **What:** In `name(for module:itemId:)`, the `case .value:` branch (the Character/"values" module) looks up the display name via `root?.photoRoot.itemControllable.nameSync(itemId:)` instead of the character root.
-- **Why:** Any game-log entry referencing a Character item resolves in the wrong module — falling back to a raw UUID string, or, if a Photo happens to share that UUID, showing an entirely wrong name. User-visible wrong data in the GM's session log on every Character-tied message.
-- **Action:** Route the `.value` case through `root?.characterRoot.itemControllable.nameSync(itemId:)`.
-- **Severity:** High — **verified**, see §12.
+### 5.1 Game log resolves Character-tied entries against the wrong module root — FIXED
+- **Location:** `Modules/GameRPG/Controller/LogGameController.swift:189-190` (pre-fix)
+- **What:** In `name(for module:itemId:)`, the `case .value:` branch (the Character/"values" module) looked up the display name via `root?.photoRoot.itemControllable.nameSync(itemId:)` instead of the character root.
+- **Why:** Any game-log entry referencing a Character item resolved in the wrong module — falling back to a raw UUID string, or, if a Photo happens to share that UUID, showing an entirely wrong name.
+- **Action taken:** ✅ Routed the `.value` case through `root?.characterRoot.itemControllable.nameSync(itemId:)`; added the now-required `import CharacterRPG` (the file had never referenced `characterRoot` before, so the module wasn't previously imported). Verified with a full `buildForTesting` pass.
+- **Severity:** High — **verified**, see §12. Resolved.
 
-### 5.2 `fatalError()` in `@unknown default` across five cross-module `NetworkModules` switches
-- **Location:** `Modules/GameRPG/Controller/LogGameController.swift:203-204`; `Modules/GameRPG/Controller/PlayerController.swift:2044`; `Modules/GameRPG/Controller/MasterController.swift:1273-1274`; `Modules/RolePlayGameKit/Model/AppModel.swift:412-413`; `Modules/RolePlayGameKit/Model/DataBaseModel.swift:163-164`
-- **What:** Five switches over the public, cross-module `NetworkModules` enum all crash with a bare `fatalError()` in `@unknown default` instead of degrading gracefully.
-- **Why:** Not reachable with today's enum cases, but `MasterController`/`PlayerController`'s switches sit directly in the incoming-network-message dispatch path — adding one case to the shared enum without touching all five sites (easy to miss across five modules) turns a routine feature addition into a guaranteed crash for every master/player session.
-- **Action:** Replace each with a safe fallback (log + `return nil`/ignore), matching the pattern already used elsewhere in the same switches.
-- **Severity:** Medium
+### 5.2 `fatalError()` in `@unknown default` across five switches — FIXED
+- **Location (pre-fix):** `Modules/GameRPG/Controller/LogGameController.swift:203-204`; `Modules/GameRPG/Controller/PlayerController.swift:2044`; `Modules/GameRPG/Controller/MasterController.swift:1273-1274`; `Modules/RolePlayGameKit/Model/AppModel.swift:412-413`; `Modules/RolePlayGameKit/Model/DataBaseModel.swift:163-164`
+- **What:** Five switches crashed with a bare `fatalError()` in `@unknown default` instead of degrading gracefully. **Correction:** four are over the cross-module `NetworkModules` enum as originally described, but `DataBaseModel.swift:163-164` is actually a switch over the unrelated `CoreDataInitError` enum (`loadModel`/`removeFile`/`migration`/`creation`) — a different, smaller mischaracterization caught during the fix.
+- **Why:** Not reachable with today's enum cases, but `MasterController`/`PlayerController`'s switches sit directly in the incoming-network-message dispatch path — adding one case to a shared enum without touching every site turns a routine feature addition into a guaranteed crash.
+- **Action taken:** ✅ Each now falls back gracefully instead of crashing, matching the idiom already used elsewhere in its own switch: `PlayerController`/`MasterController` log via `Logger.networking.error(...)` and return `nil` (mirroring `MasterController`'s existing "not supported" case); `LogGameController` returns `itemId.uuidString` (mirroring its own `.none`/`.game` cases); `AppModel.windowPlacement` returns `.leading(SceneId.game.rawValue)` (mirroring its own default-ish cases); `DataBaseModel` sets a generic localized `errorMessage` (mirroring its sibling `case`s) instead of crashing. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved.
 
-### 5.3 `fatalError()` when `managedObjectContext` is nil, repeated across every module's Core Data extension
-- **Location:** `Modules/MapRPG/Model/DataModel+Extensions.swift:32,54,64,85,106,118`; `Modules/PdfRPG/Model/DataModel+Extensions.swift:32`; `Modules/DiceRPG/Model/DataModel+Extensions.swift:32`; `Modules/WeatherRPG/Model/DataModel+Extensions.swift:32`; `Modules/AdventureRPG/Model/DataModel+Extensions.swift:32`; `Modules/CharacterRPG/Model/DataModel+Extensions.swift:32,58`; `Modules/PhotoRPG/Model/DataModel+Extensions.swift:32`; `Modules/GeneratorRPG/Model/DataModel+Extensions.swift:32`; `Modules/SpaceRPG/Model/DataModel+Extensions.swift:32`; `Modules/TableRPG/Model/DataModel+Extensions.swift:32`; `Modules/AudioRPG/Model/DataModel+Extensions.swift:32`
-- **What:** Helper accessors like `entryOrNew(for:)`/`mapPinOrNew(for:)` call `fatalError("ManagedObjectContext should be available!")` whenever the parent object's `managedObjectContext` is `nil`.
-- **Why:** `managedObjectContext` legitimately becomes `nil` if a CloudKit merge deletes a duplicate/stale row concurrently while the UI tries to create a sub-entry on it — exactly the kind of race CloudKit sync creates. Turns a rare merge race into an unconditional crash instead of a no-op.
-- **Action:** Return an already-deleted/no-op sentinel or throw a catchable error instead of `fatalError`, at least on paths reachable from UI edit flows during active sync.
-- **Severity:** Medium
+### 5.3 `fatalError()` when `managedObjectContext` is nil, repeated across every module's Core Data extension — FIXED (with a corrected root-cause understanding)
+- **Location (pre-fix):** `Modules/MapRPG/Model/DataModel+Extensions.swift:32,54,64,85,106,118`; `Modules/PdfRPG/Model/DataModel+Extensions.swift:32`; `Modules/DiceRPG/Model/DataModel+Extensions.swift:32`; `Modules/WeatherRPG/Model/DataModel+Extensions.swift:32`; `Modules/AdventureRPG/Model/DataModel+Extensions.swift:32`; `Modules/CharacterRPG/Model/DataModel+Extensions.swift:32,58`; `Modules/PhotoRPG/Model/DataModel+Extensions.swift:32`; `Modules/GeneratorRPG/Model/DataModel+Extensions.swift:32`; `Modules/SpaceRPG/Model/DataModel+Extensions.swift:32`; `Modules/TableRPG/Model/DataModel+Extensions.swift:32`; `Modules/AudioRPG/Model/DataModel+Extensions.swift:32`
+- **What:** Helper accessors like `entryOrNew(for:)`/`mapPinOrNew(for:)` called `fatalError("ManagedObjectContext should be available!")` whenever the parent object's `managedObjectContext` was `nil`.
+- **Correction to the original "CloudKit merge race" theory:** traced every call site (all live inside each module's `DataController.applySnapshot`, itself always invoked synchronously from inside the same `context.perform { updater(...) }` block that fetched-or-created the receiver — see `CoreDataController.swift`'s `replace`/`queueReplace`). Core Data serializes all work on a context through `context.perform`, so nothing can delete the receiver out from under this code mid-block; the CloudKit-merge race the original finding described isn't actually reachable through these call paths. A full non-crashing refactor (changing all 17 definitions plus their ~17 call sites across 11 modules' CloudKit-synced save pipelines to return `Optional` and propagating `guard let`/`compactMap` through each) was assessed and rejected as disproportionate risk for a currently-unreachable path — that scale of change to save-transaction code isn't something to do without the ability to exercise real CloudKit sync in testing.
+- **Action taken:** ✅ Instead, matched the codebase's own existing convention for this exact scenario — `Modules/RuleRPG/Model/DataModel+Extensions.swift` already handles it via `preconditionFailure` with a descriptive message rather than a bare `fatalError`. Applied the same pattern (still traps if the invariant is ever violated, but with a clear, type-specific diagnostic) to all 11 modules' `entryOrNew`/`mapPinOrNew`/`displyConfigOrNew`/`newCoordinate`/`coordinateOrNew`/`photoOrNew` helpers. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium → this is better characterized as Low given the reachability finding above; resolved either way.
 
-### 5.4 Force-unwrapped `URL(string:)!` built from unescaped user-provided text
-- **Location:** `Modules/CoreRPG/Controllable/EditControllable.swift:585-586`; related, lower-risk: `Modules/PhotoRPG/Controller/PhotoDataController.swift:19`; `Modules/CoreRPG/Files/CloudDocumentController.swift:61`
-- **What:** `filePath` is built by string-interpolating the user-editable `item.name` (e.g. `"\(folder)\(item.name).\(ext)"`) and passed straight into `URL(string: filePath)!`.
-- **Why:** `URL(string:)` returns `nil` for strings containing characters not valid in a URL component (`#`, unencoded `%`/`?`), which are entirely plausible in a user-typed Character/Photo name. Force-unwrapping crashes the app on save.
-- **Action:** Percent-encode the name before constructing the URL, or build it via path components; drop the `!`.
-- **Severity:** High — **verified**, see §12.
+### 5.4 Force-unwrapped `URL(string:)!` built from unescaped user-provided text — FIXED
+- **Location (pre-fix):** `Modules/CoreRPG/Controllable/EditControllable.swift:585-586`; `Modules/PhotoRPG/Controller/PhotoDataController.swift:19`; `Modules/CoreRPG/Files/CloudDocumentController.swift:61`
+- **What:** User-editable text (an item name, or a path segment decoded from `URL.pathComponents`) was interpolated into a string and passed straight into `URL(string:)!`.
+- **Why:** `URL(string:)` returns `nil` for strings containing characters not valid in a URL component (`#`, unencoded `%`/`?`), plausible in user-typed names. Force-unwrapping crashed the app on save.
+- **Action taken:** ✅ All three now build the `URL` via `.appending(path:)`/`.appending(component:)` from a safe `URL(string: "/")!` base instead of parsing an interpolated string — `.appending(component:)` percent-encodes its argument, so it can never fail, eliminating the force-unwrap entirely rather than just handling its failure. Verified via `DocumentationSearch` that `.appending(component:)` percent-encodes disallowed characters (unlike `.appending(path:)`, which treats `/` as a literal separator — used for the pre-existing `folder` prefix, which is already `/`-joined). Confirmed with a full `buildForTesting` pass.
+- **Severity:** High — **verified**, see §12. Resolved.
 
-### 5.5 Force-try loading bundled RealityKit tabletop assets in `init`
-- **Location:** `Modules/GameRPG/Table3D/GameEquiqment.swift:519` (`D20` init, entity load); `:587-590` (`Die` init, both entity and audio load)
-- **What:** `try! Entity.load(named:...)` and, for `Die`, both `try! Entity.load(named:...)` and `try! AudioFileResource.load(...)` crash unconditionally on failure, unlike `D20`'s own audio load a few lines above, which is wrapped in `do/catch`.
-- **Why:** Any Reality Composer Pro packaging problem crashes the entire visionOS tabletop feature at the moment a die is created, instead of degrading (e.g. hiding the 3D die).
-- **Action:** Mirror the `do/catch` pattern already used for `D20`'s audio load for both entity loads and `Die`'s audio load.
-- **Severity:** Medium
+### 5.5 Force-try loading bundled RealityKit tabletop assets in `init` — PARTIALLY FIXED (with a corrected assessment)
+- **Location (pre-fix):** `Modules/GameRPG/Table3D/GameEquipment.swift` (renamed from `GameEquiqment.swift` in §9.13) — `Die20` init (the struct's actual name; the audit's original "D20" was the human-readable die name, not the Swift type), entity load; `Die` init, both entity and audio load.
+- **Correction:** `entity: Entity` is a **required, non-optional** property of Apple's own `EntityEquipment` protocol (TabletopKit) — confirmed via `DocumentationSearch`, whose official sample code force-loads bundled RealityKit assets the exact same way (`self.entity = try! Entity.load(...)`). There is no way to "hide the 3D die" on a load failure without providing *some* valid `Entity`, so the entity load cannot be made fully non-crashing without inventing a fallback placeholder mesh — out of scope for this pass. The audio load, however, is not protocol-required and was a legitimate fully-fixable case (already handled correctly for `Die20`, not for `Die`).
+- **Action taken:** Entity loads (both structs) now wrap `Entity.load` in `do/catch` and crash via `preconditionFailure` with a specific diagnostic message instead of a bare `try!` — same "still fatal, but diagnosable" upgrade used throughout this pass, appropriate for a required, shipped, non-user-triggerable asset. ✅ `Die`'s audio load is now **fully fixed**: `Die.audioPlaybackController` changed from non-optional to `AudioPlaybackController?`, its `AudioFileResource.load` wrapped in `do/catch` logging via `Logger.gameTable.error(...)` and falling back to `nil` (mirroring `Die20`'s already-correct pattern exactly), and `playTossSound()` updated to `guard let`. Confirmed with a full `buildForTesting` pass.
+- **Severity:** Medium — audio-load half resolved; entity-load half improved (better diagnostics) but inherently can't be made non-fatal given the protocol constraint.
 
-### 5.6 Force-cast not covered by the surrounding `do/catch`
-- **Location:** `Modules/CoreRPG/Persistence/CoreDataController.swift:365,393,427`
-- **What:** `try self.context.fetch(request) as! [DataType]` — the `as!` sits outside the throwing part of the expression, so a failed cast (fetch built for the wrong entity, e.g. after a migration mismatch) traps instead of being caught by the immediately surrounding `catch { Logger....error(...) }`.
-- **Action:** Use `as? [DataType]` and fall back to the same error-logging path already present in the `catch`.
-- **Severity:** Medium
+### 5.6 Force-cast not covered by the surrounding `do/catch` — FIXED
+- **Location:** `Modules/CoreRPG/Persistence/CoreDataController.swift:365,393,427` (pre-fix)
+- **What:** `try self.context.fetch(request) as! [DataType]` — the `as!` sat outside the throwing part of the expression, so a failed cast trapped instead of being caught by the immediately surrounding `catch { Logger....error(...) }`.
+- **Action taken:** ✅ Changed all three to `guard let ... = try ... as? [DataType] else { Logger.coreDataController.error(...); return [] /* or nil */ }`, routing a cast failure through the same graceful-return path each function already uses for a thrown fetch error. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved.
 
-### 5.7 Force-unwrapped `hubControllable` repeated across 10 modules' `ExportController`
-- **Location:** `Modules/PdfRPG/Controller/ExportController.swift:13-15`; `Modules/DiceRPG/Controller/ExportController.swift:13-15`; `Modules/AudioRPG/Controller/ExportController.swift:14-16`; `Modules/MapRPG/Controller/ExportController.swift:26-28`; `Modules/CharacterRPG/Controller/ExportController.swift:23-25`; `Modules/PhotoRPG/Controller/ExportController.swift:13-15`; `Modules/SpaceRPG/Controller/ExportController.swift:13-15`; `Modules/GeneratorRPG/Controller/ExportController.swift:13-15`; `Modules/TableRPG/Controller/ExportController.swift:18-20`; `Modules/WeatherRPG/Controller/ExportController.swift:15-17`
-- **What:** `var hubControllable: any RootExportControllable { get { exportModel.hubControllable! } ... }` force-unwraps a late-bound dependency — confirmed present verbatim while spot-checking §9.4. `Modules/RuleRPG/Controller/ExportController.swift:31-39` already fixed this same pattern with a `preconditionFailure` and a descriptive message.
-- **Why:** If any export path runs before root wiring completes (test harness, preview, future init-order refactor), the crash is an undiagnosable bare trap instead of RuleRPG's clear message.
-- **Action:** Apply RuleRPG's `preconditionFailure(...)` pattern across the other 10 modules.
-- **Severity:** Low
+### 5.7 Force-unwrapped `hubControllable` repeated across 10 modules' `ExportController` — FIXED
+- **Location (pre-fix):** `Modules/PdfRPG/Controller/ExportController.swift:13-15`; `Modules/DiceRPG/Controller/ExportController.swift:13-15`; `Modules/AudioRPG/Controller/ExportController.swift:14-16`; `Modules/MapRPG/Controller/ExportController.swift:26-28`; `Modules/CharacterRPG/Controller/ExportController.swift:23-25`; `Modules/PhotoRPG/Controller/ExportController.swift:13-15`; `Modules/SpaceRPG/Controller/ExportController.swift:13-15`; `Modules/GeneratorRPG/Controller/ExportController.swift:13-15`; `Modules/TableRPG/Controller/ExportController.swift:18-20`; `Modules/WeatherRPG/Controller/ExportController.swift:15-17`
+- **What:** `var hubControllable: any RootExportControllable { get { exportModel.hubControllable! } ... }` force-unwrapped a late-bound dependency in all 10 modules, while `Modules/RuleRPG/Controller/ExportController.swift:31-39` already fixed this same pattern with a `preconditionFailure` and a descriptive message.
+- **Action taken:** ✅ Applied RuleRPG's exact `preconditionFailure("<Module> export requires its Adventure export hub after setup.")` pattern to all 10 modules' `hubControllable` getters. Verified with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
-### 5.8 Empty `catch {}` swallows Siri intent-donation failures
-- **Location:** `Modules/PdfRPG/Intent/OpenPdfIntent.swift:48`; `Modules/DiceRPG/Intent/OpenDiceIntent.swift:48`; `Modules/WeatherRPG/Intent/OpenWeatherIntent.swift:49`; `Modules/AdventureRPG/Intent/OpenAdventureIntent.swift:51`; `Modules/CharacterRPG/Intent/OpenCharacterIntent.swift:49`; `Modules/PhotoRPG/Intent/OpenPhotoIntent.swift:48`; `Modules/GeneratorRPG/Intent/OpenGeneratorIntent.swift:49`; `Modules/MapRPG/Intent/OpenMapIntent.swift:49`; `Modules/SpaceRPG/Intent/OpenSpaceIntent.swift:49`; `Modules/TableRPG/Intent/OpenTableIntent.swift:49`; `Modules/AudioRPG/Intent/OpenAudioIntent.swift:49`
-- **What:** `try await IntentDonationManager.shared.donate(intent:)` failures are caught with an entirely empty `catch {}` in every module's `donateSiriViewingIntent`.
-- **Why:** Siri/Shortcuts donation silently stops working with zero diagnostic trail if it starts failing, duplicated 11 times.
-- **Action:** At minimum log the error at debug level.
-- **Severity:** Low
+### 5.8 Empty `catch {}` swallows Siri intent-donation failures — FIXED
+- **Location (pre-fix):** `Modules/PdfRPG/Intent/OpenPdfIntent.swift:48`; `Modules/DiceRPG/Intent/OpenDiceIntent.swift:48`; `Modules/WeatherRPG/Intent/OpenWeatherIntent.swift:49`; `Modules/AdventureRPG/Intent/OpenAdventureIntent.swift:51`; `Modules/CharacterRPG/Intent/OpenCharacterIntent.swift:49`; `Modules/PhotoRPG/Intent/OpenPhotoIntent.swift:48`; `Modules/GeneratorRPG/Intent/OpenGeneratorIntent.swift:49`; `Modules/MapRPG/Intent/OpenMapIntent.swift:49`; `Modules/SpaceRPG/Intent/OpenSpaceIntent.swift:49`; `Modules/TableRPG/Intent/OpenTableIntent.swift:49`; `Modules/AudioRPG/Intent/OpenAudioIntent.swift:49`
+- **What:** `try await IntentDonationManager.shared.donate(intent:)` failures were caught with an entirely empty `catch {}` in every module's `donateSiriViewingIntent`.
+- **Action taken:** ✅ Added a new `Logger.appIntents` category to the shared `Logger` extension (`Modules/CoreRPG/Debug/Logging.swift`, alongside the existing per-subsystem categories), then logged each failure at `.debug` level with the specific intent name in all 11 files (plus the `import os.log` each file was missing). Verified with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
-### 5.9 CloudKit merge errors silently swallowed in the shared sync path
-- **Location:** `Modules/CoreRPG/Controllable/SyncDataControllable.swift:65-67`
-- **What:** `updateFromSync(deletedIds:insertedIds:updatedIds:)` — used by every module's `SyncDataController` via protocol extension — wraps the CloudKit merge in `do { ... } catch { /* comment only, no logging */ }`.
-- **Why:** A failing merge is invisible: no log line, no counter, no telemetry. The comment ("non-fatal; the next notification will retry") assumes self-healing that isn't guaranteed if the *next* notification also throws.
-- **Action:** Add a `Logger....error(...)` call in the `catch`, matching the pattern used elsewhere in the same file (`CloudKitOperationCounter`).
-- **Severity:** Medium
+### 5.9 CloudKit merge errors silently swallowed in the shared sync path — FIXED
+- **Location:** `Modules/CoreRPG/Controllable/SyncDataControllable.swift:65-67` (pre-fix)
+- **What:** `updateFromSync(deletedIds:insertedIds:updatedIds:)` — used by every module's `SyncDataController` via protocol extension — wrapped the CloudKit merge in `do { ... } catch { /* comment only, no logging */ }`.
+- **Action taken:** ✅ Added a new `Logger.syncDataControllable` category (no existing Logger category fit; `CloudKitOperationCounter`, referenced in the original finding's Action, is a separate operation-counting utility, not a logger) and logged the error with the deleted/inserted/updated counts in the `catch`, keeping the existing non-fatal retry behavior. Added the file's missing `import os.log`. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved.
 
 ---
 

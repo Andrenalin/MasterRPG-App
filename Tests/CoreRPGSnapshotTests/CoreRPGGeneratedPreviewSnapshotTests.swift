@@ -2005,6 +2005,8 @@ private func assertPreviewSnapshot<Content: View>(
             .environment(AppSettingsModel.previewFixture())
             .environment(AppWindowSizeModel())
             .environment(AppFocusModel())
+            .environment(SearchBarVisibleModel())
+            .environment(SearchBarVisibleModel())
             .environment(ScenesManager())
             .environment(OptionKeyDownModel())
             .environment(GroupItemSelectionModel())

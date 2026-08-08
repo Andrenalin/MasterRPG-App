@@ -25,7 +25,10 @@ struct Calculator {
         while hasOp {
             (nextInput, hasOp) = plus(nextInput)
         }
-        return try? Double(nextInput, format: .number.locale(Locale(identifier: "en_US")))
+        // `Double(_:format:)` does prefix matching (e.g. "2-" parses as 2.0, silently
+        // ignoring the trailing "-"), unlike the strict NumberFormatter this replaced.
+        // `wholeMatch(of:)` requires the entire string to match, restoring that behavior.
+        return nextInput.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US")))?.output
     }
 
     @MainActor

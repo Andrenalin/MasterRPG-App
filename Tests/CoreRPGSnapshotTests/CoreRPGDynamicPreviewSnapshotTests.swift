@@ -733,6 +733,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                 .environment(AppSettingsModel.previewFixture())
                 .environment(AppWindowSizeModel())
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .environment(ScenesManager())
                 .environment(OptionKeyDownModel())
                 .environment(GroupItemSelectionModel())

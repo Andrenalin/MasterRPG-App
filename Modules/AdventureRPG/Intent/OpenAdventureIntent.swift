@@ -6,6 +6,7 @@ import CoreRPG
 import AppIntents
 
 import Foundation
+import os.log
 import SwiftUI
 
 public struct OpenAdventureIntent: OpenIntent {
@@ -48,7 +49,9 @@ extension AdventureRootModel {
         intent.target = AdventureEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {}
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenAdventureIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

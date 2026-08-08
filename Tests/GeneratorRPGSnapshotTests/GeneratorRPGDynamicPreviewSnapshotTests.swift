@@ -95,6 +95,7 @@ struct GeneratorRPGDynamicPreviewSnapshotTests {
             of: content()
                 .modifier(MockRootViewModifier(root: root))
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -26,10 +26,10 @@ extension RPGTable {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
         }
-        if let context = managedObjectContext {
-            return RPGTableEntry(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGTable must belong to a managed object context before adding entries.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGTableEntry(context: managedObjectContext)
     }
 }
 

@@ -293,7 +293,11 @@ public extension EntryDataEditable {
             }
             let newLink = link.duplicate()
             guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
-            newContent = newContent.replacing(oldLinkText, with: newLink.markDown ?? oldLinkText, subrange: range)
+            // `.replacing(_:with:subrange:)` was tried here first but discovered (via a
+            // failing test) to replace every occurrence in the whole string, silently
+            // ignoring `subrange`, in this Swift toolchain — not a scoped search at all.
+            // `replaceSubrange(_:with:)` unambiguously replaces only this exact range.
+            newContent.replaceSubrange(range, with: newLink.markDown ?? oldLinkText)
             linkRegisterController.register(links: [newLink])
         }
         changed = changed || item[entryId].content != newContent

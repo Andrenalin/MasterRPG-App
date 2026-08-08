@@ -26,10 +26,10 @@ extension RPGPdf {
         if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
             return entry
         }
-        if let context = managedObjectContext {
-            return RPGPdfEntry(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGPdf must belong to a managed object context before adding entries.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGPdfEntry(context: managedObjectContext)
     }
 }
 

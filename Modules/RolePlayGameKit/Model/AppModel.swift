@@ -410,7 +410,7 @@ extension AppModel {
                 }
                 return .below(NetworkModules.map.linkWindowId, fallback: SceneId.game.rawValue)
         @unknown default:
-            fatalError()
+            return .leading(SceneId.game.rawValue)
         }
     }
 }

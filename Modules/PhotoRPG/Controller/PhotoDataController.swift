@@ -15,8 +15,11 @@ import UniformTypeIdentifiers
         
         model.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         model.description = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let filePath = "\(name).jpg"
-        var dataFileUrl = FileUrl(fileId: model.id, url: URL(string: filePath)!, location: .newCloud, module: NetworkModules.photo.token, relativeUrl: nil)
+        // `name` is user-editable and can contain characters invalid in a URL string
+        // (`#`, unencoded `%`/`?`, ...); `.appending(component:)` percent-encodes it,
+        // unlike `URL(string:)` which would return nil (and previously force-unwrapped).
+        let fileUrl = URL(string: "/")!.appending(component: "\(name).jpg")
+        var dataFileUrl = FileUrl(fileId: model.id, url: fileUrl, location: .newCloud, module: NetworkModules.photo.token, relativeUrl: nil)
         dataFileUrl.resetData(data)
         
         let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.photo.token, fileTypes: [.image], filenameExtension: "jpg")

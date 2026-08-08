@@ -3,6 +3,7 @@
 import Foundation
 import CoreData
 import Observation
+import os.log
 
 public protocol SyncDataControllable: Sendable {
     var dataControllable: any DataPersistenceControllable { get }
@@ -63,7 +64,12 @@ public extension SyncDataControllable {
                     }
                 }
             } catch {
-                // Sync errors are non-fatal; the next CloudKit notification will retry
+                // Sync errors are non-fatal; the next CloudKit notification will retry —
+                // but log so a merge that keeps failing (rather than self-healing on the
+                // next notification) is actually diagnosable.
+                Logger.syncDataControllable.error(
+                    "updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count)) failed: \(error.localizedDescription, privacy: .public)"
+                )
             }
         }
     }

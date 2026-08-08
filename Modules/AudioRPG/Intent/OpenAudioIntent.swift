@@ -5,6 +5,7 @@
 import CoreRPG
 import AppIntents
 import Foundation
+import os.log
 import SwiftUI
 
 
@@ -46,7 +47,9 @@ extension AudioRootModel {
         intent.target = AudioEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {}
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenAudioIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

@@ -58,7 +58,14 @@ struct CloudDocumentController: Sendable {
 
     func nameUrl(fullUrl: URL) -> URL {
         let namePath = fullUrl.pathComponents.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2)
-        var name = URL(string: namePath.first ?? "/")!
+        // `pathComponents` yields already-decoded segments, which can contain characters
+        // invalid in a URL string (`#`, unencoded `%`/`?`, ...); build from a clean base
+        // and append via `.append(path:)`, which percent-encodes each component, instead
+        // of round-tripping the first segment through `URL(string:)!`.
+        var name = URL(string: "/")!
+        if let first = namePath.first {
+            name.append(path: first)
+        }
         namePath.dropFirst().forEach {
             name.append(path: $0)
         }

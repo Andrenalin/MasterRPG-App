@@ -209,6 +209,7 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
             of: content()
                 .modifier(MockRootViewModifier())
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

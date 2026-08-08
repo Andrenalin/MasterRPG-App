@@ -432,12 +432,22 @@ extension EditController {
 
     private func parseDouble(from string: String) -> Double? {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try? Double(trimmed, format: .number.locale(Locale.current))
+        // `Double(_:format:)`/`Int(_:format:)` do prefix matching (e.g. "3.5" parses as
+        // the Int 3, silently dropping ".5"), unlike the strict, allowsFloats-respecting
+        // NumberFormatter this replaced. `wholeMatch(of:)` requires the entire string to
+        // match, restoring that behavior.
+        return trimmed.wholeMatch(of: FloatingPointFormatStyle<Double>(locale: Locale.current))?.output
     }
 
     private func parseInteger(from string: String) -> Int? {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try? Int(trimmed, format: .number.locale(Locale.current))
+        guard !trimmed.isEmpty else { return nil }
+        // `IntegerFormatStyle`'s `wholeMatch` alone still accepts "3.5" (parsing the
+        // integer prefix "3" and treating the match as complete), so explicitly reject
+        // any decimal separator to keep the old `allowsFloats = false` semantics.
+        let decimalSeparator = Locale.current.decimalSeparator ?? "."
+        guard !trimmed.contains(decimalSeparator) else { return nil }
+        return trimmed.wholeMatch(of: IntegerFormatStyle<Int>(locale: Locale.current))?.output
     }
 }
 

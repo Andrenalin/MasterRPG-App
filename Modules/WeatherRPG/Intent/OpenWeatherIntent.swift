@@ -6,6 +6,7 @@ import CoreRPG
 import AppIntents
 
 import Foundation
+import os.log
 import SwiftUI
 
 struct OpenWeatherIntent: OpenIntent {
@@ -46,7 +47,9 @@ extension WeatherRootModel {
         intent.target = WeatherEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {}
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenWeatherIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

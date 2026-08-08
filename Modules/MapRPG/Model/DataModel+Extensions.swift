@@ -26,10 +26,10 @@ extension RPGMap {
         if let entry = entryModels.first(where: { $0.uuid == uuid }) {
             return entry
         }
-        if let context = managedObjectContext {
-            return RPGMapEntry(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGMap must belong to a managed object context before adding entries.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGMapEntry(context: managedObjectContext)
     }
     
     var mapPinModels: [RPGMapPin] {
@@ -48,20 +48,20 @@ extension RPGMap {
         if let mapPin = mapPinModels.first(where: { $0.uuid == uuid }) {
             return mapPin
         }
-        if let context = managedObjectContext {
-            return RPGMapPin(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGMap must belong to a managed object context before adding map pins.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGMapPin(context: managedObjectContext)
     }
-    
+
     func displyConfigOrNew(for _: UUID) -> RPGDisplayConfig {
         if let displayConfig {
             return displayConfig
         }
-        if let context = managedObjectContext {
-            return RPGDisplayConfig(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGMap must belong to a managed object context before adding a display config.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGDisplayConfig(context: managedObjectContext)
     }
 }
 
@@ -79,10 +79,10 @@ extension RPGMapEntry {
     }
     
     func newCoordinate() -> RPGPosition {
-        if let context = managedObjectContext {
-            return RPGPosition(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGMapEntry must belong to a managed object context before adding coordinates.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGPosition(context: managedObjectContext)
     }
 }
 
@@ -100,10 +100,10 @@ extension RPGDisplayConfig {
     }
     
     func newCoordinate() -> RPGPosition {
-        if let context = managedObjectContext {
-            return RPGPosition(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGDisplayConfig must belong to a managed object context before adding coordinates.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGPosition(context: managedObjectContext)
     }
 }
 
@@ -112,10 +112,10 @@ extension RPGMapPin {
         if let coordinate = location {
             return coordinate
         }
-        if let context = managedObjectContext {
-            return RPGPosition(context: context)
+        guard let managedObjectContext else {
+            preconditionFailure("RPGMapPin must belong to a managed object context before adding a coordinate.")
         }
-        fatalError("ManagedObjectContext should be available!")
+        return RPGPosition(context: managedObjectContext)
     }
 }
 

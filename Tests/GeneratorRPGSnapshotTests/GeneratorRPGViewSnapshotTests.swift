@@ -80,6 +80,7 @@ struct GeneratorRPGViewSnapshotTests {
             content
                 .modifier(MockRootViewModifier())
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container),
             name: name,
             height: height

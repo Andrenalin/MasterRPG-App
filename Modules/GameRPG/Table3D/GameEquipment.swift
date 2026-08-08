@@ -516,7 +516,17 @@ struct Die20: EntityEquipment {
     @MainActor
     init(id: ID) {
         self.id = id
-        self.entity = try! Entity.load(named: "D20Blue", in: tabletopGameContentBunlde)
+        // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
+        // protocol, so there's no graceful "hide the die" fallback if this fails — this
+        // mirrors Apple's own EntityEquipment sample code, which force-loads bundled
+        // assets the same way. A `preconditionFailure` (vs. bare `try!`) at least makes
+        // the crash diagnosable: a missing bundled asset is a packaging bug, not
+        // something reachable from user/runtime conditions.
+        do {
+            self.entity = try Entity.load(named: "D20Blue", in: tabletopGameContentBunlde)
+        } catch {
+            preconditionFailure("Failed to load the bundled D20Blue RealityKit asset: \(error)")
+        }
         self.entity.scale.x = 0.00025
         self.entity.scale.y = 0.00025
         self.entity.scale.z = 0.00025
@@ -556,7 +566,7 @@ struct Die20: EntityEquipment {
 struct Die: EntityEquipment {
     let id: ID
     let entity: Entity
-    let audioPlaybackController: AudioPlaybackController
+    let audioPlaybackController: AudioPlaybackController?
     var initialState: DieState
     let representation: TossableRepresentation
     
@@ -584,11 +594,29 @@ struct Die: EntityEquipment {
     @MainActor
     init(id: ID) {
         self.id = id
-        self.entity = try! Entity.load(named: "Die", in: tabletopGameContentBunlde)
-        let audioResource = try! AudioFileResource.load(named: "/Root/dieSoundShort_mp3",
-                                                        from: "static_scene.usda",
-                                                        in: tabletopGameContentBunlde)
-        self.audioPlaybackController = self.entity.prepareAudio(audioResource)
+        // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
+        // protocol — see the matching comment on `Die20.init` for why this stays fatal.
+        do {
+            self.entity = try Entity.load(named: "Die", in: tabletopGameContentBunlde)
+        } catch {
+            preconditionFailure("Failed to load the bundled Die RealityKit asset: \(error)")
+        }
+        do {
+            // Unlike the entity itself, the roll sound is a nicety, not a hard
+            // requirement — degrade to a silent die rather than crash the whole
+            // tabletop feature over a missing/corrupt audio resource.
+            let audioResource = try AudioFileResource.load(
+                named: "/Root/dieSoundShort_mp3",
+                from: "static_scene.usda",
+                in: tabletopGameContentBunlde
+            )
+            self.audioPlaybackController = self.entity.prepareAudio(audioResource)
+        } catch {
+            Logger.gameTable.error(
+                "Failed to prepare the Die roll sound: \(error.localizedDescription, privacy: .public)"
+            )
+            self.audioPlaybackController = nil
+        }
         representation = .cube(height: entity.visualBounds(relativeTo: nil).extents.x)
         let pose: TableVisualState.Pose2D = .init(position: .init(x: -0.3, z: -0.5), rotation: .zero)
         initialState = .init(value: 1, parentID: .tableID, seatControl: .any, pose: pose, entity: self.entity)
@@ -596,6 +624,7 @@ struct Die: EntityEquipment {
 
     @MainActor
     func playTossSound() {
+        guard let audioPlaybackController else { return }
         if !audioPlaybackController.isPlaying {
             audioPlaybackController.seek(to: .zero)
             audioPlaybackController.play()

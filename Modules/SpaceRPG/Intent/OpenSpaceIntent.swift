@@ -6,6 +6,7 @@ import CoreRPG
 import AppIntents
 
 import Foundation
+import os.log
 import SwiftUI
 
 struct OpenSpaceIntent: OpenIntent {
@@ -46,7 +47,9 @@ extension SpaceRootModel {
         intent.target = SpaceEntity(root: self, model: model)
         do {
             try await IntentDonationManager.shared.donate(intent: intent)
-        } catch {}
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenSpaceIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

@@ -86,6 +86,7 @@ struct CharacterRPGDynamicPreviewSnapshotTests {
                 .environment(AppGameStateModel())
                 .environment(AppWindowSizeModel())
                 .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .environment(CacheItemListModel())
                 .environment(ScenesManager())
                 .environment(root.diceRoot)
