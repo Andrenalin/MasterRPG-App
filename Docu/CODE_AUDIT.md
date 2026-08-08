@@ -266,19 +266,19 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 
 ## 7. Performance
 
-### 7.1 `NSFetchRequest` without `fetchBatchSize` for app-wide tag/link tables
-- **Location:** `Modules/CoreRPG/Controllable/TagController.swift:36-37`; `Modules/CoreRPG/Links/LinkRegisterController.swift:29-30`
-- **What:** `TagDataModel.fetchRequest()`/`LinkReferenceDataModel.fetchRequest()` execute with no `fetchBatchSize`, materializing every tag and every cross-item link reference in the store at once.
+### 7.1 `NSFetchRequest` without `fetchBatchSize` for app-wide tag/link tables — FIXED
+- **Location:** `Modules/CoreRPG/Controllable/TagController.swift:36-37` (pre-fix); `Modules/CoreRPG/Links/LinkRegisterController.swift:29-30` (pre-fix)
+- **What:** `TagDataModel.fetchRequest()`/`LinkReferenceDataModel.fetchRequest()` executed with no `fetchBatchSize`, materializing every tag and every cross-item link reference in the store at once.
 - **Why:** Both tables grow with every item/entry in every module, so this is an unbounded, unbatched fetch on every reload of the tag/link caches as a campaign's data grows.
-- **Action:** Set a `fetchBatchSize` (e.g. 200-500) on both requests.
-- **Severity:** Medium
+- **Action taken:** ✅ Set `request.fetchBatchSize = 500` on both requests, right after each `.fetchRequest()` call. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved.
 
-### 7.2 Full-table reconciliation triggered by every CloudKit deletion notification
-- **Location:** `Modules/CoreRPG/Controllable/SyncDataControllable.swift:32-45`
-- **What:** On any non-empty `deletedIds`, the handler calls `dataControllable.fetchIds()` — every id currently in the store — and diffs it against the full in-memory item set, rather than resolving only the reported `deletedIds`.
-- **Why:** For modules with large item counts, a single-item deletion notification triggers an O(n) full-table fetch and diff instead of an O(k) targeted removal, on every module's sync controller simultaneously.
-- **Action:** Use the reported `deletedIds` directly to remove matching in-memory items; reserve full reconciliation for a periodic/startup pass.
-- **Severity:** Low
+### 7.2 Full-table reconciliation triggered by every CloudKit deletion notification — FIXED
+- **Location:** `Modules/CoreRPG/Controllable/SyncDataControllable.swift:32-45` (pre-fix)
+- **What:** On any non-empty `deletedIds`, the handler called `dataControllable.fetchIds()` — every id currently in the store — and diffed it against the full in-memory item set, rather than resolving only the reported `deletedIds`.
+- **Why:** For modules with large item counts, a single-item deletion notification triggered an O(n) full-table fetch and diff instead of an O(k) targeted removal, on every module's sync controller simultaneously.
+- **Action taken:** ✅ Confirmed a periodic/startup full reconciliation already exists to catch anything a targeted delete might miss — `start()` calls `fetchUpdates()` once, which calls `itemControllable.updates(_:)`, which itself diffs the full in-memory set against a full fetch and deletes anything absent (`ItemControllable.swift:371-384`) — so this wasn't introducing a new gap, just removing a redundant *second* full reconciliation that ran on every single delete notification. Simplified `updateFromSync`'s deletion handling to iterate `deletedIds` directly. Verified `ItemControllable.delete(itemId:)` no-ops safely (`guard let item = await self.item(for: itemId) else { return }`) if a reported id is already absent, e.g. from a duplicate notification — no new failure mode introduced. Verified with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
 ---
 
@@ -305,19 +305,19 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 - **Action taken:** ✅ Added `.accessibilityHidden(true)` to the hidden `ShareLink`. Verified with a `buildForTesting` pass.
 - **Severity:** Medium — resolved.
 
-### 8.4 `SharePlayButton` nests a `Task` inside a `Task.detached` just to hop back to `MainActor`
-- **Location:** `Modules/GameRPG/SetupViews/SharePlayButton.swift:44-54`
-- **What:** The button action runs `Task.detached { do { try await activity.activate() } catch { print(...); Task { @MainActor in isActivationErrorViewPresented = true } } }` — a detached task containing a further nested `Task` solely to reach the main actor for the error-alert flag.
+### 8.4 `SharePlayButton` nests a `Task` inside a `Task.detached` just to hop back to `MainActor` — FIXED
+- **Location:** `Modules/GameRPG/SetupViews/SharePlayButton.swift:44-54` (pre-fix)
+- **What:** The button action ran `Task.detached { do { try await activity.activate() } catch { print(...); Task { @MainActor in isActivationErrorViewPresented = true } } }` — a detached task containing a further nested `Task` solely to reach the main actor for the error-alert flag.
 - **Why:** Unnecessary indirection; a UI-invoked action doesn't need `Task.detached` at all, and the nested `Task { @MainActor in }` adds a second scheduling hop for no benefit.
-- **Action:** Use a single structured `Task { @MainActor in ... }` (or `Task { ... }` with an explicit `await MainActor.run` only around the flag write) instead of detaching.
-- **Severity:** Low
+- **Action taken:** ✅ Collapsed to a single structured `Task { @MainActor in ... }` — since this action closure is created inside `body` (which is `@MainActor`), the closure already inherits MainActor isolation, so no detaching or inner `Task` hop is needed to set `isActivationErrorViewPresented` in the `catch`. Verified with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
-### 8.5 `FoundryRuleImportView.swift`'s filename doesn't match its primary type
-- **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryRuleImportView.swift:7`
-- **What:** The file defines `struct FoundryImportView: View` (plus ~10 well-scoped private child View structs) — the type is named `FoundryImportView`, not `FoundryRuleImportView`. **Correction to an earlier duplication-pass note:** despite being 866 lines, this file is *not* a "computed-property soup" violation of the project's view-composition convention — it's already cleanly decomposed into ~10 dedicated `private struct ... View` types (`FoundryPreflightView`, `FoundrySourceIdentitySection`, `FoundryExternalImportReviewView`, etc.), each with its own small `body`. No split is needed on structural grounds.
+### 8.5 `FoundryRuleImportView.swift`'s filename doesn't match its primary type — FIXED
+- **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryRuleImportView.swift:7` (pre-fix)
+- **What:** The file defined `struct FoundryImportView: View` (plus ~10 well-scoped private child View structs) — the type is named `FoundryImportView`, not `FoundryRuleImportView`. **Correction to an earlier duplication-pass note:** despite being 866 lines, this file is *not* a "computed-property soup" violation of the project's view-composition convention — it's already cleanly decomposed into ~10 dedicated `private struct ... View` types (`FoundryPreflightView`, `FoundrySourceIdentitySection`, `FoundryExternalImportReviewView`, etc.), each with its own small `body`. No split is needed on structural grounds.
 - **Why:** The filename/type mismatch is real friction for fuzzy-file-search; the file being long is a byproduct of hosting the whole VTT-import flow's screens together, not of any one view being overgrown.
-- **Action:** Rename the file to `FoundryImportView.swift` to match its primary type (or rename the type to match the file, whichever the module's naming convention prefers). Do not spend time splitting it further on view-structure grounds — see §9.11 for the corrected framing.
-- **Severity:** Low
+- **Action taken:** ✅ Renamed the file to `FoundryImportView.swift` via `git mv` (project uses Xcode-16 file-system-synchronized groups, so no `project.pbxproj` change was needed). Also updated the one stray cross-reference to the old filename in `Docu/SWIFTUI_PERFORMANCE_AUDIT.md:258` so it doesn't silently go stale. Verified with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
 ---
 

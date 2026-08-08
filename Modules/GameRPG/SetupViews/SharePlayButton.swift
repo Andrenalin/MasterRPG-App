@@ -43,15 +43,15 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
 #endif
             Button(text, systemImage: "shareplay") {
                 if groupStateObserver.isEligibleForGroupSession {
-                    Task.detached {
+                    // No need to detach: this action closure is already MainActor-isolated
+                    // (created inside `body`, which is @MainActor), so a plain structured
+                    // Task inherits that isolation — no nested Task needed to set the flag.
+                    Task { @MainActor in
                         do {
                             _ = try await activity.activate()
                         } catch {
                             print("Error activating activity: \(error)")
-                            
-                            Task { @MainActor in
-                                isActivationErrorViewPresented = true
-                            }
+                            isActivationErrorViewPresented = true
                         }
                     }
                 } else {

@@ -27,6 +27,9 @@ import os.log
             await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                    // Grows with every cross-item link reference in every module; batch the
+                    // fetch instead of materializing the whole table at once.
+                    request.fetchBatchSize = 500
                     guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return }
                     var nextLegacyOccurrence: [LegacyLinkKey: Int] = [:]
                     for linkReferenceModel in linkReferenceModels {

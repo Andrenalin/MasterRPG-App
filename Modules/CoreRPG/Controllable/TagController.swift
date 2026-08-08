@@ -34,6 +34,9 @@ public struct TagController: Sendable {
             let groupedTags = await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
+                    // Grows with every tagged item/entry in every module; batch the fetch
+                    // instead of materializing the whole table at once.
+                    request.fetchBatchSize = 500
                     guard let tagModels = try context.fetch(request) as? [TagDataModel] else { return [NetworkModules: [String: TagModel]]() }
                     return tagModels.reduce(into: [NetworkModules: [String: TagModel]]()) { result, tagModel in
                         let module = NetworkModules(rawValue: Int(tagModel.module)) ?? .none

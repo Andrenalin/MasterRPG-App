@@ -30,19 +30,12 @@ public extension SyncDataControllable {
                     file: "SyncDataControllable.swift"
                 )
 
-                // Process deletions
-                if !deletedIds.isEmpty {
-                    let ids = try await dataControllable.fetchIds()
-
-                    // Safely access MainActor-isolated itemDataModel.items
-                    let currentItems = await MainActor.run {
-                        Set(itemControllable.itemDataModel.items)
-                    }
-
-                    let removedIds = currentItems.subtracting(ids)
-                    for removedId in removedIds {
-                        await itemControllable.delete(itemId: removedId, withFileData: false, withDatabase: false)
-                    }
+                // Process deletions — act directly on the reported ids instead of fetching
+                // every id in the store and diffing against the full in-memory set; that
+                // O(n) full-table reconciliation is reserved for `fetchUpdates()`, which
+                // already runs once at `start()` and would catch any deletion this misses.
+                for deletedId in deletedIds {
+                    await itemControllable.delete(itemId: deletedId, withFileData: false, withDatabase: false)
                 }
 
                 // Process insertions

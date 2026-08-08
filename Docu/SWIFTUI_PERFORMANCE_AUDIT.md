@@ -255,7 +255,7 @@ Examples:
   players; the result is referenced multiple times and once per occurrence.
 - `GameShareView.swift:88` sorts statuses, then creates attributed and accessibility
   strings.
-- `FoundryRuleImportView.swift:417` filters text resources inline in `ForEach`; the
+- `FoundryImportView.swift:417` (renamed from `FoundryRuleImportView.swift`, see CODE_AUDIT.md §8.5) filters text resources inline in `ForEach`; the
   866-line view has several additional filtered sections.
 - `EffectedLinkActionPanelView.swift:37` and `:107` filter the same link tree for title
   and disabled state.
