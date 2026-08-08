@@ -244,31 +244,8 @@ private extension SpaceViewer {
             guard let objectEntity, loadedItemId == id else { return }
 
 #if os(visionOS)
-//            this is we activate later
-//            let model = objectEntity
-//
-//            /// The volume's dimensions in local coordinates.
-//            let viewBounds = content.convert(
-//                geometry.frame(in: .local),
-//                from: .local,
-//                to: .scene
-//            )
-//
-//            // Set the model's position to the bottom of the visual bounding box.
-//            model.position.y -= model.visualBounds(relativeTo: nil).min.y
-//
-//            // Adjust the model's position on the y-axis to align with the view bounds.
-//            model.position.y += viewBounds.min.y
-//
-//            /// The base size of the model when the scale is 1.
-//            let baseExtents = model.visualBounds(relativeTo: nil).extents / model.scale
-//
-//            /// The scale required for the model to fit the bounds of the volumetric window.
-//            let scale = (Float(viewBounds.extents.x) / baseExtents.x) / 4.0
-//
-//            // Apply the scale to the model to fill the full size of the window.
-//            model.scale = SIMD3<Float>(repeating: scale)
-
+            // TODO(visionOS): auto-fit the loaded model to the volumetric window's bounds
+            // (scale + reposition so it fills the volume) — not yet implemented.
 #endif
 
 #if os(visionOS)

@@ -105,7 +105,7 @@ public struct CloudKitCoreDataPersistenceController {
         } catch {
             print("\(#function): initializeCloudKitSchema: \(error)")
         }
-        print("Successfull")
+        print("Successful")
 #else
         setupContext()
 #endif        

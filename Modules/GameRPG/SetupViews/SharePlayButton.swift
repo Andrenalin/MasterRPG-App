@@ -37,7 +37,9 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
     var body: some View {
         ZStack {
 #if !os(tvOS)
-            ShareLink(item: activity, preview: SharePreview(text)).hidden()
+            ShareLink(item: activity, preview: SharePreview(text))
+                .hidden()
+                .accessibilityHidden(true)
 #endif
             Button(text, systemImage: "shareplay") {
                 if groupStateObserver.isEligibleForGroupSession {

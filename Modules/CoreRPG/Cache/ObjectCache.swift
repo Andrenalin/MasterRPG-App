@@ -76,19 +76,6 @@ public actor ObjectCache<Object: AnyObject> {
         let url = fileURL(for: itemId)
         
         guard let data = image.jpegData(compressionQuality: 0.8) else { return }
-//        #if os(macOS)
-//        guard
-//            let tiffData = image.tiffRepresentation,
-//            let bitmap = NSBitmapImageRep(data: tiffData),
-//            let data = bitmap.representation(using: .jpeg, properties: [:]) ??
-//                       bitmap.representation(using: .png, properties: [:])
-//        else { return }
-//        #else
-//        guard let data = image.pngData() ?? image.jpegData(compressionQuality: 0.9) else {
-//            return
-//        }
-//        #endif
-        
         try? data.write(to: url, options: .atomic)
     }
     

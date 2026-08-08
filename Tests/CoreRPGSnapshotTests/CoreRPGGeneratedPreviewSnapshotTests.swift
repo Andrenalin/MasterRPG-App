@@ -1908,14 +1908,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::InspectorUnavailableView
-    @Test("InspectorUnavailableView")
-    func snapshotInspectorUnavailableView() async throws {
-        try await assertPreviewSnapshot("InspectorUnavailableView") {
-            CoreRPG.InspectorUnavailableView()
-        }
-    }
-
     // snapshot-root: CoreRPG::MenuTV
     @Test("MenuTV")
     func snapshotMenuTV() async throws {
