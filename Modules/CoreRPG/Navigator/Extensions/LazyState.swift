@@ -25,7 +25,10 @@ import SwiftUI
 /// ```
 /// Unlike `@State`, `@LazyState` is not a property wrapper that creates an observable value when the view is first created or when the view
 /// is updated. Instead, it is a property wrapper that lazily creates an observable value on first access.
-@available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, visionOS 1.0, *)
+// Vendored from "Runes" (Michael Long). Upstream gates this at iOS 17/macOS 14/tvOS 17/
+// watchOS 10/visionOS 1 — all below this project's 26.0+ deployment target, so the
+// `@available` guard was dead code here; removed rather than left to obscure the
+// type's real (nonexistent) minimum-OS requirement in this project.
 @MainActor
 @propertyWrapper
 public struct LazyState<T: Observable>: DynamicProperty {

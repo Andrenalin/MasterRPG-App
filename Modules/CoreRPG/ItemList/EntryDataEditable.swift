@@ -293,7 +293,7 @@ public extension EntryDataEditable {
             }
             let newLink = link.duplicate()
             guard let oldLinkText = link.markDown, let range = content.firstRange(of: oldLinkText) else { continue }
-            newContent = newContent.replacingOccurrences(of: oldLinkText, with: newLink.markDown ?? oldLinkText, range: range)
+            newContent = newContent.replacing(oldLinkText, with: newLink.markDown ?? oldLinkText, subrange: range)
             linkRegisterController.register(links: [newLink])
         }
         changed = changed || item[entryId].content != newContent

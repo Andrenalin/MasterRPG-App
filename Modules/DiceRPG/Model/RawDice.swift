@@ -116,7 +116,7 @@ public struct RawDice: Equatable, Hashable {
         let dieResults = RegularExpressionParser.parse(text, with: diePattern, extract: ["Die"])
         dieResults.forEach {
             dieCounters.append(RawDieCounter(text: $0))
-            modifierText = modifierText.replacingOccurrences(of: $0, with: "")
+            modifierText = modifierText.replacing($0, with: "")
         }
 
         let modifierPattern = "(?<Modifier>[+\\-]+[0-9]+)"

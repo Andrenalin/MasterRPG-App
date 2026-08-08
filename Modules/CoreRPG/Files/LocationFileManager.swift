@@ -42,10 +42,10 @@ public extension LocationFileManager {
         switch location {
         case .appCloud:
             guard let cloudPath = rootAppCloud else { return url }
-            return URL(string: url.absoluteString.replacingOccurrences(of: cloudPath.absoluteString, with: ""))
+            return URL(string: url.absoluteString.replacing(cloudPath.absoluteString, with: ""))
         case .icloud:
             guard let cloudPath = rootICloud else { return url }
-            return URL(string: url.absoluteString.replacingOccurrences(of: cloudPath.absoluteString, with: ""))
+            return URL(string: url.absoluteString.replacing(cloudPath.absoluteString, with: ""))
         default:
             return url
         }

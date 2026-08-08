@@ -562,7 +562,7 @@ public extension EditControllable {
 
         if item.name.isEmpty {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
-            let name = url.lastPathComponent.replacingOccurrences(of: ext, with: "")
+            let name = url.lastPathComponent.replacing(ext, with: "")
             reset(name: name, itemId: itemId)
         }
 

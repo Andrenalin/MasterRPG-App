@@ -222,7 +222,7 @@ extension LinkController {
                 return
             }
             let linkTable = itemController.itemOrEmpty(for: link.itemId)
-            result = result.replacingOccurrences(of: linkTable.url(linkNumber: link.linkNumber, entryId: entryId), with: "\(linkValue)")
+            result = result.replacing(linkTable.url(linkNumber: link.linkNumber, entryId: entryId), with: "\(linkValue)")
         }
         
         guard valid else {
@@ -233,7 +233,7 @@ extension LinkController {
             let cached = entry.valueCalculated
             return cached == "0" ? result : cached
         }
-        result = result.replacingOccurrences(of: "|", with: "+")
+        result = result.replacing("|", with: "+")
         return entry.calculate(on: result)
     }
     
@@ -277,7 +277,7 @@ extension LinkController {
             } else {
                 markDown = newModel.url(linkNumber: link.linkNumber)
             }
-            result = result.replacingOccurrences(of: link.markDown, with: markDown)
+            result = result.replacing(link.markDown, with: markDown)
         }
         return result
     }

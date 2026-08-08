@@ -112,7 +112,7 @@ public struct EntryTextParser {
 
     private func normalizeLineEndings(_ text: String) -> String {
         text
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
+            .replacing("\r\n", with: "\n")
+            .replacing("\r", with: "\n")
     }
 }

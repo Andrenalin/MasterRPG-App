@@ -53,7 +53,7 @@ public extension String {
 
     func withoutLink() -> String {
         var result = self
-        result = result.replacingOccurrences(of: "`", with: "")
+        result = result.replacing("`", with: "")
         var searchRange = Range(uncheckedBounds: (result.startIndex, result.endIndex))
         while let range = result.range(of: "](", range: searchRange),
                 let closing = result.range(of: ")", range: Range(uncheckedBounds: (range.upperBound, result.endIndex))) {

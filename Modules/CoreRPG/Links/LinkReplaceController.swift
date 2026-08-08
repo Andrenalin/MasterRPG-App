@@ -64,9 +64,9 @@ public final class LinkReplaceController: Sendable {
                     let ranges = text.ranges(of: prevMarkDown)
                     if linkNumber < ranges.count {
                         let replaceRange = ranges[linkNumber]
-                        text = text.replacingOccurrences(of: prevMarkDown, with: newMarkDown, range: replaceRange)
+                        text = text.replacing(prevMarkDown, with: newMarkDown, subrange: replaceRange)
                     } else {
-                        text = text.replacingOccurrences(of: prevMarkDown, with: newMarkDown)
+                        text = text.replacing(prevMarkDown, with: newMarkDown)
                     }
                 }
             }
@@ -92,9 +92,9 @@ public final class LinkReplaceController: Sendable {
                     let ranges = text.ranges(of: prevMarkDown)
                     if linkNumber < ranges.count {
                         let replaceRange = ranges[linkNumber]
-                        text = text.replacingOccurrences(of: prevMarkDown, with: newMarkDown, range: replaceRange)
+                        text = text.replacing(prevMarkDown, with: newMarkDown, subrange: replaceRange)
                     } else {
-                        text = text.replacingOccurrences(of: prevMarkDown, with: newMarkDown)
+                        text = text.replacing(prevMarkDown, with: newMarkDown)
                     }
                 }
             }
@@ -110,7 +110,7 @@ public final class LinkReplaceController: Sendable {
         let list = links(for: text)
         var result = text
         list.forEach {
-            result = result.replacingOccurrences(of: $0.markDown, with: $0.name)
+            result = result.replacing($0.markDown, with: $0.name)
         }
         return result
     }
@@ -172,7 +172,7 @@ public final class LinkReplaceController: Sendable {
     private func getValue() -> String {
         var value = getter()
         links.forEach {
-            value = value.replacingOccurrences(of: $0.markDown, with: $0.name)
+            value = value.replacing($0.markDown, with: $0.name)
         }
         return value
     }
@@ -184,7 +184,7 @@ public final class LinkReplaceController: Sendable {
             links.append(contentsOf: newLinks)
         }
         links.forEach {
-            value = value.replacingOccurrences(of: $0.name, with: $0.markDown)
+            value = value.replacing($0.name, with: $0.markDown)
         }
         if getter() != value {
             setter(value)

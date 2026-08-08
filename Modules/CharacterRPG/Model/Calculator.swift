@@ -25,10 +25,7 @@ struct Calculator {
         while hasOp {
             (nextInput, hasOp) = plus(nextInput)
         }
-        let number = NumberFormatter()
-        number.locale = Locale(identifier: "en_US")
-        number.numberStyle = .decimal
-        return number.number(from: nextInput) as? Double
+        return try? Double(nextInput, format: .number.locale(Locale(identifier: "en_US")))
     }
 
     @MainActor
@@ -156,7 +153,7 @@ struct Calculator {
     
     private static func formatNumber(_ number: Double) -> String {
         var result = "\(number.formatted(.number.locale(Locale(identifier: "en_US"))))"
-        result = result.replacingOccurrences(of: ",", with: "")
+        result = result.replacing(",", with: "")
         return result
     }
 }

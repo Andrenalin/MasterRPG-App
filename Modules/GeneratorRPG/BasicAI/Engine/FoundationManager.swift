@@ -50,7 +50,7 @@ final class FoundationManager {
         let tags = ["#", "##", "###", "####", "---"]
         var content = content
         tags.forEach { tag in
-            content = content.replacingOccurrences(of: tag, with: "")
+            content = content.replacing(tag, with: "")
         }
         return content
     }

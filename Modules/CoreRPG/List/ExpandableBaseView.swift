@@ -86,16 +86,17 @@ fileprivate extension View {
         ExpandableBaseView(
             animatableData: isExpanded ? 1 : 0,
             header: {
-                Text(verbatim: "Tap to expand/collapse")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation() {
-                            isExpanded.toggle()
-                        }
+                Button {
+                    withAnimation() {
+                        isExpanded.toggle()
                     }
+                } label: {
+                    Text(verbatim: "Tap to expand/collapse")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .buttonStyle(.plain)
             },
             content: {
                 Text(verbatim: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
@@ -110,16 +111,17 @@ fileprivate extension View {
         ExpandableBaseView(
             animatableData: isExpanded ? 1 : 0,
             header: {
-                Text(verbatim: "2. Tap to expand/collapse")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation() {
-                            isExpanded.toggle()
-                        }
+                Button {
+                    withAnimation() {
+                        isExpanded.toggle()
                     }
+                } label: {
+                    Text(verbatim: "2. Tap to expand/collapse")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .buttonStyle(.plain)
             },
             content: {
                 Text(verbatim: "********* Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ****")

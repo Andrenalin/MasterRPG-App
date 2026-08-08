@@ -132,26 +132,26 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 - **Action:** Replace with SwiftUI's `ShareLink`.
 - **Severity:** Medium
 
-### 4.3 Legacy `Formatter` subclasses instead of `FormatStyle`
-- **Location:** `Modules/CoreRPG/Editors/TextDoubleEditor.swift:116-118`; `Modules/CharacterRPG/Model/Calculator.swift:28-31`; `Modules/CharacterRPG/Controller/EditController.swift:434-447`; `Modules/SpaceRPG/Record/CaptureFolderManager.swift:140-141`
-- **What:** Four sites construct `NumberFormatter()` (three) or `ISO8601DateFormatter()` (one) instead of `FormatStyle`/`ParseStrategy`.
-- **Why:** Explicitly forbidden by project convention; all four are simple literal parse/format operations with direct modern equivalents.
-- **Action:** Replace with `Double(text, format: .number)` / a `ParseStrategy`, and `Date().formatted(.iso8601)`.
-- **Severity:** Low
+### 4.3 Legacy `Formatter` subclasses instead of `FormatStyle` — FIXED
+- **Location:** `Modules/CoreRPG/Editors/TextDoubleEditor.swift:116-118` (pre-fix); `Modules/CharacterRPG/Model/Calculator.swift:28-31` (pre-fix); `Modules/CharacterRPG/Controller/EditController.swift:434-447` (pre-fix); `Modules/SpaceRPG/Record/CaptureFolderManager.swift:140-141` (pre-fix)
+- **What:** Four sites constructed `NumberFormatter()` (three) or `ISO8601DateFormatter()` (one) instead of `FormatStyle`/`ParseStrategy`.
+- **Why:** Explicitly forbidden by project convention; all four were simple literal parse/format operations with direct modern equivalents.
+- **Action taken:** ✅ Replaced all four with `try? Double(text, format: .number.locale(...))` (and `try? Int(...)` for the integer-only `parseInteger` sibling in `EditController.swift`), and `Date().formatted(.iso8601)` for the timestamp folder name. Verified via `DocumentationSearch` that `Double(_:format:)`/`Int(_:format:)` parsing initializers exist and behave equivalently to the old locale-aware `NumberFormatter().number(from:)` path. Confirmed with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
-### 4.4 `replacingOccurrences(of:with:)` instead of `replacing(_:with:)`
-- **Location:** `Modules/CoreRPG/ItemList/EntryDataEditable.swift:296`; `Modules/CoreRPG/Controllable/EditControllable.swift:565`; `Modules/CoreRPG/Controllable/LinkControllable.swift:125,223,228,230,243,246`; `Modules/CoreRPG/Extensions/String+MarkDown.swift:56`; `Modules/CoreRPG/Links/LinkReplaceController.swift:67,69,95,97,113,175,187`; `Modules/CoreRPG/Files/LocationFileManager.swift:45,48`; `Modules/CoreRPG/Text/EntryTextParser.swift:115-116`; `Modules/DiceRPG/Model/RawDice.swift:119`; `Modules/CharacterRPG/Controller/LinkController.swift:225,236,280`; `Modules/CharacterRPG/Model/Calculator.swift:159`; `Modules/GeneratorRPG/BasicAI/Engine/FoundationManager.swift:53` (28 sites total)
-- **What:** 28 call sites use the old API for plain literal substring replacement.
-- **Why:** Project convention prefers `replacing(_:with:)`; all sampled sites are mechanical, no `NSString`/regex dependency.
-- **Action:** Bulk-replace with `.replacing(_:with:)` (or `.replacing(_:with:maxReplacements:)`).
-- **Severity:** Low
+### 4.4 `replacingOccurrences(of:with:)` instead of `replacing(_:with:)` — FIXED
+- **Location (pre-fix):** `Modules/CoreRPG/ItemList/EntryDataEditable.swift:296`; `Modules/CoreRPG/Controllable/EditControllable.swift:565`; `Modules/CoreRPG/Controllable/LinkControllable.swift:125,223,228,230,243,246`; `Modules/CoreRPG/Extensions/String+MarkDown.swift:56`; `Modules/CoreRPG/Links/LinkReplaceController.swift:67,69,95,97,113,175,187`; `Modules/CoreRPG/Files/LocationFileManager.swift:45,48`; `Modules/CoreRPG/Text/EntryTextParser.swift:115-116`; `Modules/DiceRPG/Model/RawDice.swift:119`; `Modules/CharacterRPG/Controller/LinkController.swift:225,236,280`; `Modules/CharacterRPG/Model/Calculator.swift:159`; `Modules/GeneratorRPG/BasicAI/Engine/FoundationManager.swift:53` (26 sites confirmed by re-grep; original count of 28 was a slight overcount)
+- **What:** 26 call sites used the old API for plain literal substring replacement, two of them (`EntryDataEditable.swift:296`, and two duplicated in `LinkReplaceController.swift`) via the `range:`-taking overload.
+- **Why:** Project convention prefers `replacing(_:with:)`; all sites were mechanical, no `NSString`/regex dependency.
+- **Action taken:** ✅ Replaced all 26 with `.replacing(_:with:)`; the three `range:`-taking call sites used `.replacing(_:with:subrange:)` instead (confirmed via `DocumentationSearch` that this overload exists on `RangeReplaceableCollection` and accepts the same `Range<String.Index>` the old `range:` parameter did). Three files had duplicate identical lines (`LinkControllable.swift` ×3, `LinkReplaceController.swift` ×2×2, `LocationFileManager.swift` ×2) — fixed with a scoped `replace_all` per identical snippet, safe since each duplicate site does the exact same operation. Confirmed with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
-### 4.5 Dead `@available(iOS 17.0, ...)` guard below the project's deployment target
-- **Location:** `Modules/CoreRPG/Navigator/Extensions/LazyState.swift:28`
-- **What:** A vendored `@propertyWrapper` is guarded with `@available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, visionOS 1.0, *)`, all below this project's 26.0 minimum.
-- **Why:** Permanently true given the project's deployment targets — dead code that obscures the type's real requirements.
-- **Action:** Remove the redundant `@available` attribute, or leave a comment noting it's vendored/intentionally unpruned.
-- **Severity:** Low
+### 4.5 Dead `@available(iOS 17.0, ...)` guard below the project's deployment target — FIXED
+- **Location:** `Modules/CoreRPG/Navigator/Extensions/LazyState.swift:28` (pre-fix)
+- **What:** A vendored `@propertyWrapper` (attributed to "Runes" by Michael Long, per its header comment) was guarded with `@available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, visionOS 1.0, *)`, all below this project's 26.0 minimum.
+- **Why:** Permanently true given the project's deployment targets — dead code that obscured the type's real requirements.
+- **Action taken:** ✅ Removed the redundant `@available` attribute and replaced it with a short comment explaining it's vendored and why the guard was dropped, so a future diff against upstream "Runes" stays legible. Confirmed with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
 ### 4.6 Widget extension deployment target (26.4) exceeded the host app's (26.0) — FIXED
 - **Location:** `DiceRollerWidgetExtension` target build settings (previously `IPHONEOS_DEPLOYMENT_TARGET`/`MACOSX_DEPLOYMENT_TARGET`/`XROS_DEPLOYMENT_TARGET` overrides in `MasterRPG.xcodeproj/project.pbxproj`) vs. project-level defaults inherited by the `MasterRPG` app target
@@ -167,11 +167,12 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 - **Action:** Audit each site against `containerRelativeFrame()`/`visualEffect()`/`onScrollGeometryChange`; `StretchingHeaderView` is the strongest candidate (see §8.1).
 - **Severity:** Low
 
-### 4.8 `onTapGesture` in preview code models the wrong pattern
-- **Location:** `Modules/CoreRPG/List/ExpandableBaseView.swift:94,118`
-- **What:** Two `#Preview` blocks attach `.onTapGesture { withAnimation { isExpanded.toggle() } }` to a `Text` row instead of using `Button`.
-- **Why:** Preview-only, so low risk, but sets a copy-pasteable bad example for the disclosure-row pattern it demonstrates.
-- **Action:** Replace with a styled `Button` in the preview code.
+### 4.8 `onTapGesture` in preview code models the wrong pattern — FIXED
+- **Location:** `Modules/CoreRPG/List/ExpandableBaseView.swift:94,118` (pre-fix)
+- **What:** Two `#Preview` blocks attached `.onTapGesture { withAnimation { isExpanded.toggle() } }` to a `Text` row instead of using `Button`.
+- **Why:** Preview-only, so low risk, but set a copy-pasteable bad example for the disclosure-row pattern it demonstrates.
+- **Action taken:** ✅ Wrapped each header's `Text` as a `Button` label with `.buttonStyle(.plain)` (to keep the original unstyled look) and moved the `withAnimation { isExpanded.toggle() }` into the button's action, dropping the now-unnecessary `.contentShape(Rectangle())`/`.onTapGesture`. Confirmed with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 - **Severity:** Low
 
 ---

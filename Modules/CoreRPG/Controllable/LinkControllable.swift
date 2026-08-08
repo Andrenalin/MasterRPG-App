@@ -122,7 +122,7 @@ public extension LinkControllable {
     func generateLinks(itemId: UUID, entryId: UUID? = nil, into content: String) -> String {
         let link: String = generateLink(linkNumber: 0, itemId: itemId, entryId: entryId)
         if content.contains(link) {
-            return content.replacingOccurrences(of: link, with: "")
+            return content.replacing(link, with: "")
         }
         return content + "\(link)"
     }
@@ -220,14 +220,14 @@ public extension LinkControllable {
             // Is item available for the entry? If not recovery not possible
             guard let model = itemControllable.itemSync(for: link.itemId) else {
                 Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because item is missing.")
-                return content.replacingOccurrences(of: link.markDown, with: link.name)
+                return content.replacing(link.markDown, with: link.name)
             }
 
             guard let entry = model.entries.first(where: { model.urlName(entryId: $0.id) == link.name }) else {
                 Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because entry name is missing.")
-                return content.replacingOccurrences(of: link.markDown, with: link.name)
+                return content.replacing(link.markDown, with: link.name)
             }
-            return content.replacingOccurrences(of: link.markDown, with: model.url(linkNumber: link.linkNumber, entryId: entry.id))
+            return content.replacing(link.markDown, with: model.url(linkNumber: link.linkNumber, entryId: entry.id))
         } else {
             let all = categories.contains(.all)
             var items: [(any ItemDataAccessable, Int)] = []
@@ -240,10 +240,10 @@ public extension LinkControllable {
 
             guard let newItem = items.first(where: { $0.0.urlName() == link.name })?.0 else {
                 Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover item because it is missing.")
-                return content.replacingOccurrences(of: link.markDown, with: link.name)
+                return content.replacing(link.markDown, with: link.name)
             }
 
-            return content.replacingOccurrences(of: link.markDown, with: newItem.url(linkNumber: link.linkNumber))
+            return content.replacing(link.markDown, with: newItem.url(linkNumber: link.linkNumber))
         }
     }
 }
