@@ -409,26 +409,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::ExpandableBaseView
-    @Test("ExpandableBaseView")
-    func expandableBaseView() {
-        assertCoreSnapshot("ExpandableBaseView") {
-            List {
-                ExpandableBaseView(animatableData: 1) {
-                    Text("Adventure notes")
-                        .bold()
-                        .padding()
-                } content: {
-                    Text("The party entered the forgotten shrine beneath the mountain.")
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding()
-                }
-                .background(.background.secondary)
-                .clipShape(.rect(cornerRadius: 8))
-            }
-        }
-    }
-
     // snapshot-root: CoreRPG::SheetEntryView
     @Test("SheetEntryView")
     func sheetEntryView() {

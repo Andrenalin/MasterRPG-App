@@ -160,18 +160,18 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 - **Action taken:** Grepped `Sources/DiceRollerWidget/` for any `@available(iOS 26.4` / 26.4-specific API usage — found none. Removed the three target-level overrides via `mcp__xcode__UpdateTargetBuildSetting` (not by hand-editing `project.pbxproj`, per project convention) so the extension now inherits the project's `26.0` default like every other target. Verified with a full `buildForTesting` pass — succeeded.
 - **Severity:** High (now resolved)
 
-### 4.7 `GeometryReader` used where newer scroll/layout APIs may suffice
-- **Location:** `Modules/CoreRPG/List/ExpandableBaseView.swift:60`; `Modules/CoreRPG/Views/StretchingHeaderView.swift:13` (see §8.1-8.2 for a deeper, independently-verified look at these two); `Modules/WeatherRPG/View/InlineRowViewer.swift:23`; `Modules/WeatherRPG/View/OverlayViewer.swift:19`; `Modules/WeatherRPG/Root/ViewerRootView.swift:22`; `Modules/PhotoRPG/Root/ViewerRootView.swift:64`; `Modules/SpaceRPG/Record/TutorialPageView.swift:19`; `Sources/RPGShare/SharingView.swift:73`
-- **What:** Nine views (excluding two visionOS `GeometryReader3D` uses with no simpler equivalent) still use `GeometryReader` for sizing/parallax.
+### 4.7 `GeometryReader` used where newer scroll/layout APIs may suffice — PARTIALLY MOOT (2 of 9 files deleted)
+- **Location (pre-fix):** ~~`Modules/CoreRPG/List/ExpandableBaseView.swift:60`~~ (deleted, see §8.2); ~~`Modules/CoreRPG/Views/StretchingHeaderView.swift:13`~~ (deleted, see §8.1); `Modules/WeatherRPG/View/InlineRowViewer.swift:23`; `Modules/WeatherRPG/View/OverlayViewer.swift:19`; `Modules/WeatherRPG/Root/ViewerRootView.swift:22`; `Modules/PhotoRPG/Root/ViewerRootView.swift:64`; `Modules/SpaceRPG/Record/TutorialPageView.swift:19`; `Sources/RPGShare/SharingView.swift:73`
+- **What:** Seven remaining views (excluding two visionOS `GeometryReader3D` uses with no simpler equivalent) still use `GeometryReader` for sizing/parallax; the other two (`ExpandableBaseView`, `StretchingHeaderView`) turned out to be unused entirely — both confirmed to have zero production call sites (only their own file and a generated snapshot test referenced each) — and were deleted rather than rewritten. See §8.1-8.2.
 - **Why:** Project convention prefers `containerRelativeFrame()`/`visualEffect()`; `GeometryReader` forces `.infinity`-sized child layout and re-renders the subtree on every geometry change.
-- **Action:** Audit each site against `containerRelativeFrame()`/`visualEffect()`/`onScrollGeometryChange`; `StretchingHeaderView` is the strongest candidate (see §8.1).
+- **Action:** Audit each remaining site against `containerRelativeFrame()`/`visualEffect()`/`onScrollGeometryChange`.
 - **Severity:** Low
 
-### 4.8 `onTapGesture` in preview code models the wrong pattern — FIXED
-- **Location:** `Modules/CoreRPG/List/ExpandableBaseView.swift:94,118` (pre-fix)
+### 4.8 `onTapGesture` in preview code models the wrong pattern — FIXED, then the file was deleted entirely
+- **Location (pre-fix):** `Modules/CoreRPG/List/ExpandableBaseView.swift:94,118`
 - **What:** Two `#Preview` blocks attached `.onTapGesture { withAnimation { isExpanded.toggle() } }` to a `Text` row instead of using `Button`.
 - **Why:** Preview-only, so low risk, but set a copy-pasteable bad example for the disclosure-row pattern it demonstrates.
-- **Action taken:** ✅ Wrapped each header's `Text` as a `Button` label with `.buttonStyle(.plain)` (to keep the original unstyled look) and moved the `withAnimation { isExpanded.toggle() }` into the button's action, dropping the now-unnecessary `.contentShape(Rectangle())`/`.onTapGesture`. Confirmed with a full `buildForTesting` pass.
+- **Action taken:** ✅ Originally fixed by wrapping each header's `Text` as a `Button` label with `.buttonStyle(.plain)`. Superseded shortly after: `ExpandableBaseView` turned out to be entirely unused in production (only its own file and one generated snapshot test referenced it) and was deleted outright — see §8.2. Noted here for the historical record; no longer applicable.
 - **Severity:** Low — resolved.
 - **Severity:** Low
 
@@ -284,19 +284,19 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 
 ## 8. SwiftUI / UI
 
-### 8.1 `StretchingHeaderView`'s `GeometryReader` recomputes on every scroll frame
-- **Location:** `Modules/CoreRPG/Views/StretchingHeaderView.swift:12-18`
-- **What:** The scroll-linked stretch/parallax header reads `proxy.frame(in: .global).minY` inside a `GeometryReader` wrapping the whole header content, recomputing `height(for:)`/`offset(for:)` on every layout pass while the enclosing `List`/`ScrollView` scrolls.
-- **Why:** `GeometryReader` forces its content to `.infinity` sizing and reruns on every geometry change; reading `.global` coordinates also breaks if the header is ever presented inside a sheet/`NavigationStack` with its own coordinate space. This is exactly the pattern `visualEffect(_:)`/`onScrollGeometryChange` were introduced to replace.
-- **Action:** Rewrite using `visualEffect(_:)` keyed to scroll offset, or `onScrollGeometryChange`, so the stretch effect doesn't force a `GeometryReader` layout pass per scroll frame.
-- **Severity:** Medium
+### 8.1 `StretchingHeaderView`'s `GeometryReader` recomputes on every scroll frame — RESOLVED (deleted, view was unused)
+- **Location (pre-fix):** `Modules/CoreRPG/Views/StretchingHeaderView.swift:12-18`
+- **What:** The scroll-linked stretch/parallax header read `proxy.frame(in: .global).minY` inside a `GeometryReader` wrapping the whole header content, recomputing `height(for:)`/`offset(for:)` on every layout pass while the enclosing `List`/`ScrollView` scrolled.
+- **Why:** `GeometryReader` forces its content to `.infinity` sizing and reruns on every geometry change; reading `.global` coordinates also breaks if the header is ever presented inside a sheet/`NavigationStack` with its own coordinate space.
+- **What actually happened:** Its generated snapshot test and catalog entry had already been removed; checking for production call sites turned up zero — the view was never actually used anywhere. ✅ Deleted `Modules/CoreRPG/Views/StretchingHeaderView.swift` outright (`git rm`), completing the cleanup that had been started. This also resolves the `StretchingHeaderView.swift:13` citation in §4.7. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved by deletion, not by rewriting to `visualEffect(_:)`/`onScrollGeometryChange`.
 
-### 8.2 `ExpandableBaseView`'s frame-measurement `GeometryReader` re-triggers every animation frame
-- **Location:** `Modules/CoreRPG/List/ExpandableBaseView.swift:22-27,52-74`
-- **What:** `expandedContent` applies `.getFrame($expansionFrame, space: .local)` — a `background(GeometryReader { ... }.preference(...))` — while its `.opacity(animatableData)` is being interpolated by SwiftUI's `Animatable` machinery during expand/collapse.
-- **Why:** The background `GeometryReader`/`PreferenceKey` frame-measurement modifier re-runs on every interpolated animation frame (SwiftUI calls `body` per-frame for `Animatable` types), not just once per state change, which is more layout work than the animation needs and can cause visible jank on the expand/collapse transition.
-- **Action:** Cache the measured frame once (e.g. only re-measure when `content` identity changes, not every `animatableData` tick), or drive the expansion height from a value already known without re-measuring per frame.
-- **Severity:** Medium
+### 8.2 `ExpandableBaseView`'s frame-measurement `GeometryReader` re-triggers every animation frame — RESOLVED (deleted, view was unused)
+- **Location (pre-fix):** `Modules/CoreRPG/List/ExpandableBaseView.swift:22-27,52-74`
+- **What:** `expandedContent` applied `.getFrame($expansionFrame, space: .local)` — a `background(GeometryReader { ... }.preference(...))` — while its `.opacity(animatableData)` was being interpolated by SwiftUI's `Animatable` machinery during expand/collapse.
+- **Why:** The background `GeometryReader`/`PreferenceKey` frame-measurement modifier re-ran on every interpolated animation frame (SwiftUI calls `body` per-frame for `Animatable` types), not just once per state change.
+- **What actually happened:** Before applying the originally-discussed fix (splitting the view into a non-`Animatable` measuring wrapper around an `Animatable` inner view — a real but moderate single-file restructure), a usage check turned up that `ExpandableBaseView` had **zero production call sites** — the only references anywhere in the repo were its own file and one auto-generated snapshot test (`Tests/CoreRPGSnapshotTests/CoreRPGDynamicPreviewSnapshotTests.swift`, itself generated from the view's own `#Preview` block). ✅ Deleted `Modules/CoreRPG/List/ExpandableBaseView.swift` outright (`git rm`) along with its `expandableBaseView()` test case; no recorded reference-snapshot image existed to clean up. This also resolves §4.7's `ExpandableBaseView.swift:60` `GeometryReader` citation and supersedes §4.8's fix to the same file (see those entries). Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved by deletion, not by the originally-proposed restructure.
 
 ### 8.3 `SharePlayButton`'s hidden `ShareLink` duplicates VoiceOver elements — FIXED
 - **Location:** `Modules/GameRPG/SetupViews/SharePlayButton.swift:38-41`

@@ -1966,33 +1966,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::StretchingHeaderView
-    @Test("StretchingHeaderView")
-    func snapshotStretchingHeaderView() async throws {
-        try await assertPreviewSnapshot("StretchingHeaderView") {
-            NavigationStack {
-                List {
-                    Section(header:
-                        CoreRPG.StretchingHeaderView {
-                            Image(systemName: "bookmark")
-                                .resizable()
-                                .scaledToFit()
-                        }
-                        .frame(height: 200)
-                    ) {
-                        ForEach(0 ..< 20) { i in
-                            Text(verbatim: "Row \(i)")
-                        }
-                    }
-                }
-                .listStyle(.automatic)
-                #if os(iOS)
-                    .toolbar(.hidden, for: .navigationBar)
-                #endif
-            }
-        }
-    }
-
 private func assertPreviewSnapshot<Content: View>(
     _ name: String,
     @ViewBuilder content: () -> Content

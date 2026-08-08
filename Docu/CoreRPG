@@ -653,4 +653,3 @@ Inspectors, sheets, file import/export panels, quick editors, and rows reuse the
 - `Views/RotatePhotoView.swift`
 - `Views/SectionGroupEditorView.swift`
 - `Views/SendFeedbackButton.swift`
-- `Views/StretchingHeaderView.swift`
