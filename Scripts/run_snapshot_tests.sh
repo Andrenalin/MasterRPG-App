@@ -160,7 +160,7 @@ run_tests() {
             destination="${SNAPSHOT_DESTINATION_26:-platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5}"
             ;;
         27)
-            xcode_app="${XCODE27_APP:-/Applications/Xcode-27.0.0-Beta.3.app}"
+            xcode_app="${XCODE27_APP:-/Applications/Xcode-27.0.0-Beta.4.app}"
             destination="${SNAPSHOT_DESTINATION_27:-platform=iOS Simulator,name=iPhone 17 Pro,OS=27.0}"
             ;;
     esac

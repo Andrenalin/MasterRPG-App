@@ -248,19 +248,19 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 - **Action:** Derive the PSK from something session-specific (a code shown to the player to type in, or exchanged only after user-visible pairing confirmation); treat the current scheme as protocol tagging, not authentication.
 - **Severity:** High — **verified**, see §12.
 
-### 6.2 iCloud-container/user-bearing file paths logged with `.public` privacy
-- **Location:** `Modules/CoreRPG/Controllable/ImportControllable.swift:506,515,517,523`; `Modules/CoreRPG/Files/FileBookmarkController.swift:116`; `Modules/CoreRPG/Files/FileUrlDataController.swift:131,339`
-- **What:** `Logger` calls interpolate `localFileUrl.rawUrl.absoluteString`/`url.absoluteString` with `privacy: .public`, disabling os_log's automatic redaction.
-- **Why:** On macOS these URLs point under the user's iCloud container path, so the username and local file layout end up unredacted in Console.app/sysdiagnose captures — unnecessary PII exposure for routine import/bookmark logging.
-- **Action:** Use `privacy: .private` (default) for absolute URLs, or log only the last path component/file UUID as already done elsewhere in the same file.
-- **Severity:** Medium
+### 6.2 iCloud-container/user-bearing file paths logged with `.public` privacy — FIXED (2 of 4 cited `ImportControllable.swift` locations were false positives)
+- **Location (pre-fix):** `Modules/CoreRPG/Controllable/ImportControllable.swift:515,523` (real); `Modules/CoreRPG/Files/FileBookmarkController.swift:116`; `Modules/CoreRPG/Files/FileUrlDataController.swift:131,339`
+- **Correction:** two of the four originally-cited `ImportControllable.swift` lines (506, 517) don't actually log any URL/path at all — they only interpolate `module`, `item.id` (a UUID), a file UUID, a hash, and a boolean, none of which are PII. Verified by grepping those two lines for `absoluteString` before touching anything: no match. Only lines 515 and 523 (which do log `.rawUrl.absoluteString`) were part of the real finding.
+- **What:** `Logger` calls interpolated `localFileUrl.rawUrl.absoluteString`/`url.absoluteString`/`bookmarkedUrl.absoluteString` with `privacy: .public`, disabling os_log's automatic redaction.
+- **Why:** On macOS these URLs point under the user's iCloud container path, so the username and local file layout end up unredacted in Console.app/sysdiagnose captures.
+- **Action taken:** ✅ Changed `privacy: .public` → `privacy: .private` on exactly the `absoluteString` interpolations at the 5 real sites (`ImportControllable.swift:515` — 2 fields, `:523` — 1 field; `FileBookmarkController.swift:116`; `FileUrlDataController.swift:131,339`), leaving the non-path fields in the same log lines (module, UUIDs, hashes) as `.public` since those aren't PII. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved.
 
-### 6.3 Redundant, non-standard `aps-environment` entitlement hardcoded to "development"
-- **Location:** `Resources/MasterRPG.entitlements:5-7`; `Resources/MasterTV.entitlements:5-6`; `Sources/RPGShare/RPGShare.entitlements:5-7`
-- **What:** The real Apple key is `aps-environment`; `com.apple.developer.aps-environment` (present alongside it in two files) isn't a documented Apple entitlement and looks like a copy/paste duplicate. Both real keys are hardcoded to `"development"`.
-- **Why:** With manually-committed entitlements (vs. Xcode-managed signing that rewrites this at Archive time), a release build could ship with the development APNs environment.
-- **Action:** Remove the stray duplicate key; confirm the release build pipeline overrides `aps-environment` to `production` for archives.
-- **Severity:** Low
+### 6.3 Redundant, non-standard `aps-environment` entitlement hardcoded to "development" — FIXED
+- **Location (pre-fix):** `Resources/MasterRPG.entitlements:5-7`; `Sources/RPGShare/RPGShare.entitlements:5-7`. `Resources/MasterTV.entitlements` was cited too but only ever had the one real key, no duplicate — confirmed by reading the file, nothing to fix there.
+- **What:** The real Apple key is `aps-environment`; `com.apple.developer.aps-environment` (present alongside it in `MasterRPG.entitlements` and `RPGShare.entitlements` only) isn't a documented Apple entitlement and looks like a copy/paste duplicate. Both real keys are hardcoded to `"development"`.
+- **Action taken:** ✅ Removed the stray `com.apple.developer.aps-environment` key/value pair from both files (validated both plists with `plutil -lint` afterward — well-formed). Left the real `aps-environment: development` key as-is: `CODE_SIGN_STYLE = Automatic` is set project-wide (confirmed via `GetTargetBuildSettings`), and Xcode's automatic signing rewrites `aps-environment` to match the distribution provisioning profile at Archive time regardless of the checked-in value — this is standard behavior, not a gap to fix. No Xcode Cloud workflow override was found in `MasterRPG.xcodeproj/xcshareddata/xcodecloud/manifest.json` (none needed, given automatic signing handles it). Verified with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
 ---
 

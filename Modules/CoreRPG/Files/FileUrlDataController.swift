@@ -128,7 +128,7 @@ public extension FileUrlDataController {
             module: fileUrl.module
         )
         if let bookmarkedUrl, bookmarkedUrl != managedUrl {
-            Logger.bookmarkStore.info("Different URL detected \(bookmarkedUrl.absoluteString, privacy: .public)")
+            Logger.bookmarkStore.info("Different URL detected \(bookmarkedUrl.absoluteString, privacy: .private)")
         }
 
         // Files in containers owned by the app do not require a security-scoped
@@ -336,7 +336,7 @@ public extension FileUrlDataController {
                 try? FileManager.default.startDownloadingUbiquitousItem(at: url)
             }
         } catch {
-            Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .public)")
+            Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .private)")
         }
         let fullUrl = try await cloudDocumentController.createNameUrl(for: url)
         try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)

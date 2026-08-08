@@ -512,7 +512,7 @@ private extension ImportControllable {
         }
 
         if let localFileUrl {
-            Logger.importController.warning("Import addFile rewrites existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) forceSave=\(forceSave, privacy: .public) localHash=\(localFileUrl.contentHash ?? "nil", privacy: .public) importedHash=\(importedHash, privacy: .public) localUrl=\(localFileUrl.rawUrl.absoluteString, privacy: .public) importedUrl=\(fileUrl.rawUrl.absoluteString, privacy: .public)")
+            Logger.importController.warning("Import addFile rewrites existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) forceSave=\(forceSave, privacy: .public) localHash=\(localFileUrl.contentHash ?? "nil", privacy: .public) importedHash=\(importedHash, privacy: .public) localUrl=\(localFileUrl.rawUrl.absoluteString, privacy: .private) importedUrl=\(fileUrl.rawUrl.absoluteString, privacy: .private)")
         } else {
             Logger.importController.debug("Import addFile writes new file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public)")
         }
@@ -520,7 +520,7 @@ private extension ImportControllable {
         fileUrl.resetData(data)
         do {
             let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
-            Logger.importController.debug("Import addFile stored imported file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) storedUrl=\((updated ?? fileUrl).rawUrl.absoluteString, privacy: .public) storedHash=\((updated ?? fileUrl).contentHash ?? "nil", privacy: .public)")
+            Logger.importController.debug("Import addFile stored imported file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) storedUrl=\((updated ?? fileUrl).rawUrl.absoluteString, privacy: .private) storedHash=\((updated ?? fileUrl).contentHash ?? "nil", privacy: .public)")
             await itemControllable.reset(fileUrl: updated ?? fileUrl, item: &item)
         } catch {
             Logger.importController.error("Cannot save bookmark \(module, privacy: .public), file stored as data")

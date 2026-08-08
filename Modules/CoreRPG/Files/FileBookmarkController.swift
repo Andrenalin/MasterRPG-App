@@ -113,7 +113,7 @@ extension FileBookmarkController {
             var isStale = false
             let url = try URL(resolvingBookmarkData: data, options: options, relativeTo: nil, bookmarkDataIsStale: &isStale)
             if isStale {
-                Logger.bookmarkStore.info("Stale Bookmark: \(url.absoluteString, privacy: .public)")
+                Logger.bookmarkStore.info("Stale Bookmark: \(url.absoluteString, privacy: .private)")
                 let _ = url.startAccessingSecurityScopedResource()
                 defer { url.stopAccessingSecurityScopedResource() }
                 try await saveBookmark(fileId: fileId, fileUrl: url, folder: folder)
