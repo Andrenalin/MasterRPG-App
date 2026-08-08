@@ -70,19 +70,19 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
   - Verified both with a full `buildForTesting` pass.
 - **Severity:** Low — resolved.
 
-### 3.4 `AppDataModel.deinit` cleanup is dead code — teardown never runs
-- **Location:** `Modules/SpaceRPG/Record/AppDataModel.swift:101-104`
-- **What:** `deinit` contains only a commented-out `DispatchQueue.main.async { self.detachListeners() }`; nothing runs on deallocation.
-- **Why:** `detachListeners()` (presumably tearing down subscriptions/capture session) is never called on teardown. The old GCD call was correctly identified as unsafe (a `nonisolated deinit` can't `await` actor-isolated cleanup), but no replacement was written — silently reintroducing whatever resource-retention issue the commented code was meant to fix.
-- **Action:** Have `endCapture()`/state-transition code call `detachListeners()` explicitly before the object can deallocate, and delete the dead `deinit` body.
-- **Severity:** Medium
+### 3.4 `AppDataModel.deinit` cleanup is dead code — teardown never runs — FIXED (with a corrected root cause)
+- **Location (pre-fix):** `Modules/SpaceRPG/Record/AppDataModel.swift:101-104`
+- **What:** `deinit` contained only a commented-out `DispatchQueue.main.async { self.detachListeners() }`; nothing ran on deallocation.
+- **Correction:** the finding's claim that "`detachListeners()` is never called on teardown" doesn't hold up — traced the actual call graph (relevant while fixing §3.3 on this same file) and found it's already reliably invoked on every reachable teardown path via a property observer: `objectCaptureSession`'s `willSet` calls `detachListeners()` directly, and that property is set to `nil` from `reset()`, which is itself reached from `endCapture()` and the `.restart`/`.completed`/`.prepareToReconstruct` state transitions. The genuinely dead part was narrower: just the `deinit` body — which additionally can never run at all, since `AppDataModel` is a singleton (`static let instance`).
+- **Action taken:** ✅ Deleted the dead commented-out `deinit` body, replaced with a comment explaining why no `deinit` cleanup is needed (singleton lifecycle) and pointing at where real teardown actually happens. No call to `detachListeners()` was added elsewhere, since the existing property-observer path already covers it correctly. Verified with a full `buildForTesting` pass.
+- **Severity:** Medium — resolved.
 
-### 3.5 `DebouncerModel` mixes `@Observable` with Combine `@Published`/`AnyCancellable`
-- **Location:** `Modules/CoreRPG/Stores/DebouncerModel.swift:1-25`
-- **What:** `DebouncerModel` is `@MainActor @Observable`, yet its `input` property is additionally `@ObservationIgnored @Published`, with debouncing implemented via `Combine`'s `$input.debounce(...).sink { }` and a stored `AnyCancellable`.
-- **Why:** Reintroduces Combine's separate scheduling/cancellation model (and a `[weak self]` capture) for something modern Swift Concurrency can express without Combine, contrary to project convention.
-- **Action:** Reimplement the debounce with a `Task`-based cancel-and-restart of `Task.sleep(for:)` on each `input` write.
-- **Severity:** Medium
+### 3.5 `DebouncerModel` mixes `@Observable` with Combine `@Published`/`AnyCancellable` — FIXED
+- **Location (pre-fix):** `Modules/CoreRPG/Stores/DebouncerModel.swift:1-25`
+- **What:** `DebouncerModel` was `@MainActor @Observable`, yet its `input` property was additionally `@ObservationIgnored @Published`, with debouncing implemented via `Combine`'s `$input.debounce(...).sink { }` and a stored `AnyCancellable`.
+- **Why:** Reintroduced Combine's separate scheduling/cancellation model (and a `[weak self]` capture) for something modern Swift Concurrency can express without Combine, contrary to project convention.
+- **Action taken:** ✅ Replaced with a `didSet` on `input` that cancels any in-flight `debounceTask` and starts a new `Task { try? await Task.sleep(for: .seconds(delay)); guard !Task.isCancelled else { return }; self?.output = value }`. Preserved the exact original semantics: `input` stays `@ObservationIgnored` (only `output`, the settled/debounced value, should drive SwiftUI invalidation — confirmed by reading every call site, all of which only write `.input` and read/observe `.output`, none read the old `$input` Combine publisher). Checked all 4 production call sites (`AdventureRPG`, `CharacterRPG`, `MapRPG`, `TableRPG` `QuickEntryEditor.swift`, plus `CoreRPG/EntryEditor/QuickEntryEditorView.swift`) — none depend on Combine-specific behavior. No dedicated unit test exists for `DebouncerModel`; relied on the full `buildForTesting` pass plus this call-site audit.
+- **Severity:** Medium — resolved.
 
 ### 3.6 `GroupStateObserver` forces `ObservableObject` usage (accepted exception)
 - **Location:** `Modules/GameRPG/SetupViews/SharePlayButton.swift:19-21`; `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:632`

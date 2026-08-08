@@ -1,25 +1,33 @@
 // @copyright André Trettin
 
-import Combine
 import Foundation
 
 @MainActor @Observable
 public final class DebouncerModel<T: Sendable>: Sendable {
     @ObservationIgnored
-    @Published public var input: T
+    public var input: T {
+        didSet { scheduleUpdate() }
+    }
     public var output: T
 
     @ObservationIgnored
-    private var debounce: AnyCancellable?
+    private var debounceTask: Task<Void, Never>?
+    @ObservationIgnored
+    private let delay: Double
 
     public init(initialValue: T, delay: Double = 1) {
         input = initialValue
         output = initialValue
+        self.delay = delay
+    }
 
-        debounce = $input
-            .debounce(for: .seconds(delay), scheduler: DispatchQueue.main)
-            .sink { [weak self] in
-                self?.output = $0
-            }
+    private func scheduleUpdate() {
+        debounceTask?.cancel()
+        let value = input
+        debounceTask = Task { [weak self, delay] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            self?.output = value
+        }
     }
 }

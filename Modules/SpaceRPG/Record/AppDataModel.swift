@@ -99,11 +99,11 @@ final class AppDataModel: Identifiable {
         state = .ready
     }
 
-    deinit {
-//        DispatchQueue.main.async {
-//            self.detachListeners()
-//        }
-    }
+    // No deinit cleanup needed: `AppDataModel` is a singleton (`static let instance`), so
+    // `deinit` never realistically fires. Real teardown already happens reliably via
+    // `objectCaptureSession`'s `willSet` (calls `detachListeners()`) whenever the session is
+    // reset — reached from `reset()`, itself reached from `endCapture()` and the
+    // `.restart`/`.completed`/`.prepareToReconstruct` state transitions.
 
     /// Informs your app to rerun to the new capture view after recontruction and viewing.
     ///
