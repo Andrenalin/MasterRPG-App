@@ -90,9 +90,14 @@ extension FileManager {
     private static func performCoordinatedFileAccess<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
         // NSFileCoordinator is synchronous and can block while waiting on file presenters.
         // Run it away from caller tasks so user-initiated work suspends instead of blocking its thread.
-        try await Task.detached(priority: .utility) {
+        let task = Task.detached(priority: .utility) {
             try operation()
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private static func execute<T>(_ block: (URL) throws -> T, onSecurityScopedResource url: URL) throws -> T {

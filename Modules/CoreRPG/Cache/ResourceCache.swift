@@ -46,7 +46,21 @@ public final class ResourceCache: Sendable {
             trace?.end()
             dataCache[key] = data
             inFlightRequests.removeValue(forKey: key)
+            // `task` is shared: concurrent callers for the same key await this same
+            // in-flight task, so it must run to completion — and its result cached —
+            // regardless of any one caller's own cancellation. Stopping it would break
+            // the other callers, and skipping the bookkeeping above would leave
+            // `inFlightRequests[key]` pointing at an already-finished task forever,
+            // permanently bypassing `dataCache` for this key. What a cancelled caller
+            // shouldn't do is return this value as if it succeeded, so check and
+            // propagate its own cancellation only now that bookkeeping is settled.
+            try Task.checkCancellation()
             return data
+        } catch is CancellationError {
+            // Bookkeeping above already ran (or didn't need to — see the `catch` below
+            // for the case where `task.value` itself threw); don't touch `trace`/
+            // `inFlightRequests` a second time here.
+            throw CancellationError()
         } catch {
             trace?.end()
             inFlightRequests.removeValue(forKey: key)

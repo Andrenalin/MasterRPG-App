@@ -606,13 +606,18 @@ extension FileUrlDataController {
     }
 
     private func writeRemoteCache(_ data: Data, to cacheURL: URL) async throws {
-        try await Task.detached(priority: .utility) {
+        let task = Task.detached(priority: .utility) {
             try FileManager.default.createDirectory(
                 at: cacheURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
             try data.write(to: cacheURL, options: .atomic)
-        }.value
+        }
+        try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private static func downloadRemoteFile(from url: URL) async throws -> URL {

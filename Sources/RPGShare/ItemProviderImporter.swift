@@ -154,10 +154,15 @@ private extension ItemProviderImporter {
 
     nonisolated static func data(from url: URL) async throws -> Data {
         if url.isFileURL {
-            return try await Task.detached(priority: .userInitiated) {
+            let task = Task.detached(priority: .userInitiated) {
                 try Task.checkCancellation()
                 return try Data(contentsOf: url)
-            }.value
+            }
+            return try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
         }
 
         let (data, _) = try await URLSession.shared.data(from: url)
