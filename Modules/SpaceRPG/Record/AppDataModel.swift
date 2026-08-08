@@ -139,6 +139,12 @@ final class AppDataModel: Identifiable {
     
     private var tasks: [ Task<Void, Never> ] = []
 
+    /// Tracks the background snapshots-folder cleanup task so a stale one from a previous
+    /// session doesn't keep running untracked. `AppDataModel` is a singleton (`static let
+    /// instance`), so `deinit` never realistically fires — `reset()` is the actual reachable
+    /// teardown point between capture sessions.
+    private var cleanupTask: Task<Void, Never>?
+
     @MainActor
     private func attachListeners() {
         Logger.scanner3D.debug("Attaching listeners...")
@@ -233,6 +239,8 @@ final class AppDataModel: Identifiable {
 
     private func reset() {
         Logger.scanner3D.info("reset() called...")
+        cleanupTask?.cancel()
+        cleanupTask = nil
         photogrammetrySession = nil
         objectCaptureSession = nil
         scanFolderManager = nil
@@ -309,8 +317,12 @@ final class AppDataModel: Identifiable {
                 photogrammetrySession = nil
 
                 // Removes snapshots folder to free up space after generating the model.
+                // Genuinely benefits from staying detached (plain file I/O, no MainActor
+                // work needed) — tracked so `reset()` can cancel a stale one.
                 let snapshotsFolder = scanFolderManager.snapshotsFolder
-                Task.detached(priority: .background) {
+                cleanupTask?.cancel()
+                cleanupTask = Task.detached(priority: .background) {
+                    guard !Task.isCancelled else { return }
                     try? FileManager.default.removeItem(at: snapshotsFolder)
                 }
 

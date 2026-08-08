@@ -60,12 +60,15 @@ Status as of the 2026-08-07 quick-wins pass — every item below was re-verified
 - **Action:** Wrap each with `withTaskCancellationHandler`, or replace `Task.detached` with a plain structured `Task { }` where detachment isn't actually required.
 - **Severity:** Medium
 
-### 3.3 Untracked, unnecessary `Task.detached` fire-and-forget work in SpaceRPG
-- **Location:** `Modules/SpaceRPG/Space/SpaceViewer.swift:383-392`; `Modules/SpaceRPG/Record/AppDataModel.swift:311-314`
-- **What:** `SpaceViewer` detaches only to immediately hop back to `MainActor.run` for `generateCollisionShapes`, defeating the purpose of detaching; `AppDataModel`'s background cleanup task is similarly unmanaged.
-- **Why:** Adds a pointless scheduling round-trip and leaves a dangling task if the view/model is torn down mid-generation.
-- **Action:** For `SpaceViewer`, perform the work directly under `@MainActor` without detaching. For `AppDataModel`, store/cancel the cleanup task on teardown.
-- **Severity:** Low
+### 3.3 Untracked, unnecessary `Task.detached` fire-and-forget work in SpaceRPG — FIXED
+- **Location (pre-fix):** `Modules/SpaceRPG/Space/SpaceViewer.swift:383-392`; `Modules/SpaceRPG/Record/AppDataModel.swift:311-314`
+- **What:** `SpaceViewer` detached only to immediately hop back to `MainActor.run` for `generateCollisionShapes`, defeating the purpose of detaching; `AppDataModel`'s background cleanup task was similarly unmanaged.
+- **Why:** Added a pointless scheduling round-trip and left a dangling task if the view/model was torn down mid-generation.
+- **Action taken:**
+  - ✅ `SpaceViewer.swift`: `loadEntity` is already `@MainActor async`, and RealityKit's `Entity`/`ModelEntity` are inherently MainActor-bound regardless — the detached task could never actually run its real work off the main actor, it just added indirection before hopping straight back. Replaced `Task.detached(name:priority:) { await MainActor.run { ... } }` with a plain `Task(name:priority:) { @MainActor in ... }`, keeping the same "don't block the rest of `loadEntity`" behavior without the pointless detach/re-attach.
+  - ✅ `AppDataModel.swift`: unlike the `SpaceViewer` case, this one genuinely benefits from staying detached (plain `FileManager` file I/O, no MainActor need) — the actual gap was that it was untracked. `AppDataModel` is a singleton (`static let instance`), so `deinit` never realistically fires, making it the wrong place to "cancel on teardown." Added a `cleanupTask` stored property, assigned the detached task to it, added a `Task.isCancelled` check inside the task body so cancellation actually has an effect, and cancel any in-flight cleanup task both defensively before starting a new one and in `reset()` — the function actually called on session restart/completion, i.e. the real reachable teardown point for this object.
+  - Verified both with a full `buildForTesting` pass.
+- **Severity:** Low — resolved.
 
 ### 3.4 `AppDataModel.deinit` cleanup is dead code — teardown never runs
 - **Location:** `Modules/SpaceRPG/Record/AppDataModel.swift:101-104`

@@ -356,17 +356,20 @@ private extension SpaceViewer {
                 firstMesh.components.set(HoverEffectComponent(.shader(.default)))
                 firstMesh.components.set(GroundingShadowComponent(castsShadow: true))
 
-                // Generate collision shapes asynchronously to avoid blocking Metal
-                Task.detached(name: "RealityKit Collision Shapes", priority: .utility) {
-                    await MainActor.run {
-                        let trace = PerformanceTrace.begin(
-                            "CollisionShapeGeneration",
-                            source: "SpaceViewer",
-                            count: 1
-                        )
-                        defer { trace?.end() }
-                        firstMesh.generateCollisionShapes(recursive: false, static: true)
-                    }
+                // Generate collision shapes asynchronously so this doesn't block the rest of
+                // `loadEntity`. `Task.detached` was pointless here: `Entity`/`ModelEntity` are
+                // MainActor-bound, so the detached task immediately hopped back via
+                // `MainActor.run` anyway — this is already running on the Main Actor (`loadEntity`
+                // is `@MainActor`), so a plain structured Task keeps the same "don't block, run
+                // shortly after" behavior without the detach/re-attach indirection.
+                Task(name: "RealityKit Collision Shapes", priority: .utility) { @MainActor in
+                    let trace = PerformanceTrace.begin(
+                        "CollisionShapeGeneration",
+                        source: "SpaceViewer",
+                        count: 1
+                    )
+                    defer { trace?.end() }
+                    firstMesh.generateCollisionShapes(recursive: false, static: true)
                 }
             }
 
