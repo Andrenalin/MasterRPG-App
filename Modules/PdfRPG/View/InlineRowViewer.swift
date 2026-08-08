@@ -18,29 +18,45 @@ struct InlineRowViewer: View, Equatable {
             HStack {
                 if source.entryId == nil {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.folderListController.listDisplayModel, entryId: source.entryId)
+                        .containerShape(.rect(cornerRadius: 24))
+                        .background {
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(Color.accentColor.tertiary)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(Color.accentColor.secondary, lineWidth: 2)
+                        }
+                        .padding(1)
+                        .frame(maxWidth: .infinity)
                 }
                 Button {
                     actionHandler()
                 } label: {
                     Label {
-                        Text("Open PDF", bundle: .module)
+                        Text(title)
                     } icon: {
                         Image(systemName: root.configurable.module.icon)
                     }
-                    .labelStyle(.iconOnly)
-                    .imageScale(.large)
                 }
-                .font(source.entryId == nil ? .largeTitle : .default)
-                .frame(minWidth: 44, minHeight: 44)
+                .selectedRoundButton(title: title, module: .pdf, isSelected: isPresented)
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
     }
-    
+
     var model: PdfModel {
         root.itemController.itemOrEmpty(for: source.itemId)
     }
-    
+
+    var title: String {
+        String(localized: "Open PDF", bundle: .module)
+    }
+
+    var isPresented: Bool {
+        scenesManager.getSceneState(for: SceneId(rawValue: root.configurable.module.viewerWindowId)) == .opened
+    }
+
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source
     }

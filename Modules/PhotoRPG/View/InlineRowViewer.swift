@@ -16,7 +16,17 @@ struct InlineRowViewer: View, Equatable {
         GameShareView(root: root.rootController, itemId: source.itemId) {
             HStack {
                 root.viewController.photoRow(root: root, for: source.itemId)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .containerShape(.rect(cornerRadius: 24))
+                    .background {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(Color.accentColor.tertiary)
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.accentColor.secondary, lineWidth: 2)
+                    }
+                    .padding(1)
+                    .frame(maxWidth: .infinity)
             }
             .overlay(alignment: .trailing) {
                 Button {

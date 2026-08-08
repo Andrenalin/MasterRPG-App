@@ -43,8 +43,9 @@ private extension CachePhotoView {
     func imageView(image: AKImage) -> some View {
         Image(akImage: image)
             .resizable()
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .aspectRatio(contentMode: .fit)
-            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+            .frame(minWidth: 0, minHeight: 0, maxHeight: .infinity)
     }
 
     @ViewBuilder

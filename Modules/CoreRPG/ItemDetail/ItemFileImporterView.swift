@@ -48,7 +48,8 @@ struct ItemFileImporterView: View {
             FileImporterView(
                 editControllable: root.editControllable,
                 fileTypes: fileTypes,
-                itemId: model.id
+                itemId: model.id,
+                module: root.configurable.module
             )
             .applyIf(isInitial) {
                 $0.padding(32)

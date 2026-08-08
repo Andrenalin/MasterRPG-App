@@ -4,52 +4,50 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct FileImporterView: View {
-    public init(editControllable: any EditControllable, fileTypes: [UTType], itemId: UUID, isProminent: Bool = true) {
+    public init(editControllable: any EditControllable, fileTypes: [UTType], itemId: UUID, module: NetworkModules) {
         self.editControllable = editControllable
         self.fileTypes = fileTypes
         self.itemId = itemId
-        self.isProminent = isProminent
+        self.module = module
     }
-    
+
     let editControllable: any EditControllable
     let fileTypes: [UTType]
     let itemId: UUID
-    let isProminent: Bool
-    
+    let module: NetworkModules
+
     @State private var showImporter = false
     @State private var showRemoteURLImporter = false
-    
+
     public var body: some View {
 #if !os(tvOS)
         if !fileTypes.isEmpty {
             HStack {
-                GlassButton(isProminent: isProminent) {
+                Button {
                     showImporter.toggle()
                 } label: {
                     Label {
-                        Text("Import File", bundle: .module)
+                        Text(importFileTitle)
                     } icon: {
                         Image(systemName: "folder")
                             .symbolVariant(showImporter ? .fill : .none)
-                            .imageScale(isProminent ? .large : .medium)
                             .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     }
-                    .labelStyle(.iconOnly)
                 }
+                .selectedRoundButton(title: importFileTitle, module: module, isSelected: showImporter)
 
-                GlassButton(isProminent: isProminent) {
+                Button {
                     showRemoteURLImporter.toggle()
                 } label: {
                     Label {
-                        Text("Import URL", bundle: .module)
+                        Text(importUrlTitle)
                     } icon: {
                         Image(systemName: "link.badge.plus")
                             .symbolVariant(showRemoteURLImporter ? .circle.fill : .none)
-                            .imageScale(isProminent ? .large : .medium)
                             .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                     }
-                    .labelStyle(.iconOnly)
                 }
+                .selectedRoundButton(title: importUrlTitle, module: module, isSelected: showRemoteURLImporter)
             }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
                 guard let url = try? result.get() else { return }
@@ -64,6 +62,14 @@ public struct FileImporterView: View {
             )
         }
 #endif
+    }
+
+    private var importFileTitle: String {
+        String(localized: "Import File", bundle: .module)
+    }
+
+    private var importUrlTitle: String {
+        String(localized: "Import URL", bundle: .module)
     }
 }
 
@@ -146,7 +152,8 @@ private struct RemoteFileURLImporterModifier: ViewModifier {
     FileImporterView(
         editControllable: FakeEditController.fake,
         fileTypes: [.data],
-        itemId: UUID()
+        itemId: UUID(),
+        module: .pdf
     )
     .padding()
 }

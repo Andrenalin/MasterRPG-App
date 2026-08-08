@@ -19,7 +19,8 @@ struct DetailEditorView: View {
             FileImporterView(
                 editControllable: root.editController,
                 fileTypes: root.editController.fileUrlDataController?.fileTypes ?? [],
-                itemId: model.id
+                itemId: model.id,
+                module: root.configurable.module
             )
 
             if let url = model.url {

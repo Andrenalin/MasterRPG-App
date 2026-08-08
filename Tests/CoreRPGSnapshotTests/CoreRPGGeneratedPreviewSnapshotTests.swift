@@ -961,7 +961,8 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
             CoreRPG.FileImporterView(
                 editControllable: FakeEditController.fake,
                 fileTypes: [.data],
-                itemId: UUID()
+                itemId: UUID(),
+                module: .pdf
             )
             .padding()
         }
