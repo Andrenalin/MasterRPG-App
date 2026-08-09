@@ -180,7 +180,18 @@ extension EditController {
         }
         MasterRPGTips.recordContentLinked()
     }
-    
+
+    /// Unlinks an entry's dice, mirroring the `.dice` case of `add(link:...)`.
+    /// The entry's value type is left as-is — only the link itself is removed.
+    @MainActor public func removeDice(itemId: UUID, entryId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        var entry = item[entryId]
+        guard entry.diceId != nil else { return }
+        entry.diceId = nil
+        item[entryId] = entry
+        save(updated: item, message: String(localized: "Remove Dice", bundle: .module).localizedString)
+    }
+
     public func canAddLink(module: NetworkModules, entryId: UUID?) -> Bool {
         (module == .value && entryId != nil) || module == .dice || module == .pdf || (module == .table && entryId != nil)
     }

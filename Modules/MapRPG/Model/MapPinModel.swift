@@ -4,7 +4,7 @@ import CoreRPG
 import SwiftUI
 
 public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
-    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false) {
+    public init(id: UUID, name: String, color: Color = .red, photoId: UUID? = nil, characterId: UUID? = nil, location: CGPoint = .zero, size: MapPinSize = .normal, isShown: Bool = true, isPlayer: Bool = false, players: [UUID] = [], timeInterval: TimeInterval = 0, isZoom: Bool = false, isDead: Bool = false, isHighlighted: Bool = false, healthPercent: Double? = nil) {
         self.id = id
         self.name = name
         self.color = color
@@ -19,6 +19,7 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
         self.isZoom = isZoom
         self.isDead = isDead
         self.isHighlighted = isHighlighted
+        self.healthPercent = healthPercent
     }
     
     public enum MapPinSize: Int, Identifiable, Hashable, Equatable, Codable, CaseIterable, Sendable {
@@ -93,6 +94,10 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
     public var isZoom: Bool = false
     public var isDead: Bool = false
     public var isHighlighted: Bool = false
+    /// 0...100 health reading derived from the combatant's linked hit-points
+    /// entry. `nil` means no entry is linked (or the battle never computed
+    /// one yet), which the border renders as neutral grey.
+    public var healthPercent: Double?
 }
 
 extension MapPinModel: Codable {
@@ -111,6 +116,7 @@ extension MapPinModel: Codable {
         case isZoom
         case isDead
         case isHighlighted
+        case healthPercent
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -129,6 +135,7 @@ extension MapPinModel: Codable {
         try container.encode(isZoom, forKey: .isZoom)
         try container.encode(isDead, forKey: .isDead)
         try container.encode(isHighlighted, forKey: .isHighlighted)
+        try container.encodeIfPresent(healthPercent, forKey: .healthPercent)
     }
 
     public init(from decoder: Decoder) throws {
@@ -148,6 +155,31 @@ extension MapPinModel: Codable {
         isZoom = try values.decodeIfPresent(Bool.self, forKey: .isZoom) ?? false
         isDead = try values.decodeIfPresent(Bool.self, forKey: .isDead) ?? false
         isHighlighted = try values.decodeIfPresent(Bool.self, forKey: .isHighlighted) ?? false
+        healthPercent = try values.decodeIfPresent(Double.self, forKey: .healthPercent)
+    }
+}
+
+extension MapPinModel {
+    /// Border color reflecting the pin's last *broadcast* health reading: red
+    /// under 50%, orange under 80%, green from 80% up. `nil` (no hit-points
+    /// entry linked yet) renders as neutral grey — the pin's prior default.
+    ///
+    /// This is the persisted/networked snapshot, refreshed only when the map
+    /// pushes an update (see `GameController.synchronizeBattleDefenders`) —
+    /// the only source available to a player, who has no access to the
+    /// linked Character. `MapPinView` prefers a live-computed percent instead
+    /// whenever the pin is a tracked combatant, so the game master's own
+    /// screen updates instantly with the source entry rather than waiting for
+    /// the next push. Both paths render through `healthBorderColor(for:)`.
+    var healthBorderColor: Color { Self.healthBorderColor(for: healthPercent) }
+
+    static func healthBorderColor(for healthPercent: Double?) -> Color {
+        guard let healthPercent else { return .gray }
+        return switch healthPercent {
+        case ..<50: .red
+        case 50..<80: .orange
+        default: .green
+        }
     }
 }
 

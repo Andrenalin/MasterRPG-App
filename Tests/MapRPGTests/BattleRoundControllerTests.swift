@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import CharacterRPG
@@ -437,6 +438,136 @@ struct BattleRoundControllerTests {
             entryId: monsterHitPointsEntryId
         )
         #expect(linkedEntry?.name == "current")
+    }
+
+    @Test("Battle start computes each combatant's health percent from their linked HP entry")
+    func resolvesHealthPercentFromHitPointsEntry() async throws {
+        // Given: a full-health player (no "|" modifier yet, so the base value
+        // is both the max and the current amount) and a wounded monster whose
+        // entry follows the "base|modifier" convention: 20 max, -15 applied.
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let playerCharacterId = UUID()
+        let monsterCharacterId = UUID()
+
+        let hpEntry = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "50")
+        let player = ValueModel(id: playerCharacterId, name: "Hero", entries: [hpEntry])
+        root.characterRoot.itemController.replace(model: player, isInsert: true)
+
+        let monsterHpEntry = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "20|-15")
+        let monster = ValueModel(id: monsterCharacterId, name: "Goblin", entries: [monsterHpEntry])
+        root.characterRoot.itemController.replace(model: monster, isInsert: true)
+
+        sut.battleRoundSettings.hitPointsNames = ["HP"]
+
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: square(x: 0),
+            focused: true
+        )
+        let playerPin = MapPinModel(
+            id: UUID(),
+            name: "Hero",
+            characterId: playerCharacterId,
+            location: CGPoint(x: 20, y: 20),
+            isPlayer: true
+        )
+        let monsterPin = MapPinModel(
+            id: UUID(),
+            name: "Goblin",
+            characterId: monsterCharacterId,
+            location: CGPoint(x: 60, y: 60)
+        )
+        let map = MapModel(
+            id: mapId,
+            name: "Dungeon",
+            entries: [room],
+            mapPins: [playerPin, monsterPin]
+        )
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        // Before battle: pins never got a reading, so the border is neutral
+        // grey rather than an assumed 0% or 100%.
+        #expect(playerPin.healthPercent == nil)
+        #expect(playerPin.healthBorderColor == .gray)
+
+        // When
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+
+        // Then: the broadcast pin — not just the combatant's in-memory copy —
+        // carries the computed percent, since players can't read the linked
+        // Character and only ever see the pin's border color.
+        let updatedPlayerPin = try #require(
+            sut.gameItem(for: mapId).mapPins.first { $0.id == playerPin.id }
+        )
+        let updatedMonsterPin = try #require(
+            sut.gameItem(for: mapId).mapPins.first { $0.id == monsterPin.id }
+        )
+        #expect(updatedPlayerPin.healthPercent == 100)
+        #expect(updatedPlayerPin.healthBorderColor == .green)
+        #expect(updatedMonsterPin.healthPercent == 25)
+        #expect(updatedMonsterPin.healthBorderColor == .red)
+    }
+
+    @Test("healthPercent(for:) reflects an HP entry edit immediately, ahead of the next broadcast sync")
+    func healthPercentIsLiveAheadOfBroadcastSync() async throws {
+        // Given: a running battle with a monster at 25% (matches the fixture
+        // above: 20 max, -15 applied).
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let monsterCharacterId = UUID()
+
+        let monsterHpEntry = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "20|-15")
+        let monster = ValueModel(id: monsterCharacterId, name: "Goblin", entries: [monsterHpEntry])
+        root.characterRoot.itemController.replace(model: monster, isInsert: true)
+        sut.battleRoundSettings.hitPointsNames = ["HP"]
+
+        let room = MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: square(x: 0), focused: true)
+        let monsterPin = MapPinModel(id: UUID(), name: "Goblin", characterId: monsterCharacterId, location: CGPoint(x: 60, y: 60))
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [room], mapPins: [monsterPin])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+
+        let combatant = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
+        #expect(sut.healthPercent(for: combatant) == 25)
+
+        // When: the game master heals the monster on the Character sheet —
+        // the same entry-point a live value edit goes through — without any
+        // Map/BattleRound action running afterward.
+        let gameCharacterId = try #require(combatant.gameCharacterId)
+        let hitPointsEntryId = try #require(combatant.hitPointsEntryId)
+        let update = GameValueEntryUpdate(
+            characterId: gameCharacterId,
+            entryId: hitPointsEntryId,
+            name: "HP",
+            typeRawValue: ValueEntryModel.ValueType.number.rawValue,
+            isGenerator: false,
+            value: "20|-4",
+            displayState: 0
+        )
+        #expect(root.characterRoot.valueGameControllable.applyGameValueEntryUpdate(update))
+
+        // Then: re-reading `healthPercent(for:)` for the same (unchanged)
+        // combatant already reflects the new value — it reads the entry live
+        // rather than a cached copy — while the broadcast pin on the map
+        // still carries the stale reading until the next sync tick.
+        #expect(sut.healthPercent(for: combatant) == 80)
+        let stalePin = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == monsterPin.id })
+        #expect(stalePin.healthPercent == 25)
+
+        // The next broadcast tick catches the pin up for players, who have
+        // no local combatant and so no live path of their own.
+        #expect(sut.synchronizeBattleDefenders(itemId: mapId))
+        let syncedPin = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == monsterPin.id })
+        #expect(syncedPin.healthPercent == 80)
     }
 
     @Test("Assigning an empty battle token creates one memory-only Character and reuses it")

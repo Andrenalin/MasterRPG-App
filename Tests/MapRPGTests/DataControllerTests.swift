@@ -21,11 +21,16 @@ struct DataControllerTests {
         let pinEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMapPin"])
         let deadAttribute = try #require(pinEntity.attributesByName["isDead"])
         let characterAttribute = try #require(pinEntity.attributesByName["characterId"])
+        let healthPercentAttribute = try #require(pinEntity.attributesByName["healthPercent"])
         let mapEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMap"])
         let wallsDataAttribute = try #require(mapEntity.attributesByName["wallsData"])
         #expect(!deadAttribute.isOptional)
         #expect((deadAttribute.defaultValue as? NSNumber)?.boolValue == false)
         #expect(characterAttribute.isOptional)
+        // Optional with no default, so unset pins (and pre-migration rows)
+        // decode back as `nil` — the "health unknown" grey border.
+        #expect(healthPercentAttribute.isOptional)
+        #expect(healthPercentAttribute.defaultValue == nil)
         #expect(!wallsDataAttribute.isOptional)
         #expect(wallsDataAttribute.defaultValue as? String == "")
 
@@ -64,7 +69,8 @@ struct DataControllerTests {
             size: .large,
             isShown: true,
             isDead: true,
-            isHighlighted: true
+            isHighlighted: true,
+            healthPercent: 42.5
         )
         let secondPin = MapPinModel(
             id: UUID(),
@@ -132,6 +138,8 @@ struct DataControllerTests {
         #expect(fetchedOriginal.mapPins.first?.isShown == true)
         #expect(fetchedOriginal.mapPins.first?.isDead == true)
         #expect(fetchedOriginal.mapPins.first?.isHighlighted == false)
+        #expect(fetchedOriginal.mapPins.first?.healthPercent == 42.5)
+        #expect(fetchedOriginal.mapPins.last?.healthPercent == nil)
         #expect(fetchedOriginal.walls == [firstWall])
         #expect(fetchedOriginal.pinScale == 2)
         #expect(fetchedOriginal.hexMapScale == 25)
@@ -158,7 +166,8 @@ struct DataControllerTests {
             location: CGPoint(x: 24, y: 25),
             size: .huge,
             isShown: true,
-            isDead: false
+            isDead: false,
+            healthPercent: 12
         )
         let updatedWall = MapWallModel(
             sourceIdentifier: firstWall.sourceIdentifier,
@@ -213,6 +222,7 @@ struct DataControllerTests {
         #expect(fetchedUpdated.mapPins.first?.isShown == true)
         #expect(fetchedUpdated.mapPins.first?.isDead == false)
         #expect(fetchedUpdated.mapPins.first?.characterId == nil)
+        #expect(fetchedUpdated.mapPins.first?.healthPercent == 12)
         #expect(fetchedUpdated.walls == [updatedWall])
         #expect(fetchedUpdated.pinScale == 1.5)
         #expect(fetchedUpdated.hexMapScale == 10)
