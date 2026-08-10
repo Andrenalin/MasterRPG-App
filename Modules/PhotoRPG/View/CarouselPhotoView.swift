@@ -16,9 +16,11 @@ struct CarouselPhotoView: View {
                         photoIds: photoIds,
                         groupSelection: selection
                     )
+                    .frame(height: 128)
                 }
 
                 CarouselDropAreaView(photoIds: photoIds)
+                    .frame(height: 128)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
