@@ -603,6 +603,19 @@ public extension EditControllable {
         return itemControllable.itemSync(for: itemId)?.copy() as? Model
     }
 
+    /// Clears any editor state still referencing a deleted item, so a stale/removed model
+    /// doesn't linger in the header editor, the group/sheet editor, or the item link cache.
+    @MainActor func removeFromEditors(itemId: UUID) {
+        if (editorModel.currentModel as? Model)?.id == itemId {
+            editorModel.undoManaged.resetValue(nil)
+        }
+        if editorModel.sheetEditorModel.itemId == itemId {
+            editorModel.sheetEditorModel.itemId = nil
+            editorModel.sheetEditorModel.entryId = nil
+        }
+        editorModel.cacheItemListModel.reset(itemId: itemId)
+    }
+
     @MainActor func saveChanges(to newValue: Model, name: String, forceSave: Bool = false) {
         Task {
             await CloudKitOperationCounter.shared.recordOperation(

@@ -110,6 +110,19 @@ extension FolderListModel {
                 resetListSelection()
                 update(selection: Set())
             }
+            if list[index].id == scrollId {
+                scrollId = nil
+            }
+            if list[index].id == lastNonNilScrollId {
+                lastNonNilScrollId = nil
+            }
+            // Regular-width (iPad) layouts drive the NavigationSplitView detail column from
+            // navigationModel.selectedItemId directly, independently of `selected` above — clear
+            // it too, or the detail column keeps showing the just-deleted item.
+            if list[index].source.itemId == navigationModel.selectedItemId {
+                navigationModel.selectedItemId = nil
+                navigationModel.selectedEntryId = nil
+            }
         }
         for index in offsets.reversed() {
             cacheListModels.removeValue(forKey: list[index].id)
