@@ -23,6 +23,7 @@ struct TableGenerationRootView: View {
     @State private var model: TableGenerationModel
 
     @Environment(\.itemGenerationResultAction) private var resultAction
+    @Environment(\.networkActions) private var networkActions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -35,8 +36,9 @@ struct TableGenerationRootView: View {
             TableGenerationPanelView(
                 model: model,
                 controller: controller,
-                cancelAction: cancel,
-                confirmAction: confirm
+                closeAction: close,
+                saveAction: save,
+                sendAction: send
             )
             .padding()
         }
@@ -50,14 +52,40 @@ struct TableGenerationRootView: View {
         }
     }
 
-    private func cancel() {
+    /// Discards the session without saving anything.
+    private func close() {
         sessionStore.unregister(model)
         dismissAction()
     }
 
-    private func confirm() {
+    /// Adds the generated outcome as a new value to the character.
+    private func save() {
         guard let summary = model.summary else { return }
         resultAction(summary)
+        sessionStore.unregister(model)
+        withAnimation(reduceMotion ? nil : .smooth) {
+            dismissAction()
+        }
+    }
+
+    /// Sends the generated outcome to a player (or every visible player)
+    /// over the active game session.
+    private func send(to playerId: UUID?) {
+        guard let summary = model.summary,
+              let data = summary.encodeData()
+        else {
+            return
+        }
+        networkActions?.game(
+            NetworkCodableDataType(
+                id: summary.id,
+                type: .generator,
+                version: 1,
+                data: data
+            ),
+            .generatedValue,
+            playerId
+        )
         sessionStore.unregister(model)
         withAnimation(reduceMotion ? nil : .smooth) {
             dismissAction()
