@@ -43,6 +43,7 @@ struct BattleRoundList: View {
                 selectHitPoints: selectHitPoints,
                 selectInitiative: selectInitiative
             )
+            .equatable()
             .frame(maxWidth: .infinity)
             .transition(.move(edge: .trailing).combined(with: .opacity))
 #if !os(tvOS)

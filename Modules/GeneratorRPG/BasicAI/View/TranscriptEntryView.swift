@@ -45,7 +45,7 @@ struct TranscriptEntryView: View {
             }
 
         case .toolCalls(let toolCalls):
-            ForEach(toolCalls.enumerated(), id: \.offset) { index, toolCall in
+            ForEach(toolCalls.enumerated(), id: \.element.id) { _, toolCall in
                 MessageBubbleView(message: ChatMessage(
                     entryID: entry.id,
                     content: String(
@@ -54,7 +54,7 @@ struct TranscriptEntryView: View {
                     ),
                     isFromUser: false
                 ))
-                .id("\(entry.id)-tool-\(index)")
+                .id("\(entry.id)-tool-\(toolCall.id)")
             }
 
         case .toolOutput(let toolOutput):

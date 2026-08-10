@@ -19,6 +19,11 @@ struct BattleParticipantColumn: View {
 
     private var root: MapRootModel { controller.root.mapRoot }
 
+    // A hard-coded `maxWidth` ignored Dynamic Type entirely, risking illegible
+    // truncation of a free-text combatant name at larger accessibility sizes.
+    // See CODE_AUDIT §8.12.
+    @ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 2) {
@@ -41,7 +46,8 @@ struct BattleParticipantColumn: View {
                     Text(combatant.name)
                         .font(.caption2)
                         .lineLimit(1)
-                        .frame(maxWidth: 90)
+                        .frame(maxWidth: nameMaxWidth)
+                        .help(Text(verbatim: combatant.name))
                 //}
             }
             
@@ -97,6 +103,7 @@ struct BattleParticipantColumn: View {
                     ? Text("Open character sheet for \(combatant.name)", bundle: .module)
                     : Text("Choose a Character for \(combatant.name)", bundle: .module)
                 )
+                .accessibilityValue(avatarAccessibilityValue)
 #if os(iOS) || os(macOS) || os(visionOS)
                 .battleLinkCharacterDropDestination { characters, _ in
                     guard let character = characters.first else { return false }
@@ -203,6 +210,23 @@ struct BattleParticipantColumn: View {
 
     private var haloWidth: CGFloat {
         presentation.isRollRecipient || isActive ? 3 : 1
+    }
+
+    /// The avatar halo color is the only signal for "active turn"/"roll
+    /// recipient" — mirrors the same state as `haloColor`/`haloWidth` in text
+    /// so VoiceOver users (and color-blind sighted users) aren't left without
+    /// it. See CODE_AUDIT §8.10.
+    private var avatarAccessibilityValue: Text {
+        switch (isActive, presentation.isRollRecipient) {
+        case (true, true):
+            Text("Active turn, selected roll target", bundle: .module)
+        case (true, false):
+            Text("Active turn", bundle: .module)
+        case (false, true):
+            Text("Selected roll target", bundle: .module)
+        case (false, false):
+            Text("Not active", bundle: .module)
+        }
     }
 
     private var hasCharacter: Bool { combatant.hasCharacter }

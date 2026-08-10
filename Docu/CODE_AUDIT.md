@@ -13,11 +13,10 @@ Still no finding reaches **Critical** by this audit's strict bar (crash-on-commo
 1. **[High/Security] Hardcoded, world-shared TLS pairing secret — still open** — §6.1 — `Modules/GameRPG/Network/GameSecurity.swift:7`. Unchanged since the last audit; still needs a product decision on session-specific pairing.
 2. **[High] `ExportController` BFS traversal still duplicated verbatim across 7+ modules — still open** — §9.4 — e.g. `Modules/PdfRPG/Controller/ExportController.swift` vs. `Modules/DiceRPG/Controller/ExportController.swift` (re-confirmed byte-for-byte identical apart from one string literal).
 3. **[High, NEW] `MessageMapper` — a shared encode/decode protocol that already exists — is hand-duplicated by 16 of its 17 conformers instead of used** — §9.17 — `Modules/GameRPG/Model/MessageMapper.swift:5-8`. Two incompatible call-site signatures have already drifted apart as a result.
-4. **[High, NEW, verified] Stale 3D-object rotation base after a remote SharePlay transform update** — §8.6 — `Modules/SpaceRPG/Space/SpaceViewer.swift:542-564`. After another participant moves the shared 3D object, the next local drag gesture snaps it back toward the pre-update rotation.
 
-All §5 Bugs/logic-errors findings (§5.1–§5.14) and §6.4–§6.6's DoS findings are now fixed — see those sections for details, including this pass's App Intent path-escaping fix (§5.11), the Core Data `loadPersistentStores` completion race fix (§5.14), the initiative-parsing overflow-trap fix (§5.12), the local-network wire framer's message-length bound (§6.4), and the two Foundry-import DoS gaps (§6.5 unbounded pack count, §6.6 unbounded JSON nesting depth) — all three verified with new, passing tests.
+All §5 Bugs/logic-errors findings (§5.1–§5.14), §6.4–§6.6's DoS findings, and §8.6/§8.7/§8.9/§8.10/§8.12's SwiftUI findings are now fixed — see those sections for details, including this pass's App Intent path-escaping fix (§5.11), the Core Data `loadPersistentStores` completion race fix (§5.14), the initiative-parsing overflow-trap fix (§5.12), the local-network wire framer's message-length bound (§6.4), the two Foundry-import DoS gaps (§6.5 unbounded pack count, §6.6 unbounded JSON nesting depth — all three verified with new, passing tests), and the stale SharePlay rotation-base bug (§8.6).
 
-For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.5, §9.2, §9.13–9.14 — roughly 43 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too).
+For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.7, §8.9–8.10, §8.12, §9.2, §9.13–9.14 — roughly 48 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too).
 
 ---
 
@@ -30,9 +29,8 @@ Learned from the prior audit's own experience (§4.1's reverted mechanical swap,
 - **Delete the dead half of `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift`** (`borderLessTVBottonStyle`/`BorderLessTVBottonStyleViewModifer`, lines 1-27) — zero call sites; leave the sibling `switchTVToggleStyle` (in active use) alone. See §9.18.
 - **Rename `Modules/GameRPG/SharePlay/RPGActivitty.swift` → `RPGActivity.swift`** — the type inside (`RPGActivity`, 14+ live call sites) is already spelled correctly; only the filename has a typo. See §9.19.
 - **Delete the leftover `//.padding(.horizontal)` line** — `Modules/TableRPG/View/TableGenerationRootView.swift:253`, introduced in a recent commit. See §9.18.
-- **Mark `DragRotationModifier`'s `baseYaw`/`basePitch` `private`** — `Modules/SpaceRPG/Space/SpaceViewer.swift:563-564`. See §8.6.
 
-All the other former quick wins in this list (RuleRPG's Siri-donation logging, `MasterController`'s force-unwrap, `AppDataModel`'s force-unwrapped `error`, `DetailListView`'s force-cast, and the `battleInitiative(from:)` range guard) are now fixed — see §5.10, §5.12, §5.13.
+All the other former quick wins in this list (RuleRPG's Siri-donation logging, `MasterController`'s force-unwrap, `AppDataModel`'s force-unwrapped `error`, `DetailListView`'s force-cast, the `battleInitiative(from:)` range guard, and `DragRotationModifier`'s `baseYaw`/`basePitch`) are now fixed — see §5.10, §5.12, §5.13, §8.6.
 
 ---
 
@@ -320,18 +318,18 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - Not independently re-tested this pass; no contrary evidence found.
 - **Severity:** Low — resolved.
 
-### 8.6 Stale 3D-object rotation base after a remote SharePlay transform update — NEW, verified
-- **Location:** `Modules/SpaceRPG/Space/SpaceViewer.swift:520-628` (`DragRotationModifier`), `baseYaw`/`basePitch` at :563-564 seeded once at :542-543; external write path at `apply(remote:)`, :134-150.
-- **What:** `DragRotationModifier`'s `@State var baseYaw`/`basePitch` are seeded only once, from the call-site expression `baseYaw: yaw.wrappedValue` at modifier-construction time. Verified directly: they're refreshed *only* inside the modifier's own `.onEnded` (line 613-614) and its two `axRotateClockwise`/`axRotateCounterClockwise` `.onChange` handlers (lines 617-628) — there is no `.onChange(of: yaw)`/`.onChange(of: pitch)`. `SpaceViewer.apply(remote:)` sets `yaw`/`pitch` directly (lines 144-145) whenever a remote SharePlay participant's transform update arrives, completely bypassing the modifier's own update paths.
-- **Why:** After any remote participant moves the shared 3D object, the next *local* drag gesture computes `spin(displacement:base: baseYaw)` from the stale pre-update `baseYaw` — the object visibly snaps back toward the old rotation the instant a local drag begins. A real, user-visible SharePlay desync bug in the visionOS tabletop view.
-- **Action:** Add `.onChange(of: yaw)`/`.onChange(of: pitch)` to refresh `baseYaw`/`basePitch` whenever the binding changes for a reason other than the gesture itself, or derive the delta from the binding's value read at gesture-start instead of separately-tracked base state. Also mark both `@State` properties `private` (currently not — see quick win in §2).
-- **Severity:** High.
+### 8.6 Stale 3D-object rotation base after a remote SharePlay transform update — NOW FIXED
+- **Location:** `Modules/SpaceRPG/Space/SpaceViewer.swift` (`DragRotationModifier`).
+- **Fix:** Replaced the persisted `@State var baseYaw`/`basePitch` (seeded once at modifier-construction time, then only ever resynced from within the drag gesture's own handlers) with a `@State private var dragBase: RotationBase?` captured fresh from the live `yaw`/`pitch` bindings at the start of each drag gesture and cleared once the gesture ends. Since `SpaceViewer.apply(remote:)` writes directly to those same `yaw`/`pitch` bindings, the next local drag now always starts from the current rotation — a remote SharePlay update between gestures is picked up automatically instead of leaving a stale base that snapped the object back on the next local drag. This also resolves the non-private `@State` nit from §8.12 (the properties are gone entirely, not just re-marked `private`).
+- **Severity:** High — resolved.
 
-### 8.7 `ForEach` uses positional `.offset` identity where a stable id exists — NEW
-- **Location:** `Modules/GeneratorRPG/BasicAI/View/TranscriptEntryView.swift:48` (`ForEach(toolCalls.enumerated(), id: \.offset)` — `Transcript.ToolCall` has its own stable `id: String`); `Modules/GeneratorRPG/Root/CharacterGenView.swift:20` (`ForEach(value.entries.enumerated(), id: \.self.offset)` — recursively-rendered, AI-streamed generation entries); `Modules/CoreRPG/Editors/QuickLinkEditor.swift:103-109` (index-range identity *plus* a non-constant view count per iteration — a double violation).
-- **Why:** If any of these lists are ever mutated/reordered in place rather than only appended to (streaming updates, generation edits), SwiftUI misattributes row identity and local view state to the wrong element; `QuickLinkEditor`'s variable view-count-per-iteration additionally breaks `List`'s ability to diff/animate reliably.
-- **Action:** Key `TranscriptEntryView`'s `ForEach` on `\.id`; give `CharacterEntryGenModel` a stable client-generated `UUID`; restructure `QuickLinkEditor` so each iteration yields exactly one view keyed by stable content identity (e.g. zip `beforeEntries`/`afterEntries` into one identifiable pair type).
-- **Severity:** Medium.
+### 8.7 `ForEach` uses positional `.offset` identity where a stable id exists — NOW FIXED
+- **Location:** `Modules/GeneratorRPG/BasicAI/View/TranscriptEntryView.swift`; `Modules/GeneratorRPG/Root/CharacterGenView.swift`; `Modules/CoreRPG/Editors/QuickLinkEditor.swift`.
+- **Fix:**
+  - `TranscriptEntryView`'s tool-call `ForEach` now keys on `\.element.id` (`Transcript.ToolCall.id`) instead of `\.offset`.
+  - `CharacterGenView`'s entries `ForEach` now keys on `\.self` — `CharacterEntryGenModel` is a `@Generable` FoundationModels schema type, so adding a client-generated `id` would make it part of what the model is expected to produce; its existing `Hashable` conformance gives a content-stable identity instead.
+  - `QuickLinkEditor` now zips `beforeEntries`/`afterEntries` into a private `QuickLinkComparisonPair` (`Identifiable`, `id` = position — `beforeEntries` is only ever seeded once at `init`, so position is genuinely stable here) and renders both rows for a pair inside one wrapping view, so `ForEach` yields exactly one view per iteration instead of a variable 1-or-2 count.
+- **Severity:** Medium — resolved.
 
 ### 8.8 Closures stored directly in custom `Environment` key values — NEW
 - **Location:** `Modules/CoreRPG/ItemList/ItemListActions.swift:17-47` (3 keys); `Modules/CoreRPG/Buttons/FeatureConfig.swift:21-38`; `Modules/CoreRPG/Buttons/ControlSharingView.swift:164-165`; `Modules/CoreRPG/Model/MapActions.swift:5-21`; `Modules/CoreRPG/App/RouterActions.swift:5-17`; `Modules/CoreRPG/Model/ItemGeneration.swift:59-99`; `Modules/PdfRPG/Model/PdfViewerActions.swift:11-21` (10 keys total).
@@ -340,18 +338,15 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** Replace closure-carrying environment keys with a small `@Observable`/protocol-typed controller (or route through the existing root controller already in environment) so the environment value is a stable, comparable reference instead of a fresh closure each render.
 - **Severity:** Medium.
 
-### 8.9 `BattleRoundCard` missing `Equatable` on a hot, live-game-updated list row — NEW
-- **Location:** `Modules/GameRPG/BattleRound/BattleRoundCard.swift:32-121`; `Modules/GameRPG/BattleRound/BattleRoundList.swift:38-54` (`ForEach`); `Modules/GameRPG/BattleRound/BattleRoundView.swift:57-77` (inline closures).
-- **What:** `BattleRoundCard`, re-rendered on every live Battle Round state change (HP, initiative, active turn, rolls), doesn't conform to `Equatable`; `BattleRoundView.body` additionally passes it `showCharacter`/`selectHitPoints`/`selectInitiative` as fresh inline closures on every body evaluation, which would defeat an `.equatable()` wrapper even if added.
-- **Why:** During an active battle round, every combatant/HP/initiative tick forces SwiftUI to re-diff and re-render every card in the turn order, even ones whose displayed content is unchanged — exactly the "hot leaf view inside a live-updated list" scenario worth optimizing.
-- **Action:** Conform `BattleRoundCard` to `Equatable` (comparing the already-`Equatable` `presentation` plus controller/layout identity) and apply `.equatable()`; hoist the three action closures to stable method references instead of recreating them per body pass.
-- **Severity:** Medium.
+### 8.9 `BattleRoundCard` missing `Equatable` on a hot, live-game-updated list row — NOW FIXED
+- **Location:** `Modules/GameRPG/BattleRound/BattleRoundCard.swift`; `Modules/GameRPG/BattleRound/BattleRoundList.swift` (`ForEach`); `Modules/GameRPG/BattleRound/BattleRoundView.swift`.
+- **Fix:** `BattleRoundCard` now conforms to `Equatable`, comparing `presentation` (already `Equatable`), `controller.root` by reference identity (`===`), and the environment-read `cardLayout` (now that `BattleRoundCardLayout` itself conforms to `Equatable`) — the three action closures are intentionally excluded, since closures are never `Equatable`. `.equatable()` is applied at the `ForEach` call site in `BattleRoundList`. `BattleRoundView` now passes `showCharacter`/`selectHitPoints`/`selectInitiative` as stable private method references instead of fresh closures constructed inline on every `body` evaluation.
+- **Severity:** Medium — resolved.
 
-### 8.10 Color-only state indication with no accessible/text alternative (2 sites) — NEW
-- **Location:** `Modules/GameRPG/BattleRound/BattleParticipantColumn.swift:78-86,95-99,199-206` (combatant avatar halo color = active-turn/roll-recipient signal, but the button's `.accessibilityLabel` never mentions either state — unlike the separate "Roll Target" button below it, which correctly exposes `.accessibilityValue`); `Modules/MapRPG/Map/MapPinView.swift:416-423,495-510` (pin ring: blue = active battle attacker, red = highlighted, but `pinAccessibilityValueResource` only encodes shown/dead/highlighted — `isActiveBattleAttacker` is never included in the announced value).
-- **Why:** A VoiceOver user (or a color-blind sighted user, since blue-vs-red/color-vs-gray is the only differentiator) cannot distinguish these states from the accessibility tree at all — in the app's highest-traffic live-game views.
-- **Action:** Add the missing state to each accessibility value/label — a short "Active turn"/"Active in Battle" addition in each case, mirroring the pattern already used correctly elsewhere in the same files.
-- **Severity:** Medium.
+### 8.10 Color-only state indication with no accessible/text alternative (2 sites) — NOW FIXED
+- **Location:** `Modules/GameRPG/BattleRound/BattleParticipantColumn.swift`; `Modules/MapRPG/Map/MapPinView.swift`.
+- **Fix:** `BattleParticipantColumn`'s avatar button now has an `.accessibilityValue` describing the active-turn/roll-recipient state the halo color otherwise conveys ("Active turn", "Selected roll target", both, or "Not active"). `MapPinView`'s `pinAccessibilityValue` now appends "Active Battle Attacker" to the existing shown/dead/highlighted description when `isActiveBattleAttacker` is true, mirroring the pattern already used for the other states.
+- **Severity:** Medium — resolved.
 
 ### 8.11 `@State` seeded once from a passed entry's content, never resynced — NEW
 - **Location:** `Modules/TableRPG/View/TableGenerationRootView.swift:486-512` (`TableGenerationEntryRow`).
@@ -360,11 +355,10 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** Read `entry.content` directly in `body` (dropping `@State` if `LinkHighlightTextModel` is just a display wrapper), or add `.onChange(of: entry.content)` to refresh it, mirroring the pattern already used in `NameItemNewRow`/`DescriptionItemNewRow` in the same area.
 - **Severity:** Medium.
 
-### 8.12 Minor SwiftUI nits found this pass — NEW (grouped)
-- **Non-private `@State`:** `Modules/SpaceRPG/Space/SpaceViewer.swift:563-564` (`DragRotationModifier`'s `baseYaw`/`basePitch`) — see §8.6, same fix.
-- **Fixed-width + `lineLimit(1)` on unbounded user text:** `Modules/GameRPG/BattleRound/BattleParticipantColumn.swift:41-44` — `Text(combatant.name).frame(maxWidth: 90)` hard-caps a free-text combatant name regardless of Dynamic Type setting, risking illegible truncation at larger accessibility sizes with no `.help()`/long-press fallback to the full name.
-- **Action:** Mark the `@State` properties `private`; drop or `@ScaledMetric`-scale the fixed `maxWidth`.
-- **Severity:** Low (both).
+### 8.12 Minor SwiftUI nits found this pass — NOW FIXED (grouped)
+- **Non-private `@State`:** `Modules/SpaceRPG/Space/SpaceViewer.swift` (`DragRotationModifier`'s `baseYaw`/`basePitch`) — resolved by §8.6's fix (the properties no longer exist; their replacement, `dragBase`, is `private`).
+- **Fixed-width + `lineLimit(1)` on unbounded user text:** `Modules/GameRPG/BattleRound/BattleParticipantColumn.swift` — `Text(combatant.name).frame(maxWidth: 90)` is now `@ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90`, so the cap scales with Dynamic Type, plus a `.help(Text(verbatim: combatant.name))` fallback exposing the untruncated name.
+- **Severity:** Low (both) — resolved.
 
 ---
 

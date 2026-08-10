@@ -54,27 +54,9 @@ struct BattleRoundView: View {
                                 cards: controller.model.cardPresentations,
                                 controller: controller,
                                 screenModel: screenModel,
-                                showCharacter: { combatant in
-                                    screenModel.showCharacterSheet(
-                                        combatant,
-                                        controller: controller,
-                                        scenesManager: scenesManager
-                                    )
-                                },
-                                selectHitPoints: { combatant in
-                                    screenModel.selectHitPoints(
-                                        combatant,
-                                        controller: controller,
-                                        scenesManager: scenesManager
-                                    )
-                                },
-                                selectInitiative: { combatant in
-                                    screenModel.selectInitiative(
-                                        combatant,
-                                        controller: controller,
-                                        scenesManager: scenesManager
-                                    )
-                                }
+                                showCharacter: showCharacter,
+                                selectHitPoints: selectHitPoints,
+                                selectInitiative: selectInitiative
                             )
                         } else {
                             BattleRoundEmptyState(
@@ -114,6 +96,28 @@ struct BattleRoundView: View {
         .onChange(of: screenModel.selectedValue.selection) { old, new in
             screenModel.valueSelectionDidChange(old, new, controller: controller)
         }
+    }
+}
+
+private extension BattleRoundView {
+    // Stable method references instead of closures recreated fresh every
+    // `body` evaluation — `BattleRoundCard`'s `.equatable()` (see CODE_AUDIT
+    // §8.9) already excludes these from equality since closures are never
+    // `Equatable`, but reusing the same underlying method avoids needlessly
+    // reallocating three closures on every live Battle Round tick.
+    @MainActor
+    func showCharacter(_ combatant: BattleCombatant) {
+        screenModel.showCharacterSheet(combatant, controller: controller, scenesManager: scenesManager)
+    }
+
+    @MainActor
+    func selectHitPoints(_ combatant: BattleCombatant) {
+        screenModel.selectHitPoints(combatant, controller: controller, scenesManager: scenesManager)
+    }
+
+    @MainActor
+    func selectInitiative(_ combatant: BattleCombatant) {
+        screenModel.selectInitiative(combatant, controller: controller, scenesManager: scenesManager)
     }
 }
 
