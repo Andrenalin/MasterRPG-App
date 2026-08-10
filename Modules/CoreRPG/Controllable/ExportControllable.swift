@@ -96,6 +96,46 @@ public extension ExportControllable {
         return partialFolderIds
     }
 
+    /// The id-level BFS traversal shared by every module's `exporting(itemIds:)`:
+    /// walk from `seedIds`, log-and-skip an id that no longer resolves, otherwise
+    /// keep walking whatever child ids `visit` returns. `visit` receives only the
+    /// id — not a typed item — since `itemControllable` here is type-erased and
+    /// each module needs its own module-specific fields (`diceId`, `photoId`,
+    /// `mapPins`, …), so it looks the item up itself through its own concrete
+    /// `itemController` and can also collect cross-module link ids into its own
+    /// captured accumulators, exactly as it did inline before this was extracted.
+    /// `visit` returns `nil` for "id doesn't resolve" (logged and skipped), or the
+    /// (possibly empty) array of same-module child ids to keep walking — dedup
+    /// against ids already visited or already queued is handled here, not by
+    /// `visit`, so every call site's dedup check could be dropped once extracted.
+    @MainActor func bfsExportResults(seedIds: [UUID], visit: (UUID) -> [UUID]?) -> Set<UUID> {
+        var checkIds = seedIds
+        var results: Set<UUID> = []
+        while !checkIds.isEmpty {
+            let id = checkIds.removeLast()
+            guard let childIds = visit(id) else {
+                Task { await self.logExport(title: "exporting not found \(id.uuidString))", count: 1) }
+                continue
+            }
+            results.insert(id)
+            for childId in childIds where !(results.contains(childId) || checkIds.contains(childId)) {
+                checkIds.append(childId)
+            }
+        }
+        return results
+    }
+
+    /// The tail every module's `exporting(itemIds:)` shares: promote folders,
+    /// stamp the module's own resolved ids, and merge in any partial-folder ids.
+    @MainActor func finalizeExportResults(_ results: Set<UUID>, into itemIds: ItemModuleIds) -> ItemModuleIds {
+        var results = results
+        let partialFolderIds = exportingFolder(results: &results)
+        var allIds = itemIds
+        allIds.ids[itemControllable.config.module] = Array(results)
+        allIds.mergePartial(ids: Array(partialFolderIds), for: itemControllable.config.module)
+        return allIds
+    }
+
     func logExport(title: String, count: Int) async {
         let module = await MainActor.run { itemControllable.config.module }
         Logger.exportController.info("\(title, privacy: .public) \(module.token, privacy: .public) count: \(count)")

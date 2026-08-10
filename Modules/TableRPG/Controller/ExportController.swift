@@ -41,64 +41,49 @@ extension ExportController: ExportControllable {
     }
     
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        var checkIds = itemIds.ids[itemController.config.module, default: []]
-        var results: Set<UUID> = []
         var diceIds: Set<UUID> = []
         var pdfIds: Set<UUID> = []
-    
-        while !checkIds.isEmpty {
-            let id = checkIds.removeLast()
-            guard let item = itemController.itemSync(for: id) else {
-                Task {
-                    await logExport(title: "exporting not found \(id.uuidString))", count: 1)
-                }
-                continue
-            }
-            results.insert(id)
-    
+
+        let results = bfsExportResults(seedIds: itemIds.ids[itemController.config.module, default: []]) { id in
+            guard let item = itemController.itemSync(for: id) else { return nil }
+
             if let diceId = item.diceId, diceRoot.linkControllable.validateLink(itemId: diceId) {
                 diceIds.insert(diceId)
             }
-    
+
             if item.specialCategory {
-                let ids = item.entries.compactMap { entryId -> UUID? in
-                    let subId = entryId.childId
-                    if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {
-                        return subId
-                    }
-                    return nil
-                }
-                checkIds.append(contentsOf: ids)
-            } else {
-                let links = item.entries.flatMap { entry in
-                    entry.links(for: entry.content)
-                }
-                
-                links.forEach {
-                    switch $0.module {
-                    case .dice:
-                        if diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                            diceIds.insert($0.itemId)
-                        }
-                    case .pdf:
-                        if pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
-                            pdfIds.insert($0.itemId)
-                        }
-                    case .table:
-                        if !(results.contains($0.itemId) || checkIds.contains($0.itemId)) && itemController.itemSync(for: $0.itemId) != nil {
-                            checkIds.append($0.itemId)
-                        }
-                    default:
-                        Logger.exportController.error("Table \(item.name, privacy: .public) export is not handling link \($0.markDown, privacy: .public)")
-                    }
+                return item.entries.compactMap { entryId in
+                    itemController.itemSync(for: entryId.childId) != nil ? entryId.childId : nil
                 }
             }
-        }
-        let partialFolderIds: Set<UUID> = exportingFolder(results: &results)
-        var allIds = itemIds
-        allIds.ids[itemController.config.module] = Array(results)
-        allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
 
+            var childIds: [UUID] = []
+            let links = item.entries.flatMap { entry in
+                entry.links(for: entry.content)
+            }
+
+            links.forEach {
+                switch $0.module {
+                case .dice:
+                    if diceRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        diceIds.insert($0.itemId)
+                    }
+                case .pdf:
+                    if pdfRoot.linkControllable.validateLink(itemId: $0.itemId) {
+                        pdfIds.insert($0.itemId)
+                    }
+                case .table:
+                    if itemController.itemSync(for: $0.itemId) != nil {
+                        childIds.append($0.itemId)
+                    }
+                default:
+                    Logger.exportController.error("Table \(item.name, privacy: .public) export is not handling link \($0.markDown, privacy: .public)")
+                }
+            }
+            return childIds
+        }
+
+        var allIds = finalizeExportResults(results, into: itemIds)
         let newDiceIds = diceRoot.exportControllable.exporting(ids: diceIds)
         allIds.merge(other: newDiceIds)
         let newPdfIds = pdfRoot.exportControllable.exporting(ids: pdfIds)

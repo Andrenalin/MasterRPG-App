@@ -27,32 +27,12 @@ extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
 
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        var checkIds = itemIds.ids[itemController.config.module, default: []]
-        var results: Set<UUID> = []
-
-        while !checkIds.isEmpty {
-            let id = checkIds.removeLast()
-            guard let item = itemController.itemSync(for: id) else {
-                Task {
-                    await logExport(title: "exporting not found \(id.uuidString))", count: 1)
-                }
-                continue
+        let results = bfsExportResults(seedIds: itemIds.ids[itemController.config.module, default: []]) { id in
+            guard let item = itemController.itemSync(for: id) else { return nil }
+            return item.entries.compactMap { entryId in
+                itemController.itemSync(for: entryId.childId) != nil ? entryId.childId : nil
             }
-            results.insert(id)
-            
-            let ids = item.entries.compactMap { entryId -> UUID? in
-                let subId = entryId.audioId
-                if !(results.contains(subId) || checkIds.contains(subId)) && itemController.itemSync(for: subId) != nil {
-                    return subId
-                }
-                return nil
-            }
-            checkIds.append(contentsOf: ids)
         }
-        let partialFolderIds: Set<UUID> = exportingFolder(results: &results)
-        var allIds = itemIds
-        allIds.ids[itemController.config.module] = Array(results)
-        allIds.mergePartial(ids: Array(partialFolderIds), for: itemController.config.module)
-        return allIds
+        return finalizeExportResults(results, into: itemIds)
     }
 }
