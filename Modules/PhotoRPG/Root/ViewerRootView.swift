@@ -16,6 +16,7 @@ struct ViewerRootView: View {
     
     @State private var toolBarModel: GameToolBarModel = GameToolBarModel()
     @State private var cacheItemListModel = CacheItemListModel()
+    @State private var containerSize: CGSize = .zero
 
     var body: some View {
         Group {
@@ -61,22 +62,28 @@ struct ViewerRootView: View {
 
 private extension ViewerRootView {
     var contentView: some View {
-        GeometryReader { geo in
-            let viewportSize = PhotoViewportReservation.effectiveContainerSize(
-                measuredSize: geo.size,
-                trailingReservation: trailingViewportReservation
-            )
-            AsyncImageViewer(
-                model: model,
-                size: viewportSize,
-                toolBarModel: toolBarModel
-            )
-            .frame(width: viewportSize.width, height: viewportSize.height)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        let viewportSize = PhotoViewportReservation.effectiveContainerSize(
+            measuredSize: containerSize,
+            trailingReservation: trailingViewportReservation
+        )
+        return Color.clear
+            .overlay(alignment: .topLeading) {
+                AsyncImageViewer(
+                    model: model,
+                    size: viewportSize,
+                    toolBarModel: toolBarModel
+                )
+                .frame(width: viewportSize.width, height: viewportSize.height)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 #if !os(visionOS)
-            .background(Color.black.gradient)
+                .background(Color.black.gradient)
 #endif
-        }
+            }
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { newValue in
+                containerSize = newValue
+            }
     }
 }
 

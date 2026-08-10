@@ -14,16 +14,24 @@ struct OverlayViewer: View {
     @Binding var animate: Bool
     
     @Environment(WeatherRootModel.self) private var root
-        
+
+    @State private var containerSize: CGSize = .zero
+
     var body: some View {
-        GeometryReader { geometry in
-            WeatherViewer(model: model, size: geometry.size, useGame: false, isAnimating: $animate)
+        Color.clear
+            .overlay {
+                WeatherViewer(model: model, size: containerSize, useGame: false, isAnimating: $animate)
 #if !os(visionOS)
-                .glassEffect(.clear)
+                    .glassEffect(.clear)
 #endif
-                .clipShape(.capsule)
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 128)
+                    .clipShape(.capsule)
+            }
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { newValue in
+                containerSize = newValue
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 128)
     }
 }

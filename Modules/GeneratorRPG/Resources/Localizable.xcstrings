@@ -207,6 +207,7 @@
       }
     },
     "%lld tokens" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -293,6 +294,7 @@
       }
     },
     "🔧 Calling tool: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -309,6 +311,7 @@
       }
     },
     "🔧 Tool result: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -763,6 +766,7 @@
       }
     },
     "Assistant is currently typing a response" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -779,6 +783,7 @@
       }
     },
     "Assistant is typing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -795,6 +800,7 @@
       }
     },
     "Assistant replied, %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -811,6 +817,7 @@
       }
     },
     "Assistant replied, context summary: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -827,6 +834,7 @@
       }
     },
     "Assistant replied, typing indicator, %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1053,6 +1061,7 @@
       }
     },
     "Context summarized" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1069,6 +1078,7 @@
       }
     },
     "Context summary indicator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1101,6 +1111,7 @@
       }
     },
     "Copy message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1396,6 +1407,7 @@
       }
     },
     "Double-tap to access message options like copy and share" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2128,6 +2140,7 @@
       }
     },
     "Message copied to clipboard" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2513,6 +2526,7 @@
       }
     },
     "Please wait for the assistant to finish typing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2628,6 +2642,7 @@
       }
     },
     "Reasoning: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2845,6 +2860,7 @@
       }
     },
     "Share message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2861,6 +2877,7 @@
       }
     },
     "Share sheet opened" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3202,6 +3219,7 @@
       }
     },
     "This is a summary of previous conversation context. Double-tap to interact with message options." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3248,6 +3266,7 @@
       }
     },
     "This message contains a summary of previous conversation context" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3769,6 +3788,7 @@
       }
     },
     "You said, %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3785,6 +3805,7 @@
       }
     },
     "You said, context summary: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3801,6 +3822,7 @@
       }
     },
     "You said, typing indicator, %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

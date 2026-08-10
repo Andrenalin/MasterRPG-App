@@ -41,61 +41,12 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
                 .environment(FoundationManager())
         }
     }
-
-    // snapshot-root: GeneratorRPG::MessageBubbleView
-    @Test("MessageBubbleView")
-    func snapshotMessageBubbleView() async throws {
-        try await assertPreviewSnapshot("MessageBubbleView") {
-            ScrollView {
-              VStack(spacing: 16) {
-                Text(verbatim: "Chat Message Examples")
-                  .font(.headline)
-                  .padding()
-                GeneratorRPG.MessageBubbleView(message: ChatMessage(
-                  content: "Hello! How are you today?",
-                  isFromUser: true
-                ))
-                MessageBubbleView(message: ChatMessage(
-                  content: "I'm doing great! How can I help you?",
-                  isFromUser: false
-                ))
-                MessageBubbleView(message: ChatMessage(
-                  content: "## Foundation Models\n\nThey provide **powerful** on-device AI capabilities. For *streaming*, " +
-                          "you can use `async sequences` to receive partial responses as they're generated, creating a more " +
-                          "**responsive** user experience.",
-                  isFromUser: false
-                ))
-                MessageBubbleView(
-                  message: ChatMessage(
-                    content: "",
-                    isFromUser: false
-                  ),
-                  animatesTyping: false
-                )
-              }
-              .padding()
-            }
-            .environment(ChatViewModel())
-        }
-    }
-
+    
     // snapshot-root: GeneratorRPG::TokenUsageBar
     @Test("TokenUsageBar")
     func snapshotTokenUsageBar() async throws {
         try await assertPreviewSnapshot("TokenUsageBar") {
             GeneratorRPG.TokenUsageBar(currentTokenCount: 4_200, maxContextSize: 8_192, tokenUsageFraction: 0.51)
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::TranscriptEntryView
-    @Test("TranscriptEntryView")
-    func snapshotTranscriptEntryView() async throws {
-        try await assertPreviewSnapshot("TranscriptEntryView") {
-            GeneratorRPG.TranscriptEntryView(
-                generatorController: AdventureGeneratorController(),
-                entry: .prompt(.init(segments: [.text(.init(content: "Describe a haunted lighthouse."))]))
-            )
-            .padding()
         }
     }
 

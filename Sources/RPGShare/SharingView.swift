@@ -37,6 +37,7 @@ struct SharingView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var containerSize: CGSize = .zero
 
     private let performsInitialization: Bool
     
@@ -70,14 +71,20 @@ struct SharingView: View {
     // MARK: - Body
     
     var body: some View {
-        GeometryReader { geometry in
+        Group {
             if isLoading {
                 loadingView
             } else if let errorMessage {
                 errorView(message: errorMessage)
             } else {
-                contentView(size: geometry.size)
+                contentView(size: containerSize)
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { newValue in
+            containerSize = newValue
         }
         .task {
             guard performsInitialization else { return }

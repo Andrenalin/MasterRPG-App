@@ -18,13 +18,21 @@ struct InlineRowViewer: View, Equatable {
     let isAnimating: Bool
     
     @Environment(WeatherRootModel.self) private var root
-    
+
+    @State private var containerSize: CGSize = .zero
+
     var body: some View {
-        GeometryReader { proxy in
-            WeatherViewer(model: root.itemController.itemOrEmpty(for: source.itemId), size: proxy.size, useGame: useGame, isAnimating: .constant(isAnimating))
-        }
-        .frame(height: 256)
-        .clipped()
+        Color.clear
+            .overlay {
+                WeatherViewer(model: root.itemController.itemOrEmpty(for: source.itemId), size: containerSize, useGame: useGame, isAnimating: .constant(isAnimating))
+            }
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { newValue in
+                containerSize = newValue
+            }
+            .frame(height: 256)
+            .clipped()
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

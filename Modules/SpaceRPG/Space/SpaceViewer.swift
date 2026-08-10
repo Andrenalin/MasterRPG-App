@@ -54,19 +54,18 @@ struct SpaceViewer: View {
 #endif
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .bottomLeading) {
-                if let loadError {
-                    errorView(message: loadError)
-                } else {
-                    progressView
+        ZStack(alignment: .bottomLeading) {
+            if let loadError {
+                errorView(message: loadError)
+            } else {
+                progressView
 
-                    contentView(geometry: proxy)
+                contentView
 
-                    spaceContentView
-                }
+                spaceContentView
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .applyIf(isModal) {
             $0.toolbar {
 #if os(visionOS)
@@ -229,7 +228,7 @@ private extension SpaceViewer {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    func contentView(geometry: GeometryProxy) -> some View {
+    var contentView: some View {
         RealityView { content in
             await loadEntity(into: content)
 #if !os(visionOS)
