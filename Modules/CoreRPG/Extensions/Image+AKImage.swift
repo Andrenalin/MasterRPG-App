@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import ImageIO
 import SwiftUI
 
 #if os(macOS)
@@ -133,3 +134,62 @@ public extension AKImage {
 }
 
 #endif
+
+public extension AKImage {
+    /// A downsampled decode paired with the scale factor relating it back to the
+    /// original image's pixel coordinate space, so rects defined against the source
+    /// (e.g. a map room's crop rect) can be mapped onto the downsampled result.
+    struct DownsampledResult: Sendable {
+        public let image: AKImage
+        public let scale: CGFloat
+    }
+
+    /// Decodes a thumbnail straight from image data via ImageIO, downsampling during
+    /// decode instead of fully decoding the source at native resolution first.
+    static func downsampledThumbnail(from data: Data, maxPixelSize: CGFloat) -> AKImage? {
+        downsampledThumbnailWithScale(from: data, maxPixelSize: maxPixelSize)?.image
+    }
+
+    /// Decodes a thumbnail straight from a file URL via ImageIO, downsampling during
+    /// decode instead of fully decoding the source at native resolution first.
+    static func downsampledThumbnail(from url: URL, maxPixelSize: CGFloat) -> AKImage? {
+        downsampledThumbnailWithScale(from: url, maxPixelSize: maxPixelSize)?.image
+    }
+
+    /// Same as `downsampledThumbnail(from:maxPixelSize:)`, but also reports the scale
+    /// between the downsampled result and the original image's pixel dimensions.
+    static func downsampledThumbnailWithScale(from data: Data, maxPixelSize: CGFloat) -> DownsampledResult? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return downsampledThumbnail(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    /// Same as `downsampledThumbnail(from:maxPixelSize:)`, but also reports the scale
+    /// between the downsampled result and the original image's pixel dimensions.
+    static func downsampledThumbnailWithScale(from url: URL, maxPixelSize: CGFloat) -> DownsampledResult? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return downsampledThumbnail(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    private static func downsampledThumbnail(from source: CGImageSource, maxPixelSize: CGFloat) -> DownsampledResult? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let originalWidth = (properties?[kCGImagePropertyPixelWidth] as? CGFloat) ?? CGFloat(cgImage.width)
+        let scale = originalWidth > 0 ? CGFloat(cgImage.width) / originalWidth : 1
+#if os(macOS)
+        let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+#else
+        let image = UIImage(cgImage: cgImage)
+#endif
+        return DownsampledResult(image: image, scale: scale)
+    }
+}

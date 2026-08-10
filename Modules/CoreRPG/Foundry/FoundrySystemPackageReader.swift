@@ -291,13 +291,14 @@ private extension FoundrySystemPackageReader {
 
 private enum FoundryPackageDataSource: Sendable {
     case archive(FoundryZIPArchive, sourceSHA256: String)
-    case directory(root: URL, paths: [String], limits: FoundryImportLimits)
+    case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits)
 
     init(url: URL, limits: FoundryImportLimits) throws {
         let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
         if values.isDirectory == true {
             let root = url.standardizedFileURL.resolvingSymlinksInPath()
-            self = .directory(root: root, paths: try Self.directoryPaths(at: root, limits: limits), limits: limits)
+            let paths = try Self.directoryPaths(at: root, limits: limits)
+            self = .directory(root: root, paths: paths, pathSet: Set(paths), limits: limits)
             return
         }
 
@@ -318,14 +319,14 @@ private enum FoundryPackageDataSource: Sendable {
     var paths: [String] {
         switch self {
         case .archive(let archive, _): archive.entryPaths
-        case .directory(_, let paths, _): paths
+        case .directory(_, let paths, _, _): paths
         }
     }
 
     func contains(path: String) -> Bool {
         switch self {
         case .archive(let archive, _): archive.contains(path: path)
-        case .directory(_, let paths, _): paths.contains(path)
+        case .directory(_, _, let pathSet, _): pathSet.contains(path)
         }
     }
 
@@ -333,8 +334,8 @@ private enum FoundryPackageDataSource: Sendable {
         switch self {
         case .archive(let archive, _):
             return try archive.data(forPath: path)
-        case .directory(let root, let paths, let limits):
-            guard paths.contains(path) else { return nil }
+        case .directory(let root, _, let pathSet, let limits):
+            guard pathSet.contains(path) else { return nil }
             let candidate = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
             let rootPath = root.path.hasSuffix("/") ? root.path : root.path + "/"
             guard candidate.path.hasPrefix(rootPath) else {

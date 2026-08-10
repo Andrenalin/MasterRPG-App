@@ -1404,15 +1404,17 @@ private extension FoundryDocument {
 
 private enum FoundryVTTDataSource: Sendable {
     case archive(FoundryZIPArchive, sourceSHA256: String)
-    case directory(root: URL, paths: [String], limits: FoundryImportLimits, selectedPath: String?)
+    case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits, selectedPath: String?)
 
     init(url: URL, limits: FoundryImportLimits) throws {
         let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
         if values.isDirectory == true {
             let root = url.standardizedFileURL.resolvingSymlinksInPath()
+            let paths = try Self.directoryPaths(at: root, limits: limits)
             self = .directory(
                 root: root,
-                paths: try Self.directoryPaths(at: root, limits: limits),
+                paths: paths,
+                pathSet: Set(paths),
                 limits: limits,
                 selectedPath: nil
             )
@@ -1436,6 +1438,7 @@ private enum FoundryVTTDataSource: Sendable {
             self = .directory(
                 root: root,
                 paths: [selected],
+                pathSet: [selected],
                 limits: limits,
                 selectedPath: selected
             )
@@ -1454,21 +1457,21 @@ private enum FoundryVTTDataSource: Sendable {
     var paths: [String] {
         switch self {
         case .archive(let archive, _): archive.entryPaths
-        case .directory(_, let paths, _, _): paths
+        case .directory(_, let paths, _, _, _): paths
         }
     }
 
     var selectedPath: String? {
         switch self {
         case .archive: nil
-        case .directory(_, _, _, let path): path
+        case .directory(_, _, _, _, let path): path
         }
     }
 
     var sourceSHA256: String? {
         switch self {
         case .archive(_, let hash): return hash
-        case .directory(_, _, _, let selectedPath):
+        case .directory(_, _, _, _, let selectedPath):
             guard let selectedPath, let data = try? data(forPath: selectedPath) else { return nil }
             return foundrySHA256(data)
         }
@@ -1477,7 +1480,7 @@ private enum FoundryVTTDataSource: Sendable {
     func contains(path: String) -> Bool {
         switch self {
         case .archive(let archive, _): archive.contains(path: path)
-        case .directory(_, let paths, _, _): paths.contains(path)
+        case .directory(_, _, let pathSet, _, _): pathSet.contains(path)
         }
     }
 
@@ -1485,8 +1488,8 @@ private enum FoundryVTTDataSource: Sendable {
         switch self {
         case .archive(let archive, _):
             return try archive.data(forPath: path)
-        case .directory(let root, let paths, let limits, let selectedPath):
-            guard paths.contains(path) else { return nil }
+        case .directory(let root, _, let pathSet, let limits, let selectedPath):
+            guard pathSet.contains(path) else { return nil }
             let candidate = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
             let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
             guard candidate.path.hasPrefix(rootPrefix) else {

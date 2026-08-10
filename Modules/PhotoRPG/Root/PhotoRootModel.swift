@@ -197,6 +197,32 @@ public extension PhotoRootModel {
         return result != nil
     }
 
+    /// Lightweight source for callers that only need a small preview (e.g. a Map
+    /// room-crop thumbnail) — decodes a downsampled image via ImageIO instead of the
+    /// full-resolution decode that `fetchPhotoImage`/`requestImageCache` perform, and
+    /// reports the scale to map rects defined in the original image's pixel space.
+    @MainActor
+    func fetchPhotoThumbnailSource(for id: UUID?, maxPixelSize: CGFloat) async -> (image: AKImage, scale: CGFloat, degrees: Double)? {
+        guard let id, let item = await itemController.item(for: id), let fileUrl = item.fileUrl,
+              let fileUrlDataController else { return nil }
+        if !fileUrl.hasUnconvertedData, await !fileUrlDataController.isAvailableWithoutDownloading(fileUrl) {
+            return nil
+        }
+        let result: AKImage.DownsampledResult?
+        if let data = fileUrl.data {
+            result = AKImage.downsampledThumbnailWithScale(from: data, maxPixelSize: maxPixelSize)
+        } else if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            result = AKImage.downsampledThumbnailWithScale(from: data, maxPixelSize: maxPixelSize)
+        } else {
+            result = await fileUrlDataController.url(for: fileUrl) { url -> AKImage.DownsampledResult? in
+                guard let url else { return nil }
+                return AKImage.downsampledThumbnailWithScale(from: url, maxPixelSize: maxPixelSize)
+            }
+        }
+        guard let result else { return nil }
+        return (result.image, result.scale, item.degrees)
+    }
+
     @MainActor
     func fetchPhotoImage(for id: UUID?, useGame: Bool) async -> (AKImage, Double)? {
         guard let id else { return nil }

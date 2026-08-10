@@ -32,13 +32,21 @@ struct CacheController: Sendable {
 }
 
 extension CacheController: ImageCacheControllable {
+    /// ImageIO thumbnail max pixel size: large enough that even a small room crop
+    /// keeps reasonable detail, while still skipping a full-resolution map decode.
+    private static let thumbnailMaxPixelSize: CGFloat = 1024
+
     @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
-        guard let item = item as? MapModel, await photoRoot.requestImageCache(for: item.photoId) else { return }
+        guard let item = item as? MapModel else { return }
         guard !Task.isCancelled else { return }
-        guard let result = await photoRoot.fetchPhotoImage(for: item.photoId, useGame: false) else { return }
+        guard let source = await photoRoot.fetchPhotoThumbnailSource(
+            for: item.photoId,
+            maxPixelSize: Self.thumbnailMaxPixelSize
+        ) else { return }
         guard !Task.isCancelled else { return }
         let entry = item[itemId]
-        let thumbnail = result.0.cropping(to: entry.rect)
+        let scaledRect = entry.rect.applying(CGAffineTransform(scaleX: source.scale, y: source.scale))
+        let thumbnail = source.image.cropping(to: scaledRect)
         if let thumbnail {
             await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)
 

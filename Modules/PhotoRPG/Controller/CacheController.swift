@@ -50,15 +50,38 @@ extension CacheController: ImageCacheControllable {
     @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
         let trace = PerformanceTrace.begin("ThumbnailGenerate", itemID: itemId, kind: "thumbnail")
         defer { trace?.end() }
-        let cachedImage = await imageCacheController.object(for: itemId)
-        if cachedImage == nil {
-            await createImage(for: itemId, item: item)
+        // Reuse an already fully-decoded image if one happens to be cached; otherwise
+        // decode a downsampled ImageIO thumbnail directly, avoiding a full-resolution
+        // decode purely to throw almost all of it away.
+        let source: AKImage?
+        if let cachedImage = await imageCacheController.object(for: itemId) {
+            source = cachedImage
+        } else {
+            source = await downsampledSource(for: itemId, item: item)
         }
-        guard let image = await imageCacheController.object(for: itemId) else { return }
-        let thumbnail = await image.resize(to: CGSize(width: 64, height: 64), topAligned: true)
+        guard let source else { return }
+        let thumbnail = await source.resize(to: CGSize(width: 64, height: 64), topAligned: true)
         if let thumbnail {
             await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)
             await thumbnailCacheController.setObject(thumbnail, for: itemId)
+        }
+    }
+
+    /// ImageIO thumbnail max pixel size: comfortably above the 64pt target at the
+    /// highest device scale (`resize(to:)` renders up to 3x on iOS).
+    private static let thumbnailMaxPixelSize: CGFloat = 256
+
+    @MainActor private func downsampledSource(for itemId: UUID, item: any ItemDataAccessable) async -> AKImage? {
+        guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
+        if let data = fileUrl.data {
+            return AKImage.downsampledThumbnail(from: data, maxPixelSize: Self.thumbnailMaxPixelSize)
+        }
+        if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            return AKImage.downsampledThumbnail(from: data, maxPixelSize: Self.thumbnailMaxPixelSize)
+        }
+        return await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
+            guard let url else { return nil }
+            return AKImage.downsampledThumbnail(from: url, maxPixelSize: Self.thumbnailMaxPixelSize)
         }
     }
 }

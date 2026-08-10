@@ -789,6 +789,10 @@ extension RPGSharePlayController {
         if prepared.usesJournalTransport,
            let attachmentData = prepared.model.data.data, let journal {
             let moduleKey = prepared.model.data.type
+            // `journalMetadata(for:)` hashes the full attachment; this send's model
+            // never changes underneath these closures, so hash once and reuse it
+            // instead of re-hashing on every branch below.
+            let journalMetadataForModel = Self.journalMetadata(for: prepared.model)
             let publication = journalPublicationQueue.enqueue(
                 for: moduleKey,
                 byteCount: attachmentData.count,
@@ -813,7 +817,7 @@ extension RPGSharePlayController {
                     // queued add turns into byte reuse, enqueue a real metadata
                     // presentation even if that earlier announcement succeeded.
                     let metadataAdmissionSucceeded = self.enqueueChunkedSend(
-                        Self.journalMetadata(for: prepared.model),
+                        journalMetadataForModel,
                         sessionId: sessionId,
                         participantId: participantId
                     )
@@ -864,7 +868,7 @@ extension RPGSharePlayController {
                     )
                     return nil
                 }
-                let model = Self.journalMetadata(for: prepared.model)
+                let model = journalMetadataForModel
                 let outcome = await self.journalAddLimiter.run(
                     for: moduleKey,
                     scope: sessionId,
@@ -949,7 +953,7 @@ extension RPGSharePlayController {
                     itemId: prepared.model.data.id,
                     version: prepared.model.data.effectiveAssetVersion,
                     attachmentId: result.id,
-                    metadata: Self.journalMetadata(for: prepared.model)
+                    metadata: journalMetadataForModel
                 )
                 self.mapRecoveryTracker.recordFullMapPresentation(
                     prepared.model,
