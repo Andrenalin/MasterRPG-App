@@ -14,27 +14,8 @@ struct CarouselDropAreaView: View {
 
     var body: some View {
         DropItemModuleArea(module: root.configurable.module) {
-            Button {
-                root.itemSelectionModel = photoIds
-#if os(macOS)
-                scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
-#else
-                showSheet = true
-#endif
-            } label: {
-                VStack {
-                    if appSizeModel.mode == .regular {
-                        Text("Drop \(root.configurable.module.title)", bundle: .module)
-
-                        Image(systemName: "square.and.arrow.down")
-                            .imageScale(.large)
-                    }
-                    Text(chooseText, bundle: .module)
-                }
-                .padding(.horizontal, 12)
-                .frame(height: 110)
-            }
-            .contentShape(.rect)
+            EmptyDropButton(selectionModel: photoIds)
+                .frame(height: 128)
         } dropAction: { _, itemId, _ in
             addLink(itemId: itemId)
         }

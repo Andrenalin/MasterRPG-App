@@ -115,7 +115,7 @@ struct InlineImporterView: View, Equatable {
                     isExpanded.toggle()
                 }
             } label: {
-                Label { Text("Importer", bundle: .module) } icon: { Image(systemName: "graph.3d") }
+                Label { Text(importerTitle) } icon: { Image(systemName: "graph.3d") }
                     .frame(width: 32, height: 32)
             }
             .selectedRoundButton(title: importerTitle, module: .space, isSelected: isExpanded)
@@ -167,8 +167,8 @@ struct InlineImporterView: View, Equatable {
             } icon: {
                 Image(systemName: type.systemImage)
             }
-            .opacity(isExpanded ? 1 : 0)
             .frame(width: 32, height: 32)
+            .opacity(isExpanded ? 1 : 0)
         }
         .allowsHitTesting(isExpanded)
         .accessibilityHidden(!isExpanded)

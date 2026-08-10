@@ -50,6 +50,10 @@ public protocol ViewControllable: Sendable {
     /// True when the module handles the space-key action itself (e.g. play, roll).
     /// When false the default behaviour — opening the file viewer — is used instead.
     var hasCustomSpaceAction: Bool { get }
+    /// True when a newly created item should not auto-open the header editor (name/description).
+    /// Used by file-backed modules (Audio, Pdf, Photo, Space) where the name is derived from the
+    /// picked file's filename, so the user should pick a file before naming the item.
+    var skipsHeaderEditorOnCreate: Bool { get }
 
     @MainActor func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView
     @MainActor func sharingView(for itemId: UUID) -> AnyView
@@ -76,6 +80,7 @@ public extension ViewControllable {
 
     var supportsBatchExtraction: Bool { false }
     var hasCustomSpaceAction: Bool { false }
+    var skipsHeaderEditorOnCreate: Bool { false }
     @MainActor func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView? { nil }
 
     @MainActor func linkListView(rootController: ItemRootController, type: LinkRootType, itemSelectionModel: ItemSelectionModel) -> LinkItemRootView {

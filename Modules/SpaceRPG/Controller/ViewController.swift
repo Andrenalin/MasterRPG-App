@@ -10,6 +10,8 @@ public struct ViewController: Sendable {
 }
 
 extension ViewController: ViewControllable {
+    public var skipsHeaderEditorOnCreate: Bool { true }
+
     @MainActor public func fileImporterView(for itemId: UUID, preopen: Bool, layoutDown: Bool) -> AnyView {
         AnyView(InlineImporterView(itemId: itemId, preopen: preopen, layoutDown: layoutDown).equatable())
     }
