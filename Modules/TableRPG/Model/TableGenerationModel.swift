@@ -26,7 +26,8 @@ final class TableGenerationOccurrence: Identifiable {
         diceId: UUID?,
         entries: [TableGenerationEntry],
         depth: Int,
-        tablePath: [UUID]
+        tablePath: [UUID],
+        sourceEntryId: UUID? = nil
     ) {
         self.id = id
         self.tableId = tableId
@@ -36,6 +37,7 @@ final class TableGenerationOccurrence: Identifiable {
         self.entries = entries
         self.depth = depth
         self.tablePath = tablePath
+        self.sourceEntryId = sourceEntryId
         self.selectionIds = Dictionary(
             uniqueKeysWithValues: entries.map { ($0.id, UUID()) }
         )
@@ -49,6 +51,11 @@ final class TableGenerationOccurrence: Identifiable {
     let entries: [TableGenerationEntry]
     let depth: Int
     let tablePath: [UUID]
+    /// The id of the entry (in the parent occurrence) whose table link
+    /// generated this occurrence — `nil` for the root occurrence. Used to
+    /// nest this occurrence's UI directly under that entry instead of after
+    /// the whole parent table.
+    let sourceEntryId: UUID?
 
     @ObservationIgnored private let selectionIds: [UUID: UUID]
 
@@ -137,7 +144,29 @@ final class TableGenerationModel: Identifiable {
 
     var summary: ItemGenerationSummary? {
         guard canConfirm else { return nil }
-        let selected = occurrences.flatMap { occurrence in
+        let selected = currentSelections
+        guard !selected.isEmpty else { return nil }
+        return ItemGenerationSummary(
+            name: root.tableName.withoutLink(),
+            value: combinedValue(for: selected),
+            selections: selected
+        )
+    }
+
+    /// A live preview of the outcome built from whatever has been selected
+    /// so far, updating with every choice even before every table is resolved.
+    var currentOutcome: String? {
+        let selected = currentSelections
+        guard !selected.isEmpty else { return nil }
+        return combinedValue(for: selected)
+    }
+
+    func occurrence(id: UUID) -> TableGenerationOccurrence? {
+        occurrences.first { $0.id == id }
+    }
+
+    private var currentSelections: [ItemGenerationSelection] {
+        occurrences.flatMap { occurrence in
             occurrence.selectedEntries.map { entry in
                 let plainContent = entry.content.withoutLink()
                     .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -153,24 +182,15 @@ final class TableGenerationModel: Identifiable {
                 )
             }
         }
-        guard !selected.isEmpty else { return nil }
-
-        let value: String
-        if selected.count == 1 {
-            value = selected[0].content
-        } else {
-            value = selected.map { "\($0.tableName): \($0.content)" }
-                .joined(separator: "\n")
-        }
-        return ItemGenerationSummary(
-            name: root.tableName.withoutLink(),
-            value: value,
-            selections: selected
-        )
     }
 
-    func occurrence(id: UUID) -> TableGenerationOccurrence? {
-        occurrences.first { $0.id == id }
+    private func combinedValue(for selections: [ItemGenerationSelection]) -> String {
+        if selections.count == 1 {
+            selections[0].content
+        } else {
+            selections.map { "\($0.tableName): \($0.content)" }
+                .joined(separator: "\n")
+        }
     }
 
     private func flattened(

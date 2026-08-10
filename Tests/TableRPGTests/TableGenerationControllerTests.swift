@@ -82,6 +82,9 @@ struct TableGenerationControllerTests {
         #expect(model.root.visibleEntries.map(\.id) == [linkedEntry.id])
         #expect(model.root.children.map(\.tableId) == [childA.id, childB.id])
         #expect(model.occurrences.count == 3)
+        // Both children stem from the same entry's multiple table links, so
+        // the UI can nest them directly under that entry.
+        #expect(model.root.children.map(\.sourceEntryId) == [linkedEntry.id, linkedEntry.id])
 
         // When
         root.generationController.select(

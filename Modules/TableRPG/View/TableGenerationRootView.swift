@@ -83,14 +83,12 @@ private struct TableGenerationPanelView: View {
             Divider()
 
             ScrollView {
-                LazyVStack {
-                    ForEach(model.occurrences) { occurrence in
-                        TableGenerationOccurrenceView(
-                            model: model,
-                            occurrence: occurrence,
-                            controller: controller
-                        )
-                    }
+                LazyVStack(alignment: .leading) {
+                    TableGenerationOccurrenceView(
+                        model: model,
+                        occurrence: model.root,
+                        controller: controller
+                    )
                 }
             }
             .scrollIndicators(.hidden)
@@ -230,8 +228,8 @@ private struct TableGenerationResultView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if let summary = model.summary {
-                    Text(summary.value)
+                if let outcome = model.currentOutcome {
+                    Text(outcome)
                         .bold()
                 } else {
                     Text(
@@ -247,7 +245,7 @@ private struct TableGenerationResultView: View {
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            theme.tint(for: .table).opacity(model.summary == nil ? 0.08 : 0.18),
+            theme.tint(for: .table).opacity(model.currentOutcome == nil ? 0.08 : 0.18),
             in: .rect(cornerRadius: 20, style: .continuous)
         )
         //.padding(.horizontal)
@@ -280,12 +278,22 @@ private struct TableGenerationOccurrenceView: View {
             }
 
             ForEach(occurrence.visibleEntries) { entry in
-                TableGenerationEntryRow(
-                    entry: entry,
-                    occurrence: occurrence,
-                    model: model,
-                    controller: controller
-                )
+                VStack(alignment: .leading) {
+                    TableGenerationEntryRow(
+                        entry: entry,
+                        occurrence: occurrence,
+                        model: model,
+                        controller: controller
+                    )
+
+                    ForEach(childOccurrences(for: entry)) { child in
+                        TableGenerationOccurrenceView(
+                            model: model,
+                            occurrence: child,
+                            controller: controller
+                        )
+                    }
+                }
             }
 
             if !occurrence.ignoredCycleNames.isEmpty {
@@ -307,6 +315,12 @@ private struct TableGenerationOccurrenceView: View {
             in: .rect(cornerRadius: 20, style: .continuous)
         )
         .padding(.leading, CGFloat(occurrence.depth) * 16)
+    }
+
+    private func childOccurrences(
+        for entry: TableGenerationEntry
+    ) -> [TableGenerationOccurrence] {
+        occurrence.children.filter { $0.sourceEntryId == entry.id }
     }
 }
 
@@ -595,6 +609,9 @@ private struct TableGenerationEntryRow: View {
             theme.tint(for: .table).opacity(isSelected ? 0.16 : 0.05),
             in: .rect(cornerRadius: 16, style: .continuous)
         )
+        .onChange(of: entry.content) { _, newContent in
+            contentModel.reset(text: newContent)
+        }
     }
 
     private var isSelected: Bool {
@@ -661,9 +678,51 @@ private struct TableGenerationPreviewContainer: View {
     }
 }
 
+/// Pre-selects a linked entry so the canvas shows a nested child occurrence
+/// directly under the entry that generated it.
+private struct TableGenerationNestedPreviewContainer: View {
+    let itemId: UUID
+    let entryIdToSelect: UUID
+
+    @Environment(TableRootModel.self) private var root
+    @State private var model: TableGenerationModel?
+
+    var body: some View {
+        Group {
+            if let model {
+                TableGenerationPanelView(
+                    model: model,
+                    controller: root.generationController,
+                    cancelAction: {},
+                    confirmAction: {}
+                )
+                .padding()
+            }
+        }
+        .onAppear {
+            guard model == nil else { return }
+            let newModel = root.generationController.makeModel(itemId: itemId)
+            root.generationController.select(
+                entryId: entryIdToSelect,
+                in: newModel.root,
+                model: newModel
+            )
+            model = newModel
+        }
+    }
+}
+
 #Preview("Dice Table", traits: .mockData) {
     TableGenerationPreviewContainer(itemId: TableModel.previewId)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Nested Table Link", traits: .mockData) {
+    TableGenerationNestedPreviewContainer(
+        itemId: TableModel.previewShortListId,
+        entryIdToSelect: TableModel.previewShortList.entries.last!.id
+    )
+    .preferredColorScheme(.dark)
 }
 
 #Preview("List Table", traits: .mockData) {
