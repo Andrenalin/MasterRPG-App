@@ -8,7 +8,7 @@ import Foundation
 /// Versioned, photo-free map metadata sent through the ordinary chunked
 /// messenger path. UUID photo references are present in the snapshot, but no
 /// photo bytes or exported dependent-module records are included.
-struct MapUpdatePayload: Codable, Sendable {
+struct MapUpdatePayload: Codable, Sendable, MessageMapper {
     static let currentSchemaVersion = 1
 
     let schemaVersion: Int
@@ -33,17 +33,16 @@ struct MapUpdatePayload: Codable, Sendable {
         schemaVersion == Self.currentSchemaVersion
     }
 
-    func encodedData() -> Data? {
+    /// Deterministic key ordering, unlike `MessageMapper`'s default encoding —
+    /// this payload's byte representation is compared/diffed across sends, so
+    /// stable ordering matters here in a way it doesn't for the other
+    /// conformers. `decodeData(of:)` has no such requirement and uses the
+    /// protocol's default.
+    func encodeData() -> Data? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         return try? encoder.encode(self)
     }
-
-    static func decodeData(_ data: Data?) -> Self? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(Self.self, from: data)
-    }
-
 }
 
 private struct CanonicalMapContent: Codable, Sendable {

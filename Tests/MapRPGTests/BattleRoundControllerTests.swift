@@ -194,7 +194,7 @@ struct BattleRoundControllerTests {
         #expect(sut.battleRoundModel.rollRecipientCombatantId == player.id)
 
         let update = try #require(sut.networkBattleRoundUpdate(for: mapId))
-        let state = try #require(BattleRoundNetworkState.decodeData(update.data))
+        let state = try #require(BattleRoundNetworkState.decodeData(of: update.data))
         #expect(state.isRunning)
         #expect(state.roundCounter == 0)
         #expect(state.activePinId == playerPin.id)
@@ -203,7 +203,7 @@ struct BattleRoundControllerTests {
         #expect(sut.endBattle(itemId: mapId))
         #expect(sut.gameItem(for: mapId).mapPins.allSatisfy { !$0.isHighlighted })
         let ended = try #require(sut.networkBattleRoundUpdate(for: mapId))
-        #expect(BattleRoundNetworkState.decodeData(ended.data)?.isRunning == false)
+        #expect(BattleRoundNetworkState.decodeData(of: ended.data)?.isRunning == false)
     }
 
     @Test("Repeated battles reuse player identity and game-memory monster copies")

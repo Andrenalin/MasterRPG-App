@@ -1991,7 +1991,7 @@ extension MasterController {
                   model.effectiveAudience == .master,
                   let characterId = model.sender.characterId,
                   characterId == model.data.id,
-                  let update = GameValueEntryUpdate.decodeData(model.data.data),
+                  let update = GameValueEntryUpdate.decodeData(of: model.data.data),
                   update.characterId == characterId,
                   await root.gameModel.canApplyValueUpdate(
                       senderId: model.sender.id,

@@ -21,7 +21,7 @@ public struct NetworkActions: Sendable {
     @MainActor static let empty = NetworkActions(shareId: { _ in }, send: { _ in }, game: { _, _, _ in })
 }
 
-public struct NetworkCodableDataType: Codable, Sendable, Equatable {
+public struct NetworkCodableDataType: Codable, Sendable, Equatable, MessageMapper {
     public init(
         id: UUID,
         type: NetworkModules,
@@ -55,17 +55,3 @@ public struct NetworkCodableDataType: Codable, Sendable, Equatable {
     public static let empty = NetworkCodableDataType(id: UUID(), type: .none, version: 0, data: nil)
 }
 
-// MARK: - Mapper
-
-public extension NetworkCodableDataType {
-    static func decodeData(of data: Data?) -> NetworkCodableDataType? {
-        guard let data else { return nil }
-        let decoder = JSONDecoder()
-        return try? decoder.decode(NetworkCodableDataType.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        return try? encoder.encode(self)
-    }
-}

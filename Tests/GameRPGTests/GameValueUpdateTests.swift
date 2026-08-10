@@ -24,7 +24,7 @@ struct GameValueUpdateTests {
         )
 
         let decoded = try #require(
-            GameValueEntryUpdate.decodeData(update.encodeData())
+            GameValueEntryUpdate.decodeData(of: update.encodeData())
         )
 
         #expect(decoded == update)

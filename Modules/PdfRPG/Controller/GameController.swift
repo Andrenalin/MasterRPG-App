@@ -227,18 +227,7 @@ extension GameController: PdfGameControllable {
     }
 }
 
-struct PdfListRequest: Codable, Sendable, Equatable {
+struct PdfListRequest: Codable, Sendable, Equatable, MessageMapper {
     let list: [UUID: Int]
     let players: [UUID: [UUID: Int]]
-}
-
-extension PdfListRequest {
-    static func decodeData(of data: Data?) -> PdfListRequest? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(PdfListRequest.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
-    }
 }

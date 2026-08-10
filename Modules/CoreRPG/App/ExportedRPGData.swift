@@ -67,7 +67,7 @@ public struct ItemModuleIds: Sendable, Equatable, Hashable {
     }
 }
 
-public struct ExportedRPGData: Sendable, Codable {
+public struct ExportedRPGData: Sendable, Codable, MessageMapper {
     public init(allData: [NetworkModules: String] = [:], seenIds: Set<UUID> = Set<UUID>()) {
         self.allData = allData
         self.seenIds = seenIds
@@ -88,24 +88,6 @@ public struct ExportedRPGData: Sendable, Codable {
         allData[key] = keyIds
     }
 
-}
-
-public extension ExportedRPGData {
-    func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        return try? encoder.encode(self)
-    }
-
-    static func decodeData(of data: Data?) -> ExportedRPGData? {
-        guard let data else { return nil }
-        let decoder = JSONDecoder()
-        do {
-            return try decoder.decode(ExportedRPGData.self, from: data)
-        } catch {
-            print("ExportRPGData error \(error)")
-        }
-        return nil
-    }
 }
 
 public extension UTType {

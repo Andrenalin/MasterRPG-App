@@ -206,15 +206,4 @@ extension MapPinModel: ItemDuplicatable {
     }
 }
 
-extension MapPinModel {
-    static func decodeData(of data: Data?) -> MapPinModel? {
-        guard let data else { return nil }
-        let decoder = JSONDecoder()
-        return try? decoder.decode(MapPinModel.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        return try? encoder.encode(self)
-    }
-}
+extension MapPinModel: MessageMapper {}

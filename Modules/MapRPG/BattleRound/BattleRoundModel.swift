@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Observation
 import SwiftUI
@@ -100,7 +101,7 @@ public struct BattleRoundEntry: Identifiable, Codable, Equatable, Sendable {
 /// The small master-authoritative state sent to every map participant. The
 /// initiative table itself remains master-only; participants need only the
 /// round and active pin for the shared map presentation.
-public struct BattleRoundNetworkState: Codable, Equatable, Sendable {
+public struct BattleRoundNetworkState: Codable, Equatable, Sendable, MessageMapper {
     public init(
         mapId: UUID,
         isRunning: Bool,
@@ -120,15 +121,6 @@ public struct BattleRoundNetworkState: Codable, Equatable, Sendable {
     public let roundCounter: Int
     public let activePinId: UUID?
     public let sequence: Int
-
-    public func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
-    }
-
-    public static func decodeData(_ data: Data?) -> Self? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(Self.self, from: data)
-    }
 }
 
 @MainActor @Observable

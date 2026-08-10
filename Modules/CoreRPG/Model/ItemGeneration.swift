@@ -28,7 +28,7 @@ public struct ItemGenerationSelection: Identifiable, Equatable, Hashable, Codabl
     public let content: String
 }
 
-public struct ItemGenerationSummary: Identifiable, Equatable, Hashable, Codable, Sendable {
+public struct ItemGenerationSummary: Identifiable, Equatable, Hashable, Codable, Sendable, MessageMapper {
     public init(
         id: UUID = UUID(),
         name: String,
@@ -45,15 +45,6 @@ public struct ItemGenerationSummary: Identifiable, Equatable, Hashable, Codable,
     public let name: String
     public let value: String
     public let selections: [ItemGenerationSelection]
-
-    public func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
-    }
-
-    public static func decodeData(_ data: Data?) -> Self? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(Self.self, from: data)
-    }
 }
 
 public struct ItemGenerationAction: Sendable, Equatable {
