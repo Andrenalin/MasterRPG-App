@@ -477,6 +477,13 @@ private extension FoundryVTTDecoder {
                     declaredType: FoundryDocumentType.inferred(from: typeName),
                     rawData: declaration
                 ))
+                // A tiny, well-formed manifest could otherwise declare millions of bogus
+                // packs — each one going on to cost real work below (path resolution,
+                // collection decoding) even after a fast per-lookup path. Fail fast
+                // instead of materializing an unbounded spec list. See CODE_AUDIT §6.5.
+                guard specs.count <= limits.maximumDocumentCount else {
+                    throw FoundryImportError.tooManyDocuments(specs.count)
+                }
             }
         }
 
@@ -1576,6 +1583,7 @@ private enum FoundryVTTRawJSON {
     static func decode(_ data: Data, context: String) throws -> FoundryJSONValue {
         let decoder = JSONDecoder()
         decoder.userInfo[.masterRPGFoundrySourceJSON] = true
+        decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
         do {
             return try decoder.decode(FoundryJSONValue.self, from: data)
         } catch {

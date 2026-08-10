@@ -75,6 +75,22 @@ struct FoundryVTTImportReaderTests {
         #expect(zeroDiagnosticPackage.diagnostics.map(\.code) == ["documents-decoded"])
     }
 
+    @Test("Bounds manifest-declared pack counts instead of building an unbounded spec list")
+    func boundsManifestPackDeclarations() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        // CODE_AUDIT §6.5: a tiny, well-formed manifest could otherwise declare
+        // millions of bogus packs with no cap, each going on to cost real work.
+        let packs = (0..<10).map { #"{"name":"pack-\#($0)","type":"Item"}"# }.joined(separator: ",")
+        let manifest = #"{"id":"bounds-test","title":"Bounds Test","packs":[\#(packs)]}"#
+        try Data(manifest.utf8).write(to: directory.appending(path: "module.json"))
+        let reader = FoundryVTTImportReader(limits: FoundryImportLimits(maximumDocumentCount: 5))
+
+        await #expect(throws: FoundryImportError.tooManyDocuments(6)) {
+            _ = try await reader.read(from: directory)
+        }
+    }
+
     @Test("Infers a standalone exported RollTable conservatively")
     func readsStandaloneJSON() async throws {
         let directory = try temporaryDirectory()

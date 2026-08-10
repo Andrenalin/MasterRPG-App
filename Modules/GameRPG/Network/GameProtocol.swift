@@ -1,7 +1,9 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Network
+import os.log
 
 // Define the types of commands your game will use.
 enum GameMessageType: UInt32 {
@@ -29,6 +31,20 @@ final class GameProtocol: NWProtocolFramerImplementation {
     }
 
     func cleanup(framer _: NWProtocolFramer.Instance) {}
+
+    /// Largest single message this framer accepts. `GameProtocolHeader.length`
+    /// is a `UInt32` off the wire, so without a bound a peer could declare up
+    /// to ~4 GB and force an unbounded buffer wait. Matches
+    /// `SharePlayJournalPublicationQueue`'s own outstanding-attachment budget —
+    /// the largest single Map/Photo/PDF/Space/Audio attachment this app is
+    /// designed to move around — rather than an arbitrary new ceiling.
+    static let maximumMessageByteCount: UInt32 = 512_000_000
+
+    /// Pulled out of `handleInput` so the length bound can be unit tested
+    /// without standing up a live `NWProtocolFramer.Instance`.
+    static func isMessageLengthValid(_ length: UInt32) -> Bool {
+        length <= maximumMessageByteCount
+    }
 
     // Whenever the application sends a message, add your protocol header and forward the bytes.
     func handleOutput(framer: NWProtocolFramer.Instance, message: NWProtocolFramer.Message, messageLength: Int, isComplete _: Bool) {
@@ -69,6 +85,17 @@ final class GameProtocol: NWProtocolFramerImplementation {
             // If you can't parse out a complete header, stop parsing and ask for headerSize more bytes.
             guard parsed, let header = tempHeader else {
                 return headerSize
+            }
+
+            // A peer that completed the (pre-shared-key) TLS handshake could
+            // otherwise declare an arbitrary length up to `UInt32.max` (~4 GB),
+            // forcing this side to wait/buffer for that many bytes. Reject any
+            // declared length past a sane maximum instead of handing it to
+            // `deliverInputNoCopy` — see CODE_AUDIT §6.4.
+            guard Self.isMessageLengthValid(header.length) else {
+                Logger.networking.error("GameProtocol: declared message length \(header.length, privacy: .public) exceeds the \(Self.maximumMessageByteCount, privacy: .public)-byte maximum; failing the connection")
+                framer.markFailed(error: .posix(.EMSGSIZE))
+                return 0
             }
 
             // Create an object to deliver the message.

@@ -536,6 +536,7 @@ private enum FoundryJSONDecoder {
     static func decodeSource(_ data: Data) throws -> FoundryJSONValue {
         let decoder = JSONDecoder()
         decoder.userInfo[.masterRPGFoundrySourceJSON] = true
+        decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
         return try decoder.decode(FoundryJSONValue.self, from: data)
     }
 

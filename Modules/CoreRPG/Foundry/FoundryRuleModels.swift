@@ -17,7 +17,22 @@ public enum FoundryJSONValue: Codable, Equatable, Sendable {
     case bool(Bool)
     case null
 
+    /// A ~200 KB payload of ~100,000 nested arrays (`[[[[[…]]]]]`) — well under any
+    /// per-entry size cap — would otherwise recurse one native stack frame per level
+    /// during decode and crash the process via stack overflow. See CODE_AUDIT §6.6.
+    static let maximumNestingDepth = 128
+
     public init(from decoder: any Decoder) throws {
+        let depthCounter = decoder.userInfo[.masterRPGFoundryJSONDepth] as? FoundryJSONDepthCounter
+        depthCounter?.depth += 1
+        defer { depthCounter?.depth -= 1 }
+        if let depthCounter, depthCounter.depth > Self.maximumNestingDepth {
+            throw DecodingError.dataCorrupted(DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "Foundry JSON nesting exceeds the maximum supported depth of \(Self.maximumNestingDepth)."
+            ))
+        }
+
         if decoder.userInfo[.masterRPGFoundrySourceJSON] as? Bool != true,
            let taggedContainer = try? decoder.container(keyedBy: FoundryJSONCodingKey.self),
            Set(taggedContainer.allKeys.map(\.stringValue)) == FoundryJSONCodingKey.numericKeys,
@@ -138,6 +153,19 @@ extension CodingUserInfoKey {
     static let masterRPGFoundrySourceJSON = Self(
         rawValue: "de.andretrettin.MasterRPG.decodeFoundrySourceJSON"
     )!
+    static let masterRPGFoundryJSONDepth = Self(
+        rawValue: "de.andretrettin.MasterRPG.decodeFoundryJSONDepth"
+    )!
+}
+
+/// Recursion-depth counter threaded through a `JSONDecoder`'s `userInfo` so
+/// `FoundryJSONValue.init(from:)` can bound its own nesting. Codable hands each
+/// nested array/object element its own fresh `Decoder`/`init(from:)` call, so a
+/// plain local variable can't observe depth across those calls — `userInfo` is
+/// the only channel threaded through the whole recursive decode, and it needs a
+/// reference type since `Decoder` only exposes it for reading.
+final class FoundryJSONDepthCounter: @unchecked Sendable {
+    var depth = 0
 }
 
 private enum FoundryJSONNumericType: String, Codable {

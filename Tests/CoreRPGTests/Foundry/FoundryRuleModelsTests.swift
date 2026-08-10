@@ -55,6 +55,50 @@ struct FoundryRuleModelsTests {
         ]))
     }
 
+    /// CODE_AUDIT §6.6: a small, deeply-nested JSON payload previously recursed one
+    /// native stack frame per nesting level with no depth guard — a stack-overflow
+    /// crash, not a catchable error. Every real import entry point injects a depth
+    /// counter into `userInfo`; this mirrors that configuration.
+    private func decoderWithDepthGuard() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.userInfo[.masterRPGFoundrySourceJSON] = true
+        decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
+        return decoder
+    }
+
+    private func nestedArrayJSON(depth: Int) -> Data {
+        Data((String(repeating: "[", count: depth) + "0" + String(repeating: "]", count: depth)).utf8)
+    }
+
+    @Test func deeplyNestedArraysWithinTheDepthLimitDecodeNormally() throws {
+        let depth = FoundryJSONValue.maximumNestingDepth - 1
+        let value = try decoderWithDepthGuard().decode(FoundryJSONValue.self, from: nestedArrayJSON(depth: depth))
+
+        var unwrapped = value
+        for _ in 0..<depth {
+            unwrapped = try #require(unwrapped.arrayValue?.first)
+        }
+        #expect(unwrapped == .integer(0))
+    }
+
+    @Test func arraysPastTheDepthLimitAreRejectedRatherThanCrashing() throws {
+        let payload = nestedArrayJSON(depth: 100_000)
+
+        #expect(throws: DecodingError.self) {
+            _ = try decoderWithDepthGuard().decode(FoundryJSONValue.self, from: payload)
+        }
+    }
+
+    @Test func objectsPastTheDepthLimitAreRejectedRatherThanCrashing() throws {
+        let payload = Data(
+            (String(repeating: #"{"a":"#, count: 100_000) + "0" + String(repeating: "}", count: 100_000)).utf8
+        )
+
+        #expect(throws: DecodingError.self) {
+            _ = try decoderWithDepthGuard().decode(FoundryJSONValue.self, from: payload)
+        }
+    }
+
     @Test func packageCodableRoundTripKeepsRawTemplateAndStableRuleID() throws {
         let manifestRaw = FoundryJSONValue.object(["id": .string("ds4")])
         let manifest = FoundrySystemManifest(
