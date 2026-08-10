@@ -18,7 +18,7 @@ All §5 Bugs/logic-errors findings (§5.1–§5.14), §6.4–§6.6's DoS finding
 
 Also now fixed: the six duplication/hardcoding items §9.5–§9.10 (`DetailFolderListView` overlay wiring, the `CacheController` QuickLook-thumbnail wrapper and its `saveToDisk`/`setObject` tail, `FolderListController.copy(listModel:)`'s repeated dependency derivation, and the `"Documents"`/iCloud-container-identifier literals) — each centralized into a single shared declaration in CoreRPG instead of being hand-duplicated across 4–12 modules.
 
-For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.5–9.10, §9.13–9.14, §9.16, §9.18 (partial), §9.19–9.20 — roughly 60 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too). §9.18 also caught two of the audit's own claims being wrong: `GeneratorRootModelTV.swift` and `BorderLessTVBottonStyleViewModifer.swift` are both live code, not dead — see §9.18 for the corrected record, including a build-breaking deletion mistake made and then caught by the mandatory tvOS build gate before this pass was considered complete.
+For context, everything marked **NOW FIXED** below (§3.2–3.6, §3.8, §3.12–3.16, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.5–9.10, §9.13–9.14, §9.16, §9.18 (partial), §9.19–9.20 — roughly 66 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too). §9.18 also caught two of the audit's own claims being wrong: `GeneratorRootModelTV.swift` and `BorderLessTVBottonStyleViewModifer.swift` are both live code, not dead — see §9.18 for the corrected record, including a build-breaking deletion mistake made and then caught by the mandatory tvOS build gate before this pass was considered complete.
 
 ---
 
@@ -45,10 +45,10 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** No change recommended beyond what's already landed — a full Sendable-DTO rearchitecture remains judged too risky for this codebase's size; this is a documented, accepted tradeoff. The in-code comment now explicitly cites this report's own §3.1, confirming the mitigation is tracked, not forgotten.
 - **Severity:** Medium in practice (the `cooperativeYieldInterval = 16` tuning from the last audit is confirmed still in place, unchanged).
 
-### 3.2 `Task.detached` file/network work without cancellation propagation — NOW FIXED, one small gap found this pass
+### 3.2 `Task.detached` file/network work without cancellation propagation — NOW FIXED
 - Confirmed still fixed at all four original sites (`FileManager+Coordination.swift`, `FileUrlDataController.swift`, `Sources/RPGShare/ItemProviderImporter.swift`, `Modules/CoreRPG/Cache/ResourceCache.swift`).
-- **Gap found:** `ResourceCache.load(key:from:)`'s *joiner* path (a second caller awaiting an already-in-flight request via `inFlightRequests[key]`, line ~32) has no `Task.checkCancellation()` after awaiting — only the *primary* caller's path got the fix. A cancelled joiner still returns data as if it succeeded. See §3.16 for the standalone tracking of this gap.
-- **Severity:** Medium — resolved except the noted gap.
+- **Gap closed:** `ResourceCache.load(key:from:)`'s *joiner* path (a second caller awaiting an already-in-flight request via `inFlightRequests[key]`) previously had no `Task.checkCancellation()` after awaiting — only the *primary* caller's path had the fix, so a cancelled joiner still returned data as if it succeeded. Now fixed: `try Task.checkCancellation()` is called right after `let data = try await inFlight.value`, mirroring the primary path, before returning `data` — the shared in-flight task itself is left running unaffected (other callers still need it), only the cancelled joiner's own return is suppressed. Covered by a dedicated regression test, `Tests/CoreRPGTests/ResourceCacheTests.swift` (`cancelledJoinerPropagatesCancellation`) — asserts the cancelled joiner throws `CancellationError` while the primary caller and the resulting cache entry are unaffected. See §3.16 (now also fixed).
+- **Severity:** Medium — resolved.
 
 ### 3.3 Untracked `Task.detached` fire-and-forget work in SpaceRPG — NOW FIXED
 - Confirmed still fixed: `SpaceViewer.swift`'s `loadEntity` uses a plain structured `Task { @MainActor in ... }` (no pointless detach/re-attach); `AppDataModel.swift`'s cleanup task is tracked (`cleanupTask`), cancellation-aware, and cancelled from `reset()`. Both carry accurate in-code comments explaining the choice. No regression.
@@ -73,12 +73,12 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** Consider marking more of `PlayerController`'s frequently-hopping methods `@MainActor` directly, matching `MasterController`'s style, to collapse repeated single-property hops.
 - **Severity:** Medium.
 
-### 3.8 `nonisolated(unsafe)` `Codable.encode(to:)` workaround duplicated across domain models — STILL OPEN, one more site found
-- **Location:** One per module's `Model/*Model.swift` (PdfModel:253, DiceModel:646, WeatherModel:398, AdventureModel:330, ValueModel:499, PhotoModel:281, RuleModel:753, GeneratorModel:272, MapModel:718, SpaceModel:272, TableModel:403, AudioModel:271) **plus a 13th site not previously catalogued:** `Modules/CoreRPG/Fake/FakeItemModel.swift:98`.
-- **What/Why:** Unchanged — `nonisolated(unsafe) let encoder = encoder; MainActor.assumeIsolated { }`, safe only because every caller pre-hops to MainActor.
-- **Re-verified this pass:** the sole real call site touching one of these models (`ExportControllable.swift:197`) is correctly wrapped in `await MainActor.run`; no new background-`Task` call site invoking `.encode()` on any of the 13 models was found.
-- **Action:** Unchanged — centralize in a shared helper, or provide a `Sendable` snapshot type for background encoding (see §10.2).
-- **Severity:** Medium.
+### 3.8 `nonisolated(unsafe)` `Codable.encode(to:)` workaround duplicated across domain models — NOW FIXED
+- **Location:** One per module's `Model/*Model.swift` (PdfModel, DiceModel, WeatherModel, AdventureModel, ValueModel, PhotoModel, RuleModel, GeneratorModel, MapModel, SpaceModel, TableModel, AudioModel) plus `Modules/CoreRPG/Fake/FakeItemModel.swift` — 13 sites total.
+- **Fix:** Added `Encoder.encodeOnMainActor(_:)` in `Modules/CoreRPG/Extensions/Encoder+MainActor.swift` — a single `public extension Encoder` method that owns the `nonisolated(unsafe) let encoder = self; try MainActor.assumeIsolated { try body(encoder) }` workaround in one audited place, taking an `@MainActor (Encoder) throws -> Void` closure (the same "closure typed with a global-actor attribute infers that isolation" pattern already used elsewhere in CoreRPG, e.g. `RouterActions.routePage`). All 13 `encode(to:)` implementations now read `try encoder.encodeOnMainActor { encoder in ... }` instead of hand-rolling the unsafe cast; `AudioModel`'s existing split into a private `@MainActor encodeOnMain(to:)` helper was preserved, only its wrapping mechanism changed.
+- **Re-verified before fixing:** the sole real call site touching one of these models (`ExportControllable.swift:197`) is correctly wrapped in `await MainActor.run`; no background-`Task` call site invoking `.encode()` on any of the 13 models was found — the precondition the fix (and the original workaround) depends on still holds.
+- **Verified:** all four platform builds (iOS/macOS/visionOS/tvOS) and 1268 tests across all 13 affected modules' test targets pass.
+- **Severity:** Medium — resolved.
 
 ### 3.9 `@unchecked Sendable CoreDataChangeObserver` single-call-per-instance assumption — STILL OPEN, unchanged
 - **Location:** `Modules/CoreRPG/Persistence/CoreDataChangeObserver.swift:14-46`. Re-verified all 12 real call sites (one per module's `SyncDataController.init`) each construct a fresh instance and call `observeCoreDataChanges` exactly once — assumption still holds, still undocumented as a comment on the `@unchecked Sendable` conformance itself (the file's existing comment explains the `@MainActor`-avoidance rationale but not this).
@@ -95,36 +95,34 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** Replace with `Task { try? await Task.sleep(for: .seconds(delay)); self.send(values: values) }`.
 - **Severity:** Medium.
 
-### 3.12 `nonisolated(unsafe)` on non-Sendable `EnvironmentKey.defaultValue` closures — NEW
-- **Location:** `Modules/CoreRPG/Buttons/FeatureConfig.swift:37`; `Modules/CoreRPG/Buttons/ControlSharingView.swift:165`; `Modules/CoreRPG/ItemList/ItemListActions.swift:35,46`; `Modules/CoreRPG/Model/MapActions.swift:21`.
-- **What:** 5 `EnvironmentKey.defaultValue` closures use `nonisolated(unsafe)` purely because their declared closure type lacks `@Sendable` — a sibling key in the same file (`ItemListSelectionActionKey`) shows the escape hatch is avoidable simply by adding `@Sendable` to the type.
-- **Why:** Low practical risk (defaults are only ever a fallback; real values are always injected via `.environment()` from MainActor SwiftUI code), but an unnecessary widening of the unsafe surface.
-- **Action:** Add `@Sendable` to the 5 closure type declarations.
-- **Severity:** Low.
+### 3.12 `nonisolated(unsafe)` on non-Sendable `EnvironmentKey.defaultValue` closures — NOW FIXED
+- **Location:** `Modules/CoreRPG/Buttons/FeatureConfig.swift` (`SharingFeatureActionsKey`), `Modules/CoreRPG/Buttons/ControlSharingView.swift` (`SharingControlActionsKey`), `Modules/CoreRPG/Model/MapActions.swift` (`MapActionsKey`) — 3 real sites; the audit's originally-cited 4th location, `ItemListActions.swift`, was re-checked and no longer has any `EnvironmentKey`/closure pattern at all (superseded by an unrelated earlier refactor — nothing to fix there).
+- **What:** 3 `EnvironmentKey.defaultValue` closures used `nonisolated(unsafe)` purely because their declared closure type lacked a global-actor/`Sendable` annotation.
+- **Fix:** Annotated each closure-typed property/parameter (`SharingFeatureActions.features`, `SharingControlActions.control`/`.update`, `MapActions.quickMap`) as `@MainActor @Sendable`, matching the exact convention already established elsewhere in CoreRPG (`NetworkActions`'s `shareId`/`send`/`game` closures). A `@MainActor`-isolated closure is unconditionally `Sendable`, and — critically, unlike a bare `@Sendable` annotation — it stays isolated to MainActor, so the real call sites (`GameRootModel.sharingControlActions`/`.sharingFeatureActions`, both `lazy var`s whose closures synchronously touch `self?.gameModel...` MainActor state) needed no changes. Each struct itself (`SharingFeatureActions`, `SharingControlActions`, `MapActions`) also now conforms to `Sendable` (previously only `Equatable`), so the `EnvironmentKey.defaultValue` static lets no longer need the escape hatch.
+- **Verified:** full 4-platform build; a bare `@Sendable` (without `@MainActor`) was tried first and would have forced these closures nonisolated, breaking the real call sites — caught before committing to that approach by checking `GameRootModel`'s existing closure-construction call sites first.
+- **Severity:** Low — resolved.
 
-### 3.13 `DieModel` forced into `@unchecked Sendable` by a non-`Sendable` value type — NEW
-- **Location:** `Modules/DiceRPG/Model/DieModel.swift:7` (`@unchecked Sendable`); root cause `Modules/DiceRPG/Model/RawDie.swift:5` (`public struct RawDie`, no `Sendable`, though every stored property is trivially safe).
-- **What/Why:** Because `RawDie` is `public` and Swift doesn't auto-synthesize public `Sendable` across the module boundary, `DieModel` can't get a compiler-checked conformance and falls back to `@unchecked` for no real reason.
-- **Action:** Declare `RawDie: Sendable` (and its nested `Sides` enum), then drop `@unchecked` from `DieModel`.
-- **Severity:** Low.
+### 3.13 `DieModel` forced into `@unchecked Sendable` by a non-`Sendable` value type — NOW FIXED
+- **Location:** `Modules/DiceRPG/Model/DieModel.swift` (`@unchecked Sendable`); root cause `Modules/DiceRPG/Model/RawDie.swift` (`public struct RawDie`, was missing `Sendable`, though every stored property is trivially safe).
+- **Fix:** Declared `RawDie: Sendable` and its nested `Sides` enum `Sendable`; dropped `@unchecked` from `DieModel`, now a compiler-checked `Sendable` conformance.
+- **Severity:** Low — resolved.
 
-### 3.14 `RpgSpotlightIndexerModel`'s `@unchecked Sendable` is unnecessary — NEW
-- **Location:** `Modules/CoreRPG/Persistence/RpgSpotlightIndexerDelegate.swift:15`.
-- **What:** `@MainActor @Observable public final class RpgSpotlightIndexerModel: @unchecked Sendable` — its only stored state (`message: String?`) is trivially Sendable under `@MainActor` isolation; unlike `CoreDataInitModel` (which legitimately needs the escape hatch for its non-Sendable-audited `NSManagedObjectContext`/`NSPersistentContainer` members), nothing here forces it.
-- **Action:** Drop `@unchecked`; a compiler-checked `Sendable` conformance should work as-is.
-- **Severity:** Low.
+### 3.14 `RpgSpotlightIndexerModel`'s `@unchecked Sendable` is unnecessary — NOW FIXED
+- **Location:** `Modules/CoreRPG/Persistence/RpgSpotlightIndexerDelegate.swift`.
+- **Fix:** Dropped `@unchecked` — `@MainActor @Observable final class RpgSpotlightIndexerModel: Sendable` now uses a plain, compiler-checked conformance (its only stored state, `message: String?`, is trivially safe under `@MainActor` isolation), matching the same "MainActor-owned model, Sendable via global-actor isolation, no `@unchecked`" pattern already used by the domain models (see §3.8).
+- **Severity:** Low — resolved.
 
-### 3.15 SharePlay: race between independent state/participant `AsyncSequence` consumers — NEW
-- **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:1852-1934` (`stateTask` vs. `participantTask`); `SharePlayParticipantTracker.participantsChanged` (lines 343-360).
-- **What:** `stateTask`'s `.joined` handler does a synchronous live read of `groupSession.activeParticipants` that can race ahead of `participantTask`'s own backlog; the tracker has no epoch/sequence number to detect an out-of-order snapshot.
-- **Why:** Two independently-scheduled consumers mutating shared tracker state with no relative-ordering guarantee can emit a spurious "removed" event for a still-connected participant, firing an incorrect lost-player callback followed by a duplicate rejoin — visible player-state flicker during a live SharePlay session.
-- **Action:** Route both the catch-up computation and the ongoing diff through one ordered consumer, or reject diffs the tracker can prove are older than its current state.
-- **Severity:** Medium.
+### 3.15 SharePlay: race between independent state/participant `AsyncSequence` consumers — NOW FIXED
+- **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift` (`stateTask` vs. `participantTask`); `SharePlayParticipantTracker.participantsChanged`.
+- **What/Why:** `stateTask`'s `.joined` handler does a synchronous live read of `groupSession.activeParticipants` to replay anyone already present; `participantTask` independently consumes the buffered `groupSession.$activeParticipants.values` stream. The two run as separately-scheduled `Task`s with no relative-ordering guarantee: a backlogged, already-superseded element `participantTask` had queued could get diffed against tracker state the live read on `stateTask` had already advanced past, producing a spurious "removed" event for a still-connected participant — an incorrect lost-player callback followed by a duplicate rejoin, visible as player-state flicker in a live SharePlay session.
+- **Fix:** `participantTask`'s loop now treats each stream element purely as a wake-up signal — it discards the delivered value and re-reads `groupSession.activeParticipants` live at the point of use, the same source `stateTask`'s live read already uses. Every diff computation now runs against one single current-truth source instead of two independently-paced ones; a backlogged wake-up becomes, at worst, a harmless redundant no-op re-check (the diff comes out empty) instead of a wrong one. No change was needed to the well-covered pure `SharePlayParticipantTracker` struct itself — its existing unit tests (`Tests/GameRPGTests/SharePlayPackageTransportTests.swift`) all still pass unmodified, since the fix is entirely in how the caller derives the argument it passes in, not in the tracker's diffing logic.
+- **Caveat:** the actual race (which only manifests during a live SharePlay session with real network scheduling jitter) isn't directly unit-testable without a live/mocked `GroupSession`, which this codebase doesn't have infrastructure for — verified via build + the full existing SharePlay test suite (all passing, confirming no regression to the well-tested parts) and by reasoning through the fix's correctness (documented inline at the call site), not by a new reproduction test for the race itself.
+- **Severity:** Medium — resolved.
 
-### 3.16 `ResourceCache` joiner-path cancellation gap — NEW (see §3.2)
-- **Location:** `Modules/CoreRPG/Cache/ResourceCache.swift:31-33`.
-- **What/Action:** See §3.2 — add `try Task.checkCancellation()` after `let data = try await inFlight.value` in the joiner path, mirroring the primary-caller fix already applied.
-- **Severity:** Low.
+### 3.16 `ResourceCache` joiner-path cancellation gap — NOW FIXED (see §3.2)
+- **Location:** `Modules/CoreRPG/Cache/ResourceCache.swift:31-37`.
+- **Fix:** `try Task.checkCancellation()` added after `let data = try await inFlight.value` in the joiner path, mirroring the primary-caller fix. Verified with a passing regression test (`ResourceCacheTests.cancelledJoinerPropagatesCancellation`) and a full 4-platform build. See §3.2 for the full write-up.
+- **Severity:** Low — resolved.
 
 ---
 
@@ -472,7 +470,7 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 ## 10. Cross-cutting recommendations
 
 1. **Centralize the two confirmed duplication hot spots (§9.4, §9.5) — and now a third (§9.17) — with the same pattern already proven for `FolderListControllable`.** `ExportController.exporting(itemIds:)`, `DetailFolderListView.overlayContent`, and now the `MessageMapper` encode/decode pair are all cases where a working shared-protocol-extension pattern already exists elsewhere in the codebase (`FolderListControllable`, genuinely shared) but wasn't applied. §9.17 is the cheapest of the three to fix — the protocol already exists, it just needs conformance declarations and default-implementation bodies.
-2. **Replace `nonisolated(unsafe)` + `MainActor.assumeIsolated` (§3.8) with a `Sendable` snapshot type.** Directly unblocks §3.1 (Foundry import mapping stuck on Main Actor) too.
+2. ~~Replace `nonisolated(unsafe)` + `MainActor.assumeIsolated` (§3.8) with a `Sendable` snapshot type.~~ **Done, via the simpler of the two options §3.8 itself proposed:** rather than a `Sendable` snapshot type (a larger redesign touching every model's encode path), §3.8 centralized the existing `nonisolated(unsafe)`/`assumeIsolated` workaround into one audited helper (`Encoder.encodeOnMainActor(_:)`) shared by all 13 sites. §3.1 (Foundry import mapping stuck on Main Actor) is a separate, still-open concern the snapshot-type approach would have helped with more directly than the centralization did — it remains open on its own merits.
 3. **Standardize on `os.Logger`; stop using bare `print()` or silent `catch {}`.** §9.12 (51 `print()` sites, improved from 70) and the general pattern this audit keeps finding in one-off gaps (§5.10: RuleRPG missed from an 11-module fix, now closed) — a `SwiftLint` custom rule banning `print(` in non-test targets, and a repo-wide grep for `catch {}`/`catch { }` with an empty body, run as a periodic check rather than a one-time pass, would catch this class of "missed the 12th module" gap before it needs a full re-audit to surface.
 4. **Treat "already-fixed bug classes" as a checklist for new code, not a closed chapter.** §5.11 (App Intents export path traversal, now fixed) was the *exact* bug §5.4 already fixed, just in files that fix didn't touch. When a bug class gets fixed at N call sites, grep for the same anti-pattern (`.appending(path:` on interpolated user text, in this case) across the *whole* repo, not just the originally-flagged files, before declaring it resolved.
 5. **Give the untrusted-input Foundry parser dedicated fuzz/malformed-input test coverage.** §6.5 and §6.6 were both resource-exhaustion gaps in code that already had good bounds-safety hygiene per the prior audit's own note — the parser was careful about crashing on bad data, but not about being *slow* or *deep* on bad data. Both are now fixed, each backed by a targeted regression test (an unbounded-pack-count manifest for §6.5; 100,000-deep nested-array and nested-object payloads for §6.6) rather than a full fuzz corpus — a broader adversarial-fixture suite run in CI would still catch regressions on both axes, and similar axes elsewhere in the parser, going forward.

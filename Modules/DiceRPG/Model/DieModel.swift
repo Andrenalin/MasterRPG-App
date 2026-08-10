@@ -4,7 +4,7 @@ import CoreRPG
 import RPGResources
 import SwiftUI
 
-public struct DieModel: Equatable, Hashable, Identifiable, Codable, @unchecked Sendable {
+public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
     public init(id: UUID, die: RawDie, color: String = ColorCode.Random.rawValue, rotation: Double = 0, result: [Int] = [], displayState: Int = 0) {
         self.id = id
         self.die = die

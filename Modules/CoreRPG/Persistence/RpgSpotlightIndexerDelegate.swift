@@ -12,7 +12,7 @@ public protocol SpotlightIndexerAtyribute {
 }
 
 @MainActor @Observable
-public final class RpgSpotlightIndexerModel: @unchecked Sendable {
+public final class RpgSpotlightIndexerModel: Sendable {
     public nonisolated init() {}
 
     public private(set) var message: String?

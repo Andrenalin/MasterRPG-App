@@ -1914,10 +1914,23 @@ extension RPGSharePlayController {
         // replays those participants exactly once after Messenger is ready.
         let participantTask = Task { [weak self] in
             guard let self else { return }
-            for await activeParticipants in groupSession.$activeParticipants.values {
+            for await _ in groupSession.$activeParticipants.values {
                 guard !Task.isCancelled,
                       self.sessionLoopIsCurrent(sessionId: groupSession.id)
                 else { return }
+                // Treat each stream element as a wake-up signal only, and re-read
+                // `groupSession.activeParticipants` live rather than trusting the
+                // value the stream delivered. `stateTask`'s `.joined` handler also
+                // does a live read (to replay anyone already present the instant
+                // we join); the two run as independently-scheduled Tasks with no
+                // relative-ordering guarantee, so a backlogged, already-superseded
+                // element delivered here could otherwise be diffed against roster
+                // state the live read on the other task had already advanced past,
+                // producing a spurious "removed" for a still-connected participant
+                // (see CODE_AUDIT §3.15). Reading fresh here makes every diff use
+                // the same single source of truth: a stale queued wake-up becomes,
+                // at worst, a harmless no-op re-check instead of a wrong diff.
+                let activeParticipants = groupSession.activeParticipants
                 let change = self.participantTracker.participantsChanged(
                     activeParticipantIds: Set(activeParticipants.map(\.id)),
                     localParticipantId: groupSession.localParticipant.id,
