@@ -2524,7 +2524,7 @@ struct SharePlayPackageTransportTests {
         let senderID = UUID()
         let messageID = UUID()
         let masterID = UUID()
-        let itemID = UUID()
+        let itemId = UUID()
         let full = GameNetworkModel(
             messageID: messageID,
             timestamp: 1_234,
@@ -2542,7 +2542,7 @@ struct SharePlayPackageTransportTests {
             audience: .group,
             purpose: .event,
             data: NetworkCodableDataType(
-                id: itemID,
+                id: itemId,
                 type: module,
                 version: 3,
                 data: Data("asset".utf8),

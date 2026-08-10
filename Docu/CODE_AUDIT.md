@@ -18,19 +18,19 @@ All §5 Bugs/logic-errors findings (§5.1–§5.14), §6.4–§6.6's DoS finding
 
 Also now fixed: the six duplication/hardcoding items §9.5–§9.10 (`DetailFolderListView` overlay wiring, the `CacheController` QuickLook-thumbnail wrapper and its `saveToDisk`/`setObject` tail, `FolderListController.copy(listModel:)`'s repeated dependency derivation, and the `"Documents"`/iCloud-container-identifier literals) — each centralized into a single shared declaration in CoreRPG instead of being hand-duplicated across 4–12 modules.
 
-For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.5–9.10, §9.13–9.14 — roughly 56 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too).
+For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.5–9.10, §9.13–9.14, §9.16, §9.18 (partial), §9.19–9.20 — roughly 60 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too). §9.18 also caught two of the audit's own claims being wrong: `GeneratorRootModelTV.swift` and `BorderLessTVBottonStyleViewModifer.swift` are both live code, not dead — see §9.18 for the corrected record, including a build-breaking deletion mistake made and then caught by the mandatory tvOS build gate before this pass was considered complete.
 
 ---
 
 ## 2. Quick wins (≤30 min each, low architectural risk)
 
-Learned from the prior audit's own experience (§4.1's reverted mechanical swap, §9.1's false-positive deletions): nothing touching the untrusted-input Foundry parser or the network wire protocol is listed here even though some of those fixes are individually small, because they need real testing against malformed input, not just a clean compile. Genuine low-risk quick wins from this pass:
+Learned from the prior audit's own experience (§4.1's reverted mechanical swap, §9.1's false-positive deletions): nothing touching the untrusted-input Foundry parser or the network wire protocol is listed here even though some of those fixes are individually small, because they need real testing against malformed input, not just a clean compile. This list itself produced one more lesson in the same vein this pass — see the `GeneratorRootModelTV.swift` note below. Genuine low-risk quick wins from this pass, now all resolved (fixed, or corrected as false positives) — see §9.18/§9.19 for full detail:
 
-- **Delete `Modules/CoreRPG/Model/Observable+Stream.swift`** — entire body is commented out; only a copyright header is live. See §9.18.
-- **Delete `Modules/CoreRPG/Model/GeneratorRootModelTV.swift`** — an empty tvOS placeholder type with zero real call sites (every tvOS path passes `generatorRoot: nil` instead). See §9.18.
-- **Delete the dead half of `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift`** (`borderLessTVBottonStyle`/`BorderLessTVBottonStyleViewModifer`, lines 1-27) — zero call sites; leave the sibling `switchTVToggleStyle` (in active use) alone. See §9.18.
-- **Rename `Modules/GameRPG/SharePlay/RPGActivitty.swift` → `RPGActivity.swift`** — the type inside (`RPGActivity`, 14+ live call sites) is already spelled correctly; only the filename has a typo. See §9.19.
-- **Delete the leftover `//.padding(.horizontal)` line** — `Modules/TableRPG/View/TableGenerationRootView.swift:253`, introduced in a recent commit. See §9.18.
+- **Deleted `Modules/CoreRPG/Model/Observable+Stream.swift`** — entire body was commented out; only a copyright header was live. Fixed. See §9.18.
+- ~~Delete `Modules/CoreRPG/Model/GeneratorRootModelTV.swift`~~ — **audit claim was wrong.** The file declares `GeneratorRootModel` (filename ≠ type name), which is referenced from `TableRootModel.swift` and is the *only* source of that type on tvOS. Deleting it broke the tvOS build; restored. See §9.18.
+- ~~Delete the dead half of `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift`~~ — **audit claim was wrong.** 35+ live call sites found on re-verification; left untouched. See §9.18.
+- **Renamed `Modules/GameRPG/SharePlay/RPGActivitty.swift` → `RPGActivity.swift`** — the type inside (`RPGActivity`, 14+ live call sites) was already spelled correctly; only the filename had a typo. Fixed. See §9.19.
+- ~~Delete the leftover `//.padding(.horizontal)` line~~ — `Modules/TableRPG/View/TableGenerationRootView.swift:253` no longer exists; the file was already split apart by an unrelated prior change. Moot. See §9.18.
 
 All the other former quick wins in this list (RuleRPG's Siri-donation logging, `MasterController`'s force-unwrap, `AppDataModel`'s force-unwrapped `error`, `DetailListView`'s force-cast, the `battleInitiative(from:)` range guard, and `DragRotationModifier`'s `baseYaw`/`basePitch`) are now fixed — see §5.10, §5.12, §5.13, §8.6.
 
@@ -433,10 +433,12 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - Re-confirmed against all checked modules — CLAUDE.md still implies a literal "Module" folder name that no module uses.
 - **Severity:** Medium (documentation/process debt).
 
-### 9.16 Ad-hoc magic constants — STILL OPEN, refreshed sample
-- JPEG quality still inconsistent and unnamed (0.5/0.8/0.9 across different files); thumbnail/pin sizes still hardcoded per call site (64×64, 128×128, 210×297, 393×350); three loop bounds still lack a rationale comment (`FoundryLevelDBReader.swift:349` `0..<8`, `ThemeColor.swift:55` `0..<24`, `LinkReplaceController.swift:149` `counter < 100`).
+### 9.16 Ad-hoc magic constants — NOW FIXED (JPEG quality + loop rationale; thumbnail/pin sizes left as-is)
+- **Fix (JPEG quality):** Added `Image+AKImage.swift`'s `public enum JPEGQuality` with three named tiers — `.transport` (0.5, used by `PlayerController.send(screen:responseCounter:)`'s network mirroring), `.cachedThumbnail` (0.8, `ObjectCache.saveImageToDisk`), `.export` (0.9, `ExportControllable.inlineFiles`, `PreviewAssetFixture.photoFileUrl`, `PhotoRPG/EditController.convert`/`resetPhoto`). All 6 literal-float call sites now reference the named constant instead of a bare number; the three values themselves are unchanged (they genuinely serve different purposes, not one unified number).
+- **Fix (loop rationale):** Added a one-line rationale comment above each of the three previously-unexplained loop bounds — `FoundryLevelDBReader.swift` (`0..<8`: standard CRC-32, one shift/XOR step per bit of the byte just mixed in), `ThemeColor.swift` (`0..<24`: binary-search bisection converges to ~1/2^24 precision, far finer than any visible color difference), `LinkReplaceController.swift` (`counter < 100`: sanity cap for a pathological case, not an expected count).
+- **Not changed:** thumbnail/pin sizes (64×64, 128×128, 210×297, 393×350) are left hardcoded per call site — the audit's own finding didn't specify a consolidation target, and the sizes are genuinely different per context (list thumbnail vs. detail vs. map pin), so unifying them wasn't attempted.
 - **Confirms prior "1 TODO hit" finding:** repo-wide sweep this pass found exactly the same single TODO-class marker anywhere in non-test code, `SpaceViewer.swift:247` — a legitimate, well-scoped backlog item, not a quality problem.
-- **Severity:** Low.
+- **Severity:** Low — resolved.
 
 ### 9.17 `MessageMapper` — an existing shared protocol — hand-duplicated by 16 of 17 conformers — NEW, verified
 - **Location:** `Modules/GameRPG/Model/MessageMapper.swift:5-8` (protocol, verified directly: `func encodeData() -> Data?`, `static func decodeData(of data: Data?) -> Self?`, no default extension); hand-rolled implementations at `Modules/PdfRPG/Controller/GameController.swift:236-243`, `PhotoRPG/Controller/GameController.swift:231-238`, `AudioRPG/Controller/GameController.swift:329-357`, `SpaceRPG/Controller/GameController.swift:442-450`, `SpaceRPG/Model/SpaceTransformModel.swift:22-26`, `MapRPG/Model/MapPinModel.swift:178-188`, `MapRPG/Model/MapModel.swift:609-619`, `MapRPG/Model/MapUpdatePayload.swift:42+`, `MapRPG/BattleRound/BattleRoundModel.swift:124-132`, `DiceRPG/Model/DiceResultModel.swift:73-83`, `CoreRPG/App/ExportedRPGData.swift:99-109`, `CoreRPG/Model/NetworkCodableDataType.swift:61-71`, `CoreRPG/Model/GameValueEntryUpdate.swift:35-42`, `CoreRPG/Model/ItemGeneration.swift:49-57` (17 total; only `GameNetworkModel.swift:997` actually declares `: MessageMapper` conformance).
@@ -445,25 +447,25 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** Add a default implementation to `MessageMapper` via `extension MessageMapper where Self: Codable`, declare `: MessageMapper` on all 16 non-conforming types, delete their hand-written bodies, and standardize the label to `decodeData(of:)`.
 - **Severity:** High.
 
-### 9.18 Additional dead code found this pass — NEW (grouped)
-- `Modules/CoreRPG/Model/Observable+Stream.swift:1-12` — entire body commented out, only a copyright header remains live. Delete.
-- `Modules/CoreRPG/Model/GeneratorRootModelTV.swift:1-9` — empty `#if os(tvOS)` placeholder type; verified zero real call sites (`AppModel.swift` passes `generatorRoot: nil` on every tvOS path instead). Delete.
-- `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift:1-27` — dead half only (`borderLessTVBottonStyle`/`BorderLessTVBottonStyleViewModifer`, misspelled "Botton"/"Modifer"); the sibling `switchTVToggleStyle` in the same file is live and should stay. Delete lines 1-27.
-- `Modules/TableRPG/View/TableGenerationRootView.swift:253` — leftover `//.padding(.horizontal)` from a recent commit. Delete the line.
-- `Modules/GeneratorRPG/BasicAI/Errors/FoundationModelsError.swift:7-28` — **lower confidence**: 5 error cases with zero construction/throw sites found repo-wide; only reference is a defensive cast inside its own handler that can never succeed. Verify with the author before deleting.
-- **Severity:** Low (all).
+### 9.18 Additional dead code found this pass — PARTIALLY FIXED, one item was a false positive, one was fixed then had to be reverted and restored
+- `Modules/CoreRPG/Model/Observable+Stream.swift:1-12` — **NOW FIXED.** Entire body was already commented out, only the copyright header remained live; confirmed zero references to `.stream(of:` anywhere in the repo before deleting. Deleted.
+- `Modules/CoreRPG/Model/GeneratorRootModelTV.swift:1-9` — **AUDIT WAS WRONG — restored, not deleted.** The audit checked for call sites of the *filename* (`GeneratorRootModelTV`), which correctly finds nothing — but the type actually **declared** inside the file is `GeneratorRootModel` (no "TV" suffix; filename ≠ type name). That type has a live, unconditional reference at `Modules/TableRPG/Root/TableRootModel.swift:15` (`generatorRoot: GeneratorRootModel? = nil`), which only resolves on tvOS via this file — `GeneratorRPG` (the module with the real `GeneratorRootModel`) isn't available on tvOS, so this stub is the *only* source of the type for tvOS builds. Deleting it broke the tvOS build (`error: cannot find type 'GeneratorRootModel' in scope`); caught by the mandatory tvOS build pass and restored verbatim before this fix was considered complete. Lesson for future dead-code sweeps: grep for the **declared type/symbol name**, not the filename — they aren't always the same identifier.
+- `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift:1-27` — **AUDIT WAS WRONG — not deleted.** Independently re-verified via `grep -rn "borderLessTVBottonStyle\|BorderLessTVBottonStyleViewModifer"` across `Modules/`: 35+ live call sites (`QuickEditorAction.swift`, `ExpandButtonModifier.swift`, `InspectorRowView.swift`, `SelectItemModifier.swift`, several `Sheet*.swift`, `Keyshortcuts.swift`, multiple `DiceRPG`/`CharacterRPG`/`PhotoRPG`/`MapRPG`/`AudioRPG`/`GameRPG` files). This is genuinely live code, not dead — left untouched.
+- `Modules/TableRPG/View/TableGenerationRootView.swift:253` — already resolved externally before this pass reached it; the file was split into several new files (`TableGenerationEntryRow.swift`, `TableGenerationResultView.swift`, etc.) by an unrelated prior change, and is now only 96 lines with no leftover `//.padding(.horizontal)` line. Nothing to do.
+- `Modules/GeneratorRPG/BasicAI/Errors/FoundationModelsError.swift:7-28` — **NOW FIXED.** Independently re-verified (grep across `Modules/`, `Sources/`, `Tests/`): none of the 5 cases are ever constructed or thrown; the only reference was a defensive `as? FoundationModelsError` cast inside `FoundationModelsErrorHandler.handleError(_:)` that could never succeed. Deleted the enum and that dead cast branch; the surrounding `FoundationModelsErrorHandler` struct (confirmed live — used by `AdventureGeneratorController.swift`, `GeneratorController.swift`, `ChatViewModel.swift`) is untouched.
+- **Severity:** Low (all) — two fixed, one restored after an audit-following mistake was caught by the tvOS build gate, one confirmed live and left alone, one already moot.
 
-### 9.19 New filename typo — NEW
+### 9.19 New filename typo — NOW FIXED
 - **Location:** `Modules/GameRPG/SharePlay/RPGActivitty.swift` (duplicated "t": "Activitty").
 - **What:** The type inside, `public struct RPGActivity`, is correctly spelled and has 14+ live call sites — only the filename is wrong. Same class of issue already fixed in §9.13, missed there.
-- **Action:** `git mv` to `RPGActivity.swift` (Xcode-16 synchronized groups, no `project.pbxproj` edit needed).
-- **Severity:** Low.
+- **Fix:** `git mv Modules/GameRPG/SharePlay/RPGActivitty.swift Modules/GameRPG/SharePlay/RPGActivity.swift`. Xcode-16 filesystem-synchronized group picked up the rename automatically, no `project.pbxproj` edit needed; confirmed with a clean iOS build.
+- **Severity:** Low — resolved.
 
-### 9.20 `Id`/`ID` and `Url`/`URL` naming convention drift — NEW
+### 9.20 `Id`/`ID` and `Url`/`URL` naming convention drift — NOW FIXED (documentation only — no mechanical rename)
 - **What:** ~9,500 `...Id`/`...Url` occurrences (the codebase's dominant, long-standing convention) coexist with ~300-600 `...ID`/~620 `...URL` occurrences that drifted to Swift API Design Guidelines casing — concentrated in `Modules/CoreRPG/Controllable/ItemControllable.swift`, `ImageCacheControllable.swift`, `Modules/CoreRPG/Import/ExternalImport.swift`, `Modules/CoreRPG/Sheet/SheetReviewModels.swift`, `PhotoRPG/Controller/CacheController.swift`, `RuleRPG/Controller/LinkController.swift`, several with both conventions for the same concept in one file.
 - **Why:** Not worth a mechanical rename at this scale, but new code keeps drifting without a documented project convention to hold the line.
-- **Action:** Document the chosen convention (`Id`/`Url`, matching majority usage) in CLAUDE.md.
-- **Severity:** Low.
+- **Fix:** Added a bullet to CLAUDE.md's "## Swift instructions" section documenting the chosen convention (`Id`/`Url`, matching majority usage — e.g. `itemId`, `fileUrl`, not `itemId`/`fileURL`) so future code (AI-assisted or otherwise) doesn't keep drifting to the opposite casing. The ~300-600 existing drifted occurrences themselves were not renamed — out of proportion for a Low-severity item with no functional impact.
+- **Severity:** Low — resolved (documentation).
 
 ---
 

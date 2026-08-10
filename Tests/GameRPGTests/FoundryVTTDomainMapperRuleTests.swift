@@ -62,7 +62,7 @@ struct FoundryVTTDomainMapperRuleTests {
         #expect(combatFolder.parentId == packFolder.id)
         #expect(first.mappings.contains { mapping in
             mapping.foundryIdentifier == fixture.rule.id
-                && mapping.references.contains { $0.module == .rule && $0.itemID == rule.id }
+                && mapping.references.contains { $0.module == .rule && $0.itemId == rule.id }
         })
     }
 

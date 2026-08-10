@@ -3,30 +3,6 @@
 import Foundation
 import FoundationModels
 
-/// Custom error types for Foundation Models operations
-nonisolated enum FoundationModelsError: LocalizedError, Sendable {
-    case sessionCreationFailed
-    case responseGenerationFailed(String)
-    case toolCallFailed(String)
-    case streamingFailed(String)
-    case modelUnavailable(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .sessionCreationFailed:
-            return String(localized: "Failed to create language model session", bundle: .module)
-        case .responseGenerationFailed(let message):
-            return String(localized: "Response generation failed: \(message)", bundle: .module)
-        case .toolCallFailed(let message):
-            return String(localized: "Tool call failed: \(message)", bundle: .module)
-        case .streamingFailed(let message):
-            return String(localized: "Streaming failed: \(message)", bundle: .module)
-        case .modelUnavailable(let message):
-            return String(localized: "Model unavailable: \(message)", bundle: .module)
-        }
-    }
-}
-
 /// Helper for handling LanguageModelSession errors
 struct FoundationModelsErrorHandler: Sendable {
     static func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {
@@ -70,8 +46,6 @@ struct FoundationModelsErrorHandler: Sendable {
             return handleToolCallError(toolCallError)
         } else if let coreError = error as? FoundationModelCoreError {
             return coreError.localizedDescription
-        } else if let customError = error as? FoundationModelsError {
-            return customError.localizedDescription
         } else {
             return String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .module)
         }

@@ -4,14 +4,14 @@ import Foundation
 
 /// One stable MasterRPG destination for a Foundry document or embedded element.
 public struct FoundryImportMappingReference: Codable, Equatable, Hashable, Sendable {
-    public init(module: NetworkModules, itemID: UUID, entryID: UUID? = nil) {
+    public init(module: NetworkModules, itemId: UUID, entryID: UUID? = nil) {
         self.module = module
-        self.itemID = itemID
+        self.itemId = itemId
         self.entryID = entryID
     }
 
     public let module: NetworkModules
-    public let itemID: UUID
+    public let itemId: UUID
     public let entryID: UUID?
 }
 

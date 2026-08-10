@@ -1628,6 +1628,7 @@
       }
     },
     "Failed to create language model session" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2660,16 +2661,16 @@
     },
     "Refine and expand the story around '%@': %@" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Refine and expand the story around '%1$@': %2$@"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Die Geschichte um '%1$@' verfeinern und erweitern: %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Refine and expand the story around '%1$@': %2$@"
           }
         },
         "th" : {
@@ -2681,6 +2682,7 @@
       }
     },
     "Response generation failed: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2955,6 +2957,7 @@
       }
     },
     "Streaming failed: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3422,6 +3425,7 @@
       }
     },
     "Tool call failed: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

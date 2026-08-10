@@ -114,8 +114,8 @@ import SwiftUI
         selectedItemID = modules.first { $0.id == moduleID }?.reviewItems.first?.id
     }
 
-    func select(itemID: ImportReviewItemModel.ID) {
-        selectedItemID = itemID
+    func select(itemId: ImportReviewItemModel.ID) {
+        selectedItemID = itemId
     }
 
     func selectDependency(_ reference: SingleReviewReference) {
@@ -144,15 +144,15 @@ import SwiftUI
     }
 
     func sheetMemory(
-        overriding itemID: UUID,
+        overriding itemId: UUID,
         module: NetworkModules,
         decision: SingleReviewDecision
     ) -> ReviewSheetMemory {
-        sheetMemory(overriding: (itemID, module, decision))
+        sheetMemory(overriding: (itemId, module, decision))
     }
 
     private func sheetMemory(
-        overriding override: (itemID: UUID, module: NetworkModules, decision: SingleReviewDecision)?
+        overriding override: (itemId: UUID, module: NetworkModules, decision: SingleReviewDecision)?
     ) -> ReviewSheetMemory {
         var items: [NetworkModules: [UUID: any ItemDataAccessable]] = [:]
         var hiddenItemIds: [NetworkModules: Set<UUID>] = [:]
@@ -160,7 +160,7 @@ import SwiftUI
         for module in modules {
             for item in module.reviewItems {
                 let overriddenDecision: SingleReviewDecision?
-                if let override, override.itemID == item.id, override.module == module.id {
+                if let override, override.itemId == item.id, override.module == module.id {
                     overriddenDecision = override.decision
                 } else {
                     overriddenDecision = nil
@@ -218,17 +218,17 @@ import SwiftUI
         }
     }
 
-    func setDecision(_ decision: SingleReviewDecision, for itemID: ImportReviewItemModel.ID) {
-        itemModel(for: itemID)?.applyItemDecision(decision)
+    func setDecision(_ decision: SingleReviewDecision, for itemId: ImportReviewItemModel.ID) {
+        itemModel(for: itemId)?.applyItemDecision(decision)
     }
 
-    func setPropertyDecision(_ decision: SingleReviewDecision, propertyID: UUID, itemID: ImportReviewItemModel.ID) {
-        itemModel(for: itemID)?.setPropertyDecision(decision, propertyID: propertyID)
+    func setPropertyDecision(_ decision: SingleReviewDecision, propertyID: UUID, itemId: ImportReviewItemModel.ID) {
+        itemModel(for: itemId)?.setPropertyDecision(decision, propertyID: propertyID)
     }
 
-    private func itemModel(for itemID: ImportReviewItemModel.ID) -> SingleItemImportModel? {
+    private func itemModel(for itemId: ImportReviewItemModel.ID) -> SingleItemImportModel? {
         for module in modules {
-            if let item = module.reviewItems.first(where: { $0.id == itemID }) {
+            if let item = module.reviewItems.first(where: { $0.id == itemId }) {
                 return item.itemModel
             }
         }

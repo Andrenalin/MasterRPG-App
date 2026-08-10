@@ -67,7 +67,7 @@ private actor SharePlayDeferredPeerGroupEvents {
             counter: Int,
             type: RPGMessageType,
             subType: RPGMessageActionType,
-            itemID: UUID,
+            itemId: UUID,
             timestampBits: UInt64
         )
     }
@@ -169,7 +169,7 @@ private actor SharePlayDeferredPeerGroupEvents {
             counter: model.counter,
             type: model.type,
             subType: model.subType,
-            itemID: model.data.id,
+            itemId: model.data.id,
             timestampBits: model.timestamp.bitPattern
         )
     }
@@ -223,7 +223,7 @@ actor SharePlayPlayerJournalAdmission {
         let audience: GameMessageAudience
         let purpose: GameMessagePurpose
         let targetID: UUID?
-        let itemID: UUID
+        let itemId: UUID
         let module: NetworkModules
         let version: Int
         let assetVersion: Int?
@@ -244,7 +244,7 @@ actor SharePlayPlayerJournalAdmission {
             audience = model.audience
             purpose = model.purpose
             targetID = model.targetId
-            itemID = model.data.id
+            itemId = model.data.id
             module = model.data.type
             version = model.data.version
             assetVersion = model.data.assetVersion

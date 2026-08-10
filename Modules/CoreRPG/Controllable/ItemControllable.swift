@@ -258,9 +258,9 @@ public extension ItemControllable {
     /// Exact copies of the current library models used to cover repair effects
     /// that can reach parents or children outside the selected import batch.
     @MainActor func externalImportSnapshots(excluding excludedIDs: Set<UUID>) -> [any ModelType] {
-        itemDataModel.items.compactMap { itemID -> (any ModelType)? in
-            guard !excludedIDs.contains(itemID),
-                  let item = itemSync(for: itemID, noGame: true) else { return nil }
+        itemDataModel.items.compactMap { itemId -> (any ModelType)? in
+            guard !excludedIDs.contains(itemId),
+                  let item = itemSync(for: itemId, noGame: true) else { return nil }
             return item.copy()
         }
     }

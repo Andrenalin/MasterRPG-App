@@ -214,7 +214,7 @@ public extension ExportControllable {
         }
         guard itemControllable.config.module == .photo,
               let image = await itemControllable.cacheControllable?.photo(for: itemId) else { return nil }
-        return image.jpegData(compressionQuality: 0.9)
+        return image.jpegData(compressionQuality: JPEGQuality.export)
     }
 
     @MainActor private func token() async -> NetworkModules {

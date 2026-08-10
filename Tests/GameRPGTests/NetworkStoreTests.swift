@@ -858,7 +858,7 @@ struct NetworkStoreTests {
         let env = try await NetworkStoreTestEnvironment.create()
         let messageID = UUID()
         let masterID = UUID()
-        let itemID = UUID()
+        let itemId = UUID()
         let firstSenderID = UUID()
         let secondSenderID = UUID()
 
@@ -877,7 +877,7 @@ struct NetworkStoreTests {
                     characterId: nil
                 ),
                 data: NetworkCodableDataType(
-                    id: itemID,
+                    id: itemId,
                     type: .dice,
                     version: 1,
                     data: Data([1])

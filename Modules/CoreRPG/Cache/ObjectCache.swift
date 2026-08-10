@@ -75,7 +75,7 @@ public actor ObjectCache<Object: AnyObject> {
         ensureCacheDirectoryExists(for: itemId)
         let url = fileURL(for: itemId)
         
-        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        guard let data = image.jpegData(compressionQuality: JPEGQuality.cachedThumbnail) else { return }
         try? data.write(to: url, options: .atomic)
     }
     

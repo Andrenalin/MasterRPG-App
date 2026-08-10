@@ -108,7 +108,7 @@ struct MasterControllerModelConnectionTests {
         let presenterID = UUID()
         let recipientID = UUID()
         let messageID = UUID()
-        let itemID = UUID()
+        let itemId = UUID()
         let presentation = GameNetworkModel(
             messageID: messageID,
             counter: 17,
@@ -125,7 +125,7 @@ struct MasterControllerModelConnectionTests {
             audience: .group,
             purpose: .event,
             data: NetworkCodableDataType(
-                id: itemID,
+                id: itemId,
                 type: .photo,
                 version: 3,
                 data: Data("photo".utf8),
@@ -431,7 +431,7 @@ struct MasterControllerDirectProxyTests {
     @Test("Master Space transform advances beyond retained peer time")
     func masterSpaceTransformUsesCausalTimestamp() async throws {
         let env = try await MasterControllerHarness.make(asProxy: false)
-        let itemID = UUID()
+        let itemId = UUID()
         let version = 9
         let retainedTimestamp = Date.now.timeIntervalSince1970 + 60
         let retainedTransform = SpaceTransformModel(
@@ -447,14 +447,14 @@ struct MasterControllerDirectProxyTests {
             pitch: 0.25
         )
         #expect(env.root.spaceRoot.gameController.spaceGameModel.applyTransform(
-            itemId: itemID,
+            itemId: itemId,
             version: version,
             counter: 50_000,
             timestamp: retainedTimestamp,
             transform: retainedTransform
         ))
         let data = NetworkCodableDataType(
-            id: itemID,
+            id: itemId,
             type: .space,
             version: version,
             data: newTransform.encodeData()
@@ -471,7 +471,7 @@ struct MasterControllerDirectProxyTests {
         )
         let retained = try #require(
             env.root.spaceRoot.gameController.spaceGameModel.transformState(
-                for: itemID,
+                for: itemId,
                 version: version
             )
         )

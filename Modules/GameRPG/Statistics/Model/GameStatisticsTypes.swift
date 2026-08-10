@@ -268,7 +268,7 @@ struct GameStatisticEventDraft: Sendable {
     let actorCharacterID: UUID?
     let actorName: String
     let targetID: UUID?
-    let itemID: UUID?
+    let itemId: UUID?
     let itemName: String
     let module: NetworkModules
     let messageTypeRaw: Int16
@@ -501,7 +501,7 @@ extension GameStatisticEventDraft {
             actorCharacterID: GameStatisticsFixture.characterID,
             actorName: "Test Hero",
             targetID: nil,
-            itemID: nil,
+            itemId: nil,
             itemName: "",
             module: .dice,
             messageTypeRaw: 0,

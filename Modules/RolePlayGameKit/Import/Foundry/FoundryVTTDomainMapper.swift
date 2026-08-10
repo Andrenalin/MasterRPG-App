@@ -451,7 +451,7 @@ private extension FoundryMappingState {
                     try await cooperativeCheckpoint()
                     let destination = Destination(
                         module: .rule,
-                        itemID: stableID("rule#\(rule.id)")
+                        itemId: stableID("rule#\(rule.id)")
                     )
                     for alias in foundryRuleAliases(
                         rule,
@@ -781,7 +781,7 @@ private extension FoundryMappingState {
                 recordRuleAliases(
                     rule,
                     systemID: rulePackage.manifest.id,
-                    itemID: scopedRuleID
+                    itemId: scopedRuleID
                 )
             }
         }
@@ -814,9 +814,9 @@ private extension FoundryMappingState {
         return projectedFolderIDs[parentFoundryID] ?? fallback
     }
 
-    func recordRuleAliases(_ rule: FoundryRuleDefinition, systemID: String, itemID: UUID) {
+    func recordRuleAliases(_ rule: FoundryRuleDefinition, systemID: String, itemId: UUID) {
         for alias in foundryRuleAliases(rule, systemID: systemID) {
-            recordMapping(sourceID: alias, module: .rule, itemID: itemID)
+            recordMapping(sourceID: alias, module: .rule, itemId: itemId)
         }
     }
 
@@ -904,7 +904,7 @@ private extension FoundryMappingState {
             target = markdownLink(
                 name: label,
                 module: destination.module,
-                itemID: destination.itemID
+                itemId: destination.itemId
             )
         } else {
             target = sanitizedFoundryText(reference.target)
@@ -1124,7 +1124,7 @@ private extension FoundryMappingState {
                 FoundryTextDecoder.decodedText(String($0))
             }
             ?? FoundryTextDecoder.decodedText(resource.logicalPath)
-        return markdownLink(name: name, module: module, itemID: id)
+        return markdownLink(name: name, module: module, itemId: id)
     }
 
     func resource(matching path: String) -> FoundryPackageResource? {
@@ -1334,10 +1334,10 @@ private extension FoundryMappingState {
         )
         add(model, module: .map, sourceID: document.id)
         for pin in mappedPins {
-            recordMapping(sourceID: pin.source.id, module: .map, itemID: id, entryID: pin.model.id)
+            recordMapping(sourceID: pin.source.id, module: .map, itemId: id, entryID: pin.model.id)
         }
         for wall in mappedWalls {
-            recordMapping(sourceID: wall.source.id, module: .map, itemID: id, entryID: wall.model.id)
+            recordMapping(sourceID: wall.source.id, module: .map, itemId: id, entryID: wall.model.id)
         }
         for child in document.embeddedDocuments where !sceneHandledTypes.contains(child.documentType) {
             rawOnlyDocumentIDs.insert(child.id)
@@ -1464,13 +1464,13 @@ private extension FoundryMappingState {
             )
             add(model, module: .map, sourceID: level.id)
             if isInitial {
-                recordMapping(sourceID: document.id, module: .map, itemID: id)
+                recordMapping(sourceID: document.id, module: .map, itemId: id)
             }
             for pin in mappedPins {
-                recordMapping(sourceID: pin.source.id, module: .map, itemID: id, entryID: pin.model.id)
+                recordMapping(sourceID: pin.source.id, module: .map, itemId: id, entryID: pin.model.id)
             }
             for wall in mappedWalls {
-                recordMapping(sourceID: wall.source.id, module: .map, itemID: id, entryID: wall.model.id)
+                recordMapping(sourceID: wall.source.id, module: .map, itemId: id, entryID: wall.model.id)
             }
         }
 
@@ -1508,7 +1508,7 @@ private extension FoundryMappingState {
                     name: sanitizedFoundryText(page.name),
                     content: rewriteFoundryLinks(content)
                 )
-                recordMapping(sourceID: page.id, module: .adventure, itemID: id, entryID: entry.id)
+                recordMapping(sourceID: page.id, module: .adventure, itemId: id, entryID: entry.id)
                 return entry
             }
         }
@@ -1544,7 +1544,7 @@ private extension FoundryMappingState {
                     weight.map { "Weight: \($0.formatted())" }
                 ].compactMap { $0 }.joined(separator: "; ")
                 entry.content = [details, metadata].filter { !$0.isEmpty }.joined(separator: "\n")
-                recordMapping(sourceID: result.id, module: .table, itemID: tableID, entryID: entry.id)
+                recordMapping(sourceID: result.id, module: .table, itemId: tableID, entryID: entry.id)
                 return entry
             }
         add(model, module: .table, sourceID: document.id)
@@ -1566,7 +1566,7 @@ private extension FoundryMappingState {
                     rawOnlyDocumentIDs.insert(sound.id)
                     return nil
                 }
-                recordMapping(sourceID: sound.id, module: .audio, itemID: audioID)
+                recordMapping(sourceID: sound.id, module: .audio, itemId: audioID)
                 return AudioEntryModel(
                     id: stableID("\(document.id)#sound-edge#\(sound.id)"),
                     audioId: audioID
@@ -1584,7 +1584,7 @@ private extension FoundryMappingState {
             rawOnlyDocumentIDs.insert(document.id)
             return
         }
-        recordMapping(sourceID: document.id, module: .audio, itemID: audioID)
+        recordMapping(sourceID: document.id, module: .audio, itemId: audioID)
     }
 
     func mapCards(_ document: FoundryDocument) {
@@ -1609,7 +1609,7 @@ private extension FoundryMappingState {
                     card.rawData["sort"]?.integerValue.map { "Sort: \($0)" }
                 ].compactMap { $0 }.joined(separator: "; ")
                 entry.content = [content, state].filter { !$0.isEmpty }.joined(separator: "\n")
-                recordMapping(sourceID: card.id, module: .table, itemID: id, entryID: entry.id)
+                recordMapping(sourceID: card.id, module: .table, itemId: id, entryID: entry.id)
                 return entry
             }
         add(model, module: .table, sourceID: document.id)
@@ -1629,12 +1629,12 @@ private extension FoundryMappingState {
         model.entries = document.embeddedDocuments.flatMap { child in
             (mappingReferences[child.id] ?? []).map { reference in
                 AdventureEntryModel(
-                    id: stableID("\(document.id)#link#\(child.id)#\(reference.module.token)#\(reference.itemID)"),
+                    id: stableID("\(document.id)#link#\(child.id)#\(reference.module.token)#\(reference.itemId)"),
                     name: sanitizedFoundryText(child.name),
                     content: markdownLink(
                         name: sanitizedFoundryText(child.name),
                         module: reference.module,
-                        itemID: reference.itemID
+                        itemId: reference.itemId
                     )
                 )
             }
@@ -1658,7 +1658,7 @@ private extension FoundryMappingState {
                     name: sanitizedFoundryText(combatant.name),
                     content: combatantSummary(combatant)
                 )
-                recordMapping(sourceID: combatant.id, module: .adventure, itemID: id, entryID: entry.id)
+                recordMapping(sourceID: combatant.id, module: .adventure, itemId: id, entryID: entry.id)
                 return entry
             }
         add(model, module: .adventure, sourceID: document.id)
@@ -1704,7 +1704,7 @@ private extension FoundryMappingState {
                     .joined(separator: " – "),
                 content: rewriteFoundryLinks(safeText(content))
             )
-            recordMapping(sourceID: message.id, module: .adventure, itemID: id, entryID: entry.id)
+            recordMapping(sourceID: message.id, module: .adventure, itemId: id, entryID: entry.id)
             return entry
         }
         add(model, module: .adventure, sourceID: "\(collection.id)#chat")
@@ -1735,7 +1735,7 @@ private extension FoundryMappingState {
                 rawOnlyDocumentIDs.insert(sound.id)
                 return nil
             }
-            recordMapping(sourceID: sound.id, module: .audio, itemID: audioID)
+            recordMapping(sourceID: sound.id, module: .audio, itemId: audioID)
             let importedFilename = FoundryMediaNormalizer.plan(
                 for: resource.logicalPath,
                 expectedKind: .audio
@@ -1744,7 +1744,7 @@ private extension FoundryMappingState {
             let fallbackName = importedFilename
                 ?? URL(filePath: resource.logicalPath).lastPathComponent
             let name = documentName.isEmpty ? fallbackName : documentName
-            return markdownLink(name: name, module: .audio, itemID: audioID)
+            return markdownLink(name: name, module: .audio, itemId: audioID)
         }
     }
 
@@ -2192,7 +2192,7 @@ private extension FoundryMappingState {
 
     struct Destination: Hashable {
         let module: NetworkModules
-        let itemID: UUID
+        let itemId: UUID
     }
 
     func add<Model>(
@@ -2206,7 +2206,7 @@ private extension FoundryMappingState {
         var model = model
         model.name = sanitizedFoundryText(model.name)
         let key = DestinationKey(module: module, id: model.id)
-        recordMapping(sourceID: sourceID, module: module, itemID: model.id)
+        recordMapping(sourceID: sourceID, module: module, itemId: model.id)
         guard emittedItems.insert(key).inserted else { return }
         items.append(ExternalImportBatchItem(
             id: model.id,
@@ -2227,9 +2227,9 @@ private extension FoundryMappingState {
         ))
     }
 
-    func recordMapping(sourceID: String, module: NetworkModules, itemID: UUID, entryID: UUID? = nil) {
+    func recordMapping(sourceID: String, module: NetworkModules, itemId: UUID, entryID: UUID? = nil) {
         mappingReferences[sourceID, default: []].insert(
-            FoundryImportMappingReference(module: module, itemID: itemID, entryID: entryID)
+            FoundryImportMappingReference(module: module, itemId: itemId, entryID: entryID)
         )
     }
 
@@ -2239,7 +2239,7 @@ private extension FoundryMappingState {
 
     func mappingOrder(_ lhs: FoundryImportMappingReference, _ rhs: FoundryImportMappingReference) -> Bool {
         if lhs.module.rawValue != rhs.module.rawValue { return lhs.module.rawValue < rhs.module.rawValue }
-        if lhs.itemID != rhs.itemID { return lhs.itemID.uuidString < rhs.itemID.uuidString }
+        if lhs.itemId != rhs.itemId { return lhs.itemId.uuidString < rhs.itemId.uuidString }
         return (lhs.entryID?.uuidString ?? "") < (rhs.entryID?.uuidString ?? "")
     }
 
@@ -2285,49 +2285,49 @@ private extension FoundryMappingState {
     func predictedDestination(for document: FoundryDocument) -> Destination? {
         switch document.documentType {
         case .actor where selectedCategories.contains(.actors):
-            Destination(module: .value, itemID: stableID("\(document.id)#character"))
+            Destination(module: .value, itemId: stableID("\(document.id)#character"))
         case .item:
             if let parentID = document.parentID, documentTypesByID[parentID] == .actor {
                 selectedCategories.contains(.actors)
-                    ? Destination(module: .value, itemID: stableID("\(document.id)#character-item"))
+                    ? Destination(module: .value, itemId: stableID("\(document.id)#character-item"))
                     : nil
             } else if selectedCategories.contains(.rules), package.rulePackage == nil {
-                Destination(module: .rule, itemID: stableID("\(document.id)#rule"))
+                Destination(module: .rule, itemId: stableID("\(document.id)#rule"))
             } else {
                 selectedCategories.contains(.items)
-                    ? Destination(module: .value, itemID: stableID("\(document.id)#item"))
+                    ? Destination(module: .value, itemId: stableID("\(document.id)#item"))
                     : nil
             }
         case .scene where selectedCategories.contains(.scenes):
-            Destination(module: .map, itemID: stableID("\(document.id)#map"))
+            Destination(module: .map, itemId: stableID("\(document.id)#map"))
         case .level where selectedCategories.contains(.scenes): Destination(
             module: .map,
-            itemID: levelMapIDs[document.id] ?? stableID("\(document.id)#level-map")
+            itemId: levelMapIDs[document.id] ?? stableID("\(document.id)#level-map")
         )
         case .journalEntry where selectedCategories.contains(.journals):
-            Destination(module: .adventure, itemID: stableID("\(document.id)#journal"))
+            Destination(module: .adventure, itemId: stableID("\(document.id)#journal"))
         case .journalEntryPage where selectedCategories.contains(.journals):
-            document.parentID.map { Destination(module: .adventure, itemID: stableID("\($0)#journal")) }
+            document.parentID.map { Destination(module: .adventure, itemId: stableID("\($0)#journal")) }
         case .rollTable where selectedCategories.contains(.tables):
-            Destination(module: .table, itemID: stableID("\(document.id)#table"))
+            Destination(module: .table, itemId: stableID("\(document.id)#table"))
         case .tableResult where selectedCategories.contains(.tables):
-            document.parentID.map { Destination(module: .table, itemID: stableID("\($0)#table")) }
+            document.parentID.map { Destination(module: .table, itemId: stableID("\($0)#table")) }
         case .playlist where selectedCategories.contains(.playlists):
-            Destination(module: .audio, itemID: stableID("\(document.id)#playlist"))
+            Destination(module: .audio, itemId: stableID("\(document.id)#playlist"))
         case .playlistSound where selectedCategories.contains(.playlists):
-            document.parentID.map { Destination(module: .audio, itemID: stableID("\($0)#playlist")) }
+            document.parentID.map { Destination(module: .audio, itemId: stableID("\($0)#playlist")) }
         case .cards where selectedCategories.contains(.cards):
-            Destination(module: .table, itemID: stableID("\(document.id)#cards"))
+            Destination(module: .table, itemId: stableID("\(document.id)#cards"))
         case .card where selectedCategories.contains(.cards):
-            document.parentID.map { Destination(module: .table, itemID: stableID("\($0)#cards")) }
+            document.parentID.map { Destination(module: .table, itemId: stableID("\($0)#cards")) }
         case .adventure where selectedCategories.contains(.adventures):
-            Destination(module: .adventure, itemID: stableID("\(document.id)#adventure"))
+            Destination(module: .adventure, itemId: stableID("\(document.id)#adventure"))
         case .combat where selectedCategories.contains(.combats):
-            Destination(module: .adventure, itemID: stableID("\(document.id)#combat"))
+            Destination(module: .adventure, itemId: stableID("\(document.id)#combat"))
         case .combatant where selectedCategories.contains(.combats):
-            document.parentID.map { Destination(module: .adventure, itemID: stableID("\($0)#combat")) }
+            document.parentID.map { Destination(module: .adventure, itemId: stableID("\($0)#combat")) }
         case .macro where selectedCategories.contains(.macros):
-            Destination(module: .adventure, itemID: stableID("\(document.id)#macro"))
+            Destination(module: .adventure, itemId: stableID("\(document.id)#macro"))
         default: nil
         }
     }
@@ -2459,7 +2459,7 @@ private extension FoundryMappingState {
             output.replaceSubrange(totalRange, with: markdownLink(
                 name: label,
                 module: destination.module,
-                itemID: destination.itemID
+                itemId: destination.itemId
             ))
         }
         return output
@@ -2475,14 +2475,14 @@ private extension FoundryMappingState {
         return aliases
     }
 
-    func markdownLink(name: String, module: NetworkModules, itemID: UUID) -> String {
+    func markdownLink(name: String, module: NetworkModules, itemId: UUID) -> String {
         let escapedName = name
             .replacing("\\", with: "\\\\")
             .replacing("[", with: "\\[")
             .replacing("]", with: "\\]")
             .replacing("\n", with: " ")
             .replacing("\r", with: " ")
-        return "[\(escapedName)](\(URL.appScheme)://\(module.token)/0/\(itemID.uuidString))"
+        return "[\(escapedName)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString))"
     }
 
     func inertCodeBlock(_ source: String) -> String {

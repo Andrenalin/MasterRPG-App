@@ -52,6 +52,9 @@ public struct ThemeColorComponents: Codable, Hashable, Sendable {
 
         var lowerBound = 0.0
         var upperBound = 1.0
+        // Binary search the blend amount toward the target contrast ratio; 24
+        // bisections converge to ~1/2^24 precision, far finer than any visible
+        // color difference, well before floating-point bounds would collapse.
         for _ in 0..<24 {
             let amount = (lowerBound + upperBound) / 2
             let candidate = blended(with: target, amount: amount)

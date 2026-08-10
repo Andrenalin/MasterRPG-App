@@ -99,7 +99,7 @@ struct RuleEntryTreeTests {
     func sheetProjection() throws {
         let root = RuleRootModel.testRoot()
         let rootManager = RootManager(anyRoot: root)
-        let itemID = UUID()
+        let itemId = UUID()
         let linkedRuleID = UUID()
         let group = entry(name: "Attributes", kind: .group)
         let leaf = entry(name: "Base", content: "5", parentID: group.id)
@@ -120,7 +120,7 @@ struct RuleEntryTreeTests {
         )
         root.itemController.replace(
             model: RuleModel.fixture(
-                id: itemID,
+                id: itemId,
                 name: "Source Rule",
                 entries: [group, leaf, linkedLeaf]
             ),
@@ -130,7 +130,7 @@ struct RuleEntryTreeTests {
         let controller = SheetController(itemController: root.itemController)
         let sheet = controller.sheet(
             root: rootManager,
-            itemId: itemID,
+            itemId: itemId,
             destination: nil,
             level: 0,
             isShown: true,
@@ -154,7 +154,7 @@ struct RuleEntryTreeTests {
         #expect(linkedRuleSheet.isFolded)
 
         groupSheet.isShown = false
-        let item = root.itemController.itemOrEmpty(for: itemID)
+        let item = root.itemController.itemOrEmpty(for: itemId)
         var updatedEntries = item.entries
         let leafIndex = try #require(updatedEntries.firstIndex(where: { $0.id == leaf.id }))
         updatedEntries[leafIndex].content = "6"

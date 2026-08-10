@@ -146,6 +146,9 @@ public final class LinkReplaceController: Sendable {
         return list.map {
             var displayName = $0.name
             var counter = 1
+            // 100 is a sanity cap, not an expected count: real link lists never
+            // have anywhere near 100 same-named entries, so this only bounds
+            // the pathological case instead of looping indefinitely.
             while names.contains(displayName) && counter < 100 {
                 displayName = "\($0.name)-\(counter)"
                 counter += 1

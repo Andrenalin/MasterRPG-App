@@ -4,12 +4,12 @@ import Foundation
 import SwiftUI
 
 struct SheetReviewEntryID: Hashable {
-    let itemID: UUID
+    let itemId: UUID
     let entryID: UUID
 }
 
 struct SheetReviewVersionID: Hashable {
-    let itemID: UUID
+    let itemId: UUID
     let entryID: UUID
     let decision: SingleReviewDecision
 }
@@ -29,12 +29,12 @@ struct SheetReviewVersion: Identifiable {
 @Observable @MainActor
 final class SheetEntryReviewModel: Identifiable {
     init(
-        itemID: UUID,
+        itemId: UUID,
         entryModel: SingleEntryImportModel,
         versions: [SheetReviewVersion],
         isExpanded: Bool = false
     ) {
-        id = SheetReviewEntryID(itemID: itemID, entryID: entryModel.id)
+        id = SheetReviewEntryID(itemId: itemId, entryID: entryModel.id)
         self.entryModel = entryModel
         self.versions = versions
         self.isExpanded = isExpanded
@@ -84,12 +84,12 @@ enum SheetReviewTreeBuilder {
     ) {
         guard reviewItem.kind == .different, !reviewItem.isDeletion else { return }
 
-        let itemID = reviewItem.id
-        let versionRows = versionSheets.mapValues { directRows(in: $0, itemID: itemID) }
+        let itemId = reviewItem.id
+        let versionRows = versionSheets.mapValues { directRows(in: $0, itemId: itemId) }
         let candidates = reviewItem.itemModel.entries.compactMap { entryModel -> ReviewCandidate? in
             let versions = SingleReviewDecision.allCases.map { decision in
                 SheetReviewVersion(
-                    id: SheetReviewVersionID(itemID: itemID, entryID: entryModel.id, decision: decision),
+                    id: SheetReviewVersionID(itemId: itemId, entryID: entryModel.id, decision: decision),
                     decision: decision,
                     sheetModel: versionRows[decision]?[entryModel.id],
                     entry: entryModel.materializedEntry(for: decision)
@@ -110,11 +110,11 @@ enum SheetReviewTreeBuilder {
         // authority for ordering. This also preserves linked/foreign rows interleaved with
         // the reviewed item's direct entries.
         for row in decoratedRows {
-            guard row.source.itemId == itemID,
+            guard row.source.itemId == itemId,
                   let entryID = row.source.entryId,
                   let candidate = candidatesByID[entryID] else { continue }
 
-            decorate(row, with: candidate, itemID: itemID)
+            decorate(row, with: candidate, itemId: itemId)
             consumedEntryIDs.insert(entryID)
         }
 
@@ -124,12 +124,12 @@ enum SheetReviewTreeBuilder {
             guard let visibleSheetModel = candidate.visibleSheetModel else { continue }
             let row = placeholder(from: visibleSheetModel)
             row.isReviewPlaceholder = true
-            decorate(row, with: candidate, itemID: itemID)
+            decorate(row, with: candidate, itemId: itemId)
 
             let order = candidateOrder[candidate.id] ?? candidates.count
             let insertionIndex = placeholderInsertionIndex(
                 in: decoratedRows,
-                itemID: itemID,
+                itemId: itemId,
                 candidateOrder: candidateOrder,
                 order: order
             )
@@ -144,11 +144,11 @@ enum SheetReviewTreeBuilder {
     private static func decorate(
         _ row: SheetModel,
         with candidate: ReviewCandidate,
-        itemID: UUID
+        itemId: UUID
     ) {
         row.entryReviewModel = candidate.entryModel.hasDifferences
             ? SheetEntryReviewModel(
-                itemID: itemID,
+                itemId: itemId,
                 entryModel: candidate.entryModel,
                 versions: candidate.versions
             )
@@ -158,12 +158,12 @@ enum SheetReviewTreeBuilder {
     @MainActor
     private static func placeholderInsertionIndex(
         in rows: [SheetModel],
-        itemID: UUID,
+        itemId: UUID,
         candidateOrder: [UUID: Int],
         order: Int
     ) -> Int {
         if let succeedingIndex = rows.firstIndex(where: { row in
-            guard row.source.itemId == itemID,
+            guard row.source.itemId == itemId,
                   let entryID = row.source.entryId,
                   let rowOrder = candidateOrder[entryID] else { return false }
             return rowOrder > order
@@ -172,7 +172,7 @@ enum SheetReviewTreeBuilder {
         }
 
         if let precedingIndex = rows.lastIndex(where: { row in
-            guard row.source.itemId == itemID,
+            guard row.source.itemId == itemId,
                   let entryID = row.source.entryId,
                   let rowOrder = candidateOrder[entryID] else { return false }
             return rowOrder < order
@@ -184,9 +184,9 @@ enum SheetReviewTreeBuilder {
     }
 
     @MainActor
-    private static func directRows(in sheetModel: SheetModel, itemID: UUID) -> [UUID: SheetModel] {
+    private static func directRows(in sheetModel: SheetModel, itemId: UUID) -> [UUID: SheetModel] {
         sheetModel.entries.reduce(into: [:]) { result, row in
-            guard row.source.itemId == itemID, let entryID = row.source.entryId else { return }
+            guard row.source.itemId == itemId, let entryID = row.source.entryId else { return }
             result[entryID] = row
         }
     }

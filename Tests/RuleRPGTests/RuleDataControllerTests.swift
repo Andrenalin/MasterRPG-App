@@ -23,7 +23,7 @@ struct RuleDataControllerTests {
             batchContext: store.batchContext,
             token: NetworkModules.rule.token
         )
-        let itemID = try #require(UUID(uuidString: "730A837D-BB12-4200-B65D-AF0C34F1E0DF"))
+        let itemId = try #require(UUID(uuidString: "730A837D-BB12-4200-B65D-AF0C34F1E0DF"))
         let parentID = try #require(UUID(uuidString: "A2E6EA55-F3D2-4731-BA3A-A3C6D5278183"))
         let firstID = try #require(UUID(uuidString: "287051B2-6EC2-4C43-A0D4-A94512B51D76"))
         let secondID = try #require(UUID(uuidString: "9FCBBD66-61F2-47AB-B734-059A8D4D1EC6"))
@@ -45,7 +45,7 @@ struct RuleDataControllerTests {
             imagePath: "icons/rule.webp"
         )
         let original = RuleModel.fixture(
-            id: itemID,
+            id: itemId,
             name: "Persisted Rule",
             description: "Original description",
             tags: ["one", "two"],
@@ -73,9 +73,9 @@ struct RuleDataControllerTests {
         )
 
         // When
-        try controller.replaceSync(id: itemID, with: original)
+        try controller.replaceSync(id: itemId, with: original)
         try await controller.save()
-        let fetched = try #require(try await controller.fetch(id: itemID) as? RuleModel)
+        let fetched = try #require(try await controller.fetch(id: itemId) as? RuleModel)
 
         // Then
         #expect(fetched.id == original.id)
@@ -93,11 +93,11 @@ struct RuleDataControllerTests {
         #expect(fetched.sourceMetadata == metadata)
         #expect(fetched.sourcePayload == .foundryDocument(payload))
         #expect(fetched.parentId == parentID)
-        #expect(try await controller.fetchIds() == [itemID])
+        #expect(try await controller.fetchIds() == [itemId])
 
         // When updating, the removed entry must not remain as a Core Data orphan.
         let updated = RuleModel.fixture(
-            id: itemID,
+            id: itemId,
             name: "Persisted Rule Revised",
             description: "Updated description",
             tags: ["two"],
@@ -105,9 +105,9 @@ struct RuleDataControllerTests {
             sourceMetadata: metadata,
             sourcePayload: .foundryDocument(payload)
         )
-        try await controller.replace(id: itemID, with: updated)
+        try await controller.replace(id: itemId, with: updated)
         try await controller.save()
-        let fetchedUpdated = try #require(try await controller.fetch(id: itemID) as? RuleModel)
+        let fetchedUpdated = try #require(try await controller.fetch(id: itemId) as? RuleModel)
         let entryCount = try await store.context.perform {
             try store.context.count(for: NSFetchRequest<NSFetchRequestResult>(entityName: "RPGRuleEntry"))
         }
@@ -131,9 +131,9 @@ struct RuleDataControllerTests {
         #expect(entryCount == 1)
 
         // When / Then deleting
-        try await controller.delete(id: itemID)
+        try await controller.delete(id: itemId)
         try await controller.save()
-        #expect(try await controller.fetch(id: itemID) == nil)
+        #expect(try await controller.fetch(id: itemId) == nil)
         #expect(try await controller.fetchIds().isEmpty)
     }
 }

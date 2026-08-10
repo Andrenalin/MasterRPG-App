@@ -5,7 +5,7 @@ import Foundation
 @MainActor
 struct SheetEntryReviewPreviewFixture {
     init(isExpanded: Bool = true) {
-        let itemID = UUID()
+        let itemId = UUID()
         var existingEntry = EmtpyEntryViewModel.empty
         existingEntry.id = UUID()
         existingEntry.name = "Hidden Door"
@@ -25,7 +25,7 @@ struct SheetEntryReviewPreviewFixture {
         )
 
         let source = ItemRowModel(
-            itemId: itemID,
+            itemId: itemId,
             entryId: existingEntry.id,
             typeId: .adventure
         )
@@ -51,7 +51,7 @@ struct SheetEntryReviewPreviewFixture {
         let versions = SingleReviewDecision.allCases.map { decision in
             SheetReviewVersion(
                 id: SheetReviewVersionID(
-                    itemID: itemID,
+                    itemId: itemId,
                     entryID: existingEntry.id,
                     decision: decision
                 ),
@@ -64,14 +64,14 @@ struct SheetEntryReviewPreviewFixture {
         sheetModel = row
         inlineSheetModel = inlineModel
         reviewModel = SheetEntryReviewModel(
-            itemID: itemID,
+            itemId: itemId,
             entryModel: singleEntryModel,
             versions: versions,
             isExpanded: isExpanded
         )
         version = SheetReviewVersion(
             id: SheetReviewVersionID(
-                itemID: itemID,
+                itemId: itemId,
                 entryID: existingEntry.id,
                 decision: .merge
             ),

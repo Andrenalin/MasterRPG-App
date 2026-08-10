@@ -229,3 +229,18 @@ public extension AKImage {
         return nil
     }
 }
+
+/// Named JPEG compression-quality tiers, so each `jpegData(compressionQuality:)`
+/// call site documents the tradeoff it's making instead of a bare, unexplained
+/// float. The three values already in use across the app genuinely serve
+/// different purposes — this doesn't unify them to one number, only names the
+/// ones that exist. See CODE_AUDIT §9.16.
+public enum JPEGQuality {
+    /// Bandwidth-constrained real-time transport (e.g. mirroring a game screen
+    /// over the network), where small size matters more than fidelity.
+    public static let transport: CGFloat = 0.5
+    /// Disk-cached thumbnails — balances file size against visible quality.
+    public static let cachedThumbnail: CGFloat = 0.8
+    /// User-facing exports/edits, where fidelity matters more than size.
+    public static let export: CGFloat = 0.9
+}

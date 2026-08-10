@@ -1294,11 +1294,6 @@ extension PlayerController {
         }
     }
     
-    func send(screen: AKImage, responseCounter: Int) async {
-        let data = NetworkCodableDataType(id: UUID(), type: .game, version: 0, data: screen.jpegData(compressionQuality: 0.5))
-        await send(counter: responseCounter, type: .store, subType: .screen, updated: data)
-    }
-    
     func send(
         counter: Int? = nil,
         type: RPGMessageType,

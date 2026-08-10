@@ -144,7 +144,7 @@ struct GameStatisticsDataController: Sendable {
             event.actorCharacterID = draft.actorCharacterID
             event.actorName = draft.actorName
             event.targetID = draft.targetID
-            event.itemID = draft.itemID
+            event.itemID = draft.itemId
             event.itemName = draft.itemName
             event.moduleRaw = Int16(clamping: draft.module.rawValue)
             event.messageTypeRaw = draft.messageTypeRaw

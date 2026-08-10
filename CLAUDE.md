@@ -46,6 +46,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 - Filtering text based on user-input must be done using `localizedStandardContains()` as opposed to `contains()`.
 - Avoid force unwraps and force `try` unless it is unrecoverable.
 - Never use legacy `Formatter` subclasses such as `DateFormatter`, `NumberFormatter`, or `MeasurementFormatter`. Always use the modern `FormatStyle` API instead. For example, to format a date, use `myDate.formatted(date: .abbreviated, time: .shortened)`. To parse a date from a string, use `Date(inputString, strategy: .iso8601)`. For numbers, use `myNumber.formatted(.number)` or custom format styles.
+- Naming convention: use `Id`/`Url` casing (e.g. `itemId`, `fileUrl`), not `ID`/`URL` (e.g. `itemID`, `fileURL`) — this matches the existing, dominant convention across the codebase. Don't drift to Swift API Design Guidelines casing for these two suffixes specifically, even in new code.
 
 ## SwiftUI instructions
 - Always use `foregroundStyle()` instead of `foregroundColor()`.

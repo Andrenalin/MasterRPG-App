@@ -36,17 +36,17 @@ struct ReviewSheetMemoryTests {
 
     @Test func reviewAwareLookupPrefersReviewMemory() {
         // Given
-        let itemID = UUID.fixture1
-        let liveItem = FakeItemModel(id: itemID, name: "Live Item")
-        let reviewItem = FakeItemModel(id: itemID, name: "Review Item")
+        let itemId = UUID.fixture1
+        let liveItem = FakeItemModel(id: itemId, name: "Live Item")
+        let reviewItem = FakeItemModel(id: itemId, name: "Review Item")
         let controller = fakeController(with: liveItem)
         let rootManager = RootManager(
             anyRoot: ItemRootController.fake,
-            reviewSheetMemory: ReviewSheetMemory(items: [.adventure: [itemID: reviewItem]])
+            reviewSheetMemory: ReviewSheetMemory(items: [.adventure: [itemId: reviewItem]])
         )
 
         // When
-        let result = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemID)
+        let result = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemId)
 
         // Then
         #expect(result.name == "Review Item")
@@ -54,24 +54,24 @@ struct ReviewSheetMemoryTests {
 
     @Test func reviewAwareLookupCanHideLiveItem() {
         // Given
-        let itemID = UUID.fixture1
-        let liveItem = FakeItemModel(id: itemID, name: "Live Item")
+        let itemId = UUID.fixture1
+        let liveItem = FakeItemModel(id: itemId, name: "Live Item")
         let controller = fakeController(with: liveItem)
         let rootManager = RootManager(
             anyRoot: ItemRootController.fake,
             reviewSheetMemory: ReviewSheetMemory(
                 items: [:],
-                hiddenItemIds: [.adventure: [itemID]]
+                hiddenItemIds: [.adventure: [itemId]]
             )
         )
 
         // When
-        let hidden = controller.reviewAwareItemSync(root: rootManager, for: itemID)
-        let empty = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemID)
+        let hidden = controller.reviewAwareItemSync(root: rootManager, for: itemId)
+        let empty = controller.reviewAwareItemOrEmpty(root: rootManager, for: itemId)
 
         // Then
         #expect(hidden == nil)
-        #expect(empty.id == itemID)
+        #expect(empty.id == itemId)
         #expect(empty.name.isEmpty)
     }
 
@@ -172,14 +172,14 @@ struct ReviewSheetMemoryTests {
 
     @Test func versionIdentitiesAreUniqueAndStable() throws {
         // Given
-        let itemID = UUID.fixture1
+        let itemId = UUID.fixture1
         let entryID = UUID.fixture2
 
         // When
         let identities = SingleReviewDecision.allCases.map {
-            SheetReviewVersionID(itemID: itemID, entryID: entryID, decision: $0)
+            SheetReviewVersionID(itemId: itemId, entryID: entryID, decision: $0)
         }
-        let repeated = SheetReviewVersionID(itemID: itemID, entryID: entryID, decision: .merge)
+        let repeated = SheetReviewVersionID(itemId: itemId, entryID: entryID, decision: .merge)
 
         // Then
         #expect(Set(identities).count == SingleReviewDecision.allCases.count)
@@ -188,23 +188,23 @@ struct ReviewSheetMemoryTests {
 
     @Test func decorationBuildsUnionAndPlaceholdersForMissingVersions() throws {
         // Given
-        let itemID = UUID.fixture1
+        let itemId = UUID.fixture1
         let existingOnly = FakeEntryModel(id: .fixture2, name: "Existing only", content: "Old")
         let sharedExisting = FakeEntryModel(id: .fixture3, name: "Shared", content: "Old")
         let sharedImported = FakeEntryModel(id: .fixture3, name: "Shared", content: "New")
         let importedOnly = FakeEntryModel(id: .fixture4, name: "Imported only", content: "New")
         let existing = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Existing",
             entries: [existingOnly, sharedExisting]
         )
         let imported = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Imported",
             entries: [sharedImported, importedOnly]
         )
         let merged = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Merged",
             entries: [sharedImported, importedOnly]
         )
@@ -213,18 +213,18 @@ struct ReviewSheetMemoryTests {
         )
         itemModel.applyItemDecision(.imported)
         let reviewItem = ImportReviewItemModel(
-            id: itemID,
+            id: itemId,
             kind: .different,
             existingStatus: "Existing",
             importedStatus: "Imported",
             mergedStatus: "Merged",
             itemModel: itemModel
         )
-        let currentSheet = sheet(itemID: itemID, entryIDs: [.fixture3, .fixture4])
+        let currentSheet = sheet(itemId: itemId, entryIDs: [.fixture3, .fixture4])
         let versionSheets: [SingleReviewDecision: SheetModel] = [
-            .existing: sheet(itemID: itemID, entryIDs: [.fixture2, .fixture3]),
-            .imported: sheet(itemID: itemID, entryIDs: [.fixture3, .fixture4]),
-            .merge: sheet(itemID: itemID, entryIDs: [.fixture3, .fixture4])
+            .existing: sheet(itemId: itemId, entryIDs: [.fixture2, .fixture3]),
+            .imported: sheet(itemId: itemId, entryIDs: [.fixture3, .fixture4]),
+            .merge: sheet(itemId: itemId, entryIDs: [.fixture3, .fixture4])
         ]
 
         // When
@@ -248,13 +248,13 @@ struct ReviewSheetMemoryTests {
 
     @Test func decorationPreservesCurrentAndForeignRowOrder() throws {
         // Given
-        let itemID = UUID.fixture1
+        let itemId = UUID.fixture1
         let foreignItemID = UUID.fixture5
         let entryA = UUID.fixture2
         let entryB = UUID.fixture3
         let existingOnly = UUID.fixture4
         let existing = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Existing",
             entries: [
                 FakeEntryModel(id: entryB, name: "B", content: "Existing B"),
@@ -263,7 +263,7 @@ struct ReviewSheetMemoryTests {
             ]
         )
         let imported = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Imported",
             entries: [
                 FakeEntryModel(id: entryA, name: "A", content: "Imported A"),
@@ -271,7 +271,7 @@ struct ReviewSheetMemoryTests {
             ]
         )
         let merged = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Merged",
             entries: [
                 FakeEntryModel(id: entryA, name: "A", content: "Merged A"),
@@ -283,27 +283,27 @@ struct ReviewSheetMemoryTests {
         )
         itemModel.applyItemDecision(.imported)
         let reviewItem = ImportReviewItemModel(
-            id: itemID,
+            id: itemId,
             kind: .different,
             existingStatus: "Existing",
             importedStatus: "Imported",
             mergedStatus: "Merged",
             itemModel: itemModel
         )
-        let foreignA = sheetRow(itemID: foreignItemID, entryID: entryA, name: "Foreign A")
-        let currentA = sheetRow(itemID: itemID, entryID: entryA, name: "Current A")
-        let foreignRemoved = sheetRow(itemID: foreignItemID, entryID: existingOnly, name: "Foreign Removed")
-        let currentB = sheetRow(itemID: itemID, entryID: entryB, name: "Current B")
+        let foreignA = sheetRow(itemId: foreignItemID, entryID: entryA, name: "Foreign A")
+        let currentA = sheetRow(itemId: itemId, entryID: entryA, name: "Current A")
+        let foreignRemoved = sheetRow(itemId: foreignItemID, entryID: existingOnly, name: "Foreign Removed")
+        let currentB = sheetRow(itemId: itemId, entryID: entryB, name: "Current B")
         let currentSheet = SheetModel(
-            source: ItemRowModel(itemId: itemID, typeId: .adventure),
+            source: ItemRowModel(itemId: itemId, typeId: .adventure),
             name: "Review Sheet",
             description: "",
             entries: [foreignA, currentA, foreignRemoved, currentB]
         )
         let versionSheets: [SingleReviewDecision: SheetModel] = [
-            .existing: sheet(itemID: itemID, entryIDs: [entryB, existingOnly, entryA]),
-            .imported: sheet(itemID: itemID, entryIDs: [entryA, entryB]),
-            .merge: sheet(itemID: itemID, entryIDs: [entryA, entryB])
+            .existing: sheet(itemId: itemId, entryIDs: [entryB, existingOnly, entryA]),
+            .imported: sheet(itemId: itemId, entryIDs: [entryA, entryB]),
+            .merge: sheet(itemId: itemId, entryIDs: [entryA, entryB])
         ]
 
         // When
@@ -326,7 +326,7 @@ struct ReviewSheetMemoryTests {
         let placeholder = try #require(
             currentSheet.entries.first { $0.isReviewPlaceholder }
         )
-        #expect(placeholder.source.itemId == itemID)
+        #expect(placeholder.source.itemId == itemId)
         #expect(placeholder.source.entryId == existingOnly)
         #expect(placeholder.entryReviewModel != nil)
     }
@@ -335,11 +335,11 @@ struct ReviewSheetMemoryTests {
         // Given
         let reviewItem = makeExistingOnlyReviewItem()
         reviewItem.itemModel.applyItemDecision(.imported)
-        let importedSheet = sheet(itemID: reviewItem.id, entryIDs: [])
+        let importedSheet = sheet(itemId: reviewItem.id, entryIDs: [])
         let versions: [SingleReviewDecision: SheetModel] = [
-            .existing: sheet(itemID: reviewItem.id, entryIDs: [.fixture2]),
-            .imported: sheet(itemID: reviewItem.id, entryIDs: []),
-            .merge: sheet(itemID: reviewItem.id, entryIDs: [])
+            .existing: sheet(itemId: reviewItem.id, entryIDs: [.fixture2]),
+            .imported: sheet(itemId: reviewItem.id, entryIDs: []),
+            .merge: sheet(itemId: reviewItem.id, entryIDs: [])
         ]
         SheetReviewTreeBuilder.decorate(
             sheetModel: importedSheet,
@@ -351,7 +351,7 @@ struct ReviewSheetMemoryTests {
 
         // When
         review.select(.existing)
-        let existingSheet = sheet(itemID: reviewItem.id, entryIDs: [.fixture2])
+        let existingSheet = sheet(itemId: reviewItem.id, entryIDs: [.fixture2])
         SheetReviewTreeBuilder.decorate(
             sheetModel: existingSheet,
             reviewItem: reviewItem,
@@ -380,10 +380,10 @@ struct ReviewSheetMemoryTests {
             mergedStatus: "Merged",
             itemModel: itemModel
         )
-        let currentSheet = sheet(itemID: item.id, entryIDs: [entry.id])
+        let currentSheet = sheet(itemId: item.id, entryIDs: [entry.id])
         let versions = Dictionary(
             uniqueKeysWithValues: SingleReviewDecision.allCases.map {
-                ($0, sheet(itemID: item.id, entryIDs: [entry.id]))
+                ($0, sheet(itemId: item.id, entryIDs: [entry.id]))
             }
         )
 
@@ -452,22 +452,22 @@ struct ReviewSheetMemoryTests {
         kind: ImportReviewItemModel.ChangeKind = .different,
         isDeletion: Bool = false
     ) -> ImportReviewItemModel {
-        let itemID = kind == .added ? UUID.fixture5 : UUID.fixture1
+        let itemId = kind == .added ? UUID.fixture5 : UUID.fixture1
         let entryID = UUID.fixture2
         let existing = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Existing Item",
             description: "Existing Description",
             entries: [FakeEntryModel(id: entryID, name: "Existing Entry", content: "Existing Content")]
         )
         let imported = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Imported Item",
             description: "Imported Description",
             entries: [FakeEntryModel(id: entryID, name: "Imported Entry", content: "Imported Content")]
         )
         let merged = FakeItemModel(
-            id: itemID,
+            id: itemId,
             name: "Merged Item",
             description: "Merged Description",
             entries: [FakeEntryModel(id: entryID, name: "Merged Entry", content: "Merged Content")]
@@ -480,7 +480,7 @@ struct ReviewSheetMemoryTests {
             )
         )
         return ImportReviewItemModel(
-            id: itemID,
+            id: itemId,
             kind: kind,
             existingStatus: existing.name,
             importedStatus: imported.name,
@@ -508,14 +508,14 @@ struct ReviewSheetMemoryTests {
         )
     }
 
-    private func sheet(itemID: UUID, entryIDs: [UUID]) -> SheetModel {
+    private func sheet(itemId: UUID, entryIDs: [UUID]) -> SheetModel {
         SheetModel(
-            source: ItemRowModel(itemId: itemID, typeId: .adventure),
+            source: ItemRowModel(itemId: itemId, typeId: .adventure),
             name: "Review Sheet",
             description: "",
             entries: entryIDs.map { entryID in
                 SheetModel(
-                    source: ItemRowModel(itemId: itemID, entryId: entryID, typeId: .adventure),
+                    source: ItemRowModel(itemId: itemId, entryId: entryID, typeId: .adventure),
                     name: "Entry \(entryID.uuidString)",
                     description: "Content \(entryID.uuidString)",
                     entries: []
@@ -524,9 +524,9 @@ struct ReviewSheetMemoryTests {
         )
     }
 
-    private func sheetRow(itemID: UUID, entryID: UUID, name: String) -> SheetModel {
+    private func sheetRow(itemId: UUID, entryID: UUID, name: String) -> SheetModel {
         SheetModel(
-            source: ItemRowModel(itemId: itemID, entryId: entryID, typeId: .adventure),
+            source: ItemRowModel(itemId: itemId, entryId: entryID, typeId: .adventure),
             name: name,
             description: "Content",
             entries: []

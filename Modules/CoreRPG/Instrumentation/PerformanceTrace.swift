@@ -44,7 +44,7 @@ public enum PerformanceTrace {
 
     public static func cacheEvent(
         hit: Bool,
-        itemID: UUID,
+        itemId: UUID,
         kind: String,
         source: String
     ) {
@@ -52,7 +52,7 @@ public enum PerformanceTrace {
         let name: StaticString = hit ? "CacheHit" : "CacheMiss"
         signposter.emitEvent(
             name,
-            "item=\(itemID.uuidString, privacy: .public) kind=\(kind, privacy: .public) source=\(source, privacy: .public)"
+            "item=\(itemId.uuidString, privacy: .public) kind=\(kind, privacy: .public) source=\(source, privacy: .public)"
         )
     }
 
@@ -67,7 +67,7 @@ public enum PerformanceTrace {
 
     public static func begin(
         _ name: StaticString,
-        itemID: UUID,
+        itemId: UUID,
         kind: String
     ) -> Interval? {
         guard signposter.isEnabled else { return nil }
@@ -75,7 +75,7 @@ public enum PerformanceTrace {
         let state = signposter.beginInterval(
             name,
             id: id,
-            "item=\(itemID.uuidString, privacy: .public) kind=\(kind, privacy: .public)"
+            "item=\(itemId.uuidString, privacy: .public) kind=\(kind, privacy: .public)"
         )
         return Interval(name: name, state: state)
     }

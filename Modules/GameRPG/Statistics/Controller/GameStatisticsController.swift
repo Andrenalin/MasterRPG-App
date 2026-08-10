@@ -31,7 +31,7 @@ struct GameStatisticsController: Sendable {
             actorCharacterID: model.sender.characterId,
             actorName: model.sender.name,
             targetID: model.targetId,
-            itemID: model.data.id,
+            itemId: model.data.id,
             itemName: "",
             module: model.data.type,
             messageTypeRaw: Int16(clamping: model.type.rawValue),

@@ -706,14 +706,14 @@ private struct FoundryCompendiumDecoder {
             )
             let actorEmbeddedEffects: [String: [String: FoundryJSONValue]] = embeddedItemEffects[documentID] ?? [:]
             var embedded: [FoundryEmbeddedRule] = []
-            for (itemID, raw) in embeddedItems[documentID, default: [:]] {
-                let embeddedID = FoundryCanonicalKey.embedded(parent: canonicalID, documentType: "Item", documentID: itemID)
-                let rawItemEffects: [String: FoundryJSONValue] = actorEmbeddedEffects[itemID] ?? [:]
+            for (itemId, raw) in embeddedItems[documentID, default: [:]] {
+                let embeddedID = FoundryCanonicalKey.embedded(parent: canonicalID, documentType: "Item", documentID: itemId)
+                let rawItemEffects: [String: FoundryJSONValue] = actorEmbeddedEffects[itemId] ?? [:]
                 let effects = decodeEffects(
                     rawItemEffects,
                     ownerCanonicalID: embeddedID
                 )
-                embedded.append(decodeEmbeddedRule(id: embeddedID, fallbackID: itemID, raw: raw, effects: effects))
+                embedded.append(decodeEmbeddedRule(id: embeddedID, fallbackID: itemId, raw: raw, effects: effects))
             }
             embedded.sort { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
             let rawEffects = document.type == "Actor"

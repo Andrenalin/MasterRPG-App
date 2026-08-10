@@ -9,7 +9,7 @@ struct ResetEntryTests {
     @Test("Attributed entry name preserves Character-style links")
     @MainActor
     func attributedNamePreservesLinks() {
-        let itemID = UUID.fixture1
+        let itemId = UUID.fixture1
         let entryID = UUID.fixture2
         let destinationItemID = UUID.fixture3
         let destinationEntryID = UUID.fixture4
@@ -23,7 +23,7 @@ struct ResetEntryTests {
 
         model.reset(
             entry: entry,
-            source: ItemRowModel(itemId: itemID, entryId: entryID, typeId: .value)
+            source: ItemRowModel(itemId: itemId, entryId: entryID, typeId: .value)
         )
 
         #expect(String(model.attributedName.characters) == "Attack: Strength")

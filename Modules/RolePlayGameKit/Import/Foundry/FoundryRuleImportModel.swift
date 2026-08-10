@@ -414,16 +414,16 @@ final class FoundryImportModel {
     ) -> [FoundryImportMapping] {
         struct Destination: Hashable {
             let module: NetworkModules
-            let itemID: UUID
+            let itemId: UUID
         }
 
         let selected = Set(session.batch.items.compactMap { item -> Destination? in
             guard session.decision(for: item) != .skip else { return nil }
-            return Destination(module: item.module, itemID: item.id)
+            return Destination(module: item.module, itemId: item.id)
         })
         return mappedImport.mappings.compactMap { mapping in
             let references = mapping.references.filter {
-                selected.contains(Destination(module: $0.module, itemID: $0.itemID))
+                selected.contains(Destination(module: $0.module, itemId: $0.itemId))
             }
             guard !references.isEmpty else { return nil }
             return FoundryImportMapping(

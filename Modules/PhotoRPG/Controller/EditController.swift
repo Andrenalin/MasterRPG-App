@@ -35,7 +35,7 @@ extension EditController {
     @MainActor func convert(itemId: UUID) async throws {
         guard let item = editModel(for: itemId), let fileUrl = item.fileUrl else { return }
         await cacheController?.photoId(for: item.id, item: item, shouldDownload: true)
-        guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: 0.9) else { return }
+        guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: JPEGQuality.export) else { return }
 
         var dataUrl = fileUrl
         dataUrl.convertFile(data, fileExtension: itemController.config.filenameExtension)
@@ -78,7 +78,7 @@ extension EditController {
     }
         
     func resetPhoto(image: AKImage?, itemId: UUID) async {
-        let data = image?.jpegData(compressionQuality: 0.9)
+        let data = image?.jpegData(compressionQuality: JPEGQuality.export)
         try? await resetFile(data: data, itemId: itemId, path: "")
     }
 }

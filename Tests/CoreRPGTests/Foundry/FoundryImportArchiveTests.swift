@@ -39,7 +39,7 @@ struct FoundryImportArchiveTests {
                 foundryIdentifier: "Actor.hero",
                 references: [FoundryImportMappingReference(
                     module: .value,
-                    itemID: FoundryRuleIdentity.uuid(for: "hero")
+                    itemId: FoundryRuleIdentity.uuid(for: "hero")
                 )]
             )]
         )

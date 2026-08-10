@@ -75,7 +75,7 @@ public enum PreviewAssetFixture {
         fileId: UUID,
         module: String
     ) -> FileUrl? {
-        guard let data = image(photo)?.jpegData(compressionQuality: 0.9) else {
+        guard let data = image(photo)?.jpegData(compressionQuality: JPEGQuality.export) else {
             return nil
         }
         return FileUrl(

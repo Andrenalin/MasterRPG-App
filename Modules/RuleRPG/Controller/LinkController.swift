@@ -164,10 +164,10 @@ extension LinkController: LinkControllable {
 
     @MainActor
     func link(for name: String, entryName: String?) -> String? {
-        guard let itemID = itemController.itemDataModel.items.first(where: {
+        guard let itemId = itemController.itemDataModel.items.first(where: {
             itemController.nameSync(itemId: $0) == name
         }) else { return nil }
-        let item = itemController.itemOrEmpty(for: itemID)
+        let item = itemController.itemOrEmpty(for: itemId)
         guard let entryName else { return item.url(linkNumber: 0) }
         let matchingEntries = item.entries.filter { $0.name == entryName }
         guard matchingEntries.count == 1, let entry = matchingEntries.first else { return nil }

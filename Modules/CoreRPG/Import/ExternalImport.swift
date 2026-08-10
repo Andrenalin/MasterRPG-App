@@ -247,10 +247,10 @@ public struct ExternalImportResult: Equatable, Sendable {
 public enum ExternalImportError: LocalizedError, Equatable, Sendable {
     case commitAlreadyRunning
     case commitAlreadyCompleted
-    case duplicateItem(itemID: UUID, module: NetworkModules)
+    case duplicateItem(itemId: UUID, module: NetworkModules)
     case unsupportedModule(NetworkModules)
-    case incompatibleModel(itemID: UUID, module: NetworkModules)
-    case missingFileController(itemID: UUID, module: NetworkModules)
+    case incompatibleModel(itemId: UUID, module: NetworkModules)
+    case missingFileController(itemId: UUID, module: NetworkModules)
     case attachmentSizeMismatch(attachmentID: UUID, expected: Int, actual: Int)
     case attachmentHashMismatch(attachmentID: UUID)
     case attachmentInstallFailed(attachmentID: UUID)
@@ -263,14 +263,14 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
             "An external import is already running."
         case .commitAlreadyCompleted:
             "This external import has already completed."
-        case .duplicateItem(let itemID, let module):
-            "Item \(itemID.uuidString) occurs more than once in the \(module.title) import batch."
+        case .duplicateItem(let itemId, let module):
+            "Item \(itemId.uuidString) occurs more than once in the \(module.title) import batch."
         case .unsupportedModule(let module):
             "The \(module.title) module cannot receive this import."
-        case .incompatibleModel(let itemID, let module):
-            "Item \(itemID.uuidString) is not compatible with the \(module.title) module."
-        case .missingFileController(let itemID, let module):
-            "Item \(itemID.uuidString) has an attachment, but \(module.title) cannot store files."
+        case .incompatibleModel(let itemId, let module):
+            "Item \(itemId.uuidString) is not compatible with the \(module.title) module."
+        case .missingFileController(let itemId, let module):
+            "Item \(itemId.uuidString) has an attachment, but \(module.title) cannot store files."
         case .attachmentSizeMismatch(_, let expected, let actual):
             "Attachment size mismatch: expected \(expected) bytes but loaded \(actual)."
         case .attachmentHashMismatch:
@@ -319,11 +319,11 @@ public final class ExternalImportReviewSession {
         decisions[Self.decisionKey(for: item)] = decision
     }
 
-    public func setDecision(_ decision: ExternalImportDecision, itemID: UUID, module: NetworkModules) {
+    public func setDecision(_ decision: ExternalImportDecision, itemId: UUID, module: NetworkModules) {
         guard isDecisionEditingEnabled else { return }
-        let item = batch.items.first { $0.id == itemID && $0.module == module }
+        let item = batch.items.first { $0.id == itemId && $0.module == module }
         decisions[item.map(Self.decisionKey(for:))
-            ?? DecisionKey(module: module, itemID: itemID)] = decision
+            ?? DecisionKey(module: module, itemId: itemId)] = decision
     }
 
     public func setDecisionForAll(_ decision: ExternalImportDecision) {
@@ -454,7 +454,7 @@ public final class ExternalImportReviewSession {
                 var attachmentChanged = false
                 if let attachment = item.attachment {
                     guard let fileController = itemController.fileUrlDataController else {
-                        throw ExternalImportError.missingFileController(itemID: item.id, module: item.module)
+                        throw ExternalImportError.missingFileController(itemId: item.id, module: item.module)
                     }
                     let attachmentResult = try await attach(
                         attachment,
@@ -485,7 +485,7 @@ public final class ExternalImportReviewSession {
                 }
 
                 mutations.append(
-                    AppliedMutation(module: item.module, itemID: item.id, previousModel: previous)
+                    AppliedMutation(module: item.module, itemId: item.id, previousModel: previous)
                 )
                 try itemController.replaceForExternalImport(
                     model: candidate,
@@ -592,15 +592,15 @@ public final class ExternalImportReviewSession {
 private extension ExternalImportReviewSession {
     struct DecisionKey: Hashable {
         let module: NetworkModules
-        let itemID: UUID
+        let itemId: UUID
     }
 
     static func key(for item: ExternalImportBatchItem) -> DecisionKey {
-        DecisionKey(module: item.module, itemID: item.id)
+        DecisionKey(module: item.module, itemId: item.id)
     }
 
     static func decisionKey(for item: ExternalImportBatchItem) -> DecisionKey {
-        DecisionKey(module: item.module, itemID: item.decisionOwnerID ?? item.id)
+        DecisionKey(module: item.module, itemId: item.decisionOwnerID ?? item.id)
     }
 
     static let supportedModuleOrder: [NetworkModules] = [
@@ -620,7 +620,7 @@ private extension ExternalImportReviewSession {
 
     struct AppliedMutation {
         let module: NetworkModules
-        let itemID: UUID
+        let itemId: UUID
         let previousModel: (any ModelType)?
     }
 
@@ -725,14 +725,14 @@ private extension ExternalImportReviewSession {
         for item in selectedItems {
             let key = Self.key(for: item)
             guard seen.insert(key).inserted else {
-                throw ExternalImportError.duplicateItem(itemID: item.id, module: item.module)
+                throw ExternalImportError.duplicateItem(itemId: item.id, module: item.module)
             }
             guard Self.supportedModuleOrder.contains(item.module),
                   rootManager.rootModel(for: item.module) != nil else {
                 throw ExternalImportError.unsupportedModule(item.module)
             }
             guard item.modelID == item.id, item.modelModule == item.module else {
-                throw ExternalImportError.incompatibleModel(itemID: item.id, module: item.module)
+                throw ExternalImportError.incompatibleModel(itemId: item.id, module: item.module)
             }
             if let fileID = item.attachment?.fileID,
                !attachmentFileIDs.insert(fileID).inserted {
@@ -756,7 +756,7 @@ private extension ExternalImportReviewSession {
         for item: ExternalImportBatchItem
     ) throws -> any ModelType {
         guard let copy = item.copy(model) else {
-            throw ExternalImportError.incompatibleModel(itemID: item.id, module: item.module)
+            throw ExternalImportError.incompatibleModel(itemId: item.id, module: item.module)
         }
         return copy
     }
@@ -910,7 +910,7 @@ private extension ExternalImportReviewSession {
         item: ExternalImportBatchItem
     ) throws -> any ModelType {
         guard let updated = item.attaching(fileUrl, to: model) else {
-            throw ExternalImportError.incompatibleModel(itemID: item.id, module: item.module)
+            throw ExternalImportError.incompatibleModel(itemId: item.id, module: item.module)
         }
         return updated
     }
@@ -950,11 +950,11 @@ private extension ExternalImportReviewSession {
                 if let previousModel = mutation.previousModel {
                     try controller.replaceForExternalImport(model: previousModel, isInsert: true)
                 } else {
-                    try await controller.deleteForExternalImport(itemId: mutation.itemID)
+                    try await controller.deleteForExternalImport(itemId: mutation.itemId)
                 }
             } catch {
                 errors.append(
-                    "Could not restore \(mutation.module.title) item \(mutation.itemID.uuidString): \(error.localizedDescription)"
+                    "Could not restore \(mutation.module.title) item \(mutation.itemId.uuidString): \(error.localizedDescription)"
                 )
             }
         }

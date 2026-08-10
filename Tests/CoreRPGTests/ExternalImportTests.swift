@@ -10,8 +10,8 @@ import Testing
 struct ExternalImportTests {
     @Test func stagingAndReviewDoNotLoadAttachmentOrMutateFakeLibrary() async throws {
         let root = ItemRootController.previewFixture()
-        let itemID = UUID()
-        let model = FakeItemModel(id: itemID, name: "Staged")
+        let itemId = UUID()
+        let model = FakeItemModel(id: itemId, name: "Staged")
         let loadCount = LoadCount()
         let attachment = ExternalImportAttachment(
             suggestedFilename: "portrait.png",
@@ -22,7 +22,7 @@ struct ExternalImportTests {
         )
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Staged",
             model: model,
@@ -40,7 +40,7 @@ struct ExternalImportTests {
         #expect(batch.isPartial)
         #expect(session.phase == .reviewing)
         #expect(session.decision(for: item) == .merge)
-        #expect(root.itemControllable.itemSync(for: itemID) == nil)
+        #expect(root.itemControllable.itemSync(for: itemId) == nil)
         let attachmentLoads = await loadCount.value
         #expect(attachmentLoads == 0)
     }
@@ -72,7 +72,7 @@ struct ExternalImportTests {
         )
 
         session.setDecision(.replace, for: first)
-        session.setDecision(.skip, itemID: secondID, module: .adventure)
+        session.setDecision(.skip, itemId: secondID, module: .adventure)
 
         #expect(session.decision(for: first) == .replace)
         #expect(session.decision(for: second) == .skip)
@@ -80,15 +80,15 @@ struct ExternalImportTests {
 
     @Test func skippingEverythingDoesNotLoadSaveOrMutate() async throws {
         let root = ItemRootController.previewFixture()
-        let itemID = UUID()
+        let itemId = UUID()
         let loadCount = LoadCount()
         let saveCount = LoadCount()
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Skipped",
-            model: FakeItemModel(id: itemID, name: "Skipped"),
+            model: FakeItemModel(id: itemId, name: "Skipped"),
             provenance: provenance,
             attachment: ExternalImportAttachment(
                 suggestedFilename: "skipped.dat",
@@ -114,7 +114,7 @@ struct ExternalImportTests {
 
         #expect(result.skippedItemCount == 1)
         #expect(session.phase == .completed)
-        #expect(root.itemControllable.itemSync(for: itemID) == nil)
+        #expect(root.itemControllable.itemSync(for: itemId) == nil)
         let attachmentLoads = await loadCount.value
         let saves = await saveCount.value
         #expect(attachmentLoads == 0)
@@ -123,14 +123,14 @@ struct ExternalImportTests {
 
     @Test func failedRollbackIsReportedInsteadOfClaimingSuccess() async {
         let root = ItemRootController.previewFixture()
-        let itemID = UUID()
+        let itemId = UUID()
         let saveCount = LoadCount()
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Rollback",
-            model: FakeItemModel(id: itemID, name: "Rollback", category: .entry),
+            model: FakeItemModel(id: itemId, name: "Rollback", category: .entry),
             provenance: provenance
         )
         let session = ExternalImportReviewSession(
@@ -161,19 +161,19 @@ struct ExternalImportTests {
         let saves = await saveCount.value
         #expect(saves == 2)
         #expect(session.phase == .failed)
-        #expect(root.itemControllable.itemSync(for: itemID) == nil)
+        #expect(root.itemControllable.itemSync(for: itemId) == nil)
     }
 
     @Test func thrownSaveRollsBackAndSurfacesOriginalErrorWhenRestoreSaves() async {
         let root = ItemRootController.previewFixture()
-        let itemID = UUID()
+        let itemId = UUID()
         let saveCount = LoadCount()
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Rollback",
-            model: FakeItemModel(id: itemID, name: "Rollback", category: .entry),
+            model: FakeItemModel(id: itemId, name: "Rollback", category: .entry),
             provenance: provenance
         )
         let session = ExternalImportReviewSession(
@@ -196,20 +196,20 @@ struct ExternalImportTests {
         let saves = await saveCount.value
         #expect(saves == 2)
         #expect(session.phase == .failed)
-        #expect(root.itemControllable.itemSync(for: itemID) == nil)
+        #expect(root.itemControllable.itemSync(for: itemId) == nil)
     }
 
     @Test func persistenceStagingFailureAbortsBeforeInMemoryInsert() async {
         let root = ItemRootController.previewFixture(
             dataControllable: PersistenceFailureStub(failReplace: true)
         )
-        let itemID = UUID()
+        let itemId = UUID()
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Cannot stage",
-            model: FakeItemModel(id: itemID, name: "Cannot stage", category: .entry),
+            model: FakeItemModel(id: itemId, name: "Cannot stage", category: .entry),
             provenance: provenance
         )
         let session = ExternalImportReviewSession(
@@ -227,21 +227,21 @@ struct ExternalImportTests {
         }
 
         #expect(session.phase == .failed)
-        #expect(root.itemControllable.itemSync(for: itemID) == nil)
+        #expect(root.itemControllable.itemSync(for: itemId) == nil)
     }
 
     @Test func rollbackDeleteStagingFailureIsReported() async {
         let root = ItemRootController.previewFixture(
             dataControllable: PersistenceFailureStub(failDelete: true)
         )
-        let itemID = UUID()
+        let itemId = UUID()
         let saveCount = LoadCount()
         let provenance = ExternalImportProvenance(source: "Test")
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Cannot roll back",
-            model: FakeItemModel(id: itemID, name: "Cannot roll back", category: .entry),
+            model: FakeItemModel(id: itemId, name: "Cannot roll back", category: .entry),
             provenance: provenance
         )
         let session = ExternalImportReviewSession(
@@ -268,27 +268,27 @@ struct ExternalImportTests {
             #expect(rollbackErrors.contains { $0.contains("Could not restore") })
         }
 
-        #expect(root.itemControllable.itemSync(for: itemID) != nil)
+        #expect(root.itemControllable.itemSync(for: itemId) != nil)
         #expect(session.phase == .failed)
     }
 
     @Test func failedSaveRestoresRepairLinkRegisterSideEffects() async {
         let root = ItemRootController.previewFixture()
-        let itemID = UUID()
+        let itemId = UUID()
         let destinationID = UUID()
         let provenance = ExternalImportProvenance(source: "Test")
         let existingLink = LinkRegisterModel(
             name: "Pre-import link",
-            source: ItemRowModel(itemId: itemID, typeId: .adventure),
+            source: ItemRowModel(itemId: itemId, typeId: .adventure),
             destination: ItemRowModel(itemId: destinationID, typeId: .photo)
         )
         root.editControllable.linkRegisterController.register(links: [existingLink])
 
         let item = ExternalImportBatchItem(
-            id: itemID,
+            id: itemId,
             module: .adventure,
             name: "Repair links",
-            model: FakeItemModel(id: itemID, name: "Repair links", category: .entry),
+            model: FakeItemModel(id: itemId, name: "Repair links", category: .entry),
             provenance: provenance
         )
         let session = ExternalImportReviewSession(
@@ -313,7 +313,7 @@ struct ExternalImportTests {
 
         let restoredLinks = root.editControllable.linkRegisterController.model.items[destinationID]
         #expect(restoredLinks == [existingLink])
-        #expect(root.itemControllable.itemSync(for: itemID) == nil)
+        #expect(root.itemControllable.itemSync(for: itemId) == nil)
     }
 
     @Test func failedSaveRestoresUnselectedPhotoChangedByRepair() async {

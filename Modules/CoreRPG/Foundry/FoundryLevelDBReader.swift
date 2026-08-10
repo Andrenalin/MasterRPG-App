@@ -346,6 +346,7 @@ enum FoundryCRC32C {
         var crc = UInt32.max
         for byte in bytes {
             crc ^= UInt32(byte)
+            // Standard bitwise CRC-32: one shift/XOR step per bit of the byte just mixed in.
             for _ in 0..<8 {
                 let mask = UInt32(bitPattern: -Int32(crc & 1))
                 crc = (crc >> 1) ^ (reversedPolynomial & mask)

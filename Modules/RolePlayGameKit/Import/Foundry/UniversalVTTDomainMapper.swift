@@ -113,11 +113,11 @@ struct UniversalVTTDomainMapper {
         let mappings = [
             FoundryImportMapping(
                 foundryIdentifier: "\(sourceIdentifier)#image",
-                references: [FoundryImportMappingReference(module: .photo, itemID: photoID)]
+                references: [FoundryImportMappingReference(module: .photo, itemId: photoID)]
             ),
             FoundryImportMapping(
                 foundryIdentifier: "\(sourceIdentifier)#scene",
-                references: [FoundryImportMappingReference(module: .map, itemID: mapID)]
+                references: [FoundryImportMappingReference(module: .map, itemId: mapID)]
             )
         ]
         return FoundryMappedImport(
