@@ -3,6 +3,7 @@
 #if canImport(Testing)
 import CoreRPG
 import Foundation
+import RPGResources
 import StoreKit
 import StoreKitTest
 import Testing
@@ -121,26 +122,21 @@ struct InAppControllerTests {
         #expect(model.supporterTier == .bronze)
     }
 
-//    @Test("StoreKit configuration contains three non-consumable supporter products")
-//    func storeKitConfigurationIsValid() throws {
-//        let configurationURL = URL(filePath: #filePath)
-//            .deletingLastPathComponent()
-//            .deletingLastPathComponent()
-//            .deletingLastPathComponent()
-//            .appending(path: "Modules")
-//            .appending(path: "RolePlayGameKit")
-//            .appending(path: "InApp")
-//            .appending(path: "MasterRPG.storekit")
-//
-//        _ = try SKTestSession(contentsOf: configurationURL)
-//        let data = try Data(contentsOf: configurationURL)
-//        let configuration = try JSONDecoder().decode(
-//            StoreKitConfiguration.self,
-//            from: data
-//        )
-//
-//        #expect(Set(configuration.products.map(\.productID)) == Set(SupporterProduct.productIDs))
-//        #expect(configuration.products.allSatisfy { $0.type == "NonConsumable" })
-//    }
+    @Test("StoreKit configuration contains three non-consumable supporter products")
+    func storeKitConfigurationIsValid() throws {
+        let configurationURL = try #require(
+            RPGResources.Resources.bundle.url(forResource: "MasterRPG", withExtension: "storekit")
+        )
+
+        _ = try SKTestSession(contentsOf: configurationURL)
+        let data = try Data(contentsOf: configurationURL)
+        let configuration = try JSONDecoder().decode(
+            StoreKitConfiguration.self,
+            from: data
+        )
+
+        #expect(Set(configuration.products.map(\.productID)) == Set(SupporterProduct.productIDs))
+        #expect(configuration.products.allSatisfy { $0.type == "NonConsumable" })
+    }
 }
 #endif

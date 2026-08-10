@@ -1,0 +1,125 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "4D525047",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "42524F4E",
+      "localizations" : [
+        {
+          "description" : "A one-time support purchase that adds a bronze crown beside your game name. It does not unlock or limit features.",
+          "displayName" : "Bronze Member Supporter",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.andretrettin.gamemaster.supporter.bronze",
+      "referenceName" : "Bronze Member Supporter",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "53494C56",
+      "localizations" : [
+        {
+          "description" : "A one-time support purchase that adds a silver crown beside your game name. It does not unlock or limit features.",
+          "displayName" : "Silver Member Supporter",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.andretrettin.gamemaster.supporter.silver",
+      "referenceName" : "Silver Member Supporter",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "474F4C44",
+      "localizations" : [
+        {
+          "description" : "A one-time support purchase that adds a gold crown beside your game name. It does not unlock or limit features.",
+          "displayName" : "Gold Member Supporter",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.andretrettin.gamemaster.supporter.gold",
+      "referenceName" : "Gold Member Supporter",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionBundleGroups" : [
+
+  ],
+  "subscriptionGroups" : [
+
+  ],
+  "subscriptionSuiteGroups" : [
+
+  ],
+  "version" : {
+    "major" : 6,
+    "minor" : 3
+  }
+}
