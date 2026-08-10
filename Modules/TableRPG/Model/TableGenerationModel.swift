@@ -109,6 +109,19 @@ final class TableGenerationOccurrence: Identifiable {
         return selectedEntryIds.count == 1
     }
 
+    /// Stricter than `isResolved`: for a multi-select table, every entry
+    /// needs an explicit decision (selected or hidden) — not just one pick
+    /// — before the generated text is considered settled enough to edit.
+    var isFullyDecided: Bool {
+        guard !entries.isEmpty else { return false }
+        if allowsMultipleSelection {
+            return entries.allSatisfy {
+                selectedEntryIds.contains($0.id) || hiddenEntryIds.contains($0.id)
+            }
+        }
+        return isResolved
+    }
+
     var hasDecisions: Bool {
         !selectedEntryIds.isEmpty
             || !hiddenEntryIds.isEmpty
@@ -132,6 +145,11 @@ final class TableGenerationModel: Identifiable {
     let root: TableGenerationOccurrence
     var errorMessage: String?
 
+    /// User-typed override of the generated outcome text. Offered once
+    /// `isFullyDecided` so the result can be hand-finalized before
+    /// confirming; `nil` while the computed outcome should still be shown.
+    var editedOutcome: String?
+
     var occurrences: [TableGenerationOccurrence] {
         flattened(root)
     }
@@ -142,13 +160,22 @@ final class TableGenerationModel: Identifiable {
             && currentOccurrences.allSatisfy(\.isResolved)
     }
 
+    /// True once every occurrence has an explicit decision for every entry.
+    /// Stricter than `canConfirm` (which only needs one pick per table) —
+    /// this gates when the outcome preview expands into an editable field.
+    var isFullyDecided: Bool {
+        let currentOccurrences = occurrences
+        return !currentOccurrences.isEmpty
+            && currentOccurrences.allSatisfy(\.isFullyDecided)
+    }
+
     var summary: ItemGenerationSummary? {
         guard canConfirm else { return nil }
         let selected = currentSelections
         guard !selected.isEmpty else { return nil }
         return ItemGenerationSummary(
             name: root.tableName.withoutLink(),
-            value: combinedValue(for: selected),
+            value: editedOutcome ?? combinedValue(for: selected),
             selections: selected
         )
     }
@@ -168,29 +195,52 @@ final class TableGenerationModel: Identifiable {
     private var currentSelections: [ItemGenerationSelection] {
         occurrences.flatMap { occurrence in
             occurrence.selectedEntries.map { entry in
-                let plainContent = entry.content.withoutLink()
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                let fallback = entry.name.withoutLink()
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                return ItemGenerationSelection(
+                ItemGenerationSelection(
                     id: occurrence.selectionId(for: entry.id),
                     tableId: occurrence.tableId,
                     tableName: occurrence.tableName.withoutLink(),
                     entryId: entry.id,
                     entryName: entry.name.withoutLink(),
-                    content: plainContent.isEmpty ? fallback : plainContent
+                    content: displayContent(for: entry)
                 )
             }
         }
     }
 
+    private func displayContent(for entry: TableGenerationEntry) -> String {
+        let plainContent = entry.content.withoutLink()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !plainContent.isEmpty { return plainContent }
+        return entry.name.withoutLink()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// A single selection is shown as its raw content. Once more than one
+    /// choice contributes to the outcome, the text mirrors the on-screen
+    /// nesting: an entry's own nested generation is appended to it with
+    /// " / " (instead of a separate line), and sibling entries selected in
+    /// the same table are joined with ", " under one table-name prefix.
     private func combinedValue(for selections: [ItemGenerationSelection]) -> String {
         if selections.count == 1 {
-            selections[0].content
-        } else {
-            selections.map { "\($0.tableName): \($0.content)" }
-                .joined(separator: "\n")
+            return selections[0].content
         }
+        return "\(root.tableName.withoutLink()): \(lineage(for: root))"
+    }
+
+    private func lineage(for occurrence: TableGenerationOccurrence) -> String {
+        occurrence.selectedEntries.map { entry in
+            var text = displayContent(for: entry)
+
+            let childLineages = occurrence.children
+                .filter { $0.sourceEntryId == entry.id }
+                .map { lineage(for: $0) }
+                .filter { !$0.isEmpty }
+            if !childLineages.isEmpty {
+                text += " / " + childLineages.joined(separator: " / ")
+            }
+            return text
+        }
+        .joined(separator: ", ")
     }
 
     private func flattened(
