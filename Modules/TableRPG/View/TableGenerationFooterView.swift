@@ -4,41 +4,25 @@ import CoreRPG
 import SwiftUI
 
 struct TableGenerationFooterView: View {
-    let canConfirm: Bool
-    let cancelAction: () -> Void
-    let confirmAction: () -> Void
+    let closeAction: () -> Void
 
     var body: some View {
-        GlassEffectContainerAll {
-            HStack {
-                GlassButton(action: cancelAction) {
-                    Label {
-                        Text("Cancel", bundle: .module)
-                    } icon: {
-                        Image(systemName: "xmark")
-                    }
-                }
-
-                Spacer()
-
-                GlassButton(isProminent: true, action: confirmAction) {
-                    Label {
-                        Text("Confirm", bundle: .module)
-                    } icon: {
-                        Image(systemName: "checkmark")
-                    }
-                }
-                .disabled(!canConfirm)
+        HStack {
+            Button(action: closeAction) {
+                Image(systemName: "xmark")
             }
+            .selectedRoundButton(
+                title: String(localized: "Close", bundle: .module),
+                module: .table,
+                isSelected: false
+            )
+
+            Spacer()
         }
         .padding()
     }
 }
 
-#Preview("Can confirm") {
-    TableGenerationFooterView(canConfirm: true, cancelAction: {}, confirmAction: {})
-}
-
-#Preview("Cannot confirm") {
-    TableGenerationFooterView(canConfirm: false, cancelAction: {}, confirmAction: {})
+#Preview {
+    TableGenerationFooterView(closeAction: {})
 }

@@ -7,10 +7,6 @@ struct TableGenerationHeaderView: View {
     let model: TableGenerationModel
     let controller: TableGenerationController
 
-    @Environment(\.networkActions) private var networkActions
-    @Environment(\.sharingControlActions) private var sharingControlActions
-    @Environment(AppGameStateModel.self) private var gameState
-
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
@@ -27,74 +23,21 @@ struct TableGenerationHeaderView: View {
 
             Spacer()
 
-            if gameState.isGameRunning,
-               gameState.gameModus == .master,
-               networkActions != nil,
-               model.summary != nil {
-                Menu {
-                    ForEach(visiblePlayers) { player in
-                        Button {
-                            shareSummary(to: player.id)
-                        } label: {
-                            Label {
-                                Text("Share with \(player.name)", bundle: .module)
-                            } icon: {
-                                Image(systemName: "person.crop.circle.badge.checkmark")
-                            }
-                        }
-                    }
-                } label: {
-                    Label {
-                        Text("Share", bundle: .module)
-                    } icon: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                }
-#if !os(visionOS)
-                .buttonStyle(.glass)
-#endif
-                .disabled(visiblePlayers.isEmpty)
-            }
-
-            GlassButton(isProminent: true) {
+            Button {
                 withAnimation {
                     controller.autoRoll(model: model)
                 }
             } label: {
-                Label {
-                    Text("Auto Roll", bundle: .module)
-                } icon: {
-                    Image(systemName: "dice.fill")
-                }
-                .labelStyle(.iconOnly)
+                Image(systemName: "dice.fill")
             }
+            .selectedRoundButton(
+                title: String(localized: "Auto Roll", bundle: .module),
+                module: .table,
+                isSelected: false
+            )
             .disabled(model.root.entries.isEmpty)
         }
         .padding()
-    }
-
-    private var visiblePlayers: [SharingControlModel] {
-        (sharingControlActions.control?() ?? [])
-            .filter(\.show)
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-    }
-
-    private func shareSummary(to playerId: UUID) {
-        guard let summary = model.summary,
-              let data = summary.encodeData()
-        else {
-            return
-        }
-        networkActions?.game(
-            NetworkCodableDataType(
-                id: summary.id,
-                type: .generator,
-                version: 1,
-                data: data
-            ),
-            .generatedValue,
-            playerId
-        )
     }
 }
 

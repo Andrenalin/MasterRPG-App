@@ -6,8 +6,9 @@ import SwiftUI
 struct TableGenerationPanelView: View {
     let model: TableGenerationModel
     let controller: TableGenerationController
-    let cancelAction: () -> Void
-    let confirmAction: () -> Void
+    let closeAction: () -> Void
+    let saveAction: () -> Void
+    let sendAction: (UUID?) -> Void
 
     var body: some View {
         VStack {
@@ -20,6 +21,15 @@ struct TableGenerationPanelView: View {
             // list more room before there is anything to preview.
             if model.currentOutcome != nil {
                 TableGenerationResultView(model: model)
+
+                // Only offered once every table is fully decided — that's
+                // exactly when the outcome becomes an editable TextEditor.
+                if model.isFullyDecided {
+                    TableGenerationSaveSendButton(
+                        saveAction: saveAction,
+                        sendAction: sendAction
+                    )
+                }
             }
 
             Divider()
@@ -47,11 +57,7 @@ struct TableGenerationPanelView: View {
 
             Divider()
 
-            TableGenerationFooterView(
-                canConfirm: model.canConfirm,
-                cancelAction: cancelAction,
-                confirmAction: confirmAction
-            )
+            TableGenerationFooterView(closeAction: closeAction)
         }
         .frame(maxWidth: 760, maxHeight: 820)
         .themedSurface()
@@ -70,8 +76,9 @@ struct TableGenerationPanelView: View {
     TableGenerationPanelView(
         model: model,
         controller: .preview,
-        cancelAction: {},
-        confirmAction: {}
+        closeAction: {},
+        saveAction: {},
+        sendAction: { _ in }
     )
     .padding()
 }
@@ -81,8 +88,9 @@ struct TableGenerationPanelView: View {
     TableGenerationPanelView(
         model: model,
         controller: .preview,
-        cancelAction: {},
-        confirmAction: {}
+        closeAction: {},
+        saveAction: {},
+        sendAction: { _ in }
     )
     .padding()
 }
@@ -92,8 +100,9 @@ struct TableGenerationPanelView: View {
     TableGenerationPanelView(
         model: model,
         controller: .preview,
-        cancelAction: {},
-        confirmAction: {}
+        closeAction: {},
+        saveAction: {},
+        sendAction: { _ in }
     )
     .padding()
 }
@@ -103,8 +112,9 @@ struct TableGenerationPanelView: View {
     TableGenerationPanelView(
         model: model,
         controller: .preview,
-        cancelAction: {},
-        confirmAction: {}
+        closeAction: {},
+        saveAction: {},
+        sendAction: { _ in }
     )
     .padding()
 }
