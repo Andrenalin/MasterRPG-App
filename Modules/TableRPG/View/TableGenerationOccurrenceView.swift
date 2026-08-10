@@ -64,7 +64,6 @@ struct TableGenerationOccurrenceView: View {
             theme.tint(for: .table).opacity(0.08),
             in: .rect(cornerRadius: 20, style: .continuous)
         )
-        .padding(.leading, CGFloat(occurrence.depth) * 16)
     }
 
     private func childOccurrences(

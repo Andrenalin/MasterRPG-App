@@ -61,6 +61,30 @@ extension TableGenerationModel {
         return model
     }
 
+    /// The list table with every entry explicitly decided (selected or
+    /// hidden), including the nested table spawned by the linked entry —
+    /// the state where the outcome preview becomes an editable field.
+    @MainActor static var previewFullyDecided: TableGenerationModel {
+        let controller = TableGenerationController.preview
+        let model = controller.makeModel(itemId: TableModel.previewShortListId)
+        let entries = model.root.entries
+
+        if let first = entries.first {
+            controller.select(entryId: first.id, in: model.root, model: model)
+        }
+        for entry in entries.dropFirst().dropLast() {
+            controller.hide(entryId: entry.id, in: model.root, model: model)
+        }
+        if let linked = entries.last {
+            controller.select(entryId: linked.id, in: model.root, model: model)
+            if let child = model.root.children.first(where: { $0.sourceEntryId == linked.id }),
+               let childEntry = child.entries.first {
+                controller.select(entryId: childEntry.id, in: child, model: model)
+            }
+        }
+        return model
+    }
+
     /// A table with no entries, producing the empty-state error message.
     @MainActor static var previewEmpty: TableGenerationModel {
         TableGenerationController.preview.makeModel(itemId: TableModel.previewEmptyId)

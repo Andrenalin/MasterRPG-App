@@ -16,7 +16,11 @@ struct TableGenerationPanelView: View {
                 controller: controller
             )
 
-            TableGenerationResultView(model: model)
+            // Hidden until the first choice is made, to give the occurrence
+            // list more room before there is anything to preview.
+            if model.currentOutcome != nil {
+                TableGenerationResultView(model: model)
+            }
 
             Divider()
 
@@ -85,6 +89,17 @@ struct TableGenerationPanelView: View {
 
 #Preview("Empty table", traits: .mockData) {
     @Previewable @State var model = TableGenerationModel.previewEmpty
+    TableGenerationPanelView(
+        model: model,
+        controller: .preview,
+        cancelAction: {},
+        confirmAction: {}
+    )
+    .padding()
+}
+
+#Preview("Fully decided — editable outcome", traits: .mockData) {
+    @Previewable @State var model = TableGenerationModel.previewFullyDecided
     TableGenerationPanelView(
         model: model,
         controller: .preview,

@@ -4,7 +4,6 @@
 import CoreRPG
 import Foundation
 import StoreKit
-import StoreKitTest
 import Testing
 
 @testable import RolePlayGameKit

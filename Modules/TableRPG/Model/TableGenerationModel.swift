@@ -109,6 +109,19 @@ final class TableGenerationOccurrence: Identifiable {
         return selectedEntryIds.count == 1
     }
 
+    /// Stricter than `isResolved`: for a multi-select table, every entry
+    /// needs an explicit decision (selected or hidden) — not just one pick
+    /// — before the generated text is considered settled enough to edit.
+    var isFullyDecided: Bool {
+        guard !entries.isEmpty else { return false }
+        if allowsMultipleSelection {
+            return entries.allSatisfy {
+                selectedEntryIds.contains($0.id) || hiddenEntryIds.contains($0.id)
+            }
+        }
+        return isResolved
+    }
+
     var hasDecisions: Bool {
         !selectedEntryIds.isEmpty
             || !hiddenEntryIds.isEmpty
@@ -132,6 +145,11 @@ final class TableGenerationModel: Identifiable {
     let root: TableGenerationOccurrence
     var errorMessage: String?
 
+    /// User-typed override of the generated outcome text. Offered once
+    /// `isFullyDecided` so the result can be hand-finalized before
+    /// confirming; `nil` while the computed outcome should still be shown.
+    var editedOutcome: String?
+
     var occurrences: [TableGenerationOccurrence] {
         flattened(root)
     }
@@ -142,13 +160,22 @@ final class TableGenerationModel: Identifiable {
             && currentOccurrences.allSatisfy(\.isResolved)
     }
 
+    /// True once every occurrence has an explicit decision for every entry.
+    /// Stricter than `canConfirm` (which only needs one pick per table) —
+    /// this gates when the outcome preview expands into an editable field.
+    var isFullyDecided: Bool {
+        let currentOccurrences = occurrences
+        return !currentOccurrences.isEmpty
+            && currentOccurrences.allSatisfy(\.isFullyDecided)
+    }
+
     var summary: ItemGenerationSummary? {
         guard canConfirm else { return nil }
         let selected = currentSelections
         guard !selected.isEmpty else { return nil }
         return ItemGenerationSummary(
             name: root.tableName.withoutLink(),
-            value: combinedValue(for: selected),
+            value: editedOutcome ?? combinedValue(for: selected),
             selections: selected
         )
     }

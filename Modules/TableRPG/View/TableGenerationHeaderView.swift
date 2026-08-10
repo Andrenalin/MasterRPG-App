@@ -17,8 +17,12 @@ struct TableGenerationHeaderView: View {
                 Text(model.root.tableName)
                     .font(.title)
                     .bold()
-                Text("Choose the results for each generated table.", bundle: .module)
-                    .foregroundStyle(.secondary)
+                // Hidden once a first choice has been made, to give the
+                // occurrence list more room.
+                if model.currentOutcome == nil {
+                    Text("Choose the results for each generated table.", bundle: .module)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()
@@ -62,6 +66,7 @@ struct TableGenerationHeaderView: View {
                 } icon: {
                     Image(systemName: "dice.fill")
                 }
+                .labelStyle(.iconOnly)
             }
             .disabled(model.root.entries.isEmpty)
         }
@@ -99,4 +104,8 @@ struct TableGenerationHeaderView: View {
 
 #Preview("Empty table", traits: .mockData) {
     TableGenerationHeaderView(model: .previewEmpty, controller: .preview)
+}
+
+#Preview("First entry selected", traits: .mockData) {
+    TableGenerationHeaderView(model: .previewResolved, controller: .preview)
 }

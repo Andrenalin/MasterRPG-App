@@ -3,51 +3,98 @@
 import CoreRPG
 import SwiftUI
 
+/// Previews the generated outcome. While choices are still being made it's
+/// a compact single line (sized like `EntryNameEditor`'s row); once every
+/// table is fully decided it expands into an editable multiline field so
+/// the result can be hand-finalized before confirming.
 struct TableGenerationResultView: View {
     let model: TableGenerationModel
 
     @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .top) {
+        Group {
+            if model.isFullyDecided {
+                editableOutcome
+            } else {
+                compactOutcome
+            }
+        }
+        .animation(reduceMotion ? nil : .smooth, value: model.isFullyDecided)
+    }
+
+    private var compactOutcome: some View {
+        HStack(spacing: 8) {
             Image(systemName: "wand.and.stars")
                 .foregroundStyle(theme.tint(for: .table))
 
-            VStack(alignment: .leading) {
-                Text("Outcome", bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if let outcome = model.currentOutcome {
-                    Text(outcome)
-                        .bold()
-                } else {
-                    Text(
-                        "Choose or roll every table to see the outcome.",
-                        bundle: .module
-                    )
-                    .foregroundStyle(.secondary)
-                }
-            }
+            Text(model.currentOutcome ?? "")
+                .bold()
+                .lineLimit(1)
+                // Keep the most recently added choice (at the end of the
+                // string) visible rather than the first one.
+                .truncationMode(.head)
 
             Spacer()
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 44)
+        .padding(.horizontal, 12)
         .background(
-            theme.tint(for: .table).opacity(model.currentOutcome == nil ? 0.08 : 0.18),
-            in: .rect(cornerRadius: 20, style: .continuous)
+            theme.tint(for: .table).opacity(0.18),
+            in: .rect(cornerRadius: 16, style: .continuous)
         )
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            Text("Outcome: \(model.currentOutcome ?? "")", bundle: .module)
+        )
+    }
+
+    private var editableOutcome: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label {
+                Text("Outcome", bundle: .module)
+            } icon: {
+                Image(systemName: "wand.and.stars")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            TextEditor(text: outcomeBinding)
+                .scrollContentBackground(.hidden)
+                .frame(minHeight: 88, maxHeight: 160)
+                .accessibilityLabel(Text("Outcome", bundle: .module))
+        }
+        .padding(12)
+        .background(
+            theme.tint(for: .table).opacity(0.18),
+            in: .rect(cornerRadius: 16, style: .continuous)
+        )
+    }
+
+    private var outcomeBinding: Binding<String> {
+        Binding(
+            get: { model.editedOutcome ?? model.currentOutcome ?? "" },
+            set: { model.editedOutcome = $0 }
+        )
     }
 }
 
-#Preview("Choose or roll a table", traits: .mockData) {
-    TableGenerationResultView(model: .preview)
+#Preview("Compact — partial choice", traits: .mockData) {
+    // Multi-select table: only the linked entry is decided so far, the
+    // rest are still undecided — not fully decided yet, stays compact.
+    TableGenerationResultView(model: .previewNested)
         .padding()
 }
 
-#Preview("Nested outcome", traits: .mockData) {
-    TableGenerationResultView(model: .previewNested)
+#Preview("Expanded — single-select resolved", traits: .mockData) {
+    // A single-select (dice) table only ever has one decision to make, so
+    // picking it is immediately "fully decided".
+    TableGenerationResultView(model: .previewResolved)
+        .padding()
+}
+
+#Preview("Expanded — multi-select fully decided", traits: .mockData) {
+    TableGenerationResultView(model: .previewFullyDecided)
         .padding()
 }

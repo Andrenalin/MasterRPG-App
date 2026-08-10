@@ -247,9 +247,6 @@
         }
       }
     },
-    "Choose or roll every table to see the outcome." : {
-
-    },
     "Choose the results for each generated table." : {
       "localizations" : {
         "de" : {
@@ -731,6 +728,9 @@
       }
     },
     "Outcome" : {
+
+    },
+    "Outcome: %@" : {
 
     },
     "Player Roll" : {

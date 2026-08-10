@@ -291,6 +291,9 @@ struct TableGenerationControllerTests {
         #expect(model.root.visibleEntries.map(\.id) == [rope.id, torch.id, rations.id])
         #expect(model.root.selectedEntries.map(\.id) == [rope.id, torch.id])
         #expect(model.canConfirm)
+        // `rations` has no decision yet (neither selected nor hidden), so
+        // this is confirmable but not yet "fully decided".
+        #expect(!model.isFullyDecided)
 
         // When
         root.generationController.hide(
@@ -302,6 +305,8 @@ struct TableGenerationControllerTests {
         // Then
         #expect(model.root.hiddenEntryIds == [rations.id])
         #expect(model.canConfirm)
+        // Every entry now has an explicit decision.
+        #expect(model.isFullyDecided)
         #expect(model.summary?.selections.map(\.entryId) == [rope.id, torch.id])
         #expect(model.summary?.value == "Equipment: Rope, Torch")
 
@@ -537,6 +542,36 @@ struct TableGenerationControllerTests {
         #expect(model.root.lastRoll == 5)
         #expect(model.summary?.name == "Weapon")
         #expect(model.summary?.value == "Sword")
+    }
+
+    @Test("A hand-edited outcome overrides the generated summary value")
+    func editedOutcomeOverridesGeneratedSummary() {
+        // Given
+        let root = makeRoot()
+        let entry = TableEntryModel.fixture(id: .fixture2, name: "1", content: "Mace")
+        let table = TableModel(
+            id: .fixture1,
+            name: "Weapon",
+            entries: [entry]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+
+        // When
+        root.generationController.select(entryId: entry.id, in: model.root, model: model)
+
+        // Then: nothing edited yet, the generated value is used as-is.
+        #expect(model.isFullyDecided)
+        #expect(model.summary?.value == "Mace")
+
+        // When: the player hand-finalizes the wording.
+        model.editedOutcome = "Rusty Mace"
+
+        // Then
+        #expect(model.summary?.value == "Rusty Mace")
+        // The structured selections stay untouched — only the display
+        // value is overridden.
+        #expect(model.summary?.selections.map(\.entryId) == [entry.id])
     }
 
     private func makeRoot() -> TableRootModel {
