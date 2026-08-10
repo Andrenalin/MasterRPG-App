@@ -46,7 +46,7 @@ struct QuickEntryEditor: View {
             }
         }
         .background(.primary)
-        .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
+        .pdfViewerActions(PdfViewerActions(id: model.id, selectedText: usePdfSelection(selection:)))
     }
 
     private func usePdfSelection(selection: NSAttributedString) {

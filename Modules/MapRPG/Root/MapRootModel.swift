@@ -229,7 +229,7 @@ extension MapRootModel {
 extension MapRootModel {
     @MainActor
     public var mapActions: MapActions {
-        MapActions(quickMap: editController.generateQuickMap(name:photoId:))
+        MapActions(id: .object(ObjectIdentifier(self)), quickMap: editController.generateQuickMap(name:photoId:))
     }
 }
 

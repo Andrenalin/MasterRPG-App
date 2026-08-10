@@ -2,14 +2,24 @@
 
 import SwiftUI
 
-public struct SharingControlActions {
-    public init(control: (() -> [SharingControlModel])?, update: (([SharingControlModel]) -> Void)?) {
+public struct SharingControlActions: Equatable {
+    /// `id` should be stable across the writer's re-renders (e.g. the owning
+    /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
+    /// skip invalidating readers when the same root writes the same
+    /// functional closures again. See CODE_AUDIT §8.8.
+    public init(id: EnvironmentActionIdentity = .fresh(), control: (() -> [SharingControlModel])?, update: (([SharingControlModel]) -> Void)?) {
+        self.id = id
         self.control = control
         self.update = update
     }
 
+    let id: EnvironmentActionIdentity
     public let control: (() -> [SharingControlModel])?
     public let update: (([SharingControlModel]) -> Void)?
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 public extension EnvironmentValues {

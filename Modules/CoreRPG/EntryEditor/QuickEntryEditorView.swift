@@ -34,7 +34,6 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @State private var textEditModel: TextEditModel
 
     @State private var model: EditController.Model
-    //@State private var entries: [EditController.Model.Entry] = []
     
     @State private var showHelp = false
     @State private var showInspector = false
@@ -83,6 +82,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                     toolbarContent
                 }
 #if os(macOS)
+                .padding()
                 .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
 #endif
 #if !os(tvOS)

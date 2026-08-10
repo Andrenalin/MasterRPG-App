@@ -2,12 +2,22 @@
 
 import SwiftUI
 
-public struct MapActions {
-    public init(quickMap: @escaping (String, UUID) async -> UUID?) {
+public struct MapActions: Equatable {
+    /// `id` should be stable across the writer's re-renders (e.g. the owning
+    /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
+    /// skip invalidating readers when the same root writes the same
+    /// functional closure again. See CODE_AUDIT §8.8.
+    public init(id: EnvironmentActionIdentity = .fresh(), quickMap: @escaping (String, UUID) async -> UUID?) {
+        self.id = id
         self.quickMap = quickMap
     }
 
+    let id: EnvironmentActionIdentity
     public let quickMap: (String, UUID) async -> UUID?
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 public extension EnvironmentValues {

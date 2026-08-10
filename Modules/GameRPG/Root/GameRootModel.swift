@@ -385,7 +385,7 @@ public final class GameRoot {
         }
     }
 
-    public lazy var sharingControlActions: SharingControlActions = SharingControlActions { [weak self] in
+    public lazy var sharingControlActions: SharingControlActions = SharingControlActions(id: .object(ObjectIdentifier(self))) { [weak self] in
         self?.gameModel.gameControl.controls ?? []
     } update: { [weak self] newControls in
         if self?.gameModel.gameControl.controls != newControls {
@@ -396,7 +396,7 @@ public final class GameRoot {
         }
     }
 
-    public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions { [weak self] in
+    public lazy var sharingFeatureActions: SharingFeatureActions = SharingFeatureActions(id: .object(ObjectIdentifier(self))) { [weak self] in
         self?.gameModel.gameControl.features ?? GameFeatureModel()
     }
     

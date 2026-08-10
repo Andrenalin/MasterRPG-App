@@ -225,7 +225,7 @@ private struct TableGeneratorWindowContent: View {
         )
         .environment(
             \.itemGenerationResultAction,
-            ItemGenerationResultAction { summary in
+            ItemGenerationResultAction(id: .object(ObjectIdentifier(appModel))) { summary in
                 appModel.generatedValueEntry = ValueEntryModel(
                     generationSummary: summary
                 )

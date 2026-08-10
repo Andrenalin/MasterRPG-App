@@ -75,7 +75,7 @@ struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
             .environment(\.sharingFeatureActions, root.sharingFeatureActions)
             .environment(
                 \.itemGenerationResultAction,
-                ItemGenerationResultAction { summary in
+                ItemGenerationResultAction(id: .object(ObjectIdentifier(root))) { summary in
                     root.gameModel.generatedValueEntry = ValueEntryModel(
                         generationSummary: summary
                     )
