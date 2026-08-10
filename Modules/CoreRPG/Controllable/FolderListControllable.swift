@@ -276,7 +276,13 @@ extension FolderListControllable {
             listModel.set(selectedItemId: updatedModel.id)
             listModel.scrollId = listModel.selected
             try? await Task.sleep(for: .seconds(0.25))
-            root.navigationModel.openHeaderEditor = true
+            // File-backed modules (Audio, Pdf, Photo, Space) derive the item's name from the
+            // picked file, so let the user pick a file first instead of popping the header editor.
+            // Folders/collections have no file to pick, so they still open the header editor.
+            let skipsHeaderEditor = type == .item && root.viewControllable.skipsHeaderEditorOnCreate
+            if !skipsHeaderEditor {
+                root.navigationModel.openHeaderEditor = true
+            }
 
             switch type {
             case .item:

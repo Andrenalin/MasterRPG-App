@@ -11,6 +11,7 @@ public struct ViewController: Sendable {
 
 extension ViewController: ViewControllable {
     public var hasCustomSpaceAction: Bool { true }
+    public var skipsHeaderEditorOnCreate: Bool { true }
     @MainActor public func sharingView(for itemId: UUID) -> AnyView {
         AnyView(SharingActionView(itemId: itemId, showPlayControl: false).equatable())
     }

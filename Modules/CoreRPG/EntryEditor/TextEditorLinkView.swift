@@ -20,7 +20,7 @@ struct TextEditorLinkView: View {
             Text("Edit content", bundle: .module)
         })
         .labelsHidden()
-        .frame(minHeight: 120, maxHeight: maxHeight)
+        .frame(minHeight: 60, maxHeight: maxHeight)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.secondary)
         }
@@ -29,7 +29,7 @@ struct TextEditorLinkView: View {
         AttributedTextEditorSurface(
             text: $model.attributedText,
             links: model.links,
-            minHeight: 120,
+            minHeight: 60,
             maxHeight: maxHeight,
             isFocused: isFocused
         )

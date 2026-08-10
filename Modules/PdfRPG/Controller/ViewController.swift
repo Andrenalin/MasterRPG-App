@@ -9,6 +9,8 @@ public struct ViewController {
 }
 
 extension ViewController: ViewControllable {
+    public var skipsHeaderEditorOnCreate: Bool { true }
+
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
         AnyView(InlineRowViewer(source: source, destination: destination).equatable())
     }

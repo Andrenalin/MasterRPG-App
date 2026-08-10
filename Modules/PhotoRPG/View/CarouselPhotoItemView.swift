@@ -60,6 +60,15 @@ struct CarouselPhotoItemView: View {
             for: root.configurable.module,
             handler: addLink(name:itemId:entryId:)
         )
+        .containerShape(.rect(cornerRadius: 24))
+        .background {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.accentColor.tertiary)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.accentColor.secondary, lineWidth: 2)
+        }
         .padding(1)
         .overlay(alignment: .topTrailing) {
             Button(role: .destructive) {
@@ -67,22 +76,15 @@ struct CarouselPhotoItemView: View {
                     photoIds.selection.removeAll(where: { $0 == photoSelection })
                 }
             } label: {
-                Label {
-                    Text("Remove", bundle: .module)
-                } icon: {
-                    Image(systemName: "minus.circle.fill")
-                }
+                Image(systemName: "minus.circle.fill")
+                    .imageScale(.large)
+                    .foregroundStyle(.white, .red, .red)
             }
-            .labelStyle(.iconOnly)
-            .imageScale(.large)
+            .accessibilityLabel(Text("Remove", bundle: .module))
             .frame(minWidth: 44, minHeight: 44)
-            .foregroundStyle(.white, .red, .red)
             .borderLessTVBottonStyle()
             .padding(4)
             .contentShape(.circle)
-#if !os(visionOS)
-            .glassEffect(.regular.interactive())
-#endif
         }
     }
 

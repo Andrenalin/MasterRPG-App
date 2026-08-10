@@ -30,18 +30,18 @@ enum PhotoImporterButtonType: String {
         }
     }
     
-    var localizedLabel: LocalizedStringResource {
+    var localizedLabel: String {
         switch self {
         case .file:
-            LocalizedStringResource("File", bundle: .module)
+            String(localized: "File", bundle: .module)
         case .url:
-            LocalizedStringResource("URL", bundle: .module)
+            String(localized: "URL", bundle: .module)
         case .library:
-            LocalizedStringResource("Photo Library", bundle: .module)
+            String(localized: "Photo Library", bundle: .module)
         case .camera:
-            LocalizedStringResource("Camera", bundle: .module)
+            String(localized: "Camera", bundle: .module)
         case .playground:
-            LocalizedStringResource("Image Playground", bundle: .module)
+            String(localized: "Image Playground", bundle: .module)
         }
     }
     
@@ -147,15 +147,10 @@ struct InlineImporterView: View, Equatable {
                     isExpanded.toggle()
                 }
             } label: {
-                Label { Text("Importer", bundle: .module) } icon: { Image(systemName: "photo.badge.plus") }
-                    .labelStyle(.iconOnly)
-                    .frame(width: 50, height: 50)
+                Label { Text(importerTitle) } icon: { Image(systemName: "photo.badge.plus") }
+                .frame(width: 32, height: 32)
             }
-            .borderLessTVBottonStyle()
-#if !os(visionOS)
-            .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
-            .glassEffectID("menu", in: glassNamespace)
-#endif
+            .selectedRoundButton(title: importerTitle, module: .space, isSelected: isExpanded)
         }
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
@@ -199,6 +194,10 @@ struct InlineImporterView: View, Equatable {
 #endif
     }
     
+    private var importerTitle: String {
+        String(localized: "Importer", bundle: .module)
+    }
+    
     private func update(id: UUID, image: AKImage?) async {
         await root.editController.resetPhoto(image: image, itemId: id)
     }
@@ -223,17 +222,12 @@ struct InlineImporterView: View, Equatable {
             } icon: {
                 Image(systemName: type.systemImage)
             }
-                .labelStyle(.iconOnly)
-                .frame(width: 50, height: 50)
-                .opacity(isExpanded ? 1 : 0)
+            .frame(width: 32, height: 32)
+            .opacity(isExpanded ? 1 : 0)
         }
         .allowsHitTesting(isExpanded)
         .accessibilityHidden(!isExpanded)
-        .borderLessTVBottonStyle()
-#if !os(visionOS)
-        .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
-        .glassEffectID(type.rawValue, in: glassNamespace)
-#endif
+        .selectedRoundButton(title: type.localizedLabel, module: .photo, isSelected: false)
         .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
         .animation(
             reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
