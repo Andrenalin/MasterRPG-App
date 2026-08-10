@@ -99,6 +99,129 @@ struct TableGenerationControllerTests {
         #expect(model.occurrences.count == 1)
     }
 
+    @Test("Selecting a sibling entry in a multi-select table preserves an already-selected entry's nested decisions")
+    func multiSelectSiblingChoiceKeepsExistingChildDecisions() throws {
+        // Given
+        let root = makeRoot()
+        let childAFirst = TableEntryModel.fixture(id: .fixture5, name: "1", content: "Silver")
+        let childASecond = TableEntryModel.fixture(id: .fixtureAudio, name: "2", content: "Copper")
+        let childA = TableModel(
+            id: .fixture2,
+            name: "Material",
+            entries: [childAFirst, childASecond]
+        )
+        let childB = TableModel(
+            id: .fixture4,
+            name: "Condition",
+            entries: [TableEntryModel.fixture(id: .fixture3, name: "1", content: "Ancient")]
+        )
+        root.itemController.replace(model: childA, isInsert: true)
+        root.itemController.replace(model: childB, isInsert: true)
+
+        let firstEntry = TableEntryModel.fixture(
+            id: .fixturePhoto,
+            name: "Ring",
+            content: root.linkController.generateLink(itemId: childA.id)
+        )
+        let secondEntry = TableEntryModel.fixture(
+            id: .fixtureMap,
+            name: "Amulet",
+            content: root.linkController.generateLink(itemId: childB.id)
+        )
+        let table = TableModel(
+            id: .fixture1,
+            name: "Jewelry",
+            entries: [firstEntry, secondEntry]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+
+        // When: select the first entry and drill into its generated table.
+        root.generationController.select(
+            entryId: firstEntry.id,
+            in: model.root,
+            model: model
+        )
+        let firstChild = try #require(model.root.children.first)
+        root.generationController.select(
+            entryId: childAFirst.id,
+            in: firstChild,
+            model: model
+        )
+
+        // When: selecting the second (sibling) entry in the multi-select table.
+        root.generationController.select(
+            entryId: secondEntry.id,
+            in: model.root,
+            model: model
+        )
+
+        // Then: the first entry's child occurrence and its nested decision
+        // survive untouched; only the second entry's child is newly added.
+        #expect(model.root.children.count == 2)
+        let survivingFirstChild = try #require(
+            model.root.children.first { $0.sourceEntryId == firstEntry.id }
+        )
+        #expect(survivingFirstChild.id == firstChild.id)
+        #expect(survivingFirstChild.selectedEntries.map(\.id) == [childAFirst.id])
+        #expect(model.root.children.contains { $0.sourceEntryId == secondEntry.id })
+    }
+
+    @Test("The outcome mirrors the on-screen nesting: nested picks join with '/', sibling picks join with ','")
+    func outcomeMirrorsNestedSelectionStructure() throws {
+        // Given
+        let root = makeRoot()
+        let subentry = TableEntryModel.fixture(id: .fixture5, name: "1", content: "Subentry")
+        let material = TableModel(
+            id: .fixture2,
+            name: "Material",
+            entries: [subentry]
+        )
+        root.itemController.replace(model: material, isInsert: true)
+
+        // Content combines its own text with the table link, since a link
+        // is what registers the nested "Material" generation — a real
+        // designer would word an entry the same way, e.g. "First, made of
+        // [Material](...)".
+        let first = TableEntryModel.fixture(
+            id: .fixturePhoto,
+            name: "First",
+            content: "First \(root.linkController.generateLink(itemId: material.id))"
+        )
+        let second = TableEntryModel.fixture(
+            id: .fixtureMap,
+            name: "Second",
+            content: "Second"
+        )
+        let table = TableModel(
+            id: .fixture1,
+            name: "Table",
+            entries: [first, second]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+
+        // When: only "first" is selected.
+        root.generationController.select(entryId: first.id, in: model.root, model: model)
+
+        // Then: a single selection is shown as its raw content (the link's
+        // display name inlined, same as everywhere else in the app).
+        #expect(model.currentOutcome == "First Material")
+
+        // When: drilling into "first" and selecting its nested "subentry".
+        let firstChild = try #require(model.root.children.first)
+        root.generationController.select(entryId: subentry.id, in: firstChild, model: model)
+
+        // Then: the nested pick is appended to its parent entry with " / ".
+        #expect(model.currentOutcome == "Table: First Material / Subentry")
+
+        // When: selecting the sibling "second" entry too.
+        root.generationController.select(entryId: second.id, in: model.root, model: model)
+
+        // Then: the sibling pick joins the same line with ", ".
+        #expect(model.currentOutcome == "Table: First Material / Subentry, Second")
+    }
+
     @Test("A Table without Dice supports multiple selections and explicit hiding")
     func noDiceTableSupportsMultipleSelections() {
         // Given
@@ -180,7 +303,7 @@ struct TableGenerationControllerTests {
         #expect(model.root.hiddenEntryIds == [rations.id])
         #expect(model.canConfirm)
         #expect(model.summary?.selections.map(\.entryId) == [rope.id, torch.id])
-        #expect(model.summary?.value == "Equipment: Rope\nEquipment: Torch")
+        #expect(model.summary?.value == "Equipment: Rope, Torch")
 
         // When
         root.generationController.apply(

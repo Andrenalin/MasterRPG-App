@@ -233,7 +233,12 @@ struct TableGenerationController: Sendable {
     private func rebuildChildren(
         in occurrence: TableGenerationOccurrence
     ) {
-        occurrence.children = []
+        // Reuse an already-selected entry's existing child occurrence
+        // instead of recreating it, so toggling a sibling selection in a
+        // multi-select table doesn't discard the choices already made
+        // inside that entry's generated table.
+        let existingChildren = occurrence.children
+        var newChildren: [TableGenerationOccurrence] = []
         occurrence.ignoredCycleNames = []
 
         for entry in occurrence.selectedEntries {
@@ -242,16 +247,24 @@ struct TableGenerationController: Sendable {
                     occurrence.ignoredCycleNames.append(link.name)
                     continue
                 }
+                if let existing = existingChildren.first(where: {
+                    $0.sourceEntryId == entry.id && $0.tableId == link.itemId
+                }) {
+                    newChildren.append(existing)
+                    continue
+                }
                 if let child = makeOccurrence(
                     tableId: link.itemId,
                     depth: occurrence.depth + 1,
                     tablePath: occurrence.tablePath,
                     sourceEntryId: entry.id
                 ) {
-                    occurrence.children.append(child)
+                    newChildren.append(child)
                 }
             }
         }
+
+        occurrence.children = newChildren
     }
 
     @MainActor
