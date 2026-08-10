@@ -614,7 +614,7 @@ extension AppModel {
     }
 
     @MainActor public var routeActions: RouteActions {
-        RouteActions { [weak self] module, itemId, entryId in
+        RouteActions(id: .object(ObjectIdentifier(self))) { [weak self] module, itemId, entryId in
             guard let self, module != .none else { return }
             self.routeToModule(module, itemId: itemId, entryId: entryId)
         }

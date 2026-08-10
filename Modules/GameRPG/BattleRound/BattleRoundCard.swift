@@ -120,6 +120,21 @@ struct BattleRoundCard: View {
     }
 }
 
+extension BattleRoundCard: Equatable {
+    /// Re-rendered on every live Battle Round tick (HP, initiative, active turn,
+    /// rolls) for every card in the turn order — comparing only what actually
+    /// changes the rendered output lets `.equatable()` skip re-diffing cards
+    /// whose own data is unchanged. The three action closures are intentionally
+    /// excluded: they're never `Equatable`, and — once hoisted to stable method
+    /// references at the call site (see `BattleRoundView`) — always behave the
+    /// same regardless of which render's instance gets kept. See CODE_AUDIT §8.9.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.presentation == rhs.presentation
+            && lhs.controller.root === rhs.controller.root
+            && lhs.cardLayout == rhs.cardLayout
+    }
+}
+
 #Preview("Battle card", traits: .mockData) {
     let controller = BattleRoundController.preview()
     let model = controller.model

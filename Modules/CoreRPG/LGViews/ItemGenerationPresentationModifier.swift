@@ -14,6 +14,7 @@ struct ItemGenerationPresentationModifier: ViewModifier {
             .environment(
                 \.itemGenerationAction,
                 ItemGenerationAction(
+                    id: .module(root.configurable.module),
                     isEnabled: root.generationControllable != nil,
                     present: present(itemId:)
                 )

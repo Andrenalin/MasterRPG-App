@@ -18,12 +18,22 @@ public struct GameFeatureModel: Equatable, Hashable, Codable, Sendable {
     public var spaceSharing: Bool
 }
 
-public struct SharingFeatureActions {
-    public init(features: @escaping () -> GameFeatureModel) {
+public struct SharingFeatureActions: Equatable {
+    /// `id` should be stable across the writer's re-renders (e.g. the owning
+    /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
+    /// skip invalidating readers when the same root writes the same
+    /// functional closure again. See CODE_AUDIT §8.8.
+    public init(id: EnvironmentActionIdentity = .fresh(), features: @escaping () -> GameFeatureModel) {
+        self.id = id
         self.features = features
     }
 
+    let id: EnvironmentActionIdentity
     public let features: (() -> GameFeatureModel)
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 public extension EnvironmentValues {

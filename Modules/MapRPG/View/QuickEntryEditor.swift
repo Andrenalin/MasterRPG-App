@@ -43,7 +43,7 @@ struct QuickEntryEditor: View {
             withAnimation { root.editController.mapEditModel.selectionPdf.resetSelection(itemId: nil, entryId: nil) }
         }
         .background(.primary)
-        .pdfViewerActions(PdfViewerActions(selectedText: usePdfSelection(selection:)))
+        .pdfViewerActions(PdfViewerActions(id: model.id, selectedText: usePdfSelection(selection:)))
     }
 
     private func usePdfSelection(selection: NSAttributedString) {

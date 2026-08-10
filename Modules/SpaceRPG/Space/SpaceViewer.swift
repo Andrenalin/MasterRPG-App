@@ -538,9 +538,7 @@ extension View {
                 axRotateClockwise: axRotateClockwise,
                 axRotateCounterClockwise: axRotateCounterClockwise,
                 disableRotation: disableRotation,
-                disableBackPosition: disableBackPosition,
-                baseYaw: yaw.wrappedValue,
-                basePitch: pitch.wrappedValue
+                disableBackPosition: disableBackPosition
             )
         )
     }
@@ -560,8 +558,20 @@ private struct DragRotationModifier: ViewModifier {
     var disableRotation: Bool
     var disableBackPosition: Bool
 
-    @State var baseYaw: Float
-    @State var basePitch: Float
+    private struct RotationBase {
+        var yaw: Float
+        var pitch: Float
+    }
+
+    // Captured fresh from the live `yaw`/`pitch` bindings at the start of each
+    // drag gesture, then cleared once the gesture ends — rather than a base
+    // seeded once at modifier-construction time and manually kept in sync.
+    // A remote SharePlay participant can update `yaw`/`pitch` directly
+    // (`SpaceViewer.apply(remote:)`) at any point between gestures; reading the
+    // bindings fresh here means the next local drag always starts from the
+    // current rotation instead of spinning back toward a stale one. See
+    // CODE_AUDIT §8.6.
+    @State private var dragBase: RotationBase?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
@@ -570,6 +580,9 @@ private struct DragRotationModifier: ViewModifier {
                 .targetedToAnyEntity()
                 .onChanged { value in
                     guard disableRotation == false else { return }
+                    let base = dragBase ?? RotationBase(yaw: yaw, pitch: pitch)
+                    if dragBase == nil { dragBase = base }
+
                     // Find the current linear displacement.
                     let location3D = value.locationInScene()
                     let startLocation3D = value.startLocationInScene()
@@ -579,12 +592,13 @@ private struct DragRotationModifier: ViewModifier {
                     // Use an interactive spring animation that becomes
                     // a spring animation when the gesture ends below.
                     withAnimation(reduceMotion ? nil : .interactiveSpring) {
-                        yaw = spin(displacement: delta.x, base: baseYaw, limit: yawLimit)
-                        pitch = spin(displacement: -delta.y, base: basePitch, limit: pitchLimit)
+                        yaw = spin(displacement: delta.x, base: base.yaw, limit: yawLimit)
+                        pitch = spin(displacement: -delta.y, base: base.pitch, limit: pitchLimit)
                     }
                 }
                 .onEnded { value in
                     guard disableRotation == false else { return }
+                    let base = dragBase ?? RotationBase(yaw: yaw, pitch: pitch)
 
                     if !disableBackPosition {
                         // Find the current and predicted final linear displacements.
@@ -600,30 +614,28 @@ private struct DragRotationModifier: ViewModifier {
                             yaw = finalSpin(
                                 displacement: delta.x,
                                 predictedDisplacement: predictedDelta.x,
-                                base: baseYaw,
+                                base: base.yaw,
                                 limit: yawLimit)
                             pitch = finalSpin(
                                 displacement: -delta.y,
                                 predictedDisplacement: -predictedDelta.y,
-                                base: basePitch,
+                                base: base.pitch,
                                 limit: pitchLimit)
                         }
                     }
-                    // Store the last value for use by the next gesture.
-                    baseYaw = yaw
-                    basePitch = pitch
+                    // The next gesture re-derives its base from the (now current)
+                    // `yaw`/`pitch` bindings instead of a persisted value.
+                    dragBase = nil
                 }
             )
             .onChange(of: axRotateClockwise) {
                 withAnimation(reduceMotion ? nil : .spring) {
                     yaw -= (.pi / 6)
-                    baseYaw = yaw
                 }
             }
             .onChange(of: axRotateCounterClockwise) {
                 withAnimation(reduceMotion ? nil : .spring) {
                     yaw += (.pi / 6)
-                    baseYaw = yaw
                 }
             }
     }

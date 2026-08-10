@@ -3,7 +3,7 @@
 import Foundation
 import MapRPG
 
-enum BattleRoundCardLayout: Sendable {
+enum BattleRoundCardLayout: Sendable, Equatable {
     case compact
     case wide
 }

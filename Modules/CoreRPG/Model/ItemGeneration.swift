@@ -56,15 +56,23 @@ public struct ItemGenerationSummary: Identifiable, Equatable, Hashable, Codable,
     }
 }
 
-public struct ItemGenerationAction: Sendable {
+public struct ItemGenerationAction: Sendable, Equatable {
+    /// `id` should be stable across the writer's re-renders (e.g. the owning
+    /// module) so SwiftUI's environment diffing can skip invalidating readers
+    /// when the same writer re-supplies the same functional closure. `isEnabled`
+    /// is compared separately since it's meaningful state that does need to be
+    /// observed. See CODE_AUDIT §8.8.
     public init(
+        id: EnvironmentActionIdentity = .fresh(),
         isEnabled: Bool = true,
         present: @MainActor @escaping @Sendable (UUID) -> Void
     ) {
+        self.id = id
         self.isEnabled = isEnabled
         self.present = present
     }
 
+    let id: EnvironmentActionIdentity
     public let isEnabled: Bool
     private let present: @MainActor @Sendable (UUID) -> Void
 
@@ -75,15 +83,26 @@ public struct ItemGenerationAction: Sendable {
     }
 
     public static let disabled = ItemGenerationAction(isEnabled: false) { _ in }
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id && lhs.isEnabled == rhs.isEnabled
+    }
 }
 
-public struct ItemGenerationResultAction: Sendable {
+public struct ItemGenerationResultAction: Sendable, Equatable {
+    /// `id` should be stable across the writer's re-renders (e.g. the owning
+    /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
+    /// skip invalidating readers when the same root writes the same
+    /// functional closure again. See CODE_AUDIT §8.8.
     public init(
+        id: EnvironmentActionIdentity = .fresh(),
         accept: @MainActor @escaping @Sendable (ItemGenerationSummary) -> Void
     ) {
+        self.id = id
         self.accept = accept
     }
 
+    let id: EnvironmentActionIdentity
     private let accept: @MainActor @Sendable (ItemGenerationSummary) -> Void
 
     @MainActor
@@ -92,6 +111,10 @@ public struct ItemGenerationResultAction: Sendable {
     }
 
     public static let disabled = ItemGenerationResultAction { _ in }
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 public extension EnvironmentValues {

@@ -93,23 +93,46 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
     }
 }
 
+/// Pairs a `beforeEntries` row with its (possibly not-yet-scanned) `afterEntries`
+/// counterpart at the same position, so `ForEach` below yields exactly one view
+/// per iteration instead of a variable 1-or-2 view count. `beforeEntries` is only
+/// ever seeded once, at `QuickLinkEditor.init`, so the position is a genuinely
+/// stable identity here — not the usual "reorderable list" case. See CODE_AUDIT §8.7.
+private struct QuickLinkComparisonPair<EntryViewModel>: Identifiable {
+    let id: Int
+    let before: EntryViewModel
+    let after: EntryViewModel?
+}
+
 private extension QuickLinkEditor {
+    var comparisonPairs: [QuickLinkComparisonPair<EntryViewModel>] {
+        beforeEntries.indices.map { index in
+            QuickLinkComparisonPair(
+                id: index,
+                before: beforeEntries[index],
+                after: index < afterEntries.count ? afterEntries[index] : nil
+            )
+        }
+    }
+
     var contentView: some View {
         VStack(spacing: 0) {
             actionView($afterEntries)
-            
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(0 ..< beforeEntries.count, id: \.self) { index in
-                        QuickLinkTextRow(linkControllable: linkController, model: beforeEntries[index], original: true)
+                    ForEach(comparisonPairs) { pair in
+                        VStack(alignment: .leading, spacing: 4) {
+                            QuickLinkTextRow(linkControllable: linkController, model: pair.before, original: true)
 
-                        if index < afterEntries.count {
-                            QuickLinkTextRow(linkControllable: linkController, model: afterEntries[index], original: false)
+                            if let after = pair.after {
+                                QuickLinkTextRow(linkControllable: linkController, model: after, original: false)
+                            }
                         }
                     }
                 }
             }
-            
+
         }
     }
 }
