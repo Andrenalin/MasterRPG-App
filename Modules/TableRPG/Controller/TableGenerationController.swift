@@ -245,7 +245,8 @@ struct TableGenerationController: Sendable {
                 if let child = makeOccurrence(
                     tableId: link.itemId,
                     depth: occurrence.depth + 1,
-                    tablePath: occurrence.tablePath
+                    tablePath: occurrence.tablePath,
+                    sourceEntryId: entry.id
                 ) {
                     occurrence.children.append(child)
                 }
@@ -266,7 +267,8 @@ struct TableGenerationController: Sendable {
     private func makeOccurrence(
         tableId: UUID,
         depth: Int,
-        tablePath: [UUID]
+        tablePath: [UUID],
+        sourceEntryId: UUID? = nil
     ) -> TableGenerationOccurrence? {
         guard let table = itemController.itemSync(for: tableId),
               !table.specialCategory
@@ -294,7 +296,8 @@ struct TableGenerationController: Sendable {
                 )
             },
             depth: depth,
-            tablePath: tablePath + [table.id]
+            tablePath: tablePath + [table.id],
+            sourceEntryId: sourceEntryId
         )
     }
 }
