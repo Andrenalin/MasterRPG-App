@@ -68,7 +68,11 @@ struct ContextMenuMultiController {
     }
     
     func deleteItem(currentSelected: UUID?) -> [ItemRowModel] {
-        listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
+        let removed = listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
+        for item in removed {
+            editController.removeFromEditors(itemId: item.itemId)
+        }
+        return removed
     }
     
     func exportItem(currentSelected: UUID?) -> any NavigationDestination {
