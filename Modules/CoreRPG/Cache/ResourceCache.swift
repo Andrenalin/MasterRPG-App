@@ -30,7 +30,13 @@ public final class ResourceCache: Sendable {
 
         // Check if already loading
         if let inFlight = inFlightRequests[key] {
-            return try await inFlight.value
+            let data = try await inFlight.value
+            // Mirror the primary caller's fix below: the shared in-flight task
+            // must keep running for other callers regardless of this joiner's
+            // own cancellation, but a cancelled joiner shouldn't hand back the
+            // result as if it succeeded.
+            try Task.checkCancellation()
+            return data
         }
 
         // Start new load task
