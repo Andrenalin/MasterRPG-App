@@ -542,6 +542,34 @@ struct EditControllerTests {
         #expect(target.name == previousName)
     }
 
+    @Test func removeDiceUnlinksWithoutChangingValueType() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+        let itemId = await root.itemController.addNew(type: .character)
+        let entry = ValueEntryModel(id: UUID(), name: "Target", type: .text, value: "body")
+        sut.add(entry: entry, itemId: itemId)
+
+        let diceId = UUID()
+        sut.add(link: "Dice", module: .dice, itemId: diceId, entryId: nil, destinationItemId: itemId, destinationEntryId: entry.id)
+        var target = root.itemController.itemOrEmpty(for: itemId)[entry.id]
+        #expect(target.diceId == diceId)
+        #expect(target.type == .number)
+
+        // When: unlinking. The value type set by `add(link:...)` is left
+        // untouched — only the diceId itself is cleared.
+        sut.removeDice(itemId: itemId, entryId: entry.id)
+        target = root.itemController.itemOrEmpty(for: itemId)[entry.id]
+        #expect(target.diceId == nil)
+        #expect(target.type == .number)
+
+        // A second removal (nothing left to unlink) and an unknown item are
+        // both no-ops rather than crashing or writing a spurious undo step.
+        sut.removeDice(itemId: itemId, entryId: entry.id)
+        sut.removeDice(itemId: UUID(), entryId: entry.id)
+        target = root.itemController.itemOrEmpty(for: itemId)[entry.id]
+        #expect(target.diceId == nil)
+    }
+
     // MARK: - willDeleteChildren (called from delete)
 
     @Test func deleteNonFolderContainerClearsGroupIdOnChildren() async throws {

@@ -11,19 +11,24 @@ struct InlineRowViewer: View, Equatable {
     
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
+    @Environment(\.appTheme) private var theme
 
     var body: some View {
         GameShareView(root: root.rootController, itemId: source.itemId) {
             HStack {
                 root.viewController.photoRow(root: root, for: source.itemId)
+                    .background {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous).fill(theme.background(for: root.config.module))
+                    }
                     .containerShape(.rect(cornerRadius: 24))
                     .background {
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .fill(Color.accentColor.tertiary)
                     }
+                    .padding(2)
                     .overlay {
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.accentColor.secondary, lineWidth: 2)
+                            .stroke(Color.accentColor.secondary, lineWidth: 3)
                     }
                     .padding(1)
                     .frame(maxWidth: .infinity)
@@ -65,5 +70,13 @@ struct InlineRowViewer: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    InlineRowViewer(source: ItemRowModel(itemId: MockData.previewId, typeId: .photo), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
+    VStack {
+        InlineRowViewer(source: ItemRowModel(itemId: PhotoModel.previewPaladinId, typeId: .photo), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
+
+        InlineRowViewer(source: ItemRowModel(itemId: PhotoModel.previewRotatedId, typeId: .photo), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
+
+        InlineRowViewer(source: ItemRowModel(itemId: PhotoModel.previewEmptyId, typeId: .photo), destination: ItemRowModel(itemId: UUID(), entryId: nil, typeId: .table))
+
+    }
+    .frame(width: 300, height: 600)
 }

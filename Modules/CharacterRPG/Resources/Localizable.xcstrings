@@ -888,6 +888,22 @@
         }
       }
     },
+    "Remove Dice" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel entfernen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลบลูกเต๋า"
+          }
+        }
+      }
+    },
     "Remove from favorites" : {
       "extractionState" : "stale",
       "localizations" : {

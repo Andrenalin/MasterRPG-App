@@ -12,12 +12,18 @@ struct InlineRowViewer: View, Equatable {
     let destination: ItemRowModel
     
     @Environment(CharacterRootModel.self) private var root
-    
+    @Environment(\.isSheetEditor) private var isSheetEditor
+
     var body: some View {
         switch module {
         case .dice:
             if let entryId = destination.entryId {
-                EntryListDiceRow(itemId: destination.itemId, entryId: entryId)
+                HStack(spacing: 4) {
+                    EntryListDiceRow(itemId: destination.itemId, entryId: entryId)
+                    if isSheetEditor && root.itemController.itemOrEmpty(for: destination.itemId)[entryId].diceId != nil {
+                        DiceRowRemoveButton(itemId: destination.itemId, entryId: entryId)
+                    }
+                }
             } else {
                 root.diceRoot.viewController.rowViewer(source: diceSource, destination: destination)
             }

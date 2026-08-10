@@ -4,6 +4,7 @@
 import CoreGraphics
 import CoreRPG
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import MapRPG
@@ -61,6 +62,44 @@ struct MapPinVisibilityTests {
         #expect(!legacyPin.isDead)
         #expect(!legacyPin.isHighlighted)
         #expect(legacyPin.characterId == nil)
+        // No "healthPercent" key at all (pre-migration payload/pin): decodes
+        // to `nil`, the "health unknown" grey border, not 0%.
+        #expect(legacyPin.healthPercent == nil)
+    }
+
+    @Test func healthPercentCodableRoundTrip() throws {
+        var pin = MapPinModel(id: UUID(), name: "Wounded", healthPercent: 37.5)
+
+        let encoded = try JSONEncoder().encode(pin)
+        let decoded = try JSONDecoder().decode(MapPinModel.self, from: encoded)
+        #expect(decoded.healthPercent == 37.5)
+
+        pin.healthPercent = nil
+        let encodedUnknown = try JSONEncoder().encode(pin)
+        let decodedUnknown = try JSONDecoder().decode(MapPinModel.self, from: encodedUnknown)
+        #expect(decodedUnknown.healthPercent == nil)
+    }
+
+    @Test func healthBorderColorThresholds() {
+        var pin = MapPinModel(id: UUID(), name: "Combatant")
+
+        pin.healthPercent = nil
+        #expect(pin.healthBorderColor == .gray)
+
+        pin.healthPercent = 49
+        #expect(pin.healthBorderColor == .red)
+
+        pin.healthPercent = 50
+        #expect(pin.healthBorderColor == .orange)
+
+        pin.healthPercent = 79
+        #expect(pin.healthBorderColor == .orange)
+
+        pin.healthPercent = 80
+        #expect(pin.healthBorderColor == .green)
+
+        pin.healthPercent = 100
+        #expect(pin.healthBorderColor == .green)
     }
 
     @Test func entryContainsPoint() {

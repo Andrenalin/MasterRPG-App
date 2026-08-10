@@ -18,14 +18,14 @@ enum ImporterButtonType: String {
         }
     }
     
-    var localizedLabel: LocalizedStringResource {
+    var localizedLabel: String {
         switch self {
         case .file:
-            LocalizedStringResource("File", bundle: .module)
+            String(localized: "File", bundle: .module)
         case .url:
-            LocalizedStringResource("URL", bundle: .module)
+            String(localized: "URL", bundle: .module)
         case .scanner:
-            LocalizedStringResource("3D Scanner", bundle: .module)
+            String(localized: "3D Scanner", bundle: .module)
         }
     }
     
@@ -116,14 +116,9 @@ struct InlineImporterView: View, Equatable {
                 }
             } label: {
                 Label { Text("Importer", bundle: .module) } icon: { Image(systemName: "graph.3d") }
-                    .labelStyle(.iconOnly)
-                    .frame(width: 50, height: 50)
+                    .frame(width: 32, height: 32)
             }
-            .borderLessTVBottonStyle()
-#if !os(visionOS)
-            .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
-            .glassEffectID("menu", in: glassNamespace)
-#endif
+            .selectedRoundButton(title: importerTitle, module: .space, isSelected: isExpanded)
         }
         .task {
 #if os(iOS) && !targetEnvironment(simulator)
@@ -152,6 +147,10 @@ struct InlineImporterView: View, Equatable {
 #endif
     }
     
+    private var importerTitle: String {
+        String(localized: "Importer", bundle: .module)
+    }
+    
     private func button(type: ImporterButtonType) -> some View {
         return Button {
             switch type {
@@ -168,17 +167,12 @@ struct InlineImporterView: View, Equatable {
             } icon: {
                 Image(systemName: type.systemImage)
             }
-                .labelStyle(.iconOnly)
-                .frame(width: 50, height: 50)
-                .opacity(isExpanded ? 1 : 0)
+            .opacity(isExpanded ? 1 : 0)
+            .frame(width: 32, height: 32)
         }
         .allowsHitTesting(isExpanded)
         .accessibilityHidden(!isExpanded)
-        .borderLessTVBottonStyle()
-#if !os(visionOS)
-        .glassEffect(.regular.tint(.white.opacity(0.5)).interactive())
-        .glassEffectID(type.rawValue, in: glassNamespace)
-#endif
+        .selectedRoundButton(title: type.localizedLabel, module: .space, isSelected: false)
         .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
         .animation(
             reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),

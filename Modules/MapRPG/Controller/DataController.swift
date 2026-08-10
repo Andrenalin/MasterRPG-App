@@ -185,7 +185,8 @@ extension DataController: CoreDataSnapshotPersistable {
             location: CGPoint(x: model.location?.xPos ?? 0.0, y: model.location?.yPos ?? 0.0),
             size: MapPinModel.MapPinSize(rawValue: Int(model.size)) ?? .normal,
             isShown: model.isShown,
-            isDead: model.isDead
+            isDead: model.isDead,
+            healthPercent: model.healthPercent?.doubleValue
         )
     }
 
@@ -258,5 +259,6 @@ extension DataController: CoreDataSnapshotPersistable {
         model.size = Int16(viewModel.size.rawValue)
         model.isShown = viewModel.isShown
         model.isDead = viewModel.isDead
+        model.healthPercent = viewModel.healthPercent.map(NSNumber.init)
     }
 }

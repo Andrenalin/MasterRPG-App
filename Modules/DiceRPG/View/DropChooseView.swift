@@ -16,6 +16,8 @@ struct DropChooseView: View {
             Group {
                 if let model {
                     DiceViewer(model: model, isEditor: false)
+                        .fixedSize()
+                        .frame(minWidth: 128)
                 } else {
                     EmptyDropButton(selectionModel: selectionModel)
                 }
@@ -64,6 +66,6 @@ struct DropChooseView: View {
 
 #Preview(traits: .mockData) {
     ManagedNavigationStack {
-        DropChooseView(selectionModel: ItemSelectionModel())
+        DropChooseView(selectionModel: ItemSelectionModel(selection: [WindowItemSelection(itemId: DiceModel.previewId)]))
     }
 }

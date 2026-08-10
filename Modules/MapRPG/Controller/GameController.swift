@@ -187,6 +187,11 @@ public protocol MapGameStorable {
     ) -> Bool
     @MainActor func refreshBattleConfiguredValues(itemId: UUID)
     @MainActor func synchronizeBattleDefenders(itemId: UUID) -> Bool
+    /// The live health percent (0...100) for a tracked combatant, computed
+    /// from its linked hit-points entry. `MapPinView` calls this directly so
+    /// the game master's own screen reflects an entry change the instant it
+    /// happens, rather than waiting for the next broadcast to `pin.healthPercent`.
+    @MainActor func healthPercent(for combatant: BattleCombatant) -> Double?
     @MainActor func networkBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType?
     @MainActor func applyBattleRoundUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
     @MainActor func resetBattleRound()
@@ -1154,7 +1159,61 @@ extension GameController: MapGameStorable {
             pins: map.mapPins,
             additionalDefenders: additionalDefenders
         )
-        return repairedAttacker || changed
+
+        // Runs on every master tick while a battle is active, so a hit-points
+        // entry edited on the Character sheet (outside any Map/BattleRound
+        // action) still reaches the pin's health-bar border without a
+        // dedicated notification path.
+        var healthChanged = false
+        for combatant in battleRoundModel.combatants {
+            let percent = healthPercent(for: combatant)
+            guard combatant.pin.healthPercent != percent else { continue }
+            if updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { $0.healthPercent = percent }) {
+                healthChanged = true
+            }
+        }
+        if healthChanged {
+            _ = battleRoundModel.synchronize(pins: map.mapPins)
+        }
+
+        return repairedAttacker || changed || healthChanged
+    }
+
+    /// Also called directly by `MapPinView` to render a tracked combatant's
+    /// pin live — reading `entry.value` here touches the same `@Observable`
+    /// `ValueModel.entries` storage the Character sheet edits, so that render
+    /// updates the instant the game master changes hit points, with no
+    /// dependency on the periodic broadcast in `synchronizeBattleDefenders`
+    /// above. A player has no combatant locally (only the master's
+    /// `battleRoundModel` is ever populated with combatants — see
+    /// `BattleRoundNetworkState`), so this path only ever fires for the
+    /// master; players still see `pin.healthPercent`, the persisted value
+    /// `synchronizeBattleDefenders`/`resolveBattleConfiguredValues` push onto
+    /// the pin for the network.
+    ///
+    /// `entry.value` follows the same "base|modifier" convention as
+    /// `ValueEntryModel.valueCalculated`: the text before "|" is the maximum
+    /// (100%); `gameEntryDisplayValue` already resolves links and evaluates
+    /// "base|modifier" as "base+modifier" into the current amount.
+    @MainActor
+    func healthPercent(for combatant: BattleCombatant) -> Double? {
+        guard let gameCharacterId = combatant.gameCharacterId,
+              let entryId = combatant.hitPointsEntryId,
+              let entry = root.characterRoot.valueGameControllable.gameEntry(
+                  characterId: gameCharacterId,
+                  entryId: entryId
+              ),
+              let baseText = entry.value.split(separator: "|").first,
+              let base = Double(baseText),
+              base > 0,
+              let displayText = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+                  characterId: gameCharacterId,
+                  entryId: entryId
+              ),
+              let current = Double(displayText) else {
+            return nil
+        }
+        return min(max(current / base * 100, 0), 100)
     }
 
     @MainActor
@@ -1449,6 +1508,23 @@ private extension GameController {
                     for: combatant.id
                 )
             }
+
+            // Re-fetch: the hit-points entry assigned just above isn't
+            // reflected on the loop's original snapshot.
+            applyHealthPercent(for: battleRoundModel.combatant(id: combatant.id) ?? combatant)
+        }
+    }
+
+    /// Writes the freshly computed health percent onto the combatant's pin
+    /// when it changed, so the map broadcast (and CloudKit save) only picks
+    /// up a new `timeInterval` on an actual health change.
+    @MainActor
+    private func applyHealthPercent(for combatant: BattleCombatant) {
+        guard let mapId = battleRoundModel.mapId else { return }
+        let percent = healthPercent(for: combatant)
+        guard combatant.pin.healthPercent != percent else { return }
+        _ = updatePinState(itemId: mapId, pinId: combatant.pinId) { pin in
+            pin.healthPercent = percent
         }
     }
 

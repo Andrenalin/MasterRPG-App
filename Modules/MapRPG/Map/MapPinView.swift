@@ -369,6 +369,20 @@ struct MapPinView: View {
         return battleRound.isRunning && battleRound.activePinId == pin.id
     }
 
+    /// Prefers a live read of the linked hit-points entry over the pin's
+    /// broadcast `healthPercent` whenever this pin is a tracked combatant —
+    /// only true on the game master's own screen (see
+    /// `GameController.healthPercent(for:)`) — so the border reacts the
+    /// instant the entry changes instead of waiting for the next push. A
+    /// player has no local combatant for this pin and falls through to the
+    /// last broadcast value.
+    private var healthPercent: Double? {
+        guard let combatant = root.mapGameControllable.battleRoundModel.combatant(pinId: pin.id) else {
+            return pin.healthPercent
+        }
+        return root.mapGameControllable.healthPercent(for: combatant)
+    }
+
     var body: some View {
         pinView
     }
@@ -380,7 +394,11 @@ struct MapPinView: View {
             size: pinSize,
             color: pin.color
         )
-        .frame(width: pinSize.width, height: pinSize.height)
+        // The source photo is rarely square, so the resizable `.fill` image
+        // overflows the pin's circular frame in one axis. Anchor that overflow
+        // to the top so a portrait character keeps their head in view instead
+        // of centering on the torso.
+        .frame(width: pinSize.width, height: pinSize.height, alignment: .top)
         .overlay {
             if !pin.isShown {
                 Circle()
@@ -398,8 +416,14 @@ struct MapPinView: View {
             )
         }
         .overlay {
+            // The border doubles as a health bar once a hit-points entry is
+            // linked: red/orange/green by remaining percent, grey while
+            // unknown. A dead pin's black ring always takes precedence.
             Circle()
-                .strokeBorder(pin.isDead ? .black : .gray, lineWidth: pin.isDead ? 5 : 2)
+                .strokeBorder(
+                    pin.isDead ? .black : MapPinModel.healthBorderColor(for: healthPercent),
+                    lineWidth: pin.isDead ? 5 : 2
+                )
                 .accessibilityHidden(true)
         }
         .overlay {
