@@ -605,19 +605,6 @@ extension MapModel: nonisolated ItemDuplicatable {
 
 extension MapModel: nonisolated ItemReferencable {}
 
-extension MapModel {
-    static func decodeData(of data: Data?) -> MapModel? {
-        guard let data else { return nil }
-        let decoder = JSONDecoder()
-        return try? decoder.decode(MapModel.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        return try? encoder.encode(self)
-    }
-}
-
 extension MapModel: nonisolated ItemDataAccessable {
     public var fileUrl: FileUrl? {
         get { nil }

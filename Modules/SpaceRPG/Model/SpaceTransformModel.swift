@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import simd
 
@@ -9,18 +10,9 @@ import simd
 /// derives the entity rotation from these values; position and scale are local
 /// to the model's anchor, which is identical on every participant's device
 /// (shared world origin during SharePlay, same initial head-locked offset otherwise).
-struct SpaceTransformModel: Codable, Equatable, Sendable {
+struct SpaceTransformModel: Codable, Equatable, Sendable, MessageMapper {
     var position: SIMD3<Float>
     var scale: SIMD3<Float>
     var yaw: Float
     var pitch: Float
-
-    func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
-    }
-
-    static func decodeData(of data: Data?) -> SpaceTransformModel? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(SpaceTransformModel.self, from: data)
-    }
 }

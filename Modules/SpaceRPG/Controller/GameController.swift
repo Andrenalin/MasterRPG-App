@@ -433,18 +433,7 @@ extension GameController: SpaceGameControllable {
     }
 }
 
-struct SpaceListRequest: Codable, Sendable, Equatable {
+struct SpaceListRequest: Codable, Sendable, Equatable, MessageMapper {
     let list: [UUID: Int]
     let players: [UUID: [UUID: Int]]
-}
-
-extension SpaceListRequest {
-    static func decodeData(of data: Data?) -> SpaceListRequest? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(SpaceListRequest.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
-    }
 }

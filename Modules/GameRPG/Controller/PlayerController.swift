@@ -2050,7 +2050,7 @@ extension PlayerController {
         guard model.sender.isMaster,
               model.type == .update,
               model.subType == .generatedValue,
-              let summary = ItemGenerationSummary.decodeData(model.data.data)
+              let summary = ItemGenerationSummary.decodeData(of: model.data.data)
         else {
             return nil
         }

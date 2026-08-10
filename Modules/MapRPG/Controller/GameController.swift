@@ -374,7 +374,7 @@ extension GameController: MapGameStorable {
     func applyMapContentUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
         guard data.id == itemId,
               data.type == .map,
-              let payload = MapUpdatePayload.decodeData(data.data),
+              let payload = MapUpdatePayload.decodeData(of: data.data),
               payload.isSupported,
               payload.snapshot.id == itemId,
               data.contentVersion == nil || data.contentVersion == payload.contentVersion,
@@ -1242,7 +1242,7 @@ extension GameController: MapGameStorable {
               data.version == generation.version,
               data.assetVersion == generation.assetVersion,
               data.contentVersion == generation.contentVersion,
-              let state = BattleRoundNetworkState.decodeData(data.data),
+              let state = BattleRoundNetworkState.decodeData(of: data.data),
               state.mapId == itemId else {
             return false
         }
@@ -1405,7 +1405,7 @@ private extension GameController {
                 contentVersion: payload.contentVersion,
                 backgroundPhotoId: item.photoId
             ),
-            data: payload.encodedData()
+            data: payload.encodeData()
         )
     }
 

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import SwiftUI
 import Testing
@@ -438,7 +439,7 @@ struct BattleRoundModelTests {
         #expect(sut.applyRemoteState(running))
 
         // When
-        let decoded = try #require(BattleRoundNetworkState.decodeData(ended.encodeData()))
+        let decoded = try #require(BattleRoundNetworkState.decodeData(of: ended.encodeData()))
         #expect(sut.applyRemoteState(decoded))
 
         // Then

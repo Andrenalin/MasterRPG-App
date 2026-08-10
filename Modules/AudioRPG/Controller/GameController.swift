@@ -320,38 +320,12 @@ extension GameController: AudioGameStoreable {
     }
 }
 
-struct AudioPlayRequest: Codable {
+struct AudioPlayRequest: Codable, Sendable, MessageMapper {
     let id: UUID
     let shouldPlay: Bool
 }
 
-extension AudioPlayRequest {
-    static func decodeData(of data: Data?) -> AudioPlayRequest? {
-        guard let data else { return nil }
-        let decoder = JSONDecoder()
-        return try? decoder.decode(AudioPlayRequest.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        return try? encoder.encode(self)
-    }
-}
-
-struct AudioListRequest: Codable {
+struct AudioListRequest: Codable, Sendable, MessageMapper {
     let list: [UUID]
     let players: [UUID: [UUID]]
-}
-
-extension AudioListRequest {
-    static func decodeData(of data: Data?) -> AudioListRequest? {
-        guard let data else { return nil }
-        let decoder = JSONDecoder()
-        return try? decoder.decode(AudioListRequest.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        return try? encoder.encode(self)
-    }
 }

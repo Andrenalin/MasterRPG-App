@@ -222,18 +222,7 @@ extension GameController: PhotoGameControllable {
     }
 }
 
-struct PhotoListRequest: Codable, Sendable, Equatable {
+struct PhotoListRequest: Codable, Sendable, Equatable, MessageMapper {
     let list: [UUID: Int]
     let players: [UUID: [UUID: Int]]
-}
-
-extension PhotoListRequest {
-    static func decodeData(of data: Data?) -> PhotoListRequest? {
-        guard let data else { return nil }
-        return try? JSONDecoder().decode(PhotoListRequest.self, from: data)
-    }
-
-    func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
-    }
 }
