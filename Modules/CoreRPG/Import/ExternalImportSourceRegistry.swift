@@ -136,7 +136,7 @@ public actor ExternalImportSourceRegistry {
     public init(directoryURL: URL? = nil) {
         let root = FileManager.cloudURL ?? FileManager.groupURL
         self.directoryURL = directoryURL ?? root
-            .appending(path: "Documents")
+            .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")
             .appending(path: "sources", directoryHint: .isDirectory)
     }

@@ -2,6 +2,11 @@
 
 import ImageIO
 import SwiftUI
+import os.log
+
+#if !os(tvOS)
+import QuickLookThumbnailing
+#endif
 
 #if os(macOS)
 import AppKit
@@ -191,5 +196,36 @@ public extension AKImage {
         let image = UIImage(cgImage: cgImage)
 #endif
         return DownsampledResult(image: image, scale: scale)
+    }
+}
+
+public extension AKImage {
+    /// Renders a best-effort QuickLook preview thumbnail for a file the platform
+    /// has no direct decoder for (PDF, USDZ/3D, …). Shared by PdfRPG's and
+    /// SpaceRPG's `CacheController`s, which previously each defined an
+    /// identical wrapper around `QLThumbnailGenerator`. See CODE_AUDIT §9.6.
+    static func quickLookThumbnail(
+        for url: URL?,
+        size: CGSize,
+        scale: CGFloat = 2,
+        removeWhiteBackground: Bool = false
+    ) async -> AKImage? {
+        guard let url else { return nil }
+#if !os(tvOS)
+        let request = QLThumbnailGenerator.Request(fileAt: url, size: size, scale: scale, representationTypes: .all)
+        let generator = QLThumbnailGenerator.shared
+        do {
+            let result = try await generator.generateBestRepresentation(for: request)
+#if os(macOS)
+            return result.nsImage
+#else
+            let image = result.uiImage
+            return removeWhiteBackground ? image.removeWhiteBackground() : image
+#endif
+        } catch let error {
+            Logger.cacheController.error("QLThumbnail failed \(error.localizedDescription, privacy: .public)")
+        }
+#endif
+        return nil
     }
 }

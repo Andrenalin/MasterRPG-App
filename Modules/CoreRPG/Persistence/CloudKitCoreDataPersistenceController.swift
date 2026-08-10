@@ -13,7 +13,7 @@ private enum CloudKitEventModelUpdate: Sendable {
 }
 
 public struct CloudKitCoreDataPersistenceController {
-    static let cloudKitContainerIdentifier = "iCloud.de.andretrettin.gamemaster"
+    static let cloudKitContainerIdentifier = FileManager.cloudContainerIdentifier
 
     public init(inMemory: Bool = false, currentActor: AppPersistentActor) {
         model = CoreDataInitModel(inMemory: inMemory, currentActor: currentActor)

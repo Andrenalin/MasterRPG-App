@@ -48,11 +48,7 @@ extension CacheController: ImageCacheControllable {
         let entry = item[itemId]
         let scaledRect = entry.rect.applying(CGAffineTransform(scaleX: source.scale, y: source.scale))
         let thumbnail = source.image.cropping(to: scaledRect)
-        if let thumbnail {
-            await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)
-
-            await thumbnailCacheController.setObject(thumbnail, for: itemId)
-        }
+        await cacheThumbnail(thumbnail, for: itemId)
     }
 }
 

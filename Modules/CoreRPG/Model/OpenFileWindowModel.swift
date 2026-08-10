@@ -26,6 +26,29 @@ public final class OpenFileWindowModel {
     }
 }
 
+public extension View {
+    /// The "open file" overlay every module's `DetailFolderListView` shows above
+    /// its content whenever `openFileWindowModel.showItem` is set: presents
+    /// `viewer`, and dismisses by resetting `showItem` back to `false`. Each
+    /// module's own `viewController.viewer(root:itemId:configuration:dismissAction:)`
+    /// call still varies (different `ViewerConfiguration`/extra parameters), so
+    /// only that surrounding "check/extract/dismiss" wiring is shared here — not
+    /// the viewer call itself. See CODE_AUDIT §9.5.
+    @ViewBuilder
+    func openFileWindowOverlay<Viewer: View>(
+        _ openFileWindowModel: OpenFileWindowModel,
+        @ViewBuilder viewer: (UUID, @escaping () -> Void) -> Viewer
+    ) -> some View {
+        overlay {
+            if openFileWindowModel.showItem {
+                viewer(openFileWindowModel.itemId) {
+                    openFileWindowModel.showItem = false
+                }
+            }
+        }
+    }
+}
+
 struct OpenFileViewerViewModifier: ViewModifier {
     let model: any ItemDataAccessable
     let openFileWindowModel: OpenFileWindowModel

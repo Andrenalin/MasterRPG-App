@@ -26,19 +26,15 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-        .overlay {
-            overlayContent
-        }
-    }
-
-    // MARK: - Overlays
-
-    @ViewBuilder
-    private var overlayContent: some View {
-        if root.openFileWindowModel.showItem {
-            root.viewController.viewer(root: root, itemId: root.openFileWindowModel.itemId, entryId: nil, configuration: ViewerConfiguration(closeButton: true, canBookmark: true), onTextExtracted: nil, dismissAction: {
-                root.openFileWindowModel.showItem = false
-            })
+        .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
+            root.viewController.viewer(
+                root: root,
+                itemId: itemId,
+                entryId: nil,
+                configuration: ViewerConfiguration(closeButton: true, canBookmark: true),
+                onTextExtracted: nil,
+                dismissAction: dismiss
+            )
         }
     }
 }

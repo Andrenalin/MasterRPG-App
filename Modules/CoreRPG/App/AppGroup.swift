@@ -22,7 +22,12 @@ public extension UserDefaults {
 }
 
 public extension FileManager {
+    /// Shared iCloud container identifier — also used by
+    /// `CloudKitCoreDataPersistenceController` for its
+    /// `NSPersistentCloudKitContainerOptions`. See CODE_AUDIT §9.10.
+    static let cloudContainerIdentifier = "iCloud.de.andretrettin.gamemaster"
+
     static let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: UserDefaults.appGroupString)!
-    
-    static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.de.andretrettin.gamemaster")
+
+    static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: cloudContainerIdentifier)
 }

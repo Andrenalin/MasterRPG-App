@@ -37,25 +37,16 @@ struct DetailFolderListView: View {
                     .padding()
             }
         }
-        .overlay {
-            overlayContent
-        }
-    }
-    
-    // MARK: - Overlays
-    
-    @ViewBuilder private var overlayContent: some View {
-        if root.openFileWindowModel.showItem {
+        .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
             root.viewController.viewer(
                 root: root,
-                itemId: root.openFileWindowModel.itemId,
-                configuration: ViewerConfiguration(closeButton: true)
-            ) {
-                root.openFileWindowModel.showItem = false
-            }
+                itemId: itemId,
+                configuration: ViewerConfiguration(closeButton: true),
+                dismissAction: dismiss
+            )
         }
     }
-    
+
     private var usesPhoneTabAccessory: Bool {
 #if os(iOS)
         UIDevice.current.userInterfaceIdiom == .phone
