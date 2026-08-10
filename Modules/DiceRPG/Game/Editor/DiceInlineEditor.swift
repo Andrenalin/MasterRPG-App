@@ -40,7 +40,7 @@ struct DiceInlineEditor: View {
                 .foregroundStyle(.secondary)
                 .padding(.top)
 
-            OldDiceBag { die in
+            GameDiceBag { die in
                 withAnimation(reduceMotion ? nil : .default) {
                     root.gameController.gameItem(for: itemId).dice.append(die)
                 }

@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-struct OldDiceBag: View {
+struct GameDiceBag: View {
     let addAction: (DieModel) -> Void
 
     @Environment(DiceRootModel.self) private var root
@@ -33,6 +33,6 @@ struct OldDiceBag: View {
 }
 
 #Preview {
-    OldDiceBag { _ in }
+    GameDiceBag { _ in }
         .environment(DiceRootModel.previewWithData)
 }
