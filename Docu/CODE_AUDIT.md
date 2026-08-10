@@ -16,7 +16,9 @@ Still no finding reaches **Critical** by this audit's strict bar (crash-on-commo
 
 All §5 Bugs/logic-errors findings (§5.1–§5.14), §6.4–§6.6's DoS findings, and §8.6–§8.12's SwiftUI findings are now fixed — see those sections for details, including this pass's App Intent path-escaping fix (§5.11), the Core Data `loadPersistentStores` completion race fix (§5.14), the initiative-parsing overflow-trap fix (§5.12), the local-network wire framer's message-length bound (§6.4), the two Foundry-import DoS gaps (§6.5 unbounded pack count, §6.6 unbounded JSON nesting depth — all three verified with new, passing tests), the stale SharePlay rotation-base bug (§8.6), and the closure-carrying `Environment` values (§8.8 — 3 of the 10 cited keys turned out to be entirely dead code; the other 7 now compare a stable identity token instead of their non-`Equatable` closures). §8.11 (a `@State`-resync bug) turned out to already be fixed independently, in an unrelated commit — re-verified against current source and corrected below.
 
-For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.13–9.14 — roughly 50 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too).
+Also now fixed: the six duplication/hardcoding items §9.5–§9.10 (`DetailFolderListView` overlay wiring, the `CacheController` QuickLook-thumbnail wrapper and its `saveToDisk`/`setObject` tail, `FolderListController.copy(listModel:)`'s repeated dependency derivation, and the `"Documents"`/iCloud-container-identifier literals) — each centralized into a single shared declaration in CoreRPG instead of being hand-duplicated across 4–12 modules.
+
+For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.5–9.10, §9.13–9.14 — roughly 56 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too).
 
 ---
 
@@ -382,26 +384,30 @@ All the other former quick wins in this list (RuleRPG's Siri-donation logging, `
 - **Action:** Unchanged — extract the BFS into `ExportControllable`'s protocol extension (which already centralizes `exportingFolder`/`exporting(ids:)`/`logExport`/`export`/`createExport`), parameterized similarly to how RuleRPG's rewrite dispatches per module.
 - **Severity:** High.
 
-### 9.5 `DetailFolderListView.overlayContent` copy-pasted across 11 modules — STILL OPEN, unchanged
-- Re-confirmed: same 11 modules (`RuleRPG` inlines the identical body directly rather than via a named property — a minor variant, same root duplication).
-- **Severity:** Medium.
+### 9.5 `DetailFolderListView.overlayContent` copy-pasted across 11 modules — NOW FIXED
+- **Location:** all 11 modules' `View/DetailFolderListView.swift`; shared helper in `Modules/CoreRPG/Model/OpenFileWindowModel.swift`.
+- **Fix:** Added a `View.openFileWindowOverlay(_:viewer:)` extension in CoreRPG that owns the shared "check `showItem`, extract `itemId`, dismiss by resetting `showItem`" wiring every module's `overlayContent` duplicated. Each module's own `root.viewController.viewer(root:itemId:configuration:dismissAction:)` call still varies per module (different `ViewerConfiguration`, and PdfRPG's extra `entryId`/`onTextExtracted` params) so only the surrounding overlay logic is shared, not the viewer call itself — a full generic abstraction isn't possible since each module's `viewController` type and call signature genuinely differ. `RuleRPG`'s previously-inlined body now uses the same helper. Verified with iOS/macOS/visionOS/tvOS builds and the full per-module test suites.
+- **Severity:** Medium — resolved.
 
-### 9.6 `CacheController.generateThumbnail` QuickLook wrapper duplicated (SpaceRPG/PdfRPG) — STILL OPEN, unchanged
-- **Severity:** Medium.
+### 9.6 `CacheController.generateThumbnail` QuickLook wrapper duplicated (SpaceRPG/PdfRPG) — NOW FIXED
+- **Fix:** Extracted the identical `QLThumbnailGenerator` wrapper into `AKImage.quickLookThumbnail(for:size:scale:removeWhiteBackground:)` in `Modules/CoreRPG/Extensions/Image+AKImage.swift`. Both modules' `CacheController.createThumbnail` now call the shared helper with their own `size`/`removeWhiteBackground` values instead of each declaring a byte-for-byte-identical `static func generateThumbnail(for:)`.
+- **Severity:** Medium — resolved.
 
-### 9.7 Minor duplicated `saveToDisk`/`setObject` tail in four modules' `CacheController` — STILL OPEN, unchanged
-- **Severity:** Low.
+### 9.7 Minor duplicated `saveToDisk`/`setObject` tail in four modules' `CacheController` — NOW FIXED
+- **Fix:** Added `ImageCacheControllable.cacheThumbnail(_:for:)` (persists to disk + in-memory cache, no-op on `nil`) in `Modules/CoreRPG/Controllable/ImageCacheControllable.swift`. Pdf/Photo/Map/SpaceRPG's `createThumbnail` now end with `await cacheThumbnail(thumbnail, for: itemId)` instead of the repeated `if let thumbnail { ...2 lines... }` block.
+- **Severity:** Low — resolved.
 
-### 9.8 `FolderListController.copy(listModel:)` boilerplate repeated in 12 modules — STILL OPEN, unchanged
-- **Severity:** Low.
+### 9.8 `FolderListController.copy(listModel:)` boilerplate repeated in 12 modules — NOW FIXED
+- **Fix:** Added `FolderListControllable.copiedListDependencies` (derives the fresh `listDisplayModel` + matching copied `searchRootControllable` every module computed identically) in `Modules/CoreRPG/Controllable/FolderListControllable.swift`. Each module's `copy(listModel:)` now reads `let dependencies = copiedListDependencies` instead of recomputing `listDisplayModel.newListDisplayModel` twice inline. Each module still constructs its own concrete `FolderListController` directly (rather than a fully generic protocol-extension default) since `FakeFolderListController` in CoreRPG's test fixtures has a materially different initializer shape (different parameter order, a stored `searchModel`) that a shared `init` requirement would have broken.
+- **Severity:** Low — resolved.
 
-### 9.9 `"Documents"` path component hardcoded independently — STILL OPEN, line refs updated
-- Canonical constant now at `CloudDocumentController.swift:217` (was :210); still 5 literal `"Documents"` occurrences in `LocationFileManager.swift` (×3), `FoundryImportArchive.swift`, `ExternalImportSourceRegistry.swift`.
-- **Severity:** Low.
+### 9.9 `"Documents"` path component hardcoded independently — NOW FIXED
+- **Fix:** `CloudDocumentController.documentDirName` (previously `private`) is now module-visible. The 5 remaining literal `"Documents"` occurrences — `LocationFileManager.swift` (×3: `rootAppCloud`, `rootNewCloud`, the `pathComponents.firstIndex(of:)` check), `FoundryImportArchive.swift`, `ExternalImportSourceRegistry.swift` — now reference `CloudDocumentController.documentDirName` instead of re-hardcoding the literal.
+- **Severity:** Low — resolved.
 
-### 9.10 iCloud container identifier string literal duplicated — STILL OPEN, unchanged
-- Re-confirmed at `AppGroup.swift:27` and `CloudKitCoreDataPersistenceController.swift:16` — both still hardcode `"iCloud.de.andretrettin.gamemaster"` independently.
-- **Severity:** Low.
+### 9.10 iCloud container identifier string literal duplicated — NOW FIXED
+- **Fix:** `FileManager.cloudContainerIdentifier` (`Modules/CoreRPG/App/AppGroup.swift`) is now the single declaration of `"iCloud.de.andretrettin.gamemaster"`; `FileManager.cloudURL`'s own use of it and `CloudKitCoreDataPersistenceController.cloudKitContainerIdentifier` both reference that constant instead of independently hardcoding the string.
+- **Severity:** Low — resolved.
 
 ### 9.11 Oversized files (>500 lines) — STILL OPEN, fresh count + 3 new large files
 - Fresh sweep: **50** non-test files over 500 lines (was 51). None of the 9 previously-named files (`GameNetworkController.swift`, `SharePlayJournalPublicationQueue.swift`, `GeneratorController.swift`, `GameNetworkModel.swift`, `SheetRootModel.swift`, `ExternalImport.swift`, `RuleModel.swift`, `MasterRPGTips.swift`, `MapOverlayGeometry.swift`) were split.

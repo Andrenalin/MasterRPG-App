@@ -208,7 +208,7 @@ private extension FoundryImportArchiveStore {
     static var defaultDirectoryURL: URL {
         let root = FileManager.cloudURL ?? FileManager.groupURL
         return root
-            .appending(path: "Documents")
+            .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")
             .appending(path: "archives")
     }

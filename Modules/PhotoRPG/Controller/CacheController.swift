@@ -61,10 +61,7 @@ extension CacheController: ImageCacheControllable {
         }
         guard let source else { return }
         let thumbnail = await source.resize(to: CGSize(width: 64, height: 64), topAligned: true)
-        if let thumbnail {
-            await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)
-            await thumbnailCacheController.setObject(thumbnail, for: itemId)
-        }
+        await cacheThumbnail(thumbnail, for: itemId)
     }
 
     /// ImageIO thumbnail max pixel size: comfortably above the 64pt target at the

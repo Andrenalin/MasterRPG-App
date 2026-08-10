@@ -60,10 +60,18 @@ struct TableGenerationResultView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
+#if os(tvOS)
+            // `TextEditor`/`scrollContentBackground` are unavailable on tvOS;
+            // fall back to a read-only display of the current outcome.
+            Text(outcomeBinding.wrappedValue)
+                .frame(minHeight: 88, maxHeight: 160, alignment: .topLeading)
+                .accessibilityLabel(Text("Outcome", bundle: .module))
+#else
             TextEditor(text: outcomeBinding)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 88, maxHeight: 160)
                 .accessibilityLabel(Text("Outcome", bundle: .module))
+#endif
         }
         .padding(12)
         .background(

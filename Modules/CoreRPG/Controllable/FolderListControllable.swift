@@ -27,6 +27,18 @@ public protocol FolderListControllable: Sendable {
 
 extension FolderListControllable {
     public var searchModel: SearchModel { searchRootControllable.searchModel }
+
+    /// The `(listDisplayModel, searchRootControllable)` pair every module's
+    /// `copy(listModel:)` derived identically — a fresh display model, and the
+    /// search controller copied to match it — before constructing its own
+    /// concrete `Self` with those plus the passed `listModel`. Each conformer's
+    /// stored-property shape/initializer still differs, so only this shared
+    /// derivation is hoisted here, not the `Self` construction itself. See
+    /// CODE_AUDIT §9.8.
+    public var copiedListDependencies: (listDisplayModel: ListDisplayModel, searchRootControllable: any SearchRootControllable) {
+        let copiedDisplayModel = listDisplayModel.newListDisplayModel
+        return (copiedDisplayModel, searchRootControllable.copy(listDisplayModel: copiedDisplayModel))
+    }
     
     /// Runs a search, updates `searchModel.results`, and rebuilds `listModel.list`.
     /// Structured: if the enclosing `Task` is cancelled (e.g. view disappears or a

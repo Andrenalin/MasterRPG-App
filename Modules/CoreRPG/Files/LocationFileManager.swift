@@ -12,10 +12,10 @@ public struct LocationFileManager: Sendable {
     public init(moduleFolder: String) {
         self.moduleFolder = moduleFolder
         let cloud = FileManager.cloudURL
-        self.rootAppCloud = cloud?.appendingPathComponent("Documents")
+        self.rootAppCloud = cloud?.appendingPathComponent(CloudDocumentController.documentDirName)
         self.rootICloud = cloud?.deletingLastPathComponent().appendingPathComponent("com~apple~CloudDocs/")
         self.rootLocal = URL.documentsDirectory
-        self.rootNewCloud = (FileManager.cloudURL ?? FileManager.groupURL).appending(path: "Documents")
+        self.rootNewCloud = (FileManager.cloudURL ?? FileManager.groupURL).appending(path: CloudDocumentController.documentDirName)
     }
 }
 
@@ -64,7 +64,7 @@ public extension LocationFileManager {
             return add(relative: url, to: rootNewCloud, module: mapModule(name: module))
         case .local:
             guard let rootLocal else { return nil }
-            guard let documentsIndex = url.pathComponents.firstIndex(of: "Documents") else {
+            guard let documentsIndex = url.pathComponents.firstIndex(of: CloudDocumentController.documentDirName) else {
                 return url
             }
             let filePath = url.pathComponents[(documentsIndex + 1)...].joined(separator: "/")

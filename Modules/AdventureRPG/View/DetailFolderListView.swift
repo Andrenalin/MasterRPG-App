@@ -26,22 +26,13 @@ struct DetailFolderListView: View {
         ) {
             DetailEditorView(root: root, model: model)
         }
-        .overlay {
-            overlayContent
-        }
-    }
-
-    // MARK: - Overlays
-
-    @ViewBuilder private var overlayContent: some View {
-        if root.openFileWindowModel.showItem {
+        .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
             root.viewController.viewer(
                 root: root,
-                itemId: root.openFileWindowModel.itemId,
-                configuration: ViewerConfiguration(closeButton: true, addToolbar: false)
-            ) {
-                root.openFileWindowModel.showItem = false
-            }
+                itemId: itemId,
+                configuration: ViewerConfiguration(closeButton: true, addToolbar: false),
+                dismissAction: dismiss
+            )
         }
     }
 }

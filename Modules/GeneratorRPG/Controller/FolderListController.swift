@@ -29,10 +29,11 @@ struct FolderListController: FolderListControllable {
     }
 
     func copy(listModel: FolderListModel) -> FolderListController {
+        let dependencies = copiedListDependencies
         return FolderListController(
             listModel: listModel,
-            listDisplayModel: listDisplayModel.newListDisplayModel,
+            listDisplayModel: dependencies.listDisplayModel,
             itemControllable: itemControllable,
-            searchRootControllable: searchRootControllable.copy(listDisplayModel: listDisplayModel.newListDisplayModel))
+            searchRootControllable: dependencies.searchRootControllable)
     }
 }
