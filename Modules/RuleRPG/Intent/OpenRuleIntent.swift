@@ -5,6 +5,7 @@
 import AppIntents
 import CoreRPG
 import Foundation
+import os.log
 
 struct OpenRuleIntent: OpenIntent {
     static let title: LocalizedStringResource = "Open Rule"
@@ -44,7 +45,11 @@ extension RuleRootModel {
               !model.specialCategory else { return }
         let intent = OpenRuleIntent()
         intent.target = RuleEntity(root: self, model: model)
-        _ = try? await IntentDonationManager.shared.donate(intent: intent)
+        do {
+            try await IntentDonationManager.shared.donate(intent: intent)
+        } catch {
+            Logger.appIntents.debug("Failed to donate OpenRuleIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
+        }
 #endif
     }
 }

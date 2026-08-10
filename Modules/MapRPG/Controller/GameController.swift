@@ -1534,7 +1534,7 @@ private extension GameController {
         }
         guard let value = Double(
             value.trimmingCharacters(in: .whitespacesAndNewlines)
-        ), value.isFinite else {
+        ), value.isFinite, value >= Double(Int.min), value <= Double(Int.max) else {
             return nil
         }
         return max(1, Int(value))

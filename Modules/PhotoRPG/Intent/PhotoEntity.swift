@@ -58,7 +58,7 @@ struct PhotoEntity: IndexedEntity {
 extension PhotoEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.documentsDirectory.appending(path: "\(landmark.name).pdf")
+            let url = URL.cachesDirectory.appending(component: "\(landmark.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
 //                Image(landmark.landmark.backgroundImageName)

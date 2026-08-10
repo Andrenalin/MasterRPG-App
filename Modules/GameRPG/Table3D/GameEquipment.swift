@@ -517,15 +517,17 @@ struct Die20: EntityEquipment {
     init(id: ID) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
-        // protocol, so there's no graceful "hide the die" fallback if this fails — this
-        // mirrors Apple's own EntityEquipment sample code, which force-loads bundled
-        // assets the same way. A `preconditionFailure` (vs. bare `try!`) at least makes
-        // the crash diagnosable: a missing bundled asset is a packaging bug, not
-        // something reachable from user/runtime conditions.
+        // protocol. Rather than crash the whole tabletop feature over a missing/corrupt
+        // bundled asset (a packaging bug, not something reachable from user/runtime
+        // conditions), fall back to a plain procedural mesh so the die still renders,
+        // rolls, and reports a value — just without its custom artwork.
         do {
             self.entity = try Entity.load(named: "D20Blue", in: tabletopGameContentBunlde)
         } catch {
-            preconditionFailure("Failed to load the bundled D20Blue RealityKit asset: \(error)")
+            Logger.gameTable.error(
+                "Failed to load the bundled D20Blue RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
+            )
+            self.entity = Self.makeFallbackEntity()
         }
         self.entity.scale.x = 0.00025
         self.entity.scale.y = 0.00025
@@ -561,6 +563,19 @@ struct Die20: EntityEquipment {
         audioPlaybackController.seek(to: .zero)
         audioPlaybackController.play()
     }
+
+    /// A plain procedural stand-in for the bundled D20 mesh, sized so it still
+    /// looks and behaves like a die after the same 0.00025 scale factor applied
+    /// to the loaded asset is applied to it.
+    @MainActor
+    private static func makeFallbackEntity() -> Entity {
+        let model = ModelEntity(
+            mesh: .generateSphere(radius: 80),
+            materials: [SimpleMaterial(color: .systemBlue, isMetallic: false)]
+        )
+        model.name = "D20Fallback"
+        return model
+    }
 }
 
 struct Die: EntityEquipment {
@@ -595,11 +610,15 @@ struct Die: EntityEquipment {
     init(id: ID) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
-        // protocol — see the matching comment on `Die20.init` for why this stays fatal.
+        // protocol — see the matching comment on `Die20.init` for why this degrades to a
+        // procedural fallback mesh instead of crashing.
         do {
             self.entity = try Entity.load(named: "Die", in: tabletopGameContentBunlde)
         } catch {
-            preconditionFailure("Failed to load the bundled Die RealityKit asset: \(error)")
+            Logger.gameTable.error(
+                "Failed to load the bundled Die RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
+            )
+            self.entity = Self.makeFallbackEntity()
         }
         do {
             // Unlike the entity itself, the roll sound is a nicety, not a hard
@@ -629,6 +648,17 @@ struct Die: EntityEquipment {
             audioPlaybackController.seek(to: .zero)
             audioPlaybackController.play()
         }
+    }
+
+    /// A plain procedural stand-in for the bundled Die mesh — see `Die20.makeFallbackEntity`.
+    @MainActor
+    private static func makeFallbackEntity() -> Entity {
+        let model = ModelEntity(
+            mesh: .generateBox(size: 140),
+            materials: [SimpleMaterial(color: .systemBlue, isMetallic: false)]
+        )
+        model.name = "DieFallback"
+        return model
     }
 }
 

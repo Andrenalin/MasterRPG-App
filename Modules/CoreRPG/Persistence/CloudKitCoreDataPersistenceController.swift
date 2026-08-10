@@ -61,7 +61,7 @@ public struct CloudKitCoreDataPersistenceController {
         privateDescription.shouldMigrateStoreAutomatically = true
         privateDescription.shouldInferMappingModelAutomatically = true
 
-        if allowCloudKitSync && !model.inMemory {
+        if Self.allowCloudKitSync && !model.inMemory {
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             privateDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
@@ -76,115 +76,128 @@ public struct CloudKitCoreDataPersistenceController {
         }
         
 #if !os(tvOS)
-        if allowCloudKitSync {
+        if Self.allowCloudKitSync {
             model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: privateDescription, coordinator: container.persistentStoreCoordinator)
         }
 #endif
         
-        var privateStore: NSPersistentStore?
-        var storeUrl: URL? = nil
-        var initError: CoreDataInitError = .none
+        // `loadPersistentStores` is documented as always asynchronous with no
+        // guaranteed completion thread, so the store-dependent state below is set
+        // from inside the completion handler rather than read immediately after the
+        // (non-blocking) call returns — see `runOnMainActor` for how that stays safe
+        // without breaking callers that rely on the (common, synchronous) fast path.
+        let model = model
         container.loadPersistentStores { storeDescription, error in
+            let initError: CoreDataInitError
+            let storeUrl: URL?
+            var privateStore: NSPersistentStore?
             if let error = error as NSError?, let url = storeDescription.url {
                 initError = .migration(message: error.localizedDescription)
                 storeUrl = url
-                return
+            } else {
+                initError = .none
+                storeUrl = nil
+                // Always capture the private store reference
+                if let url = storeDescription.url {
+                    privateStore = container.persistentStoreCoordinator.persistentStore(for: url)
+                }
             }
-            // Always capture the private store reference
-            if let url = storeDescription.url {
-                privateStore = container.persistentStoreCoordinator.persistentStore(for: url)
-            }
-        }
-        model.containerStoreUrl = storeUrl
-        model.privatePersistentStore = privateStore
-        model.error = initError
+            runOnMainActor {
+                model.containerStoreUrl = storeUrl
+                model.privatePersistentStore = privateStore
+                model.error = initError
 
 #if InitializeCloudKitSchema
-        do {
-            try container.initializeCloudKitSchema()
-        } catch {
-            print("\(#function): initializeCloudKitSchema: \(error)")
-        }
-        print("Successful")
+                do {
+                    try container.initializeCloudKitSchema()
+                } catch {
+                    print("\(#function): initializeCloudKitSchema: \(error)")
+                }
+                print("Successful")
 #else
-        setupContext()
-#endif        
+                Self.setupContext(container: container, model: model)
+#endif
+            }
+        }
     }
-    
+
     @MainActor
     public func recoverFromError() {
         guard model.recoverableError, let url = model.containerStoreUrl, let container = model.container else { return }
         do {
             try FileManager.default.removeItem(at: url)
-            var newError: CoreDataInitError = .none
+            let model = model
             container.loadPersistentStores { _, error in
-                if let error = error as NSError? {
-                    newError = .creation(message: error.localizedDescription)
+                let newError: CoreDataInitError = if let error = error as NSError? {
+                    .creation(message: error.localizedDescription)
+                } else {
+                    .none
+                }
+                runOnMainActor {
+                    model.error = newError
+                    Self.setupContext(container: container, model: model)
                 }
             }
-            model.error = newError
-            setupContext()
         } catch {
             model.error = .removeFile(message: error.localizedDescription)
         }
     }
-    
-    @MainActor
-    private func setupContext() {
-        if let container = model.container, model.error == .none {
-            // Setup main background context for regular operations
-            let context = container.newBackgroundContext()
-            context.name = "background_context"
-            context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-            context.transactionAuthor = model.currentActor.rawValue
-            context.automaticallyMergesChangesFromParent = true
-            model.context = context
 
-            // Setup dedicated batch context for batch operations
-            let batchContext = container.newBackgroundContext()
-            batchContext.name = "batchContext"
-            batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-            batchContext.transactionAuthor = model.currentActor.rawValue
-            batchContext.automaticallyMergesChangesFromParent = true
-            model.batchContext = batchContext
+    @MainActor
+    private static func setupContext(container: NSPersistentContainer, model: CoreDataInitModel) {
+        guard model.error == .none else { return }
+        // Setup main background context for regular operations
+        let context = container.newBackgroundContext()
+        context.name = "background_context"
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.transactionAuthor = model.currentActor.rawValue
+        context.automaticallyMergesChangesFromParent = true
+        model.context = context
+
+        // Setup dedicated batch context for batch operations
+        let batchContext = container.newBackgroundContext()
+        batchContext.name = "batchContext"
+        batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        batchContext.transactionAuthor = model.currentActor.rawValue
+        batchContext.automaticallyMergesChangesFromParent = true
+        model.batchContext = batchContext
 
 #if !os(tvOS)
-            model.spotlightIndexer?.startSpotlightIndexing()
+        model.spotlightIndexer?.startSpotlightIndexing()
 #endif
 
-            // Setup CloudKit event monitoring if sync is enabled
-            if allowCloudKitSync && !model.inMemory {
-                setupCloudKitEventMonitoring(container: container)
-            }
+        // Setup CloudKit event monitoring if sync is enabled
+        if allowCloudKitSync && !model.inMemory {
+            Self.setupCloudKitEventMonitoring(container: container, model: model)
+        }
 
-            let currentActor = model.currentActor
-            let localContext = model.context
+        let currentActor = model.currentActor
+        let localContext = model.context
 
-            let localModel = model
-            
-            if allowCloudKitSync {
-                let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
-                localModel.persistentHistoryTracker = persistentHistoryTracker
-                
-                // Setup persistent history cleaner and run initial cleanup
-                localModel.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
-                
-                // Run cleanup on launch (after a delay to not block startup)
-                localModel.cleanupTask?.cancel()
-                localModel.cleanupTask = Task { [weak localModel] in
-                    try? await Task.sleep(for: .seconds(5))
+        let localModel = model
+
+        if allowCloudKitSync {
+            let persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: currentActor, viewBackupContext: localContext)
+            localModel.persistentHistoryTracker = persistentHistoryTracker
+
+            // Setup persistent history cleaner and run initial cleanup
+            localModel.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
+
+            // Run cleanup on launch (after a delay to not block startup)
+            localModel.cleanupTask?.cancel()
+            localModel.cleanupTask = Task { [weak localModel] in
+                try? await Task.sleep(for: .seconds(5))
+                localModel?.persistentHistoryCleaner?.clean()
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(24 * 60 * 60))
                     localModel?.persistentHistoryCleaner?.clean()
-                    while !Task.isCancelled {
-                        try? await Task.sleep(for: .seconds(24 * 60 * 60))
-                        localModel?.persistentHistoryCleaner?.clean()
-                    }
                 }
             }
         }
     }
 
     @MainActor
-    private func setupCloudKitEventMonitoring(container: NSPersistentContainer) {
+    private static func setupCloudKitEventMonitoring(container: NSPersistentContainer, model: CoreDataInitModel) {
         NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container,
@@ -250,7 +263,7 @@ public struct CloudKitCoreDataPersistenceController {
         }
     }
     
-    private var allowCloudKitSync: Bool = {
+    private static let allowCloudKitSync: Bool = {
         let arguments = ProcessInfo.processInfo.arguments
         guard let index = arguments.firstIndex(where: { $0 == "-allowCloudKitSync" }), index + 1 < arguments.count else { return true }
         return arguments[index + 1] == "1"

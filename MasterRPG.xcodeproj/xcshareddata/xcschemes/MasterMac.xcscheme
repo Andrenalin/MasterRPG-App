@@ -51,7 +51,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-allowCloudKitSync 0"
+            argument = "-allowCloudKitSync 1"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

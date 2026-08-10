@@ -58,7 +58,7 @@ struct SpaceEntity: IndexedEntity {
 extension SpaceEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            let url = URL.documentsDirectory.appending(path: "\(item.name).pdf")
+            let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
 //                Image(item.imageRepresentationData)

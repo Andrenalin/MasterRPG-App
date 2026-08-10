@@ -327,7 +327,7 @@ final class AppDataModel: Identifiable {
                 }
 
             case .failed:
-            Logger.scanner3D.error("App failed state error=\(String(describing: self.error!))")
+            Logger.scanner3D.error("App failed state error=\(String(describing: self.error))")
                 // Shows error screen.
             default:
                 break

@@ -126,76 +126,106 @@ public struct CoreDataPersistenceController {
         model.spotlightIndexer = RpgSpotlightIndexerDelegate(forStoreWith: localDescription, coordinator: container.persistentStoreCoordinator)
 #endif
         
-        var storeUrl: URL? = nil
-        var initError: CoreDataInitError = .none
+        // `loadPersistentStores` is documented as always asynchronous with no
+        // guaranteed completion thread, so the store-dependent state below is set
+        // from inside the completion handler rather than read immediately after the
+        // (non-blocking) call returns — see `runOnMainActor` for how that stays safe
+        // without breaking callers that rely on the (common, synchronous) fast path.
+        let model = model
         container.loadPersistentStores { storeDescription, error in
+            let initError: CoreDataInitError
+            let storeUrl: URL?
             if let error = error as NSError?, let url = storeDescription.url {
                 initError = .migration(message: error.localizedDescription)
                 storeUrl = url
+            } else {
+                initError = .none
+                storeUrl = nil
+            }
+            runOnMainActor {
+                model.containerStoreUrl = storeUrl
+                model.error = initError
+                Self.setupContext(container: container, model: model)
             }
         }
-        model.containerStoreUrl = storeUrl
-        model.error = initError
-        
-        setupContext()
     }
-    
+
     @MainActor
     public func recoverFromError() {
         guard model.recoverableError, let url = model.containerStoreUrl, let container = model.container else { return }
         do {
             try FileManager.default.removeItem(at: url)
-            var newError: CoreDataInitError = .none
+            let model = model
             container.loadPersistentStores { _, error in
-                if let error = error as NSError? {
-                    newError = .creation(message: error.localizedDescription)
+                let newError: CoreDataInitError = if let error = error as NSError? {
+                    .creation(message: error.localizedDescription)
+                } else {
+                    .none
+                }
+                runOnMainActor {
+                    model.error = newError
+                    Self.setupContext(container: container, model: model)
                 }
             }
-            model.error = newError
-            setupContext()
         } catch {
             model.error = .removeFile(message: error.localizedDescription)
         }
     }
-    
-    @MainActor
-    private func setupContext() {
-        if let container = model.container, model.error == .none {
-            // Setup main background context for regular operations
-            let context = container.newBackgroundContext()
-            context.name = "background_context"
-            context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-            context.transactionAuthor = model.currentActor.rawValue
-            context.automaticallyMergesChangesFromParent = true
-            model.context = context
 
-            // Setup dedicated batch context for batch operations
-            let batchContext = container.newBackgroundContext()
-            batchContext.name = "batchContext"
-            batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-            batchContext.transactionAuthor = model.currentActor.rawValue
-            batchContext.automaticallyMergesChangesFromParent = true
-            model.batchContext = batchContext
+    @MainActor
+    private static func setupContext(container: NSPersistentContainer, model: CoreDataInitModel) {
+        guard model.error == .none else { return }
+        // Setup main background context for regular operations
+        let context = container.newBackgroundContext()
+        context.name = "background_context"
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.transactionAuthor = model.currentActor.rawValue
+        context.automaticallyMergesChangesFromParent = true
+        model.context = context
+
+        // Setup dedicated batch context for batch operations
+        let batchContext = container.newBackgroundContext()
+        batchContext.name = "batchContext"
+        batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        batchContext.transactionAuthor = model.currentActor.rawValue
+        batchContext.automaticallyMergesChangesFromParent = true
+        model.batchContext = batchContext
 
 #if !os(tvOS)
-            model.spotlightIndexer?.startSpotlightIndexing()
+        model.spotlightIndexer?.startSpotlightIndexing()
 #endif
-            model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: model.currentActor, viewBackupContext: model.context)
+        model.persistentHistoryTracker = PersistentHistoryTrackerManager(container: container, currentActor: model.currentActor, viewBackupContext: model.context)
 
-            // Setup persistent history cleaner and run initial cleanup
-            model.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
+        // Setup persistent history cleaner and run initial cleanup
+        model.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
 
-            model.cleanupTask?.cancel()
-            model.cleanupTask = Task { [weak model] in
-                try? await Task.sleep(for: .seconds(5))
+        model.cleanupTask?.cancel()
+        model.cleanupTask = Task { [weak model] in
+            try? await Task.sleep(for: .seconds(5))
+            model?.persistentHistoryCleaner?.clean()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(24 * 60 * 60))
                 model?.persistentHistoryCleaner?.clean()
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(24 * 60 * 60))
-                    model?.persistentHistoryCleaner?.clean()
-                }
             }
         }
     }
 }
 
 final class RPGPersistentContainer: NSPersistentContainer, @unchecked Sendable {}
+
+/// Runs `work` on the main actor. `loadPersistentStores`'s completion handler is
+/// documented as not guaranteed to run on any particular thread — but in practice,
+/// for a healthy local (or already-cached CloudKit) store it fires synchronously on
+/// the calling (main) thread. `DataBaseModel.setup()`/`ShareExtensionDatabaseService.setup()`
+/// call `loadDatabase(bundles:)` and read `model.context`/`model.error` immediately
+/// afterward with no `await`, relying on exactly that fast path. Running synchronously
+/// via `MainActor.assumeIsolated` when we're already on the main thread preserves that
+/// behavior; hopping through a `Task` only when the completion genuinely lands off-thread
+/// (or later) keeps the rare slow path correct without breaking the common one.
+func runOnMainActor(_ work: @escaping @MainActor @Sendable () -> Void) {
+    if Thread.isMainThread {
+        MainActor.assumeIsolated(work)
+    } else {
+        Task { @MainActor in work() }
+    }
+}

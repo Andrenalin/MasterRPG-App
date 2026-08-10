@@ -9,14 +9,13 @@ struct DetailListView: View {
 
     @Environment(\.navigator) private var navigator
 
-    @State private var detailFolderListController: FolderListController
+    @State private var detailFolderListController: any FolderListControllable
     @State private var selection = ItemSelectionModel()
 
     init(root: GeneratorRootModel, model: GeneratorModel) {
         self.root = root
         self.model = model
-        let listController = root.folderListControllable
-        self._detailFolderListController = State(wrappedValue: listController as! FolderListController)
+        self._detailFolderListController = State(wrappedValue: root.folderListControllable)
     }
 
     var body: some View {

@@ -14,14 +14,13 @@ Still no finding reaches **Critical** by this audit's strict bar (crash-on-commo
 2. **[High/Security, NEW] No maximum length on the local-network message framer** — §6.4 — `Modules/GameRPG/Network/GameProtocol.swift:82`. Compounds #1: any device that completes the (secret-derived) TLS handshake can declare an arbitrary multi-gigabyte message length with nothing downstream validating it.
 3. **[High/Security, NEW] Foundry import: unbounded pack count from the manifest enables a CPU-exhaustion DoS** — §6.5 — `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:449-481`. A tiny, well-formed manifest can declare millions of bogus packs, forcing an O(specs × paths) scan with no cap.
 4. **[High/Security, NEW] Foundry import: unbounded JSON nesting depth — stack-overflow DoS** — §6.6 — `Modules/CoreRPG/Foundry/FoundryRuleModels.swift:20-59`. A small, deeply-nested JSON array/object payload recurses one native stack frame per level with no depth guard.
-5. **[High, NEW] App Intent PDF/file export writes to a path built from an unescaped, user-controlled item name — same bug class as an already-fixed one, recurring in 8 files** — §5.11 — e.g. `Modules/PdfRPG/Intent/PdfEntity.swift:61`. `.appending(path:)` treats `/`/`..` in a free-text item name as literal path structure.
-6. **[High, NEW] Core Data `loadPersistentStores` completion race in both persistence controllers** — §5.14 — `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:129-140`, `CloudKitCoreDataPersistenceController.swift:87-100`. Error/URL state is read immediately after calling `loadPersistentStores`, not inside its completion handler, which Apple documents as not guaranteed synchronous — a genuine migration/corruption failure can go completely undetected.
-7. **[High, NEW] User-typed initiative value can crash the app via `Int(Double)` overflow trap** — §5.12 — `Modules/MapRPG/Controller/GameController.swift:1464`. Typing a plain large number (no scientific notation needed) into any Character value mapped to "initiative" traps the Game Master's device mid-battle.
-8. **[High] `ExportController` BFS traversal still duplicated verbatim across 7+ modules — still open** — §9.4 — e.g. `Modules/PdfRPG/Controller/ExportController.swift` vs. `Modules/DiceRPG/Controller/ExportController.swift` (re-confirmed byte-for-byte identical apart from one string literal).
-9. **[High, NEW] `MessageMapper` — a shared encode/decode protocol that already exists — is hand-duplicated by 16 of its 17 conformers instead of used** — §9.17 — `Modules/GameRPG/Model/MessageMapper.swift:5-8`. Two incompatible call-site signatures have already drifted apart as a result.
-10. **[High, NEW, verified] Stale 3D-object rotation base after a remote SharePlay transform update** — §8.6 — `Modules/SpaceRPG/Space/SpaceViewer.swift:542-564`. After another participant moves the shared 3D object, the next local drag gesture snaps it back toward the pre-update rotation.
+5. **[High] `ExportController` BFS traversal still duplicated verbatim across 7+ modules — still open** — §9.4 — e.g. `Modules/PdfRPG/Controller/ExportController.swift` vs. `Modules/DiceRPG/Controller/ExportController.swift` (re-confirmed byte-for-byte identical apart from one string literal).
+6. **[High, NEW] `MessageMapper` — a shared encode/decode protocol that already exists — is hand-duplicated by 16 of its 17 conformers instead of used** — §9.17 — `Modules/GameRPG/Model/MessageMapper.swift:5-8`. Two incompatible call-site signatures have already drifted apart as a result.
+7. **[High, NEW, verified] Stale 3D-object rotation base after a remote SharePlay transform update** — §8.6 — `Modules/SpaceRPG/Space/SpaceViewer.swift:542-564`. After another participant moves the shared 3D object, the next local drag gesture snaps it back toward the pre-update rotation.
 
-For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.9, §6.2–6.3, §7.1–7.2, §8.1–8.5, §9.2, §9.13–9.14 — roughly 30 items) was re-verified this pass and confirmed still holding, with one small gap found (§5.8/§5.10: one module, RuleRPG, was missed from the original 11-module Siri-donation-logging fix).
+All §5 Bugs/logic-errors findings (§5.1–§5.14) are now fixed — see that section for details, including this pass's App Intent path-escaping fix (§5.11), the Core Data `loadPersistentStores` completion race fix (§5.14), and the initiative-parsing overflow-trap fix (§5.12).
+
+For context, everything marked **NOW FIXED** below (§3.2–3.6, §4.3–4.6, §5.1–5.14, §6.2–6.3, §7.1–7.2, §8.1–8.5, §9.2, §9.13–9.14 — roughly 40 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too).
 
 ---
 
@@ -34,12 +33,9 @@ Learned from the prior audit's own experience (§4.1's reverted mechanical swap,
 - **Delete the dead half of `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift`** (`borderLessTVBottonStyle`/`BorderLessTVBottonStyleViewModifer`, lines 1-27) — zero call sites; leave the sibling `switchTVToggleStyle` (in active use) alone. See §9.18.
 - **Rename `Modules/GameRPG/SharePlay/RPGActivitty.swift` → `RPGActivity.swift`** — the type inside (`RPGActivity`, 14+ live call sites) is already spelled correctly; only the filename has a typo. See §9.19.
 - **Delete the leftover `//.padding(.horizontal)` line** — `Modules/TableRPG/View/TableGenerationRootView.swift:253`, introduced in a recent commit. See §9.18.
-- **Add the missing error-logging to RuleRPG's Siri-donation catch** — `Modules/RuleRPG/Intent/OpenRuleIntent.swift:47` (`_ = try? await IntentDonationManager.shared.donate(...)`) — the other 11 modules already log via `Logger.appIntents`; RuleRPG was missed from that pass. See §5.10.
 - **Mark `DragRotationModifier`'s `baseYaw`/`basePitch` `private`** — `Modules/SpaceRPG/Space/SpaceViewer.swift:563-564`. See §8.6.
-- **Guard `MasterController.start()`'s force-unwrap** — `Modules/GameRPG/Controller/MasterController.swift:495` (`root.gameModel.gameConfig.master.adventureId!`) — add a `guard let` instead of relying on an upstream-only invariant. See §5.13.
-- **Fix the force-unwrapped `error` in `AppDataModel`'s failed-state logging** — `Modules/SpaceRPG/Record/AppDataModel.swift:330` — `String(describing:)` already handles `Optional` fine; drop the `!`. See §5.13.
-- **Fix `GeneratorRPG/Root/DetailListView.swift:19`'s force-cast** (`listController as! FolderListController`) — store the `any FolderListControllable` existential directly, matching every other module's `DetailListView.swift`. See §5.13.
-- **Add the range guard in `battleInitiative(from:)`** before the final `Int(value)` conversion — `Modules/MapRPG/Controller/GameController.swift:1464`. See §5.12.
+
+All the other former quick wins in this list (RuleRPG's Siri-donation logging, `MasterController`'s force-unwrap, `AppDataModel`'s force-unwrapped `error`, `DetailListView`'s force-cast, and the `battleInitiative(from:)` range guard) are now fixed — see §5.10, §5.12, §5.13.
 
 ---
 
@@ -193,9 +189,10 @@ Learned from the prior audit's own experience (§4.1's reverted mechanical swap,
 - Re-confirmed at all three original sites (`EditControllable.swift:590`, `PhotoDataController.swift:21`, `CloudDocumentController.swift:65`): all use the safe `.appending(component:)` pattern, no force-unwrap on interpolated user text.
 - **Severity:** High — resolved. **Note:** the same underlying bug class (unescaped user text into a URL-building API) was found recurring, unfixed, in App Intents export code that wasn't covered by this original fix — see §5.11.
 
-### 5.5 Force-try loading bundled RealityKit assets in `GameEquipment.swift` — PARTIALLY FIXED, unchanged assessment
-- Entity loads (`Die20`, `Die`) remain `preconditionFailure`-guarded but still fatal by design — `EntityEquipment.entity` is a non-optional protocol requirement (confirmed against Apple's own sample code using the identical pattern), so this can't be made fully non-crashing without a fallback placeholder mesh. Audio loads for both structs re-confirmed fully non-fatal (`AudioPlaybackController?`, `do/catch` + `Logger.gameTable.error`).
-- **Severity:** Medium — audio half resolved; entity half is an accepted, unavoidable tradeoff.
+### 5.5 Force-try loading bundled RealityKit assets in `GameEquipment.swift` — NOW FIXED
+- **Location:** `Modules/GameRPG/Table3D/GameEquipment.swift` (`Die20.init`, `Die.init`).
+- **Fix:** `entity` is still a non-optional `EntityEquipment` protocol requirement, but the previous `preconditionFailure` on a failed bundled-asset load is now a logged fallback: each struct gains a `makeFallbackEntity()` that builds a plain procedural mesh (a sphere for `Die20`, a cube for `Die`) at the same post-scale size as the real asset. A failed `Entity.load` now logs via `Logger.gameTable.error` and substitutes the procedural mesh instead of crashing the whole tabletop feature over a missing/corrupt bundled asset. Audio loads were already non-fatal. Verified with a full visionOS Simulator build.
+- **Severity:** Medium — resolved.
 
 ### 5.6 Force-cast outside the throwing part of do/catch — NOW FIXED
 - Re-confirmed at `CoreDataController.swift:365,396,433`: all use `guard let ... = try ... as? [DataType] else { log; return }`.
@@ -205,47 +202,40 @@ Learned from the prior audit's own experience (§4.1's reverted mechanical swap,
 - Re-confirmed: all 10 (+RuleRPG's original) use `preconditionFailure` with a module-specific message. Directly re-verified byte-for-byte on PdfRPG/DiceRPG while investigating §9.4.
 - **Severity:** Low — resolved.
 
-### 5.8 Empty `catch {}` swallowing Siri intent-donation failures, 11 modules — NOW FIXED for 10/11; gap found in the 12th module
+### 5.8 Empty `catch {}` swallowing Siri intent-donation failures, 11 modules — NOW FIXED for all 12 modules
 - Re-confirmed fixed (logs via `Logger.appIntents.debug`) in AdventureRPG, AudioRPG, GeneratorRPG, DiceRPG, MapRPG, PhotoRPG, PdfRPG, CharacterRPG, SpaceRPG, WeatherRPG, TableRPG.
-- **Gap:** `Modules/RuleRPG/Intent/OpenRuleIntent.swift:47` still silently swallows (`_ = try? await IntentDonationManager.shared.donate(...)`) — RuleRPG wasn't in the original 11-module list this fix targeted. See §5.10 and the matching quick win in §2.
-- **Severity:** Low — resolved except RuleRPG.
+- **Gap closed:** `Modules/RuleRPG/Intent/OpenRuleIntent.swift` now uses the same `do { try await IntentDonationManager.shared.donate(...) } catch { Logger.appIntents.debug(...) }` pattern as the other 11 modules instead of silently swallowing via `try?`. See §5.10.
+- **Severity:** Low — resolved.
 
 ### 5.9 CloudKit merge errors silently swallowed — NOW FIXED
 - Re-confirmed at `SyncDataControllable.swift:60-66`: logs via `Logger.syncDataControllable.error` with deleted/inserted/updated counts.
 - **Severity:** Medium — resolved.
 
-### 5.10 RuleRPG's Siri-donation catch still swallows errors silently — NEW (gap in §5.8's fix)
-- **Location:** `Modules/RuleRPG/Intent/OpenRuleIntent.swift:47`.
-- **What/Why:** Same diagnosability gap §5.8 fixed everywhere else; RuleRPG was missed.
-- **Action:** Apply the same `Logger.appIntents.debug(...)` pattern used in the other 11 modules.
-- **Severity:** Low.
+### 5.10 RuleRPG's Siri-donation catch still swallows errors silently — NOW FIXED
+- **Location:** `Modules/RuleRPG/Intent/OpenRuleIntent.swift` (`donateSiriViewingIntent(for:)`).
+- **Fix:** Replaced `_ = try? await IntentDonationManager.shared.donate(intent: intent)` with the same `do`/`catch` + `Logger.appIntents.debug(...)` pattern used by the other 11 modules.
+- **Severity:** Low — resolved.
 
-### 5.11 App Intent PDF/file export writes to a path built from unescaped, user-controlled item names — NEW
-- **Location:** `Modules/PdfRPG/Intent/PdfEntity.swift:61`, `Modules/WeatherRPG/Intent/WeatherEntity.swift:61`, `Modules/AdventureRPG/Intent/AdventureEntity.swift:61`, `Modules/CharacterRPG/Intent/CharacterEntity.swift:61`, `Modules/PhotoRPG/Intent/PhotoEntity.swift:61`, `Modules/MapRPG/Intent/MapEntity.swift:61`, `Modules/SpaceRPG/Intent/SpaceEntity.swift:61`, `Modules/TableRPG/Intent/TableEntity.swift:61` (8 sites, verified directly at `PdfEntity.swift:61`).
-- **What:** Each `Transferable.transferRepresentation`'s `FileRepresentation` builds `URL.documentsDirectory.appending(path: "\(item.name).pdf")`. Unlike `.appending(component:)` (used in §5.4's fix), `.appending(path:)` does **not** percent-encode `/` — it's a literal path separator, and `..` segments resolve as parent-directory references. `item.name` is free-text, CloudKit-synced, fully user-controllable.
-- **Why:** A `/` or `..` in any Pdf/Weather/Adventure/Character/Photo/Map/Space/Table item's name causes the generated share file to be written to an unintended subpath (silently failing if the directory doesn't exist, since `CGContext(url as CFURL, ...)` returns `nil` and the function just returns) or overwrites an existing file at an attacker/user-chosen relative location inside the app's own Documents container. This is exactly §5.4's bug class recurring in App Intents/Siri/Shortcuts sharing code that fix pass didn't cover. Separately: this disposable, regenerate-on-demand share file is written to `.documentsDirectory` (iCloud/backup-synced) rather than `.cachesDirectory`/a temp directory.
-- **Action:** Swap `.appending(path:)` → `.appending(component:)` in all 8 files (percent-encodes `/`, can't fail); move the output location to `.cachesDirectory` or `FileManager.default.temporaryDirectory`.
-- **Severity:** High.
+### 5.11 App Intent PDF/file export writes to a path built from unescaped, user-controlled item names — NOW FIXED
+- **Location:** `Modules/PdfRPG/Intent/PdfEntity.swift`, `Modules/WeatherRPG/Intent/WeatherEntity.swift`, `Modules/AdventureRPG/Intent/AdventureEntity.swift`, `Modules/CharacterRPG/Intent/CharacterEntity.swift`, `Modules/PhotoRPG/Intent/PhotoEntity.swift`, `Modules/MapRPG/Intent/MapEntity.swift`, `Modules/SpaceRPG/Intent/SpaceEntity.swift`, `Modules/TableRPG/Intent/TableEntity.swift` (all 8 sites).
+- **Fix:** All 8 `FileRepresentation` closures now build `URL.cachesDirectory.appending(component: "\(item.name).pdf")` — `.appending(component:)` percent-encodes `/` instead of treating it as a path separator (so it can't escape the target directory or resolve `..` segments), and the disposable, regenerate-on-demand share file now lands in `.cachesDirectory` instead of the iCloud/backup-synced `.documentsDirectory`.
+- **Severity:** High — resolved.
 
-### 5.12 Battle initiative parsing traps on out-of-range numeric text — NEW, verified
-- **Location:** `Modules/MapRPG/Controller/GameController.swift:1455-1465` (`battleInitiative(from:)`).
-- **What:** For text that fails `Int(value)`, the function parses as `Double`, checks only `.isFinite`, then returns `max(1, Int(value))`. Verified directly: `Int.init(_:Double)` traps at runtime when the magnitude exceeds `Int`'s range even though the `Double` is perfectly finite.
-- **Why:** `value` is the free-text display value of whatever Character game-entry is mapped to "initiative" — ordinary user-typed, CloudKit/game-network-synced text. A plain large number like `"99999999999999999999"` (no scientific notation required) parses fine as a finite `Double` (~1e20) but crashes the instant `Int(value)` runs, since 1e20 exceeds `Int64.max`. Reachable via `addBattleCombatant`/`assignBattleCharacter`/`refreshBattleConfiguredValues` — a session-ending crash on the Game Master's device from an ordinary typo or pasted garbage, no malicious intent needed.
-- **Action:** Guard the range before converting: bail out (return `nil`) if `value < Double(Int.min) || value > Double(Int.max)` before calling `Int(value)`.
-- **Severity:** High.
+### 5.12 Battle initiative parsing traps on out-of-range numeric text — NOW FIXED
+- **Location:** `Modules/MapRPG/Controller/GameController.swift` (`battleInitiative(from:)`).
+- **Fix:** The `Double` fallback path now also guards `value >= Double(Int.min), value <= Double(Int.max)` before calling `Int(value)`, so an out-of-range but finite `Double` (e.g. from typing `"99999999999999999999"`) returns `nil` instead of trapping.
+- **Severity:** High — resolved.
 
-### 5.13 Additional minor force-unwraps/force-casts found this pass — NEW (grouped)
-- `Modules/GameRPG/Controller/MasterController.swift:495` — `root.gameModel.gameConfig.master.adventureId!` force-unwrapped; currently safe only because the sole call site enforces the invariant in a different file. Add a local `guard let`.
-- `Modules/GeneratorRPG/Root/DetailListView.swift:19` — `listController as! FolderListController` force-casts an existential to a concrete type; every other module's `DetailListView.swift` stores the protocol-typed value directly instead. Crashes if ever given a test/preview mock.
-- `Modules/SpaceRPG/Record/AppDataModel.swift:330` — `self.error!` force-unwrapped inside error-state logging; safe today only by call-site discipline (`switchToErrorState` always sets `error` first). `String(describing:)` already handles `Optional` — drop the `!`.
-- **Severity:** Low (all three — none currently reachable, all one bad refactor away from a crash).
+### 5.13 Additional minor force-unwraps/force-casts found this pass — NOW FIXED (grouped)
+- `Modules/GameRPG/Controller/MasterController.swift` — the force-unwrap is gone; `titleImage(for:)` already accepts `UUID?`, so `root.gameModel.gameConfig.master.adventureId` (itself already `UUID?`) is now passed straight through with no `!`.
+- `Modules/GeneratorRPG/Root/DetailListView.swift` — the `@State` property is now typed `any FolderListControllable` (matching every other module's `DetailListView.swift`) and initialized directly from `root.folderListControllable`, so the `as! FolderListController` force-cast is gone.
+- `Modules/SpaceRPG/Record/AppDataModel.swift` — dropped the `!`; `String(describing: self.error)` already handles the `Optional` correctly.
+- **Severity:** Low (all three) — resolved.
 
-### 5.14 `NSPersistentContainer.loadPersistentStores` completion race — NEW
-- **Location:** `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:129-140` (`loadDatabase`), `:144-155` (`recoverFromError`); `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift:87-100`, `:114-126` (identical pattern) — both verified directly.
-- **What:** `container.loadPersistentStores { storeDescription, error in initError = ...; storeUrl = ... }` is called, and immediately *after* — not inside the completion closure — the code reads `initError`/`storeUrl` and assigns `model.error`/`model.containerStoreUrl`, then calls `setupContext()`, which itself gates on `model.error == .none`. Apple documents `loadPersistentStores` as always asynchronous, with no synchronous variant guaranteed.
-- **Why:** `model.error` is effectively read at its pre-completion initial value (`.none`) regardless of whether the store actually finished loading. The entire recoverable-error UI path in `DataBaseModel.finishSetup()` (the "database could not be loaded, recover?" flow, `canRecover = true`) becomes unreachable under real async completion timing: a genuine migration/corruption failure goes undetected, the app proceeds as if the store loaded fine, and every subsequent Core Data operation against the broken store fails deep in the app with no diagnosis or recovery offered. `recoverFromError()` has the identical bug, so even manual recovery (delete + recreate) doesn't reliably confirm success. This is the Core Data bootstrap path exercised on every single app launch, in both the local-only and CloudKit-backed controllers.
-- **Action:** Move the `model.*` assignment and `setupContext()` call *inside* the completion handler (re-dispatching to `@MainActor`, since the handler isn't guaranteed to run on Main), or bridge to `async`/`await`.
-- **Severity:** High. Not empirically reproduced with a crash/log (the finding rests on Apple's documented API contract plus a static trace, not an observed failure — for a healthy local store the completion in practice often does return before `loadPersistentStores` does, which is exactly what makes this intermittent and dangerous rather than obviously broken).
+### 5.14 `NSPersistentContainer.loadPersistentStores` completion race — NOW FIXED
+- **Location:** `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift` (`loadDatabase`, `recoverFromError`); `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift` (identical pattern, plus CloudKit-specific `privatePersistentStore`/schema-init handling).
+- **Fix:** In both controllers, the `model.error`/`model.containerStoreUrl` (and, for CloudKit, `model.privatePersistentStore`) assignment plus the `setupContext()` call now happen *inside* `loadPersistentStores`'s completion closure, wrapped in `Task { @MainActor in ... }` since the closure isn't guaranteed to run on the main actor. `setupContext()` (and CloudKit's `setupCloudKitEventMonitoring()`) were changed from instance methods to `private static` functions taking `container`/`model` explicitly, so they can be called from inside the completion closure without capturing `self`. `recoverFromError()` got the identical fix. Verified with full iOS, visionOS, and macOS builds.
+- **Severity:** High — resolved.
 
 ---
 
@@ -490,8 +480,8 @@ Learned from the prior audit's own experience (§4.1's reverted mechanical swap,
 
 1. **Centralize the two confirmed duplication hot spots (§9.4, §9.5) — and now a third (§9.17) — with the same pattern already proven for `FolderListControllable`.** `ExportController.exporting(itemIds:)`, `DetailFolderListView.overlayContent`, and now the `MessageMapper` encode/decode pair are all cases where a working shared-protocol-extension pattern already exists elsewhere in the codebase (`FolderListControllable`, genuinely shared) but wasn't applied. §9.17 is the cheapest of the three to fix — the protocol already exists, it just needs conformance declarations and default-implementation bodies.
 2. **Replace `nonisolated(unsafe)` + `MainActor.assumeIsolated` (§3.8) with a `Sendable` snapshot type.** Directly unblocks §3.1 (Foundry import mapping stuck on Main Actor) too.
-3. **Standardize on `os.Logger`; stop using bare `print()` or silent `catch {}`.** §9.12 (51 `print()` sites, improved from 70), §5.10 (one remaining silent Siri-donation catch), and the general pattern this audit keeps finding in one-off gaps (RuleRPG missed from an 11-module fix) — a `SwiftLint` custom rule banning `print(` in non-test targets, and a repo-wide grep for `catch {}`/`catch { }` with an empty body, run as a periodic check rather than a one-time pass, would catch this class of "missed the 12th module" gap before it needs a full re-audit to surface.
-4. **Treat "already-fixed bug classes" as a checklist for new code, not a closed chapter.** §5.11 (App Intents export path traversal) is the *exact* bug §5.4 already fixed, just in files that fix didn't touch. When a bug class gets fixed at N call sites, grep for the same anti-pattern (`.appending(path:` on interpolated user text, in this case) across the *whole* repo, not just the originally-flagged files, before declaring it resolved.
+3. **Standardize on `os.Logger`; stop using bare `print()` or silent `catch {}`.** §9.12 (51 `print()` sites, improved from 70) and the general pattern this audit keeps finding in one-off gaps (§5.10: RuleRPG missed from an 11-module fix, now closed) — a `SwiftLint` custom rule banning `print(` in non-test targets, and a repo-wide grep for `catch {}`/`catch { }` with an empty body, run as a periodic check rather than a one-time pass, would catch this class of "missed the 12th module" gap before it needs a full re-audit to surface.
+4. **Treat "already-fixed bug classes" as a checklist for new code, not a closed chapter.** §5.11 (App Intents export path traversal, now fixed) was the *exact* bug §5.4 already fixed, just in files that fix didn't touch. When a bug class gets fixed at N call sites, grep for the same anti-pattern (`.appending(path:` on interpolated user text, in this case) across the *whole* repo, not just the originally-flagged files, before declaring it resolved.
 5. **Give the untrusted-input Foundry parser dedicated fuzz/malformed-input test coverage.** §6.5 and §6.6 are both resource-exhaustion gaps in code that already has good bounds-safety hygiene per the prior audit's own note — the parser is careful about crashing on bad data, but not yet about being *slow* or *deep* on bad data. A small corpus of adversarial fixtures (huge pack counts, deeply nested JSON) run in CI would catch regressions on both axes going forward.
 6. **Reconcile `CLAUDE.md`'s documented per-module folder structure (§9.15) and Id/URL casing convention (§9.20) with actual practice.** Both are low-severity individually but compound the same underlying problem: documentation an AI coding agent (or new contributor) would reasonably treat as authoritative doesn't match what the codebase actually does.
 
