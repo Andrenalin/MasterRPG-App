@@ -129,7 +129,7 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
     @Test("OldDiceBag")
     func snapshotOldDiceBag() async throws {
         try await assertPreviewSnapshot("OldDiceBag") {
-            DiceRPG.OldDiceBag { _ in }
+            DiceRPG.GameDiceBag { _ in }
                 .environment(DiceRootModel.previewWithData)
         }
     }

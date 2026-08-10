@@ -41,8 +41,7 @@ struct CarouselPhotoItemView: View {
                 }
             }
             .environment(itemSelectionModel)
-            .frame(height: 110)
-            .clipShape(.rect(cornerRadius: 20, style: .continuous))
+            .frame(height: 120)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(

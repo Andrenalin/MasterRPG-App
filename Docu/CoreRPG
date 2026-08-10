@@ -19,7 +19,7 @@ CoreRPG is the shared foundation module for MasterRPG. It supplies cross-module 
 ## Subagent Coverage
 
 - Subagent 1: `Model`, `Persistence`, `Stores`, `CRDT`, `PropertyWrappers`, `Files`, `Cache`, shared Core Data model.
-- Subagent 2: `Controllable`, `ItemList`, `Fake`, `DeleteMe`.
+- Subagent 2: `Controllable`, `ItemList`, `Fake`.
 - Subagent 3: `Navigator`, `Routes`, `ScenesManager`, `App`, `AppModels`, `TabNavigation`, `Platform`, `Settings`, `Menu`.
 - Subagent 4: UI folders including `LGViews`, `LGViewModifiers`, `Views`, `ViewModifiers`, `Buttons`, `ItemViews`, `Rows`, `ItemDetail`, `Layout`, `CustomBars`, `FileViews`, `Editors`, `EntryEditor`, `Inspector`, `Sheet`.
 - Subagent 5: `Links`, `LinkRenderer`, `Text`, `Parser`, `List`, `Accessibility`, `Animations`, `Shaders`.
@@ -86,7 +86,7 @@ Inspectors, sheets, file import/export panels, quick editors, and rows reuse the
 ## Category Order
 
 1. Model contracts and item/list state: `Model`, `ItemList`.
-2. Controller architecture: `Controllable`, `Fake`, `DeleteMe`.
+2. Controller architecture: `Controllable`, `Fake`.
 3. Persistence, file storage, cache, sync primitives: `Persistence`, `Files`, `Cache`, `CRDT`, `Stores`, `PropertyWrappers`, shared Core Data resources.
 4. Navigation, app state, windows, platform wrappers: `Navigator`, `Routes`, `ScenesManager`, `App`, `AppModels`, `TabNavigation`, `Platform`, `Settings`, `Menu`.
 5. Reusable SwiftUI UI: `LGViews`, `LGViewModifiers`, `Views`, `ViewModifiers`, `Buttons`, `ItemViews`, `Rows`, `ItemDetail`, `Layout`, `CustomBars`, `Editors`, `EntryEditor`, `Inspector`, `Sheet`, `FileViews`.
@@ -98,7 +98,6 @@ Inspectors, sheets, file import/export panels, quick editors, and rows reuse the
 - Some `@Observable` classes are not explicitly `@MainActor`; repo guidance says observable classes should be MainActor-isolated unless default actor isolation covers them.
 - Existing code has older APIs in places: Combine debouncing, `DispatchQueue`, `DateFormatter`/`NumberFormatter`, `Task.sleep(nanoseconds:)`, `onTapGesture`, `showsIndicators: false`, and a few force unwraps. Follow repo guidance for new work even when older examples exist.
 - `LinkRegisterController.linksFrom(source:)` and `resetUsedLink(for:)` deserve review before relying on outgoing-link semantics.
-- `DeleteMe/ItemSwiftDataPersistable.swift`, commented shader material, checked-in `.DS_Store` files, and typo-named APIs are legacy or surprising areas. Preserve public names unless doing a coordinated rename.
 - The CloudKit container string in code should be checked against current entitlements before changing persistence behavior.
 
 ## Complete File Catalog
@@ -214,10 +213,6 @@ Inspectors, sheets, file import/export panels, quick editors, and rows reuse the
 - `Debug/DumpEnvironment.swift`
 - `Debug/Logging.swift`
 - `Debug/RainbowDebug.swift`
-
-### Delete Me
-
-- `DeleteMe/ItemSwiftDataPersistable.swift`
 
 ### Editors
 
