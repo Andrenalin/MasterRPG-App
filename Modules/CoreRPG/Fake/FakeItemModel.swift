@@ -95,8 +95,7 @@ final class FakeItemModel: nonisolated Identifiable, @unchecked Sendable {
     }
     
     nonisolated final func encode(to encoder: any Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<FakeItemModel.CodingKeys> = encoder.container(keyedBy: FakeItemModel.CodingKeys.self)
             
             try container.encode(self._entries, forKey: FakeItemModel.CodingKeys._entries)

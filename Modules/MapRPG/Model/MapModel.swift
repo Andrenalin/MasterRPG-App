@@ -715,8 +715,7 @@ extension MapModel: nonisolated Codable {
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<MapModel.CodingKeys> = encoder.container(keyedBy: MapModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: MapModel.CodingKeys._id)

@@ -278,8 +278,7 @@ extension PhotoModel: nonisolated Codable {
     }
 
     nonisolated final public func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<PhotoModel.CodingKeys> = encoder.container(keyedBy: PhotoModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: PhotoModel.CodingKeys._id)

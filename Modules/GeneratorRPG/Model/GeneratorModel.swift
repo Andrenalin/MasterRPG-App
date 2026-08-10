@@ -269,8 +269,7 @@ extension GeneratorModel: nonisolated Equatable, nonisolated Hashable, nonisolat
     }
 
     nonisolated final func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<GeneratorModel.CodingKeys> = encoder.container(keyedBy: GeneratorModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: GeneratorModel.CodingKeys._id)

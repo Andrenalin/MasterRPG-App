@@ -496,8 +496,7 @@ extension ValueModel: nonisolated Codable {
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<ValueModel.CodingKeys> = encoder.container(keyedBy: ValueModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: ValueModel.CodingKeys._id)

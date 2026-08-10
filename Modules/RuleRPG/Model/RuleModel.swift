@@ -750,8 +750,7 @@ extension RuleModel: Codable {
     }
 
     nonisolated public func encode(to encoder: any Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(id, forKey: .id)
             try container.encode(name_, forKey: .name)

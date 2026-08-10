@@ -400,8 +400,7 @@ extension TableModel: nonisolated Codable {
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<TableModel.CodingKeys> = encoder.container(keyedBy: TableModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: TableModel.CodingKeys._id)

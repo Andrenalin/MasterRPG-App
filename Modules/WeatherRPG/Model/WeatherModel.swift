@@ -395,8 +395,7 @@ extension WeatherModel: nonisolated Codable {
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<WeatherModel.CodingKeys> = encoder.container(keyedBy: WeatherModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: WeatherModel.CodingKeys._id)

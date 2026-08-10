@@ -266,10 +266,7 @@ extension AudioModel: nonisolated Codable {
     // Nonisolated shim: Codable's encode is a nonisolated requirement; export hops
     // to the MainActor before encoding (see ExportControllable.extract).
     nonisolated public final func encode(to encoder: Encoder) throws {
-        // Safety: assumeIsolated runs synchronously on the current (main) thread
-        // and the encoder does not escape the closure.
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             try encodeOnMain(to: encoder)
         }
     }

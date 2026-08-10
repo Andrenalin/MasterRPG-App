@@ -250,8 +250,7 @@ extension PdfModel: nonisolated Codable {
     }
 
     nonisolated public final func encode(to encoder: Encoder) throws {
-        nonisolated(unsafe) let encoder = encoder
-        try MainActor.assumeIsolated {
+        try encoder.encodeOnMainActor { encoder in
             var container: KeyedEncodingContainer<PdfModel.CodingKeys> = encoder.container(keyedBy: PdfModel.CodingKeys.self)
 
             try container.encode(self.id, forKey: PdfModel.CodingKeys._id)
@@ -263,7 +262,6 @@ extension PdfModel: nonisolated Codable {
             try container.encode(self._fileUrl_, forKey: PdfModel.CodingKeys._fileUrl_)
             try container.encode(self._entries_, forKey: PdfModel.CodingKeys._entries_)
             try container.encodeIfPresent(self._parentId, forKey: PdfModel.CodingKeys._parentId)
-    
         }
     }
 }
