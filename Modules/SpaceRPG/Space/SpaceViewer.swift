@@ -91,8 +91,11 @@ struct SpaceViewer: View {
 #if os(visionOS)
         .immersiveSpaceTracker()  // ✅ Track immersive space lifecycle for ScenesManager
         .onChange(of: immersiveSpaceDisplacement) {
-            // The system sets a displacement when it aligns the immersive space
-            // for SharePlay — move the model from the head anchor to the shared origin.
+            // A defensive re-check for SharePlay starting (or realigning) after
+            // the model already loaded. `applySharedPlacementIfNeeded` no longer
+            // keys its own gate off this value (see its doc comment) — this is
+            // just "something about space alignment changed, make sure we've
+            // switched off the head anchor if we're in a shared session."
             applySharedPlacementIfNeeded()
         }
         .onChange(
@@ -120,9 +123,20 @@ struct SpaceViewer: View {
 private extension SpaceViewer {
     /// Re-anchors the model from the local head pose to the immersive space
     /// origin, which the system aligns across all SharePlay participants.
+    ///
+    /// Gated on `networkActions != nil` (shared/networked game session), not
+    /// on `immersiveSpaceDisplacement != .identity`. Per Apple's docs, the
+    /// system reports `.identity` for whichever participant's own default
+    /// space position already *is* the shared meeting point — that's a
+    /// legitimate steady-state value, not an "alignment hasn't happened yet"
+    /// signal. Gating on it meant that participant's model never left the
+    /// head-locked anchor: everyone else's world-anchor-relative position/
+    /// rotation broadcasts would land on a still-head-anchored entity for
+    /// them, which is exactly the "translation/rotation not mapped into the
+    /// other person's coordinate system" symptom.
     @MainActor
     func applySharedPlacementIfNeeded() {
-        guard isImmersiveSpace, immersiveSpaceDisplacement != .identity, !isSharedPlacement else { return }
+        guard isImmersiveSpace, networkActions != nil, !isSharedPlacement else { return }
         guard let anchor = rootEntity as? AnchorEntity, let objectEntity else { return }
         isSharedPlacement = true
 
