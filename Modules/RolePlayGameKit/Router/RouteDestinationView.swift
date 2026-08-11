@@ -19,7 +19,7 @@ import WeatherRPG
 import GeneratorRPG
 #endif
 
-struct RouteRouteDestionationView: View {
+struct RouteDestinationView: View {
     let route: RootRoute
     @Environment(AppModel.self) private var appModel
 
@@ -75,6 +75,6 @@ struct RouteRouteDestionationView: View {
 }
 
 #Preview("Settings destination") {
-    RouteRouteDestionationView(route: .settings)
+    RouteDestinationView(route: .settings)
         .environment(AppModel())
 }

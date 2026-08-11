@@ -400,16 +400,10 @@ private actor RemoteDownloadProbe {
 private struct ManagedFileImageCacheController: ImageCacheControllable {
     @MainActor
     init(fileController: FileUrlDataController) {
-        imageCacheController = ImageCacheController()
-        thumbnailCacheController = ImageCacheController()
-        fileUrlDataController = fileController
-        observableImageCache = ObservableImageCache()
+        cacheStorage = ImageCacheControllableStorage(fileUrlDataController: fileController)
     }
 
-    let imageCacheController: ImageCacheController
-    let thumbnailCacheController: ImageCacheController
-    let fileUrlDataController: FileUrlDataController?
-    let observableImageCache: ObservableImageCache
+    let cacheStorage: ImageCacheControllableStorage
 
     @MainActor
     func createThumbnail(

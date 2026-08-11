@@ -8,6 +8,23 @@ import os.log
 public protocol SyncDataControllable: Sendable {
     var dataControllable: any DataPersistenceControllable { get }
     var itemControllable: any ItemControllable { get }
+    var changeObserver: CoreDataChangeObserver { get }
+}
+
+// MARK: - Shared change-observer wiring
+
+public extension SyncDataControllable {
+    /// Wires up Core Data change observation for `entity` on the already-created
+    /// `changeObserver`. Every conforming module's own `SyncDataController.init` calls this
+    /// once — as its last statement, after `dataControllable`/`itemControllable`/`changeObserver`
+    /// are all already assigned — instead of hand-duplicating this identical wiring call 12
+    /// times. (It can't be folded into `changeObserver`'s own assignment: calling any
+    /// instance/extension method on `self` mid-initializer requires every stored property,
+    /// including the one being assigned, to already have a value.) The only per-module
+    /// difference is the Core Data `entity` being observed. See CODE_AUDIT §9.2.
+    func startSyncObservation(context: NSManagedObjectContext, entity: NSEntityDescription) {
+        changeObserver.observeCoreDataChanges(from: context, entity: entity, handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
+    }
 }
 
 // MARK: Core Data --> CloudKit Sync

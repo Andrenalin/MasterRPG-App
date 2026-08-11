@@ -5,16 +5,10 @@ import Foundation
 
 struct CacheController: Sendable {
     @MainActor init(fileUrlDataController: FileUrlDataController) {
-        self.imageCacheController = ImageCacheController()
-        self.thumbnailCacheController = ImageCacheController()
-        self.fileUrlDataController = fileUrlDataController
-        self.observableImageCache = ObservableImageCache()
+        cacheStorage = ImageCacheControllableStorage(fileUrlDataController: fileUrlDataController)
     }
 
-    let imageCacheController: ImageCacheController
-    let thumbnailCacheController: ImageCacheController
-    let fileUrlDataController: FileUrlDataController?
-    let observableImageCache: ObservableImageCache
+    let cacheStorage: ImageCacheControllableStorage
 }
 
 extension CacheController: ImageCacheControllable {

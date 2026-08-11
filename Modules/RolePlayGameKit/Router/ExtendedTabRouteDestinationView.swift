@@ -16,7 +16,7 @@ import WeatherRPG
 import GeneratorRPG
 #endif
 
-struct ExtendedTabRouteDestionationView: View {
+struct ExtendedTabRouteDestinationView: View {
     let route: ExtendedTabRoute
     let tabId = KnownRoutes.mainTabId
 
@@ -55,6 +55,6 @@ struct ExtendedTabRouteDestionationView: View {
 }
 
 #Preview("Settings editor destination") {
-    ExtendedTabRouteDestionationView(route: .settings)
+    ExtendedTabRouteDestinationView(route: .settings)
         .environment(AppModel())
 }

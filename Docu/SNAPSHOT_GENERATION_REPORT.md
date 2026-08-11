@@ -56,8 +56,7 @@ Generated: 168; skipped: 30.
 - Modules/CoreRPG/FileViews/ImportStatusSection.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/ItemDetail/ItemDetailContentView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/ItemViews/ModalPresentCloseButton.swift — #Preview uses local dynamic state
-- Modules/CoreRPG/ItemViews/QuickEditorAction.swift — #Preview uses local dynamic state
-- Modules/CoreRPG/LGViews/HeaderContentScrollView.swift — #Preview uses local dynamic state
+- - Modules/CoreRPG/LGViews/HeaderContentScrollView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/LGViews/HeaderFooterContentScrollView.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/LGViews/NameItemNewRow.swift — #Preview uses local dynamic state
 - Modules/CoreRPG/LinkRenderer/LinkHighlightTextView.swift — #Preview uses local dynamic state
@@ -71,7 +70,7 @@ Generated: 168; skipped: 30.
 
 Generated: 22; skipped: 21.
 
-- Modules/DiceRPG/0-Old/Detail/DicePlayer.swift — #Preview uses local dynamic state
+- Modules/DiceRPG/Game/Detail/DicePlayer.swift — #Preview uses local dynamic state
 - Modules/DiceRPG/Dice/CoupEditor.swift — #Preview uses local dynamic state
 - Modules/DiceRPG/Dice/DiceEditor.swift — #Preview uses local dynamic state
 - Modules/DiceRPG/Dice/DiceOptionEditor.swift — #Preview uses local dynamic state

@@ -7,21 +7,44 @@ import AppKit
 import UIKit
 #endif
 
+/// The identical property skeleton every `ImageCacheControllable` conformer used to hand-wire
+/// itself: two `ImageCacheController` instances, the shared `ObservableImageCache`, and the
+/// optional `FileUrlDataController`. Each module still needs its own concrete `CacheController`
+/// type (protocol conformance requires one per module, and `createThumbnail`'s body is genuinely
+/// module-specific), but now only needs to store one `cacheStorage` value instead of
+/// re-declaring and re-initializing all four properties by hand. See CODE_AUDIT §9.3.
+public struct ImageCacheControllableStorage: Sendable {
+    @MainActor
+    public init(fileUrlDataController: FileUrlDataController? = nil) {
+        imageCacheController = ImageCacheController()
+        thumbnailCacheController = ImageCacheController()
+        self.fileUrlDataController = fileUrlDataController
+        observableImageCache = ObservableImageCache()
+    }
+
+    public let imageCacheController: ImageCacheController
+    public let thumbnailCacheController: ImageCacheController
+    public let fileUrlDataController: FileUrlDataController?
+    public let observableImageCache: ObservableImageCache
+}
+
 public protocol ImageCacheControllable: Sendable {
-    var imageCacheController: ImageCacheController { get }
-    var thumbnailCacheController: ImageCacheController { get }
-    var fileUrlDataController: FileUrlDataController? { get }
-    
-    // Observable cache for SwiftUI views
-    @MainActor var observableImageCache: ObservableImageCache { get }
+    var cacheStorage: ImageCacheControllableStorage { get }
 
     @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessable) async
     @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async
 }
 
 extension ImageCacheControllable {
+    public var imageCacheController: ImageCacheController { cacheStorage.imageCacheController }
+    public var thumbnailCacheController: ImageCacheController { cacheStorage.thumbnailCacheController }
+    public var fileUrlDataController: FileUrlDataController? { cacheStorage.fileUrlDataController }
+
+    // Observable cache for SwiftUI views
+    @MainActor public var observableImageCache: ObservableImageCache { cacheStorage.observableImageCache }
+
     @MainActor public func createImage(for itemId: UUID, item: any ItemDataAccessable) async {}
-    
+
     public func photo(for itemId: UUID) async -> AKImage? {
         let image = await imageCacheController.object(for: itemId)
         PerformanceTrace.cacheEvent(

@@ -458,12 +458,7 @@ where Attachment.ID == UUID {
                 self?.finishCleanup(id: id)
                 return
             }
-            let retryDelays: [Duration] = [
-                .milliseconds(250),
-                .seconds(1),
-                .seconds(2),
-                .seconds(5)
-            ]
+            let retryDelays = SharePlayAttachmentLoadRetry.cleanupRetryDelays
             var retryIndex = 0
             while !Task.isCancelled {
                 if await remove(attachment) {
@@ -506,12 +501,7 @@ where Attachment.ID == UUID {
                 self?.finishEmergencyCleanup(for: module)
                 return
             }
-            let retryDelays: [Duration] = [
-                .milliseconds(250),
-                .seconds(1),
-                .seconds(2),
-                .seconds(5)
-            ]
+            let retryDelays = SharePlayAttachmentLoadRetry.cleanupRetryDelays
             var retryIndex = 0
             while !Task.isCancelled {
                 if await remove(attachment) {
@@ -761,12 +751,7 @@ final class SharePlayJournalAddLimiter<Key: Hashable & Sendable, Value: Sendable
             // `journal.remove` fail before it starts. The attempt retains that
             // task, preserving the one-quarantined-operation-per-module bound.
             let cleanupTask = Task { @MainActor in
-                let retryDelays: [Duration] = [
-                    .milliseconds(250),
-                    .seconds(1),
-                    .seconds(2),
-                    .seconds(5)
-                ]
+                let retryDelays = SharePlayAttachmentLoadRetry.cleanupRetryDelays
                 var retryIndex = 0
                 while !Task.isCancelled {
                     if attempt.isObsolete {
@@ -1047,6 +1032,16 @@ enum SharePlayAttachmentLoadRetry {
         .milliseconds(250),
         .seconds(1),
         .seconds(2)
+    ]
+
+    /// Shared by the 3 best-effort attachment-cleanup retry loops in this file (removal after
+    /// a cancelled add, an emergency cleanup, and a timed-out add's post-cleanup) — previously
+    /// the same 4-element literal was hand-copied at each site. See CODE_AUDIT §9.4.
+    static let cleanupRetryDelays: [Duration] = [
+        .milliseconds(250),
+        .seconds(1),
+        .seconds(2),
+        .seconds(5)
     ]
 
     static func load<Value: Sendable>(

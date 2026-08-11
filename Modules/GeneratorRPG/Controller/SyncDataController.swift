@@ -9,8 +9,7 @@ struct SyncDataController: Sendable {
         self.dataControllable = dataControllable
         self.itemControllable = itemController
         self.changeObserver = CoreDataChangeObserver()
-
-        changeObserver.observeCoreDataChanges(from: context, entity: RPGGenerator.entity(), handler: updateFromSync(deletedIds:insertedIds:updatedIds:))
+        startSyncObservation(context: context, entity: RPGGenerator.entity())
     }
 
     let dataControllable: any DataPersistenceControllable

@@ -62,7 +62,7 @@ extension ExtendedTabRoute: AppRouter {
 
 extension ExtendedTabRoute: NavigationDestination {
     public var body: some View {
-        ExtendedTabRouteDestionationView(route: self)
+        ExtendedTabRouteDestinationView(route: self)
     }
     
     static var allTabs: [ExtendedTabRoute] {

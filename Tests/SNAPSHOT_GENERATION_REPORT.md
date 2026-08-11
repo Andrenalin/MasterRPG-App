@@ -72,7 +72,7 @@ Generated: 174; skipped: 30.
 
 Generated: 22; skipped: 21.
 
-- Modules/DiceRPG/0-Old/Detail/DicePlayer.swift — #Preview uses local dynamic state
+- Modules/DiceRPG/Game/Detail/DicePlayer.swift — #Preview uses local dynamic state
 - Modules/DiceRPG/Dice/CoupEditor.swift — #Preview uses local dynamic state
 - Modules/DiceRPG/Dice/DiceEditor.swift — #Preview uses local dynamic state
 - Modules/DiceRPG/Dice/DiceOptionEditor.swift — #Preview uses local dynamic state

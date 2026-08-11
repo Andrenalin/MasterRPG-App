@@ -14,7 +14,6 @@ SPECIALIZED_FIXED_FONT_FILES = [
 def accessibility_source_paths
   Dir.glob(ACCESSIBILITY_ROOT.join("{Modules,Sources}/**/*.swift"))
     .map { |path| Pathname(path) }
-    .reject { |path| path.to_s.include?("/0-Old/") }
     .sort
 end
 

@@ -111,6 +111,16 @@ public struct CloudKitCoreDataPersistenceController {
                 model.privatePersistentStore = privateStore
                 model.error = initError
 
+                // `InitializeCloudKitSchema` is a manual, local-only developer escape hatch —
+                // it is never defined by any scheme or .xcconfig, so the branch below never
+                // compiles into a shipped or CI build (see CODE_AUDIT §9.8). To push this
+                // model's schema to the CloudKit *development* environment after a Core Data
+                // model change, temporarily add `InitializeCloudKitSchema` to this target's
+                // `SWIFT_ACTIVE_COMPILATION_CONDITIONS` (or pass `-D InitializeCloudKitSchema`
+                // to `xcodebuild`), run the app once, then remove the flag again — per Apple's
+                // documented one-off `NSPersistentCloudKitContainer.initializeCloudKitSchema()`
+                // workflow. Never leave the flag enabled: it skips `setupContext`, so the app
+                // never finishes its normal Core Data setup while it's on.
 #if InitializeCloudKitSchema
                 do {
                     try container.initializeCloudKitSchema()

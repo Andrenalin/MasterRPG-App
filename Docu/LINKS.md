@@ -302,7 +302,7 @@ candidate Markdown while:
 - optionally requiring a word boundary;
 - skipping ranges already inside links.
 
-`QuickLinkConfig`, `QuickEditorAction`, and `QuickLinkEditor` provide the
+`QuickLinkConfig`, and `QuickLinkEditor` provide the
 selection and before/after preview infrastructure. This path still produces the
 same Markdown format and must save through the owning editor to update the
 register.

@@ -11,16 +11,10 @@ import UIKit
 
 struct FakeImageCacheController: ImageCacheControllable {
     @MainActor init() {
-        self.imageCacheController = ImageCacheController()
-        self.thumbnailCacheController = ImageCacheController()
-        self.fileUrlDataController = nil
-        self.observableImageCache = ObservableImageCache()
+        cacheStorage = ImageCacheControllableStorage()
     }
-    
+
     func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {}
-    
-    var imageCacheController: ImageCacheController
-    var thumbnailCacheController: ImageCacheController
-    var fileUrlDataController: FileUrlDataController?
-    var observableImageCache: ObservableImageCache
+
+    let cacheStorage: ImageCacheControllableStorage
 }

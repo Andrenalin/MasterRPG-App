@@ -111,7 +111,7 @@ extension RootRoute {
 
 extension RootRoute: NavigationDestination {
     public var body: some View {
-        RouteRouteDestionationView(route: self)
+        RouteDestinationView(route: self)
     }
     
     public static var allTabs: [RootRoute] {

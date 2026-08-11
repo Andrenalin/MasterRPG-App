@@ -50,11 +50,11 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: RolePlayGameKit::ExtendedTabRouteDestionationView
-    @Test("ExtendedTabRouteDestionationView")
-    func snapshotExtendedTabRouteDestionationView() async throws {
-        try await assertPreviewSnapshot("ExtendedTabRouteDestionationView") { appModel in
-            RolePlayGameKit.ExtendedTabRouteDestionationView(route: .settings)
+    // snapshot-root: RolePlayGameKit::ExtendedTabRouteDestinationView
+    @Test("ExtendedTabRouteDestinationView")
+    func snapshotExtendedTabRouteDestinationView() async throws {
+        try await assertPreviewSnapshot("ExtendedTabRouteDestinationView") { appModel in
+            RolePlayGameKit.ExtendedTabRouteDestinationView(route: .settings)
                 .environment(appModel)
         }
     }
@@ -79,11 +79,11 @@ struct RolePlayGameKitGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: RolePlayGameKit::RouteRouteDestionationView
-    @Test("RouteRouteDestionationView")
-    func snapshotRouteRouteDestionationView() async throws {
-        try await assertPreviewSnapshot("RouteRouteDestionationView") { appModel in
-            RolePlayGameKit.RouteRouteDestionationView(route: .settings)
+    // snapshot-root: RolePlayGameKit::RouteDestinationView
+    @Test("RouteDestinationView")
+    func snapshotRouteDestinationView() async throws {
+        try await assertPreviewSnapshot("RouteDestinationView") { appModel in
+            RolePlayGameKit.RouteDestinationView(route: .settings)
                 .environment(appModel)
         }
     }

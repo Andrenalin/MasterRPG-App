@@ -17,19 +17,12 @@ actor MapEntryCacheImageMapper {
 struct CacheController: Sendable {
     @MainActor init(photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot
-        
-        self.imageCacheController = ImageCacheController()
-        self.thumbnailCacheController = ImageCacheController()
-        self.fileUrlDataController = nil
-        self.observableImageCache = ObservableImageCache()
+        cacheStorage = ImageCacheControllableStorage()
     }
-    
+
     let photoRoot: PhotoRootModel
-    
-    let imageCacheController: ImageCacheController
-    let thumbnailCacheController: ImageCacheController
-    let fileUrlDataController: FileUrlDataController?
-    let observableImageCache: ObservableImageCache
+
+    let cacheStorage: ImageCacheControllableStorage
 }
 
 extension CacheController: ImageCacheControllable {

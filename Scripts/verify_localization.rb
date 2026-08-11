@@ -337,7 +337,6 @@ end
 
 def audit_module_source(path, issues)
   relative = path.relative_path_from(ROOT).to_s
-  return if relative.include?("/0-Old/")
 
   source = path.read
   scan_source = masking_preview_blocks(masking_comments(source))

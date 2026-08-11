@@ -82,59 +82,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::InlineEditRowViewerWrapper
-    @Test("InlineEditRowViewerWrapper")
-    func snapshotInlineEditRowViewerWrapper() async throws {
-        try await assertPreviewSnapshot("InlineEditRowViewerWrapper") {
-            CoreRPG.InlineEditRowViewerWrapper(
-                controller: FakeViewController(),
-                source: ItemRowModel(itemId: .fixture1, typeId: .none),
-                destination: ItemRowModel(itemId: .fixture2, typeId: .none)
-            )
-        }
-    }
-
-    // snapshot-root: CoreRPG::LinkListViewWrapper
-    @Test("LinkListViewWrapper")
-    func snapshotLinkListViewWrapper() async throws {
-        try await assertPreviewSnapshot("LinkListViewWrapper") {
-            CoreRPG.LinkListViewWrapper(
-                controller: FakeViewController(),
-                rootController: ItemRootController.fake,
-                type: .inspector,
-                itemSelectionModel: ItemSelectionModel()
-            )
-        }
-    }
-
-    // snapshot-root: CoreRPG::RowViewerWrapper
-    @Test("RowViewerWrapper")
-    func snapshotRowViewerWrapper() async throws {
-        try await assertPreviewSnapshot("RowViewerWrapper") {
-            CoreRPG.RowViewerWrapper(
-                controller: FakeViewController(),
-                source: ItemRowModel(itemId: .fixture1, typeId: .none),
-                destination: ItemRowModel(itemId: .fixture2, typeId: .none)
-            )
-        }
-    }
-
-    // snapshot-root: CoreRPG::SharingViewWrapper
-    @Test("SharingViewWrapper")
-    func snapshotSharingViewWrapper() async throws {
-        try await assertPreviewSnapshot("SharingViewWrapper") {
-            CoreRPG.SharingViewWrapper(controller: FakeViewController(), itemId: .fixture1)
-        }
-    }
-
-    // snapshot-root: CoreRPG::ThumbnailRowViewWrapper
-    @Test("ThumbnailRowViewWrapper")
-    func snapshotThumbnailRowViewWrapper() async throws {
-        try await assertPreviewSnapshot("ThumbnailRowViewWrapper") {
-            CoreRPG.ThumbnailRowViewWrapper(controller: FakeViewController(), itemId: .fixture1)
-        }
-    }
-
     // snapshot-root: CoreRPG::FileImporterViewWrapper
     @Test("FileImporterViewWrapper")
     func snapshotFileImporterViewWrapper() async throws {

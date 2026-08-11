@@ -125,10 +125,10 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: DiceRPG::OldDiceBag
-    @Test("OldDiceBag")
-    func snapshotOldDiceBag() async throws {
-        try await assertPreviewSnapshot("OldDiceBag") {
+    // snapshot-root: DiceRPG::GameDiceBag
+    @Test("GameDiceBag")
+    func snapshotGameDiceBag() async throws {
+        try await assertPreviewSnapshot("GameDiceBag") {
             DiceRPG.GameDiceBag { _ in }
                 .environment(DiceRootModel.previewWithData)
         }

@@ -304,28 +304,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::QuickEditorAction
-    @Test("QuickEditorAction")
-    func quickEditorAction() {
-        assertCoreSnapshot("QuickEditorAction") {
-            QuickEditorAction(
-                configs: [
-                    QuickLinkConfig(
-                        module: .adventure,
-                        title: "Adventure",
-                        name: { _ in "Preview adventure" }
-                    )
-                ],
-                bundle: nil,
-                afterEntries: .constant([String]()),
-                scanner: { _, _, _, _ in ["Scanned entry"] }
-            ) { _, _, _ in
-                Text("Link selection")
-            }
-            .padding()
-        }
-    }
-
     // snapshot-root: CoreRPG::HeaderContentScrollView
     @Test("HeaderContentScrollView")
     func headerContentScrollView() {

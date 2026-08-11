@@ -347,7 +347,6 @@ Inspectors, sheets, file import/export panels, quick editors, and rows reuse the
 - `ItemViews/CategoryItemRow.swift`
 - `ItemViews/ExpandButtonModifier.swift`
 - `ItemViews/ModalCloseButton.swift`
-- `ItemViews/QuickEditorAction.swift`
 - `ItemViews/TagItemRow.swift`
 
 ### LG View Modifiers
