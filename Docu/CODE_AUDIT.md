@@ -57,12 +57,13 @@ Strict concurrency (`SWIFT_STRICT_CONCURRENCY = complete`) compiles with zero co
 - **Action:** Standardize on per-function `@MainActor` annotations (MapRPG's pattern) instead of `MainActor.run` closures throughout `CoreRPG/Controllable/*.swift` and the listed `GameController`/network files.
 - **Severity:** Medium
 
-### 3.3 `RPGSharePlayController` cannot self-clean on deallocation; relies on callers remembering `reset()`
+### 3.3 `RPGSharePlayController` cannot self-clean on deallocation; relies on callers remembering `reset()` — NOW FIXED
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:602-685` (class + plain `deinit`), `:1607-1644` (`reset()`); contrast `Modules/GameRPG/Network/ListenerManager.swift:49-53`, `Modules/GameRPG/Browser/BrowserManager.swift:42-44`, `Modules/GameRPG/Table3D/GameTableModel.swift:606-611`, all three of which use `isolated deinit`.
-- **What:** `RPGSharePlayController`'s `deinit` is a plain nonisolated `deinit` that only logs, with an in-code comment noting it "cannot access @MainActor-isolated `tasks`." The many session tasks stored in `tasks: [UUID: Task<Void, Never>]` (plus `sendOperationTask`, `deferredPromotionTask`) are only cancelled by an explicit call to `reset()`.
+- **What:** `RPGSharePlayController`'s `deinit` was a plain nonisolated `deinit` that only logged, with an in-code comment noting it "cannot access @MainActor-isolated `tasks`." The many session tasks stored in `tasks: [UUID: Task<Void, Never>]` (plus `sendOperationTask`, `deferredPromotionTask`) were only cancelled by an explicit call to `reset()`.
 - **Why:** Three sibling files in the same module already solve this with `isolated deinit`. Any future non-singleton instantiation of `RPGSharePlayController` — tests already do this at `Tests/GameRPGTests/SharePlayPackageTransportTests.swift:124,1294` — that's released without calling `reset()` first leaks every task it owns.
-- **Action:** Adopt `isolated deinit { reset() }` on `RPGSharePlayController`, matching the other three files in this module.
-- **Severity:** Medium
+- **Fix:** Adopted `isolated deinit`, matching the other three files in this module. Went one step past the audit's literal `{ reset() }` suggestion: `reset()` deliberately leaves `eligibilityTask`/`joinTask`/`modeChangeTask` running (they're lifetime observers documented to survive a session reset, not scoped to it), so a deinit that only called `reset()` would still leak those three. `deinit` now calls `reset()` and separately cancels those three, so every task the instance owns is actually stopped on deallocation, not just the session-scoped ones — with a comment explaining why the extra cancellation is there so it doesn't look redundant with `reset()`.
+- **Verified:** `xcodebuild build` — **BUILD SUCCEEDED** on all 4 platform schemes (iOS, visionOS — exercises the `#if os(visionOS)` `modeChangeTask` branch — macOS, tvOS). `xcodebuild test` — **TEST SUCCEEDED**, including `SharePlayPackageTransportTests`, which is exactly where the audit noted multiple non-singleton instances already get created and released.
+- **Severity:** Medium — resolved.
 
 ### 3.4 `DispatchQueue.main.asyncAfter` used instead of structured concurrency
 - **Location:** `Modules/CoreRPG/Navigator/Core/NavigationSend.swift:107-114`, violation at line 112, inside `@MainActor internal func resume(...)`.

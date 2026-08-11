@@ -678,9 +678,19 @@ final class RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: init")
     }
 
-    deinit {
-        // Swift 6: deinit is nonisolated and cannot access @MainActor-isolated `tasks`.
-        // Cleanup is handled by reset(), which must be called before releasing this controller.
+    isolated deinit {
+        // `isolated deinit` (matching `ListenerManager`/`BrowserManager`/`GameTableModel` in
+        // this module) runs on the actor, so it can self-clean instead of relying on every
+        // caller to remember `reset()` first. `reset()` deliberately leaves `eligibilityTask`/
+        // `joinTask`/`modeChangeTask` running — they're lifetime observers meant to survive a
+        // session reset (see their declarations above) — so cancel those separately here to
+        // stop every task this instance owns, not just the session-scoped ones. See CODE_AUDIT §3.3.
+        reset()
+        eligibilityTask?.cancel()
+        joinTask?.cancel()
+        #if os(visionOS)
+        modeChangeTask?.cancel()
+        #endif
         Logger.sharePlay.debug("SharePlay: deinit")
     }
 
