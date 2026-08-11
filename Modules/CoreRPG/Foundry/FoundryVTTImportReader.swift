@@ -480,7 +480,7 @@ private extension FoundryVTTDecoder {
                 // A tiny, well-formed manifest could otherwise declare millions of bogus
                 // packs — each one going on to cost real work below (path resolution,
                 // collection decoding) even after a fast per-lookup path. Fail fast
-                // instead of materializing an unbounded spec list. See CODE_AUDIT §6.5.
+                // instead of materializing an unbounded spec list. See CODE_AUDIT §5.9.
                 guard specs.count <= limits.maximumDocumentCount else {
                     throw FoundryImportError.tooManyDocuments(specs.count)
                 }

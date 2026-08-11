@@ -6,6 +6,7 @@ import RealityKit
 import SwiftUI
 import CoreRPG
 import UIKit
+import os.log
 
 struct ImagePresentationView: View {
     let model: ImagePresentationModel
@@ -26,7 +27,7 @@ struct ImagePresentationView: View {
                     .observable
                     .components[ImagePresentationComponent.self]?
                     .presentationScreenSize, presentationScreenSize != .zero else {
-                        print("Unable to get a valid presentation screen size from the content entity.")
+                        Logger.photoSpace.error("Unable to get a valid presentation screen size from the content entity.")
                         return
                     }
                 // Position the entity at the back of the window.
@@ -41,7 +42,7 @@ struct ImagePresentationView: View {
             }
             .onAppear {
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {
-                    print("Unable to get the window scene. Unable to set the resizing restrictions.")
+                    Logger.photoSpace.error("Unable to get the window scene. Unable to set the resizing restrictions.")
                     return
                 }
                 // Ensure that the scene resizes uniformly on X and Y axes.
@@ -49,7 +50,7 @@ struct ImagePresentationView: View {
             }
             .onChange(of: model.imageAspectRatio) { _, newAspectRatio in
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {
-                    print("Unable to get the window scene. Resizing is not possible.")
+                    Logger.photoSpace.error("Unable to get the window scene. Resizing is not possible.")
                     return
                 }
 

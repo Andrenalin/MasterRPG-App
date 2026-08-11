@@ -61,7 +61,7 @@ final class GameProtocol: NWProtocolFramerImplementation {
         do {
             try framer.writeOutputNoCopy(length: messageLength)
         } catch {
-            print("Hit error writing \(error)")
+            Logger.networking.error("Hit error writing: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -91,7 +91,7 @@ final class GameProtocol: NWProtocolFramerImplementation {
             // otherwise declare an arbitrary length up to `UInt32.max` (~4 GB),
             // forcing this side to wait/buffer for that many bytes. Reject any
             // declared length past a sane maximum instead of handing it to
-            // `deliverInputNoCopy` — see CODE_AUDIT §6.4.
+            // `deliverInputNoCopy` — see CODE_AUDIT §5.9.
             guard Self.isMessageLengthValid(header.length) else {
                 Logger.networking.error("GameProtocol: declared message length \(header.length, privacy: .public) exceeds the \(Self.maximumMessageByteCount, privacy: .public)-byte maximum; failing the connection")
                 framer.markFailed(error: .posix(.EMSGSIZE))

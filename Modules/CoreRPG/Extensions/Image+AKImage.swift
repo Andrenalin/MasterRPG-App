@@ -203,7 +203,7 @@ public extension AKImage {
     /// Renders a best-effort QuickLook preview thumbnail for a file the platform
     /// has no direct decoder for (PDF, USDZ/3D, …). Shared by PdfRPG's and
     /// SpaceRPG's `CacheController`s, which previously each defined an
-    /// identical wrapper around `QLThumbnailGenerator`. See CODE_AUDIT §9.6.
+    /// identical wrapper around `QLThumbnailGenerator`.
     static func quickLookThumbnail(
         for url: URL?,
         size: CGSize,
@@ -234,7 +234,7 @@ public extension AKImage {
 /// call site documents the tradeoff it's making instead of a bare, unexplained
 /// float. The three values already in use across the app genuinely serve
 /// different purposes — this doesn't unify them to one number, only names the
-/// ones that exist. See CODE_AUDIT §9.16.
+/// ones that exist.
 public enum JPEGQuality {
     /// Bandwidth-constrained real-time transport (e.g. mirroring a game screen
     /// over the network), where small size matters more than fidelity.

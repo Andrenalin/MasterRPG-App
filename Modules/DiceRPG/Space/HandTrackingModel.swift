@@ -4,6 +4,7 @@
 
 import ARKit
 import Combine
+import os.log
 import SwiftUI
 
 /// A model that contains up-to-date hand coordinate information.
@@ -26,7 +27,9 @@ public final class DiceHandTrackingGestureModel {
     func start() async {
         do {
             if HandTrackingProvider.isSupported {
+                #if DEBUG
                 print("ARKitSession starting.")
+                #endif
                 try await session.run([handTracking])
             }
             let planeData = PlaneDetectionProvider(alignments: [.horizontal])
@@ -34,7 +37,9 @@ public final class DiceHandTrackingGestureModel {
                 try await session.run([planeData])
                 for await update in planeData.anchorUpdates {
                     guard update.anchor.surfaceClassification == .table else { continue }
+                    #if DEBUG
                     print(update.description)
+                    #endif
                     switch update.event {
                     case .added, .updated:
                         root.diceSpaceModel.updatePlane(update.anchor)
@@ -44,7 +49,7 @@ public final class DiceHandTrackingGestureModel {
                 }
             }
         } catch {
-            print("ARKitSession error:", error)
+            Logger.diceSpace.error("ARKitSession error: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -77,7 +82,9 @@ public final class DiceHandTrackingGestureModel {
                     // Stop the game, ask the user to grant hand tracking authorization again in Settings.
                 }
             default:
+                #if DEBUG
                 print("Session event \(event)")
+                #endif
             }
         }
     }

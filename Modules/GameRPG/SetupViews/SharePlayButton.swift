@@ -5,6 +5,7 @@ import CoreRPG
 import CoreTransferable
 import GroupActivities
 import SwiftUI
+import os.log
 
 #if os(macOS)
 import AppKit
@@ -50,7 +51,7 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
                         do {
                             _ = try await activity.activate()
                         } catch {
-                            print("Error activating activity: \(error)")
+                            Logger.sharePlay.error("Error activating activity: \(error.localizedDescription, privacy: .public)")
                             isActivationErrorViewPresented = true
                         }
                     }

@@ -3,11 +3,16 @@
 import CoreRPG
 import RPGResources
 import SwiftUI
+import os.log
+
+private extension Logger {
+    static let weatherIcon = Logger(subsystem: subsystem, category: "WeatherIcon")
+}
 
 extension Image {
     static func bundleImage(name: String) -> Image {
         guard let akImage = Image.loadImage(name: name) else {
-            print("**** icon broken: \(name)")
+            Logger.weatherIcon.error("icon broken: \(name, privacy: .public)")
             return Image(systemName: "exclamationmark.3")
         }
         return Image(akImage: akImage)

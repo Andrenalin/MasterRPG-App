@@ -10,6 +10,10 @@ import RealityKit
 import GroupActivities
 #endif
 
+extension Logger {
+    static let spaceViewer = Logger(subsystem: subsystem, category: "SpaceViewer")
+}
+
 struct SpaceViewer: View {
     let root: SpaceRootModel
     let id: UUID
@@ -438,13 +442,13 @@ private extension SpaceViewer {
                 localized: "The 3D model format could not be read: \(error.localizedDescription)",
                 bundle: .module
             )
-            print("Decoding error loading 3D entity: \(error)")
+            Logger.spaceViewer.error("Decoding error loading 3D entity: \(error.localizedDescription, privacy: .public)")
         } catch {
             loadError = String(
                 localized: "The 3D model could not be loaded: \(error.localizedDescription)",
                 bundle: .module
             )
-            print("Error loading 3D entity from URL: \(error)")
+            Logger.spaceViewer.error("Error loading 3D entity from URL: \(error.localizedDescription, privacy: .public)")
         }
 
         hasLoaded = true
@@ -568,8 +572,7 @@ private struct DragRotationModifier: ViewModifier {
     // A remote SharePlay participant can update `yaw`/`pitch` directly
     // (`SpaceViewer.apply(remote:)`) at any point between gestures; reading the
     // bindings fresh here means the next local drag always starts from the
-    // current rotation instead of spinning back toward a stale one. See
-    // CODE_AUDIT §8.6.
+    // current rotation instead of spinning back toward a stale one.
     @State private var dragBase: RotationBase?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 

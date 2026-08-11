@@ -519,8 +519,7 @@ struct MapPinView: View {
     private var pinAccessibilityValue: Text {
         // The ring color (blue = active battle attacker, red = highlighted) is
         // otherwise the only signal for this state — announce it too, mirroring
-        // the pattern already used for shown/dead/highlighted below. See
-        // CODE_AUDIT §8.10.
+        // the pattern already used for shown/dead/highlighted below.
         let base = Text(pinAccessibilityValueResource)
         guard isActiveBattleAttacker else { return base }
         return Text("\(base), \(Text("Active Battle Attacker", bundle: .module))")

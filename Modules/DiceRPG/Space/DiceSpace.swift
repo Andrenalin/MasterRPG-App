@@ -4,6 +4,7 @@
 import Accelerate
 import AVKit
 import Combine
+import os.log
 import RealityKit
 import SwiftUI
 //import Dice3dAssets
@@ -35,7 +36,7 @@ public struct DiceSpace: View {
             do {
                 // Load the dice entity asynchronously
                 guard let entity = try? await Entity(named: "Dice20", in: dice3dAssetsBundle) else {
-                    print("Failed to load Dice20 entity")
+                    Logger.diceSpace.error("Failed to load Dice20 entity")
                     return
                 }
 

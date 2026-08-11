@@ -33,8 +33,7 @@ extension FolderListControllable {
     /// search controller copied to match it — before constructing its own
     /// concrete `Self` with those plus the passed `listModel`. Each conformer's
     /// stored-property shape/initializer still differs, so only this shared
-    /// derivation is hoisted here, not the `Self` construction itself. See
-    /// CODE_AUDIT §9.8.
+    /// derivation is hoisted here, not the `Self` construction itself.
     public var copiedListDependencies: (listDisplayModel: ListDisplayModel, searchRootControllable: any SearchRootControllable) {
         let copiedDisplayModel = listDisplayModel.newListDisplayModel
         return (copiedDisplayModel, searchRootControllable.copy(listDisplayModel: copiedDisplayModel))

@@ -24,10 +24,12 @@ public struct DumpingEnvironment<Content: View>: View {
     }
 
     func printing(_ environmentValues: EnvironmentValues) {
+        #if DEBUG
         print("--- Environment Values - BEGIN ---")
         let keyValuePair = environmentValues.asTextualRepresentationWithNonReaptingKeys
         keyValuePair.forEach { print($0) }
         print("--- Environment Values - END ---")
+        #endif
     }
 }
 

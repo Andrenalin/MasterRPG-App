@@ -9,7 +9,7 @@ import Foundation
 /// let SwiftUI skip invalidating readers when a re-render writes the same
 /// value again — closures themselves are never `Equatable`, so these structs
 /// compare this identity instead. `AnyHashable` can't be used for the token
-/// since it isn't unconditionally `Sendable`. See CODE_AUDIT §8.8.
+/// since it isn't unconditionally `Sendable`.
 public enum EnvironmentActionIdentity: Hashable, Sendable {
     /// Ties the identity to a stable, long-lived owning reference type (a
     /// root model), so repeated writes from that same owner compare equal.

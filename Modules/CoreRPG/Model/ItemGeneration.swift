@@ -52,7 +52,7 @@ public struct ItemGenerationAction: Sendable, Equatable {
     /// module) so SwiftUI's environment diffing can skip invalidating readers
     /// when the same writer re-supplies the same functional closure. `isEnabled`
     /// is compared separately since it's meaningful state that does need to be
-    /// observed. See CODE_AUDIT §8.8.
+    /// observed.
     public init(
         id: EnvironmentActionIdentity = .fresh(),
         isEnabled: Bool = true,
@@ -84,7 +84,7 @@ public struct ItemGenerationResultAction: Sendable, Equatable {
     /// `id` should be stable across the writer's re-renders (e.g. the owning
     /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
     /// skip invalidating readers when the same root writes the same
-    /// functional closure again. See CODE_AUDIT §8.8.
+    /// functional closure again.
     public init(
         id: EnvironmentActionIdentity = .fresh(),
         accept: @MainActor @escaping @Sendable (ItemGenerationSummary) -> Void

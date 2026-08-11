@@ -12,7 +12,7 @@ public extension Encoder {
     /// `nonisolated(unsafe) let encoder = encoder; MainActor.assumeIsolated { ... }`.
     ///
     /// Safe only because every real call site pre-hops to `MainActor` before invoking
-    /// `encode(to:)` on one of these models (verified — see CODE_AUDIT §3.8); otherwise
+    /// `encode(to:)` on one of these models (personally verified); otherwise
     /// `MainActor.assumeIsolated` traps.
     nonisolated func encodeOnMainActor(_ body: @MainActor (Encoder) throws -> Void) throws {
         nonisolated(unsafe) let encoder = self

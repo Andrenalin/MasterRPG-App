@@ -4,6 +4,7 @@
 
 import SwiftUI
 import RealityKit
+import os.log
 
 extension RealityKit.RealityViewCameraContent {
     @MainActor
@@ -18,9 +19,9 @@ extension RealityKit.RealityViewCameraContent {
 
         do {
             if let result = await session.run(configuration) {
-                print(result)
+                Logger.spaceViewer.debug("World tracking session result: \(String(describing: result), privacy: .public)")
             } else {
-                print("Unknown spatial tracking authorization status")
+                Logger.spaceViewer.error("Unknown spatial tracking authorization status")
             }
         }
     }

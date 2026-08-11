@@ -2,6 +2,7 @@
 
 import AVFoundation
 import Foundation
+import os.log
 
 protocol AudioPlayerSessionDelegate: Sendable {
     @MainActor func routeChanged()
@@ -60,7 +61,7 @@ private extension AudioPlayerSession {
             try audioSession.setCategory(.playback, mode: .default, policy: .default, options: [.allowAirPlay, .mixWithOthers, .allowBluetoothHFP, .allowBluetoothA2DP])
 #endif
         } catch {
-            print("an error occurred when audio session category.\n \(error)")
+            Logger.audioController.error("An error occurred setting the audio session category: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -70,7 +71,7 @@ private extension AudioPlayerSession {
             // setActive is a blocking AVAudioSession call — keep it off the main actor.
             try audioSession.setActive(true)
         } catch {
-            print("an error occurred when audio session activation.\n \(error)")
+            Logger.audioController.error("An error occurred activating the audio session: \(error.localizedDescription, privacy: .public)")
         }
     }
 

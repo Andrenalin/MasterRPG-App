@@ -1074,6 +1074,7 @@
       }
     },
     "Case Insensitive" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1090,6 +1091,7 @@
       }
     },
     "Change" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2696,6 +2698,7 @@
       }
     },
     "Entry links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4826,6 +4829,7 @@
       }
     },
     "Not yet selected" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5803,6 +5807,7 @@
       }
     },
     "Root Links" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5867,6 +5872,7 @@
       }
     },
     "Scan" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -7199,6 +7205,7 @@
       }
     },
     "Which Module" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -7267,6 +7274,7 @@
       }
     },
     "Word" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

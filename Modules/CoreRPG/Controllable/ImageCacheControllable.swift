@@ -94,8 +94,7 @@ extension ImageCacheControllable {
     
     /// Persists a generated thumbnail to disk and the in-memory cache together —
     /// the common tail every module's `createThumbnail(for:item:)` ends with,
-    /// once it has an image (or `nil`, in which case this is a no-op). See
-    /// CODE_AUDIT §9.7.
+    /// once it has an image (or `nil`, in which case this is a no-op).
     public func cacheThumbnail(_ thumbnail: AKImage?, for itemId: UUID) async {
         guard let thumbnail else { return }
         await thumbnailCacheController.saveToDisk(thumbnail, for: itemId)

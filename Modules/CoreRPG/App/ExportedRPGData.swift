@@ -2,6 +2,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import os.log
 
 public struct ItemModuleIds: Sendable, Equatable, Hashable {
     public init(dictionary: [NetworkModules: [UUID]] = [:]) {
@@ -135,7 +136,7 @@ public extension UTType {
                 let encodedData = try encoder.encode(data)
                 return FileWrapper(regularFileWithContents: encodedData)
             } catch {
-                print(error.localizedDescription)
+                Logger.exportController.error("Failed to encode exported RPG data file wrapper: \(error.localizedDescription, privacy: .public)")
             }
             return FileWrapper(regularFileWithContents: Data())
         }

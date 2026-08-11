@@ -21,7 +21,7 @@ struct CharacterGenView: View {
             // type — adding a client-generated `id` would make it part of what
             // the model is expected to produce, so identity is keyed on the
             // entry's own `Hashable` content instead of its (unstable, once the
-            // AI-streamed list is edited or reordered) position. See CODE_AUDIT §8.7.
+            // AI-streamed list is edited or reordered) position.
             ForEach(value.entries, id: \.self) { element in
                 Text(entryText(name: element.name, content: element.content))
                 if let subvalue = element.groupedValues.first {

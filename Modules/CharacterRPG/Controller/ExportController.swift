@@ -6,6 +6,7 @@ import PdfRPG
 import TableRPG
 import PhotoRPG
 import DiceRPG
+import os.log
 
 struct ExportController: Sendable {
     // `hubControllable` reaches Adventure's hub exporter (ExportControllable.hubControllable).
@@ -106,7 +107,7 @@ extension ExportController: ExportControllable {
                         childIds.append($0.itemId)
                     }
                 default:
-                    print("*** ERROR table \(item.name) export is not handling link \($0)")
+                    Logger.exportController.error("Table \(item.name, privacy: .private) export is not handling link \(String(describing: $0), privacy: .private)")
                 }
             }
             return childIds

@@ -33,7 +33,9 @@ struct DeviceRotationViewModifier: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
                 let newOrientation = mapDeviceOrientation(orientation: UIDevice.current.orientation)
                 guard let newOrientation, newOrientation != model.orientation else { return }
+                #if DEBUG
                 print("*** Changed Rotation")
+                #endif
                 model.orientation = newOrientation
             }
 #endif

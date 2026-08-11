@@ -125,9 +125,9 @@ public struct CloudKitCoreDataPersistenceController {
                 do {
                     try container.initializeCloudKitSchema()
                 } catch {
-                    print("\(#function): initializeCloudKitSchema: \(error)")
+                    Logger.persistenceController.error("\(#function): initializeCloudKitSchema failed: \(error.localizedDescription, privacy: .public)")
                 }
-                print("Successful")
+                Logger.persistenceController.info("initializeCloudKitSchema succeeded")
 #else
                 Self.setupContext(container: container, model: model)
 #endif

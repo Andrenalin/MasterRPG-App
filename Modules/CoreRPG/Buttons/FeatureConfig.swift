@@ -22,7 +22,7 @@ public struct SharingFeatureActions: Equatable, Sendable {
     /// `id` should be stable across the writer's re-renders (e.g. the owning
     /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
     /// skip invalidating readers when the same root writes the same
-    /// functional closure again. See CODE_AUDIT §8.8.
+    /// functional closure again.
     public init(id: EnvironmentActionIdentity = .fresh(), features: @MainActor @escaping @Sendable () -> GameFeatureModel) {
         self.id = id
         self.features = features

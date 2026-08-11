@@ -12,6 +12,7 @@ import RuleRPG
 import SpaceRPG
 import TableRPG
 import CharacterRPG
+import os.log
 
 struct ExportController: Sendable {
     @MainActor init(rootManager: RootManager? = nil, root: AdventureRootModel, itemController: ItemController) {
@@ -126,7 +127,7 @@ extension ExportController: ExportControllable {
                         weatherIds.insert($0.itemId)
                     }
                 default:
-                    print("*** ERROR table \(item.name) export is not handling link \($0)")
+                    Logger.exportController.error("Table \(item.name, privacy: .private) export is not handling link \(String(describing: $0), privacy: .private)")
                 }
             }
             return childIds

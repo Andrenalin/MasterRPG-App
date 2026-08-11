@@ -79,7 +79,7 @@ struct FoundryVTTImportReaderTests {
     func boundsManifestPackDeclarations() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        // CODE_AUDIT §6.5: a tiny, well-formed manifest could otherwise declare
+        // CODE_AUDIT §5.9: a tiny, well-formed manifest could otherwise declare
         // millions of bogus packs with no cap, each going on to cost real work.
         let packs = (0..<10).map { #"{"name":"pack-\#($0)","type":"Item"}"# }.joined(separator: ",")
         let manifest = #"{"id":"bounds-test","title":"Bounds Test","packs":[\#(packs)]}"#

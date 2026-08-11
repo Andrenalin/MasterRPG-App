@@ -14,7 +14,7 @@ public struct PdfViewerActions: Equatable {
     /// diffing (which uses `Equatable` conformance automatically) can tell an
     /// unchanged writer apart from a genuinely different one, instead of
     /// invalidating every reader on every write regardless of whether the
-    /// closure's behavior actually changed. See CODE_AUDIT §8.8.
+    /// closure's behavior actually changed.
     public init(id: AnyHashable = UUID(), selectedText: ((NSAttributedString) -> Void)? = nil) {
         self.id = id
         self.selectedText = selectedText

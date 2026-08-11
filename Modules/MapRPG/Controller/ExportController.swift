@@ -8,6 +8,7 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG
+import os.log
 
 struct ExportController: Sendable {
     @MainActor init(root: MapRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, itemController: ItemController) {
@@ -122,7 +123,7 @@ extension ExportController: ExportControllable {
                         valueIds.insert($0.itemId)
                     }
                 default:
-                    print("*** ERROR table \(item.name) export is not handling link \($0)")
+                    Logger.exportController.error("Table \(item.name, privacy: .private) export is not handling link \(String(describing: $0), privacy: .private)")
                 }
             }
             return childIds

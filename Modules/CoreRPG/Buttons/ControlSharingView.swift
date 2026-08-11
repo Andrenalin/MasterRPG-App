@@ -6,7 +6,7 @@ public struct SharingControlActions: Equatable, Sendable {
     /// `id` should be stable across the writer's re-renders (e.g. the owning
     /// root model's `ObjectIdentifier`) so SwiftUI's environment diffing can
     /// skip invalidating readers when the same root writes the same
-    /// functional closures again. See CODE_AUDIT §8.8.
+    /// functional closures again.
     public init(id: EnvironmentActionIdentity = .fresh(), control: (@MainActor @Sendable () -> [SharingControlModel])?, update: (@MainActor @Sendable ([SharingControlModel]) -> Void)?) {
         self.id = id
         self.control = control

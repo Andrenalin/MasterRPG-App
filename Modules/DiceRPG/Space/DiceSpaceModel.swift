@@ -3,10 +3,16 @@
 #if os(visionOS)
 import ARKit
 //import Dice3dAssets
+import CoreRPG
 import Foundation
 import Observation
+import os.log
 import RealityKit
 import SwiftUI
+
+extension Logger {
+    static let diceSpace = Logger(subsystem: subsystem, category: "DiceSpace")
+}
 
 @Observable
 @MainActor
@@ -81,7 +87,9 @@ final class DiceSpaceModel {
 
     func rollDice(diceEntity: Entity, usePhysics: Bool = false) {
         let result = RawDie.twenty.role()
+        #if DEBUG
         print("*** Dice result = \(result)")
+        #endif
 
         let targetOrientation = DiceSpaceModel.dice20OrientationMap[result, default: simd_quatf(real: 1, imag: SIMD3<Float>(0, 0, 0))]
 
@@ -199,13 +207,12 @@ final class DiceSpaceModel {
         do {
             let scene = try await Entity(named: sceneName, in: dice3dAssetsBundle)
             guard let entity = scene.findEntity(named: entityName) else {
-                print("Entity '\(entityName)' not found in scene '\(sceneName)'")
-                print("Available entities in scene: \(scene.children.map { $0.name })")
+                Logger.diceSpace.error("Entity '\(entityName, privacy: .public)' not found in scene '\(sceneName, privacy: .public)'; available entities: \(scene.children.map(\.name), privacy: .public)")
                 return nil
             }
             return entity
         } catch {
-            print("Error loading '\(entityName)' from scene '\(sceneName)': \(error.localizedDescription)")
+            Logger.diceSpace.error("Error loading '\(entityName, privacy: .public)' from scene '\(sceneName, privacy: .public)': \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -215,7 +222,9 @@ final class DiceSpaceModel {
 
     func updatePlane(_ anchor: PlaneAnchor) {
         if entityMap[anchor.id] == nil {
+            #if DEBUG
             print("**** Have plane")
+            #endif
             // Add a new entity to represent this plane.
             let entity = ModelEntity(
                 mesh: .generateText(anchor.surfaceClassification.description)
@@ -282,7 +291,7 @@ extension Entity {
                         do {
                             try material.setParameter(name: parameter, value: value)
                         } catch {
-                            print("Error setting parameter: \(error.localizedDescription)")
+                            Logger.diceSpace.error("Error setting shader parameter '\(parameter, privacy: .public)': \(error.localizedDescription, privacy: .public)")
                         }
                     }
                     return material

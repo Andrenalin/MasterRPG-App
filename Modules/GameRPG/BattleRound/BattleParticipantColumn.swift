@@ -21,7 +21,6 @@ struct BattleParticipantColumn: View {
 
     // A hard-coded `maxWidth` ignored Dynamic Type entirely, risking illegible
     // truncation of a free-text combatant name at larger accessibility sizes.
-    // See CODE_AUDIT §8.12.
     @ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90
 
     var body: some View {
@@ -215,7 +214,7 @@ struct BattleParticipantColumn: View {
     /// The avatar halo color is the only signal for "active turn"/"roll
     /// recipient" — mirrors the same state as `haloColor`/`haloWidth` in text
     /// so VoiceOver users (and color-blind sighted users) aren't left without
-    /// it. See CODE_AUDIT §8.10.
+    /// it.
     private var avatarAccessibilityValue: Text {
         switch (isActive, presentation.isRollRecipient) {
         case (true, true):

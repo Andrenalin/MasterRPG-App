@@ -127,7 +127,7 @@ extension BattleRoundCard: Equatable {
     /// whose own data is unchanged. The three action closures are intentionally
     /// excluded: they're never `Equatable`, and — once hoisted to stable method
     /// references at the call site (see `BattleRoundView`) — always behave the
-    /// same regardless of which render's instance gets kept. See CODE_AUDIT §8.9.
+    /// same regardless of which render's instance gets kept.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.presentation == rhs.presentation
             && lhs.controller.root === rhs.controller.root

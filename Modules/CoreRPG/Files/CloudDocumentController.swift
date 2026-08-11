@@ -216,8 +216,7 @@ extension CloudDocumentController {
 extension CloudDocumentController {
     /// The canonical "Documents" path component every module-relative cloud/local
     /// file root is built under. Shared module-wide so it's declared exactly
-    /// once instead of re-hardcoded as a literal at each call site. See
-    /// CODE_AUDIT §9.9.
+    /// once instead of re-hardcoded as a literal at each call site.
     static let documentDirName: String = "Documents"
 }
 

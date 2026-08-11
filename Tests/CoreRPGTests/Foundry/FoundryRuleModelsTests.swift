@@ -55,7 +55,7 @@ struct FoundryRuleModelsTests {
         ]))
     }
 
-    /// CODE_AUDIT §6.6: a small, deeply-nested JSON payload previously recursed one
+    /// CODE_AUDIT §5.9: a small, deeply-nested JSON payload previously recursed one
     /// native stack frame per nesting level with no depth guard — a stack-overflow
     /// crash, not a catchable error. Every real import entry point injects a depth
     /// counter into `userInfo`; this mirrors that configuration.

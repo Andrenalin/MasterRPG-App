@@ -1926,8 +1926,8 @@ extension RPGSharePlayController {
                 // relative-ordering guarantee, so a backlogged, already-superseded
                 // element delivered here could otherwise be diffed against roster
                 // state the live read on the other task had already advanced past,
-                // producing a spurious "removed" for a still-connected participant
-                // (see CODE_AUDIT §3.15). Reading fresh here makes every diff use
+                // producing a spurious "removed" for a still-connected participant.
+                // Reading fresh here makes every diff use
                 // the same single source of truth: a stale queued wake-up becomes,
                 // at worst, a harmless no-op re-check instead of a wrong diff.
                 let activeParticipants = groupSession.activeParticipants

@@ -101,10 +101,10 @@ struct BattleRoundView: View {
 
 private extension BattleRoundView {
     // Stable method references instead of closures recreated fresh every
-    // `body` evaluation — `BattleRoundCard`'s `.equatable()` (see CODE_AUDIT
-    // §8.9) already excludes these from equality since closures are never
-    // `Equatable`, but reusing the same underlying method avoids needlessly
-    // reallocating three closures on every live Battle Round tick.
+    // `body` evaluation — `BattleRoundCard`'s `.equatable()` already excludes
+    // these from equality since closures are never `Equatable`, but reusing
+    // the same underlying method avoids needlessly reallocating three
+    // closures on every live Battle Round tick.
     @MainActor
     func showCharacter(_ combatant: BattleCombatant) {
         screenModel.showCharacterSheet(combatant, controller: controller, scenesManager: scenesManager)

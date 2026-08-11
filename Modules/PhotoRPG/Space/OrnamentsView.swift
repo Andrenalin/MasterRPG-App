@@ -3,6 +3,7 @@
 #if os(visionOS)
 import RealityKit
 import SwiftUI
+import os.log
 
 struct OrnamentsView: View {
     let model: ImagePresentationModel
@@ -12,7 +13,7 @@ struct OrnamentsView: View {
             HStack {
                 Button {
                     guard var component = model.contentEntity.components[ImagePresentationComponent.self] else {
-                        print("Unable to find ImagePresentationComponent.")
+                        Logger.photoSpace.error("Unable to find ImagePresentationComponent.")
                         return
                     }
                     switch component.viewingMode {
@@ -26,18 +27,18 @@ struct OrnamentsView: View {
                                 do {
                                     try await model.generateSpatial3DImage()
                                 } catch {
-                                    print("Spatial3DImage generation failed: \(error.localizedDescription)")
+                                    Logger.photoSpace.error("Spatial3DImage generation failed: \(error.localizedDescription, privacy: .public)")
                                     model.spatial3DImageState = .notGenerated
                                 }
                             }
                         case .generating:
-                            print("Spatial 3D Image is still generating...")
+                            Logger.photoSpace.debug("Spatial 3D Image is still generating...")
                         }
                     case .spatial3D:
                         component.desiredViewingMode = .mono
                         model.contentEntity.components.set(component)
                     default:
-                        print("Unhandled viewing mode: \(component.viewingMode)")
+                        Logger.photoSpace.error("Unhandled viewing mode: \(String(describing: component.viewingMode), privacy: .public)")
                     }
                 } label: {
                     switch model.contentEntity.observable.components[ImagePresentationComponent.self]?.viewingMode {

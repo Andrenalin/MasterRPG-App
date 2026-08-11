@@ -33,7 +33,7 @@ public extension View {
     /// module's own `viewController.viewer(root:itemId:configuration:dismissAction:)`
     /// call still varies (different `ViewerConfiguration`/extra parameters), so
     /// only that surrounding "check/extract/dismiss" wiring is shared here — not
-    /// the viewer call itself. See CODE_AUDIT §9.5.
+    /// the viewer call itself.
     @ViewBuilder
     func openFileWindowOverlay<Viewer: View>(
         _ openFileWindowModel: OpenFileWindowModel,

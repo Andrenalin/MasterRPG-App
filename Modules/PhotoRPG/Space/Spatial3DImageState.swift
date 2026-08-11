@@ -4,6 +4,11 @@
 import CoreRPG
 import RealityKit
 import SwiftUI
+import os.log
+
+extension Logger {
+    static let photoSpace = Logger(subsystem: subsystem, category: "PhotoSpace")
+}
 
 enum Spatial3DImageState {
     case notGenerated
@@ -34,7 +39,7 @@ enum Spatial3DImageState {
         guard let url = await root.itemController.loadableUrl(itemId: requestedItemId),
               !Task.isCancelled,
               selectedItemId == requestedItemId else {
-            print("ImageURL is nil.")
+            Logger.photoSpace.error("ImageURL is nil.")
             return
         }
 
@@ -45,7 +50,7 @@ enum Spatial3DImageState {
         do {
             loadedSpatial3DImage = try await ImagePresentationComponent.Spatial3DImage(contentsOf: url)
         } catch {
-            print("Unable to initialize spatial 3D image: \(error.localizedDescription)")
+            Logger.photoSpace.error("Unable to initialize spatial 3D image: \(error.localizedDescription, privacy: .public)")
             return
         }
 
@@ -74,21 +79,21 @@ enum Spatial3DImageState {
         } catch is CancellationError {
             // A new photo superseded this conversion.
         } catch {
-            print("Spatial3DImage generation failed: \(error.localizedDescription)")
+            Logger.photoSpace.error("Spatial3DImage generation failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
     func generateSpatial3DImage() async throws {
         guard spatial3DImageState == .notGenerated else {
-            print("Spatial 3D image already generated or generation is in progress.")
+            Logger.photoSpace.debug("Spatial 3D image already generated or generation is in progress.")
             return
         }
         guard let spatial3DImage else {
-            print("createImagePresentationComponent.")
+            Logger.photoSpace.error("generateSpatial3DImage called before createImagePresentationComponent.")
             return
         }
         guard var imagePresentationComponent = contentEntity.components[ImagePresentationComponent.self] else {
-            print("ImagePresentationComponent is missing from the entity.")
+            Logger.photoSpace.error("ImagePresentationComponent is missing from the entity.")
             return
         }
         // Set the desired viewing mode before generating so that it will trigger the

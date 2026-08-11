@@ -19,7 +19,7 @@ public enum FoundryJSONValue: Codable, Equatable, Sendable {
 
     /// A ~200 KB payload of ~100,000 nested arrays (`[[[[[…]]]]]`) — well under any
     /// per-entry size cap — would otherwise recurse one native stack frame per level
-    /// during decode and crash the process via stack overflow. See CODE_AUDIT §6.6.
+    /// during decode and crash the process via stack overflow. See CODE_AUDIT §5.9.
     static let maximumNestingDepth = 128
 
     public init(from decoder: any Decoder) throws {

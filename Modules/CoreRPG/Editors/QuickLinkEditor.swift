@@ -97,7 +97,7 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
 /// counterpart at the same position, so `ForEach` below yields exactly one view
 /// per iteration instead of a variable 1-or-2 view count. `beforeEntries` is only
 /// ever seeded once, at `QuickLinkEditor.init`, so the position is a genuinely
-/// stable identity here — not the usual "reorderable list" case. See CODE_AUDIT §8.7.
+/// stable identity here — not the usual "reorderable list" case.
 private struct QuickLinkComparisonPair<EntryViewModel>: Identifiable {
     let id: Int
     let before: EntryViewModel

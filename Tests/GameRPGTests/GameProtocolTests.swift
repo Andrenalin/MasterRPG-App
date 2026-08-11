@@ -9,7 +9,7 @@ import Testing
 /// `GameProtocol.handleInput` hands `header.length` straight to
 /// `deliverInputNoCopy` without a live `NWProtocolFramer.Instance` being
 /// mockable, so this exercises the pulled-out length bound directly.
-/// See CODE_AUDIT §6.4: an unbounded `UInt32` length let any TLS-authenticated
+/// See CODE_AUDIT §5.9: an unbounded `UInt32` length let any TLS-authenticated
 /// local-network peer force an effectively unbounded buffer wait.
 @Suite("GameProtocol message-length bound")
 struct GameProtocolTests {

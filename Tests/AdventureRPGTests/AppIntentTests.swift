@@ -10,12 +10,27 @@ import Testing
 @testable import AdventureRPG
 
 struct AdventureAppIntentTests {
-//    @Test
-//    @MainActor
-//    func shortcutCatalogKeepsPublishedBudget() {
-//        #expect(AdventureShortcutCatalog.all.count == 6)
-//    }
-//
+    @Test
+    @MainActor
+    func shortcutCatalogKeepsPublishedBudget() {
+        #expect(AdventureShortcutCatalog.all.count == 6)
+    }
+
+    // Disabled: `AdventureEntityQuery.suggestedEntities()`/`entities(matching:)`/`allEntities()`
+    // read `@Dependency var root: AdventureRootModel`. Personally confirmed this is not a stale
+    // API mismatch (every symbol below still exists with a compatible signature — checked before
+    // restoring), but a genuine runtime crash: registering the dependency via
+    // `AppDependencyManager.shared.add(dependency:)` and then calling the query directly, outside
+    // the real intent-perform flow, traps with "Dependency values can only be accessed inside of
+    // the intent perform flow ... unless the value of the dependency is manually set prior to
+    // access." Because it's a Fatal error (not a thrown error), it kills the whole shared xctest
+    // process rather than just failing this one test — the entire suite (`ItemControllerTests`,
+    // `SheetControllerTests`, `ExportControllerTests`, and more) reported spurious failures the
+    // one time this ran, because their results were lost when the process crashed mid-run. Per
+    // the `app-intent` skill's own testing guidance, entity-query coverage like this belongs in
+    // the out-of-process `AppIntentsTesting` framework (iOS 27+, a separate XCUITest bundle that
+    // exercises the real App Intents stack), not a direct struct test — that's the fix, not
+    // restoring this as written. See CODE_AUDIT §9.12.
 //    @Test
 //    @MainActor
 //    func entityQueryLimitsPickerResultsWithoutLimitingFullIndex() async throws {

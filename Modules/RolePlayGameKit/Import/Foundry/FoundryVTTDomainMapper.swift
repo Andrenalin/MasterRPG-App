@@ -263,7 +263,7 @@ private final class FoundryMappingState {
     /// How many units of mapping work run between `Task.yield()` calls in
     /// `cooperativeCheckpoint()`. The whole mapping pass runs on the Main Actor (its models are
     /// @MainActor @Observable classes, so it can't move to a background actor without a much
-    /// larger rewrite — see CODE_AUDIT.md §3.1), so this is what keeps SwiftUI's render loop and
+    /// larger rewrite — see CODE_AUDIT.md §3.7), so this is what keeps SwiftUI's render loop and
     /// other Main Actor work interleaved during a large import instead of one long unbroken run.
     /// Lowered from 64 to yield more often, at the cost of slightly more yield overhead.
     private static let cooperativeYieldInterval = 16
