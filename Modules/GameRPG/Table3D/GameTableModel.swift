@@ -253,6 +253,16 @@ final class GameTableModel: Sendable {
         broadcastMapState(for: mapId)
     }
 
+    /// Toggles the same "focused" flag the 2D map's room long-press uses to
+    /// zoom its viewport to a room. The 3D table has no camera to move — this
+    /// just keeps a concurrently open 2D map view in sync when the master
+    /// long-presses a room's fog on the table instead.
+    func toggleRoomFocus(_ roomId: UUID) {
+        guard isGameMaster, let mapId = currentMapId,
+              mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
+        broadcastMapState(for: mapId)
+    }
+
     /// Shows or hides the full map with one render/sync/network transaction.
     func setAllRoomsShown(_ isShown: Bool) async {
         guard isGameMaster, let mapId = currentMapId else { return }

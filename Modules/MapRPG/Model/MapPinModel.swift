@@ -51,7 +51,10 @@ public struct MapPinModel: Identifiable, Equatable, Hashable, Sendable {
             }
         }
 
-        var size: CGSize {
+        /// Base render size in points, before `MapModel.pinScale` and zoom are
+        /// applied. Exposed so other renderers (the 3D table) can derive a
+        /// pin's on-screen size the same way the 2D map does.
+        public var size: CGSize {
             switch self {
             case .tiny:
                 return CGSize(width: 22, height: 22)

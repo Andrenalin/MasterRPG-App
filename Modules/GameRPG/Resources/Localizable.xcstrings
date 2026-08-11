@@ -4519,6 +4519,9 @@
         }
       }
     },
+    "Room %@" : {
+
+    },
     "Room Visibility" : {
       "localizations" : {
         "de" : {
@@ -5603,6 +5606,9 @@
           }
         }
       }
+    },
+    "Toggle Room Focus" : {
+
     },
     "Total" : {
       "localizations" : {

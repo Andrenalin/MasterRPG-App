@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS) || os(macOS) || os(visionOS)
+import CoreRPG
 import MapRPG
 import PhotoRPG
 import SwiftUI
@@ -28,6 +29,7 @@ private struct GamePinActionMenuContent: View {
                     ? LocalizedStringResource("Revive Pin", bundle: .module)
                     : LocalizedStringResource("Mark Pin Dead", bundle: .module),
                 systemImage: pin.isDead ? "heart.fill" : "xmark",
+                isSelected: pin.isDead,
                 action: game.toggleSelectedPinDead
             )
             GamePinMenuButton(
@@ -35,11 +37,13 @@ private struct GamePinActionMenuContent: View {
                     ? LocalizedStringResource("Hide Pin", bundle: .module)
                     : LocalizedStringResource("Show Pin", bundle: .module),
                 systemImage: pin.isShown ? "eye.slash" : "eye",
+                isSelected: pin.isShown,
                 action: game.toggleSelectedPinVisibility
             )
             GamePinMenuButton(
                 title: LocalizedStringResource("Resize Pin", bundle: .module),
                 systemImage: "square.resize",
+                isSelected: false,
                 action: game.resizeSelectedPin
             )
             GamePinMenuButton(
@@ -47,24 +51,26 @@ private struct GamePinActionMenuContent: View {
                     ? LocalizedStringResource("Reset Pin Zoom", bundle: .module)
                     : LocalizedStringResource("Zoom Pin", bundle: .module),
                 systemImage: pin.isZoom ? "minus.magnifyingglass" : "plus.magnifyingglass",
+                isSelected: pin.isZoom,
                 action: game.toggleSelectedPinZoom
             )
             if game.canAddSelectedPinToBattleRound {
                 GamePinMenuButton(
                     title: LocalizedStringResource("Add Pin to Battle Round", bundle: .module),
                     systemImage: "person.badge.plus",
+                    isSelected: false,
                     action: game.addSelectedPinToBattleRound
                 )
             }
         }
         .padding(12)
-        .modifier(GamePinMenuBackground())
     }
 }
 
 private struct GamePinMenuButton: View {
     let title: LocalizedStringResource
     let systemImage: String
+    let isSelected: Bool
     let action: @MainActor () -> Void
 
     var body: some View {
@@ -75,20 +81,11 @@ private struct GamePinMenuButton: View {
                 Image(systemName: systemImage)
             }
         }
-        .labelStyle(.iconOnly)
-        .controlSize(.small)
-        .help(Text(title))
-    }
-}
-
-private struct GamePinMenuBackground: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-#if os(visionOS)
-        content.glassBackgroundEffect(in: .capsule)
-#else
-        content.background(.regularMaterial, in: .capsule)
-#endif
+        .selectedRoundButton(
+            title: String(localized: title),
+            module: .table,
+            isSelected: isSelected
+        )
     }
 }
 

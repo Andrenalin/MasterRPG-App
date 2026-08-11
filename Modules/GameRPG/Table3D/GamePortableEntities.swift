@@ -289,10 +289,13 @@ struct PinComponent: Component {
     let pinId: UUID
 }
 
+/// Identifies a room's fog hit-test volume for entity-targeted gestures.
+struct RoomComponent: Component {
+    let roomId: UUID
+}
+
 @MainActor
 final class PinPawn {
-    static let baseRadius: Float = 0.02
-
     let pinId: UUID
     let entity: Entity
     var loadedPhotoId: UUID?
@@ -302,11 +305,13 @@ final class PinPawn {
     private let highlightModel: ModelEntity
     private let deathMarkModels: [ModelEntity]
     private var currentSize: MapPinModel.MapPinSize
+    private var currentPointsToMeters: Float
 
-    init(pin: MapPinModel) {
+    init(pin: MapPinModel, pointsToMeters: Float) {
         pinId = pin.id
         currentSize = pin.size
-        let radius = Self.baseRadius * Self.scaleForPinSize(pin.size)
+        currentPointsToMeters = pointsToMeters
+        let radius = Self.radius(for: pin.size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
 
         var baseMaterial = UnlitMaterial()
@@ -415,13 +420,15 @@ final class PinPawn {
         pin: MapPinModel,
         position: SIMD3<Float>,
         hiddenForMaster: Bool,
-        activeAttackerPinId: UUID? = nil
+        activeAttackerPinId: UUID? = nil,
+        pointsToMeters: Float
     ) {
         entity.position = position
         entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4 : 1)
-        if pin.size != currentSize {
+        if pin.size != currentSize || pointsToMeters != currentPointsToMeters {
             currentSize = pin.size
-            applySize(pin.size)
+            currentPointsToMeters = pointsToMeters
+            applySize(pin.size, pointsToMeters: pointsToMeters)
         }
 
         var baseMaterial = UnlitMaterial()
@@ -456,19 +463,16 @@ final class PinPawn {
         photoPlane.model?.materials = [material]
     }
 
-    static func scaleForPinSize(_ size: MapPinModel.MapPinSize) -> Float {
-        switch size {
-        case .tiny: 0.5
-        case .small: 0.75
-        case .normal: 1
-        case .large: 1.5
-        case .huge: 2
-        case .colossal: 3
-        }
+    /// Matches the 2D map's `pin.size.size × pinScale` sizing, projected from
+    /// image points into table meters via `pointsToMeters` (see
+    /// `MapTableProjection.metersPerPoint`) so a token covers the same
+    /// fraction of the table that its pin covers of the map image.
+    static func radius(for size: MapPinModel.MapPinSize, pointsToMeters: Float) -> Float {
+        Float(size.size.width) * pointsToMeters / 2
     }
 
-    private func applySize(_ size: MapPinModel.MapPinSize) {
-        let radius = Self.baseRadius * Self.scaleForPinSize(size)
+    private func applySize(_ size: MapPinModel.MapPinSize, pointsToMeters: Float) {
+        let radius = Self.radius(for: size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
         baseModel.model?.mesh = .generateCylinder(height: 0.005, radius: radius)
         highlightModel.model?.mesh = .generateCylinder(
@@ -520,6 +524,64 @@ final class PinPawn {
         case (false, true, false): LocalizedStringResource("Hidden, Dead, Not Highlighted", bundle: .module)
         case (false, true, true): LocalizedStringResource("Hidden, Dead, Highlighted", bundle: .module)
         }
+    }
+}
+
+// MARK: - Room Hit Area
+
+/// An invisible hit-test volume matching a room's fog outline, so the fog
+/// covering it can be tapped directly on the table instead of only through
+/// the room menu. The map's composite board texture still draws the visible
+/// fog — this entity exists purely so `RoomComponent`-targeted gestures have
+/// something to hit. Lives in `GameSetup.roomHitContainer`, parallel to how
+/// `PinPawn` lives in `pinContainer`.
+@MainActor
+final class RoomHitArea {
+    let roomId: UUID
+    let entity: Entity
+    private var currentCoordinates: [CGPoint]
+
+    init(entry: MapEntryModel, projection: MapTableProjection) {
+        roomId = entry.id
+        currentCoordinates = entry.coordinates
+        let hitEntity = Entity()
+        hitEntity.name = "RoomHitArea-\(entry.name)"
+        hitEntity.components.set(RoomComponent(roomId: entry.id))
+        hitEntity.components.set(InputTargetComponent())
+        hitEntity.components.set(HoverEffectComponent())
+        hitEntity.components.set(Self.collision(for: entry.coordinates, projection: projection))
+        var accessibility = AccessibilityComponent()
+        accessibility.isAccessibilityElement = true
+        accessibility.label = LocalizedStringResource("Room \(entry.name)", bundle: .module)
+        accessibility.systemActions = .activate
+        accessibility.customActions = [LocalizedStringResource("Toggle Room Focus", bundle: .module)]
+        hitEntity.components.set(accessibility)
+        entity = hitEntity
+    }
+
+    /// Rebuilds the hit volume when the room's outline changed.
+    func update(entry: MapEntryModel, projection: MapTableProjection) {
+        guard entry.coordinates != currentCoordinates else { return }
+        currentCoordinates = entry.coordinates
+        entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
+    }
+
+    /// A thin convex volume enclosing the room polygon, projected onto the
+    /// table plane. Concave outlines are approximated by their convex hull —
+    /// fine for a fog-reveal hit target, unlike a physics collider.
+    private static func collision(for coordinates: [CGPoint], projection: MapTableProjection) -> CollisionComponent {
+        guard coordinates.count >= 3 else {
+            return CollisionComponent(shapes: [])
+        }
+        let halfThickness: Float = 0.004
+        let points = coordinates.flatMap { point -> [SIMD3<Float>] in
+            let base = projection.tablePosition(for: point)
+            return [
+                SIMD3<Float>(base.x, base.y - halfThickness, base.z),
+                SIMD3<Float>(base.x, base.y + halfThickness, base.z)
+            ]
+        }
+        return CollisionComponent(shapes: [.generateConvex(from: points)])
     }
 }
 

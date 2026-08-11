@@ -41,7 +41,7 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
             // Don't let the die land on any other equipment, just the table.
             interaction.setConfiguration(.init(allowedDestinations: .restricted([])))
         }
-        
+
     }
     
     @MainActor
