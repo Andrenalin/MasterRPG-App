@@ -78,9 +78,9 @@ extension GameController: GameControllable {
 
 extension GameController: WeatherGameControllable {
     func weatherVersion(for itemId: UUID) async -> Int {
-        let photoId = await MainActor.run {
-            gameItem(for: itemId).photoId
-        }
+        // `gameItem(for:)` is itself `@MainActor` — `await` alone hops there, no
+        // `MainActor.run` wrapper needed.
+        let photoId = await gameItem(for: itemId).photoId
         guard let photoId else { return 0 }
         guard await exportController.photoRoot.itemControllable.item(for: photoId) != nil else {
             return 0
@@ -121,6 +121,11 @@ extension GameController: WeatherGameControllable {
         weatherGameModel.availableVersions[itemId] = version
     }
 
+    @MainActor
+    private func hasWeatherModel(itemId: UUID) -> Bool {
+        gameModel.itemData[itemId] is WeatherModel
+    }
+
     func revealWeather(itemId: UUID, data: NetworkCodableDataType) async throws -> Bool {
         guard data.id == itemId, data.type == .weather else {
             throw ItemGameStorableError.wrongData
@@ -137,9 +142,7 @@ extension GameController: WeatherGameControllable {
             deep: true,
             policy: .memoryOnly
         )
-        guard await MainActor.run(body: {
-            gameModel.itemData[itemId] is WeatherModel
-        }) else {
+        guard await hasWeatherModel(itemId: itemId) else {
             return false
         }
 

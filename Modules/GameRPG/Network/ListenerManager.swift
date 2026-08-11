@@ -65,14 +65,17 @@ final class ListenerManager: ListenerManaging {
             }
         }
 
+        // This `Task` literal is written directly inside `startListening()`'s body, so —
+        // like `monitorTask` above — it inherits this @MainActor class's isolation; no
+        // `MainActor.run` wrapper needed to set `state` after the `await` resumes.
         networkTask = Task { [weak self] in
             do {
                 try await controller.run()
             } catch is CancellationError {
-                await MainActor.run { self?.state = .cancelled }
+                self?.state = .cancelled
             } catch {
                 Logger.listenerController.error("ListenerManager: Error \(error.localizedDescription, privacy: .public)")
-                await MainActor.run { self?.state = .stopped }
+                self?.state = .stopped
             }
         }
     }

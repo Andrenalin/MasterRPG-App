@@ -154,10 +154,7 @@ extension GameController: TableGameStorable {
             guard await isTableAvailable(itemId: itemId, version: data.version) else { return false }
             guard makeCurrent else { return true }
             guard await setCurrent(itemId: itemId) else { return false }
-            await MainActor.run {
-                guard let table = gameModel.itemData[itemId] as? TableModel else { return }
-                itemController.replaceForGame(model: table, isInsert: true, policy: .persist)
-            }
+            await persistCurrentTable(itemId: itemId)
             return true
         }
 
@@ -176,9 +173,7 @@ extension GameController: TableGameStorable {
         }
 
         let importedTables = await newlyImportedTables(comparedWith: previousIdentities)
-        var importedVersions = await MainActor.run {
-            importedTables.mapValues(\.version)
-        }
+        var importedVersions = await versions(of: importedTables)
         guard importedTables[itemId] != nil else { return false }
 
         // The envelope is the game master's authoritative package version.
@@ -189,25 +184,13 @@ extension GameController: TableGameStorable {
         // their imported, pre-player-merge versions.
         importedVersions[itemId] = data.version
 
-        await MainActor.run {
-            for (id, imported) in importedTables {
-                let merged = persistentTables[id].map { imported.merge($0) } ?? imported
-                gameModel.itemData[id] = merged
-                if makeCurrent {
-                    itemController.replaceForGame(model: merged, isInsert: true, policy: .persist)
-                }
-            }
-        }
+        await mergeAndPersistImportedTables(importedTables, persistentTables: persistentTables, makeCurrent: makeCurrent)
 
         if makeCurrent, await !setCurrent(itemId: itemId) {
             return false
         }
 
-        await MainActor.run {
-            for (id, version) in importedVersions {
-                tableGameAvailabilityModel.markAvailable(itemId: id, version: version)
-            }
-        }
+        await markAvailable(importedVersions)
         return true
     }
 
@@ -234,6 +217,39 @@ extension GameController: TableGameStorable {
                   previous[entry.key] != ObjectIdentifier(table)
             else { return }
             result[entry.key] = table
+        }
+    }
+
+    @MainActor
+    private func persistCurrentTable(itemId: UUID) {
+        guard let table = gameModel.itemData[itemId] as? TableModel else { return }
+        itemController.replaceForGame(model: table, isInsert: true, policy: .persist)
+    }
+
+    @MainActor
+    private func versions(of tables: [UUID: TableModel]) -> [UUID: Int] {
+        tables.mapValues(\.version)
+    }
+
+    @MainActor
+    private func mergeAndPersistImportedTables(
+        _ importedTables: [UUID: TableModel],
+        persistentTables: [UUID: TableModel],
+        makeCurrent: Bool
+    ) {
+        for (id, imported) in importedTables {
+            let merged = persistentTables[id].map { imported.merge($0) } ?? imported
+            gameModel.itemData[id] = merged
+            if makeCurrent {
+                itemController.replaceForGame(model: merged, isInsert: true, policy: .persist)
+            }
+        }
+    }
+
+    @MainActor
+    private func markAvailable(_ importedVersions: [UUID: Int]) {
+        for (id, version) in importedVersions {
+            tableGameAvailabilityModel.markAvailable(itemId: id, version: version)
         }
     }
 }

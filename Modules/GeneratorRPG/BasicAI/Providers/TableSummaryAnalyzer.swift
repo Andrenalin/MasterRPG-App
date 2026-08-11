@@ -37,9 +37,7 @@ struct TableSummaryAnalyzer {
                 let content = snapshot.content
                 latestContent = content
                 let progress = TableSummaryAnalysisProgress(content)
-                await MainActor.run {
-                    resultModel.analysisProgress = progress
-                }
+                await resultModel.setAnalysisProgress(progress)
             }
         } catch let error as LanguageModelSession.GenerationError {
             throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))

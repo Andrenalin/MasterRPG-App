@@ -27,6 +27,15 @@ public struct ImportReviewItem: Identifiable, Sendable {
 public final class ItemDataImportModel {
     public init() {}
 
+    /// Lets a caller set the initial mode atomically with construction — calling an
+    /// isolated initializer with `await` works the same as calling an isolated method;
+    /// only a bare property *write* on an already-existing instance needs its own
+    /// isolated function (see CODE_AUDIT §3.2).
+    public convenience init(importMode: ImportMode) {
+        self.init()
+        self.importMode = importMode
+    }
+
     public var importedItems: Int = 0
     public var totalImportingItems: Int = 0
     public var isImportRunning: Bool = false
@@ -87,8 +96,7 @@ public extension ImportControllable {
     // Convenience for fire-and-forget callers — no progress UI
     func importUrl(from url: URL, withOverwrite: Bool = false) -> Task<Void, any Error> {
         Task.detached(priority: .userInitiated) {
-            let importModel = await MainActor.run { ItemDataImportModel() }
-            await MainActor.run { importModel.importMode = withOverwrite ? .overwrite : .merge }
+            let importModel = await ItemDataImportModel(importMode: withOverwrite ? .overwrite : .merge)
             try await self.performImport(from: url, importModel: importModel, gameMemoryOnly: false)
         }
     }
@@ -145,10 +153,11 @@ public extension ImportControllable {
                     let itemFile = currentFile
                     currentFile = nil
                     do {
-                        // decode constructs models, which may be @MainActor — hop for
-                        // the decode call; the wire format itself is unchanged.
+                        // decode constructs models, which may be @MainActor — `decode` is
+                        // itself `@MainActor`, so `await` alone hops for the decode call
+                        // (no `MainActor.run` wrapper needed); the wire format is unchanged.
                         let itemVersion = version
-                        let newItem = try await MainActor.run { try itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion) }
+                        let newItem = try await itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion)
                         if let itemFile {
                             if try await addFile(data: itemFile, to: newItem, forceSave: forceSave) {
                                 locallyReusedFileIds.insert(newItem.id)
@@ -194,23 +203,9 @@ public extension ImportControllable {
             if itemCount > 0 {
                 let module = itemControllable.config.module
                 let ic = itemControllable
-                let allLocalIds = await MainActor.run { Set(ic.itemDataModel.items) }
+                let allLocalIds = await localItemIds(of: ic)
                 for deletedId in allLocalIds.subtracting(importedIds) {
-                    await MainActor.run {
-                        guard let deletedIA: any ItemDataAccessable = ic.itemSync(for: deletedId) else { return }
-                        let reviewItem = SingleReviewItem(existing: deletedIA, imported: deletedIA, merged: deletedIA)
-                        let itemModel = SingleItemImportModel.from(item: reviewItem)
-                        let reviewItemModel = ImportReviewItemModel(
-                            id: deletedId,
-                            kind: .different,
-                            existingStatus: deletedIA.name,
-                            importedStatus: "Not in import",
-                            mergedStatus: deletedIA.name,
-                            itemModel: itemModel,
-                            isDeletion: true
-                        )
-                        importModel.pendingModules[module, default: []].append(reviewItemModel)
-                    }
+                    await appendDeletionReviewItem(deletedId: deletedId, module: module, itemController: ic, importModel: importModel)
                 }
             }
         } else if !gameMemoryOnly {
@@ -228,15 +223,48 @@ public extension ImportControllable {
 
     // Convenience for game networking imports — no progress tracking needed
     func importStream(from inputStream: InputStream, forceSave: Bool) async throws {
-        let importModel = await MainActor.run { ItemDataImportModel() }
+        // `ItemDataImportModel.init()` is itself `@MainActor` — `await` alone hops
+        // there, no `MainActor.run` wrapper needed.
+        let importModel = await ItemDataImportModel()
         try await importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
     }
 
     func logImport(title: String, count: Int, importModel: ItemDataImportModel) async {
-        let (token, importedItems, totalItems) = await MainActor.run {
-            (itemControllable.config.module.rawValue, importModel.importedItems, importModel.totalImportingItems)
-        }
+        let token = await self.token()
+        let (importedItems, totalItems) = await importProgress(importModel)
         Logger.importController.info("\(title, privacy: .public) \(token, privacy: .public) currentItems \(count), importedItems \(importedItems), total: \(totalItems)")
+    }
+
+    @MainActor
+    private func importProgress(_ importModel: ItemDataImportModel) -> (importedItems: Int, totalItems: Int) {
+        (importModel.importedItems, importModel.totalImportingItems)
+    }
+
+    @MainActor
+    private func localItemIds(of itemController: any ItemControllable) -> Set<UUID> {
+        Set(itemController.itemDataModel.items)
+    }
+
+    @MainActor
+    private func appendDeletionReviewItem(
+        deletedId: UUID,
+        module: NetworkModules,
+        itemController: any ItemControllable,
+        importModel: ItemDataImportModel
+    ) {
+        guard let deletedIA: any ItemDataAccessable = itemController.itemSync(for: deletedId) else { return }
+        let reviewItem = SingleReviewItem(existing: deletedIA, imported: deletedIA, merged: deletedIA)
+        let itemModel = SingleItemImportModel.from(item: reviewItem)
+        let reviewItemModel = ImportReviewItemModel(
+            id: deletedId,
+            kind: .different,
+            existingStatus: deletedIA.name,
+            importedStatus: "Not in import",
+            mergedStatus: deletedIA.name,
+            itemModel: itemModel,
+            isDeletion: true
+        )
+        importModel.pendingModules[module, default: []].append(reviewItemModel)
     }
 }
 
@@ -258,22 +286,38 @@ private extension ImportControllable {
         guard fileHeader.token == ExportDataToken.counter.rawValue &&
                 fileHeader.version == ExportDataToken.version_2024.rawValue else { throw ItemDataImportableError.notEnoughData }
 
-        await MainActor.run {
-            importModel.importedItems = 0
-            importModel.totalImportingItems = fileHeader.counter
-            importModel.isImportRunning = true
-        }
+        await beginImport(importModel, totalItems: fileHeader.counter)
 
         do {
             try await self.importStream(from: inputStream, forceSave: true, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
-            await MainActor.run {
-                importModel.isImportRunning = false
-                if importModel.importMode == .manual { importModel.finalizeReview() }
-            }
+            await finishImport(importModel)
         } catch {
-            await MainActor.run { importModel.isImportRunning = false }
+            await stopImport(importModel)
             throw Task.isCancelled ? ItemDataImportableError.cancel : error
         }
+    }
+
+    @MainActor
+    private func beginImport(_ importModel: ItemDataImportModel, totalItems: Int) {
+        importModel.importedItems = 0
+        importModel.totalImportingItems = totalItems
+        importModel.isImportRunning = true
+    }
+
+    @MainActor
+    private func finishImport(_ importModel: ItemDataImportModel) {
+        importModel.isImportRunning = false
+        if importModel.importMode == .manual { importModel.finalizeReview() }
+    }
+
+    @MainActor
+    private func stopImport(_ importModel: ItemDataImportModel) {
+        importModel.isImportRunning = false
+    }
+
+    @MainActor
+    private func incrementImportedItems(_ importModel: ItemDataImportModel) {
+        importModel.importedItems += 1
     }
 
     func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false, locallyReusedFileIds: Set<UUID> = []) async throws {
@@ -282,7 +326,7 @@ private extension ImportControllable {
         let editCtrl = editControllable
         let normalizedImportedItem = await itemController.normalizedImportedItem(from: importedItem)
         guard let importableItem = await itemController.gameModeImportedItem(from: normalizedImportedItem, forceSave: forceSave, locallyReusedFileIds: locallyReusedFileIds) else {
-            await MainActor.run { importModel.importedItems += 1 }
+            await incrementImportedItems(importModel)
             try Task.checkCancellation()
             return
         }
@@ -294,13 +338,7 @@ private extension ImportControllable {
         // stays the authority for that (see `ItemGameModel.currentItemId`/`.items`) — until it's
         // in that id list too, so add it there ourselves.
         guard !gameMemoryOnly else {
-            await MainActor.run {
-                itemController.replaceForGame(model: importableItem, isInsert: true, policy: .memoryOnly)
-                if !itemController.itemDataModel.gameItems.contains(id) {
-                    itemController.itemDataModel.gameItems.insert(id, at: 0)
-                }
-                importModel.importedItems += 1
-            }
+            await replaceForGameAndCount(importableItem, id: id, itemController: itemController, importModel: importModel)
             try Task.checkCancellation()
             return
         }
@@ -319,42 +357,65 @@ private extension ImportControllable {
 
         case .manual:
             let merged = await itemController.merge(with: importableItem) as? any ItemDataAccessable
-            await MainActor.run {
-                guard let imported = importableItem as? any ItemDataAccessable else { return }
-                let existing = itemController.itemSync(for: id)
-                let module = itemController.config.module
-
-                if existing != nil && merged == nil {
-                    logManualReviewUnchangedSkipped(module: module, id: id, imported: imported)
-                    return
-                }
-
-                let kind: ImportReviewItemModel.ChangeKind = existing == nil ? .added : .different
-                let reviewItem = SingleReviewItem(existing: existing, imported: imported, merged: merged ?? imported)
-                let itemModel = SingleItemImportModel.from(item: reviewItem)
-                if kind == .different {
-                    logManualReviewDifference(
-                        module: module,
-                        id: id,
-                        existing: existing,
-                        imported: imported,
-                        itemModel: itemModel
-                    )
-                }
-                let reviewItemModel = ImportReviewItemModel(
-                    id: id,
-                    kind: kind,
-                    existingStatus: existing?.name ?? "Not in library",
-                    importedStatus: imported.name,
-                    mergedStatus: kind == .different ? "Merged" : "Ready to add",
-                    itemModel: itemModel
-                )
-                importModel.pendingModules[module, default: []].append(reviewItemModel)
-            }
+            await recordManualReview(importableItem: importableItem, merged: merged, id: id, itemController: itemController, importModel: importModel)
         }
 
-        await MainActor.run { importModel.importedItems += 1 }
+        await incrementImportedItems(importModel)
         try Task.checkCancellation()
+    }
+
+    @MainActor
+    private func replaceForGameAndCount(
+        _ importableItem: ModelType,
+        id: UUID,
+        itemController: any ItemControllable,
+        importModel: ItemDataImportModel
+    ) {
+        itemController.replaceForGame(model: importableItem, isInsert: true, policy: .memoryOnly)
+        if !itemController.itemDataModel.gameItems.contains(id) {
+            itemController.itemDataModel.gameItems.insert(id, at: 0)
+        }
+        importModel.importedItems += 1
+    }
+
+    @MainActor
+    private func recordManualReview(
+        importableItem: ModelType,
+        merged: (any ItemDataAccessable)?,
+        id: UUID,
+        itemController: any ItemControllable,
+        importModel: ItemDataImportModel
+    ) {
+        guard let imported = importableItem as? any ItemDataAccessable else { return }
+        let existing = itemController.itemSync(for: id)
+        let module = itemController.config.module
+
+        if existing != nil && merged == nil {
+            logManualReviewUnchangedSkipped(module: module, id: id, imported: imported)
+            return
+        }
+
+        let kind: ImportReviewItemModel.ChangeKind = existing == nil ? .added : .different
+        let reviewItem = SingleReviewItem(existing: existing, imported: imported, merged: merged ?? imported)
+        let itemModel = SingleItemImportModel.from(item: reviewItem)
+        if kind == .different {
+            logManualReviewDifference(
+                module: module,
+                id: id,
+                existing: existing,
+                imported: imported,
+                itemModel: itemModel
+            )
+        }
+        let reviewItemModel = ImportReviewItemModel(
+            id: id,
+            kind: kind,
+            existingStatus: existing?.name ?? "Not in library",
+            importedStatus: imported.name,
+            mergedStatus: kind == .different ? "Merged" : "Ready to add",
+            itemModel: itemModel
+        )
+        importModel.pendingModules[module, default: []].append(reviewItemModel)
     }
 
     @MainActor

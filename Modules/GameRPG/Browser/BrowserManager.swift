@@ -64,14 +64,17 @@ final class BrowserManager {
             }
         }
 
+        // This `Task` literal is written directly inside `start()`'s body, so — like
+        // `monitorTask` above — it inherits this @MainActor class's isolation; no
+        // `MainActor.run` wrapper needed to set `connectionState` after the `await` resumes.
         networkTask = Task { [weak self] in
             do {
                 try await controller.startBrowser()
             } catch is CancellationError {
-                await MainActor.run { self?.connectionState = .cancelled }
+                self?.connectionState = .cancelled
             } catch {
                 Logger.browserController.log("Browser error: \(error.localizedDescription)")
-                await MainActor.run { self?.connectionState = .stopped }
+                self?.connectionState = .stopped
             }
         }
     }

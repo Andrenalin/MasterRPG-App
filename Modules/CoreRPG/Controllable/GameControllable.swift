@@ -166,9 +166,9 @@ public extension GameControllable {
 
     var currentId: UUID {
         get async {
-            await MainActor.run {
-                gameModel.currentItemId ?? UUID()
-            }
+            // `currentItemId` is itself `@MainActor` (inherited from `ItemGameModel`'s class
+            // annotation) — `await` alone hops there, no `MainActor.run` wrapper needed.
+            await gameModel.currentItemId ?? UUID()
         }
     }
 
@@ -183,11 +183,14 @@ public extension GameControllable {
 
     }
 
+    @MainActor
+    private func existingGameItem(for itemId: UUID) -> (id: UUID, index: Int)? {
+        guard let index = gameModel.items.firstIndex(where: { $0 == itemId }) else { return nil }
+        return (id: gameModel.items[index], index: index)
+    }
+
     func setCurrent(itemId: UUID) async -> Bool {
-        let existing = await MainActor.run { () -> (id: UUID, index: Int)? in
-            guard let index = gameModel.items.firstIndex(where: { $0 == itemId }) else { return nil }
-            return (id: gameModel.items[index], index: index)
-        }
+        let existing = await existingGameItem(for: itemId)
         if let existing {
             if existing.index != 0 {
                 await gameModel.insert(itemId: existing.id, at: 0, removeIndex: existing.index)
@@ -214,11 +217,14 @@ public extension GameControllable {
     }
     
     func focus(on id: UUID?) async {
-        await MainActor.run {
-            let newFocusId = id ?? gameModel.currentItemId
-            if let newFocusId {
-                gameModel.focus(on: [newFocusId])
-            }
+        await performFocus(on: id)
+    }
+
+    @MainActor
+    private func performFocus(on id: UUID?) {
+        let newFocusId = id ?? gameModel.currentItemId
+        if let newFocusId {
+            gameModel.focus(on: [newFocusId])
         }
     }
 

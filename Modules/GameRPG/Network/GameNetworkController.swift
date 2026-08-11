@@ -783,9 +783,9 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
             if Self.shouldRelayToLAN(gameData), await relayAdmission.admit(gameData) {
                 await model.masterStore?.sendResponse(data: gameData, except: connectionId)
                 let useFileJournal = fileJournal || gameData.usesFileJournal
-                await MainActor.run {
-                    _ = sharePlayStore.sendData(gameData, fileJournal: useFileJournal)
-                }
+                // `sendData` is itself `@MainActor` (and `@discardableResult`) — `await`
+                // alone hops there, no `MainActor.run` wrapper needed.
+                await sharePlayStore.sendData(gameData, fileJournal: useFileJournal)
             }
             await model.masterDelegate?.received(gameData, origin: origin)
         }

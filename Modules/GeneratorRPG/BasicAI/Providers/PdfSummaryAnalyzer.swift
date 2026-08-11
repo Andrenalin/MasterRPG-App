@@ -49,9 +49,7 @@ struct PdfSummaryAnalyzer: Sendable {
             throw PdfSummaryAnalysisError.textExtractionFailed
         }
 
-        await MainActor.run {
-            resultModel.pageProgress = PdfAnalysisProgress(currentPage: pageLimit, totalPages: pageLimit)
-        }
+        await resultModel.setPageProgress(PdfAnalysisProgress(currentPage: pageLimit, totalPages: pageLimit))
 
         do {
             let activeInstructions = instructions + "\nIMPORTANT: All output must be written in \(outputLanguage), regardless of the input language."
@@ -69,9 +67,7 @@ struct PdfSummaryAnalyzer: Sendable {
                 let content = snapshot.content
                 latestContent = content
                 let progress = PdfSummaryAnalysisProgress(content)
-                await MainActor.run {
-                    resultModel.analysisProgress = progress
-                }
+                await resultModel.setAnalysisProgress(progress)
             }
 
             guard let partial = latestContent,

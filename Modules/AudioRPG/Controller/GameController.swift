@@ -40,6 +40,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
 
     @MainActor
+    private func fileUrlAndName(of item: AudioModel) -> (FileUrl?, String) {
+        (item.fileUrl, item.name)
+    }
+
+    @MainActor
     func gameItem(for itemId: UUID) -> AudioModel {
         (gameModel.itemData[itemId] as? AudioModel) ?? itemController.itemOrEmpty(for: itemId)
     }
@@ -120,7 +125,9 @@ extension GameController {
         let visited = visited.union([itemId])
 
         let item = await gameItem(for: itemId)
-        let entryIds = await MainActor.run { item.entries.map(\.audioId) }
+        // `item.entries` is itself `@MainActor` (inherited from `AudioModel`'s class
+        // annotation) — `await` alone hops there, no `MainActor.run` wrapper needed.
+        let entryIds = await item.entries.map(\.audioId)
         guard await hasLocalFileData(for: itemId) else { return false }
 
         for entryId in entryIds {
@@ -151,7 +158,7 @@ extension GameController {
         let item = await gameItem(for: itemId)
         // Extract the Sendable fields on the MainActor — the @MainActor model must
         // not be read inside the file-loading closures below.
-        let (itemFileUrl, title) = await MainActor.run { (item.fileUrl, item.name) }
+        let (itemFileUrl, title) = await fileUrlAndName(of: item)
         guard let fileUrl = itemFileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
 
         var audioAsset: PlaylistItem? = nil

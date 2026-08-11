@@ -137,15 +137,20 @@ public extension ExportControllable {
     }
 
     func logExport(title: String, count: Int) async {
-        let module = await MainActor.run { itemControllable.config.module }
+        // `token()` already exists below for exactly this @MainActor read.
+        let module = await token()
         Logger.exportController.info("\(title, privacy: .public) \(module.token, privacy: .public) count: \(count)")
     }
 
     func logExport(title: String, count: Int, exportModel: ItemDataExportModel) async {
-        let (module, exportedItems, totalItems) = await MainActor.run {
-            (itemControllable.config.module, exportModel.exportedItems, exportModel.totalExportingItems)
-        }
+        let module = await token()
+        let (exportedItems, totalItems) = await exportProgress(exportModel)
         Logger.exportController.info("\(title, privacy: .public) \(module.token, privacy: .public) currentItems \(count), exportedItems \(exportedItems), total: \(totalItems)")
+    }
+
+    @MainActor
+    private func exportProgress(_ exportModel: ItemDataExportModel) -> (exportedItems: Int, totalItems: Int) {
+        (exportModel.exportedItems, exportModel.totalExportingItems)
     }
 
     // MARK: - Exporters
@@ -162,27 +167,41 @@ public extension ExportControllable {
             outputStream.open()
             defer { outputStream.close() }
 
-            await MainActor.run {
-                exportModel.isExportRunning = true
-                exportModel.exportedItems = 0
-                exportModel.totalExportingItems = 0
-            }
-
-            let itemIds = await MainActor.run {
-                let ids = self.exporting(itemIds: itemIds)
-                exportModel.totalExportingItems = ids.count
-                return ids
-            }
+            // `Task.detached` doesn't inherit any ambient actor isolation (unlike a plain
+            // `Task { }` literal written inside a @MainActor context elsewhere in this
+            // file), so these genuinely need an actor-isolated function call rather than
+            // just an `await`-prefixed property access.
+            await self.beginExport(exportModel)
+            let itemIds = await self.resolveExportIds(itemIds, exportModel: exportModel)
 
             do {
                 try outputStream.append(fileHeader: GmzFileHeader(counter: itemIds.count, token: ExportDataToken.counter.rawValue, version: ExportDataToken.version_2024.rawValue))
                 _ = try await exportController.export(itemIds: itemIds, into: outputStream, exportModel: exportModel)
-                await MainActor.run { exportModel.isExportRunning = false }
+                await self.endExport(exportModel)
             } catch {
-                await MainActor.run { exportModel.isExportRunning = false }
+                await self.endExport(exportModel)
                 throw error
             }
         }
+    }
+
+    @MainActor
+    private func beginExport(_ exportModel: ItemDataExportModel) {
+        exportModel.isExportRunning = true
+        exportModel.exportedItems = 0
+        exportModel.totalExportingItems = 0
+    }
+
+    @MainActor
+    private func resolveExportIds(_ itemIds: ItemModuleIds, exportModel: ItemDataExportModel) -> ItemModuleIds {
+        let ids = exporting(itemIds: itemIds)
+        exportModel.totalExportingItems = ids.count
+        return ids
+    }
+
+    @MainActor
+    private func endExport(_ exportModel: ItemDataExportModel) {
+        exportModel.isExportRunning = false
     }
 
     // Game direct and Adventure for all other modules export
@@ -206,7 +225,10 @@ public extension ExportControllable {
 
     // Convenience for game networking exports — no progress tracking needed
     func export(itemIds: ItemModuleIds, into stream: OutputStream) async throws -> ItemModuleIds {
-        let exportModel = await MainActor.run { ItemDataExportModel() }
+        // `ItemDataExportModel.init()` is itself `@MainActor` — `await` alone hops there
+        // to construct it, no `MainActor.run` wrapper needed (calling an isolated
+        // initializer/function works the same as calling an isolated method).
+        let exportModel = await ItemDataExportModel()
         return try await export(itemIds: itemIds, into: stream, exportModel: exportModel)
     }
 
@@ -234,7 +256,7 @@ public extension ExportControllable {
             }
             // Models may be @MainActor-isolated; encode on the main actor so the
             // Codable implementation (wire format) stays untouched.
-            let data = try await MainActor.run { try JSONEncoder().encode(item) }
+            let data = try await encoded(item)
 
             if await !exportModel.exportWithoutFileData, let fileData = await inlineFiles(for: itemId) {
                 try outputStream.append(counter: fileData.count, token: ExportDataToken.file.rawValue)
@@ -242,9 +264,19 @@ public extension ExportControllable {
             }
             try outputStream.append(counter: data.count, token: ExportDataToken.item.rawValue)
             try outputStream.write(data: data)
-            await MainActor.run { exportModel.exportedItems += 1 }
+            await incrementExportedItems(exportModel)
             await Task.yield()
         }
+    }
+
+    @MainActor
+    private func encoded<T: Encodable>(_ item: T) throws -> Data {
+        try JSONEncoder().encode(item)
+    }
+
+    @MainActor
+    private func incrementExportedItems(_ exportModel: ItemDataExportModel) {
+        exportModel.exportedItems += 1
     }
 
     @MainActor private func inlineFiles(for itemId: UUID) async -> Data? {

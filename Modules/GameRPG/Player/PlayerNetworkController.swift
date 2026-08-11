@@ -110,13 +110,15 @@ private extension PlayerNetworkController {
     func startPlayerServer() async {
         guard await networkModel.listener == nil else { return }
         Logger.networking.debug("PlayerNetworkController: Create Listener")
-        await MainActor.run { [weak self] in
-            guard let self else { return }
-            let manager = ListenerManager(name: networkModel.name, supporterTier: networkModel.supporterTier, serviceType: fallbackServiceType)
-            manager.delegate = self
-            networkModel.reset(listener: manager)
-            manager.startListening()
-        }
+        await setUpListener()
+    }
+
+    @MainActor
+    private func setUpListener() {
+        let manager = ListenerManager(name: networkModel.name, supporterTier: networkModel.supporterTier, serviceType: fallbackServiceType)
+        manager.delegate = self
+        networkModel.reset(listener: manager)
+        manager.startListening()
     }
 }
 

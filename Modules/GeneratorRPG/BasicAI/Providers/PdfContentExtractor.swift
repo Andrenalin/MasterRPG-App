@@ -60,10 +60,10 @@ struct PdfContentExtractor: Sendable {
         do {
             var blocks: [BlockEntryGenModel] = []
             for page in extractedText {
-                // Report progress for current page
-                await MainActor.run {
-                    resultModel.pageProgress = PdfAnalysisProgress(currentPage: page.pageNumber, totalPages: pageLimit)
-                }
+                // Report progress for current page. `setPageProgress` is itself `@MainActor`
+                // — `await` alone hops there, no `MainActor.run` wrapper needed (a cross-actor
+                // property *write*, unlike a read, can't compose as `await obj.property = value`).
+                await resultModel.setPageProgress(PdfAnalysisProgress(currentPage: page.pageNumber, totalPages: pageLimit))
 
                 let session = LanguageModelSession(instructions: instructions)
 
@@ -78,9 +78,7 @@ struct PdfContentExtractor: Sendable {
 
                 // Update extraction progress with accumulated blocks
                 blocks.append(contentsOf: response.content)
-                await MainActor.run {
-                    resultModel.extractionProgress = blocks
-                }
+                await resultModel.setExtractionProgress(blocks)
             }
             return blocks
         } catch let error as LanguageModelSession.GenerationError {

@@ -132,19 +132,19 @@ extension GameController: DiceGameStorable {
     }
     
     func createGameData(for itemId: UUID, resultCategory: ResultCategory?) async throws -> NetworkCodableDataType {
-        let oldResultCategory = await MainActor.run {
-            let nilResult: ResultCategory? = nil
-            guard let model = itemController.itemSync(for: itemId) else { return nilResult }
-            let oldResultCategory = model.resultCategory
-            model.resultCategory = resultCategory
-            return oldResultCategory
-        }
+        let oldResultCategory = await applyResultCategory(resultCategory, for: itemId)
         let result = try await createGameData(for: itemId)
-        await MainActor.run {
-            guard let model = itemController.itemSync(for: itemId) else { return }
-            model.resultCategory = oldResultCategory
-        }
+        await applyResultCategory(oldResultCategory, for: itemId)
         return result
+    }
+
+    @MainActor
+    @discardableResult
+    private func applyResultCategory(_ resultCategory: ResultCategory?, for itemId: UUID) -> ResultCategory? {
+        guard let model = itemController.itemSync(for: itemId) else { return nil }
+        let oldResultCategory = model.resultCategory
+        model.resultCategory = resultCategory
+        return oldResultCategory
     }
 
     func createVirtualGameData(
@@ -153,28 +153,31 @@ extension GameController: DiceGameStorable {
         resultCategory: ResultCategory
     ) async throws -> NetworkCodableDataType {
         let itemId = UUID()
-        await MainActor.run {
-            let dice = DiceModel(
-                id: itemId,
-                name: name,
-                category: .value,
-                dice: [
-                    DieModel(
-                        id: UUID(),
-                        die: RawDie(.number(max(numberOfSides, 1)))
-                    )
-                ],
-                resultCategory: resultCategory
-            )
-            itemController.replaceForGame(
-                model: dice,
-                isInsert: true,
-                policy: .memoryOnly
-            )
-        }
+        await createVirtualDiceModel(itemId: itemId, numberOfSides: numberOfSides, name: name, resultCategory: resultCategory)
         return try await createGameData(
             for: itemId,
             resultCategory: resultCategory
+        )
+    }
+
+    @MainActor
+    private func createVirtualDiceModel(itemId: UUID, numberOfSides: Int, name: String, resultCategory: ResultCategory) {
+        let dice = DiceModel(
+            id: itemId,
+            name: name,
+            category: .value,
+            dice: [
+                DieModel(
+                    id: UUID(),
+                    die: RawDie(.number(max(numberOfSides, 1)))
+                )
+            ],
+            resultCategory: resultCategory
+        )
+        itemController.replaceForGame(
+            model: dice,
+            isInsert: true,
+            policy: .memoryOnly
         )
     }
     
@@ -203,14 +206,17 @@ extension GameController: DiceGameStorable {
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws {
         try await updateGame(data: data, hide: hide, deep: false)
         if focus {
-            await MainActor.run {
-                if let index = gameModel.focusItemIds.firstIndex(where: { $0 == data.id }) {
-                    gameModel.focusItemIds.remove(at: index)
-                }
-                reset(for: data.id)
-                gameModel.focusItemIds.insert(data.id, at: 0)
-            }
+            await refocus(on: data.id)
         }
+    }
+
+    @MainActor
+    private func refocus(on itemId: UUID) {
+        if let index = gameModel.focusItemIds.firstIndex(where: { $0 == itemId }) {
+            gameModel.focusItemIds.remove(at: index)
+        }
+        reset(for: itemId)
+        gameModel.focusItemIds.insert(itemId, at: 0)
     }
     
     @MainActor

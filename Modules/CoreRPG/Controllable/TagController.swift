@@ -49,10 +49,12 @@ public struct TagController: Sendable {
                 }
             }
 
-            await MainActor.run {
-                for (module, tags) in groupedTags {
-                    model.tags[module, default: [:]].merge(tags) { _, new in new }
-                }
+            // Already back on the Main Actor here: this `Task` literal was created
+            // directly inside `setup(context:)`'s @MainActor body, so it inherits that
+            // isolation, and `await context.perform` only hops off-actor for the
+            // duration of the Core Data fetch above.
+            for (module, tags) in groupedTags {
+                model.tags[module, default: [:]].merge(tags) { _, new in new }
             }
         }
     }

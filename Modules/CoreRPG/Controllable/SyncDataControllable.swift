@@ -60,18 +60,16 @@ public extension SyncDataControllable {
                 // We only need to update in-memory models, NOT save back to database
                 for insertedId in insertedIds {
                     guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
-                    await MainActor.run {
-                        itemControllable.resetModel(with: model)
-                    }
+                    // `resetModel(with:)` is itself `@MainActor` — `await` alone hops, same as
+                    // `delete(itemId:...)` above; no `MainActor.run` wrapper needed.
+                    await itemControllable.resetModel(with: model)
                 }
 
                 // Process updates
                 for updatedId in updatedIds {
                     guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
                     // Use mergeUpdates to avoid database writes during sync
-                    await MainActor.run {
-                        itemControllable.mergeUpdates(model: model)
-                    }
+                    await itemControllable.mergeUpdates(model: model)
                 }
             } catch {
                 // Sync errors are non-fatal; the next CloudKit notification will retry —

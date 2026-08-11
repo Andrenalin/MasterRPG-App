@@ -39,20 +39,31 @@ public extension CoreDataSnapshotPersistable {
 
     func replace(id: UUID, with viewModel: any ModelType) async throws {
         guard let viewModel = viewModel as? Model else { return }
-        let snapshot = await MainActor.run { makeSnapshot(from: viewModel) }
+        // `makeSnapshot(from:)` is itself `@MainActor` — `await` alone hops there, no
+        // `MainActor.run` wrapper needed.
+        let snapshot = await makeSnapshot(from: viewModel)
         try await dataController.replace(uuid: id, snapshot: snapshot, updater: applySnapshot(_:into:))
     }
 
     func fetch(id: UUID) async throws -> ModelType? {
         let token = self.token
         guard let snapshot = try await dataController.fetchSnapshot(uuid: id, mapper: { self.mapSnapshot($0, token: token) }) else { return nil }
-        return await MainActor.run { makeModel(from: snapshot) }
+        return await makeModel(from: snapshot)
     }
 
     func fetch() async throws -> [Model] {
         let token = self.token
         let snapshots = try await dataController.fetchSnapshots { self.mapSnapshot($0, token: token) }
-        return await MainActor.run { snapshots.map { makeModel(from: $0) } }
+        // A plain `.map` closure can't be `async`, so this can't collapse to a single
+        // `await`-prefixed expression the way the single-snapshot `fetch(id:)` above does;
+        // loop with one `await makeModel(from:)` per snapshot instead of batching the whole
+        // conversion inside `MainActor.run`.
+        var models: [Model] = []
+        models.reserveCapacity(snapshots.count)
+        for snapshot in snapshots {
+            models.append(await makeModel(from: snapshot))
+        }
+        return models
     }
 
     func fetchAll() async throws -> [any ModelType] {
