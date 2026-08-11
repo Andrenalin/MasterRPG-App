@@ -19,9 +19,9 @@ Findings cite `path/to/file.swift:LINE` so you can jump straight to them in Xcod
 5. **[Medium/Security] `aps-environment: development` baked into every Release build with zero push-notification code present** — §6.2 — `Resources/MasterRPG.entitlements:5-6`.
 6. **[Medium/API modernity] Deprecated `.system.search` App Shortcuts phrase — the sole compiler-warning root cause in the entire build, across 12 modules** — §4.1.
 7. **[Medium/Dead code] `SyncDataController.swift` duplicated byte-for-shape-identical across 12 modules** — §9.2 — `Modules/*RPG/Controller/SyncDataController.swift`.
-8. **[Medium/Bugs] `BatteryMonitor`'s macOS polling `Task` is never cancelled — an orphaned infinite-wake loop per view lifecycle** — §5.5 — `Modules/GameRPG/GameViews/BatteryView.swift:69-131`.
+8. **[Medium/Bugs] `BatteryMonitor`'s macOS polling `Task` is never cancelled — an orphaned infinite-wake loop per view lifecycle — NOW FIXED** — §5.5 — `Modules/GameRPG/GameViews/BatteryView.swift:69-131`.
 9. **[Medium/Dead code] `PlayerController.swift` is 3,841 lines (7.5× the codebase's own 500-line convention), two responsibilities in one file, ~1,846 unmarked lines** — §9.9 — `Modules/GameRPG/Controller/PlayerController.swift`.
-10. **[Medium/Bugs] Six structurally-identical `catch { return nil }` blocks silently swallow player asset-import failures with no logging** — §5.3 — `Modules/GameRPG/Controller/{Master,Player}Controller.swift`.
+10. **[Medium/Bugs] Six structurally-identical `catch { return nil }` blocks silently swallow player asset-import failures with no logging — NOW FIXED** — §5.3 — `Modules/GameRPG/Controller/{Master,Player}Controller.swift`.
 
 ---
 
@@ -152,54 +152,55 @@ _Cross-referenced under Concurrency since the fix is a concurrency-adjacent API 
 - **Verified:** `xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build` — `CoreRPG.framework` (and every target compiled ahead of `GeneratorRPG`) built with 0 new errors/warnings from this change. The one remaining build failure (`Transcript.Segment` has no member `custom` in `GeneratorRPG`) was confirmed pre-existing on `develop` before this fix (`git stash` + rebuild reproduces the identical error), unrelated to App Group access.
 - **Severity:** High — resolved.
 
-### 5.2 `fatalError` on an out-of-range die value reachable from SharePlay/TabletopKit-synchronized state
+### 5.2 `fatalError` on an out-of-range die value reachable from SharePlay/TabletopKit-synchronized state — NOW FIXED
 - **Location:** `Modules/GameRPG/Table3D/GameEquipment.swift:466-468` (`Die20.restingOrientation`), `:604-605` (`Die.restingOrientation`).
-- **What:** Both call `fatalError("Invalid die value...")` when the synchronized `DieState.value` (delivered via TabletopKit's `UpdateEquipmentAction<DieState>`, synced across all SharePlay participants) falls outside the expected face range. A neighboring near-zero-axis case in the same function already has a graceful fallback.
+- **What:** Both called `fatalError("Invalid die value...")` when the synchronized `DieState.value` (delivered via TabletopKit's `UpdateEquipmentAction<DieState>`, synced across all SharePlay participants) fell outside the expected face range. A neighboring near-zero-axis case in the same function already had a graceful fallback.
 - **Why:** A TabletopKit version skew, a corrupted/delayed sync payload, or a toss animation resumed after a session rebind could plausibly deliver an out-of-range value — crashing every participant's app simultaneously instead of one participant seeing a glitched pose.
-- **Action:** Replace both `fatalError` calls with a clamped/default orientation + log, mirroring the existing near-zero-axis fallback pattern.
-- **Severity:** Medium
+- **Fix:** Both `fatalError` calls replaced with `Logger.gameTable.error(...)` + a fallback orientation (identity rotation), mirroring the existing near-zero-axis fallback pattern already present in the same functions.
+- **Severity:** Medium — resolved.
 
-### 5.3 Six structurally-identical `catch { return nil }` blocks silently swallow player asset-import failures
-- **Location:** `Modules/GameRPG/Controller/MasterController.swift:1774-1776` (PDF `.itemMissing` fallback), `:1919-1921` (Photo), `:2202-2204` (Space); `Modules/GameRPG/Controller/PlayerController.swift:2566-2568` (Map import), `:2592-2594` (Audio reveal), `:2670-2672` (Map import).
-- **What:** All 6 discard the thrown error entirely, following a successful-looking `try`/`try await ...updateGame(...)` import call — inconsistent with every other `catch` in the same two files, which consistently call `Logger.networking.error(...)`.
-- **Why:** A failure importing a player's shared photo/PDF/space/map bytes as the canonical asset (disk full, corrupted payload, iCloud eviction mid-write) disappears without a trace, making a real, reproducible bug ("my photo never got shared to the group") undiagnosable from logs.
-- **Action:** Add `Logger.networking.error(...)` calls matching the pattern used everywhere else in these two files.
-- **Severity:** Medium
+### 5.3 Six structurally-identical `catch { return nil }` blocks silently swallow player asset-import failures — NOW FIXED
+- **Location:** `Modules/GameRPG/Controller/MasterController.swift:1774-1776` (PDF `.itemMissing` fallback), `:1919-1921` (Photo), `:2202-2204` (Space); `Modules/GameRPG/Controller/PlayerController.swift:2566-2568` (Map import), `:2592-2594` (Map reveal — the audit's original "Audio reveal" label for this site didn't match the code at that location, which calls `root.mapRoot.gameControllable.reveal`), `:2670-2672` (Map import).
+- **What:** All 6 discarded the thrown error entirely, following a successful-looking `try`/`try await ...updateGame(...)` import call — inconsistent with every other `catch` in the same two files, which consistently call `Logger.networking.error(...)`.
+- **Why:** A failure importing a player's shared photo/PDF/space/map bytes as the canonical asset (disk full, corrupted payload, iCloud eviction mid-write) disappeared without a trace, making a real, reproducible bug ("my photo never got shared to the group") undiagnosable from logs.
+- **Fix:** Added `Logger.networking.error(...)` calls matching the pattern used everywhere else in these two files, each including the item id and `error.localizedDescription`.
+- **Severity:** Medium — resolved.
 
-### 5.4 Temp-file write failure is silently ignored, and the fallback path is skipped even though the write didn't succeed
+### 5.4 Temp-file write failure is silently ignored, and the fallback path is skipped even though the write didn't succeed — NOW FIXED
 - **Location:** `Modules/CoreRPG/Files/FileUrlDataController.swift:233-237`.
-- **What:** `try? data.write(to: tempUrl)` discards any write error, but `loadedFileUrl = tempUrl` is assigned unconditionally on the next line regardless of success — so `processUrl = loadedFileUrl ?? fullUrl` never falls back to `fullUrl` on a failed write.
-- **Why:** On a failed temp write (disk pressure, sandbox issue), the subsequent action (e.g. a QuickLook thumbnail request) gets a URL to a nonexistent file, silently producing no preview instead of falling back to the still-available `fullUrl`.
-- **Action:** Only assign `loadedFileUrl = tempUrl` when the write succeeds; otherwise fall through to `fullUrl`.
-- **Severity:** Medium
+- **What:** `try? data.write(to: tempUrl)` discarded any write error, but `loadedFileUrl = tempUrl` was assigned unconditionally on the next line regardless of success — so `processUrl = loadedFileUrl ?? fullUrl` never fell back to `fullUrl` on a failed write.
+- **Why:** On a failed temp write (disk pressure, sandbox issue), the subsequent action (e.g. a QuickLook thumbnail request) got a URL to a nonexistent file, silently producing no preview instead of falling back to the still-available `fullUrl`.
+- **Fix:** `loadedFileUrl = tempUrl` now only happens inside `if (try? data.write(to: tempUrl)) != nil`; on a failed write `loadedFileUrl` stays `nil` and `processUrl` falls through to `fullUrl` as intended.
+- **Severity:** Medium — resolved.
 
-### 5.5 `BatteryMonitor`'s macOS polling `Task` is never cancelled — an orphaned infinite-wake loop per view lifecycle
+### 5.5 `BatteryMonitor`'s macOS polling `Task` is never cancelled — an orphaned infinite-wake loop per view lifecycle — NOW FIXED
 - **Location:** `Modules/GameRPG/GameViews/BatteryView.swift:69-131`.
-- **What:** Personally verified: `BatteryMonitor.init()` (line 71-73) calls `startMonitoring()`, which on macOS starts `pollTask = Task { [weak self] in while !Task.isCancelled { sleep 30s; refresh() } }` (line 110-119). `stopMonitoring()` (line 121, cancels `pollTask` at 129-130) has exactly one reference in the whole repo — its own declaration; grepped repo-wide, confirmed it is never called from anywhere. `BatteryView` owns the monitor via `@State private var monitor = BatteryMonitor()` (line 18) with no `deinit` on `BatteryMonitor` and no `.onDisappear` on `BatteryView`.
-- **Why:** `[weak self]` avoids a crash, but the `Task` itself keeps waking every 30s forever after the owning view/monitor deallocate, because nothing ever cancels it. Each time a `BatteryView` appears/disappears (e.g. entering/leaving the game screen repeatedly), one more permanently-leaked sleeping `Task` accumulates for the process lifetime on macOS.
-- **Action:** Add `deinit { stopMonitoring() }` to `BatteryMonitor` (or call `monitor.stopMonitoring()` from `BatteryView`'s `.onDisappear`).
-- **Severity:** Medium
+- **What:** Personally verified: `BatteryMonitor.init()` (line 71-73) calls `startMonitoring()`, which on macOS starts `pollTask = Task { [weak self] in while !Task.isCancelled { sleep 30s; refresh() } }` (line 110-119). `stopMonitoring()` (line 121, cancels `pollTask` at 129-130) had exactly one reference in the whole repo — its own declaration; grepped repo-wide, confirmed it was never called from anywhere. `BatteryView` owns the monitor via `@State private var monitor = BatteryMonitor()` (line 18) with no `deinit` on `BatteryMonitor` and no `.onDisappear` on `BatteryView`.
+- **Why:** `[weak self]` avoided a crash, but the `Task` itself kept waking every 30s forever after the owning view/monitor deallocated, because nothing ever cancelled it. Each time a `BatteryView` appeared/disappeared (e.g. entering/leaving the game screen repeatedly), one more permanently-leaked sleeping `Task` accumulated for the process lifetime on macOS.
+- **Fix:** The audit's first-choice fix (`deinit { stopMonitoring() }` on `BatteryMonitor`) doesn't compile on this toolchain: `deinit` on a `@MainActor` class runs nonisolated, and neither calling the actor-isolated `stopMonitoring()` nor even reading the actor-isolated `observationTokens`/`pollTask` stored properties directly is permitted from it — no automatic "isolated deinit" applies here. Used the audit's documented alternative instead: `BatteryView` now calls `monitor.stopMonitoring()` from `.onDisappear` and `monitor.startMonitoring()` from `.onAppear` (a no-op on first appearance, since `init()` already started monitoring — both `startMonitoring()`/`stopMonitoring()` guard against redundant start/stop).
+- **Verified:** `xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build` — **BUILD SUCCEEDED**; `xcodebuild test` — **TEST SUCCEEDED** (21 tests, 9 suites).
+- **Severity:** Medium — resolved.
 
-### 5.6 `ObjectCache.allKeys` grows unbounded and is never read
+### 5.6 `ObjectCache.allKeys` grows unbounded and is never read — NOW FIXED
 - **Location:** `Modules/CoreRPG/Cache/ObjectCache.swift:26,38-42,44-47`.
-- **What:** Updated on every `insertObject`/`removeObject` call but never trimmed when the backing `NSCache` evicts entries automatically (no `NSCacheDelegate` hooked up); a repo-wide search shows `allKeys` is never read anywhere.
-- **Why:** Over a long campaign with many photos/maps/PDFs cached and evicted, this `Set<UUID>` accumulates entries indefinitely for objects long since gone — an unbounded, if slow, memory leak that also serves no purpose since nothing consumes it.
-- **Action:** Remove `allKeys` entirely, or implement `NSCacheDelegate.cache(_:willEvictObject:)` to keep it in sync if it's meant to track live cache membership.
-- **Severity:** Low
+- **What:** Updated on every `insertObject`/`removeObject` call but never trimmed when the backing `NSCache` evicts entries automatically (no `NSCacheDelegate` hooked up); a repo-wide search showed `allKeys` was never read anywhere.
+- **Why:** Over a long campaign with many photos/maps/PDFs cached and evicted, this `Set<UUID>` accumulated entries indefinitely for objects long since gone — an unbounded, if slow, memory leak that also served no purpose since nothing consumed it.
+- **Fix:** Removed `allKeys` (and the `insert`/`remove` calls that maintained it) entirely, per the audit's first-choice action — confirmed via repo-wide grep that the only other `allKeys` in the codebase is an unrelated `FoundryRuleModels.swift` usage on a different type.
+- **Severity:** Low — resolved.
 
-### 5.7 `print()` instead of structured `Logger` swallows SharePlay/network message-decode diagnostics
+### 5.7 `print()` instead of structured `Logger` swallows SharePlay/network message-decode diagnostics — NOW FIXED
 - **Location:** `Modules/GameRPG/Model/GameNetworkModel.swift:998-1006` (`decodeData(of:)`).
-- **What:** The entry point for every inbound wire/journal/SharePlay message logs a decode failure via `print("**** Error \(error.localizedDescription)")` instead of the `Logger.networking` used everywhere else in this subsystem; returns `nil` safely (no crash) but with no structured, privacy-scrubbed log entry.
-- **Why:** A malformed or malicious payload from a local-network or SharePlay peer that fails to decode leaves no trace in Console/os_log — precisely the signal that would help diagnose either a protocol-version mismatch or an actual probing attempt against the parser.
-- **Action:** Replace with `Logger.networking.error(...)`.
-- **Severity:** Low
+- **What:** The entry point for every inbound wire/journal/SharePlay message logged a decode failure via `print("**** Error \(error.localizedDescription)")` instead of the `Logger.networking` used everywhere else in this subsystem; returned `nil` safely (no crash) but with no structured, privacy-scrubbed log entry.
+- **Why:** A malformed or malicious payload from a local-network or SharePlay peer that fails to decode left no trace in Console/os_log — precisely the signal that would help diagnose either a protocol-version mismatch or an actual probing attempt against the parser.
+- **Fix:** Replaced with `Logger.networking.error(...)` (added the missing `import os.log` this file needed for `Logger` to resolve).
+- **Severity:** Low — resolved.
 
-### 5.8 Repeated force-cast pattern in Core Data relationship accessors across every module
+### 5.8 Repeated force-cast pattern in Core Data relationship accessors across every module — NOW FIXED
 - **Location:** `Modules/{Pdf,Dice,Weather,Adventure,Character,Photo,Generator,Space,Table,Audio}RPG/Model/DataModel+Extensions.swift:18` (CharacterRPG also `:44`) — 10 modules.
-- **What:** Each `entriesModel` getter does `(entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGXxxEntry]` immediately after already validating `entries as? Set<RPGXxxEntry>` two lines above.
+- **What:** Each `entriesModel` getter did `(entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGXxxEntry]` immediately after already validating `entries as? Set<RPGXxxEntry>` two lines above.
 - **Why:** Currently safe in practice (Core Data's typed relationship guarantees element type; `sortedArray` only reorders), but a fragile, copy-pasted pattern repeated 11 times — any future relationship/migration edge case would crash instead of degrading gracefully, and an `as!` immediately after an `as?` guard is redundant defensive-coding debt.
-- **Action:** Use `.compactMap { $0 as? RPGXxxEntry }` on the sorted array, or cast once and reuse.
-- **Severity:** Low
+- **Fix:** All 11 sites across all 10 modules now use `.compactMap { $0 as? RPGXxxEntry }` on the sorted array instead of the force-cast, per the audit's first-choice action. Confirmed via grep that no `as! [...]` remains in any `DataModel+Extensions.swift`.
+- **Severity:** Low — resolved.
 
 ### 5.9 Untrusted-input parsers (Foundry VTT import, SharePlay wire protocol) — checked, already hardened
 - **Location:** `Modules/CoreRPG/Foundry/{FoundryZIPArchive,FoundryVTTArchiveSanitizer,FoundryBoundedBase64,FoundryLevelDBReader,FoundryLevelDBWriteAheadLogReader,FoundryRuleModels,FoundryVTTImportReader,FoundrySystemPackageReader}.swift`; `Modules/GameRPG/SharePlay/SharePlayPackageReceiver.swift`; `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper.swift`; `Modules/MapRPG/Controller/GameController.swift`; `Modules/GameRPG/Network/GameProtocol.swift`.

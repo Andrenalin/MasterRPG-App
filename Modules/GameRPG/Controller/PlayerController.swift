@@ -2564,6 +2564,7 @@ extension PlayerController {
                             deep: false
                         )
                     } catch {
+                        Logger.networking.error("PlayerController: Failed to import full map payload \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                         return nil
                     }
                     // Importing the map package establishes the advertised
@@ -2590,6 +2591,7 @@ extension PlayerController {
                         save: false
                     )
                 } catch {
+                    Logger.networking.error("PlayerController: Failed to reveal map \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     return nil
                 }
                 if revealed, model.data.data != nil {
@@ -2668,6 +2670,7 @@ extension PlayerController {
                         deep: true
                     )
                 } catch {
+                    Logger.networking.error("PlayerController: Failed to import full map payload \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     return nil
                 }
                 importedFullPayload = true

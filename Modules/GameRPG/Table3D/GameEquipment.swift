@@ -463,7 +463,12 @@ struct Die20: EntityEquipment {
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
         guard let normal = Self.faceNormals[state.value] else {
-            fatalError("Invalid die value: \(state.value). D20 must have value 1...20")
+            // `state.value` arrives via TabletopKit's synchronized `UpdateEquipmentAction<DieState>`,
+            // so a version skew or corrupted/delayed sync payload could plausibly deliver an
+            // out-of-range value here. Log and fall back to the identity orientation instead of
+            // crashing every SharePlay participant at once. See CODE_AUDIT §5.2.
+            Logger.gameTable.error("Invalid D20 die value \(state.value, privacy: .public); using identity orientation as a fallback")
+            return .init()
         }
 
         let up = SIMD3<Float>(0, 1, 0)
@@ -602,7 +607,11 @@ struct Die: EntityEquipment {
             case 6: // Default orientation.
                 return .init()
             default:
-            fatalError("Invalid die value")
+                // Same out-of-range-value risk as `Die20.restingOrientation` above, reachable via
+                // TabletopKit's synchronized `DieState` — fall back instead of crashing every
+                // SharePlay participant at once. See CODE_AUDIT §5.2.
+                Logger.gameTable.error("Invalid die value \(state.value, privacy: .public); using default orientation as a fallback")
+                return .init()
         }
     }
     

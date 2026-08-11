@@ -15,7 +15,7 @@ extension RPGValue {
             }
             // Use NSSortDescriptor for efficient database-level sorting
             let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGValueEntry]
+            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGValueEntry }
         }
         set {
             entries = NSSet(array: newValue)
@@ -41,7 +41,7 @@ extension RPGValue {
             }
             // Use NSSortDescriptor for efficient database-level sorting
             let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (photos as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGValuePhoto]
+            return (photos as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGValuePhoto }
         }
         set {
             photos = NSSet(array: newValue)

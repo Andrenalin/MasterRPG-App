@@ -15,7 +15,7 @@ extension RPGGenerator {
             }
             // Use NSSortDescriptor for efficient database-level sorting
             let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGGeneratorEntry]
+            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGGeneratorEntry }
         }
         set {
             entries = NSSet(array: newValue)

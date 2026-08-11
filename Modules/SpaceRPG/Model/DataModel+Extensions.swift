@@ -15,7 +15,7 @@ extension RPGSpace {
             }
             // Use NSSortDescriptor for efficient database-level sorting
             let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGSpaceEntry]
+            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGSpaceEntry }
         }
         set {
             entries = NSSet(array: newValue)

@@ -23,10 +23,8 @@ public actor ObjectCache<Object: AnyObject> {
 
     private let countLimit: Int
 
-    public private(set) var allKeys: Set<UUID> = Set()
-
     // MARK: - Memory Cache
-    
+
     public func hasObject(for itemId: UUID) -> Bool {
         (objectCache.object(forKey: itemId as AnyObject) as? Object) != nil
     }
@@ -38,12 +36,10 @@ public actor ObjectCache<Object: AnyObject> {
     public func insertObject(_ object: Object?, for itemId: UUID, cost: Int) {
         guard let object = object else { return removeObject(for: itemId) }
         objectCache.setObject(object as AnyObject, forKey: itemId as AnyObject, cost: cost)
-        allKeys.insert(itemId)
     }
 
     public func removeObject(for itemId: UUID) {
         objectCache.removeObject(forKey: itemId as AnyObject)
-        allKeys.remove(itemId)
     }
         
     // MARK: - File Cache

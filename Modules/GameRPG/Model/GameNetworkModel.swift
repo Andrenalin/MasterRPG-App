@@ -3,6 +3,7 @@
 import CoreRPG
 import CryptoKit
 import Foundation
+import os.log
 
 /// Sender identity — travels with every message. Players send only this;
 /// receivers never derive the sender from a roster lookup again.
@@ -1001,7 +1002,7 @@ extension GameNetworkModel: MessageMapper {
         do {
             return try decoder.decode(GameNetworkModel.self, from: data)
         } catch {
-            print("**** Error \(error.localizedDescription)")
+            Logger.networking.error("GameNetworkModel: Failed to decode inbound message: \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }

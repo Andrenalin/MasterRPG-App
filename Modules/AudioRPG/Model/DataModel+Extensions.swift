@@ -15,7 +15,7 @@ extension RPGAudio {
             }
             // Use NSSortDescriptor for efficient database-level sorting
             let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGAudioEntry]
+            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGAudioEntry }
         }
         set {
             entries = NSSet(array: newValue)

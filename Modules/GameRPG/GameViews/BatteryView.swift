@@ -38,6 +38,18 @@ struct BatteryView: View {
         // above: monitoring must start regardless of the current status, since
         // the status starts `.unavailable` and only becomes `.onBattery` as a
         // *result* of monitoring running at least once.
+        //
+        // `stopMonitoring()`/`startMonitoring()` are called from here rather than
+        // `BatteryMonitor.deinit` — a `deinit` on a `@MainActor` class runs
+        // nonisolated on this toolchain and can't touch actor-isolated state, so it
+        // can't reach the notification observers / poll `Task` it would need to
+        // cancel. `.onDisappear` reliably fires before the owning view (and its
+        // `@State` `monitor`) is torn down, closing the leak described in
+        // CODE_AUDIT §5.5 without requiring isolated deinit. `startMonitoring()`
+        // already guards against a redundant restart on the initial appearance
+        // (monitoring was already started by `BatteryMonitor.init`).
+        .onAppear { monitor.startMonitoring() }
+        .onDisappear { monitor.stopMonitoring() }
     }
 
     private static func symbolName(for level: Double) -> String {
@@ -72,7 +84,7 @@ final class BatteryMonitor {
     init() {
         startMonitoring()
     }
-    
+
     enum Status: Equatable, Sendable {
         case unavailable
         case onBattery(Double)

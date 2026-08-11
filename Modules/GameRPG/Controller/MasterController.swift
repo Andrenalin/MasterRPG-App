@@ -1772,6 +1772,7 @@ extension MasterController {
                 )
                 return nil
             } catch {
+                Logger.networking.error("MasterController: Failed to import shared PDF \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         case .store:
@@ -1917,6 +1918,7 @@ extension MasterController {
                 )
                 return nil
             } catch {
+                Logger.networking.error("MasterController: Failed to import shared photo \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         case .store:
@@ -2200,6 +2202,7 @@ extension MasterController {
                 )
                 return nil
             } catch {
+                Logger.networking.error("MasterController: Failed to import shared space \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         case .store:

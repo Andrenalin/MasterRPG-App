@@ -232,8 +232,12 @@ public extension FileUrlDataController {
 
         if loadedFileUrl == nil, let data = fileUrl.data {
             let tempUrl = URL.temporaryDirectory.appendingPathComponent(fileUrl.fileId.uuidString).appendingPathExtension(filenameExtension)
-            try? data.write(to: tempUrl)
-            loadedFileUrl = tempUrl
+            // Only take the temp-file path when the write actually succeeded; otherwise fall
+            // through and let `loadedFileUrl` stay `nil` so `processUrl` below still falls back
+            // to `fullUrl` instead of pointing at a file that was never written. See CODE_AUDIT §5.4.
+            if (try? data.write(to: tempUrl)) != nil {
+                loadedFileUrl = tempUrl
+            }
         }
 
         var processUrl = loadedFileUrl ?? fullUrl
