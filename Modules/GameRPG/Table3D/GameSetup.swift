@@ -27,10 +27,13 @@ class GameSetup {
     var setup: TableSetup
     let board: Board
     var pinPawns: [PinPawn] = []
+    var roomHitAreas: [RoomHitArea] = []
     var seats: [PlayerSeat] = []
     /// Container for dynamically-added pin entities. Parented to root so they
     /// appear in the scene without going through TabletopKit's frozen TableSetup.
     let pinContainer: Entity
+    /// Container for invisible room fog hit-test volumes, parallel to `pinContainer`.
+    let roomHitContainer: Entity
 
     // This is an incrementing counter to generate unique IDs for each piece of equipment.
     struct IdentifierGenerator {
@@ -73,9 +76,13 @@ class GameSetup {
     init(root: Entity) {
         self.root = root
         PinComponent.registerComponent()
+        RoomComponent.registerComponent()
         pinContainer = Entity()
         pinContainer.name = "PinContainer"
         root.addChild(pinContainer)
+        roomHitContainer = Entity()
+        roomHitContainer.name = "RoomHitContainer"
+        root.addChild(roomHitContainer)
         setup = TableSetup(tabletop: Table())
 
         for (index, pose) in PlayerSeat.seatPoses.enumerated() {
@@ -122,20 +129,7 @@ class GameSetup {
             return mapModel.map { !$0.isLocationHiddenForPlayers(pin.location) } ?? true
         }
 
-        let projection: MapTableProjection? = if let mapModel,
-                                                  mapModel.width > 0,
-                                                  mapModel.height > 0 {
-            // MapModel is authoritative: room/pin coordinates were already
-            // normalized into this oriented canvas by the 2D editor.
-            MapTableProjection(
-                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
-                degrees: 0
-            )
-        } else if let mapImage {
-            MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
-        } else {
-            nil
-        }
+        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
 
         // Same conversion the 2D map applies to a pin's base size (points ×
         // pinScale), just projected into table meters instead of screen
@@ -203,6 +197,60 @@ class GameSetup {
         Logger.gameTable.debug("Pin sync: \(self.pinPawns.count, privacy: .public) tokens, \(photoLoads.count, privacy: .public) photo loads pending")
         return photoLoads
     }
+
+    /// Syncs invisible room fog hit-test volumes with the current map's
+    /// entries so a room can be double-tapped/long-pressed directly on the
+    /// table. Clears every hit area when there's no map or image to project
+    /// coordinates against — the room menu still works then, only the
+    /// on-table gesture is unavailable.
+    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) {
+        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees) else {
+            for area in roomHitAreas {
+                area.entity.removeFromParent()
+            }
+            roomHitAreas.removeAll()
+            return
+        }
+
+        let existingAreas = Dictionary(
+            roomHitAreas.map { ($0.roomId, $0) },
+            uniquingKeysWith: { current, _ in current }
+        )
+        var keptIds: Set<UUID> = []
+
+        for entry in mapModel.entries {
+            keptIds.insert(entry.id)
+            if let area = existingAreas[entry.id] {
+                area.update(entry: entry, projection: projection)
+            } else {
+                let area = RoomHitArea(entry: entry, projection: projection)
+                roomHitAreas.append(area)
+                roomHitContainer.addChild(area.entity)
+            }
+        }
+
+        for area in roomHitAreas where !keptIds.contains(area.roomId) {
+            area.entity.removeFromParent()
+        }
+        roomHitAreas.removeAll { !keptIds.contains($0.roomId) }
+    }
+
+    /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
+    /// coordinate conversion, authoritative from `MapModel` when available.
+    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) -> MapTableProjection? {
+        if let mapModel, mapModel.width > 0, mapModel.height > 0 {
+            // MapModel is authoritative: room/pin coordinates were already
+            // normalized into this oriented canvas by the 2D editor.
+            return MapTableProjection(
+                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
+                degrees: 0
+            )
+        } else if let mapImage {
+            return MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
+        } else {
+            return nil
+        }
+    }
 }
 
 extension GameTableModel {
@@ -225,6 +273,7 @@ extension GameTableModel {
             isGameMaster: isGameMaster,
             activeAttackerPinId: activeAttackerPinId
         )
+        setup.syncRooms(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees)
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }

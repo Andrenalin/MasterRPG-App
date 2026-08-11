@@ -289,6 +289,11 @@ struct PinComponent: Component {
     let pinId: UUID
 }
 
+/// Identifies a room's fog hit-test volume for entity-targeted gestures.
+struct RoomComponent: Component {
+    let roomId: UUID
+}
+
 @MainActor
 final class PinPawn {
     let pinId: UUID
@@ -519,6 +524,64 @@ final class PinPawn {
         case (false, true, false): LocalizedStringResource("Hidden, Dead, Not Highlighted", bundle: .module)
         case (false, true, true): LocalizedStringResource("Hidden, Dead, Highlighted", bundle: .module)
         }
+    }
+}
+
+// MARK: - Room Hit Area
+
+/// An invisible hit-test volume matching a room's fog outline, so the fog
+/// covering it can be tapped directly on the table instead of only through
+/// the room menu. The map's composite board texture still draws the visible
+/// fog — this entity exists purely so `RoomComponent`-targeted gestures have
+/// something to hit. Lives in `GameSetup.roomHitContainer`, parallel to how
+/// `PinPawn` lives in `pinContainer`.
+@MainActor
+final class RoomHitArea {
+    let roomId: UUID
+    let entity: Entity
+    private var currentCoordinates: [CGPoint]
+
+    init(entry: MapEntryModel, projection: MapTableProjection) {
+        roomId = entry.id
+        currentCoordinates = entry.coordinates
+        let hitEntity = Entity()
+        hitEntity.name = "RoomHitArea-\(entry.name)"
+        hitEntity.components.set(RoomComponent(roomId: entry.id))
+        hitEntity.components.set(InputTargetComponent())
+        hitEntity.components.set(HoverEffectComponent())
+        hitEntity.components.set(Self.collision(for: entry.coordinates, projection: projection))
+        var accessibility = AccessibilityComponent()
+        accessibility.isAccessibilityElement = true
+        accessibility.label = LocalizedStringResource("Room \(entry.name)", bundle: .module)
+        accessibility.systemActions = .activate
+        accessibility.customActions = [LocalizedStringResource("Toggle Room Focus", bundle: .module)]
+        hitEntity.components.set(accessibility)
+        entity = hitEntity
+    }
+
+    /// Rebuilds the hit volume when the room's outline changed.
+    func update(entry: MapEntryModel, projection: MapTableProjection) {
+        guard entry.coordinates != currentCoordinates else { return }
+        currentCoordinates = entry.coordinates
+        entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
+    }
+
+    /// A thin convex volume enclosing the room polygon, projected onto the
+    /// table plane. Concave outlines are approximated by their convex hull —
+    /// fine for a fog-reveal hit target, unlike a physics collider.
+    private static func collision(for coordinates: [CGPoint], projection: MapTableProjection) -> CollisionComponent {
+        guard coordinates.count >= 3 else {
+            return CollisionComponent(shapes: [])
+        }
+        let halfThickness: Float = 0.004
+        let points = coordinates.flatMap { point -> [SIMD3<Float>] in
+            let base = projection.tablePosition(for: point)
+            return [
+                SIMD3<Float>(base.x, base.y - halfThickness, base.z),
+                SIMD3<Float>(base.x, base.y + halfThickness, base.z)
+            ]
+        }
+        return CollisionComponent(shapes: [.generateConvex(from: points)])
     }
 }
 

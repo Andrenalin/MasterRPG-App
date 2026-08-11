@@ -32,13 +32,19 @@ public struct GameTableView: View {
                     if accessibilitySubscriptions.isEmpty,
                        let gameScene = loadedGame.renderer.root.scene {
                         let subscription = gameScene.subscribe(to: AccessibilityEvents.Activate.self) { event in
-                            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
-                            loadedGame.pinTapped(pinId: pinId)
+                            if let pinId = event.entity.components[PinComponent.self]?.pinId {
+                                loadedGame.pinTapped(pinId: pinId)
+                            } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
+                                Task { await loadedGame.toggleRoomVisibility(roomId) }
+                            }
                         }
                         accessibilitySubscriptions.append(subscription)
                         let zoomSubscription = gameScene.subscribe(to: AccessibilityEvents.CustomAction.self) { event in
-                            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
-                            loadedGame.pinDoubleTapped(pinId: pinId)
+                            if let pinId = event.entity.components[PinComponent.self]?.pinId {
+                                loadedGame.pinDoubleTapped(pinId: pinId)
+                            } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
+                                loadedGame.toggleRoomFocus(roomId)
+                            }
                         }
                         accessibilitySubscriptions.append(zoomSubscription)
                     }
@@ -89,7 +95,10 @@ public struct GameTableView: View {
                 // Double tap toggles zoom, single tap toggles highlight, and a
                 // stationary long press opens the master's local action menu.
                 // Exclusivity prevents one physical interaction firing two
-                // domain actions.
+                // domain actions. The room cluster below is exclusively
+                // *after* this one so a pin sitting over a room's fog always
+                // wins the tap — its predicate simply never matches when the
+                // touch lands only on the fog, letting the room cluster win.
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)
                         .targetedToEntity(where: .has(PinComponent.self))
@@ -101,17 +110,31 @@ public struct GameTableView: View {
                                         .targetedToEntity(where: .has(PinComponent.self))
                                 )
                         )
+                        .exclusively(
+                            before: LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)
+                                .targetedToEntity(where: .has(RoomComponent.self))
+                                .exclusively(
+                                    before: TapGesture(count: 2)
+                                        .targetedToEntity(where: .has(RoomComponent.self))
+                                )
+                        )
                         .onEnded { value in
                             switch value {
-                            case .first(let longPress):
+                            case .first(.first(let longPress)):
                                 guard let pinId = longPress.entity.components[PinComponent.self]?.pinId else { return }
                                 loadedGame.pinLongPressed(pinId: pinId)
-                            case .second(.first(let doubleTap)):
+                            case .first(.second(.first(let doubleTap))):
                                 guard let pinId = doubleTap.entity.components[PinComponent.self]?.pinId else { return }
                                 loadedGame.pinDoubleTapped(pinId: pinId)
-                            case .second(.second(let tap)):
+                            case .first(.second(.second(let tap))):
                                 guard let pinId = tap.entity.components[PinComponent.self]?.pinId else { return }
                                 loadedGame.pinTapped(pinId: pinId)
+                            case .second(.first(let roomLongPress)):
+                                guard let roomId = roomLongPress.entity.components[RoomComponent.self]?.roomId else { return }
+                                loadedGame.toggleRoomFocus(roomId)
+                            case .second(.second(let roomDoubleTap)):
+                                guard let roomId = roomDoubleTap.entity.components[RoomComponent.self]?.roomId else { return }
+                                Task { await loadedGame.toggleRoomVisibility(roomId) }
                             }
                         }
                 )
@@ -343,7 +366,11 @@ private struct GameTableRealityContent: View {
             game.renderer.updateCamera(for: size)
         }
         .highPriorityGesture(pinDragGesture)
-        .simultaneousGesture(pinTapGesture)
+        // A pin sitting over a room's fog always wins the tap — pinTapGesture
+        // is listed first, and exclusively(before:) gives it precedence; its
+        // targetedToEntity predicate simply never matches when the touch
+        // lands only on the fog, letting roomTapGesture win instead.
+        .simultaneousGesture(pinTapGesture.exclusively(before: roomTapGesture))
         .overlay(alignment: .topTrailing) {
             if showsEmbeddedToolbar {
                 GameTableToolbar(game: game)
@@ -399,20 +426,48 @@ private struct GameTableRealityContent: View {
             }
     }
 
+    /// Long press toggles room focus, double tap toggles room visibility —
+    /// mirroring the 2D map's room gestures. No single-tap: an accidental tap
+    /// on the fog shouldn't do anything by itself.
+    private var roomTapGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)
+            .targetedToEntity(where: .has(RoomComponent.self))
+            .exclusively(
+                before: TapGesture(count: 2)
+                    .targetedToEntity(where: .has(RoomComponent.self))
+            )
+            .onEnded { value in
+                switch value {
+                case .first(let longPress):
+                    guard let roomId = longPress.entity.components[RoomComponent.self]?.roomId else { return }
+                    game.toggleRoomFocus(roomId)
+                case .second(let doubleTap):
+                    guard let roomId = doubleTap.entity.components[RoomComponent.self]?.roomId else { return }
+                    Task { await game.toggleRoomVisibility(roomId) }
+                }
+            }
+    }
+
     private func installAccessibilitySubscriptionsIfNeeded() {
         guard accessibilitySubscriptions.isEmpty,
               let scene = game.renderer.root.scene else { return }
 
         let activate = scene.subscribe(to: AccessibilityEvents.Activate.self) { event in
-            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
             Task { @MainActor in
-                game.pinTapped(pinId: pinId)
+                if let pinId = event.entity.components[PinComponent.self]?.pinId {
+                    game.pinTapped(pinId: pinId)
+                } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
+                    await game.toggleRoomVisibility(roomId)
+                }
             }
         }
         let zoom = scene.subscribe(to: AccessibilityEvents.CustomAction.self) { event in
-            guard let pinId = event.entity.components[PinComponent.self]?.pinId else { return }
             Task { @MainActor in
-                game.pinDoubleTapped(pinId: pinId)
+                if let pinId = event.entity.components[PinComponent.self]?.pinId {
+                    game.pinDoubleTapped(pinId: pinId)
+                } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
+                    game.toggleRoomFocus(roomId)
+                }
             }
         }
         accessibilitySubscriptions = [activate, zoom]

@@ -23,11 +23,15 @@ final class GameSetup {
     let root: Entity
     let board: Board
     let pinContainer: Entity
+    /// Container for invisible room fog hit-test volumes, parallel to `pinContainer`.
+    let roomHitContainer: Entity
     var pinPawns: [PinPawn] = []
+    var roomHitAreas: [RoomHitArea] = []
 
     init(root: Entity) {
         self.root = root
         PinComponent.registerComponent()
+        RoomComponent.registerComponent()
 
         board = Board()
         root.addChild(board.entity)
@@ -35,6 +39,10 @@ final class GameSetup {
         pinContainer = Entity()
         pinContainer.name = "PinContainer"
         root.addChild(pinContainer)
+
+        roomHitContainer = Entity()
+        roomHitContainer.name = "RoomHitContainer"
+        root.addChild(roomHitContainer)
     }
 
     /// Synchronizes dynamic pin entities without rebuilding the RealityView
@@ -65,18 +73,7 @@ final class GameSetup {
             } ?? true
         }
 
-        let projection: MapTableProjection? = if let mapModel,
-                                                  mapModel.width > 0,
-                                                  mapModel.height > 0 {
-            MapTableProjection(
-                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
-                degrees: 0
-            )
-        } else if let mapImage {
-            MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
-        } else {
-            nil
-        }
+        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
         let existingPawns = Dictionary(
             pinPawns.map { ($0.pinId, $0) },
             uniquingKeysWith: { current, _ in current }
@@ -147,6 +144,58 @@ final class GameSetup {
         )
         return photoLoads
     }
+
+    /// Syncs invisible room fog hit-test volumes with the current map's
+    /// entries so a room can be double-tapped/long-pressed directly on the
+    /// table. Clears every hit area when there's no map or image to project
+    /// coordinates against — the room menu still works then, only the
+    /// on-table gesture is unavailable.
+    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) {
+        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees) else {
+            for area in roomHitAreas {
+                area.entity.removeFromParent()
+            }
+            roomHitAreas.removeAll()
+            return
+        }
+
+        let existingAreas = Dictionary(
+            roomHitAreas.map { ($0.roomId, $0) },
+            uniquingKeysWith: { current, _ in current }
+        )
+        var keptIds: Set<UUID> = []
+
+        for entry in mapModel.entries {
+            keptIds.insert(entry.id)
+            if let area = existingAreas[entry.id] {
+                area.update(entry: entry, projection: projection)
+            } else {
+                let area = RoomHitArea(entry: entry, projection: projection)
+                roomHitAreas.append(area)
+                roomHitContainer.addChild(area.entity)
+            }
+        }
+
+        for area in roomHitAreas where !keptIds.contains(area.roomId) {
+            area.entity.removeFromParent()
+        }
+        roomHitAreas.removeAll { !keptIds.contains($0.roomId) }
+    }
+
+    /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
+    /// coordinate conversion, authoritative from `MapModel` when available.
+    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) -> MapTableProjection? {
+        if let mapModel, mapModel.width > 0, mapModel.height > 0 {
+            return MapTableProjection(
+                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
+                degrees: 0
+            )
+        } else if let mapImage {
+            return MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
+        } else {
+            return nil
+        }
+    }
 }
 
 extension GameTableModel {
@@ -165,6 +214,7 @@ extension GameTableModel {
             isGameMaster: isGameMaster,
             activeAttackerPinId: activeAttackerPinId
         )
+        setup.syncRooms(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees)
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
