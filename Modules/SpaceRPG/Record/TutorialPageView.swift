@@ -16,34 +16,33 @@ struct TutorialPageView: View {
     let cons: [String]
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(alignment: .leading) {
-                Text(pageName)
-                    .foregroundStyle(.primary)
-                    .font(.largeTitle)
-                    .bold()
+        VStack(alignment: .leading) {
+            Text(pageName)
+                .foregroundStyle(.primary)
+                .font(.largeTitle)
+                .bold()
 
-                Text(imageCaption)
-                    .foregroundStyle(.secondary)
+            Text(imageCaption)
+                .foregroundStyle(.secondary)
 
-                Image(imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 0.85 * geometry.size.width)
-                    .padding(.leading)
+            Image(imageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .containerRelativeFrame(.horizontal) { width, _ in width * 0.85 }
+                .padding(.leading)
 
-                ProConListView(
-                    prosTitle: prosTitle,
-                    pros: pros,
-                    consTitle: consTitle,
-                    cons: cons
-                )
+            ProConListView(
+                prosTitle: prosTitle,
+                pros: pros,
+                consTitle: consTitle,
+                cons: cons
+            )
 
-                Spacer()
-            }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+            Spacer()
         }
-        .navigationBarTitle(pageName, displayMode: .inline)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .navigationTitle(pageName)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

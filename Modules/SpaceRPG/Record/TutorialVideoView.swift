@@ -44,21 +44,20 @@ struct TutorialVideoView: View {
             }
         }
         .foregroundStyle(.white)
-        .onAppear {
-            Task { @MainActor in
-                if !reduceMotion {
-                    try? await Task.sleep(for: .seconds(textDelay))
-                }
-                withAnimation(reduceMotion ? nil : .default) {
-                    isShowing = true
-                }
+        .task {
+            if !reduceMotion {
+                try? await Task.sleep(for: .seconds(textDelay))
+                guard !Task.isCancelled else { return }
             }
-            if !isInReviewSheet {
-                Task { @MainActor in
-                    try? await Task.sleep(for: .seconds(animationDuration))
-                    appModel.orbitState = .capturing
-                }
+            withAnimation(reduceMotion ? nil : .default) {
+                isShowing = true
             }
+        }
+        .task {
+            guard !isInReviewSheet else { return }
+            try? await Task.sleep(for: .seconds(animationDuration))
+            guard !Task.isCancelled else { return }
+            appModel.orbitState = .capturing
         }
     }
 }

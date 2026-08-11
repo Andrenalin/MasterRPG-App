@@ -29,12 +29,11 @@ struct SelectedMasterView: View {
                     .imageScale(.large)
             }
         }
-        .onAppear {
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(2))
-                root.resetSelectedGameMaster(uuidString: gameMasterUUID)
-                selection.resetSelection(itemId: root.gameModel.selectedGameMaster, entryId: nil)
-            }
+        .task {
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            root.resetSelectedGameMaster(uuidString: gameMasterUUID)
+            selection.resetSelection(itemId: root.gameModel.selectedGameMaster, entryId: nil)
         }
         .onChange(of: gameMasterUUID, initial: true) {
             root.gameModel.selectedGameMaster <=> selection.itemId

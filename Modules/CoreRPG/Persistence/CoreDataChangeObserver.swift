@@ -11,6 +11,14 @@ import os.log
 /// queue — not necessarily the main thread. `@MainActor` here makes the Combine closures
 /// below inferred main-actor-isolated while Combine still invokes them off-thread, which
 /// broke Core Data's thread confinement in practice (see git history for this file).
+///
+/// `@unchecked Sendable` soundness precondition: `observeCoreDataChanges(from:entity:handler:)`
+/// must be called exactly once per instance. `observer` is mutable, unsynchronized state — a
+/// second call on the same instance would silently drop the first subscription's `Cancellable`
+/// (with no compiler signal) rather than run two subscriptions side by side. Every current call
+/// site (one per module's `SyncDataController.init`, via `SyncDataControllable.startSyncObservation`)
+/// already satisfies this by constructing a fresh `CoreDataChangeObserver()` right before calling
+/// it; `observeCoreDataChanges` itself enforces it defensively below. See CODE_AUDIT §3.6.
 public final class CoreDataChangeObserver: @unchecked Sendable {
     typealias DataType = (NSManagedObject & CoreDataId)
 
@@ -19,6 +27,7 @@ public final class CoreDataChangeObserver: @unchecked Sendable {
     public init() {}
 
     public func observeCoreDataChanges(from context: NSManagedObjectContext, entity: NSEntityDescription, handler: @escaping @Sendable ([UUID], [UUID], [UUID]) -> Void) {
+        precondition(observer == nil, "observeCoreDataChanges(from:entity:handler:) must only be called once per CoreDataChangeObserver instance.")
         let localCtx = context
         observer = NotificationCenter.default
             .publisher(for: NSManagedObjectContext.didMergeChangesObjectIDsNotification, object: localCtx)
