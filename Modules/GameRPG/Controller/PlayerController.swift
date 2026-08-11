@@ -958,13 +958,104 @@ final class PlayerControllerModel: Sendable {
     func reset(lostMaster: Bool) {
         self.lostMaster = lostMaster
     }
-    
+
     func reset(sendPlayer: Bool) {
         self.hasSendPlayer = sendPlayer
     }
-    
+
     func setGameUpdateType(_ type: NetworkModules) {
         gameUpdateType = type
+    }
+
+    /// Reads both gate flags in one @MainActor property so a concurrent
+    /// writer can't be observed between them. See CODE_AUDIT §3.1.
+    var canSendCharacter: Bool { !hasSendPlayer && !lostMaster }
+
+    /// The read-then-conditionally-write needs to stay one @MainActor call so a
+    /// concurrent reader never observes a state between the check and the clear.
+    /// See CODE_AUDIT §3.1.
+    func clearGameUpdateTypeIfPhoto() {
+        if gameUpdateType == .photo {
+            gameUpdateType = .none
+        }
+    }
+
+    /// Clears the pdf repair-pending flag and marks the pdf update atomically,
+    /// so a concurrent reader never observes one change without the other.
+    /// See CODE_AUDIT §3.1.
+    func completePdfRepairAndSetUpdateType(_ id: UUID) {
+        requestedPdfRepairIds.remove(id)
+        gameUpdateType = .pdf
+    }
+
+    // Named per-set mutators for every `pending*Requests`/`requested*RepairIds`
+    // single-id `Set<UUID>` in this model — a keypath-generic pair (tried first)
+    // doesn't compile: Swift disallows forming a key path to an actor-isolated
+    // stored property at all, from anywhere, since the resulting `KeyPath` value
+    // itself carries no isolation. See CODE_AUDIT §3.1.
+    @discardableResult
+    func removePendingAudioRequest(_ id: UUID) -> Bool {
+        pendingAudioRequests.remove(id) != nil
+    }
+
+    @discardableResult
+    func insertPendingAudioRequest(_ id: UUID) -> Bool {
+        pendingAudioRequests.insert(id).inserted
+    }
+
+    @discardableResult
+    func removeRequestedRepairId(_ id: UUID) -> Bool {
+        requestedRepairIds.remove(id) != nil
+    }
+
+    @discardableResult
+    func insertRequestedRepairId(_ id: UUID) -> Bool {
+        requestedRepairIds.insert(id).inserted
+    }
+
+    @discardableResult
+    func removeRequestedPdfRepairId(_ id: UUID) -> Bool {
+        requestedPdfRepairIds.remove(id) != nil
+    }
+
+    @discardableResult
+    func insertRequestedPdfRepairId(_ id: UUID) -> Bool {
+        requestedPdfRepairIds.insert(id).inserted
+    }
+
+    @discardableResult
+    func removeRequestedSpaceRepairId(_ id: UUID) -> Bool {
+        requestedSpaceRepairIds.remove(id) != nil
+    }
+
+    @discardableResult
+    func insertRequestedSpaceRepairId(_ id: UUID) -> Bool {
+        requestedSpaceRepairIds.insert(id).inserted
+    }
+
+    /// The batch of per-connection state a lost connection must clear atomically,
+    /// pulled out of `PlayerController.resetForLostConnection` so the multi-property
+    /// reset stays one `@MainActor` call from the controller instead of a
+    /// `MainActor.run` closure. See CODE_AUDIT §3.1.
+    func resetForLostConnection(preservingSharePlayRebind: Bool) {
+        sendCharacterTask?.cancel()
+        sendCharacterTask = nil
+        sendCharacterTaskId = nil
+        pendingMapRequests = []
+        pendingAudioRequests = []
+        requestedRepairIds = []
+        requestedPdfRepairIds = []
+        requestedSpaceRepairIds = []
+        resetMasterStateSequence()
+        resetAudioListSequence()
+        resetPhotoListSequence()
+        resetPdfListSequence()
+        resetSpaceListSequence()
+        resetPresentationSequence()
+        resetMapContentSequence()
+        if !preservingSharePlayRebind {
+            resetSharePlayMasterParticipant()
+        }
     }
 }
 
@@ -1049,6 +1140,51 @@ extension PlayerController {
         gameModel.resetSharePlayMasterParticipant()
     }
     
+    /// Combines `GameRootModel.applyMasterBroadcast` with `resetPlayers()` in one
+    /// @MainActor call so both happen atomically — see CODE_AUDIT §3.1.
+    @MainActor
+    func applyMasterBroadcastAndResetPlayers(
+        masterId: UUID,
+        masterName: String,
+        supporterTier: SupporterTier,
+        state: GameMasterStateModel
+    ) {
+        root.gameModel.applyMasterBroadcast(
+            masterId: masterId,
+            masterName: masterName,
+            supporterTier: supporterTier,
+            state: state
+        )
+        resetPlayers()
+    }
+
+    /// Spans two separate @MainActor models (`gameModel` and `root.gameModel`), so
+    /// it lives on the controller rather than either model — one @MainActor call
+    /// keeps both updates atomic. See CODE_AUDIT §3.1.
+    @MainActor
+    func setMapUpdateTypeAndSyncPawns() {
+        gameModel.setGameUpdateType(.map)
+        #if !os(tvOS)
+        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        #endif
+    }
+
+    /// Clears the space repair-pending flag, marks the space update, and (on
+    /// visionOS) switches to immersive presentation. Spans two @MainActor
+    /// models (`gameModel` and `root.gameModel`), so it lives on the
+    /// controller — one @MainActor call keeps all three updates atomic.
+    /// See CODE_AUDIT §3.1.
+    @MainActor
+    func completeSpaceReveal(itemId: UUID) {
+        gameModel.requestedSpaceRepairIds.remove(itemId)
+        gameModel.setGameUpdateType(.space)
+        #if os(visionOS)
+        if root.networkStore.sharePlayStore.isActive {
+            root.gameModel.shareState.mode = .immersive
+        }
+        #endif
+    }
+
     @MainActor
     func resetPlayers() {
         let players = root.gameModel.gameControl.controls.compactMap { $0.show ? $0.id : nil }
@@ -1145,7 +1281,7 @@ extension PlayerController {
                 contentVersion: fullData.contentVersion
             )
             if await root.photoRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                await MainActor.run { gameModel.gameUpdateType = .photo }
+                await gameModel.setGameUpdateType(.photo)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
@@ -1204,7 +1340,7 @@ extension PlayerController {
                 contentVersion: fullData.contentVersion
             )
             if await root.pdfRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                await MainActor.run { gameModel.gameUpdateType = .pdf }
+                await gameModel.setGameUpdateType(.pdf)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
@@ -1263,7 +1399,7 @@ extension PlayerController {
                 contentVersion: fullData.contentVersion
             )
             if await root.spaceRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                await MainActor.run { gameModel.gameUpdateType = .space }
+                await gameModel.setGameUpdateType(.space)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
@@ -1322,21 +1458,24 @@ extension PlayerController {
             outgoingTimestamp = Date.now.timeIntervalSince1970
         }
 
-        let outgoingCounter = await MainActor.run {
-            counter ?? gameModel.nextOutgoingMessageCounter()
+        // Both are @MainActor method calls (not property writes) — `await` alone hops,
+        // no `MainActor.run` wrapper needed.
+        let outgoingCounter: Int
+        if let counter {
+            outgoingCounter = counter
+        } else {
+            outgoingCounter = await gameModel.nextOutgoingMessageCounter()
         }
         Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
-        let networtData = await MainActor.run {
-            root.gameModel.outgoingMessage(
-                timestamp: outgoingTimestamp,
-                counter: outgoingCounter,
-                type: type,
-                subType: subType,
-                asMaster: false,
-                purpose: purpose,
-                data: updated
-            )
-        }
+        let networtData = await root.gameModel.outgoingMessage(
+            timestamp: outgoingTimestamp,
+            counter: outgoingCounter,
+            type: type,
+            subType: subType,
+            asMaster: false,
+            purpose: purpose,
+            data: updated
+        )
 
         // Group transports do not echo a sender's own event, and the master no
         // longer republishes a canonical Space transform. Apply this exact
@@ -1378,20 +1517,18 @@ extension PlayerController {
               (source.data.type == .photo || source.data.type == .pdf || source.data.type == .space)
         else { return }
 
-        let outgoingCounter = await MainActor.run {
-            gameModel.nextOutgoingMessageCounter()
-        }
-        let remapped = await MainActor.run {
-            root.gameModel.outgoingMessage(
-                timestamp: source.timestamp,
-                counter: outgoingCounter,
-                type: source.type,
-                subType: source.subType,
-                asMaster: false,
-                purpose: source.purpose,
-                data: source.data
-            )
-        }
+        // Both are @MainActor method calls (not property writes) — `await` alone hops,
+        // no `MainActor.run` wrapper needed.
+        let outgoingCounter = await gameModel.nextOutgoingMessageCounter()
+        let remapped = await root.gameModel.outgoingMessage(
+            timestamp: source.timestamp,
+            counter: outgoingCounter,
+            type: source.type,
+            subType: source.subType,
+            asMaster: false,
+            purpose: source.purpose,
+            data: source.data
+        )
 
         Logger.networking.debug("PlayerController: Relay proxy presentation \(outgoingCounter, privacy: .public) for \(source.data.type.token, privacy: .public) -> \(source.data.id, privacy: .public)")
         await root.statisticsModel.record(remapped, direction: .outgoing, origin: .proxy(connectionId))
@@ -1430,20 +1567,18 @@ extension PlayerController {
               (source.subType == .spaceTransform && source.data.type == .space)))
         guard isSupportedEvent else { return }
 
-        let outgoingCounter = await MainActor.run {
-            gameModel.nextOutgoingMessageCounter()
-        }
-        let remapped = await MainActor.run {
-            root.gameModel.outgoingMessage(
-                timestamp: source.timestamp,
-                counter: outgoingCounter,
-                type: source.type,
-                subType: source.subType,
-                asMaster: false,
-                purpose: source.purpose,
-                data: source.data
-            )
-        }
+        // Both are @MainActor method calls (not property writes) — `await` alone hops,
+        // no `MainActor.run` wrapper needed.
+        let outgoingCounter = await gameModel.nextOutgoingMessageCounter()
+        let remapped = await root.gameModel.outgoingMessage(
+            timestamp: source.timestamp,
+            counter: outgoingCounter,
+            type: source.type,
+            subType: source.subType,
+            asMaster: false,
+            purpose: source.purpose,
+            data: source.data
+        )
         await root.statisticsModel.record(
             remapped,
             direction: .outgoing,
@@ -1540,26 +1675,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         preservingSharePlayRebind: Bool
     ) async {
         Logger.networking.debug("PlayerController: Lost Connection - Reset State")
-        await MainActor.run {
-            gameModel.sendCharacterTask?.cancel()
-            gameModel.sendCharacterTask = nil
-            gameModel.sendCharacterTaskId = nil
-            gameModel.pendingMapRequests = []
-            gameModel.pendingAudioRequests = []
-            gameModel.requestedRepairIds = []
-            gameModel.requestedPdfRepairIds = []
-            gameModel.requestedSpaceRepairIds = []
-            gameModel.resetMasterStateSequence()
-            gameModel.resetAudioListSequence()
-            gameModel.resetPhotoListSequence()
-            gameModel.resetPdfListSequence()
-            gameModel.resetSpaceListSequence()
-            gameModel.resetPresentationSequence()
-            gameModel.resetMapContentSequence()
-            if !preservingSharePlayRebind {
-                gameModel.resetSharePlayMasterParticipant()
-            }
-        }
+        await gameModel.resetForLostConnection(preservingSharePlayRebind: preservingSharePlayRebind)
         await root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
         await gameModel.reset(lostMaster: true)
         await gameModel.reset(sendPlayer: false)
@@ -1810,15 +1926,16 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 // One MainActor hop for the whole broadcast: applying config,
                 // controls and roster in separate steps lets concurrent message
                 // builders capture a torn state and send it back to the master.
-                await MainActor.run {
-                    root.gameModel.applyMasterBroadcast(
-                        masterId: model.masterId,
-                        masterName: model.sender.name,
-                        supporterTier: model.sender.supporterTier,
-                        state: masterState
-                    )
-                    resetPlayers()
-                }
+                // A single @MainActor function call preserves that atomicity the
+                // same way `MainActor.run` did — two separate `await`-ed calls
+                // would each be a scheduling point another queued task could
+                // interleave between.
+                await applyMasterBroadcastAndResetPlayers(
+                    masterId: model.masterId,
+                    masterName: model.sender.name,
+                    supporterTier: model.sender.supporterTier,
+                    state: masterState
+                )
             }
 
             let localId = await root.gameModel.gameConfig.id
@@ -2072,20 +2189,20 @@ extension PlayerController {
         case .reveal:
             let revealed = try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true)
             if revealed, await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) {
-                await MainActor.run { _ = gameModel.pendingAudioRequests.remove(model.data.id) }
+                await gameModel.removePendingAudioRequest(model.data.id)
                 await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                await MainActor.run { _ = gameModel.pendingAudioRequests.insert(model.data.id) }
+                await gameModel.insertPendingAudioRequest(model.data.id)
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
             try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else {
-                await MainActor.run { _ = gameModel.pendingAudioRequests.insert(model.data.id) }
+                await gameModel.insertPendingAudioRequest(model.data.id)
                 return await response(for: model, isSuccess: true, requestData: true)
             }
-            let completesReveal = await MainActor.run { gameModel.pendingAudioRequests.remove(model.data.id) != nil }
+            let completesReveal = await gameModel.removePendingAudioRequest(model.data.id)
             if completesReveal {
                 _ = await root.audioRoot.gameControllable.setCurrent(itemId: model.data.id)
             }
@@ -2600,11 +2717,7 @@ extension PlayerController {
             }
 
             guard revealed else {
-                await MainActor.run {
-                    if gameModel.gameUpdateType == .photo {
-                        gameModel.gameUpdateType = .none
-                    }
-                }
+                await gameModel.clearGameUpdateTypeIfPhoto()
                 guard !isRepairPayload else { return nil }
                 return await requestFullMap(
                     for: model,
@@ -2750,7 +2863,7 @@ extension PlayerController {
                 await gameModel.markMapStateApplied(itemId: model.data.id, counter: model.counter)
                 _ = await completeMapRepairIfSatisfied(itemId: model.data.id)
                 await retryDeferredMapPins(itemId: model.data.id)
-                await MainActor.run { gameModel.gameUpdateType = .map }
+                await gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
 
             case .mapPin:
@@ -2761,12 +2874,7 @@ extension PlayerController {
                     for: model.data.id,
                     with: model.data
                 ) else { return nil }
-                await MainActor.run {
-                    gameModel.gameUpdateType = .map
-                    #if !os(tvOS)
-                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
-                    #endif
-                }
+                await setMapUpdateTypeAndSyncPawns()
             default:
                 return nil
             }
@@ -2792,15 +2900,10 @@ extension PlayerController {
             switch model.subType {
             case .mapState:
                 await retryDeferredMapPins(itemId: model.data.id)
-                await MainActor.run { gameModel.gameUpdateType = .map }
+                await gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
             case .battleRound:
-                await MainActor.run {
-                    gameModel.gameUpdateType = .map
-                    #if !os(tvOS)
-                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
-                    #endif
-                }
+                await setMapUpdateTypeAndSyncPawns()
             case .generic, .mapPin:
                 // A structural/content resync or a player-authored pin move:
                 // this device's own map already reflects it. Neither one is
@@ -2975,25 +3078,23 @@ extension PlayerController {
         }
         guard shouldRequest else { return nil }
 
-        return await MainActor.run {
-            root.gameModel.outgoingMessage(
-                replyToMessageID: model.messageID,
-                counter: model.counter,
-                proxyCounter: model.proxyCounter,
-                type: requestType,
-                subType: action,
-                asMaster: false,
-                purpose: .assetRequest,
-                data: NetworkCodableDataType(
-                    id: model.data.id,
-                    type: .map,
-                    version: model.data.version,
-                    data: nil,
-                    assetVersion: model.data.assetVersion,
-                    contentVersion: model.data.contentVersion
-                )
+        return await root.gameModel.outgoingMessage(
+            replyToMessageID: model.messageID,
+            counter: model.counter,
+            proxyCounter: model.proxyCounter,
+            type: requestType,
+            subType: action,
+            asMaster: false,
+            purpose: .assetRequest,
+            data: NetworkCodableDataType(
+                id: model.data.id,
+                type: .map,
+                version: model.data.version,
+                data: nil,
+                assetVersion: model.data.assetVersion,
+                contentVersion: model.data.contentVersion
             )
-        }
+        )
     }
 
     func requestMapContent(
@@ -3008,25 +3109,23 @@ extension PlayerController {
             counter: model.counter
         ) else { return nil }
 
-        return await MainActor.run {
-            root.gameModel.outgoingMessage(
-                replyToMessageID: model.messageID,
-                counter: model.counter,
-                proxyCounter: model.proxyCounter,
-                type: .update,
-                subType: .generic,
-                asMaster: false,
-                purpose: .assetRequest,
-                data: NetworkCodableDataType(
-                    id: model.data.id,
-                    type: .map,
-                    version: model.data.version,
-                    data: nil,
-                    assetVersion: model.data.assetVersion,
-                    contentVersion: model.data.contentVersion
-                )
+        return await root.gameModel.outgoingMessage(
+            replyToMessageID: model.messageID,
+            counter: model.counter,
+            proxyCounter: model.proxyCounter,
+            type: .update,
+            subType: .generic,
+            asMaster: false,
+            purpose: .assetRequest,
+            data: NetworkCodableDataType(
+                id: model.data.id,
+                type: .map,
+                version: model.data.version,
+                data: nil,
+                assetVersion: model.data.assetVersion,
+                contentVersion: model.data.contentVersion
             )
-        }
+        )
     }
 
     func presentMap(itemId: UUID) async {
@@ -3041,7 +3140,7 @@ extension PlayerController {
             await root.mapRoot.mapGameControllable.refreshAuthoritativeMapContentVersion(for: itemId)
         }
         await retryDeferredMapPins(itemId: itemId)
-        await MainActor.run { gameModel.gameUpdateType = .map }
+        await gameModel.setGameUpdateType(.map)
         await refreshMapVisuals(itemId: itemId)
     }
 
@@ -3100,9 +3199,7 @@ extension PlayerController {
         #if !os(tvOS)
         let isGameMaster = await root.gameModel.gameConfig.isMaster
         await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
-        await MainActor.run {
-            root.gameModel.gameTableModel?.syncPawnsWithMapPins()
-        }
+        await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
     }
 
@@ -3113,7 +3210,7 @@ extension PlayerController {
     func requestMissingMapImages(itemId: UUID) async {
         let missingImages = await root.mapRoot.mapGameControllable.missingMapImages(itemId: itemId)
         for idType in missingImages {
-            let isFirstRequest = await MainActor.run { gameModel.requestedRepairIds.insert(idType.id).inserted }
+            let isFirstRequest = await gameModel.insertRequestedRepairId(idType.id)
             guard isFirstRequest else { continue }
             await send(
                 type: .store,
@@ -3145,7 +3242,7 @@ extension PlayerController {
                 masterId: masterId
             )
             if previousBaseline != nil, previousBaseline != model.data.effectiveAssetVersion {
-                await MainActor.run { _ = gameModel.requestedPdfRepairIds.remove(model.data.id) }
+                await gameModel.removeRequestedPdfRepairId(model.data.id)
             }
             await root.pdfRoot.pdfGameControllable.setMasterVersion(
                 itemId: model.data.id,
@@ -3176,10 +3273,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.pdfRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await MainActor.run {
-                    _ = gameModel.requestedPdfRepairIds.remove(model.data.id)
-                    gameModel.gameUpdateType = .pdf
-                }
+                await gameModel.completePdfRepairAndSetUpdateType(model.data.id)
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.pdfRoot.pdfGameControllable.markPdfAvailable(
                     itemId: model.data.id,
@@ -3197,9 +3291,7 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: false)
             }
 
-            let isFirstRequest = await MainActor.run {
-                gameModel.requestedPdfRepairIds.insert(model.data.id).inserted
-            }
+            let isFirstRequest = await gameModel.insertRequestedPdfRepairId(model.data.id)
             guard isFirstRequest else { return nil }
             let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
                 for: model.data.id,
@@ -3222,11 +3314,9 @@ extension PlayerController {
             )
             let hasLocalData = await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                let completesReveal = await MainActor.run {
-                    gameModel.requestedPdfRepairIds.remove(model.data.id) != nil
-                }
+                let completesReveal = await gameModel.removeRequestedPdfRepairId(model.data.id)
                 if completesReveal, await root.pdfRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                    await MainActor.run { gameModel.gameUpdateType = .pdf }
+                    await gameModel.setGameUpdateType(.pdf)
                 }
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.pdfRoot.pdfGameControllable.markPdfAvailable(
@@ -3292,9 +3382,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .photo
-                }
+                await gameModel.setGameUpdateType(.photo)
 
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.photoRoot.photoGameControllable.markPhotoAvailable(
@@ -3327,7 +3415,7 @@ extension PlayerController {
             try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.photoRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                await MainActor.run { _ = gameModel.requestedRepairIds.remove(model.data.id) }
+                await gameModel.removeRequestedRepairId(model.data.id)
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.photoRoot.photoGameControllable.markPhotoAvailable(
                     itemId: model.data.id,
@@ -3349,9 +3437,7 @@ extension PlayerController {
                 }
             }
             if await root.photoRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .photo
-                }
+                await gameModel.setGameUpdateType(.photo)
             }
         }
         return nil
@@ -3375,9 +3461,7 @@ extension PlayerController {
                model.data.version != 0,
                await root.tableRoot.gameControllable.networkVersion(for: model.data.id) == model.data.version,
                await root.tableRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .table
-                }
+                await gameModel.setGameUpdateType(.table)
                 return await response(for: model, isSuccess: true, requestData: false)
             }
             if try await root.tableRoot.tableGameControllable.receiveTable(
@@ -3385,9 +3469,7 @@ extension PlayerController {
                 data: model.data,
                 makeCurrent: true
             ) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .table
-                }
+                await gameModel.setGameUpdateType(.table)
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -3444,9 +3526,7 @@ extension PlayerController {
                 itemId: model.data.id,
                 data: model.data
             ) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .weather
-                }
+                await gameModel.setGameUpdateType(.weather)
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -3488,7 +3568,7 @@ extension PlayerController {
                 masterId: masterId
             )
             if previousBaseline != nil, previousBaseline != model.data.effectiveAssetVersion {
-                await MainActor.run { _ = gameModel.requestedSpaceRepairIds.remove(model.data.id) }
+                await gameModel.removeRequestedSpaceRepairId(model.data.id)
             }
             await root.spaceRoot.spaceGameControllable.setMasterVersion(
                 itemId: model.data.id,
@@ -3527,19 +3607,10 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await MainActor.run {
-                    _ = gameModel.requestedSpaceRepairIds.remove(model.data.id)
-                    gameModel.gameUpdateType = .space
-
-                    #if os(visionOS)
-                    if root.networkStore.sharePlayStore.isActive {
-                        // Switch the presentation mode; the modeChanged observer
-                        // reconfigures the spatial template, and the game screen
-                        // opens the immersive space when it shows the space module.
-                        root.gameModel.shareState.mode = .immersive
-                    }
-                    #endif
-                }
+                // Switching the presentation mode: the modeChanged observer
+                // reconfigures the spatial template, and the game screen opens
+                // the immersive space when it shows the space module.
+                await completeSpaceReveal(itemId: model.data.id)
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
                     itemId: model.data.id,
@@ -3556,9 +3627,7 @@ extension PlayerController {
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                let isFirstRequest = await MainActor.run {
-                    gameModel.requestedSpaceRepairIds.insert(model.data.id).inserted
-                }
+                let isFirstRequest = await gameModel.insertRequestedSpaceRepairId(model.data.id)
                 guard isFirstRequest else { return nil }
                 let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
                     for: model.data.id,
@@ -3575,20 +3644,10 @@ extension PlayerController {
             try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.spaceRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                let completesReveal = await MainActor.run {
-                    gameModel.requestedSpaceRepairIds.remove(model.data.id) != nil
-                }
+                let completesReveal = await gameModel.removeRequestedSpaceRepairId(model.data.id)
                 if completesReveal,
                    await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                    await MainActor.run {
-                        gameModel.gameUpdateType = .space
-
-                        #if os(visionOS)
-                        if root.networkStore.sharePlayStore.isActive {
-                            root.gameModel.shareState.mode = .immersive
-                        }
-                        #endif
-                    }
+                    await completeSpaceReveal(itemId: model.data.id)
                 }
                 let localPlayerId = await root.gameModel.gameConfig.id
                 await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
@@ -3599,9 +3658,7 @@ extension PlayerController {
                 )
                 return await response(for: model, isSuccess: true, requestData: false)
             }
-            let isFirstRequest = await MainActor.run {
-                gameModel.requestedSpaceRepairIds.insert(model.data.id).inserted
-            }
+            let isFirstRequest = await gameModel.insertRequestedSpaceRepairId(model.data.id)
             guard isFirstRequest else { return nil }
             return await response(for: model, isSuccess: true, requestData: true)
         case .update:
@@ -3638,9 +3695,7 @@ extension PlayerController {
                 break
             }
             if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await MainActor.run {
-                    gameModel.gameUpdateType = .space
-                }
+                await gameModel.setGameUpdateType(.space)
             }
         }
         return nil
@@ -3701,76 +3756,90 @@ extension PlayerController {
         // created for the original send — with a fresh counter here that link
         // was counter-space garbage and the log's delivery indicator could never
         // leave "missing players", on every transport, not just file sharing.
-        return await MainActor.run {
-            root.gameModel.outgoingMessage(
-                replyToMessageID: model.messageID,
-                counter: model.counter,
-                proxyCounter: model.proxyCounter,
-                type: model.type,
-                subType: subType,
-                asMaster: false,
-                purpose: requestData ? .assetRequest : .event,
-                data: payload
-            )
-        }
+        return await root.gameModel.outgoingMessage(
+            replyToMessageID: model.messageID,
+            counter: model.counter,
+            proxyCounter: model.proxyCounter,
+            type: model.type,
+            subType: subType,
+            asMaster: false,
+            purpose: requestData ? .assetRequest : .event,
+            data: payload
+        )
     }
 
     func scheduleSendCharacter() async {
-        await MainActor.run {
-            guard gameModel.sendCharacterTask == nil else { return }
-            let taskId = UUID()
-            gameModel.sendCharacterTaskId = taskId
-            gameModel.sendCharacterTask = Task { [weak self] in
-                await self?.sendCharacter()
-                await MainActor.run {
-                    guard self?.gameModel.sendCharacterTaskId == taskId else { return }
-                    self?.gameModel.sendCharacterTask = nil
-                    self?.gameModel.sendCharacterTaskId = nil
-                }
-            }
+        await scheduleSendCharacterTask()
+    }
+
+    /// The whole task-scheduling block (nil-check, id mint, task assignment)
+    /// needs to stay one @MainActor unit so a concurrent caller can't observe
+    /// a half-scheduled task. See CODE_AUDIT §3.1.
+    @MainActor
+    private func scheduleSendCharacterTask() {
+        guard gameModel.sendCharacterTask == nil else { return }
+        let taskId = UUID()
+        gameModel.sendCharacterTaskId = taskId
+        gameModel.sendCharacterTask = Task { [weak self] in
+            await self?.sendCharacter()
+            await self?.clearSendCharacterTask(if: taskId)
         }
     }
 
+    @MainActor
+    private func clearSendCharacterTask(if taskId: UUID) {
+        guard gameModel.sendCharacterTaskId == taskId else { return }
+        gameModel.sendCharacterTask = nil
+        gameModel.sendCharacterTaskId = nil
+    }
+
     func scheduleProxyFocus(characterId: UUID) async {
-        await MainActor.run {
-            gameModel.proxyFocusTask?.cancel()
-            let taskId = UUID()
-            gameModel.proxyFocusTaskId = taskId
-            gameModel.proxyFocusTask = Task { [weak self] in
-                guard let self else { return }
-                _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
-                await root.characterRoot.gameControllable.focus(on: characterId)
-                do {
-                    try await Task.sleep(for: .seconds(1))
-                } catch {
-                    await MainActor.run {
-                        guard self.gameModel.proxyFocusTaskId == taskId else { return }
-                        self.gameModel.proxyFocusTask = nil
-                        self.gameModel.proxyFocusTaskId = nil
-                    }
-                    return
-                }
-                guard !Task.isCancelled else {
-                    await MainActor.run {
-                        guard self.gameModel.proxyFocusTaskId == taskId else { return }
-                        self.gameModel.proxyFocusTask = nil
-                        self.gameModel.proxyFocusTaskId = nil
-                    }
-                    return
-                }
-                await MainActor.run {
-                    guard gameModel.proxyFocusTaskId == taskId else { return }
-                    root.gameModel.selectedCharacter = characterId
-                    gameModel.proxyFocusTask = nil
-                    gameModel.proxyFocusTaskId = nil
-                }
+        await scheduleProxyFocusTask(characterId: characterId)
+    }
+
+    /// Same reasoning as `scheduleSendCharacterTask` — the cancel/mint/assign
+    /// sequence must stay one @MainActor unit. See CODE_AUDIT §3.1.
+    @MainActor
+    private func scheduleProxyFocusTask(characterId: UUID) {
+        gameModel.proxyFocusTask?.cancel()
+        let taskId = UUID()
+        gameModel.proxyFocusTaskId = taskId
+        gameModel.proxyFocusTask = Task { [weak self] in
+            guard let self else { return }
+            _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
+            await root.characterRoot.gameControllable.focus(on: characterId)
+            do {
+                try await Task.sleep(for: .seconds(1))
+            } catch {
+                await clearProxyFocusTask(if: taskId)
+                return
             }
+            guard !Task.isCancelled else {
+                await clearProxyFocusTask(if: taskId)
+                return
+            }
+            await completeProxyFocus(characterId: characterId, if: taskId)
         }
+    }
+
+    @MainActor
+    private func clearProxyFocusTask(if taskId: UUID) {
+        guard gameModel.proxyFocusTaskId == taskId else { return }
+        gameModel.proxyFocusTask = nil
+        gameModel.proxyFocusTaskId = nil
+    }
+
+    @MainActor
+    private func completeProxyFocus(characterId: UUID, if taskId: UUID) {
+        guard gameModel.proxyFocusTaskId == taskId else { return }
+        root.gameModel.selectedCharacter = characterId
+        gameModel.proxyFocusTask = nil
+        gameModel.proxyFocusTaskId = nil
     }
     
     func sendCharacter() async {
         let gameType = await root.gameModel.gameType
-        let canSend = await MainActor.run { !gameModel.hasSendPlayer && !gameModel.lostMaster }
+        let canSend = await gameModel.canSendCharacter
         // A proxy device never announces a character: it mirrors the host
         // player and receives the host's character on readyProxy instead.
         guard canSend, gameType != .observer, gameType != .proxy,

@@ -544,9 +544,7 @@ extension MasterController {
         if !asProxy {
             await root.mapRoot.mapGameControllable.resetPlayerPins(for: gameRoster.players.filter { $0.type != .observer })
             #if !os(tvOS)
-            await MainActor.run {
-                root.gameModel.gameTableModel?.syncPawnsWithMapPins()
-            }
+            await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
             #endif
             // Push the changed player pins to everyone right away — otherwise
             // a joining player's pin only appears on the next unrelated map
@@ -619,9 +617,7 @@ extension MasterController {
         // others request it.
         if Self.sendsFullPayloadOnFirstShow(resolvedIdType.type), await !gameModel.hasSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion) {
             if let fullData = try? await createGameData(for: resolvedIdType) {
-                await MainActor.run {
-                    gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
-                }
+                await gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
                 await send(type: .reveal, subtype: .show, updated: fullData)
                 if fullData.type == .map,
                    let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
@@ -751,18 +747,16 @@ extension MasterController {
 
         // Built from local state in one MainActor hop; a playerId becomes the
         // message target so only the addressee processes it.
-        let networtData = await MainActor.run {
-            root.gameModel.outgoingMessage(
-                replyToMessageID: replyToMessageID,
-                timestamp: outgoingTimestamp,
-                counter: counter,
-                type: type,
-                subType: subtype,
-                asMaster: authoritativeMaster ?? !asProxy,
-                targetId: playerId,
-                data: updated
-            )
-        }
+        let networtData = await root.gameModel.outgoingMessage(
+            replyToMessageID: replyToMessageID,
+            timestamp: outgoingTimestamp,
+            counter: counter,
+            type: type,
+            subType: subtype,
+            asMaster: authoritativeMaster ?? !asProxy,
+            targetId: playerId,
+            data: updated
+        )
 
         if !asProxy,
            appliesLocalSpaceTransform,
@@ -1574,9 +1568,7 @@ extension MasterController {
                         itemId: model.data.id
                     )
                     #if !os(tvOS)
-                    await MainActor.run {
-                        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
-                    }
+                    await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     #endif
                 }
             default:
