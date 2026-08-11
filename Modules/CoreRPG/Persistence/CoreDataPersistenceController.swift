@@ -42,6 +42,7 @@ public final class CoreDataInitModel: @unchecked Sendable {
     var persistentHistoryTracker: PersistentHistoryTrackerManager?
     var persistentHistoryCleaner: PersistentHistoryCleaner?
     var cleanupTask: Task<Void, Never>?
+    var cloudKitEventMonitoringTask: Task<Void, Never>?
 
     // CloudKit sync state for UI
     public var cloudKitSyncState: CloudKitSyncState = .notStarted

@@ -1,523 +1,406 @@
 # MasterRPG Code Audit
 
-Generated 2026-08-09, merged with and superseding the 2026-08-07/08 audit (previous revision preserved in git history — `git log -p -- Docu/CODE_AUDIT.md`). Scope: ~263,600 Swift LOC across 1,942 files, 0 Metal kernels, spanning targets `MasterRPG` (iOS/visionOS), `MasterMac`, `MasterTV`, `RPGShare`, `DiceRollerWidgetExtension`, and 15 feature modules (`AdventureRPG`, `AudioRPG`, `CharacterRPG`, `CoreRPG`, `DiceRPG`, `GameRPG`, `GeneratorRPG`, `MapRPG`, `PdfRPG`, `PhotoRPG`, `RolePlayGameKit`, `RuleRPG`, `SpaceRPG`, `TableRPG`, `WeatherRPG`). Deployment target confirmed 26.0 across iOS/iPadOS/tvOS/visionOS/macOS. A full clean build (`xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build`) succeeded with exactly 12 deduplicated warnings — see §4.1, unchanged from the prior audit.
+Generated 2026-08-10. Scope: ~264,465 Swift LOC across 1,954 files, 0 Metal kernels, spanning targets `MasterRPG` (iOS/visionOS), `MasterMac`, `MasterTV`, `RPGShare`, `DiceRollerWidgetExtension`, and 15 feature modules (`AdventureRPG`, `AudioRPG`, `CharacterRPG`, `CoreRPG`, `DiceRPG`, `GameRPG`, `GeneratorRPG`, `MapRPG`, `PdfRPG`, `PhotoRPG`, `RolePlayGameKit`, `RuleRPG`, `SpaceRPG`, `TableRPG`, `WeatherRPG`). Deployment target confirmed uniformly 26.0 across iOS/iPadOS/tvOS/visionOS/macOS. No `Dead/` or other archived directory exists in this project, so nothing was excluded on that basis.
 
-**How this merge works:** every subsection number from the prior report (`§3.1`–`§9.16`) is preserved exactly — per the audit skill's own stability rule, so old notes/issues referencing "§5.4" etc. still resolve correctly. Each was re-verified against current source this pass (three parallel background agents plus a dedicated SwiftUI pass, all seeded with the prior report's open items) and its status updated: **NOW FIXED** (confirmed still holding — write-up compressed to a short confirmation; full remediation narrative is in the prior revision's git history), **STILL OPEN** (re-verified at current, possibly-shifted line numbers), or **REGRESSED/GAP FOUND**. New findings from this pass are appended as continuing subsection numbers (`§3.11+`, `§5.10+`, `§6.4+`, `§7.3+`, `§8.6+`, `§9.17+`) rather than renumbering anything. Every Critical/High claim — old and new — was personally re-opened and confirmed by reading the cited lines before inclusion; see §12.
+**Prior audit note:** a previous `Docu/CODE_AUDIT.md` (dated 2026-08-09, same section-numbering scheme, extremely mature — ~69 of ~90 tracked items already marked fixed) exists in git history but is staged for deletion in the working tree as of this run. Rather than re-deriving already-fixed items from scratch, this pass used that document's still-open items as a lead list and **personally re-opened and confirmed every one against current source** before including it below (see §12) — this is not a transcription of the old report. 29 source files still contain `// See CODE_AUDIT §X.Y`-style comments pointing at the old document's numbering; since this report is a fresh document with its own numbering, those in-code references will now dangle (see §9.13, §10.7).
+
+A full clean build (`xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build`) succeeded with exactly **12 deduplicated warnings**, all one root cause (§4.1) — a strong signal for `SWIFT_STRICT_CONCURRENCY = complete` holding cleanly, though strict-concurrency checking doesn't catch every runtime race (see §3).
+
+Findings cite `path/to/file.swift:LINE` so you can jump straight to them in Xcode. Each item has a recommended action; no code changes were made.
 
 ---
 
 ## 1. Executive summary
 
-Still no finding reaches **Critical** by this audit's strict bar (crash-on-common-path / data loss / memory corruption with no mitigating factor). This pass surfaced several new **High** items that a purely mechanical follow-up on the prior report would have missed — most notably two denial-of-service gaps in the untrusted-input Foundry VTT parser and a Core Data bootstrap race that could silently swallow a genuine store-load failure — all of which have since been fixed and verified (§5.14, §6.4–§6.6). Top items still open, in priority order:
-
-1. **[High/Security] Hardcoded, world-shared TLS pairing secret — still open** — §6.1 — `Modules/GameRPG/Network/GameSecurity.swift:7`. Unchanged since the last audit; still needs a product decision on session-specific pairing.
-
-All §5 Bugs/logic-errors findings (§5.1–§5.14), §6.4–§6.6's DoS findings, and §8.6–§8.12's SwiftUI findings are now fixed — see those sections for details, including this pass's App Intent path-escaping fix (§5.11), the Core Data `loadPersistentStores` completion race fix (§5.14), the initiative-parsing overflow-trap fix (§5.12), the local-network wire framer's message-length bound (§6.4), the two Foundry-import DoS gaps (§6.5 unbounded pack count, §6.6 unbounded JSON nesting depth — all three verified with new, passing tests), the stale SharePlay rotation-base bug (§8.6), and the closure-carrying `Environment` values (§8.8 — 3 of the 10 cited keys turned out to be entirely dead code; the other 7 now compare a stable identity token instead of their non-`Equatable` closures). §8.11 (a `@State`-resync bug) turned out to already be fixed independently, in an unrelated commit — re-verified against current source and corrected below.
-
-Also now fixed: the six duplication/hardcoding items §9.5–§9.10 (`DetailFolderListView` overlay wiring, the `CacheController` QuickLook-thumbnail wrapper and its `saveToDisk`/`setObject` tail, `FolderListController.copy(listModel:)`'s repeated dependency derivation, and the `"Documents"`/iCloud-container-identifier literals) — each centralized into a single shared declaration in CoreRPG instead of being hand-duplicated across 4–12 modules.
-
-For context, everything marked **NOW FIXED** below (§3.2–3.6, §3.8, §3.12–3.16, §4.3–4.6, §4.7 (partial), §5.1–5.14, §6.2–6.6, §7.1–7.2, §8.1–8.12, §9.2, §9.4, §9.5–9.10, §9.13–9.14, §9.16, §9.17, §9.18 (partial), §9.19–9.20 — roughly 69 items) was re-verified or newly fixed this pass, with one small gap closed along the way (§5.8/§5.10: RuleRPG, missed from the original 11-module Siri-donation-logging fix, is now covered too). §9.18 also caught two of the audit's own claims being wrong: `GeneratorRootModelTV.swift` and `BorderLessTVBottonStyleViewModifer.swift` are both live code, not dead — see §9.18 for the corrected record, including a build-breaking deletion mistake made and then caught by the mandatory tvOS build gate before this pass was considered complete.
+1. **[Critical/Security] Hardcoded, world-shared TLS pre-shared key lets any nearby device join and inject state into someone else's live game** — §6.1 — `Modules/GameRPG/Network/GameSecurity.swift:7`.
+2. **[High/Bugs] Force-unwrapped App Group access can crash the whole app and every extension at launch on any entitlement/provisioning mismatch** — §5.1 — `Modules/CoreRPG/App/AppGroup.swift:7,30`.
+3. **[High/Concurrency] Unstructured, uncancellable `DispatchQueue.main.asyncAfter` delayed navigation resume** — §3.4 — `Modules/CoreRPG/Navigator/Core/NavigationSend.swift:112`.
+4. **[High/Concurrency] 54 redundant `MainActor.run` hops in `PlayerController`'s hot network-dispatch path (+6 in `MasterController`)** — §3.1 — `Modules/GameRPG/Controller/PlayerController.swift`.
+5. **[Medium/Security] `aps-environment: development` baked into every Release build with zero push-notification code present** — §6.2 — `Resources/MasterRPG.entitlements:5-6`.
+6. **[Medium/API modernity] Deprecated `.system.search` App Shortcuts phrase — the sole compiler-warning root cause in the entire build, across 12 modules** — §4.1.
+7. **[Medium/Dead code] `SyncDataController.swift` duplicated byte-for-shape-identical across 12 modules** — §9.2 — `Modules/*RPG/Controller/SyncDataController.swift`.
+8. **[Medium/Bugs] `BatteryMonitor`'s macOS polling `Task` is never cancelled — an orphaned infinite-wake loop per view lifecycle** — §5.5 — `Modules/GameRPG/GameViews/BatteryView.swift:69-131`.
+9. **[Medium/Dead code] `PlayerController.swift` is 3,841 lines (7.5× the codebase's own 500-line convention), two responsibilities in one file, ~1,846 unmarked lines** — §9.9 — `Modules/GameRPG/Controller/PlayerController.swift`.
+10. **[Medium/Bugs] Six structurally-identical `catch { return nil }` blocks silently swallow player asset-import failures with no logging** — §5.3 — `Modules/GameRPG/Controller/{Master,Player}Controller.swift`.
 
 ---
 
-## 2. Quick wins (≤30 min each, low architectural risk)
+## 2. Quick wins (≤30 min each)
 
-Learned from the prior audit's own experience (§4.1's reverted mechanical swap, §9.1's false-positive deletions): nothing touching the untrusted-input Foundry parser or the network wire protocol is listed here even though some of those fixes are individually small, because they need real testing against malformed input, not just a clean compile. This list itself produced one more lesson in the same vein this pass — see the `GeneratorRootModelTV.swift` note below. Genuine low-risk quick wins from this pass, now all resolved (fixed, or corrected as false positives) — see §9.18/§9.19 for full detail:
-
-- **Deleted `Modules/CoreRPG/Model/Observable+Stream.swift`** — entire body was commented out; only a copyright header was live. Fixed. See §9.18.
-- ~~Delete `Modules/CoreRPG/Model/GeneratorRootModelTV.swift`~~ — **audit claim was wrong.** The file declares `GeneratorRootModel` (filename ≠ type name), which is referenced from `TableRootModel.swift` and is the *only* source of that type on tvOS. Deleting it broke the tvOS build; restored. See §9.18.
-- ~~Delete the dead half of `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift`~~ — **audit claim was wrong.** 35+ live call sites found on re-verification; left untouched. See §9.18.
-- **Renamed `Modules/GameRPG/SharePlay/RPGActivitty.swift` → `RPGActivity.swift`** — the type inside (`RPGActivity`, 14+ live call sites) was already spelled correctly; only the filename had a typo. Fixed. See §9.19.
-- ~~Delete the leftover `//.padding(.horizontal)` line~~ — `Modules/TableRPG/View/TableGenerationRootView.swift:253` no longer exists; the file was already split apart by an unrelated prior change. Moot. See §9.18.
-
-All the other former quick wins in this list (RuleRPG's Siri-donation logging, `MasterController`'s force-unwrap, `AppDataModel`'s force-unwrapped `error`, `DetailListView`'s force-cast, the `battleInitiative(from:)` range guard, and `DragRotationModifier`'s `baseYaw`/`basePitch`) are now fixed — see §5.10, §5.12, §5.13, §8.6.
+- **Add `deinit { stopMonitoring() }` to `BatteryMonitor`** (or call it from `BatteryView`'s `.onDisappear`) — `Modules/GameRPG/GameViews/BatteryView.swift:69-131`. Stops an orphaned Task from accumulating on macOS. See §5.5.
+- **Fix `FileUrlDataController.swift`'s dead fallback path** — only assign `loadedFileUrl = tempUrl` when the write actually succeeds. See §5.4.
+- **Delete the 5 unused `*Wrapper` view files** (`RowViewerWrapper.swift`, `ThumbnailRowViewWrapper.swift`, `SharingViewWrapper.swift`, `LinkListViewWrapper.swift`, `InlineEditRowViewerWrapper.swift`) — zero call sites anywhere, confirmed via grep. See §9.1.
+- **Delete the commented-out `AnyView` block** at `Modules/CoreRPG/ItemViews/QuickEditorAction.swift:54`. See §9.1.
+- **Route the 6 silent `catch { return nil }` blocks through `Logger.networking.error(...)`**, matching every other catch in the same two files. See §5.3.
+- **Rename `Docu/CoreRPG` → `Docu/CoreRPG.md`** — the only file in `Docu/` missing its extension. See §9.11.
+- **Fix the stale `OldDiceBag` snapshot-test names** left over from today's rename commit (`fa5c4ec3`) — `Tests/DiceRPGSnapshotTests/DiceRPGGeneratedPreviewSnapshotTests.swift:128-134`. See §9.6.
+- **Remove the now-unreachable `/0-Old/` path exclusions** in `Scripts/verify_localization.rb:340` and `Scripts/verify_accessibility.rb:17` — no `0-Old` directory exists anywhere post-rename. See §9.7.
+- **Replace the 3 triplicated retry-delay literals** in `Modules/GameRPG/SharePlay/SharePlayJournalPublicationQueue.swift` with one named constant, mirroring the file's own `SharePlayAttachmentLoadRetry` pattern. See §9.4.
 
 ---
 
 ## 3. Concurrency
 
-### 3.1 FoundryVTTDomainMapper still fully Main-Actor-bound for import mapping — STILL OPEN (mitigation confirmed holding)
-- **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper.swift:179-359` (`@MainActor struct FoundryVTTDomainMapper`, `@MainActor final class FoundryMappingState`); `cooperativeCheckpoint()` at :337-344, `cooperativeYieldInterval` at :269; call site `FoundryRuleImportModel.swift:169,187`.
-- **What:** The entire Foundry document/asset mapping pass still runs on `@MainActor`, yielding via `cooperativeCheckpoint()` at ~25 call sites.
-- **Why:** A large import can still visibly compete with SwiftUI's render loop between yields, though less than before the mitigation.
-- **Action:** No change recommended beyond what's already landed — a full Sendable-DTO rearchitecture remains judged too risky for this codebase's size; this is a documented, accepted tradeoff. The in-code comment now explicitly cites this report's own §3.1, confirming the mitigation is tracked, not forgotten.
-- **Severity:** Medium in practice (the `cooperativeYieldInterval = 16` tuning from the last audit is confirmed still in place, unchanged).
+Strict concurrency (`SWIFT_STRICT_CONCURRENCY = complete`) compiles with zero concurrency-related warnings — a genuinely strong baseline. The findings below are things the compiler can't catch: readability/overhead patterns, one house-rule violation, and a couple of documented-but-worth-recording tradeoffs.
 
-### 3.2 `Task.detached` file/network work without cancellation propagation — NOW FIXED
-- Confirmed still fixed at all four original sites (`FileManager+Coordination.swift`, `FileUrlDataController.swift`, `Sources/RPGShare/ItemProviderImporter.swift`, `Modules/CoreRPG/Cache/ResourceCache.swift`).
-- **Gap closed:** `ResourceCache.load(key:from:)`'s *joiner* path (a second caller awaiting an already-in-flight request via `inFlightRequests[key]`) previously had no `Task.checkCancellation()` after awaiting — only the *primary* caller's path had the fix, so a cancelled joiner still returned data as if it succeeded. Now fixed: `try Task.checkCancellation()` is called right after `let data = try await inFlight.value`, mirroring the primary path, before returning `data` — the shared in-flight task itself is left running unaffected (other callers still need it), only the cancelled joiner's own return is suppressed. Covered by a dedicated regression test, `Tests/CoreRPGTests/ResourceCacheTests.swift` (`cancelledJoinerPropagatesCancellation`) — asserts the cancelled joiner throws `CancellationError` while the primary caller and the resulting cache entry are unaffected. See §3.16 (now also fixed).
-- **Severity:** Medium — resolved.
+### 3.1 Pervasive, redundant `MainActor.run` hopping in the SharePlay/network hot path
+- **Location:** `Modules/GameRPG/Controller/PlayerController.swift` — 54 sites (1122, 1148, 1181, 1207, 1240, 1266, 1325, 1329, 1381, 1384, 1433, 1436, 1543, 1813, 2075, 2079, 2085, 2088, 2601, 2750, 2761, 2792, 2795, 2975, 3008, 3041, 3100, 3113, 3145, 3176, 3197, 3222, 3226, 3292, 3327, 3349, 3375, 3385, 3444, 3488, 3527, 3556, 3575, 3580, 3599, 3638, 3701, 3716, 3722, 3732, 3743, 3751, 3758, 3770); `Modules/GameRPG/Controller/MasterController.swift` — 6 sites (521, 547, 622, 754, 1141, 1577); `Modules/GameRPG/Network/GameNetworkController.swift` — 1 site (786). All counts personally re-verified via `grep -c "MainActor.run"`.
+- **What:** `PlayerController` and `MasterController` are plain `final class ... : Sendable` (not `@MainActor`, not an actor) holding an `@MainActor @Observable` model. Nearly every read/write of that model's state wraps in `await MainActor.run { ... }` instead of directly `await`-ing the already-`@MainActor` property/method — e.g. the model already defines `setGameUpdateType(_:)` at `PlayerController.swift:966-968`, but most call sites bypass it in favor of a closure.
+- **Why:** This is the busiest concurrency-critical subsystem in the app (network I/O feeding UI state). The redundant hops add scheduling overhead per message, obscure which reads are genuinely atomic multi-field snapshots (a legitimate subset exists, e.g. line 1122's `(playerId, masterId)` tuple) versus simple single-field mutations that don't need a closure, and make the real isolation boundary harder to audit at a glance.
+- **Action:** Where a single property/method is touched, drop the `MainActor.run` wrapper and `await` the `@MainActor` call directly (or route through the model's existing setter methods); reserve `MainActor.run` for genuinely atomic multi-property reads. `MasterController`'s broader per-method `@MainActor` style is the better template — see §3.2.
+- **Severity:** High
 
-### 3.3 Untracked `Task.detached` fire-and-forget work in SpaceRPG — NOW FIXED
-- Confirmed still fixed: `SpaceViewer.swift`'s `loadEntity` uses a plain structured `Task { @MainActor in ... }` (no pointless detach/re-attach); `AppDataModel.swift`'s cleanup task is tracked (`cleanupTask`), cancellation-aware, and cancelled from `reset()`. Both carry accurate in-code comments explaining the choice. No regression.
-- **Severity:** Low — resolved.
+### 3.2 Same `MainActor.run` anti-pattern replicated across CoreRPG's shared Controllable protocols and several modules' `GameController`
+- **Location:** `Modules/CoreRPG/Controllable/ImportControllable.swift` (14 sites), `ExportControllable.swift` (9), `GameControllable.swift` (3), `CoreDataSnapshotPersistable.swift` (3 — sits on the CloudKit-remote-change → `ItemController` merge boundary), `SyncDataControllable.swift` (2 — same boundary), `TagController.swift` (1), `SearchControllable.swift` (1); `Modules/{Table,Dice,Weather,Audio}RPG/Controller/GameController.swift` (multiple each); `Modules/GameRPG/Network/ListenerManager.swift` (2), `Modules/GameRPG/Browser/BrowserManager.swift` (2), `Modules/GameRPG/Player/PlayerNetworkController.swift` (1); 3 `GeneratorRPG` AI provider files; `Modules/SpaceRPG/Space/SpaceViewer.swift` (1); `Modules/CharacterRPG/Controller/CharacterPackageVersion.swift` (1).
+- **What:** Same root cause as §3.1, recurring in the shared protocol default implementations used by every module. `Modules/MapRPG/Controller/GameController.swift` demonstrates the working alternative already used successfully elsewhere in the codebase: every function individually marked `@MainActor`, zero `MainActor.run` calls needed.
+- **Why:** The inconsistency across modules increases review burden and the risk of a future edit silently reintroducing an actual race when someone copies the wrong (hop-heavy) pattern instead of the clean one.
+- **Action:** Standardize on per-function `@MainActor` annotations (MapRPG's pattern) instead of `MainActor.run` closures throughout `CoreRPG/Controllable/*.swift` and the listed `GameController`/network files.
+- **Severity:** Medium
 
-### 3.4 `AppDataModel.deinit` cleanup was dead code — NOW FIXED
-- Not independently re-exercised this pass beyond a structural read; no contrary evidence found. Treat as holding.
-- **Severity:** Medium — resolved.
+### 3.3 `RPGSharePlayController` cannot self-clean on deallocation; relies on callers remembering `reset()`
+- **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:602-685` (class + plain `deinit`), `:1607-1644` (`reset()`); contrast `Modules/GameRPG/Network/ListenerManager.swift:49-53`, `Modules/GameRPG/Browser/BrowserManager.swift:42-44`, `Modules/GameRPG/Table3D/GameTableModel.swift:606-611`, all three of which use `isolated deinit`.
+- **What:** `RPGSharePlayController`'s `deinit` is a plain nonisolated `deinit` that only logs, with an in-code comment noting it "cannot access @MainActor-isolated `tasks`." The many session tasks stored in `tasks: [UUID: Task<Void, Never>]` (plus `sendOperationTask`, `deferredPromotionTask`) are only cancelled by an explicit call to `reset()`.
+- **Why:** Three sibling files in the same module already solve this with `isolated deinit`. Any future non-singleton instantiation of `RPGSharePlayController` — tests already do this at `Tests/GameRPGTests/SharePlayPackageTransportTests.swift:124,1294` — that's released without calling `reset()` first leaks every task it owns.
+- **Action:** Adopt `isolated deinit { reset() }` on `RPGSharePlayController`, matching the other three files in this module.
+- **Severity:** Medium
 
-### 3.5 `DebouncerModel` mixed `@Observable` with Combine — NOW FIXED
-- Re-read in full this pass: `@MainActor @Observable public final class DebouncerModel<T: Sendable>: Sendable` uses only `Task { ... try? await Task.sleep(for:) ... }` with proper `debounceTask?.cancel()` before rescheduling; no `import Combine`. Confirmed no regression.
-- **Severity:** Medium — resolved.
-
-### 3.6 `GroupStateObserver` forces `ObservableObject` usage — accepted exception, unchanged
-- Confirmed still the *only* `ObservableObject`-adjacent usage anywhere in non-test source (`SharePlayButton.swift:20`, `RPGSharePlayController.swift:632`) — a full repo sweep for `ObservableObject`/`@Published`/`@StateObject`/`@EnvironmentObject` found zero other occurrences.
-- **Severity:** Low — no action needed, revisit only if Apple ships an `@Observable` variant.
-
-### 3.7 Sendable-conforming Controller classes mix explicit `Sendable` with piecemeal `@MainActor` — STILL OPEN, scope expanded
-- **Location:** `Modules/GameRPG/Controller/MasterController.swift:443` (6 `MainActor.run` hops); `Modules/GameRPG/Controller/PlayerController.swift:971` (**54** separate `await MainActor.run { }` hops around single-property mutations, e.g. lines 1122-3181); `Modules/GameRPG/Network/GameNetworkController.swift:503` (1 hop).
-- **What:** All three declare `final class ... : Sendable` (safe — every stored property is an immutable `let`) but rely on a mix of whole-method `@MainActor` and, especially in `PlayerController`, dozens of granular `MainActor.run` hops instead of isolating the enclosing method.
-- **Why:** Not a correctness bug (compiles clean under strict concurrency), but 54 hops in one file on the hot network-dispatch path is a real scheduling-overhead and readability cost — the prior audit only named `MasterController`; this pass found the same pattern far more densely in `PlayerController` and also in `GameNetworkController`.
-- **Action:** Consider marking more of `PlayerController`'s frequently-hopping methods `@MainActor` directly, matching `MasterController`'s style, to collapse repeated single-property hops.
-- **Severity:** Medium.
-
-### 3.8 `nonisolated(unsafe)` `Codable.encode(to:)` workaround duplicated across domain models — NOW FIXED
-- **Location:** One per module's `Model/*Model.swift` (PdfModel, DiceModel, WeatherModel, AdventureModel, ValueModel, PhotoModel, RuleModel, GeneratorModel, MapModel, SpaceModel, TableModel, AudioModel) plus `Modules/CoreRPG/Fake/FakeItemModel.swift` — 13 sites total.
-- **Fix:** Added `Encoder.encodeOnMainActor(_:)` in `Modules/CoreRPG/Extensions/Encoder+MainActor.swift` — a single `public extension Encoder` method that owns the `nonisolated(unsafe) let encoder = self; try MainActor.assumeIsolated { try body(encoder) }` workaround in one audited place, taking an `@MainActor (Encoder) throws -> Void` closure (the same "closure typed with a global-actor attribute infers that isolation" pattern already used elsewhere in CoreRPG, e.g. `RouterActions.routePage`). All 13 `encode(to:)` implementations now read `try encoder.encodeOnMainActor { encoder in ... }` instead of hand-rolling the unsafe cast; `AudioModel`'s existing split into a private `@MainActor encodeOnMain(to:)` helper was preserved, only its wrapping mechanism changed.
-- **Re-verified before fixing:** the sole real call site touching one of these models (`ExportControllable.swift:197`) is correctly wrapped in `await MainActor.run`; no background-`Task` call site invoking `.encode()` on any of the 13 models was found — the precondition the fix (and the original workaround) depends on still holds.
-- **Verified:** all four platform builds (iOS/macOS/visionOS/tvOS) and 1268 tests across all 13 affected modules' test targets pass.
-- **Severity:** Medium — resolved.
-
-### 3.9 `@unchecked Sendable CoreDataChangeObserver` single-call-per-instance assumption — STILL OPEN, unchanged
-- **Location:** `Modules/CoreRPG/Persistence/CoreDataChangeObserver.swift:14-46`. Re-verified all 12 real call sites (one per module's `SyncDataController.init`) each construct a fresh instance and call `observeCoreDataChanges` exactly once — assumption still holds, still undocumented as a comment on the `@unchecked Sendable` conformance itself (the file's existing comment explains the `@MainActor`-avoidance rationale but not this).
-- **Severity:** Medium.
-
-### 3.10 Widespread `@preconcurrency import` at framework boundaries — STILL OPEN, unchanged
-- Same 11 files, same frameworks (CoreData, PDFKit, GroupActivities, TabletopKit, RealityKit) — count and file list confirmed unchanged; no Apple-side Sendable audit has landed for any of them as of this SDK.
-- **Severity:** Low.
-
-### 3.11 `DispatchQueue.main.asyncAfter` survivor — NEW
-- **Location:** `Modules/CoreRPG/Navigator/Core/NavigationSend.swift:112` (inside `@MainActor internal func resume(...)`).
+### 3.4 `DispatchQueue.main.asyncAfter` used instead of structured concurrency
+- **Location:** `Modules/CoreRPG/Navigator/Core/NavigationSend.swift:107-114`, violation at line 112, inside `@MainActor internal func resume(...)`.
 - **What:** `DispatchQueue.main.asyncAfter(deadline: .now() + delay) { self.send(values: values) }` implements a delayed navigation resume via old-style GCD.
-- **Why:** Directly violates the project's explicit "never `DispatchQueue.main.async()`-style GCD" rule. Functionally harmless today (still lands correctly on Main), but it's the one clear non-test survivor in the whole codebase — a full sweep found exactly two other `DispatchQueue` uses, both legitimate `Network.framework`/`NWConnection` interop with no async-native equivalent (`ConnectionController.swift:31`, `NWParameter+GameMaster.swift:13`).
-- **Action:** Replace with `Task { try? await Task.sleep(for: .seconds(delay)); self.send(values: values) }`.
-- **Severity:** Medium.
+- **Why:** Directly violates the project's explicit house rule ("never use `DispatchQueue.main.async()`-style GCD; always use modern Swift concurrency") and, more importantly, is unstructured and uncancellable — a delayed navigation resume can fire after the navigator/view it targets is already gone. A full repo sweep found exactly 2 other `DispatchQueue` uses, both legitimate Network.framework/`NWConnection` interop with no async-native equivalent (`ConnectionController.swift:31`, `NWParameter+GameMaster.swift:13`) — this is the one clear non-test survivor.
+- **Action:** Replace with a tracked `Task { try? await Task.sleep(for: .seconds(delay)); await send(values: values) }`.
+- **Severity:** High
 
-### 3.12 `nonisolated(unsafe)` on non-Sendable `EnvironmentKey.defaultValue` closures — NOW FIXED
-- **Location:** `Modules/CoreRPG/Buttons/FeatureConfig.swift` (`SharingFeatureActionsKey`), `Modules/CoreRPG/Buttons/ControlSharingView.swift` (`SharingControlActionsKey`), `Modules/CoreRPG/Model/MapActions.swift` (`MapActionsKey`) — 3 real sites; the audit's originally-cited 4th location, `ItemListActions.swift`, was re-checked and no longer has any `EnvironmentKey`/closure pattern at all (superseded by an unrelated earlier refactor — nothing to fix there).
-- **What:** 3 `EnvironmentKey.defaultValue` closures used `nonisolated(unsafe)` purely because their declared closure type lacked a global-actor/`Sendable` annotation.
-- **Fix:** Annotated each closure-typed property/parameter (`SharingFeatureActions.features`, `SharingControlActions.control`/`.update`, `MapActions.quickMap`) as `@MainActor @Sendable`, matching the exact convention already established elsewhere in CoreRPG (`NetworkActions`'s `shareId`/`send`/`game` closures). A `@MainActor`-isolated closure is unconditionally `Sendable`, and — critically, unlike a bare `@Sendable` annotation — it stays isolated to MainActor, so the real call sites (`GameRootModel.sharingControlActions`/`.sharingFeatureActions`, both `lazy var`s whose closures synchronously touch `self?.gameModel...` MainActor state) needed no changes. Each struct itself (`SharingFeatureActions`, `SharingControlActions`, `MapActions`) also now conforms to `Sendable` (previously only `Equatable`), so the `EnvironmentKey.defaultValue` static lets no longer need the escape hatch.
-- **Verified:** full 4-platform build; a bare `@Sendable` (without `@MainActor`) was tried first and would have forced these closures nonisolated, breaking the real call sites — caught before committing to that approach by checking `GameRootModel`'s existing closure-construction call sites first.
-- **Severity:** Low — resolved.
+### 3.5 Fire-and-forget `Task` inside `.onAppear` instead of the `.task` modifier
+- **Location:** `Modules/GameRPG/SetupViews/SelectedMasterView.swift:32-38`; `Modules/SpaceRPG/Record/TutorialVideoView.swift:47-62`.
+- **What:** Both views spawn `Task { @MainActor in try? await Task.sleep(for: ...); <mutate state> }` from `.onAppear` rather than using the `.task { }` view modifier.
+- **Why:** `.onAppear`-spawned tasks aren't tied to the view's lifetime and are never cancelled if the view disappears before the sleep completes (2s in `SelectedMasterView`, up to 4s in `TutorialVideoView`) — a dismissed view can still mutate `root.gameModel.selectedGameMaster`/`appModel.orbitState` afterward.
+- **Action:** Replace `.onAppear { Task { ... } }` with `.task { ... }`, which is automatically cancelled when the view disappears.
+- **Severity:** Medium
 
-### 3.13 `DieModel` forced into `@unchecked Sendable` by a non-`Sendable` value type — NOW FIXED
-- **Location:** `Modules/DiceRPG/Model/DieModel.swift` (`@unchecked Sendable`); root cause `Modules/DiceRPG/Model/RawDie.swift` (`public struct RawDie`, was missing `Sendable`, though every stored property is trivially safe).
-- **Fix:** Declared `RawDie: Sendable` and its nested `Sides` enum `Sendable`; dropped `@unchecked` from `DieModel`, now a compiler-checked `Sendable` conformance.
-- **Severity:** Low — resolved.
+### 3.6 `CoreDataChangeObserver`'s `@unchecked Sendable` rests on an unenforced single-call-per-instance assumption
+- **Location:** `Modules/CoreRPG/Persistence/CoreDataChangeObserver.swift:14-46`.
+- **What:** `private var observer: AnyCancellable?` is mutable state inside a `@unchecked Sendable public final class`. The file's own comment (lines 8-12) documents *why the class can't be `@MainActor`* (Core Data posts change notifications synchronously on the context's own possibly-background queue) but not the actual soundness precondition: safety depends entirely on `observeCoreDataChanges` being called exactly once per instance. The 12 real call sites (one per module's `SyncDataController.init`) do satisfy this, but nothing in the type enforces it.
+- **Why:** An undocumented invariant is one refactor away from becoming a real race — a future call site that reuses an existing `CoreDataChangeObserver` instance for a second `observeCoreDataChanges` call would silently drop the first subscription's cancellable, with no compiler signal.
+- **Action:** Add a comment on the `@unchecked Sendable` conformance itself documenting the single-call precondition, or enforce it with a `precondition(observer == nil)` guard at the top of `observeCoreDataChanges`.
+- **Severity:** Medium
 
-### 3.14 `RpgSpotlightIndexerModel`'s `@unchecked Sendable` is unnecessary — NOW FIXED
-- **Location:** `Modules/CoreRPG/Persistence/RpgSpotlightIndexerDelegate.swift`.
-- **Fix:** Dropped `@unchecked` — `@MainActor @Observable final class RpgSpotlightIndexerModel: Sendable` now uses a plain, compiler-checked conformance (its only stored state, `message: String?`, is trivially safe under `@MainActor` isolation), matching the same "MainActor-owned model, Sendable via global-actor isolation, no `@unchecked`" pattern already used by the domain models (see §3.8).
-- **Severity:** Low — resolved.
+### 3.7 `FoundryVTTDomainMapper` fully Main-Actor-bound for import mapping — documented, accepted tradeoff
+- **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper.swift:179-359` (`@MainActor struct FoundryVTTDomainMapper`, `@MainActor final class FoundryMappingState`); `cooperativeCheckpoint()` at ~25 call sites; `cooperativeYieldInterval = 16` at line 269; call sites `FoundryRuleImportModel.swift:169,187`.
+- **What:** The entire Foundry document/asset mapping pass runs on `@MainActor`, yielding periodically via `cooperativeCheckpoint()`.
+- **Why:** A large import can still visibly compete with SwiftUI's render loop between yields, though the yield-interval tuning mitigates the worst of it. A full Sendable-DTO rearchitecture would help more directly but was judged too risky for this codebase's size and is not recommended here either — flagging so it stays a documented tradeoff, not a forgotten one.
+- **Action:** No change recommended beyond what's already landed (the yield interval). Revisit only if a specific large-import stutter is reported.
+- **Severity:** Medium (in practice; the mitigation is real and holding)
 
-### 3.15 SharePlay: race between independent state/participant `AsyncSequence` consumers — NOW FIXED
-- **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift` (`stateTask` vs. `participantTask`); `SharePlayParticipantTracker.participantsChanged`.
-- **What/Why:** `stateTask`'s `.joined` handler does a synchronous live read of `groupSession.activeParticipants` to replay anyone already present; `participantTask` independently consumes the buffered `groupSession.$activeParticipants.values` stream. The two run as separately-scheduled `Task`s with no relative-ordering guarantee: a backlogged, already-superseded element `participantTask` had queued could get diffed against tracker state the live read on `stateTask` had already advanced past, producing a spurious "removed" event for a still-connected participant — an incorrect lost-player callback followed by a duplicate rejoin, visible as player-state flicker in a live SharePlay session.
-- **Fix:** `participantTask`'s loop now treats each stream element purely as a wake-up signal — it discards the delivered value and re-reads `groupSession.activeParticipants` live at the point of use, the same source `stateTask`'s live read already uses. Every diff computation now runs against one single current-truth source instead of two independently-paced ones; a backlogged wake-up becomes, at worst, a harmless redundant no-op re-check (the diff comes out empty) instead of a wrong one. No change was needed to the well-covered pure `SharePlayParticipantTracker` struct itself — its existing unit tests (`Tests/GameRPGTests/SharePlayPackageTransportTests.swift`) all still pass unmodified, since the fix is entirely in how the caller derives the argument it passes in, not in the tracker's diffing logic.
-- **Caveat:** the actual race (which only manifests during a live SharePlay session with real network scheduling jitter) isn't directly unit-testable without a live/mocked `GroupSession`, which this codebase doesn't have infrastructure for — verified via build + the full existing SharePlay test suite (all passing, confirming no regression to the well-tested parts) and by reasoning through the fix's correctness (documented inline at the call site), not by a new reproduction test for the race itself.
-- **Severity:** Medium — resolved.
+### 3.8 `@preconcurrency import` at 11 framework boundaries
+- **Location:** `Modules/PdfRPG/Pdf/SearchBar.swift`, `SelectionBar.swift`, `Modules/PdfRPG/Root/ViewerRootView.swift` (PDFKit); `Modules/CoreRPG/Persistence/{CloudKitCoreDataPersistenceController,CoreDataController,CoreDataChangeObserver,PersistentHistoryTrackerManager,CoreDataPersistenceController}.swift` (CoreData); `Modules/GameRPG/SharePlay/RPGSharePlayController.swift`, `Modules/GameRPG/Table3D/GroupActivityManager.swift` (GroupActivities); `Modules/SpaceRPG/Record/ReconstructionProgressView.swift` (RealityKit/ObjectCapture).
+- **What:** Standard practice for pre-Sendable Apple frameworks — Apple hasn't shipped a Sendable audit for CoreData, PDFKit, GroupActivities, or RealityKit as of this SDK.
+- **Why:** Informational; nothing actionable until Apple updates these frameworks' headers.
+- **Action:** No action; periodically re-check whether newer SDKs drop the need for any of these.
+- **Severity:** Low
 
-### 3.16 `ResourceCache` joiner-path cancellation gap — NOW FIXED (see §3.2)
-- **Location:** `Modules/CoreRPG/Cache/ResourceCache.swift:31-37`.
-- **Fix:** `try Task.checkCancellation()` added after `let data = try await inFlight.value` in the joiner path, mirroring the primary-caller fix. Verified with a passing regression test (`ResourceCacheTests.cancelledJoinerPropagatesCancellation`) and a full 4-platform build. See §3.2 for the full write-up.
+### 3.9 `nonisolated(unsafe)` — sole production usage, audited and safe
+- **Location:** `Modules/CoreRPG/Extensions/Encoder+MainActor.swift:17-22`.
+- **What:** `nonisolated(unsafe) let encoder = self`, paired with `MainActor.assumeIsolated`, is the codebase's only production `nonisolated(unsafe)` — documented as the single, audited escape hatch for `Encodable.encode(to:)`'s `nonisolated` protocol requirement crossing into `@MainActor`-isolated domain models. Confirmed correctly scoped: every real call site pre-hops to `MainActor` before invoking `.encode()`.
+- **Action:** No change needed; keep this as the sole sanctioned call site and reject any new ad hoc `nonisolated(unsafe)` in review.
+- **Severity:** Low (informational)
+
+### 3.10 `@ObservedObject` for Apple's `GroupStateObserver` — accepted SDK exception
+- **Location:** `Modules/GameRPG/SetupViews/SharePlayButton.swift:19-21`.
+- **What:** `@ObservedObject private var groupStateObserver = GroupStateObserver()` — `GroupStateObserver` is Apple's own `GroupActivities` type and conforms to `ObservableObject`, not `@Observable`; app code cannot change that.
+- **Action:** No change — this is the one legitimate SDK-imposed exception to the `@Observable` house rule. Recorded so it isn't mistakenly "fixed" (which wouldn't compile) during a future cleanup pass.
+- **Severity:** Low (informational)
+
+### 3.11 Closure-based `NotificationCenter.addObserver` where an async notification sequence is available — NOW FIXED
+- **Location:** `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift:199-259` (`setupCloudKitEventMonitoring`); `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:45` (new `cloudKitEventMonitoringTask` bookkeeping property on `CoreDataInitModel`).
+- **Fix:** Replaced the `NotificationCenter.default.addObserver(forName:object:queue: .main) { }` closure + `MainActor.assumeIsolated { }` pair with `for await notification in NotificationCenter.default.notifications(named:object:)` inside a `Task { [weak model] in ... }`, started from the already-`@MainActor` `setupCloudKitEventMonitoring`. Since the `Task` is created within an `@MainActor` context, its body is `@MainActor`-isolated by inference (the same established pattern already used one function up, in `setupContext`'s `cleanupTask`), so every `model.cloudKitSyncState`/`model.lastSuccessfulSync` write is now directly and safely isolated — no manual `assumeIsolated` assertion needed. The task is stored in a new `cloudKitEventMonitoringTask: Task<Void, Never>?` property on `CoreDataInitModel` (mirroring the existing `cleanupTask` property) and cancelled before a fresh one is assigned, guarding against a leaked prior observer if this function were ever called twice. `[weak model]` avoids a retain cycle (the task's `for await` loop runs indefinitely until the notification stream ends or the task is cancelled, so a strong capture would keep `model` alive forever via `model → Task → closure → model`).
+- **Verified:** `xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build` — **BUILD SUCCEEDED**, 0 new warnings.
 - **Severity:** Low — resolved.
 
 ---
 
 ## 4. API modernity
 
-### 4.1 Deprecated `.system.search` App Intents schema — STILL OPEN, unchanged
-- Re-confirmed via a fresh clean build: exactly the same 12 sites, exactly the same warning, nothing else in the build log. The `.system.searchInApp` replacement still requires macOS 27.0+ against this project's 26.0 deployment target — still not a mechanical fix; still needs either a deployment-target bump or `#available`-gated dual schema support.
-- **Severity:** Medium.
+### 4.1 Deprecated `.system.search` App Shortcuts phrase — 12 modules, the sole compiler-warning root cause in the entire build
+- **Location:** `Modules/AdventureRPG/Intent/SearchAdventuresIntent.swift:8`; `Modules/{Audio,Character,Dice,Generator,Map,Pdf,Photo,Rule,Space,Table,Weather}RPG/Intent/*ManagementIntents.swift` (one site each, ~line 89-94).
+- **What:** A fresh clean build produces exactly 12 deduplicated warnings, all `'search' is deprecated: Use .system.searchInApp instead`.
+- **Why:** The `.system.searchInApp` replacement requires a newer OS version than this project's 26.0 deployment target in at least some SDK betas — not a mechanical find-and-replace; needs either a deployment-target bump or `#available`-gated dual-schema support.
+- **Action:** Evaluate `.system.searchInApp`'s actual minimum-version requirement against the 26.0 target; if it's available at 26.0, do the mechanical swap across all 12 sites in one pass (they're identical in shape). If not, gate with `#available` and keep `.search` as the fallback.
+- **Severity:** Medium
 
-### 4.2 Manual `UIActivityViewController` + scene/window traversal instead of `ShareLink` — REMOVED
-- **Location:** `Modules/GeneratorRPG/BasicAI/View/MessageBubbleView.swift:222-250` (`shareMessage()`).
-- **New detail:** the function is entirely `#if os(iOS)`-gated — on macOS its body is empty, so the "Share message" accessibility action registered unconditionally at line 36 is a **silent no-op** on Mac, not just a modernity nit.
-- **Action:** Replace with `ShareLink`, which handles presentation correctly on both platforms including macOS, closing the accessibility-action gap as a side effect.
-- **Severity:** Medium.
+### 4.2 Closure-based `NotificationCenter` — see §3.11
+_Cross-referenced under Concurrency since the fix is a concurrency-adjacent API swap, not a deprecation._
 
-### 4.3 Legacy `Formatter` subclasses instead of `FormatStyle` — NOW FIXED
-- Not independently re-tested this pass beyond a repo-wide grep; zero real `DateFormatter`/`NumberFormatter`/`ISO8601DateFormatter`/`MeasurementFormatter` usages found (the two `NumberFormatter` grep hits are code comments documenting the removal). No regression.
-- **Severity:** Low — resolved.
-
-### 4.4 `replacingOccurrences(of:with:)` instead of `.replacing(_:with:)` — NOW FIXED
-- Confirmed via fresh sweep: zero occurrences anywhere in non-test source.
-- **Severity:** Low — resolved.
-
-### 4.5 Dead `@available(iOS 17.0, ...)` guard below the deployment target — NOW FIXED
-- Not independently re-tested; no contrary evidence found.
-- **Severity:** Low — resolved.
-
-### 4.6 Widget extension deployment target exceeded the host app's — NOW FIXED
-- `IPHONEOS_DEPLOYMENT_TARGET`/`MACOSX_DEPLOYMENT_TARGET`/`XROS_DEPLOYMENT_TARGET` confirmed uniformly 26.0 project-wide this pass (see the deployment-target grep in the header of this report) — no target-level override anywhere.
-- **Severity:** High — resolved.
-
-### 4.7 `GeometryReader` used where newer layout APIs may suffice — PARTIALLY FIXED (6 of 7)
-- **Location:** `Sources/RPGShare/SharingView.swift`; `Modules/WeatherRPG/View/InlineRowViewer.swift`; `Modules/WeatherRPG/View/OverlayViewer.swift`; `Modules/WeatherRPG/Root/ViewerRootView.swift`; `Modules/PhotoRPG/Root/ViewerRootView.swift`; `Modules/SpaceRPG/Record/TutorialPageView.swift` (not migrated, see below); `Modules/SpaceRPG/Space/SpaceViewer.swift`.
-- **Fix (5 sites — genuine `CGSize`-as-data usage):** `SharingView.swift`, `InlineRowViewer.swift`, `OverlayViewer.swift`, `WeatherRPG/ViewerRootView.swift`, `PhotoRPG/ViewerRootView.swift` all migrated to `onGeometryChange(for:of:action:)`. Each follows the same shape: a `@State private var containerSize: CGSize = .zero`, measured via a `Color.clear` (or, for `SharingView`, a `Group` over the existing always-full-size branches) placed where `GeometryReader` used to sit in the modifier chain — so the measurement point sees the same post-padding/pre-outer-frame geometry `GeometryReader` did — with the real content in an `.overlay` reading `containerSize` as data, and `.frame(maxWidth: .infinity, maxHeight: .infinity)` preserving `GeometryReader`'s implicit full-space-filling default. `PhotoRPG/ViewerRootView.swift`'s `contentView` additionally needed converting from a `GeometryReader`-closure computed property to a `let`-then-`return` form since the viewport-size math now runs against `containerSize` state instead of a closure parameter.
-- **Fix (1 site — turned out not to be a data case at all):** `SpaceRPG/Space/SpaceViewer.swift` — re-reading the code, the `GeometryReader`'s `proxy` was passed into `contentView(geometry:)` but **never referenced inside it**, and no sibling branch (`progressView`, `errorView`, `spaceContentView`) used it either. This one wasn't reading size as data (the audit's "all 7 genuinely need the raw `CGSize`" claim was wrong for this specific site) — `GeometryReader` was doing nothing but forcing full-space fill. Replaced with a plain `ZStack` plus `.frame(maxWidth: .infinity, maxHeight: .infinity)`, and dropped the now-pointless `geometry:` parameter from `contentView` (now a plain computed property, matching its `progressView`/`spaceContentView` siblings). No `onGeometryChange` needed here since nothing consumes a size.
-- **Not fixed (1 site, deliberately):** `Modules/SpaceRPG/Record/TutorialPageView.swift` — genuinely uses `geometry.size` as data (image width, container frame), but the whole file is Apple ObjectCapture sample code (see its own `LICENSE.txt` header) gated `#if os(iOS) && !targetEnvironment(simulator)` — it only compiles for a real device, which this environment has no way to build or verify. Left untouched rather than making an unverifiable change to vendored sample code.
-- **Also confirmed:** the two previously-deleted dead files (`ExpandableBaseView.swift`, `StretchingHeaderView.swift`) remain gone. The two visionOS `GeometryReader3D` sites (`GameTableView.swift`, `ImagePresentationView.swift`) are a distinct, necessary volumetric API with no 2D equivalent — not instances of this finding, not touched.
-- **Verified:** all 4 platforms (iOS/macOS/visionOS/tvOS) build clean; 283 tests pass across `WeatherRPGTests`/`PhotoRPGTests`/`SpaceRPGTests`. No Xcode MCP render-preview tooling is configured in this environment, so the layout-equivalence of each migration was verified by build success, existing test coverage, and reasoning through the modifier-chain ordering (documented per-file above) rather than a visual diff — appropriate given the audit's own "Low/cosmetic" severity rating, but worth a manual look in Simulator/Previews next time these views are opened in Xcode.
-- **Severity:** Low — resolved except the one deliberately-skipped, unverifiable site.
-
-### 4.8 `onTapGesture` in preview code — RESOLVED (file deleted, superseded)
-- Unchanged from prior audit — no longer applicable, `ExpandableBaseView.swift` is gone.
-- **Severity:** Low — resolved.
+### 4.3 Deprecated `navigationBarTitle` + `GeometryReader`-for-proportional-sizing in a vendored sample view
+- **Location:** `Modules/SpaceRPG/Record/TutorialPageView.swift:19,32,44,46`.
+- **What:** `.navigationBarTitle(pageName, displayMode: .inline)` (line 46) is the pre-`NavigationStack` API, deprecated since iOS 14 in favor of `.navigationTitle(_:)` + `.navigationBarTitleDisplayMode(_:)`. The view also wraps its body in a plain `GeometryReader` (line 19) purely to compute `0.85 * geometry.size.width` (line 32) and force a `.frame(width:height:)` to the reader's full size (line 44).
+- **Why:** This is the only place in the app still using the deprecated title API, and it's exactly the "proportional sizing" `GeometryReader` case replaceable by `containerRelativeFrame()`. **Context:** this file is adapted Apple Object Capture sample code (carries its own `LICENSE.txt` header), gated `#if os(iOS) && !targetEnvironment(simulator)` — it only compiles for a real device, which this environment can't build or verify, and was deliberately left untouched by a prior audit pass for exactly that reason.
+- **Action:** Low-risk to modernize (`.navigationTitle`/`.navigationBarTitleDisplayMode`, `.containerRelativeFrame(.horizontal) { width, _ in width * 0.85 }`), but verify on a real device before merging since this environment can't build/preview it.
+- **Severity:** Medium (the change itself), but treat as deliberately deprioritized until real-device verification is available.
 
 ---
 
 ## 5. Bugs / logic errors
 
-### 5.1 Game log resolved Character-tied entries against the wrong module root — NOW FIXED
-- Re-confirmed at `Modules/GameRPG/Controller/LogGameController.swift:190-191`: `.value` case now correctly routes through `characterRoot`.
-- **Severity:** High — resolved.
+### 5.1 Force-unwrapped App Group access can crash the whole app and every extension at launch
+- **Location:** `Modules/CoreRPG/App/AppGroup.swift:7,30` (`UserDefaults.appGroup = UserDefaults(suiteName: appGroupString)!`, `FileManager.groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:)!`); consumed at `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift:33`, `CoreDataPersistenceController.swift:85`, `Modules/CoreRPG/Files/LocationFileManager.swift:18`, `Modules/CoreRPG/Persistence/FilePersistenceController.swift:114`.
+- **What:** Both are force-unwrapped `static let` globals, personally confirmed by reading `AppGroup.swift` in full. Either force-unwrap traps the instant it's first touched if the App Group entitlement/container is unavailable.
+- **Why:** Any entitlement/provisioning mismatch (ad-hoc/enterprise signing drift, a future extension target that forgets the entitlement) becomes an unconditional launch crash for both the CloudKit and local-only Core Data stacks, rather than a recoverable, surfaced error — invisible in normal development (entitlements always correct there) but fatal in field/CI/TestFlight signing edge cases. With 5 targets (`MasterRPG`, `MasterMac`, `MasterTV`, `RPGShare`, `DiceRollerWidgetExtension`) each needing matching App Group configuration, this is a real, not merely theoretical, risk surface.
+- **Action:** Make `appGroup`/`groupURL` throwing or optional-returning APIs, and have `loadDatabase()` set `model.error` (as it already does for other init failures) instead of crashing.
+- **Severity:** High
 
-### 5.2 `fatalError()` in `@unknown default` across five switches — NOW FIXED
-- Re-confirmed: zero `fatalError` occurrences remain in any of the five originally-cited files.
-- **Severity:** Medium — resolved.
+### 5.2 `fatalError` on an out-of-range die value reachable from SharePlay/TabletopKit-synchronized state
+- **Location:** `Modules/GameRPG/Table3D/GameEquipment.swift:466-468` (`Die20.restingOrientation`), `:604-605` (`Die.restingOrientation`).
+- **What:** Both call `fatalError("Invalid die value...")` when the synchronized `DieState.value` (delivered via TabletopKit's `UpdateEquipmentAction<DieState>`, synced across all SharePlay participants) falls outside the expected face range. A neighboring near-zero-axis case in the same function already has a graceful fallback.
+- **Why:** A TabletopKit version skew, a corrupted/delayed sync payload, or a toss animation resumed after a session rebind could plausibly deliver an out-of-range value — crashing every participant's app simultaneously instead of one participant seeing a glitched pose.
+- **Action:** Replace both `fatalError` calls with a clamped/default orientation + log, mirroring the existing near-zero-axis fallback pattern.
+- **Severity:** Medium
 
-### 5.3 `fatalError()` on nil `managedObjectContext`, 11 modules — NOW FIXED
-- Re-confirmed: `preconditionFailure` with a descriptive, entity-specific message present in all 11 modules' `Model/DataModel+Extensions.swift`.
-- **Severity:** Medium (practically Low, given the CloudKit-merge race this guarded against isn't reachable through the call paths that use it) — resolved.
+### 5.3 Six structurally-identical `catch { return nil }` blocks silently swallow player asset-import failures
+- **Location:** `Modules/GameRPG/Controller/MasterController.swift:1774-1776` (PDF `.itemMissing` fallback), `:1919-1921` (Photo), `:2202-2204` (Space); `Modules/GameRPG/Controller/PlayerController.swift:2566-2568` (Map import), `:2592-2594` (Audio reveal), `:2670-2672` (Map import).
+- **What:** All 6 discard the thrown error entirely, following a successful-looking `try`/`try await ...updateGame(...)` import call — inconsistent with every other `catch` in the same two files, which consistently call `Logger.networking.error(...)`.
+- **Why:** A failure importing a player's shared photo/PDF/space/map bytes as the canonical asset (disk full, corrupted payload, iCloud eviction mid-write) disappears without a trace, making a real, reproducible bug ("my photo never got shared to the group") undiagnosable from logs.
+- **Action:** Add `Logger.networking.error(...)` calls matching the pattern used everywhere else in these two files.
+- **Severity:** Medium
 
-### 5.4 Force-unwrapped `URL(string:)!` from unescaped user text — NOW FIXED (see §5.11 for a recurrence of the same bug class elsewhere)
-- Re-confirmed at all three original sites (`EditControllable.swift:590`, `PhotoDataController.swift:21`, `CloudDocumentController.swift:65`): all use the safe `.appending(component:)` pattern, no force-unwrap on interpolated user text.
-- **Severity:** High — resolved. **Note:** the same underlying bug class (unescaped user text into a URL-building API) was found recurring, unfixed, in App Intents export code that wasn't covered by this original fix — see §5.11.
+### 5.4 Temp-file write failure is silently ignored, and the fallback path is skipped even though the write didn't succeed
+- **Location:** `Modules/CoreRPG/Files/FileUrlDataController.swift:233-237`.
+- **What:** `try? data.write(to: tempUrl)` discards any write error, but `loadedFileUrl = tempUrl` is assigned unconditionally on the next line regardless of success — so `processUrl = loadedFileUrl ?? fullUrl` never falls back to `fullUrl` on a failed write.
+- **Why:** On a failed temp write (disk pressure, sandbox issue), the subsequent action (e.g. a QuickLook thumbnail request) gets a URL to a nonexistent file, silently producing no preview instead of falling back to the still-available `fullUrl`.
+- **Action:** Only assign `loadedFileUrl = tempUrl` when the write succeeds; otherwise fall through to `fullUrl`.
+- **Severity:** Medium
 
-### 5.5 Force-try loading bundled RealityKit assets in `GameEquipment.swift` — NOW FIXED
-- **Location:** `Modules/GameRPG/Table3D/GameEquipment.swift` (`Die20.init`, `Die.init`).
-- **Fix:** `entity` is still a non-optional `EntityEquipment` protocol requirement, but the previous `preconditionFailure` on a failed bundled-asset load is now a logged fallback: each struct gains a `makeFallbackEntity()` that builds a plain procedural mesh (a sphere for `Die20`, a cube for `Die`) at the same post-scale size as the real asset. A failed `Entity.load` now logs via `Logger.gameTable.error` and substitutes the procedural mesh instead of crashing the whole tabletop feature over a missing/corrupt bundled asset. Audio loads were already non-fatal. Verified with a full visionOS Simulator build.
-- **Severity:** Medium — resolved.
+### 5.5 `BatteryMonitor`'s macOS polling `Task` is never cancelled — an orphaned infinite-wake loop per view lifecycle
+- **Location:** `Modules/GameRPG/GameViews/BatteryView.swift:69-131`.
+- **What:** Personally verified: `BatteryMonitor.init()` (line 71-73) calls `startMonitoring()`, which on macOS starts `pollTask = Task { [weak self] in while !Task.isCancelled { sleep 30s; refresh() } }` (line 110-119). `stopMonitoring()` (line 121, cancels `pollTask` at 129-130) has exactly one reference in the whole repo — its own declaration; grepped repo-wide, confirmed it is never called from anywhere. `BatteryView` owns the monitor via `@State private var monitor = BatteryMonitor()` (line 18) with no `deinit` on `BatteryMonitor` and no `.onDisappear` on `BatteryView`.
+- **Why:** `[weak self]` avoids a crash, but the `Task` itself keeps waking every 30s forever after the owning view/monitor deallocate, because nothing ever cancels it. Each time a `BatteryView` appears/disappears (e.g. entering/leaving the game screen repeatedly), one more permanently-leaked sleeping `Task` accumulates for the process lifetime on macOS.
+- **Action:** Add `deinit { stopMonitoring() }` to `BatteryMonitor` (or call `monitor.stopMonitoring()` from `BatteryView`'s `.onDisappear`).
+- **Severity:** Medium
 
-### 5.6 Force-cast outside the throwing part of do/catch — NOW FIXED
-- Re-confirmed at `CoreDataController.swift:365,396,433`: all use `guard let ... = try ... as? [DataType] else { log; return }`.
-- **Severity:** Medium — resolved.
+### 5.6 `ObjectCache.allKeys` grows unbounded and is never read
+- **Location:** `Modules/CoreRPG/Cache/ObjectCache.swift:26,38-42,44-47`.
+- **What:** Updated on every `insertObject`/`removeObject` call but never trimmed when the backing `NSCache` evicts entries automatically (no `NSCacheDelegate` hooked up); a repo-wide search shows `allKeys` is never read anywhere.
+- **Why:** Over a long campaign with many photos/maps/PDFs cached and evicted, this `Set<UUID>` accumulates entries indefinitely for objects long since gone — an unbounded, if slow, memory leak that also serves no purpose since nothing consumes it.
+- **Action:** Remove `allKeys` entirely, or implement `NSCacheDelegate.cache(_:willEvictObject:)` to keep it in sync if it's meant to track live cache membership.
+- **Severity:** Low
 
-### 5.7 Force-unwrapped `hubControllable`, 10 modules' `ExportController` — NOW FIXED
-- Re-confirmed: all 10 (+RuleRPG's original) use `preconditionFailure` with a module-specific message. Directly re-verified byte-for-byte on PdfRPG/DiceRPG while investigating §9.4.
-- **Severity:** Low — resolved.
+### 5.7 `print()` instead of structured `Logger` swallows SharePlay/network message-decode diagnostics
+- **Location:** `Modules/GameRPG/Model/GameNetworkModel.swift:998-1006` (`decodeData(of:)`).
+- **What:** The entry point for every inbound wire/journal/SharePlay message logs a decode failure via `print("**** Error \(error.localizedDescription)")` instead of the `Logger.networking` used everywhere else in this subsystem; returns `nil` safely (no crash) but with no structured, privacy-scrubbed log entry.
+- **Why:** A malformed or malicious payload from a local-network or SharePlay peer that fails to decode leaves no trace in Console/os_log — precisely the signal that would help diagnose either a protocol-version mismatch or an actual probing attempt against the parser.
+- **Action:** Replace with `Logger.networking.error(...)`.
+- **Severity:** Low
 
-### 5.8 Empty `catch {}` swallowing Siri intent-donation failures, 11 modules — NOW FIXED for all 12 modules
-- Re-confirmed fixed (logs via `Logger.appIntents.debug`) in AdventureRPG, AudioRPG, GeneratorRPG, DiceRPG, MapRPG, PhotoRPG, PdfRPG, CharacterRPG, SpaceRPG, WeatherRPG, TableRPG.
-- **Gap closed:** `Modules/RuleRPG/Intent/OpenRuleIntent.swift` now uses the same `do { try await IntentDonationManager.shared.donate(...) } catch { Logger.appIntents.debug(...) }` pattern as the other 11 modules instead of silently swallowing via `try?`. See §5.10.
-- **Severity:** Low — resolved.
+### 5.8 Repeated force-cast pattern in Core Data relationship accessors across every module
+- **Location:** `Modules/{Pdf,Dice,Weather,Adventure,Character,Photo,Generator,Space,Table,Audio}RPG/Model/DataModel+Extensions.swift:18` (CharacterRPG also `:44`) — 10 modules.
+- **What:** Each `entriesModel` getter does `(entries as NSSet).sortedArray(using: [sortDescriptor]) as! [RPGXxxEntry]` immediately after already validating `entries as? Set<RPGXxxEntry>` two lines above.
+- **Why:** Currently safe in practice (Core Data's typed relationship guarantees element type; `sortedArray` only reorders), but a fragile, copy-pasted pattern repeated 11 times — any future relationship/migration edge case would crash instead of degrading gracefully, and an `as!` immediately after an `as?` guard is redundant defensive-coding debt.
+- **Action:** Use `.compactMap { $0 as? RPGXxxEntry }` on the sorted array, or cast once and reuse.
+- **Severity:** Low
 
-### 5.9 CloudKit merge errors silently swallowed — NOW FIXED
-- Re-confirmed at `SyncDataControllable.swift:60-66`: logs via `Logger.syncDataControllable.error` with deleted/inserted/updated counts.
-- **Severity:** Medium — resolved.
-
-### 5.10 RuleRPG's Siri-donation catch still swallows errors silently — NOW FIXED
-- **Location:** `Modules/RuleRPG/Intent/OpenRuleIntent.swift` (`donateSiriViewingIntent(for:)`).
-- **Fix:** Replaced `_ = try? await IntentDonationManager.shared.donate(intent: intent)` with the same `do`/`catch` + `Logger.appIntents.debug(...)` pattern used by the other 11 modules.
-- **Severity:** Low — resolved.
-
-### 5.11 App Intent PDF/file export writes to a path built from unescaped, user-controlled item names — NOW FIXED
-- **Location:** `Modules/PdfRPG/Intent/PdfEntity.swift`, `Modules/WeatherRPG/Intent/WeatherEntity.swift`, `Modules/AdventureRPG/Intent/AdventureEntity.swift`, `Modules/CharacterRPG/Intent/CharacterEntity.swift`, `Modules/PhotoRPG/Intent/PhotoEntity.swift`, `Modules/MapRPG/Intent/MapEntity.swift`, `Modules/SpaceRPG/Intent/SpaceEntity.swift`, `Modules/TableRPG/Intent/TableEntity.swift` (all 8 sites).
-- **Fix:** All 8 `FileRepresentation` closures now build `URL.cachesDirectory.appending(component: "\(item.name).pdf")` — `.appending(component:)` percent-encodes `/` instead of treating it as a path separator (so it can't escape the target directory or resolve `..` segments), and the disposable, regenerate-on-demand share file now lands in `.cachesDirectory` instead of the iCloud/backup-synced `.documentsDirectory`.
-- **Severity:** High — resolved.
-
-### 5.12 Battle initiative parsing traps on out-of-range numeric text — NOW FIXED
-- **Location:** `Modules/MapRPG/Controller/GameController.swift` (`battleInitiative(from:)`).
-- **Fix:** The `Double` fallback path now also guards `value >= Double(Int.min), value <= Double(Int.max)` before calling `Int(value)`, so an out-of-range but finite `Double` (e.g. from typing `"99999999999999999999"`) returns `nil` instead of trapping.
-- **Severity:** High — resolved.
-
-### 5.13 Additional minor force-unwraps/force-casts found this pass — NOW FIXED (grouped)
-- `Modules/GameRPG/Controller/MasterController.swift` — the force-unwrap is gone; `titleImage(for:)` already accepts `UUID?`, so `root.gameModel.gameConfig.master.adventureId` (itself already `UUID?`) is now passed straight through with no `!`.
-- `Modules/GeneratorRPG/Root/DetailListView.swift` — the `@State` property is now typed `any FolderListControllable` (matching every other module's `DetailListView.swift`) and initialized directly from `root.folderListControllable`, so the `as! FolderListController` force-cast is gone.
-- `Modules/SpaceRPG/Record/AppDataModel.swift` — dropped the `!`; `String(describing: self.error)` already handles the `Optional` correctly.
-- **Severity:** Low (all three) — resolved.
-
-### 5.14 `NSPersistentContainer.loadPersistentStores` completion race — NOW FIXED
-- **Location:** `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift` (`loadDatabase`, `recoverFromError`); `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift` (identical pattern, plus CloudKit-specific `privatePersistentStore`/schema-init handling).
-- **Fix:** In both controllers, the `model.error`/`model.containerStoreUrl` (and, for CloudKit, `model.privatePersistentStore`) assignment plus the `setupContext()` call now happen *inside* `loadPersistentStores`'s completion closure, wrapped in `Task { @MainActor in ... }` since the closure isn't guaranteed to run on the main actor. `setupContext()` (and CloudKit's `setupCloudKitEventMonitoring()`) were changed from instance methods to `private static` functions taking `container`/`model` explicitly, so they can be called from inside the completion closure without capturing `self`. `recoverFromError()` got the identical fix. Verified with full iOS, visionOS, and macOS builds.
-- **Severity:** High — resolved.
+### 5.9 Untrusted-input parsers (Foundry VTT import, SharePlay wire protocol) — checked, already hardened
+- **Location:** `Modules/CoreRPG/Foundry/{FoundryZIPArchive,FoundryVTTArchiveSanitizer,FoundryBoundedBase64,FoundryLevelDBReader,FoundryLevelDBWriteAheadLogReader,FoundryRuleModels,FoundryVTTImportReader,FoundrySystemPackageReader}.swift`; `Modules/GameRPG/SharePlay/SharePlayPackageReceiver.swift`; `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper.swift`; `Modules/MapRPG/Controller/GameController.swift`; `Modules/GameRPG/Network/GameProtocol.swift`.
+- **What:** Read in full or near-full and grepped exhaustively for force-unwraps, `try!`, `as!`, unchecked indexing, and unbounded recursion — this is the app's highest-value attack surface (a user imports a third-party Foundry VTT export, or a local-network peer sends arbitrary bytes). All ZIP path components are validated against `../`, `\`, NUL, drive-letter-absolute, and symlink entries before extraction (`FoundryZIPArchive.swift:236-299`); all size/length/offset fields read from untrusted bytes are bounds- and overflow-checked before allocation/slicing; JSON nesting depth is explicitly capped at 128 (`FoundryRuleModels.swift:20-34`, personally confirmed present); the network wire framer caps declared message length at 512,000,000 bytes (`GameProtocol.swift:41,45-46,95-97`, personally confirmed present); SharePlay's chunked-message reassembly bounds per-stream/per-package/cumulative byte counts with LRU eviction and expiry.
+- **Why:** Reporting this so the audit record reflects that the named highest-priority attack surface is already well-hardened, not unreviewed.
+- **Action:** None required. Worth preserving as regression-test coverage (`Tests/CoreRPGTests/Foundry/`) since these are exactly the invariants a future refactor could accidentally weaken.
+- **Severity:** Low (informational)
 
 ---
 
 ## 6. Security
 
-### 6.1 Hardcoded, world-shared TLS pre-shared key for local-network game pairing — STILL OPEN, unchanged
-- **Location:** `Modules/GameRPG/Network/GameSecurity.swift:6-8` (`static let passcode = "GameMasterCode"`); `NWParameter+GameMaster.swift:19-61`; `ListenerManager.swift:124,136-139`.
-- Re-confirmed byte-for-byte unchanged. Independently re-verified this pass that `ListenerManager.newConnectionHandler` hands off any TLS-authenticated connection to the delegate with no additional per-session pairing check, and that no `sessionCode`/`pairingCode`/`joinCode`/`pinCode` mechanism exists anywhere in `GameRPG`.
-- **Action:** Unchanged — derive the PSK from something session-specific (a code shown to the player to type in, exchanged only after user-visible pairing confirmation).
-- **Severity:** High.
+### 6.1 Hardcoded, world-shared TLS pre-shared key allows any local device to join or inject state into any game
+- **Location:** `Modules/GameRPG/Network/GameSecurity.swift:7` (`static let passcode = "GameMasterCode"`); `Modules/GameRPG/Network/NWParameter+GameMaster.swift:21,27-61` (used to build TLS parameters for both `NWListener` and `NWConnection`); `Modules/GameRPG/Network/ListenerManager.swift:124`; `Modules/GameRPG/Browser/BrowserManager.swift:52-135`; `Modules/GameRPG/Controller/MasterController.swift:185-215` (`add`/`accepts(connectionId:sender:)`), `:835-895` (`accepts(_:origin:)`).
+- **What:** The TLS pre-shared key that "authenticates" every Bonjour peer connection derives from a compile-time constant string identical across every install of the app — personally confirmed: `NWParameters(passcode: GameSecurity.passcode)` is used verbatim for both the listener and connection side. `BrowserManager` auto-discovers advertised MasterRPG games over Bonjour and lets a user tap-to-join with no per-session code, PIN, or host-side approval UI — personally confirmed no such field/prompt exists anywhere in `BrowserManager.swift`. `MasterController.accepts(_:origin:)` gates on identity-consistency (a peer can't spoof an existing player/master ID or reuse a role across connections) but has no secondary secret check beyond the TLS handshake completing — any peer that completes the handshake (which only requires knowing the universal hardcoded passcode) is auto-admitted as a legitimate new player via `add(connectionId:playerId:role:)`.
+- **Why:** Any device with MasterRPG installed on the same local network — a coffee shop, a convention hall, a shared office or dorm network — can discover and join a stranger's live game as a player/observer and have its messages processed exactly like an invited player: inject dice results, map pins, chat, or state into a running game it was never invited to. This is a full authentication bypass into another user's live multiplayer session, not merely weak crypto.
+- **Action:** Replace the static PSK with a per-game secret (freshly generated at "Start Game," shown to the host, entered by joining players), and/or add an explicit host-side accept/deny prompt per incoming connection before `add()`/`accepts()` binds a connection to a player identity.
+- **Severity:** Critical
 
-### 6.2 iCloud-container file paths logged with `.public` privacy — NOW FIXED
-- Re-confirmed at all five original sites (`ImportControllable.swift:515,523`, `FileBookmarkController.swift:116`, `FileUrlDataController.swift:131,339`): all now `privacy: .private`.
-- **Severity:** Medium — resolved.
+### 6.2 `aps-environment: development` baked into Release builds of every push-capable target, with zero push-notification code present
+- **Location:** `Resources/MasterRPG.entitlements:5-6`; `Resources/MasterTV.entitlements:5-6`; `Sources/RPGShare/RPGShare.entitlements:5-6`; `MasterRPG.xcodeproj/project.pbxproj` (same entitlements file referenced by both Debug and Release configurations for each target).
+- **What:** All 3 targets declare `aps-environment=development` for both Debug and Release; a repo-wide search found zero uses of `UNUserNotificationCenter`, `registerForRemoteNotifications`, or `PushKit`.
+- **Why:** Dead capability today, but a latent trap — if push is ever wired up without someone remembering to fix this, App Store review can reject the build or Release traffic can silently mis-route to the dev APNs environment; it also forces every provisioning profile to include a push capability the app doesn't use.
+- **Action:** Remove the `aps-environment` key until push is actually implemented, or split Debug/Release entitlements files when that work begins.
+- **Severity:** Medium
 
-### 6.3 Redundant, non-standard `aps-environment` entitlement key — NOW FIXED
-- Re-confirmed: all four entitlements files (`MasterRPG`, `MasterTV`, `RPGShare`, `DiceRollerWidgetExtension`) read in full this pass, no unexpected keys, only the real `aps-environment` key remains.
-- **Severity:** Low — resolved.
-
-### 6.4 No maximum message-length bound in the local-network wire framer — NOW FIXED
-- **Location:** `Modules/GameRPG/Network/GameProtocol.swift` (`handleInput`, `GameProtocol.maximumMessageByteCount`/`isMessageLengthValid(_:)`).
-- **Fix:** `handleInput` now rejects any parsed header whose `length` exceeds a 512,000,000-byte maximum — chosen to match `SharePlayJournalPublicationQueue`'s own outstanding-attachment budget rather than an arbitrary new ceiling — by calling `framer.markFailed(error: .posix(.EMSGSIZE))` and returning before ever calling `deliverInputNoCopy`. The bound check was pulled into a small `static func isMessageLengthValid(_:)` so it's unit-testable without a live `NWProtocolFramer.Instance`; see `Tests/GameRPGTests/GameProtocolTests.swift` (5 tests, including an adversarial `UInt32.max` case) — all passing.
-- **Severity:** High — resolved.
-
-### 6.5 Foundry import: unbounded pack/collection count from the manifest — CPU-exhaustion DoS — NOW FIXED
-- **Location:** `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift` (`collectionSpecs`).
-- **Fix:** The manifest `packs` declaration loop now checks `specs.count <= limits.maximumDocumentCount` after each append and throws `FoundryImportError.tooManyDocuments` past that bound, matching the same incremental-check pattern already used elsewhere in this reader — so a manifest declaring an unbounded number of bogus packs fails fast instead of materializing an unbounded spec list ahead of the (now O(1) per lookup, per §7.4) decode loop. Covered by a new test (`FoundryVTTImportReaderTests.boundsManifestPackDeclarations`) asserting the exact `tooManyDocuments` count — passing, along with the full 39-test Foundry-adjacent suite in `CoreRPGTests`.
-- **Severity:** High — resolved.
-
-### 6.6 Foundry import: unbounded JSON nesting depth — stack-overflow DoS — NOW FIXED
-- **Location:** `Modules/CoreRPG/Foundry/FoundryRuleModels.swift` (`FoundryJSONValue.init(from:)`, `FoundryJSONDepthCounter`, `maximumNestingDepth`); decoder configuration in `FoundryVTTImportReader.swift`, `FoundrySystemPackageReader.swift`, and `UniversalVTTReader.swift`.
-- **Fix:** A reference-type `FoundryJSONDepthCounter` is threaded through each untrusted-JSON entry point's `JSONDecoder.userInfo` (the only channel Codable exposes across the whole recursive decode — a plain local variable can't observe depth across the fresh `init(from:)` call Codable makes per nested element). `init(from:)` increments/decrements it around its body and throws a `DecodingError` past a 128-level cap instead of recursing further. Verified with three new tests in `FoundryRuleModelsTests.swift`: a within-bound 127-level payload decodes normally, and both a 100,000-deep nested-array and nested-object payload are rejected via a catchable `DecodingError` in well under a second (previously a stack-overflow crash) — all passing.
-- **Severity:** High — resolved.
+### 6.3 Untrusted-input hardening — see §5.9
+_Cross-referenced under Bugs since it's a code-correctness finding (bounds-safety), not a new vulnerability._
 
 ---
 
 ## 7. Performance
 
-### 7.1 `NSFetchRequest` without `fetchBatchSize` for tag/link tables — NOW FIXED
-- Re-confirmed at `TagController.swift:39`, `LinkRegisterController.swift:32`: both set `fetchBatchSize = 500`.
-- **Severity:** Medium — resolved.
-
-### 7.2 Full-table reconciliation on every CloudKit deletion notification — NOW FIXED
-- Re-confirmed at `SyncDataControllable.swift:33-38`: iterates `deletedIds` directly.
-- **Severity:** Low — resolved.
-
-### 7.3 Photo/Map thumbnail generation always fully decodes the source image before downsampling — NOW FIXED
-- **Location:** `Modules/PhotoRPG/Controller/CacheController.swift` (`createThumbnail`); `Modules/MapRPG/Controller/CacheController.swift` (`createThumbnail`); shared decode helper in `Modules/CoreRPG/Extensions/Image+AKImage.swift`.
-- **Fix:** Added `AKImage.downsampledThumbnail(from:maxPixelSize:)` / `downsampledThumbnailWithScale(from:maxPixelSize:)`, backed by `CGImageSourceCreateThumbnailAtIndex` + `kCGImageSourceThumbnailMaxPixelSize`, so a thumbnail is decoded directly at a small pixel size instead of at native resolution.
-  - PhotoRPG's `createThumbnail` now reuses an already-cached full image if one exists, otherwise decodes a 256px-max ImageIO thumbnail straight from the source data/URL (no more forced full decode via `createImage`).
-  - MapRPG's `createThumbnail` now calls a new lightweight `PhotoRootModel.fetchPhotoThumbnailSource(for:maxPixelSize:)` that decodes a 1024px-max ImageIO thumbnail plus the scale factor back to the original pixel space, and scales the room's crop rect by that factor before cropping — avoiding a full-resolution map decode just to produce a folder-list preview.
-- **Severity:** Medium — resolved.
-
-### 7.4 Foundry import: O(n×m) linear path lookups for directory-backed (unzipped) imports — NOW FIXED
-- **Location:** `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift` (`FoundryVTTDataSource`); `FoundrySystemPackageReader.swift` (`FoundryPackageDataSource`).
-- **Fix:** Both `.directory` cases now carry a `pathSet: Set<String>` alongside the ordered `paths: [String]` (kept for `.paths`/ordering-sensitive call sites); `contains(path:)` and `data(forPath:)` look up against the set, giving directory-backed imports the same O(1) lookup the ZIP-backed case already had.
-- **Severity:** Medium — resolved.
-
-### 7.5 SharePlay attachment digest recomputed synchronously up to 3× per send — NOW FIXED
-- **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:789-960` (`sendData(_:fileJournal:participantId:)`).
-- **Fix:** `Self.journalMetadata(for: prepared.model)` is now computed once (`journalMetadataForModel`) right after entering the journal-transport block and reused at the former 816/867/952 call sites, instead of re-hashing the same attachment `Data` on each of those branches.
-- **Severity:** Medium — resolved.
+No new performance findings surfaced this pass. The prior audit's five performance fixes — `fetchBatchSize` batching on tag/link tables, incremental (not full-table) CloudKit-deletion reconciliation, ImageIO downsampled thumbnail generation instead of full-resolution decode, O(1) Foundry path lookups for directory-backed imports, and cached (not per-branch-recomputed) SharePlay attachment digests — were not independently re-verified end-to-end this pass; the source files implementing them (`Modules/CoreRPG/Extensions/Image+AKImage.swift`, `Modules/CoreRPG/Foundry/*`, `Modules/GameRPG/SharePlay/RPGSharePlayController.swift`) were read for other purposes during this pass with no contrary evidence found, but that's incidental coverage, not a dedicated performance re-audit. See §11.
 
 ---
 
 ## 8. SwiftUI / UI
 
-### 8.1 `StretchingHeaderView`'s `GeometryReader` — RESOLVED (deleted, unused) — NOW FIXED
-- Re-confirmed absent, no trace anywhere in the repo.
-- **Severity:** Medium — resolved by deletion.
+The SwiftUI layer was checked directly (not via a sub-agent) against the full `swiftui-expert-skill` correctness checklist — state ownership (`@State` seeded from a passed value), `ForEach` identity, deprecated modifiers (`onChange` 1-param, `cornerRadius`, `foregroundColor`, `tabItem`, `NavigationView`), accessibility on icon-only controls, localization (`Text(..., bundle:)`), `GeometryReader` usage, and missing `Equatable` on hot leaf views.
 
-### 8.2 `ExpandableBaseView`'s frame-measurement `GeometryReader` — RESOLVED (deleted, unused) — NOW FIXED
-- Re-confirmed absent.
-- **Severity:** Medium — resolved by deletion.
+### 8.1 Checklist clean sweep — no violations found
+- **Location:** All `Modules/*/View/`, `Root/`, `Menu/`, `LGViews/`, `Sheet/` folders, plus `CoreRPG` shared UI helpers.
+- **What:** Zero occurrences of: deprecated 1-parameter `.onChange(of:)` (out of 255 total `onChange` sites); `.foregroundColor(`; `.tabItem(`; `NavigationView {`; `DateFormatter()`/`NumberFormatter()`/`MeasurementFormatter()`; `String(format:`; `.fontWeight(.bold)`; `ForEach` using `.indices`/`\.offset`/`Array(x.enumerated())`; `Text("literal")` missing a `bundle:` parameter. Only 1 `.onTapGesture()` (legitimately needs `count: 2`). Only 3 `GeometryReader` uses (2 are visionOS `GeometryReader3D`, a distinct necessary volumetric API; the third is the vendored sample file at §4.3). The classic "`@State` seeded from a passed value, never resynced" anti-pattern was checked at all 6 sites where the seeding pattern (`_x = State(initialValue:)` in a custom `init`) appears — each is either explicitly resynced via `.onChange`, or is deliberate modal edit-buffer/one-time-initial-value semantics. Thumbnail row views already apply `.equatable()` at their call sites (`AnyView(ThumbnailPhotoRow(...).equatable())` etc.) before erasure.
+- **Why:** Recording the sweep so the report doesn't read as if this large a surface (all view files) went unreviewed.
+- **Action:** None.
+- **Severity:** Low (informational)
 
-### 8.3 `SharePlayButton`'s hidden `ShareLink` duplicated VoiceOver elements — NOW FIXED
-- Not independently re-tested this pass; no contrary evidence found.
-- **Severity:** Medium — resolved.
-
-### 8.4 `SharePlayButton` nested `Task` inside `Task.detached` — NOW FIXED
-- Not independently re-tested this pass; no contrary evidence found.
-- **Severity:** Low — resolved.
-
-### 8.5 `FoundryRuleImportView.swift`'s filename mismatch — NOW FIXED
-- Not independently re-tested this pass; no contrary evidence found.
-- **Severity:** Low — resolved.
-
-### 8.6 Stale 3D-object rotation base after a remote SharePlay transform update — NOW FIXED
-- **Location:** `Modules/SpaceRPG/Space/SpaceViewer.swift` (`DragRotationModifier`).
-- **Fix:** Replaced the persisted `@State var baseYaw`/`basePitch` (seeded once at modifier-construction time, then only ever resynced from within the drag gesture's own handlers) with a `@State private var dragBase: RotationBase?` captured fresh from the live `yaw`/`pitch` bindings at the start of each drag gesture and cleared once the gesture ends. Since `SpaceViewer.apply(remote:)` writes directly to those same `yaw`/`pitch` bindings, the next local drag now always starts from the current rotation — a remote SharePlay update between gestures is picked up automatically instead of leaving a stale base that snapped the object back on the next local drag. This also resolves the non-private `@State` nit from §8.12 (the properties are gone entirely, not just re-marked `private`).
-- **Severity:** High — resolved.
-
-### 8.7 `ForEach` uses positional `.offset` identity where a stable id exists — NOW FIXED
-- **Location:** `Modules/GeneratorRPG/BasicAI/View/TranscriptEntryView.swift`; `Modules/GeneratorRPG/Root/CharacterGenView.swift`; `Modules/CoreRPG/Editors/QuickLinkEditor.swift`.
-- **Fix:**
-  - `TranscriptEntryView`'s tool-call `ForEach` now keys on `\.element.id` (`Transcript.ToolCall.id`) instead of `\.offset`.
-  - `CharacterGenView`'s entries `ForEach` now keys on `\.self` — `CharacterEntryGenModel` is a `@Generable` FoundationModels schema type, so adding a client-generated `id` would make it part of what the model is expected to produce; its existing `Hashable` conformance gives a content-stable identity instead.
-  - `QuickLinkEditor` now zips `beforeEntries`/`afterEntries` into a private `QuickLinkComparisonPair` (`Identifiable`, `id` = position — `beforeEntries` is only ever seeded once at `init`, so position is genuinely stable here) and renders both rows for a pair inside one wrapping view, so `ForEach` yields exactly one view per iteration instead of a variable 1-or-2 count.
-- **Severity:** Medium — resolved.
-
-### 8.8 Closures stored directly in custom `Environment` key values — NOW FIXED
-- **Location:** `Modules/CoreRPG/ItemList/ItemListActions.swift`; `Modules/CoreRPG/Buttons/FeatureConfig.swift`; `Modules/CoreRPG/Buttons/ControlSharingView.swift`; `Modules/CoreRPG/Model/MapActions.swift`; `Modules/CoreRPG/App/RouterActions.swift`; `Modules/CoreRPG/Model/ItemGeneration.swift`; `Modules/PdfRPG/Model/PdfViewerActions.swift`.
-- **Fix:**
-  - Re-auditing usage first found the 3 keys in `ItemListActions.swift` (`itemListSelectionAction`, `listRowOverlayChildAction`, `toggleSelectionAction`) had **zero call sites anywhere** — deleted outright rather than refactored.
-  - The remaining 7 (`PdfViewerActions`, `MapActions`, `RouteActions`, `SharingFeatureActions`, `SharingControlActions`, `ItemGenerationAction`, `ItemGenerationResultAction`) now conform to `Equatable`, comparing a new `EnvironmentActionIdentity` token (`Modules/CoreRPG/Model/EnvironmentActionIdentity.swift`: `.object(ObjectIdentifier)` for a stable owning root model, `.module(NetworkModules)` for the one `any`-existential-owned case, `.token(UUID)` as a no-benefit-but-no-worse fallback default) instead of comparing the closures themselves (which are never `Equatable`). SwiftUI's environment diffing uses `Equatable` conformance automatically, so a writer that re-supplies a value from the same stable owner now compares equal and no longer force-invalidates every reader.
-  - Each production write site now passes a real stable identity instead of the default: the 3 `QuickEntryEditor.swift` sites pass the owning item's `model.id`; `MapRootModel`/`AppModel`/`GameRootModel`/`GameRoot` pass `.object(ObjectIdentifier(self))` (or `root`/`appModel` at the call site); `ItemGenerationPresentationModifier` passes `.module(root.configurable.module)` since its `root` is an `any` existential with no `AnyObject` constraint.
-- **Severity:** Medium — resolved.
-
-### 8.9 `BattleRoundCard` missing `Equatable` on a hot, live-game-updated list row — NOW FIXED
-- **Location:** `Modules/GameRPG/BattleRound/BattleRoundCard.swift`; `Modules/GameRPG/BattleRound/BattleRoundList.swift` (`ForEach`); `Modules/GameRPG/BattleRound/BattleRoundView.swift`.
-- **Fix:** `BattleRoundCard` now conforms to `Equatable`, comparing `presentation` (already `Equatable`), `controller.root` by reference identity (`===`), and the environment-read `cardLayout` (now that `BattleRoundCardLayout` itself conforms to `Equatable`) — the three action closures are intentionally excluded, since closures are never `Equatable`. `.equatable()` is applied at the `ForEach` call site in `BattleRoundList`. `BattleRoundView` now passes `showCharacter`/`selectHitPoints`/`selectInitiative` as stable private method references instead of fresh closures constructed inline on every `body` evaluation.
-- **Severity:** Medium — resolved.
-
-### 8.10 Color-only state indication with no accessible/text alternative (2 sites) — NOW FIXED
-- **Location:** `Modules/GameRPG/BattleRound/BattleParticipantColumn.swift`; `Modules/MapRPG/Map/MapPinView.swift`.
-- **Fix:** `BattleParticipantColumn`'s avatar button now has an `.accessibilityValue` describing the active-turn/roll-recipient state the halo color otherwise conveys ("Active turn", "Selected roll target", both, or "Not active"). `MapPinView`'s `pinAccessibilityValue` now appends "Active Battle Attacker" to the existing shown/dead/highlighted description when `isActiveBattleAttacker` is true, mirroring the pattern already used for the other states.
-- **Severity:** Medium — resolved.
-
-### 8.11 `@State` seeded once from a passed entry's content, never resynced — NOW FIXED
-- **Location:** `Modules/TableRPG/View/TableGenerationRootView.swift` (`TableGenerationEntryRow`).
-- **Fix:** Re-verified against current source (unrelated to this pass's other fixes — landed separately in commit `5bc87c77`, "fix for the table"): `TableGenerationEntryRow` now has `.onChange(of: entry.content) { _, newContent in contentModel.reset(text: newContent) }`, and `LinkHighlightTextModel.reset(text:)` correctly invalidates its caches and bumps the `@Observable` `updated` UUID, so a later regeneration/edit that replaces `entry.content` for the same row identity is picked up instead of the row keeping its original text.
-- **Severity:** Medium — resolved.
-
-### 8.12 Minor SwiftUI nits found this pass — NOW FIXED (grouped)
-- **Non-private `@State`:** `Modules/SpaceRPG/Space/SpaceViewer.swift` (`DragRotationModifier`'s `baseYaw`/`basePitch`) — resolved by §8.6's fix (the properties no longer exist; their replacement, `dragBase`, is `private`).
-- **Fixed-width + `lineLimit(1)` on unbounded user text:** `Modules/GameRPG/BattleRound/BattleParticipantColumn.swift` — `Text(combatant.name).frame(maxWidth: 90)` is now `@ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90`, so the cap scales with Dynamic Type, plus a `.help(Text(verbatim: combatant.name))` fallback exposing the untruncated name.
-- **Severity:** Low (both) — resolved.
+### 8.2 `AnyView` pervasive at the `ViewControllable` protocol boundary — architecturally justified
+- **Location:** `Modules/CoreRPG/Controllable/ViewControllable.swift:58-84` (protocol requirements); implementations in all 10 modules' `Controller/ViewController.swift`.
+- **What:** ~45 of the ~50 repo-wide `AnyView` occurrences are return-type erasure at a cross-module protocol boundary, where each module's `ViewController` must return a common `AnyView` because the concrete SwiftUI view type differs per conforming module — Swift protocols can't express a per-conformance `some View` return.
+- **Why:** No `some View`-based alternative exists for this heterogeneous-return protocol-registry design; not an oversight.
+- **Action:** None on the protocol-boundary uses. The remaining ~5 non-boundary occurrences (dead wrapper types + 1 commented block) are dead code — see §9.1.
+- **Severity:** Low (informational)
 
 ---
 
 ## 9. Dead code / duplication / refactor
 
-### 9.1 Files to delete outright — housekeeping note re-confirmed, unchanged
-- `Modules/DiceRPG/0-Old/` and `Modules/SpaceRPG/0-Old/SpaceQuickLook.swift` re-confirmed **live** by all three background agents this pass (independently, via direct reads and cross-reference greps, not `project.pbxproj` text) — still not dead, still not deleted. `Modules/CoreRPG/DeleteMe/` confirmed still absent (no regression).
-- **Severity:** Low (housekeeping/lesson) — no change.
+### 9.1 Files/blocks to delete outright
+- `Modules/CoreRPG/Controllable/RowViewerWrapper.swift`, `ThumbnailRowViewWrapper.swift`, `SharingViewWrapper.swift`, `LinkListViewWrapper.swift`, `InlineEditRowViewerWrapper.swift` — 5 `Equatable`-wrapping `View` structs whose doc comments claim to "eliminate AnyView overhead," but personally confirmed via grep to have **zero call sites** anywhere outside their own declaration file. They wouldn't actually eliminate `AnyView` from the protocol boundary either way (the wrapped `controller.rowViewer(...)` call still returns `AnyView` internally) — the real call sites already solve the equatable-diffing problem a different, working way (`.equatable()` applied to the concrete view *before* erasure, e.g. `AnyView(ThumbnailDiceRow(...).equatable())`). Genuinely abandoned code from an incomplete migration attempt.
+- `Modules/CoreRPG/ItemViews/QuickEditorAction.swift:54` — commented-out `AnyView(...)` block.
+- **Severity:** Low (clean up; ~150 LOC removed)
 
-### 9.2 Commented-out dead implementations — NOW FIXED
-- Re-confirmed: no commented-out dead code blocks found in `CRDT.swift`, `LinkRegisterController.swift`, `GlasseffectAll.swift`, `ObjectCache.swift`, `SpaceViewer.swift` (the `SpaceViewer.swift` TODO left by the prior fix is confirmed still the *only* TODO-class marker in the entire non-test codebase — see §9.16 note).
-- **Severity:** Medium — resolved.
+### 9.2 `SyncDataController.swift` duplicated byte-for-shape-identical across 12 modules
+- **Locations:** `Modules/{Adventure,Audio,Character,Dice,Generator,Map,Pdf,Photo,Space,Table,Weather}RPG/Controller/SyncDataController.swift` (21 lines each, identical) and `Modules/RuleRPG/Controller/SyncDataController.swift` (29-line variant). Personally diffed all 12: every file declares the identical `struct SyncDataController: Sendable` with the same 4 stored properties and the same `@MainActor init` body, differing only in the Core Data entity type passed to `changeObserver.observeCoreDataChanges(from:entity:handler:)` (`RPGAdventure.entity()` vs `RPGRule.entity()` vs `RPGDice.entity()`, etc.).
+- **Action:** Add a generic default via a `SyncDataControllable` protocol-extension initializer parameterized by the entity type, following the same pattern already proven for `FolderListControllable.copiedListDependencies` and `ExportControllable.bfsExportResults`/`finalizeExportResults` (both already-completed instances of exactly this refactor — see §10.1). Any change to the init logic currently requires editing 12 files identically.
+- **Severity:** Medium
 
-### 9.3 Two test methods disabled via comments — PARTIALLY FIXED
-- `Tests/GameRPGTests/InAppControllerTests.swift` — **NOW FIXED.** `storeKitConfigurationIsValid()` is uncommented and passing. It previously located `MasterRPG.storekit` via a fragile `#filePath`-relative walk up from the test file's own on-disk location (3 `.deletingLastPathComponent()` calls into `Modules/RolePlayGameKit/InApp/`) — brittle if the test file ever moved, and it wasn't reachable as a bundled resource at all. The `.storekit` file is now also present at `Resources/RPGResources/Resources/MasterRPG.storekit` (a copy — the original at `Modules/RolePlayGameKit/InApp/MasterRPG.storekit` is left in place since the `MasterRPG` scheme's `StoreKitConfigurationFileReference` points at that exact path for local Simulator runs). `RPGResources` is a `PBXFileSystemSynchronizedRootGroup`-backed target, so the copy needed no `.pbxproj` edits to become a bundled resource. The test now resolves it via `RPGResources.Resources.bundle.url(forResource:withExtension:)` (module-qualified — `CoreRPG`, `RPGResources`, and `RolePlayGameKit` each declare their own `Resources` type, so the bare name is ambiguous once `RPGResources` is imported). Verified: full `GameRPGTests` suite (469 tests) passes; iOS/macOS/visionOS/tvOS all build.
-- `Tests/AdventureRPGTests/AppIntentTests.swift:13-40` — still open, out of scope for this fix (unrelated test, not touched).
-- **Severity:** Medium — half resolved.
+### 9.3 `CacheController` struct skeleton duplicated across 4 modules
+- **Locations:** `Modules/PhotoRPG/Controller/CacheController.swift:6-18`, `Modules/PdfRPG/Controller/CacheController.swift:10-22`, `Modules/SpaceRPG/Controller/CacheController.swift:6-18`, `Modules/MapRPG/Controller/CacheController.swift:17-33` (MapRPG a near-identical variant).
+- **What:** The `createThumbnail` method bodies were already centralized in a prior pass (`AKImage.quickLookThumbnail`, `cacheThumbnail(_:for:)`), but the surrounding property/init skeleton (`imageCacheController`, `thumbnailCacheController`, `fileUrlDataController`/`photoRoot`, `observableImageCache`) is still hand-duplicated identically.
+- **Action:** Extract a `struct BaseCacheController` or default memberwise init in `Modules/CoreRPG/Controllable/ImageCacheControllable.swift`, leaving only `createThumbnail`'s module-specific body per conformer.
+- **Severity:** Low
 
-### 9.4 `ExportController.exporting(itemIds:)` BFS traversal duplicated across 7+ modules — NOW FIXED
-- **Location (before):** `Modules/{Pdf,Dice,Generator,Photo,Space,Audio}RPG/Controller/ExportController.swift` (byte-for-byte identical skeleton apart from a module-name string, plus — found this pass — Photo/Space/Audio used their own aliased field name, `entryId.photoId`/`.spaceId`/`.audioId`, instead of the canonical `entryId.childId` the other three used, and skipped the `if item.specialCategory` gate the other three had; both differences turned out to be behaviorally inert, not real divergence — see below); `CharacterRPG`/`AdventureRPG`/`MapRPG`/`TableRPG`/`WeatherRPG` layered per-link-type dispatch onto the same underlying skeleton.
-- **Fix — a shared BFS helper, not a full rewrite to `RuleRPG`'s pattern:** `RuleRPG`'s independently-rewritten `ExportController.swift` (table-driven, `rootManager.rootModel(for:)` dispatch) was considered as a template but rejected for the other 11 modules — Rule items reference other items via free-text markdown links (`LinkReplaceController.links(for:)`), while every other module has its own typed link fields (`diceId`, `photoId`, `mapPins`, per-entry `LinkReplaceModel` switches, …); forcing all 11 onto Rule's exact shape would mean re-deriving each module's real link-validation logic from scratch, in the highest-stakes correctness-sensitive part of the app (save-game export/import). Instead, added two generic helpers to `ExportControllable`'s protocol extension (`Modules/CoreRPG/Controllable/ExportControllable.swift`): `bfsExportResults(seedIds:visit:)` owns the id-level `checkIds`/`results` while-loop, the "not found → log and skip" branch, and the visited/queued dedup that every module had inlined slightly differently; `finalizeExportResults(_:into:)` owns the shared tail (`exportingFolder` + stamping the module's resolved ids + merging partial-folder ids). Each module's own per-item logic — same-module child-walking, cross-module link validation, `specialCategory` gating, per-entry `LinkReplaceModel` switch dispatch — moved *verbatim* into the `visit` closure passed to `bfsExportResults`, with cross-module id accumulators (`diceIds`, `photoIds`, …) captured exactly as they were as local `var`s, not restructured. This is a mechanical "extract method" refactor, not a behavioral rewrite.
-- **All 11 duplicate modules migrated** (`PdfRPG`, `DiceRPG`, `GeneratorRPG`, `PhotoRPG`, `SpaceRPG`, `AudioRPG`, `WeatherRPG`, `CharacterRPG`, `AdventureRPG`, `MapRPG`, `TableRPG`); `RuleRPG` untouched (already a legitimate one-off, not part of the duplication). Net effect: ~700 lines of duplicated BFS/dedup bookkeeping collapsed into the two shared helpers plus 11 short `visit` closures containing only each module's genuinely distinct logic.
-- **The two behavioral non-differences confirmed, not assumed:** `entryId.childId` is a protocol requirement (`EntryDataAccessable`) that `PhotoEntryModel`/`SpaceEntryModel`/`AudioEntryModel` each implement as a plain computed alias for their own `photoId`/`spaceId`/`audioId` (e.g. `public var childId: UUID { photoId }`) — same value, confirmed by reading each entry model, not inferred. Normalized all 11 modules to use `entryId.childId` uniformly. The `specialCategory` gate (`category == .folder || category.isCollection`) was preserved *per module exactly as before* rather than assumed equivalent — each module's `visit` closure still gates (or doesn't) exactly as its original inline code did; this fix didn't bet on the two being interchangeable.
-- **One dead-weight discrepancy fixed along the way:** `MapRPG`'s `.map`-link case previously re-implemented the same dedup check (`!(results.contains($0.itemId) || checkIds.contains($0.itemId))`) inline that `bfsExportResults` now does generically — dropped, no behavior change, since the generic dedup covers it.
-- **Verified:** all 4 platforms (iOS/macOS/visionOS/tvOS) build clean; 1268 tests pass across all 11 migrated modules' full test suites (including `ExportControllerTests` for each — 13 tests for `CharacterRPG`, 10 for `TableRPG`/`PhotoRPG`, 5 for `MapRPG`, others 2-3), plus 469 `GameRPGTests` (including full save-game round-trip integration tests spanning every module) — 0 failures throughout.
-- **Severity:** High — resolved.
+### 9.4 Retry-delay array triplicated in one file
+- **Location:** `Modules/GameRPG/SharePlay/SharePlayJournalPublicationQueue.swift:461-465, 509-513, 764-768`, versus the file's own reusable `SharePlayAttachmentLoadRetry.defaultRetryDelays` at `:1046-1050`.
+- **What:** The exact same 4-element `[Duration]` retry-delay literal (`[.milliseconds(250), .seconds(1), .seconds(2), .seconds(5)]`) appears verbatim in 3 different cleanup-retry loops, while a structurally similar, already-reusable retry helper exists in the same file.
+- **Action:** Hoist to a single named constant and reference it from all 3 sites, mirroring `SharePlayAttachmentLoadRetry`'s existing pattern (visible proof the codebase already knows this fix — `RPGSharePlayController.swift:659`'s `journalAddTimeout` is a good counter-example of the pattern done right).
+- **Severity:** Low
 
-### 9.5 `DetailFolderListView.overlayContent` copy-pasted across 11 modules — NOW FIXED
-- **Location:** all 11 modules' `View/DetailFolderListView.swift`; shared helper in `Modules/CoreRPG/Model/OpenFileWindowModel.swift`.
-- **Fix:** Added a `View.openFileWindowOverlay(_:viewer:)` extension in CoreRPG that owns the shared "check `showItem`, extract `itemId`, dismiss by resetting `showItem`" wiring every module's `overlayContent` duplicated. Each module's own `root.viewController.viewer(root:itemId:configuration:dismissAction:)` call still varies per module (different `ViewerConfiguration`, and PdfRPG's extra `entryId`/`onTextExtracted` params) so only the surrounding overlay logic is shared, not the viewer call itself — a full generic abstraction isn't possible since each module's `viewController` type and call signature genuinely differ. `RuleRPG`'s previously-inlined body now uses the same helper. Verified with iOS/macOS/visionOS/tvOS builds and the full per-module test suites.
-- **Severity:** Medium — resolved.
+### 9.5 `RouteRouteDestionationView` / `ExtendedTabRouteDestionationView` — "Destionation" typo in both filename and type name, live and referenced from generated snapshot tests
+- **Location:** `Modules/RolePlayGameKit/Router/RouteRouteDestionationView.swift:22`, `Modules/RolePlayGameKit/Router/ExtendedTabRouteDestionationView.swift:19`; called from `Modules/RolePlayGameKit/Router/RootRoute.swift:114`, `Modules/RolePlayGameKit/Router/ExtendedTabRoute.swift:65`; test names in `Tests/GameRPGSnapshotTests/RolePlayGameKitGeneratedPreviewSnapshotTests.swift:53-86`.
+- **What:** Both filename and struct name misspell "Destination" as "Destionation"; `RouteRouteDestionationView` additionally doubles the word "Route."
+- **Why:** Larger blast radius than previously-fixed filename typos, since filename and type name agree with each other (both wrong the same way), so a filename-vs-type-mismatch sweep wouldn't catch it.
+- **Action:** Rename both types to `RouteDestinationView`/`ExtendedTabRouteDestinationView`, update the 2 call sites plus snapshot-test names/comments.
+- **Severity:** Low
 
-### 9.6 `CacheController.generateThumbnail` QuickLook wrapper duplicated (SpaceRPG/PdfRPG) — NOW FIXED
-- **Fix:** Extracted the identical `QLThumbnailGenerator` wrapper into `AKImage.quickLookThumbnail(for:size:scale:removeWhiteBackground:)` in `Modules/CoreRPG/Extensions/Image+AKImage.swift`. Both modules' `CacheController.createThumbnail` now call the shared helper with their own `size`/`removeWhiteBackground` values instead of each declaring a byte-for-byte-identical `static func generateThumbnail(for:)`.
-- **Severity:** Medium — resolved.
+### 9.6 Stale renamed-pair artifact: `OldDiceBag` snapshot test still names the pre-rename symbol
+- **Location:** `Tests/DiceRPGSnapshotTests/DiceRPGGeneratedPreviewSnapshotTests.swift:128-134`.
+- **What:** Today's rename commit (`fa5c4ec3`, "renamed --> old are not old anymore") moved `Modules/DiceRPG/0-Old/Editor/OldDiceBag.swift` → `Modules/DiceRPG/Game/Editor/GameDiceBag.swift`, but this generated snapshot test's comment (`// snapshot-root: DiceRPG::OldDiceBag`), test name (`@Test("OldDiceBag")`), and function name (`func snapshotOldDiceBag()`) still say "OldDiceBag," while the body correctly calls `DiceRPG.GameDiceBag { _ in }`.
+- **Action:** Rename the test/comment to `GameDiceBag`; re-run whatever generates `*GeneratedPreviewSnapshotTests.swift` so future regeneration doesn't reintroduce the stale name.
+- **Severity:** Low
 
-### 9.7 Minor duplicated `saveToDisk`/`setObject` tail in four modules' `CacheController` — NOW FIXED
-- **Fix:** Added `ImageCacheControllable.cacheThumbnail(_:for:)` (persists to disk + in-memory cache, no-op on `nil`) in `Modules/CoreRPG/Controllable/ImageCacheControllable.swift`. Pdf/Photo/Map/SpaceRPG's `createThumbnail` now end with `await cacheThumbnail(thumbnail, for: itemId)` instead of the repeated `if let thumbnail { ...2 lines... }` block.
-- **Severity:** Low — resolved.
+### 9.7 Stale `/0-Old/` path exclusions left in verification scripts after the rename
+- **Location:** `Scripts/verify_localization.rb:340` (`return if relative.include?("/0-Old/")`), `Scripts/verify_accessibility.rb:17` (`.reject { |path| path.to_s.include?("/0-Old/") }`).
+- **What:** Both scripts special-case-skip any path containing `/0-Old/`, but no `0-Old` directory exists anywhere post-rename (confirmed repo-wide; only these 2 scripts plus 2 doc files still mention it).
+- **Action:** Remove the now-unreachable exclusion branches from both scripts; update the 2 stale doc mentions (`Tests/SNAPSHOT_GENERATION_REPORT.md`, `Docu/SNAPSHOT_GENERATION_REPORT.md`).
+- **Severity:** Low
 
-### 9.8 `FolderListController.copy(listModel:)` boilerplate repeated in 12 modules — NOW FIXED
-- **Fix:** Added `FolderListControllable.copiedListDependencies` (derives the fresh `listDisplayModel` + matching copied `searchRootControllable` every module computed identically) in `Modules/CoreRPG/Controllable/FolderListControllable.swift`. Each module's `copy(listModel:)` now reads `let dependencies = copiedListDependencies` instead of recomputing `listDisplayModel.newListDisplayModel` twice inline. Each module still constructs its own concrete `FolderListController` directly (rather than a fully generic protocol-extension default) since `FakeFolderListController` in CoreRPG's test fixtures has a materially different initializer shape (different parameter order, a stored `searchModel`) that a shared `init` requirement would have broken.
-- **Severity:** Low — resolved.
+### 9.8 `#if InitializeCloudKitSchema` guards a print-only path with no build setting ever defining the flag
+- **Location:** `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift:109-117`.
+- **What:** Custom compilation flag `InitializeCloudKitSchema` is never set in any scheme or `.xcconfig` (confirmed via grep of `project.pbxproj` and all xcconfigs) — the `#if` branch (including 2 `print()` calls) is unreachable in every configured build.
+- **Action:** Document as a manual local-only developer escape hatch (comment explaining how to enable it for a one-off CloudKit-schema push), or move it to a script instead of a permanently-disabled compiler flag.
+- **Severity:** Low
 
-### 9.9 `"Documents"` path component hardcoded independently — NOW FIXED
-- **Fix:** `CloudDocumentController.documentDirName` (previously `private`) is now module-visible. The 5 remaining literal `"Documents"` occurrences — `LocationFileManager.swift` (×3: `rootAppCloud`, `rootNewCloud`, the `pathComponents.firstIndex(of:)` check), `FoundryImportArchive.swift`, `ExternalImportSourceRegistry.swift` — now reference `CloudDocumentController.documentDirName` instead of re-hardcoding the literal.
-- **Severity:** Low — resolved.
+### 9.9 Oversized files >800 lines (34 total)
+- **Location (largest production files, all personally spot-checked for MARK coverage):**
+  - `Modules/GameRPG/Controller/PlayerController.swift` — 3,841 lines. `PlayerControllerModel` (60-970, no MARKs) and `PlayerController` (971-3841) are two responsibilities in one file; MARKs exist at 1004, 1068, 1527, 1971, but lines ~1995-3841 (~1,846 lines) have no further breakdown.
+  - `Modules/GameRPG/Controller/MasterController.swift` — 2,666 lines, clean MARK boundaries at 486, 582, 832 (spans to 2291, ~1,460 unmarked lines), 2293, 2320.
+  - `Modules/RolePlayGameKit/Import/Foundry/FoundryVTTDomainMapper.swift` — 2,572 lines, 7 MARKs already present (good split seams exist).
+  - `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift` — 2,432 lines, zero MARKs.
+  - `Modules/GameRPG/SharePlay/RPGSharePlayController.swift` — 2,464 lines, zero MARKs; only 2 top-level extensions span almost the whole file.
+  - `Modules/CoreRPG/Foundry/FoundrySystemPackageReader.swift` — 1,215 lines, zero MARKs.
+  - `Modules/GameRPG/Network/GameNetworkController.swift` — 1,182 lines, 7 clean MARKs.
+  - `Modules/GameRPG/SharePlay/SharePlayJournalPublicationQueue.swift` — 1,074 lines, zero MARKs, 6 distinct top-level types.
+  - `Modules/GeneratorRPG/Controller/GeneratorController.swift` — 1,037 lines.
+  - `Modules/GameRPG/Model/GameNetworkModel.swift` — 1,018 lines (includes intentionally-retained `GameNetworkModelV1`/`GameConfigModelV1` legacy wire-format types at 684-739 — legitimate backward compat, not dead code).
+  - `Modules/CoreRPG/Sheet/SheetRootModel.swift` — 1,009 lines.
+  - `Modules/CoreRPG/Import/ExternalImport.swift` — 1,003 lines, zero MARKs.
+  - Plus 12 more production files 700-870 lines (`FoundryImportView.swift` 866, `RuleModel.swift` 851, `FoundryRuleModels.swift` 826, `MasterRPGTips.swift` 816, `MapOverlayGeometry.swift` 815, `EditController.swift` [CharacterRPG] 808, `GameRootModel.swift` 783, `SpaceViewer.swift` 752, `MapModel.swift` 742, `GameEquipment.swift` 741, `SearchController.swift` 718, `MapEditorModel.swift` 711), and oversized test files (`SharePlayPackageTransportTests.swift` 4,082, `MasterPlayerControllerTests.swift` 2,267, `NetworkStoreTests.swift` 1,999, `MasterControllerConnectionTests.swift` 1,423).
+- **Action:** Prioritize `PlayerController.swift` (mechanical split into `PlayerControllerModel.swift` / `PlayerController.swift` / `PlayerController+ProxyDelegate.swift` along its existing MARKs). Add MARK comments *first* to the zero-MARK files >1,000 lines before attempting a split (`FoundryVTTImportReader.swift`, `RPGSharePlayController.swift`, `SharePlayJournalPublicationQueue.swift`, `ExternalImport.swift`, `FoundrySystemPackageReader.swift`) — none of them can be safely split until logical sections are demarcated. `MasterController.swift`, `GameNetworkController.swift`, and `FoundryVTTDomainMapper.swift` already have clean MARK seams and can be split into `+ExtensionName.swift` files mechanically today.
+- **Severity:** Medium (top 3-4: `PlayerController.swift`, `RPGSharePlayController.swift`, `FoundryVTTImportReader.swift`, `SharePlayJournalPublicationQueue.swift`), Low (rest)
 
-### 9.10 iCloud container identifier string literal duplicated — NOW FIXED
-- **Fix:** `FileManager.cloudContainerIdentifier` (`Modules/CoreRPG/App/AppGroup.swift`) is now the single declaration of `"iCloud.de.andretrettin.gamemaster"`; `FileManager.cloudURL`'s own use of it and `CloudKitCoreDataPersistenceController.cloudKitContainerIdentifier` both reference that constant instead of independently hardcoding the string.
-- **Severity:** Low — resolved.
+### 9.10 `print()` calls not behind `#if DEBUG` or a logging wrapper — 56 sites across 30 files
+- **Location (top offenders):** `Modules/DiceRPG/Space/DiceSpaceModel.swift:84,202,203,208,218,231,285` (7); `Modules/PhotoRPG/Space/Spatial3DImageState.swift:37,48,77,83,87,91` (6); `Modules/PhotoRPG/Space/OrnamentsView.swift:15,29,34,40` (4); `Modules/DiceRPG/Space/HandTrackingModel.swift:29,37,47,80` (4); `Modules/PhotoRPG/Space/ImagePresentationView.swift:29,44,52` (3); `Modules/CoreRPG/Debug/DumpEnvironment.swift:27,29,30` (3, named "Debug" — likely intentional dev tool, lowest priority); `Modules/SpaceRPG/Space/SpaceViewer.swift:441,447` and `Modules/SpaceRPG/Space/RealityView+CameraTracking.swift:21,23` (2 each); `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift:114,116` (gated by the never-defined `InitializeCloudKitSchema` flag — see §9.8, not `#if DEBUG`); `Modules/AudioRPG/Audio/AudioPlayerSession.swift:63,73`; `Modules/CoreRPG/ViewModifiers/RemoveItemViewModifier.swift:40,45`; 18 more files with 1 site each, including `Modules/{Adventure,Character,Map}RPG/Controller/ExportController.swift` (each prints `"*** ERROR table \(item.name) export is not handling link \($0)"`, echoing user-authored campaign content to the console in shipped builds).
+- **Why:** Console noise in Release builds; the 3 `ExportController` sites leak user-created content strings; the Space/AR-tracking files account for over a third of all sites. The codebase already has an established `Logger`/`os.log` convention (`Modules/CoreRPG/Debug/Logging.swift:18`, `CoreDataController.swift:506`, `FilePersistenceController.swift:135`), so these `print()` sites are inconsistent with the project's own established pattern, not a greenfield gap.
+- **Action:** Route through existing `Logger` categories or wrap in `#if DEBUG`. Consider a SwiftLint custom rule banning bare `print(` in non-test targets — a prior pass already made this exact recommendation when the count was lower (51/24), suggesting the rule was never added; see §10.4.
+- **Severity:** Low-Medium
 
-### 9.11 Oversized files (>500 lines) — STILL OPEN, fresh count + 3 new large files
-- Fresh sweep: **50** non-test files over 500 lines (was 51). None of the 9 previously-named files (`GameNetworkController.swift`, `SharePlayJournalPublicationQueue.swift`, `GeneratorController.swift`, `GameNetworkModel.swift`, `SheetRootModel.swift`, `ExternalImport.swift`, `RuleModel.swift`, `MasterRPGTips.swift`, `MapOverlayGeometry.swift`) were split.
-- **New:** the 3 Foundry VTT import files added since the last audit are now the 3rd/5th/7th-largest files in the repo — `FoundryVTTDomainMapper.swift` (2,572), `FoundryVTTImportReader.swift` (2,421), `FoundrySystemPackageReader.swift` (1,213) — none were named in the prior top-10.
-- **New split guidance:** `PlayerController.swift` is actually two responsibilities in one file — `PlayerControllerModel` (lines 60-970, no MARKs) and `PlayerController` (971-3846, only 4 MARKs, with lines 1976-3846 spanning ~1,870 unmarked lines) — minimum viable split is `PlayerControllerModel.swift` / `PlayerController.swift` / `PlayerController+ProxyDelegate.swift`. `MasterController.swift` and `GameNetworkController.swift` already have clean MARK boundaries (5 and 8 respectively) that make a mechanical split straightforward. `ExternalImport.swift`, `MasterRPGTips.swift`, `MapOverlayGeometry.swift`, `SharePlayJournalPublicationQueue.swift`, `RPGSharePlayController.swift`, `FoundryVTTImportReader.swift` have **zero** MARK comments despite being 741-2,447 lines — MARK annotation is a prerequisite before any split is easy to reason about.
-- **Action:** Prioritize `PlayerController.swift` (7.5× the threshold, two responsibilities) and the 3 new Foundry files.
-- **Severity:** Medium (top few), Low (rest).
+### 9.11 `Docu/CoreRPG` documentation file is missing its `.md` extension
+- **Location:** `Docu/CoreRPG` (26,159 bytes).
+- **What:** Every other file in `Docu/` uses `.md` except this one, an LLM-oriented documentation file for the CoreRPG module.
+- **Why:** Won't render as Markdown in editors/GitHub that rely on the extension; the bare name also collides visually with the `Modules/CoreRPG` directory.
+- **Action:** Rename to `Docu/CoreRPG.md` (or a more descriptive name to avoid the module-name collision).
+- **Severity:** Low
 
-### 9.12 `print()` calls not behind `#if DEBUG` — STILL OPEN, improved
-- Fresh sweep (excluding `MyAiPlayground.swift`'s `#Playground` prints, correctly not a real issue): **51 sites across 24 files** — down from 70/29, so partial cleanup landed since the last audit, but the same top offenders remain: `DiceSpaceModel.swift` (7), `Spatial3DImageState.swift` (6), `HandTrackingModel.swift` (4), `OrnamentsView.swift` (4), `CloudKitCoreDataPersistenceController.swift` (2, gated by a custom `#if InitializeCloudKitSchema` flag, not `DEBUG`), `ExportedRPGData.swift` (2).
-- **Action:** Wrap in `#if DEBUG` or route through the existing `Logger` categories.
-- **Severity:** Low-Medium.
+### 9.12 Commented-out disabled test in `AdventureRPG`
+- **Location:** `Tests/AdventureRPGTests/AppIntentTests.swift:13-43`.
+- **What:** Two entire `@Test` methods (`shortcutCatalogKeepsPublishedBudget`, `entityQueryLimitsPickerResultsWithoutLimitingFullIndex`) are commented out line-by-line — the only run of commented-out code in the whole non-Playground codebase (the `#Playground` scratch file `Modules/GeneratorRPG/Playground/MyAiPlayground.swift` is Xcode Playgrounds code, never compiled into a shipping target, and not counted as dead code).
+- **Action:** Either restore/fix these two tests (likely broken by an `AppDependencyManager`/entity-query API change) or delete them outright instead of leaving them commented.
+- **Severity:** Low
 
-### 9.13 Filename typos — NOW FIXED (see §9.19 for one missed this pass)
-- Re-confirmed: `InspectorUnavailableView.swift`, `GameEquipment.swift`, `TaggedPreferenceKey.swift` all correctly renamed and present; no reversion.
-- **Severity:** Low — resolved.
+### 9.13 29 in-code comments reference the now-deleted `Docu/CODE_AUDIT.md` by its old section numbers
+- **Location:** e.g. `Modules/CoreRPG/Extensions/Image+AKImage.swift:237`, `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:1930`, `Modules/CoreRPG/App/AppGroup.swift:27` — 29 files total (`grep -rln "CODE_AUDIT" --include="*.swift" .`).
+- **What:** A prior `Docu/CODE_AUDIT.md` (same skill/numbering scheme, dated 2026-08-09) is staged for deletion in the working tree (not yet committed) as of this session's start. 29 source files still carry `// See CODE_AUDIT §X.Y`-style comments pointing at that document's section numbers.
+- **Why:** This new report is a fresh document with independent numbering — those in-code references will now point at nothing once the old file is actually gone (or at stale numbers if it's kept around). Either outcome quietly breaks a trail future readers would otherwise follow.
+- **Action:** Decide whether the old `Docu/CODE_AUDIT.md` deletion should be committed (in which case, sweep the 29 comments to either remove the dangling reference or repoint to this report's equivalent section), or keep both documents side-by-side with a note distinguishing them.
+- **Severity:** Medium (process/continuity, not a code defect)
 
-### 9.14 CoreRPG had both a `View/` and `Views/` folder — NOW FIXED
-- Re-confirmed: only `Modules/CoreRPG/Views/` exists.
-- **Severity:** Low — resolved.
+### 9.14 TODO marker — only one in the entire non-test codebase
+- **Location:** `Modules/SpaceRPG/Space/SpaceViewer.swift:246`.
+- **What:** `// TODO(visionOS): auto-fit the loaded model to the volumetric window's bounds...` inside `#if os(visionOS)`. A repo-wide sweep found zero `FIXME`/`HACK`/`XXX`/`#warning` markers anywhere.
+- **Action:** None required beyond normal backlog tracking; confirms near-zero TODO-marker debt.
+- **Severity:** Low (informational)
 
-### 9.15 Documented module folder structure doesn't match actual practice — STILL OPEN, unchanged
-- Re-confirmed against all checked modules — CLAUDE.md still implies a literal "Module" folder name that no module uses.
-- **Severity:** Medium (documentation/process debt).
-
-### 9.16 Ad-hoc magic constants — NOW FIXED (JPEG quality + loop rationale; thumbnail/pin sizes left as-is)
-- **Fix (JPEG quality):** Added `Image+AKImage.swift`'s `public enum JPEGQuality` with three named tiers — `.transport` (0.5, used by `PlayerController.send(screen:responseCounter:)`'s network mirroring), `.cachedThumbnail` (0.8, `ObjectCache.saveImageToDisk`), `.export` (0.9, `ExportControllable.inlineFiles`, `PreviewAssetFixture.photoFileUrl`, `PhotoRPG/EditController.convert`/`resetPhoto`). All 6 literal-float call sites now reference the named constant instead of a bare number; the three values themselves are unchanged (they genuinely serve different purposes, not one unified number).
-- **Fix (loop rationale):** Added a one-line rationale comment above each of the three previously-unexplained loop bounds — `FoundryLevelDBReader.swift` (`0..<8`: standard CRC-32, one shift/XOR step per bit of the byte just mixed in), `ThemeColor.swift` (`0..<24`: binary-search bisection converges to ~1/2^24 precision, far finer than any visible color difference), `LinkReplaceController.swift` (`counter < 100`: sanity cap for a pathological case, not an expected count).
-- **Not changed:** thumbnail/pin sizes (64×64, 128×128, 210×297, 393×350) are left hardcoded per call site — the audit's own finding didn't specify a consolidation target, and the sizes are genuinely different per context (list thumbnail vs. detail vs. map pin), so unifying them wasn't attempted.
-- **Confirms prior "1 TODO hit" finding:** repo-wide sweep this pass found exactly the same single TODO-class marker anywhere in non-test code, `SpaceViewer.swift:247` — a legitimate, well-scoped backlog item, not a quality problem.
-- **Severity:** Low — resolved.
-
-### 9.17 `MessageMapper` — an existing shared protocol — hand-duplicated by 16 of 17 conformers — NOW FIXED
-- **Location (before):** `Modules/GameRPG/Model/MessageMapper.swift` (protocol, internal to GameRPG, no default extension); hand-rolled implementations across `PdfRPG`, `PhotoRPG`, `AudioRPG`, `SpaceRPG` (×2 types), `MapRPG` (×4 types), `DiceRPG`, `CoreRPG` (×4 types) — 16 non-conforming types plus `GameNetworkModel` (the sole existing conformer) — 17 total.
-- **Fix — relocated, not just extended:** The protocol couldn't stay in `GameRPG` and simply gain a default extension: `GameRPG` sits *above* `PdfRPG`/`PhotoRPG`/`AudioRPG`/`SpaceRPG`/`MapRPG`/`DiceRPG`/`CoreRPG` in the dependency graph (they don't import it, and importing it back would be a cycle), so those modules' types could never have conformed to a `GameRPG`-internal protocol regardless of a default extension. Moved to `Modules/CoreRPG/Model/MessageMapper.swift` as `public protocol MessageMapper: Sendable`, which every affected module already depends on, with `public extension MessageMapper where Self: Codable` providing the mechanical `guard let data else { return nil }; try? JSONDecoder().decode(...)` / `try? JSONEncoder().encode(self)` pair as a default.
-- **Fix — 16 conformers, 3 outcomes:**
-  - **13 types** (`PdfListRequest`, `PhotoListRequest`, `SpaceListRequest`, `AudioPlayRequest`, `AudioListRequest`, `MapPinModel`, `SpaceTransformModel`, `BattleRoundNetworkState`, `ExportedRPGData`, `NetworkCodableDataType`, `GameValueEntryUpdate`, `ItemGenerationSummary`, `DiceResultModel`) now declare `: MessageMapper` and had their hand-written bodies deleted entirely, relying on the shared default. Two of these (`AudioPlayRequest`, `AudioListRequest`) were also missing `Sendable` — added, since `MessageMapper` requires it and both were already trivially safe. Two (`ExportedRPGData`'s `print`, `DiceResultModel`'s `Logger.codable.error`) had one-off error logging on decode failure that the shared default doesn't reproduce — dropped rather than preserved as per-type overrides, converging all 13 onto one real, auditable implementation instead of keeping 13 near-identical-but-not-quite copies (the logging wasn't load-bearing, just inconsistent debug scaffolding already tracked separately under §9.12).
-  - **1 type** (`MapUpdatePayload`) genuinely needs to diverge: its `encodedData()` (note the pre-existing name typo, also fixed) sets `.sortedKeys` output formatting — a real behavioral difference (deterministic byte ordering for a payload that gets diffed across sends), not a cosmetic one. Now conforms to `MessageMapper` and keeps a custom `encodeData()` override for that reason, documented inline; `decodeData(of:)` (previously mislabeled `decodeData(_:)`) uses the shared default, since decoding has no such requirement.
-  - **1 type** (`MapModel`) turned out not to need migrating at all: a repo-wide call-site search (including `Tests/`) found its `encodeData()`/`decodeData(of:)` pair had **zero real callers anywhere** — dead code left over from before `MapUpdatePayload` became the actual map wire format. Deleted outright instead of given a conformance nobody would use — a correction to the audit's own "16 non-conforming types" count, which had folded this dead pair in with the 16 genuine duplicates.
-  - **`GameNetworkModel`** (the pre-existing, sole real conformer) was left untouched — its custom `.withoutEscapingSlashes` encoding and error-path `print` are unrelated to this fix's scope and it already conformed correctly.
-- **Fix — the 4 mismatched `decodeData(_ data:)` labels** (`GameValueEntryUpdate`, `ItemGenerationSummary`, `BattleRoundNetworkState`, `MapUpdatePayload`): now formally conforming to `MessageMapper` made the compiler catch the label mismatch immediately, as the audit predicted. Standardized to `decodeData(of:)` and updated every call site (5 in production code, 4 in tests) to match.
-- **Verified:** all 4 platforms (iOS/macOS/visionOS/tvOS) build clean; 1708 tests pass, 0 failures, across `CoreRPGTests`, `GameRPGTests`, `PdfRPGTests`, `PhotoRPGTests`, `SpaceRPGTests`, `AudioRPGTests`, `MapRPGTests`, `DiceRPGTests`, `TableRPGTests`, `CharacterRPGTests`, `WeatherRPGTests`. Moving the protocol's home module also surfaced 3 test-support files (`GameRPGTests/Mocks/PlayerStoreMocks.swift`, `.../MasterNetworkControllableMock.swift`, `MapRPGTests/BattleRoundModelTests.swift`) that had been relying on `@testable import GameRPG` to see the (previously GameRPG-internal) protocol transitively — each needed an explicit `import CoreRPG` added, caught immediately by the build.
-- **Severity:** High — resolved.
-
-### 9.18 Additional dead code found this pass — PARTIALLY FIXED, one item was a false positive, one was fixed then had to be reverted and restored
-- `Modules/CoreRPG/Model/Observable+Stream.swift:1-12` — **NOW FIXED.** Entire body was already commented out, only the copyright header remained live; confirmed zero references to `.stream(of:` anywhere in the repo before deleting. Deleted.
-- `Modules/CoreRPG/Model/GeneratorRootModelTV.swift:1-9` — **AUDIT WAS WRONG — restored, not deleted.** The audit checked for call sites of the *filename* (`GeneratorRootModelTV`), which correctly finds nothing — but the type actually **declared** inside the file is `GeneratorRootModel` (no "TV" suffix; filename ≠ type name). That type has a live, unconditional reference at `Modules/TableRPG/Root/TableRootModel.swift:15` (`generatorRoot: GeneratorRootModel? = nil`), which only resolves on tvOS via this file — `GeneratorRPG` (the module with the real `GeneratorRootModel`) isn't available on tvOS, so this stub is the *only* source of the type for tvOS builds. Deleting it broke the tvOS build (`error: cannot find type 'GeneratorRootModel' in scope`); caught by the mandatory tvOS build pass and restored verbatim before this fix was considered complete. Lesson for future dead-code sweeps: grep for the **declared type/symbol name**, not the filename — they aren't always the same identifier.
-- `Modules/CoreRPG/Buttons/BorderLessTVBottonStyleViewModifer.swift:1-27` — **AUDIT WAS WRONG — not deleted.** Independently re-verified via `grep -rn "borderLessTVBottonStyle\|BorderLessTVBottonStyleViewModifer"` across `Modules/`: 35+ live call sites (`QuickEditorAction.swift`, `ExpandButtonModifier.swift`, `InspectorRowView.swift`, `SelectItemModifier.swift`, several `Sheet*.swift`, `Keyshortcuts.swift`, multiple `DiceRPG`/`CharacterRPG`/`PhotoRPG`/`MapRPG`/`AudioRPG`/`GameRPG` files). This is genuinely live code, not dead — left untouched.
-- `Modules/TableRPG/View/TableGenerationRootView.swift:253` — already resolved externally before this pass reached it; the file was split into several new files (`TableGenerationEntryRow.swift`, `TableGenerationResultView.swift`, etc.) by an unrelated prior change, and is now only 96 lines with no leftover `//.padding(.horizontal)` line. Nothing to do.
-- `Modules/GeneratorRPG/BasicAI/Errors/FoundationModelsError.swift:7-28` — **NOW FIXED.** Independently re-verified (grep across `Modules/`, `Sources/`, `Tests/`): none of the 5 cases are ever constructed or thrown; the only reference was a defensive `as? FoundationModelsError` cast inside `FoundationModelsErrorHandler.handleError(_:)` that could never succeed. Deleted the enum and that dead cast branch; the surrounding `FoundationModelsErrorHandler` struct (confirmed live — used by `AdventureGeneratorController.swift`, `GeneratorController.swift`, `ChatViewModel.swift`) is untouched.
-- **Severity:** Low (all) — two fixed, one restored after an audit-following mistake was caught by the tvOS build gate, one confirmed live and left alone, one already moot.
-
-### 9.19 New filename typo — NOW FIXED
-- **Location:** `Modules/GameRPG/SharePlay/RPGActivitty.swift` (duplicated "t": "Activitty").
-- **What:** The type inside, `public struct RPGActivity`, is correctly spelled and has 14+ live call sites — only the filename is wrong. Same class of issue already fixed in §9.13, missed there.
-- **Fix:** `git mv Modules/GameRPG/SharePlay/RPGActivitty.swift Modules/GameRPG/SharePlay/RPGActivity.swift`. Xcode-16 filesystem-synchronized group picked up the rename automatically, no `project.pbxproj` edit needed; confirmed with a clean iOS build.
-- **Severity:** Low — resolved.
-
-### 9.20 `Id`/`ID` and `Url`/`URL` naming convention drift — NOW FIXED (documentation only — no mechanical rename)
-- **What:** ~9,500 `...Id`/`...Url` occurrences (the codebase's dominant, long-standing convention) coexist with ~300-600 `...ID`/~620 `...URL` occurrences that drifted to Swift API Design Guidelines casing — concentrated in `Modules/CoreRPG/Controllable/ItemControllable.swift`, `ImageCacheControllable.swift`, `Modules/CoreRPG/Import/ExternalImport.swift`, `Modules/CoreRPG/Sheet/SheetReviewModels.swift`, `PhotoRPG/Controller/CacheController.swift`, `RuleRPG/Controller/LinkController.swift`, several with both conventions for the same concept in one file.
-- **Why:** Not worth a mechanical rename at this scale, but new code keeps drifting without a documented project convention to hold the line.
-- **Fix:** Added a bullet to CLAUDE.md's "## Swift instructions" section documenting the chosen convention (`Id`/`Url`, matching majority usage — e.g. `itemId`, `fileUrl`, not `itemId`/`fileURL`) so future code (AI-assisted or otherwise) doesn't keep drifting to the opposite casing. The ~300-600 existing drifted occurrences themselves were not renamed — out of proportion for a Low-severity item with no functional impact.
-- **Severity:** Low — resolved (documentation).
+### 9.15 `FolderListController`/`DetailFolderListView` per-module pattern — confirmed intentional, no copy-paste-bug divergence found
+- **Location:** 12 `FolderListController.swift` + 11 `DetailFolderListView.swift` files across modules.
+- **What:** Diffed across 5 modules (`AdventureRPG`, `DiceRPG`, `CharacterRPG`, `AudioRPG`, `MapRPG` for controllers; `CharacterRPG`, `AudioRPG`, `WeatherRPG`, `DiceRPG` for views). All differences found are legitimate per-module feature additions (AudioRPG's `AudioPlayerBarView` overlay, WeatherRPG's/DiceRPG's ambient overlay animations, differing `viewerDestination`/`linkTypes` per module's real routing needs) — no edge-case-only-handled-by-one-module bug found in this sample.
+- **Action:** None. Documented per the audit's own verification-transparency convention — this pattern is intentional per-module parallelism, not duplication to fix.
+- **Severity:** Low (informational)
 
 ---
 
 ## 10. Cross-cutting recommendations
 
-1. **Centralize duplication hot spots with the same shared-protocol-extension pattern proven for `FolderListControllable`, §9.4, and §9.17 (all three now done).** `ExportController.exporting(itemIds:)` (§9.4) and the `MessageMapper` encode/decode pair (§9.17) are both now fixed the same way `FolderListControllable` already was: a real shared implementation in the protocol extension, not a proposal. §9.4 in particular showed the pattern doesn't have to mean "force every conformer into one identical shape" — the shared BFS/dedup bookkeeping moved into `ExportControllable`, but each module kept its own genuinely-different link-validation logic in a closure, rather than being rewritten to match `RuleRPG`'s unrelated table-driven design. `DetailFolderListView.overlayContent` (§9.5) is already resolved from an earlier pass in this same series.
-2. ~~Replace `nonisolated(unsafe)` + `MainActor.assumeIsolated` (§3.8) with a `Sendable` snapshot type.~~ **Done, via the simpler of the two options §3.8 itself proposed:** rather than a `Sendable` snapshot type (a larger redesign touching every model's encode path), §3.8 centralized the existing `nonisolated(unsafe)`/`assumeIsolated` workaround into one audited helper (`Encoder.encodeOnMainActor(_:)`) shared by all 13 sites. §3.1 (Foundry import mapping stuck on Main Actor) is a separate, still-open concern the snapshot-type approach would have helped with more directly than the centralization did — it remains open on its own merits.
-3. **Standardize on `os.Logger`; stop using bare `print()` or silent `catch {}`.** §9.12 (51 `print()` sites, improved from 70) and the general pattern this audit keeps finding in one-off gaps (§5.10: RuleRPG missed from an 11-module fix, now closed) — a `SwiftLint` custom rule banning `print(` in non-test targets, and a repo-wide grep for `catch {}`/`catch { }` with an empty body, run as a periodic check rather than a one-time pass, would catch this class of "missed the 12th module" gap before it needs a full re-audit to surface.
-4. **Treat "already-fixed bug classes" as a checklist for new code, not a closed chapter.** §5.11 (App Intents export path traversal, now fixed) was the *exact* bug §5.4 already fixed, just in files that fix didn't touch. When a bug class gets fixed at N call sites, grep for the same anti-pattern (`.appending(path:` on interpolated user text, in this case) across the *whole* repo, not just the originally-flagged files, before declaring it resolved.
-5. **Give the untrusted-input Foundry parser dedicated fuzz/malformed-input test coverage.** §6.5 and §6.6 were both resource-exhaustion gaps in code that already had good bounds-safety hygiene per the prior audit's own note — the parser was careful about crashing on bad data, but not about being *slow* or *deep* on bad data. Both are now fixed, each backed by a targeted regression test (an unbounded-pack-count manifest for §6.5; 100,000-deep nested-array and nested-object payloads for §6.6) rather than a full fuzz corpus — a broader adversarial-fixture suite run in CI would still catch regressions on both axes, and similar axes elsewhere in the parser, going forward.
-6. **Reconcile `CLAUDE.md`'s documented per-module folder structure (§9.15) and Id/URL casing convention (§9.20) with actual practice.** Both are low-severity individually but compound the same underlying problem: documentation an AI coding agent (or new contributor) would reasonably treat as authoritative doesn't match what the codebase actually does.
+1. **Standardize on per-function `@MainActor` instead of `MainActor.run` closures.** §3.1 and §3.2 are the same root cause recurring in the hottest subsystem (`PlayerController`, 54 sites) and the shared protocol layer (`CoreRPG/Controllable/*`, ~40 more sites). `MapRPG/Controller/GameController.swift` already proves the cleaner alternative works in this codebase — use it as the template for a mechanical pass, prioritizing `PlayerController.swift` first.
+2. **Close the game-join security gap, and audit for other places relying solely on the shared PSK.** §6.1 is the single Critical finding in this report. A per-session pairing code (generated at "Start Game," shown to the host, typed by joiners) is the standard fix for this exact local-network-Bonjour-pairing pattern.
+3. **Extract shared protocol-extension defaults for the remaining duplicated controller boilerplate.** §9.2 (`SyncDataController`) and §9.3 (`CacheController` skeleton) are both instances of a pattern this codebase has *already* fixed twice — `FolderListControllable.copiedListDependencies` and `ExportControllable.bfsExportResults`/`finalizeExportResults` are both real, working shared implementations (not proposals) that the same treatment should extend to.
+4. **Standardize on `os.Logger`; eliminate `print()` and silent `catch {}`.** §5.3 (6 silent-swallow catches), §5.7 (one `print()` on a hot decode path), and §9.10 (56 `print()` sites) are the same theme recurring at different scales. A SwiftLint custom rule banning bare `print(` in non-test targets, plus a periodic grep for empty-bodied `catch {}`, would catch this class of gap before it needs a full audit pass to resurface — this exact recommendation appears to have been made before (the `print()` count crept back up from a previously-reported 51/24 to 56/30), suggesting the rule was never actually added.
+5. **Add MARK annotations before splitting oversized files.** §9.9's zero-MARK files >1,000 lines (`FoundryVTTImportReader.swift`, `RPGSharePlayController.swift`, `SharePlayJournalPublicationQueue.swift`, `ExternalImport.swift`, `FoundrySystemPackageReader.swift`) can't be split safely without first demarcating logical sections — treat MARK-annotation as its own quick pass ahead of any structural split.
+6. **Reconcile `CLAUDE.md`'s documented per-module folder structure with actual practice.** Personally confirmed: no module has a literal `Module/` subfolder (`find Modules -maxdepth 2 -type d -iname "Module"` → nothing); e.g. `PhotoRPG/` actually has `Controller/, Intent/, Menu/, Model/, Photo/, Resources/, Root/, Route/, Space/, View/` — domain-named folders instead of a generic one. This is the exact document that drives this audit and future AI-assisted changes to this codebase; a mismatch here compounds every other finding's risk of being mis-applied.
+7. **Resolve the dangling `CODE_AUDIT §X.Y` references before they go stale.** §9.13 — 29 files reference the old audit's numbering; this report doesn't preserve that numbering (a fresh run, not a merge), so a decision is needed on whether to sweep those comments now or accept they'll point at nothing.
 
 ---
 
 ## 11. What was NOT audited
 
-- `Modules/DiceRPG/0-Old/` and `Modules/SpaceRPG/0-Old/` — characterized as live (§9.1) but not reviewed line-by-line beyond concurrency-safety spot checks in this pass.
-- Algorithmic correctness of RealityKit/3D-object rendering — only concurrency/isolation and the specific rotation-state bug (§8.6) were reviewed, not rendering-math correctness.
-- Foundry LevelDB/ZIP binary-format parsing internals — bounds-safety and, newly this pass, algorithmic-complexity/resource-exhaustion posture (§6.5, §6.6) were reviewed; full parser correctness against the real Foundry VTT format spec was not.
-- Xcode project build settings and scheme configuration beyond the deployment-target sweep (confirmed uniform 26.0 this pass) and the four entitlements files (re-read in full).
-- Third-party SPM dependency internals (`swift-syntax`, `xctest-dynamic-overlay`, `swift-snapshot-testing`, `swift-custom-dump`, `RPGTabletopGameContent`) — treated as black boxes.
-- Test coverage — a quick scan surfaced the same two disabled tests as before (§9.3); no deep coverage review of the 20+ test targets.
-- Full accessibility audit (complete VoiceOver walkthrough, Dynamic Type stress testing at largest sizes, dark-mode contrast) — this pass added targeted findings in the app's 4 highest-traffic view areas (§8.9, §8.10) but is not exhaustive across all ~500 view files.
-- Localization/String Catalog wording correctness — usage patterns spot-checked, not translation content.
-- StoreKit/IAP configuration — unchanged from last audit, no product-catalog files found beyond the one disabled test (§9.3).
-- Performance profiling with Instruments — no `.trace` was recorded; all performance findings (§7, §8.9) are static-analysis-only.
-- SharePlay/GameController correctness beyond the specific races and bugs cited (§3.15, §5.12, §7.5, §8.6) — the full 2,447/3,846/2,666-line files were read closely around concurrency, force-unwrap, and identified-pattern boundaries, not exhaustively line-by-line for domain logic (e.g. map-pin geometry math, battle-round bookkeeping) outside those boundaries.
-- `Docu/SWIFTUI_PERFORMANCE_AUDIT.md` exists alongside this report but was not consulted this pass — it may track additional SwiftUI-performance items outside this report's scope.
+- Algorithmic correctness of RealityKit/3D-object rendering — only concurrency/isolation was reviewed, not rendering-math correctness.
+- Foundry LevelDB/ZIP binary-format parsing internals against the real Foundry VTT format spec — bounds-safety and resource-exhaustion posture were reviewed (§5.9), full format-correctness was not.
+- Xcode project build settings and scheme configuration beyond the deployment-target sweep (confirmed uniform 26.0) and the entitlements files (read in full for §6.2).
+- Third-party SPM dependency internals (`RPGTabletopGameContent` and any others) — treated as black boxes.
+- Test coverage — a quick scan surfaced §9.12's disabled test; no deep coverage review of the 20+ test targets.
+- Full accessibility audit (complete VoiceOver walkthrough, Dynamic Type stress testing at largest sizes, dark-mode contrast) — the SwiftUI pass (§8) spot-checked several icon-only buttons and confirmed a shared `.accessibilityLabel`-applying modifier pattern, but did not exhaustively review all ~71 `Image(systemName:)` sites.
+- Localization/String Catalog wording correctness — usage patterns spot-checked (§8.1's `bundle:` sweep), not translation content.
+- StoreKit/IAP configuration — `InAppModel.swift`'s use of `StoreKit.Transaction.currentEntitlements` was located and confirmed to use the modern async API, but the `.storekit` product-catalog file wasn't cross-checked against App Store Connect.
+- Performance profiling with Instruments — no `.trace` was recorded; §7 is static-analysis-only (and largely deferred to a prior pass's fixes, not independently re-verified this time).
+- SharePlay/GameController correctness beyond the specific concurrency/bug findings cited (§3.1, §3.3, §5.2, §5.3, §6.1) — the large `PlayerController.swift`/`MasterController.swift`/`RPGSharePlayController.swift` files were read closely around those boundaries, not exhaustively line-by-line for domain logic (map-pin geometry math, battle-round bookkeeping) outside them.
+- `Tests/` directories — scanned for duplication/structure (§9) and one disabled test (§9.12), not reviewed for test-logic correctness.
+- The historical `Docu/CODE_AUDIT.md`'s ~69 "NOW FIXED" items were spot-checked only where they overlapped this pass's own findings (§6.1's fixed sub-items §6.4-§6.6, confirmed still fixed in §5.9; §4.7's `GeometryReader` migration, confirmed still holding in §8.1) — not every one of the ~69 was re-verified line-by-line.
 
 ---
 
 ## 12. Verification
 
-Spot-check pattern: open Xcode, command-click the `path:line` reference — it should land on the cited line. Entries below are the lines that were personally re-opened and confirmed (not just taken from a background agent's report) before inclusion — both carried-forward High items and every new High item in this revision.
+Spot-check pattern: open Xcode, command-click the `path:line` reference in this report — it should land on the cited line. Every Critical/High finding below was personally re-opened and confirmed this pass (not taken solely from a background agent's report).
 
-- **§5.1** — `Modules/GameRPG/Controller/LogGameController.swift:190-191`. Confirmed via the dedicated bugs/security/perf agent's direct re-read: `.value` now returns `root?.characterRoot.itemControllable.nameSync(itemId:)`.
-- **§5.11** — `Modules/PdfRPG/Intent/PdfEntity.swift:61`. Personally opened: `URL.documentsDirectory.appending(path: "\(item.name).pdf")` — confirmed `.appending(path:)`, not `.appending(component:)`, with `item.name` interpolated directly.
-- **§5.12** — `Modules/MapRPG/Controller/GameController.swift:1455-1465`. Personally opened: confirmed the `Int(value)` conversion at line 1464 runs after only an `.isFinite` check on the parsed `Double`, with no range guard — `Int.init(_:Double)` traps on an out-of-`Int`-range finite `Double` per Swift's documented behavior.
-- **§5.14** — `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:129-141` and `Modules/CoreRPG/Persistence/CloudKitCoreDataPersistenceController.swift:84-111`. Personally opened both: confirmed `model.error`/`model.containerStoreUrl` assignment and the `setupContext()` call sit immediately after, not inside, the `container.loadPersistentStores { }` completion closure, in both controllers identically.
-- **§6.1** — `Modules/GameRPG/Network/GameSecurity.swift:1-8`. Personally opened: confirmed unchanged, `static let passcode = "GameMasterCode"` is the entire declared type.
-- **§6.4** — `Modules/GameRPG/Network/GameProtocol.swift:53-86,109-145`. Personally opened: confirmed `header.length: UInt32` is parsed from the wire (line 119-131) and passed directly to `deliverInputNoCopy(length: Int(header.length), ...)` (line 82) with no bound check anywhere in the file.
-- **§6.5** — `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:449-481`. Personally opened: confirmed the `for (fallbackName, declaration) in declarations` loop building `specs` has no count cap.
-- **§6.6** — `Modules/CoreRPG/Foundry/FoundryRuleModels.swift:20-59`. Personally opened: confirmed `FoundryJSONValue.init(from:)` recursively decodes `[FoundryJSONValue]`/`[String: FoundryJSONValue]` via `container.decode(...)` with no depth counter anywhere in the initializer.
-- **§8.6** — `Modules/SpaceRPG/Space/SpaceViewer.swift:134-150,520-628`. Personally opened both halves: confirmed `apply(remote:)` writes `yaw`/`pitch` directly (lines 144-145) with no path back into `DragRotationModifier`'s `baseYaw`/`basePitch`, which are refreshed only in `.onEnded` and the two `axRotateClockwise`/`CounterClockwise` `.onChange` handlers — no `.onChange(of: yaw)` exists.
-- **§9.4** — `Modules/PdfRPG/Controller/ExportController.swift` vs. `Modules/DiceRPG/Controller/ExportController.swift`, full files. Personally diffed: identical except the module-name string inside the `preconditionFailure` message.
-- **§9.17** — `Modules/GameRPG/Model/MessageMapper.swift:1-9`. Personally opened: confirmed the protocol has exactly the two bare requirements described, no default `extension` implementation anywhere in the file.
+- **§6.1** (Critical) — `Modules/GameRPG/Network/GameSecurity.swift:1-8`: confirmed `static let passcode = "GameMasterCode"` is the entire declared type. `Modules/GameRPG/Network/NWParameter+GameMaster.swift:21`: confirmed `NWConnection(to: endpoint, using: NWParameters(passcode: GameSecurity.passcode))`. `Modules/GameRPG/Browser/BrowserManager.swift:52-135`: confirmed no join-code/PIN field or prompt exists anywhere in the file — `start()`/`updateGames(from:)` populate a tap-to-join list directly from discovered Bonjour endpoints. `Modules/GameRPG/Controller/MasterController.swift:835-895`: confirmed `accepts(_:origin:)` checks identity-consistency only (sender ID/role reuse), with no secondary secret check before `gameModel.accepts(connectionId:sender:)` → `add(...)` admits a new player.
+- **§5.1** (High) — `Modules/CoreRPG/App/AppGroup.swift:7,30`: confirmed both `UserDefaults.appGroup` and `FileManager.groupURL` are force-unwrapped `static let` globals, read in full file context.
+- **§3.4** (High) — `Modules/CoreRPG/Navigator/Core/NavigationSend.swift:105-120`: confirmed `DispatchQueue.main.asyncAfter(deadline: .now() + delay) { self.send(values: values) }` at line 112, inside `@MainActor internal func resume(...)`.
+- **§3.1** (High) — `grep -c "MainActor.run" Modules/GameRPG/Controller/PlayerController.swift` → 54; same command against `MasterController.swift` → 6; against `Modules/GameRPG/Network/GameNetworkController.swift` → 1. Counts independently reproduced, matching both the concurrency agent's site list and a prior audit pass's count.
+- **§5.5** (Medium, but verification included given its prominence in §1) — `Modules/GameRPG/GameViews/BatteryView.swift:69-131`: confirmed `init()` calls `startMonitoring()` (line 71-73), which starts an uncancelled `pollTask` on macOS (line 110-119); `grep -rn "stopMonitoring\|BatteryMonitor(" Modules/ Sources/ Tests/` → only 2 matches, the type's own declaration line and its own `func stopMonitoring()` declaration — confirmed never called.
+- **§9.2** (Medium) — personally diffed all 12 `SyncDataController.swift` files: 11 are byte-for-byte identical except the `entity:` argument (`RPGAdventure.entity()`, `RPGAudio.entity()`, `RPGValue.entity()`, `RPGDice.entity()`, `RPGGenerator.entity()`, `RPGMap.entity()`, `RPGPdf.entity()`, `RPGPhoto.entity()`, `RPGSpace.entity()`, `RPGTable.entity()`, `RPGWeather.entity()`); `RuleRPG`'s is a 29-line variant.
+- **§4.1** (Medium) — clean build log (`clean_build_log.txt`, `grep -E "^/Users.*warning:" | sort -u`) confirmed exactly 12 unique warnings, all `'search' is deprecated: Use .system.searchInApp instead`, one per module's Intent file.
+- **§9.9** (Medium, top items) — confirmed via `wc -l` on each cited file; MARK presence/absence confirmed via `grep -n "// MARK"` on `PlayerController.swift`, `MasterController.swift`, `FoundryVTTImportReader.swift`, `RPGSharePlayController.swift`.
 
 If any finding doesn't reproduce when you visit the line, flag the specific reference for re-investigation.

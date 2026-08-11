@@ -198,56 +198,56 @@ public struct CloudKitCoreDataPersistenceController {
 
     @MainActor
     private static func setupCloudKitEventMonitoring(container: NSPersistentContainer, model: CoreDataInitModel) {
-        NotificationCenter.default.addObserver(
-            forName: NSPersistentCloudKitContainer.eventChangedNotification,
-            object: container,
-            queue: .main
-        ) { [weak model] notification in
-            guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event else {
-                return
-            }
-
-            let update: CloudKitEventModelUpdate
-            switch event.type {
-            case .setup:
-                if event.succeeded {
-                    Logger.persistenceController.info("CloudKit setup succeeded")
-                    update = .none
-                } else {
-                    Logger.persistenceController.info("CloudKit setup in progress")
-                    update = .syncState(.inProgress)
+        model.cloudKitEventMonitoringTask?.cancel()
+        model.cloudKitEventMonitoringTask = Task { [weak model] in
+            let events = NotificationCenter.default.notifications(
+                named: NSPersistentCloudKitContainer.eventChangedNotification,
+                object: container
+            )
+            for await notification in events {
+                guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey] as? NSPersistentCloudKitContainer.Event else {
+                    continue
                 }
 
-            case .import:
-                if event.succeeded {
-                    Logger.persistenceController.info("CloudKit import succeeded")
-                    update = .importSucceeded(Date())
-                } else if let error = event.error {
-                    Logger.persistenceController.error("CloudKit import error: \(error.localizedDescription, privacy: .public)")
-                    update = .syncState(.failed(error.localizedDescription))
-                } else {
-                    update = .syncState(.inProgress)
+                let update: CloudKitEventModelUpdate
+                switch event.type {
+                case .setup:
+                    if event.succeeded {
+                        Logger.persistenceController.info("CloudKit setup succeeded")
+                        update = .none
+                    } else {
+                        Logger.persistenceController.info("CloudKit setup in progress")
+                        update = .syncState(.inProgress)
+                    }
+
+                case .import:
+                    if event.succeeded {
+                        Logger.persistenceController.info("CloudKit import succeeded")
+                        update = .importSucceeded(Date())
+                    } else if let error = event.error {
+                        Logger.persistenceController.error("CloudKit import error: \(error.localizedDescription, privacy: .public)")
+                        update = .syncState(.failed(error.localizedDescription))
+                    } else {
+                        update = .syncState(.inProgress)
+                    }
+
+                case .export:
+                    if event.succeeded {
+                        Logger.persistenceController.info("CloudKit export succeeded")
+                        update = .exportSucceeded(Date())
+                    } else if let error = event.error {
+                        Logger.persistenceController.error("CloudKit export error: \(error.localizedDescription, privacy: .public)")
+                        update = .none
+                    } else {
+                        update = .none
+                    }
+
+                @unknown default:
+                    Logger.persistenceController.debug("CloudKit unknown event type")
+                    update = .none
                 }
 
-            case .export:
-                if event.succeeded {
-                    Logger.persistenceController.info("CloudKit export succeeded")
-                    update = .exportSucceeded(Date())
-                } else if let error = event.error {
-                    Logger.persistenceController.error("CloudKit export error: \(error.localizedDescription, privacy: .public)")
-                    update = .none
-                } else {
-                    update = .none
-                }
-
-            @unknown default:
-                Logger.persistenceController.debug("CloudKit unknown event type")
-                update = .none
-            }
-
-            MainActor.assumeIsolated {
-                guard let model = model else { return }
-
+                guard let model else { return }
                 switch update {
                 case .none:
                     break
