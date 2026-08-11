@@ -328,15 +328,21 @@ private struct GameTableRealityContent: View {
             installAccessibilitySubscriptionsIfNeeded()
         } update: { content in
             content.camera = .virtual
-            content.cameraTarget = game.setup.board.entity
         }
+        // Always on: CameraControls is a fixed set of exclusive presets, not
+        // an option set, so there's no way to keep .orbit's bundled pinch-zoom
+        // and rotate while dropping only its one-finger-drag component — and
+        // reassigning this value resets the camera's current framing back to
+        // default. Instead, pinDragGesture below wins priority over the drag
+        // component only for touches that start on a pin, leaving zoom/rotate
+        // untouched and every other drag orbiting the table as usual.
         .realityViewCameraControls(.orbit)
         .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
         } action: { size in
             game.renderer.updateCamera(for: size)
         }
-        .simultaneousGesture(pinDragGesture)
+        .highPriorityGesture(pinDragGesture)
         .simultaneousGesture(pinTapGesture)
         .overlay(alignment: .topTrailing) {
             if showsEmbeddedToolbar {

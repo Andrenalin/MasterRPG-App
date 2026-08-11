@@ -291,8 +291,6 @@ struct PinComponent: Component {
 
 @MainActor
 final class PinPawn {
-    static let baseRadius: Float = 0.02
-
     let pinId: UUID
     let entity: Entity
     var loadedPhotoId: UUID?
@@ -302,11 +300,13 @@ final class PinPawn {
     private let highlightModel: ModelEntity
     private let deathMarkModels: [ModelEntity]
     private var currentSize: MapPinModel.MapPinSize
+    private var currentPointsToMeters: Float
 
-    init(pin: MapPinModel) {
+    init(pin: MapPinModel, pointsToMeters: Float) {
         pinId = pin.id
         currentSize = pin.size
-        let radius = Self.baseRadius * Self.scaleForPinSize(pin.size)
+        currentPointsToMeters = pointsToMeters
+        let radius = Self.radius(for: pin.size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
 
         var baseMaterial = UnlitMaterial()
@@ -415,13 +415,15 @@ final class PinPawn {
         pin: MapPinModel,
         position: SIMD3<Float>,
         hiddenForMaster: Bool,
-        activeAttackerPinId: UUID? = nil
+        activeAttackerPinId: UUID? = nil,
+        pointsToMeters: Float
     ) {
         entity.position = position
         entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4 : 1)
-        if pin.size != currentSize {
+        if pin.size != currentSize || pointsToMeters != currentPointsToMeters {
             currentSize = pin.size
-            applySize(pin.size)
+            currentPointsToMeters = pointsToMeters
+            applySize(pin.size, pointsToMeters: pointsToMeters)
         }
 
         var baseMaterial = UnlitMaterial()
@@ -456,19 +458,16 @@ final class PinPawn {
         photoPlane.model?.materials = [material]
     }
 
-    static func scaleForPinSize(_ size: MapPinModel.MapPinSize) -> Float {
-        switch size {
-        case .tiny: 0.5
-        case .small: 0.75
-        case .normal: 1
-        case .large: 1.5
-        case .huge: 2
-        case .colossal: 3
-        }
+    /// Matches the 2D map's `pin.size.size × pinScale` sizing, projected from
+    /// image points into table meters via `pointsToMeters` (see
+    /// `MapTableProjection.metersPerPoint`) so a token covers the same
+    /// fraction of the table that its pin covers of the map image.
+    static func radius(for size: MapPinModel.MapPinSize, pointsToMeters: Float) -> Float {
+        Float(size.size.width) * pointsToMeters / 2
     }
 
-    private func applySize(_ size: MapPinModel.MapPinSize) {
-        let radius = Self.baseRadius * Self.scaleForPinSize(size)
+    private func applySize(_ size: MapPinModel.MapPinSize, pointsToMeters: Float) {
+        let radius = Self.radius(for: size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
         baseModel.model?.mesh = .generateCylinder(height: 0.005, radius: radius)
         highlightModel.model?.mesh = .generateCylinder(

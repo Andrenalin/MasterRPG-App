@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS) || os(macOS) || os(visionOS)
+import CoreRPG
 import MapRPG
 import PhotoRPG
 import SwiftUI
@@ -25,7 +26,11 @@ struct GameTableToolbar: View {
                         Image(systemName: game.pointer?.isShown == true ? "hand.point.up.left.fill" : "hand.point.up.left")
                     }
                 }
-                .help(Text(pointerTitle))
+                .selectedRoundButton(
+                    title: String(localized: pointerTitle),
+                    module: .table,
+                    isSelected: game.pointer?.isShown == true
+                )
 
                 Button {
                     game.movePointerToMapCenter()
@@ -36,7 +41,11 @@ struct GameTableToolbar: View {
                         Image(systemName: "scope")
                     }
                 }
-                .help(Text("Center Pointer", bundle: .module))
+                .selectedRoundButton(
+                    title: String(localized: "Center Pointer", bundle: .module),
+                    module: .table,
+                    isSelected: false
+                )
             }
 
             Button {
@@ -48,11 +57,13 @@ struct GameTableToolbar: View {
                     Image(systemName: "arrow.counterclockwise")
                 }
             }
-            .help(Text("Reset", bundle: .module))
+            .selectedRoundButton(
+                title: String(localized: "Reset", bundle: .module),
+                module: .table,
+                isSelected: false
+            )
         }
-        .labelStyle(.iconOnly)
         .padding()
-        .modifier(GameTableToolbarBackground())
     }
 
     private var pointerTitle: LocalizedStringResource {
@@ -114,19 +125,12 @@ private struct RoomVisibilityMenu: View {
                 Image(systemName: "door.left.hand.open")
             }
         }
+        .selectedRoundButton(
+            title: String(localized: "Room Visibility", bundle: .module),
+            module: .table,
+            isSelected: false
+        )
         .disabled(game.rooms.isEmpty)
-        .help(Text("Room Visibility", bundle: .module))
-    }
-}
-
-private struct GameTableToolbarBackground: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-#if os(visionOS)
-        content.glassBackgroundEffect()
-#else
-        content.background(.regularMaterial, in: .capsule)
-#endif
     }
 }
 

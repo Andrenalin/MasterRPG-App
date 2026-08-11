@@ -284,8 +284,6 @@ struct PinComponent: Component {
 /// of truth, TabletopKit pose sync would fight it.
 @MainActor
 final class PinPawn {
-    static let baseRadius: Float = 0.02
-
     let pinId: UUID
     let entity: Entity
     private let baseModel: ModelEntity
@@ -294,11 +292,13 @@ final class PinPawn {
     private let deathMarkModels: [ModelEntity]
     var loadedPhotoId: UUID?
     private var currentSize: MapPinModel.MapPinSize
+    private var currentPointsToMeters: Float
 
-    init(pin: MapPinModel) {
+    init(pin: MapPinModel, pointsToMeters: Float) {
         pinId = pin.id
         currentSize = pin.size
-        let radius = Self.baseRadius * Self.scaleForPinSize(pin.size)
+        currentPointsToMeters = pointsToMeters
+        let radius = Self.radius(for: pin.size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
 
         var baseMaterial = UnlitMaterial()
@@ -367,15 +367,12 @@ final class PinPawn {
         entity = pinEntity
     }
 
-    static func scaleForPinSize(_ size: MapPinModel.MapPinSize) -> Float {
-        switch size {
-        case .tiny: return 0.5
-        case .small: return 0.75
-        case .normal: return 1.0
-        case .large: return 1.5
-        case .huge: return 2.0
-        case .colossal: return 3.0
-        }
+    /// Matches the 2D map's `pin.size.size × pinScale` sizing, projected from
+    /// image points into table meters via `pointsToMeters` (see
+    /// `MapTableProjection.metersPerPoint`) so a token covers the same
+    /// fraction of the table that its pin covers of the map image.
+    static func radius(for size: MapPinModel.MapPinSize, pointsToMeters: Float) -> Float {
+        Float(size.size.width) * pointsToMeters / 2
     }
 
     /// Applies pin state without recreating the entity. A battle attacker uses
@@ -384,13 +381,15 @@ final class PinPawn {
         pin: MapPinModel,
         position: SIMD3<Float>,
         hiddenForMaster: Bool,
-        activeAttackerPinId: UUID? = nil
+        activeAttackerPinId: UUID? = nil,
+        pointsToMeters: Float
     ) {
         entity.position = position
         entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4.0 : 1.0)
-        if pin.size != currentSize {
+        if pin.size != currentSize || pointsToMeters != currentPointsToMeters {
             currentSize = pin.size
-            applySize(pin.size)
+            currentPointsToMeters = pointsToMeters
+            applySize(pin.size, pointsToMeters: pointsToMeters)
         }
         var baseMaterial = UnlitMaterial()
         baseMaterial.color = .init(tint: pin.isDead ? .black : UIColor(pin.color))
@@ -418,8 +417,8 @@ final class PinPawn {
         photoPlane.model?.materials = [material]
     }
 
-    private func applySize(_ size: MapPinModel.MapPinSize) {
-        let radius = Self.baseRadius * Self.scaleForPinSize(size)
+    private func applySize(_ size: MapPinModel.MapPinSize, pointsToMeters: Float) {
+        let radius = Self.radius(for: size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
         baseModel.model?.mesh = .generateCylinder(height: 0.005, radius: radius)
         highlightModel.model?.mesh = .generateCylinder(height: 0.001, radius: radius * 1.18)

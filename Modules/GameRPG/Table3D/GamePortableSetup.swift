@@ -81,6 +81,15 @@ final class GameSetup {
             pinPawns.map { ($0.pinId, $0) },
             uniquingKeysWith: { current, _ in current }
         )
+        // Same conversion the 2D map applies to a pin's base size (points ×
+        // pinScale), just projected into table meters instead of screen
+        // points, so a token occupies the same fraction of the table that its
+        // pin occupies of the map image.
+        let pointsToMeters: Float = if let projection {
+            Float(mapModel?.pinScale ?? 1) * projection.metersPerPoint
+        } else {
+            MapTableProjection.fallbackPointsToMeters
+        }
         var photoLoads: [UUID: UUID] = [:]
         var lineupIndex = 0
         var keptIds: Set<UUID> = []
@@ -105,18 +114,20 @@ final class GameSetup {
                     pin: pin,
                     position: position,
                     hiddenForMaster: hiddenForMaster,
-                    activeAttackerPinId: activeAttackerPinId
+                    activeAttackerPinId: activeAttackerPinId,
+                    pointsToMeters: pointsToMeters
                 )
                 if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
                     photoLoads[pin.id] = photoId
                 }
             } else {
-                let pawn = PinPawn(pin: pin)
+                let pawn = PinPawn(pin: pin, pointsToMeters: pointsToMeters)
                 pawn.update(
                     pin: pin,
                     position: position,
                     hiddenForMaster: hiddenForMaster,
-                    activeAttackerPinId: activeAttackerPinId
+                    activeAttackerPinId: activeAttackerPinId,
+                    pointsToMeters: pointsToMeters
                 )
                 pinPawns.append(pawn)
                 pinContainer.addChild(pawn.entity)
@@ -171,11 +182,24 @@ extension GameTableModel {
 struct MapTableProjection {
     static let mapSize: Float = GameMetrics.tableEdge - 0.1
     static let pinHeight: Float = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
+    /// Pin diameter (meters) used when no map is on the table and there's no
+    /// image to derive a conversion factor from — matches a "normal" 2D pin
+    /// (44pt) rendered at the table's former fixed 0.04 m default.
+    static let fallbackPointsToMeters: Float = 0.04 / 44
 
     let imageSize: CGSize
     let degrees: Double
     let planeWidth: Float
     let planeDepth: Float
+
+    /// Table meters per source-image point, at this projection's scale.
+    /// Multiplying a 2D pin's point size by this (and by `MapModel.pinScale`)
+    /// gives the 3D token the same size relative to the table that the pin
+    /// has relative to the map image.
+    var metersPerPoint: Float {
+        guard imageSize.width > 0 else { return 0 }
+        return planeWidth / Float(imageSize.width)
+    }
 
     init(imageSize: CGSize, degrees: Double) {
         let normalizedDegrees = Self.normalizedDegrees(degrees)
