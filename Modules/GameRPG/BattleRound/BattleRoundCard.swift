@@ -41,81 +41,90 @@ struct BattleRoundCard: View {
     @State private var cardState = BattleRoundCardState()
 
     var body: some View {
-        Group {
-            switch cardLayout {
-            case .wide:
-                BattleRoundWideCardLayout(
-                    state: cardState,
-                    presentation: presentation,
-                    controller: controller,
-                    showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints,
-                    selectInitiative: selectInitiative
-                )
-            case .compact:
-                BattleRoundCompactCardLayout(
-                    state: cardState,
-                    presentation: presentation,
-                    controller: controller,
-                    showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints,
-                    selectInitiative: selectInitiative
-                )
+        // A single wrapping container keeps this a unary view: the card
+        // content and the optional inline character sheet must always
+        // reconcile as one row, or `BattleRoundList`'s `.frame(maxWidth:
+        // .infinity)` / `.transition` / `.draggable` fan out across whichever
+        // children happen to exist at that moment instead of bounding one
+        // stable row — visible as rows resizing/losing full width whenever
+        // `cardState.characterSheet` is cleared (e.g. switching attacker).
+        VStack(spacing: 0) {
+            Group {
+                switch cardLayout {
+                case .wide:
+                    BattleRoundWideCardLayout(
+                        state: cardState,
+                        presentation: presentation,
+                        controller: controller,
+                        showCharacter: showCharacter,
+                        selectHitPoints: selectHitPoints,
+                        selectInitiative: selectInitiative
+                    )
+                case .compact:
+                    BattleRoundCompactCardLayout(
+                        state: cardState,
+                        presentation: presentation,
+                        controller: controller,
+                        showCharacter: showCharacter,
+                        selectHitPoints: selectHitPoints,
+                        selectInitiative: selectInitiative
+                    )
+                }
             }
-        }
-        .padding(10)
-        #if !os(visionOS)
-        .glassEffect(
-            presentation.isActive
-                ? .regular.tint(.blue)
-                : .regular,
-            in: .rect(cornerRadius: 12)
-        )
-        #endif
-        .overlay(alignment: .leading) {
-            UnevenRoundedRectangle(
-                topLeadingRadius: 12,
-                bottomLeadingRadius: 12
+            .padding(10)
+            #if !os(visionOS)
+            .glassEffect(
+                presentation.isActive
+                    ? .regular.tint(.blue)
+                    : .regular,
+                in: .rect(cornerRadius: 12)
             )
-            .fill(presentation.isActive ? Color.blue : .clear)
-            .frame(width: 4)
-            .accessibilityHidden(true)
-        }
-        .opacity(presentation.attacker.combatant.isDead ? 0.58 : 1)
-        .animation(
-            accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2),
-            value: presentation.isActive
-        )
-        .accessibilityElement(children: .contain)
-        .onChange(of: presentation.isActive) { wasActive, isActive in
-            // A turn moving on should never leave a stale character sheet
-            // open on the card that was just active.
-            guard wasActive, !isActive else { return }
-            cardState.characterSheet = nil
-        }
-        .contextMenu {
-            BattleRoundParticipantActionsMenu(
-                role: .attacker,
-                presentation: presentation.attacker,
-                cardState: cardState,
-                controller: controller,
-                showCharacter: showCharacter,
-                selectHitPoints: selectHitPoints
+            #endif
+            .overlay(alignment: .leading) {
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 12,
+                    bottomLeadingRadius: 12
+                )
+                .fill(presentation.isActive ? Color.blue : .clear)
+                .frame(width: 4)
+                .accessibilityHidden(true)
+            }
+            .opacity(presentation.attacker.combatant.isDead ? 0.58 : 1)
+            .animation(
+                accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2),
+                value: presentation.isActive
             )
-            ForEach(presentation.defenders) { defender in
+            .accessibilityElement(children: .contain)
+            .onChange(of: presentation.isActive) { wasActive, isActive in
+                // A turn moving on should never leave a stale character sheet
+                // open on the card that was just active.
+                guard wasActive, !isActive else { return }
+                cardState.characterSheet = nil
+            }
+            .contextMenu {
                 BattleRoundParticipantActionsMenu(
-                    role: .defender,
-                    presentation: defender,
+                    role: .attacker,
+                    presentation: presentation.attacker,
                     cardState: cardState,
                     controller: controller,
                     showCharacter: showCharacter,
                     selectHitPoints: selectHitPoints
                 )
+                ForEach(presentation.defenders) { defender in
+                    BattleRoundParticipantActionsMenu(
+                        role: .defender,
+                        presentation: defender,
+                        cardState: cardState,
+                        controller: controller,
+                        showCharacter: showCharacter,
+                        selectHitPoints: selectHitPoints
+                    )
+                }
             }
-        }
 
-        if let sheet = cardState.characterSheet {
-            SheetRootView(root: sheet.root, rootModel: sheet.sheet)
+            if let sheet = cardState.characterSheet {
+                SheetRootView(root: sheet.root, rootModel: sheet.sheet)
+            }
         }
     }
 }
