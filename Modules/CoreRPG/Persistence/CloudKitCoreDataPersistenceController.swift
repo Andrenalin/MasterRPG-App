@@ -28,9 +28,13 @@ public struct CloudKitCoreDataPersistenceController {
         }
 
         model.isInitialized = true
-        
+
         // init path to stores
-        let groupURL = FileManager.groupURL
+        guard let groupURL = FileManager.groupURL else {
+            Logger.persistenceController.error("PersistenceController #\(#function) App Group container is unavailable")
+            model.error = .loadModel
+            return
+        }
         let storeFolderURL = groupURL.appendingPathComponent("Stores")
         let privateStoreFolderURL = storeFolderURL.appendingPathComponent("Private")
 

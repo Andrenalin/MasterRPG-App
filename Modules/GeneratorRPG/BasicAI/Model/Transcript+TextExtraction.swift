@@ -13,8 +13,6 @@ extension Array where Element == Transcript.Segment {
 #if compiler(>=6.4)
             case .attachment(let attachmentSegment):
                 return attachmentSegment.label
-            case .custom(let customSegment):
-                return String(describing: customSegment)
 #endif
             @unknown default:
                 return String(describing: segment)

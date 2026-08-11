@@ -19,10 +19,17 @@ public struct PersistentHistoryCleaner {
     }
 
     let container: NSPersistentContainer
-    let userDefault: UserDefaults
+    // `nil` when the App Group entitlement/provisioning profile doesn't grant access — see
+    // CODE_AUDIT §5.1. `clean()` is a periodic maintenance task, so it degrades to a no-op
+    // rather than crashing.
+    let userDefault: UserDefaults?
     let appActors = AppPersistentActor.allCases
 
     public func clean() {
+        guard let userDefault else {
+            Logger.persistentHistory.error("Skipping history cleanup: App Group container is unavailable")
+            return
+        }
         guard let timestamp = userDefault.lastCommonTransactionTimestamp(in: appActors) else {
             return
         }
@@ -54,7 +61,11 @@ public struct PersistentHistoryCleaner {
 private actor PersistentHistoryTimestampUpdater {
     static let shared = PersistentHistoryTimestampUpdater()
 
-    private let userDefault = UserDefaults(suiteName: UserDefaults.appGroupString)!
+    // Falls back to `.standard` when the App Group entitlement/provisioning profile doesn't
+    // grant access, rather than crashing — see CODE_AUDIT §5.1. Timestamps then stay
+    // per-device instead of shared across the app and its extensions, which only degrades
+    // history-cleanup efficiency, not correctness.
+    private let userDefault = UserDefaults(suiteName: UserDefaults.appGroupString) ?? .standard
 
     func advanceTimestamps(for actors: [AppPersistentActor], to timestamp: Date) {
         for actor in actors {
@@ -68,11 +79,13 @@ private actor PersistentHistoryTimestampUpdater {
 
 final class PersistentHistoryTrackerManager {
     init(container: NSPersistentContainer, currentActor: AppPersistentActor, viewBackupContext: NSManagedObjectContext?) {
+        // Falls back to `.standard` when the App Group entitlement/provisioning profile
+        // doesn't grant access, rather than crashing — see CODE_AUDIT §5.1.
         let processor = PersistentHistoryProcessor(
             container: container,
             currentActor: currentActor,
             viewBackupContext: viewBackupContext,
-            userDefaults: UserDefaults(suiteName: UserDefaults.appGroupString)!
+            userDefaults: UserDefaults(suiteName: UserDefaults.appGroupString) ?? .standard
         )
         self.processor = processor
 

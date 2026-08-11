@@ -110,8 +110,12 @@ private extension FilePersistenceController {
         return documentsURL
     }
 
+    // Falls back to `URL.documentsDirectory` (the same root `oldFileURL` already uses)
+    // when the App Group entitlement/provisioning profile doesn't grant access, rather
+    // than crashing — see CODE_AUDIT §5.1. Widgets sharing this data won't see it in
+    // that edge case, but the app keeps functioning locally instead of crashing at launch.
     var fileURL: URL {
-        FileManager.groupURL.appendingPathComponent("\(name).json")
+        (FileManager.groupURL ?? URL.documentsDirectory).appendingPathComponent("\(name).json")
     }
 
     var oldFileURL: URL {

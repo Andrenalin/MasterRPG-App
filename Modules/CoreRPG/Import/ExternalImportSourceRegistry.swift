@@ -134,7 +134,9 @@ public actor ExternalImportSourceRegistry {
     public static let shared = ExternalImportSourceRegistry()
 
     public init(directoryURL: URL? = nil) {
-        let root = FileManager.cloudURL ?? FileManager.groupURL
+        // Falls back to `URL.documentsDirectory` when neither iCloud nor the App Group
+        // container is available, rather than crashing — see CODE_AUDIT §5.1.
+        let root = FileManager.cloudURL ?? FileManager.groupURL ?? URL.documentsDirectory
         self.directoryURL = directoryURL ?? root
             .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")

@@ -52,8 +52,6 @@ extension Transcript.Segment {
 #if compiler(>=6.4)
         case .attachment(let attachmentSegment):
             return foundationLabEstimateTokens(attachmentSegment.label ?? "") + 16
-        case .custom:
-            return 16
 #endif
         @unknown default:
             return foundationLabEstimateTokens(String(describing: self))
