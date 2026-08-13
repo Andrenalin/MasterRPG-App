@@ -37,18 +37,43 @@ final class Board {
         plane.name = "MapImagePlane"
         plane.position.y = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
         plane.isEnabled = false
+        // Hit-testable so `viewportPanGesture` (GameTableView) can target the
+        // map surface directly, separately from pins and room fog. The
+        // collision shape sits well *below* the plane's own Y (`Self.hitTestYOffset`,
+        // clear of `RoomHitArea`'s ±0.004 box around `MapTableProjection.pinHeight`
+        // — the same height this plane is placed at) so a touch over a room's
+        // fog always hits the closer room volume first, never this one: an
+        // earlier attempt at this gesture placed the two coincident, which
+        // made the board volume randomly win room long-press/double-tap.
+        plane.components.set(BoardSurfaceComponent())
+        plane.components.set(InputTargetComponent())
+        plane.components.set(
+            CollisionComponent(shapes: [
+                ShapeResource
+                    .generateBox(width: mapSize, height: Self.hitTestBoxHeight, depth: mapSize)
+                    .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
+            ])
+        )
         boardEntity.addChild(plane)
         imagePlane = plane
 
         entity = boardEntity
     }
 
+    private static let hitTestBoxHeight: Float = 0.002
+    /// Local offset (relative to `imagePlane`, itself at world Y ==
+    /// `MapTableProjection.pinHeight`) putting the hit-test box's whole
+    /// height range below `pinHeight - 0.004` — `RoomHitArea`'s lower bound —
+    /// with a clear margin.
+    private static let hitTestYOffset: Float = -0.006
+
     func updateMap(
         image: AKImage,
         degrees: Double,
         displayConfig: DisplayConfigModel?,
         mapModel: MapModel?,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        panOffset: CGPoint
     ) {
         let orientedSize: CGSize
         if let mapModel, mapModel.width > 0, mapModel.height > 0 {
@@ -72,13 +97,21 @@ final class Board {
             planeWidth = mapSize * Float(aspectRatio)
         }
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
+        imagePlane.components.set(
+            CollisionComponent(shapes: [
+                ShapeResource
+                    .generateBox(width: planeWidth, height: Self.hitTestBoxHeight, depth: planeDepth)
+                    .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
+            ])
+        )
 
         guard let compositeImage = GameTableTextureRenderer.render(
             image: image,
             degrees: degrees,
             mapModel: mapModel,
             displayConfig: displayConfig,
-            isGameMaster: isGameMaster
+            isGameMaster: isGameMaster,
+            panOffset: panOffset
         ) else { return }
 
         do {
@@ -115,7 +148,8 @@ private enum GameTableTextureRenderer {
         degrees: Double,
         mapModel: MapModel?,
         displayConfig: DisplayConfigModel?,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        panOffset: CGPoint
     ) -> CGImage? {
         guard let sourceImage = GameTableImage.cgImage(from: image) else { return nil }
 
@@ -151,7 +185,8 @@ private enum GameTableTextureRenderer {
         }
         let focusRect = GameTableModel.boardFocusRect(
             entries: mapModel?.entries ?? [],
-            imageSize: coordinateSize
+            imageSize: coordinateSize,
+            panOffset: panOffset
         )
 
         let content = GameTableTextureView(
@@ -308,6 +343,11 @@ private struct GameTableTextureView: View {
         isGameMaster: true
     )
 }
+
+/// Identifies the board's map-image plane for entity-targeted gestures, so a
+/// drag started on the map itself can be told apart from one started on a pin
+/// or a room's fog.
+struct BoardSurfaceComponent: Component {}
 
 /// Identifies a map token for entity-targeted gestures.
 struct PinComponent: Component {

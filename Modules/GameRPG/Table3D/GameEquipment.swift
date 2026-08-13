@@ -62,7 +62,7 @@ final class Board {
     }
         
     // Update the map from PhotoModel data while preserving its aspect ratio.
-    func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
+    func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool, panOffset: CGPoint) {
         guard image.cgImage != nil else {
             Logger.gameTable.error("Failed to create a board image from the current photo")
             return
@@ -101,7 +101,8 @@ final class Board {
             canvasSize: displaySize,
             mapModel: mapModel,
             displayConfig: displayConfig,
-            isGameMaster: isGameMaster
+            isGameMaster: isGameMaster,
+            panOffset: panOffset
         ) else { return }
         
         // Update the texture using new visionOS 2.0+ API
@@ -136,7 +137,8 @@ final class Board {
         canvasSize: CGSize,
         mapModel: MapModel?,
         displayConfig: DisplayConfigModel?,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        panOffset: CGPoint
     ) -> CGImage? {
         guard let fallbackImage = baseImage.cgImage else { return nil }
         let normalizedDegrees = degrees.truncatingRemainder(dividingBy: 360)
@@ -155,7 +157,8 @@ final class Board {
         // the crop needs no unit conversion before use below.
         let focusRect = GameTableModel.boardFocusRect(
             entries: mapModel?.entries ?? [],
-            imageSize: canvasSize
+            imageSize: canvasSize,
+            panOffset: panOffset
         )
         let zoomScaleX = focusRect.width > 0 ? canvasSize.width / focusRect.width : 1
         let zoomScaleY = focusRect.height > 0 ? canvasSize.height / focusRect.height : 1

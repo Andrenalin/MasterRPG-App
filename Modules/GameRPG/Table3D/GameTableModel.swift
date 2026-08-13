@@ -73,6 +73,20 @@ final class GameTableModel: Sendable {
     /// Pin-only mapState messages can then skip a full fog recomposite.
     private var fogSignature: Int?
 
+    /// A local, per-client pan applied on top of `boardFocusRect`'s
+    /// room-centered crop — dragging the map surface while a room is
+    /// focused/zoomed adjusts this instead of moving anything in 3D space
+    /// (see `GameTableView.viewportPanGesture`) or touching map data. Not
+    /// networked: each client frames their own zoomed view independently,
+    /// same as the 2D map's viewport is per-client.
+    var manualViewportOffset: CGPoint = .zero
+    /// The room id `manualViewportOffset` was last computed against. A stale
+    /// pan (from before a *different* room was focused, or before focus
+    /// cleared) could point outside the new crop entirely, so it resets
+    /// whenever this changes — including a focus change that arrived over
+    /// the network, not just ones this client made.
+    private var lastFocusedRoomId: UUID?
+
     @MainActor
     init(mapRoot: MapRootModel, photoRoot: PhotoRootModel) {
         self.mapRoot = mapRoot
@@ -166,6 +180,7 @@ final class GameTableModel: Sendable {
         if roleChanged {
             fogSignature = nil
         }
+        resetViewportPanIfFocusedRoomChanged(entries: mapModel.entries)
         currentMapId = currentItemId
 
         if mapChanged || photoChanged || currentMapImage == nil {
@@ -182,7 +197,12 @@ final class GameTableModel: Sendable {
             currentMapImage = nil
             currentMapDegrees = 0
             currentPhotoVersion = nil
-            fogSignature = Self.renderSignature(of: mapModel, degrees: 0, isGameMaster: renderIsGameMaster)
+            fogSignature = Self.renderSignature(
+                of: mapModel,
+                degrees: 0,
+                isGameMaster: renderIsGameMaster,
+                viewportPan: manualViewportOffset
+            )
             setup.board.clearMap()
             Logger.gameTable.debug("Map has no photo")
             return
@@ -203,13 +223,19 @@ final class GameTableModel: Sendable {
         currentMapImage = image
         currentMapDegrees = degrees
         currentPhotoVersion = metadata?.version
-        fogSignature = Self.renderSignature(of: mapModel, degrees: degrees, isGameMaster: renderIsGameMaster)
+        fogSignature = Self.renderSignature(
+            of: mapModel,
+            degrees: degrees,
+            isGameMaster: renderIsGameMaster,
+            viewportPan: manualViewportOffset
+        )
         setup.board.updateMap(
             image: image,
             degrees: degrees,
             displayConfig: mapModel.displayConfig,
             mapModel: mapModel,
-            isGameMaster: renderIsGameMaster
+            isGameMaster: renderIsGameMaster,
+            panOffset: manualViewportOffset
         )
         Logger.gameTable.debug("Map updated (rotation: \(degrees, privacy: .public)°, GM: \(isGameMaster, privacy: .public))")
     }
@@ -226,6 +252,7 @@ final class GameTableModel: Sendable {
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
+        resetViewportPanIfFocusedRoomChanged(entries: mapModel.entries)
         let metadata = mapModel.photoId.flatMap(photoMetadata(for:))
         if metadata?.version != currentPhotoVersion
             || metadata?.degrees != currentMapDegrees {
@@ -241,7 +268,8 @@ final class GameTableModel: Sendable {
         let signature = Self.renderSignature(
             of: mapModel,
             degrees: currentMapDegrees,
-            isGameMaster: renderIsGameMaster
+            isGameMaster: renderIsGameMaster,
+            viewportPan: manualViewportOffset
         )
         guard signature != fogSignature else { return }
         fogSignature = signature
@@ -251,7 +279,8 @@ final class GameTableModel: Sendable {
             degrees: currentMapDegrees,
             displayConfig: mapModel.displayConfig,
             mapModel: mapModel,
-            isGameMaster: renderIsGameMaster
+            isGameMaster: renderIsGameMaster,
+            panOffset: manualViewportOffset
         )
         Logger.gameTable.debug("Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count, privacy: .public) hidden areas (GM: \(isGameMaster, privacy: .public))")
     }
@@ -270,7 +299,8 @@ final class GameTableModel: Sendable {
     private static func renderSignature(
         of mapModel: MapModel,
         degrees: Double,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        viewportPan: CGPoint
     ) -> Int {
         var hasher = Hasher()
         hasher.combine(mapModel.id)
@@ -280,6 +310,8 @@ final class GameTableModel: Sendable {
         hasher.combine(degrees)
         hasher.combine(isGameMaster)
         hasher.combine(mapModel.displayConfig)
+        hasher.combine(viewportPan.x)
+        hasher.combine(viewportPan.y)
         for entry in mapModel.entries {
             hasher.combine(entry.id)
             hasher.combine(entry.coordinates)
@@ -300,7 +332,11 @@ final class GameTableModel: Sendable {
     /// `GameSetup` implementations (visionOS and iOS/macOS) duplicate
     /// `MapTableProjection` and its board texture rendering — this keeps the
     /// geometry itself in one place.
-    static func boardFocusRect(entries: [MapEntryModel], imageSize: CGSize) -> CGRect {
+    /// `panOffset` shifts the crop's center before clamping — the local,
+    /// per-client adjustment from dragging the map surface while zoomed (see
+    /// `manualViewportOffset`). Zero by default: the auto-fit crop centered
+    /// on the focused room, unchanged from before panning existed.
+    static func boardFocusRect(entries: [MapEntryModel], imageSize: CGSize, panOffset: CGPoint = .zero) -> CGRect {
         let fullRect = CGRect(origin: .zero, size: imageSize)
         guard imageSize.width > 0, imageSize.height > 0,
               let focused = entries.first(where: \.focused),
@@ -322,7 +358,10 @@ final class GameTableModel: Sendable {
         guard scale.isFinite, scale > 0 else { return fullRect }
 
         let cropSize = CGSize(width: imageSize.width / scale, height: imageSize.height / scale)
-        var origin = CGPoint(x: bounds.midX - cropSize.width / 2, y: bounds.midY - cropSize.height / 2)
+        var origin = CGPoint(
+            x: bounds.midX - cropSize.width / 2 + panOffset.x,
+            y: bounds.midY - cropSize.height / 2 + panOffset.y
+        )
         origin.x = min(max(origin.x, 0), imageSize.width - cropSize.width)
         origin.y = min(max(origin.y, 0), imageSize.height - cropSize.height)
         return CGRect(origin: origin, size: cropSize)
@@ -350,6 +389,53 @@ final class GameTableModel: Sendable {
     /// monster pin should land.
     var focusedRoomId: UUID? {
         rooms.first(where: \.focused)?.id
+    }
+
+    private func resetViewportPanIfFocusedRoomChanged(entries: [MapEntryModel]) {
+        let currentFocusedRoomId = entries.first(where: \.focused)?.id
+        guard currentFocusedRoomId != lastFocusedRoomId else { return }
+        lastFocusedRoomId = currentFocusedRoomId
+        manualViewportOffset = .zero
+    }
+
+    /// Pans the zoomed viewport by a map-coordinate delta — dragging the map
+    /// surface while a room is focused. Purely a local render adjustment
+    /// (`manualViewportOffset`, folded into `boardFocusRect`); never touches
+    /// map data, so it works the same for the game master and every player,
+    /// each framing their own view independently.
+    private func panViewport(by delta: CGPoint) {
+        guard focusedRoomId != nil else { return }
+        // Dragging right should bring content on the left into view (like
+        // dragging a photo, not scrolling a window onto it) — the visible
+        // crop moves opposite the finger.
+        manualViewportOffset.x -= delta.x
+        manualViewportOffset.y -= delta.y
+        Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+        syncPawnsWithMapPins()
+    }
+
+    /// Entry point for `GameTableView.viewportPanGesture`: converts a drag's
+    /// start/end table positions into a map-coordinate delta using whatever
+    /// projection is currently on screen (so the pan tracks the finger
+    /// exactly, at any zoom level), then pans by it. No-ops without a
+    /// focused room — there's no crop to pan within otherwise.
+    func panViewport(fromTableStart start: SIMD3<Float>, toTableEnd end: SIMD3<Float>) {
+        guard focusedRoomId != nil,
+              let mapModel = currentMapModel(),
+              mapModel.width > 0, mapModel.height > 0 else { return }
+        let coordinateSize = CGSize(width: mapModel.width, height: mapModel.height)
+        let projection = MapTableProjection(
+            imageSize: coordinateSize,
+            degrees: 0,
+            focusRect: Self.boardFocusRect(
+                entries: mapModel.entries,
+                imageSize: coordinateSize,
+                panOffset: manualViewportOffset
+            )
+        )
+        let startLocation = projection.mapLocation(for: start)
+        let endLocation = projection.mapLocation(for: end)
+        panViewport(by: CGPoint(x: endLocation.x - startLocation.x, y: endLocation.y - startLocation.y))
     }
 
     /// Re-syncs pawns and re-broadcasts after a map mutation made outside this
@@ -615,7 +701,11 @@ final class GameTableModel: Sendable {
         let projection = MapTableProjection(
             imageSize: coordinateSize,
             degrees: 0,
-            focusRect: Self.boardFocusRect(entries: mapModel.entries, imageSize: coordinateSize)
+            focusRect: Self.boardFocusRect(
+                entries: mapModel.entries,
+                imageSize: coordinateSize,
+                panOffset: manualViewportOffset
+            )
         )
         let location = projection.mapLocation(
             for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)

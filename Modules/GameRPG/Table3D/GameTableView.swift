@@ -361,6 +361,11 @@ private struct GameTableRealityContent: View {
     @Binding var accessibilitySubscriptions: [any Cancellable]
     let showsEmbeddedToolbar: Bool
 
+    /// Captured on `viewportPanGesture`'s first `.onChanged` call, cleared on
+    /// `.onEnded` — the pan commits once, in a single step, rather than
+    /// re-rendering the board texture on every touch-move event.
+    @State private var viewportPanStart: SIMD3<Float>?
+
     var body: some View {
         RealityView { content in
             content.camera = .virtual
@@ -385,6 +390,15 @@ private struct GameTableRealityContent: View {
             game.renderer.updateCamera(for: size)
         }
         .highPriorityGesture(pinDragGesture)
+        // Wins over `.orbit`'s bundled one-finger drag (see the comment
+        // above) only for touches starting on the map surface itself, so a
+        // room, once focused/zoomed, can be panned within its own crop by
+        // dragging it — like the 2D map's viewport, not by moving anything
+        // in 3D space (see `GameTableModel.manualViewportOffset`). Distinct
+        // from `BoardSurfaceComponent`'s hit-test volume: pins and room fog
+        // sit closer to the camera and keep winning ties, so this never
+        // steals from `pinDragGesture` or `roomTapGesture` below.
+        .highPriorityGesture(viewportPanGesture)
         // A pin sitting over a room's fog always wins the tap — pinTapGesture
         // is listed first, and exclusively(before:) gives it precedence; its
         // targetedToEntity predicate simply never matches when the touch
@@ -416,6 +430,26 @@ private struct GameTableRealityContent: View {
                       let parent = value.entity.parent,
                       let position = value.tablePosition(relativeTo: parent) else { return }
                 game.pinDragEnded(pinId: pinId, position: position)
+            }
+    }
+
+    /// Pans the zoomed viewport instead of moving a pin or the table itself —
+    /// see `GameTableModel.panViewport(fromTableStart:toTableEnd:)`. Commits
+    /// once, on release, rather than re-rendering the board texture (an
+    /// `ImageRenderer` pass, not cheap) on every touch-move event.
+    private var viewportPanGesture: some Gesture {
+        DragGesture(minimumDistance: 5)
+            .targetedToEntity(where: .has(BoardSurfaceComponent.self))
+            .onChanged { value in
+                guard viewportPanStart == nil,
+                      let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
+                viewportPanStart = position
+            }
+            .onEnded { value in
+                defer { viewportPanStart = nil }
+                guard let start = viewportPanStart,
+                      let end = value.tablePosition(relativeTo: game.renderer.root) else { return }
+                game.panViewport(fromTableStart: start, toTableEnd: end)
             }
     }
 

@@ -22,6 +22,7 @@ final class GameSetup {
         self.root = root
         PinComponent.registerComponent()
         RoomComponent.registerComponent()
+        BoardSurfaceComponent.registerComponent()
 
         board = Board()
         root.addChild(board.entity)
@@ -42,7 +43,8 @@ final class GameSetup {
         mapImage: AKImage?,
         degrees: Double,
         isGameMaster: Bool,
-        activeAttackerPinId: UUID?
+        activeAttackerPinId: UUID?,
+        viewportPan: CGPoint
     ) -> [UUID: UUID] {
         let allPins: [MapPinModel]
         if let mapModel {
@@ -63,7 +65,7 @@ final class GameSetup {
             } ?? true
         }
 
-        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
+        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees, viewportPan: viewportPan)
         let existingPawns = Dictionary(
             pinPawns.map { ($0.pinId, $0) },
             uniquingKeysWith: { current, _ in current }
@@ -140,8 +142,8 @@ final class GameSetup {
     /// table. Clears every hit area when there's no map or image to project
     /// coordinates against — the room menu still works then, only the
     /// on-table gesture is unavailable.
-    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) {
-        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees) else {
+    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, viewportPan: CGPoint) {
+        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees, viewportPan: viewportPan) else {
             for area in roomHitAreas {
                 area.entity.removeFromParent()
             }
@@ -174,13 +176,17 @@ final class GameSetup {
 
     /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
     /// coordinate conversion, authoritative from `MapModel` when available.
-    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) -> MapTableProjection? {
+    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, viewportPan: CGPoint) -> MapTableProjection? {
         if let mapModel, mapModel.width > 0, mapModel.height > 0 {
             let imageSize = CGSize(width: mapModel.width, height: mapModel.height)
             return MapTableProjection(
                 imageSize: imageSize,
                 degrees: 0,
-                focusRect: GameTableModel.boardFocusRect(entries: mapModel.entries, imageSize: imageSize)
+                focusRect: GameTableModel.boardFocusRect(
+                    entries: mapModel.entries,
+                    imageSize: imageSize,
+                    panOffset: viewportPan
+                )
             )
         } else if let mapImage {
             return MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
@@ -204,9 +210,15 @@ extension GameTableModel {
             mapImage: currentMapImage,
             degrees: currentMapDegrees,
             isGameMaster: isGameMaster,
-            activeAttackerPinId: activeAttackerPinId
+            activeAttackerPinId: activeAttackerPinId,
+            viewportPan: manualViewportOffset
         )
-        setup.syncRooms(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees)
+        setup.syncRooms(
+            mapModel: mapModel,
+            mapImage: currentMapImage,
+            degrees: currentMapDegrees,
+            viewportPan: manualViewportOffset
+        )
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
