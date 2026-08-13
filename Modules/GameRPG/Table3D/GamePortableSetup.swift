@@ -7,17 +7,6 @@ import MapRPG
 import RealityKit
 import os.log
 
-enum GameMetrics {
-    static let tableEdge: Float = 0.7
-    static let tableThickness: Float = 0.0146
-    static let mapSurfaceClearance: Float = 0.0005
-    static let playerAreaDistanceFromCenter: Float = 0.29
-    static let smallHeight: Float = 0.001
-    static let boardHeight: Float = 0.055
-    static let playerAreaSize = SIMD2<Float>(0.4, 0.1)
-    static let playerHandSize = SIMD2<Float>(0.2, 0.1)
-}
-
 @MainActor
 final class GameSetup {
     let root: Entity
@@ -218,9 +207,10 @@ extension GameTableModel {
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
-            Task { [weak self] in
+            let task = Task { [weak self] in
                 await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)
             }
+            trackThumbnailTask(for: pinId, task)
         }
     }
 }

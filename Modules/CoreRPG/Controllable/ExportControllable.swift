@@ -125,6 +125,29 @@ public extension ExportControllable {
         return results
     }
 
+    /// Default `exporting(itemIds:)` body for modules with no per-item
+    /// companion assets to pull in beyond their own item tree — walk from the
+    /// seed ids through same-module `entries`, treating a leaf item's
+    /// `entries` as cross-references rather than containment (`specialCategory`
+    /// distinguishes container items — folders/collections — from leaves, so a
+    /// leaf's traversal stops there instead of following its cross-links).
+    ///
+    /// Every "simple" module (no `diceId`/`photoId`/`mapPins`-style fields to
+    /// also collect) should implement `exporting(itemIds:)` as exactly
+    /// `exportingSimpleEntries(itemIds: itemIds)` rather than hand-copying
+    /// this BFS — see CODE_AUDIT §9.4/§5.1 for the drift that duplicating it
+    /// already caused once.
+    @MainActor func exportingSimpleEntries(itemIds: ItemModuleIds) -> ItemModuleIds {
+        let results = bfsExportResults(seedIds: itemIds.ids[itemControllable.config.module, default: []]) { id in
+            guard let item = itemControllable.itemSync(for: id) else { return nil }
+            guard item.specialCategory else { return [] }
+            return item.entries.compactMap { entryId in
+                itemControllable.itemSync(for: entryId.childId) != nil ? entryId.childId : nil
+            }
+        }
+        return finalizeExportResults(results, into: itemIds)
+    }
+
     /// The tail every module's `exporting(itemIds:)` shares: promote folders,
     /// stamp the module's own resolved ids, and merge in any partial-folder ids.
     @MainActor func finalizeExportResults(_ results: Set<UUID>, into itemIds: ItemModuleIds) -> ItemModuleIds {

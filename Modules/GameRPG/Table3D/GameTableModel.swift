@@ -42,6 +42,11 @@ final class GameTableModel: Sendable {
     private var currentPhotoId: UUID?
     private var currentPhotoVersion: Int?
     private var pendingPinPhotoIds: [UUID: UUID] = [:]
+    /// Tracks the `Task` spawned per pin by `syncPawnsWithMapPins()` so a
+    /// pin whose photo load is superseded (or the whole model torn down) can
+    /// have its in-flight load cancelled instead of running to completion
+    /// with no one left to apply the result. See CODE_AUDIT §3.5.
+    private var pendingThumbnailTasks: [UUID: Task<Void?, Never>] = [:]
     /// Signature of every value that affects the rendered board texture.
     /// Pin-only mapState messages can then skip a full fog recomposite.
     private var fogSignature: Int?
@@ -316,14 +321,16 @@ final class GameTableModel: Sendable {
             if pendingPinPhotoIds[pinId] == photoId {
                 pendingPinPhotoIds[pinId] = nil
             }
+            pendingThumbnailTasks[pinId] = nil
         }
-        guard let cache = photoRoot.cacheControllable else { return }
+        guard !Task.isCancelled, let cache = photoRoot.cacheControllable else { return }
         var image = await cache.thumbnail(for: photoId)
         if image == nil {
             guard let item = await photoRoot.itemControllable.item(for: photoId) else { return }
             await cache.thumbnailId(for: photoId, item: item)
             image = await cache.thumbnail(for: photoId)
         }
+        guard !Task.isCancelled else { return }
         let currentPin = currentMapModel().flatMap { mapModel in
             pinId == mapModel.pointer.id
                 ? mapModel.pointer
@@ -340,6 +347,13 @@ final class GameTableModel: Sendable {
         guard pendingPinPhotoIds[pinId] != photoId else { return false }
         pendingPinPhotoIds[pinId] = photoId
         return true
+    }
+
+    /// Records the thumbnail-load `Task` spawned for `pinId`, cancelling any
+    /// still-running load for that same pin it supersedes.
+    func trackThumbnailTask(for pinId: UUID, _ task: Task<Void?, Never>) {
+        pendingThumbnailTasks[pinId]?.cancel()
+        pendingThumbnailTasks[pinId] = task
     }
 
     /// The master moves every pin. A player moves its own pin and may move the
@@ -614,6 +628,7 @@ final class GameTableModel: Sendable {
     }
 
     isolated deinit {
+        pendingThumbnailTasks.values.forEach { $0.cancel() }
 #if os(visionOS)
         tabletopGame.removeObserver(observer)
         tabletopGame.removeRenderDelegate(renderer)

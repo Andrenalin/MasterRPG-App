@@ -31,7 +31,6 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
         ///   - rhs: The second atom to compare.
         public static func <= (lhs: Self, rhs: Self) -> Bool {
             // functionally equivalent to say rhs instance is ordered after lhs instance
-            // print("lhs \(lhs.timestamp), \(lhs.id) <=? rhs \(rhs.timestamp), \(rhs.id)")
             lhs.clockId <= rhs.clockId
         }
     }

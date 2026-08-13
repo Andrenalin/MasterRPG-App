@@ -72,18 +72,17 @@ public struct LinkItemListView: View {
                             root.folderLinkControllable.scheduleSearch()
                         }
                     }
-                    .onAppear {
+                    .task {
                         let savedScroll = listModel.scrollId
-                        Task {
-                            // Only prime the main list once; detailListModel is handled by .task above.
-                            if parentModel == nil {
-                                await root.folderLinkControllable.resetItemOnce()
-                            }
-                            listModel.scrollId = savedScroll
-                            if let savedPosition = listModel.scrollId {
-                                withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2)) {
-                                    scrollPosition = savedPosition
-                                }
+                        // Only prime the main list once; detailListModel is handled by .task above.
+                        if parentModel == nil {
+                            await root.folderLinkControllable.resetItemOnce()
+                        }
+                        guard !Task.isCancelled else { return }
+                        listModel.scrollId = savedScroll
+                        if let savedPosition = listModel.scrollId {
+                            withAnimation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                                scrollPosition = savedPosition
                             }
                         }
                     }

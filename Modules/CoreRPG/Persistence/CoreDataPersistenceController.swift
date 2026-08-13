@@ -205,13 +205,8 @@ public struct CoreDataPersistenceController {
         model.persistentHistoryCleaner = PersistentHistoryCleaner(container: container)
 
         model.cleanupTask?.cancel()
-        model.cleanupTask = Task { [weak model] in
-            try? await Task.sleep(for: .seconds(5))
+        model.cleanupTask = PersistentHistoryCleaner.scheduleRecurringCleanup { [weak model] in
             model?.persistentHistoryCleaner?.clean()
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(24 * 60 * 60))
-                model?.persistentHistoryCleaner?.clean()
-            }
         }
     }
 }

@@ -231,7 +231,7 @@ private extension ListRootView {
                 }
             }
         }
-        .onAppear {
+        .task {
             // Snapshot the exact recorded position (not just whether one exists) before
             // `applyPostUpdateSelection` runs below — it can itself derive a fresh `scrollId`,
             // which would silently move the restore target away from where the list actually
@@ -240,18 +240,17 @@ private extension ListRootView {
             // isn't always preserved for free.
             let recordedScrollId = listModel.scrollId
             let initialSelected = listModel.selected
-            Task {
-                await Task.yield()
-                if let selectedId = initialSelected {
-                    listController.applyPostUpdateSelection(previousSelectedId: selectedId, selectionGeneration: 0)
-                }
-                if let recordedScrollId {
-                    scrollPosition = ScrollPosition(id: recordedScrollId, anchor: .top)
-                } else if let selected = listModel.selected {
-                    // First-ever appearance with a selection restored from persisted state
-                    // (no scroll memory yet) — reveal it centered.
-                    scrollPosition = ScrollPosition(id: selected, anchor: .center)
-                }
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            if let selectedId = initialSelected {
+                listController.applyPostUpdateSelection(previousSelectedId: selectedId, selectionGeneration: 0)
+            }
+            if let recordedScrollId {
+                scrollPosition = ScrollPosition(id: recordedScrollId, anchor: .top)
+            } else if let selected = listModel.selected {
+                // First-ever appearance with a selection restored from persisted state
+                // (no scroll memory yet) — reveal it centered.
+                scrollPosition = ScrollPosition(id: selected, anchor: .center)
             }
         }
         .focusedValue(\.moduleListIsFocused, true)

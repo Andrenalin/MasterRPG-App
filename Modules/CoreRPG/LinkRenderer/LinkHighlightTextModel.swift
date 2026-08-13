@@ -155,7 +155,6 @@ extension LinkHighlightTextModel {
         while index != range.upperBound && index < text.endIndex {
             // Link Begin Test
             if text[index] == Character(LinkExpandHighLightValues.begin.rawValue) {
-                //print("Link Begin:\(text[index])")
                 if lastIndex != index && index > lastIndex {
                     let previousRange = lastIndex..<index
                     result.append(contentsOf: hightlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
@@ -193,7 +192,6 @@ extension LinkHighlightTextModel {
                             deep: deep + 1
                         )
                     )
-                    //print("Link End:\(text[nextIndex..<endRange.lowerBound])")
                     nextIndex = endRange.upperBound
                     index = endRange.lowerBound
                     if boldRange != nil {
@@ -205,21 +203,17 @@ extension LinkHighlightTextModel {
             
             // check for bold
             if text[index] == Character(LinkExpandHighLightValues.bold.rawValue) {
-                //print("Check bold:\(text[index])")
                 let nextIndex = text.index(after: index)
                 if nextIndex != range.upperBound && text[nextIndex] == Character(LinkExpandHighLightValues.bold.rawValue) {
-                    //print("found bold:\(text[index])")
                     // found bold
                     if var range = boldRange {
                         // bold end
                         range = range.lowerBound..<index
-                        //print("Found bold:\(text[range])")
                         result.append(contentsOf: hightlight(text: text, range: range, isBold: true, deep: deep))
                         boldRange = nil
                         lastIndex = text.index(after: nextIndex)
                     } else {
                         // bold start
-                        //print("Bold Start detected ")
                         let rangeStart = text.index(after: nextIndex)
                         if rangeStart != range.upperBound {
                             boldRange = rangeStart..<range.upperBound

@@ -112,12 +112,6 @@ import Foundation
     } catch {
         print(error.localizedDescription)
     }
-
-//    do {
-//        let response = try await session.respond(to: prompt)
-//    } catch {
-//        print(error.localizedDescription)
-//    }
 }
 
 #endif

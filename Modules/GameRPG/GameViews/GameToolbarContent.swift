@@ -64,6 +64,8 @@ struct GameToolbarContent: ToolbarContent {
                 PlayerConnectionStatusView(status: connectionStatus)
             }
 
+            GameJoinCodeRevealButton(root: root, isMaster: role == .master)
+
             BatteryView()
         }
 

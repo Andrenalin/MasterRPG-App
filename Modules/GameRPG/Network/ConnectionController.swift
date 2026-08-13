@@ -32,9 +32,9 @@ actor ConnectionController: Identifiable {
     private weak var delegate: (any ConnectionControllerDelegate)?
     private var receiveTask: Task<Void, Never>?
 
-    init(id: UUID, endpoint: NWEndpoint, delegate: ConnectionControllerDelegate) {
+    init(id: UUID, endpoint: NWEndpoint, passcode: String, delegate: ConnectionControllerDelegate) {
         self.id = id
-        self.connection = NWConnection.connection(endpoint: endpoint)
+        self.connection = NWConnection.connection(endpoint: endpoint, passcode: passcode)
         self.delegate = delegate
         Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint")
     }

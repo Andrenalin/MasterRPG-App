@@ -7,4 +7,4 @@ Declare the bundle for the assets.
 import Foundation
 
 /// Bundle for the TabletopGameSampleContent project
-public let tabletopGameContentBunlde = Bundle.module
+public let tabletopGameContentBundle = Bundle.module

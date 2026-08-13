@@ -63,7 +63,11 @@ struct GameRootViewer: View {
                     EmptyGameContent(
                         title: emptyTitle,
                         startTime: root.gameModel.startGameTime,
-                        showsElapsedTime: contentType == .master
+                        showsElapsedTime: contentType == .master,
+                        // An external/mirrored display is a shared, public
+                        // screen (e.g. a second monitor for the whole table) —
+                        // never reveal a private join code there.
+                        joinCode: contentType == .externalPlayer ? nil : root.ownJoinCode(isMaster: contentType == .master)
                     )
                 }
             } else if playerController.gameModel.gameUpdateType != .map {
@@ -207,6 +211,7 @@ private struct EmptyGameContent: View {
     let title: LocalizedStringKey
     let startTime: Date
     let showsElapsedTime: Bool
+    let joinCode: String?
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -224,6 +229,13 @@ private struct EmptyGameContent: View {
                         )
                         .monospacedDigit()
                     }
+                }
+                if let joinCode {
+                    Text("Join Code: \(joinCode)", bundle: .module)
+                        .font(.title3)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                 }
                 Spacer()
             }

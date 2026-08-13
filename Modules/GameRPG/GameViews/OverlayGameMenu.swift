@@ -374,16 +374,21 @@ private extension OverlayGameMenu {
     
     @ViewBuilder
     var wifiView: some View {
-        if !isMaster, let playerController {
-            GameConnectionStatusIndicatorView(
-                status: GameConnectionStatusPresentation(
-                    lostMaster: playerController.gameModel.lostMaster,
-                    sharePlayState: root.networkStore.sharePlayStore.connectionState
+        HStack(spacing: marginWidth) {
+            if !isMaster, let playerController {
+                GameConnectionStatusIndicatorView(
+                    status: GameConnectionStatusPresentation(
+                        lostMaster: playerController.gameModel.lostMaster,
+                        sharePlayState: root.networkStore.sharePlayStore.connectionState
+                    )
                 )
-            )
                 .imageScale(.small)
-                .padding(.leading, marginWidth)
+            }
+
+            GameJoinCodeRevealButton(root: root, isMaster: isMaster)
+                .imageScale(.small)
         }
+        .padding(.leading, marginWidth)
     }
     
 }

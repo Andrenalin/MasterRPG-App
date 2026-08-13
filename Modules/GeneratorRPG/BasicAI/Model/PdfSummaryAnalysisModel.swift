@@ -9,14 +9,14 @@ import PDFKit
 final class PdfSummaryAnalysisModel {
 
     var isAnalyzing: Bool = false
-    let resultModel: PdfSummaryAnalyzyerResultModel
+    let resultModel: PdfSummaryAnalyzerResultModel
     var lastError: String?
 
     private let analyzer: PdfSummaryAnalyzer
 
     init() {
         analyzer = PdfSummaryAnalyzer()
-        resultModel = PdfSummaryAnalyzyerResultModel()
+        resultModel = PdfSummaryAnalyzerResultModel()
     }
 
     /// Analyzes PDF with streaming progress updates

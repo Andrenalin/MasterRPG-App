@@ -492,7 +492,11 @@ extension MasterController {
         gameModel.resetPlayerJournalAdmissions()
         gameModel.resetPeerAvailabilitySources()
         root.logGameController.beginDeliverySession(gameModel.deliverySessionID)
-        await root.networkStore.startMasterGame(game: root.gameModel.gameConfig, titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId))
+        await root.networkStore.startMasterGame(
+            game: root.gameModel.gameConfig,
+            titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId),
+            passcode: root.gameJoinCodeModel.masterCode
+        )
     }
     
     @MainActor

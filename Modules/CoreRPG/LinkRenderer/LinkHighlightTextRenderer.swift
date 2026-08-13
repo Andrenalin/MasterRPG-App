@@ -42,7 +42,6 @@ struct LinkHighlightTextRenderer: TextRenderer {
                 } else if let link = run[LinkHighlightAttribute.self] {
                     
                     var rect = run.typographicBounds.rect
-                    //print("\(link.linkModel.itemId) with \(line.indices) \(run.indices) on \(rect)")
                     rect = CGRect(x: rect.origin.x, y: rect.origin.y, width: rect.width + 2, height: rect.height)
                     let location = rect
                     let runId = run.indices.upperBound + 10000 + run.indices.upperBound

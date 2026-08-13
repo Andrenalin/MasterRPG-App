@@ -29,11 +29,10 @@ struct SharingInput: View {
                 focusedField = .text
             }
             .hideKeyboardView(enabled: focusedField != nil, focusedField: $focusedField)
-            .onAppear {
-                Task {
-                    try? await Task.sleep(for: .seconds(0.5))
-                    focusedField = .name
-                }
+            .task {
+                try? await Task.sleep(for: .seconds(0.5))
+                guard !Task.isCancelled else { return }
+                focusedField = .name
             }
 
         TextField(text: $model.text, axis: .vertical) {

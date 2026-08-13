@@ -614,10 +614,10 @@ final class GameNetworkController: Sendable {
 
 extension GameNetworkController {
     @MainActor
-    func startMasterGame(game: GameConfigModel, titleImage: AKImage?) async {
+    func startMasterGame(game: GameConfigModel, titleImage: AKImage?, passcode: String) async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .public)")
-        model.masterStore?.startStreaming()
+        model.masterStore?.startStreaming(passcode: passcode)
         if !proxy && sharePlayStore.canActivateSharePlay {
             // Subscribe to sessions() before activating, so the session delivered
             // by activate() can never race past the for-await loop.
@@ -627,18 +627,18 @@ extension GameNetworkController {
     }
 
     @MainActor
-    func startProxyServer() {
+    func startProxyServer(passcode: String) {
         let name = model.name
         Logger.networking.debug("GameNetworkController: start proxy server \(name, privacy: .public)")
-        model.masterStore?.startProxyStreaming()
+        model.masterStore?.startProxyStreaming(passcode: passcode)
     }
 
     @MainActor
-    func startPlayerGame(to model: BrowserGameModel?) async -> Bool {
+    func startPlayerGame(to model: BrowserGameModel?, passcode: String) async -> Bool {
         let name = self.model.name
         Logger.networking.debug("GameNetworkController: start player game \(name, privacy: .public)")
         if let model {
-            await self.model.playerStore?.toggleConnection(to: model)
+            await self.model.playerStore?.toggleConnection(to: model, passcode: passcode)
             return true
         }
         if !proxy && sharePlayStore.canActivateSharePlay {

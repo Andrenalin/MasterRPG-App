@@ -26,13 +26,6 @@ extension ExportController: ExportControllable {
     var itemControllable: any ItemControllable { itemController }
     
     @MainActor public func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
-        let results = bfsExportResults(seedIds: itemIds.ids[itemController.config.module, default: []]) { id in
-            guard let item = itemController.itemSync(for: id) else { return nil }
-            guard item.specialCategory else { return [] }
-            return item.entries.compactMap { entryId in
-                itemController.itemSync(for: entryId.childId) != nil ? entryId.childId : nil
-            }
-        }
-        return finalizeExportResults(results, into: itemIds)
+        exportingSimpleEntries(itemIds: itemIds)
     }
 }

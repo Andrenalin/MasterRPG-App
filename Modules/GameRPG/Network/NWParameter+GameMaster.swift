@@ -17,8 +17,8 @@ protocol ConnectionAbstraction: AnyObject {
 extension NWConnection: ConnectionAbstraction {}
 
 extension NWConnection {
-    static func connection(endpoint: NWEndpoint) -> NWConnection {
-        NWConnection(to: endpoint, using: NWParameters(passcode: GameSecurity.passcode))
+    static func connection(endpoint: NWEndpoint, passcode: String) -> NWConnection {
+        NWConnection(to: endpoint, using: NWParameters(passcode: passcode))
     }
 }
 

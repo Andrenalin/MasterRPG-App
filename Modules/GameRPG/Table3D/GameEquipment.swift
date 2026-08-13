@@ -589,7 +589,7 @@ struct Die20: EntityEquipment {
         // conditions), fall back to a plain procedural mesh so the die still renders,
         // rolls, and reports a value — just without its custom artwork.
         do {
-            self.entity = try Entity.load(named: "D20Blue", in: tabletopGameContentBunlde)
+            self.entity = try Entity.load(named: "D20Blue", in: tabletopGameContentBundle)
         } catch {
             Logger.gameTable.error(
                 "Failed to load the bundled D20Blue RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
@@ -606,7 +606,7 @@ struct Die20: EntityEquipment {
             let audioResource = try AudioFileResource.load(
                 named: "/Root/dieSoundLong_mp3",
                 from: "static_scene.usda",
-                in: tabletopGameContentBunlde
+                in: tabletopGameContentBundle
             )
             self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         } catch {
@@ -684,7 +684,7 @@ struct Die: EntityEquipment {
         // protocol — see the matching comment on `Die20.init` for why this degrades to a
         // procedural fallback mesh instead of crashing.
         do {
-            self.entity = try Entity.load(named: "Die", in: tabletopGameContentBunlde)
+            self.entity = try Entity.load(named: "Die", in: tabletopGameContentBundle)
         } catch {
             Logger.gameTable.error(
                 "Failed to load the bundled Die RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
@@ -698,7 +698,7 @@ struct Die: EntityEquipment {
             let audioResource = try AudioFileResource.load(
                 named: "/Root/dieSoundShort_mp3",
                 from: "static_scene.usda",
-                in: tabletopGameContentBunlde
+                in: tabletopGameContentBundle
             )
             self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         } catch {
