@@ -108,20 +108,9 @@ struct PlayerStartView: View {
                                 appGameStateModel.gameModus = .edit
                             }
                         }
-
-                    playerJoinCodeField
                 }
             }
         }
-    }
-
-    @ViewBuilder
-    private var playerJoinCodeField: some View {
-        @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
-        GameJoinCodeField(title: "Your Player Code", code: $gameJoinCodeModel.playerCode) {
-            gameJoinCodeModel.playerCode = GameJoinCodeModel.randomCode()
-        }
-        .padding(.top, 8)
     }
 }
 

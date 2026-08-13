@@ -21,48 +21,36 @@ struct MasterStartView: View {
     
     var body: some View {
         if root.gameModel.selectedAdventure != nil {
-            VStack {
-                Button {
-                    Task {
-                        await startGame()
-                    }
-                } label: {
-                    Label {
-                        Text(title(), bundle: .module)
-                    } icon: {
-                        Image(systemName: "play.square.stack")
-                            .imageScale(.large)
-                    }
-                    .padding()
+            Button {
+                Task {
+                    await startGame()
                 }
-                .borderLessTVBottonStyle()
-                .overlay {
-                    overlayAnimation
+            } label: {
+                Label {
+                    Text(title(), bundle: .module)
+                } icon: {
+                    Image(systemName: "play.square.stack")
+                        .imageScale(.large)
                 }
-                .animation(
-                    accessibilityReduceMotion ? nil : .easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false),
-                    value: startSharePlayAnimation
-                )
-                .onChange(of: sharePlayStore.canActivateSharePlay, initial: true) {
-                    startSharePlayAnimation = sharePlayStore.canActivateSharePlay
-                }
-                .popoverTip(
-                    navigator.isPresenting ? nil : MasterRPGTips.startOrJoinGame
-                )
-
-                masterJoinCodeField
+                .padding()
             }
+            .borderLessTVBottonStyle()
+            .overlay {
+                overlayAnimation
+            }
+            .animation(
+                accessibilityReduceMotion ? nil : .easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false),
+                value: startSharePlayAnimation
+            )
+            .onChange(of: sharePlayStore.canActivateSharePlay, initial: true) {
+                startSharePlayAnimation = sharePlayStore.canActivateSharePlay
+            }
+            .popoverTip(
+                navigator.isPresenting ? nil : MasterRPGTips.startOrJoinGame
+            )
         }
     }
 
-    @ViewBuilder
-    private var masterJoinCodeField: some View {
-        @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
-        GameJoinCodeField(title: "Game Master Code", code: $gameJoinCodeModel.masterCode) {
-            gameJoinCodeModel.masterCode = GameJoinCodeModel.randomCode()
-        }
-    }
-    
     private var overlayAnimation: some View {
         Capsule()
             .stroke(Color.accentColor, lineWidth: 4)

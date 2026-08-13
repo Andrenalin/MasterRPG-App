@@ -29,12 +29,14 @@ public final class GameJoinCodeModel: Sendable {
         self.defaults = .standard
         masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, defaults: .standard)
         playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, defaults: .standard)
+        lastUsedMasterJoinCode = UserDefaults.standard.string(forKey: Self.lastUsedMasterJoinCodeKey)
     }
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
         masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, defaults: defaults)
         playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, defaults: defaults)
+        lastUsedMasterJoinCode = defaults.string(forKey: Self.lastUsedMasterJoinCodeKey)
     }
 
     private let defaults: UserDefaults?
@@ -50,6 +52,20 @@ public final class GameJoinCodeModel: Sendable {
         didSet {
             guard oldValue != playerCode else { return }
             defaults?.set(playerCode, forKey: Self.playerCodeKey)
+        }
+    }
+
+    /// The code this device last used to successfully join a Game Master.
+    /// Tried automatically on the next "Connect" tap for that role before
+    /// falling back to prompting for a fresh code — see `BrowserRowView`.
+    public var lastUsedMasterJoinCode: String? {
+        didSet {
+            guard oldValue != lastUsedMasterJoinCode else { return }
+            if let lastUsedMasterJoinCode {
+                defaults?.set(lastUsedMasterJoinCode, forKey: Self.lastUsedMasterJoinCodeKey)
+            } else {
+                defaults?.removeObject(forKey: Self.lastUsedMasterJoinCodeKey)
+            }
         }
     }
 
@@ -74,4 +90,5 @@ public final class GameJoinCodeModel: Sendable {
 
     private static let masterCodeKey = "MasterRPGMasterJoinCode"
     private static let playerCodeKey = "MasterRPGPlayerJoinCode"
+    private static let lastUsedMasterJoinCodeKey = "MasterRPGLastUsedMasterJoinCode"
 }
