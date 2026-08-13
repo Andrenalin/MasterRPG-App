@@ -2030,7 +2030,9 @@ extension RPGSharePlayController {
         guard !Task.isCancelled,
               sessionLoopIsCurrent(sessionId: groupSession.id)
         else { return }
-        tabletopGame?.coordinateWithSession(groupSession)
+        Task {
+            tabletopGame?.coordinateWithSession(groupSession)
+        }
         
         if tabletopGame != nil {
             if let gameTableModel = gameModel?.gameTableModel {

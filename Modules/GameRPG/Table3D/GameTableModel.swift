@@ -10,6 +10,7 @@ import SwiftUI
 import os.log
 
 #if os(visionOS)
+import DiceRPG
 import SpaceRPG
 import TabletopKit
 #endif
@@ -137,6 +138,47 @@ final class GameTableModel: Sendable {
         }
         await renderer.loadSpaceObject(itemId: itemId, from: url)
     }
+
+    /// This device's own seat, however it was claimed (SharePlay assignment
+    /// or `claimAnySeat()` for local/single-player) — queried directly from
+    /// TabletopKit's synchronized seat state rather than tracked separately
+    /// during assignment, so it stays correct even if seating changes later.
+    private var localSeat: TableSeatIdentifier? {
+        var result: TableSeatIdentifier?
+        tabletopGame.withCurrentSnapshot { snapshot in
+            result = snapshot.seat(of: PlayerSeat.self, for: tabletopGame.localPlayer)?.0.id
+        }
+        return result
+    }
+
+    /// Mirrors a character-sheet roll onto the local player's own seat dice
+    /// (see `GameSetup.playerDiceIds`) — only d20 is supported right now, the
+    /// only die the pool has. Reuses DiceRPG's existing focus-dice mechanism
+    /// as the trigger (see `GameTableView`'s observer) rather than building a
+    /// new, separate notion of "selected dice" for the table.
+    /// `TabletopGame.addAction` syncs the result to every other participant
+    /// automatically, the same way a physical toss already does.
+    func applyDiceRoll(_ diceModel: DiceModel) {
+        guard let seat = localSeat, let d20Ids = setup.playerDiceIds[seat] else { return }
+
+        var nextD20Index = 0
+        for die in diceModel.dice {
+            guard let result = die.result.last else { continue }
+            // Compare the *resolved* side count (`RawDie.max`, public), not
+            // the `Sides` enum case directly — a die authored through the
+            // sheet's own UI can end up as `.number(20)` instead of the
+            // dedicated `.twenty` case, and those don't compare equal to
+            // each other despite meaning the same die.
+            guard die.die.max == 20,
+                  nextD20Index < d20Ids.count,
+                  let equipment = tabletopGame.equipment(of: Die20.self, matching: d20Ids[nextD20Index]) else { continue }
+            nextD20Index += 1
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        }
+    }
+
 #endif
 
     /// Refreshes the standalone tabletop from the current game selection. The

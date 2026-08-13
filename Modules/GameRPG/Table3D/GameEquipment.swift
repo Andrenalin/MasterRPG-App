@@ -288,6 +288,40 @@ struct PlayerSeat: TableSeat {
                                                              rotation: pose.rotation)
         initialState = .init(pose: spatialSeatPose)
     }
+
+    /// Two table-plane positions in the given seat's own player area, side by
+    /// side — for that seat's own dice. Placed at `playerAreaDistanceFromCenter`
+    /// (an existing, already-correct constant for this exact purpose — see
+    /// `GameMetrics`, previously declared but unused) *from the table center*,
+    /// along the same angular direction as the seat, rather than inset from
+    /// the seat's own position: the table (`GameMetrics.tableEdge`, a full
+    /// width/depth, not a radius) is only 0.7 m across, so seats — placed at
+    /// a full `tableEdge` from center — already sit well *beyond* its physical
+    /// edge, the way a chair sits beyond a real table's edge. Insetting from
+    /// the seat by a small amount (the previous approach) still landed
+    /// outside the table surface, off in empty space.
+    @MainActor
+    static func diceLayout(inFrontOf seatPose: TableVisualState.Pose2D) -> [TableVisualState.Pose2D] {
+        let seatPosition = seatPose.position
+        let distance = (seatPosition.x * seatPosition.x + seatPosition.z * seatPosition.z).squareRoot()
+        let direction: (x: Double, z: Double) = distance > 0.0001
+            ? (x: seatPosition.x / distance, z: seatPosition.z / distance)
+            : (x: 0, z: 1)
+        // Perpendicular to `direction`, to spread the two dice apart.
+        let lateral: (x: Double, z: Double) = (x: -direction.z, z: direction.x)
+        let radius = Double(GameMetrics.playerAreaDistanceFromCenter)
+        let lateralSpacing = 0.07
+
+        return [-lateralSpacing, lateralSpacing].map { offset in
+            TableVisualState.Pose2D(
+                position: .init(
+                    x: direction.x * radius + lateral.x * offset,
+                    z: direction.z * radius + lateral.z * offset
+                ),
+                rotation: .zero
+            )
+        }
+    }
 }
 
 // MARK: - Pin Pawn
@@ -601,7 +635,7 @@ struct Die20: EntityEquipment {
     ]
     
     @MainActor
-    init(id: ID) {
+    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
         // protocol. Rather than crash the whole tabletop feature over a missing/corrupt
@@ -637,11 +671,7 @@ struct Die20: EntityEquipment {
         }
         representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
             //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
-        let pose: TableVisualState.Pose2D = .init(
-            position: .init(x: -0.28, z: -0.28),
-            rotation: .zero
-        )
-        initialState = .init(value: 1, parentID: .tableID, seatControl: .any, pose: pose, entity: self.entity)
+        initialState = .init(value: 1, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
     }
 
     @MainActor
@@ -698,7 +728,7 @@ struct Die: EntityEquipment {
     }
     
     @MainActor
-    init(id: ID) {
+    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
         // protocol — see the matching comment on `Die20.init` for why this degrades to a
@@ -728,8 +758,7 @@ struct Die: EntityEquipment {
             self.audioPlaybackController = nil
         }
         representation = .cube(height: entity.visualBounds(relativeTo: nil).extents.x)
-        let pose: TableVisualState.Pose2D = .init(position: .init(x: -0.3, z: -0.5), rotation: .zero)
-        initialState = .init(value: 1, parentID: .tableID, seatControl: .any, pose: pose, entity: self.entity)
+        initialState = .init(value: 1, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
     }
 
     @MainActor

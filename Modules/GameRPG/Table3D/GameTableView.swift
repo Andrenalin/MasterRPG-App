@@ -3,6 +3,7 @@
 #if os(visionOS)
 import Combine
 import CoreRPG
+import DiceRPG
 import Foundation
 import GroupActivities
 import MapRPG
@@ -157,6 +158,15 @@ public struct GameTableView: View {
                 spaceRoot: root.spaceRoot
             )
         }
+        // Mirrors a character-sheet roll onto this player's own seat dice.
+        // Watches the *result values*, not `focusItemIds` — re-rolling the
+        // already-focused dice mutates `DiceModel.dice[].result` in place
+        // without the focus id array itself changing, so that alone
+        // wouldn't fire this.
+        .onChange(of: focusedDiceRollSignature, initial: false) { _, _ in
+            guard let game else { return }
+            applyCurrentFocusedDiceRoll(to: game)
+        }
         .task {
             await scaleController.start()
         }
@@ -185,6 +195,7 @@ public struct GameTableView: View {
                 itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
                 spaceRoot: root.spaceRoot
             )
+            applyCurrentFocusedDiceRoll(to: game)
             return
         }
 
@@ -224,6 +235,30 @@ public struct GameTableView: View {
             itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
             spaceRoot: root.spaceRoot
         )
+
+        // Same reasoning again: the volume can open after the character
+        // sheet's dice are already focused and rolled — the `.onChange`
+        // above only fires on the *next* roll, so without this a die that
+        // was already showing a result on the 2D screen would sit at its
+        // default face on the table until someone rolled again.
+        applyCurrentFocusedDiceRoll(to: initializedGame)
+    }
+
+    private func applyCurrentFocusedDiceRoll(to game: GameTableModel) {
+        guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
+              let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else { return }
+        game.applyDiceRoll(diceModel)
+    }
+
+    /// Every result value on the currently-focused character-sheet dice —
+    /// changes on every roll, including a re-roll of the same dice, unlike
+    /// `focusItemIds` (which only changes when the *selection* changes).
+    private var focusedDiceRollSignature: [Int] {
+        guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
+              let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
+            return []
+        }
+        return diceModel.dice.flatMap(\.result)
     }
 
     private func configureSessionState(for game: GameTableModel) {
