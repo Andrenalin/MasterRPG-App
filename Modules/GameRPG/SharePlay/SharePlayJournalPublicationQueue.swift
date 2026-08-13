@@ -3,6 +3,8 @@
 import CoreRPG
 import Foundation
 
+// MARK: - Publication policy & admission
+
 enum SharePlayJournalPublicationPolicy: Equatable, Sendable {
     /// Every accepted publication is significant and stays in FIFO order. This
     /// is used for repairs such as Audio/Weather, where dropping one item could
@@ -19,6 +21,8 @@ enum SharePlayJournalPublicationAdmission: Equatable, Sendable {
     case replacedPending
     case rejected
 }
+
+// MARK: - Publication completion bookkeeping
 
 @MainActor
 private final class SharePlayJournalPublicationCompletion {
@@ -41,6 +45,8 @@ private final class SharePlayJournalPublicationCompletion {
     }
 }
 
+// MARK: - Enqueue result
+
 @MainActor
 struct SharePlayJournalPublicationEnqueueResult {
     let admission: SharePlayJournalPublicationAdmission
@@ -62,6 +68,8 @@ struct SharePlayJournalPublicationEnqueueResult {
         }
     }
 }
+
+// MARK: - Publication queue
 
 /// Serializes publications for one journal slot without putting removal of the
 /// previous attachment on the publication's critical path.
@@ -575,6 +583,8 @@ where Attachment.ID == UUID {
     }
 }
 
+// MARK: - Add outcome
+
 enum SharePlayJournalAddOutcome<Value: Sendable>: Sendable {
     case succeeded(Value)
     case failed(String)
@@ -582,6 +592,8 @@ enum SharePlayJournalAddOutcome<Value: Sendable>: Sendable {
     case unavailable
     case cancelled
 }
+
+// MARK: - Add attempt limiter
 
 @MainActor
 private final class SharePlayJournalAddAttempt<Value: Sendable> {
@@ -792,6 +804,8 @@ final class SharePlayJournalAddLimiter<Key: Hashable & Sendable, Value: Sendable
     }
 }
 
+// MARK: - Messenger payload budget
+
 enum SharePlayMessengerPayloadBudget {
     // GameNetworkModel deliberately uses `.withoutEscapingSlashes`, so Data has
     // only Base64's 4/3 expansion. Reserve one MB for the rest of the model so
@@ -806,6 +820,8 @@ enum SharePlayMessengerPayloadBudget {
         rawPayloadByteCount >= 0 && rawPayloadByteCount <= maximumRawPayloadByteCount
     }
 }
+
+// MARK: - Deferred delivery admission
 
 enum SharePlayDeferredDeliveryAdmission: Equatable, Sendable {
     case enqueued
@@ -825,6 +841,8 @@ enum SharePlayDeferredDeliveryAdmission: Equatable, Sendable {
         }
     }
 }
+
+// MARK: - Deferred delivery queue
 
 struct SharePlayDeferredDeliveryQueue: Sendable {
     struct Entry: Sendable {
@@ -1024,6 +1042,8 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         }
     }
 }
+
+// MARK: - Attachment load retry
 
 /// Retries the transient window where a journal entry is visible before its
 /// CloudAsset upload is downloadable by another participant.

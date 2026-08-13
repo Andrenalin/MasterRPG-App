@@ -62,7 +62,7 @@ final class Board {
     }
         
     // Update the map from PhotoModel data while preserving its aspect ratio.
-    func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool) {
+    func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool, panOffset: CGPoint) {
         guard image.cgImage != nil else {
             Logger.gameTable.error("Failed to create a board image from the current photo")
             return
@@ -101,7 +101,8 @@ final class Board {
             canvasSize: displaySize,
             mapModel: mapModel,
             displayConfig: displayConfig,
-            isGameMaster: isGameMaster
+            isGameMaster: isGameMaster,
+            panOffset: panOffset
         ) else { return }
         
         // Update the texture using new visionOS 2.0+ API
@@ -136,7 +137,8 @@ final class Board {
         canvasSize: CGSize,
         mapModel: MapModel?,
         displayConfig: DisplayConfigModel?,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        panOffset: CGPoint
     ) -> CGImage? {
         guard let fallbackImage = baseImage.cgImage else { return nil }
         let normalizedDegrees = degrees.truncatingRemainder(dividingBy: 360)
@@ -147,7 +149,20 @@ final class Board {
         } else {
             mapModel?.entries.filter { !$0.isShown } ?? []
         }
-        
+
+        // The crop to zoom the composited image+fog to — the full map by
+        // default, or a room-centered crop when a room is focused. `canvasSize`
+        // doubles as both the entries' coordinate space and the output frame
+        // here (unlike the iOS/macOS renderer, which keeps them separate), so
+        // the crop needs no unit conversion before use below.
+        let focusRect = GameTableModel.boardFocusRect(
+            entries: mapModel?.entries ?? [],
+            imageSize: canvasSize,
+            panOffset: panOffset
+        )
+        let zoomScaleX = focusRect.width > 0 ? canvasSize.width / focusRect.width : 1
+        let zoomScaleY = focusRect.height > 0 ? canvasSize.height / focusRect.height : 1
+
         // Create a SwiftUI view that layers the image with fog of war overlays
         let compositeView = ZStack {
             ZStack {
@@ -214,8 +229,14 @@ final class Board {
                 }
             }
         }
-        .frame(width: canvasSize.width, height: canvasSize.height)
-        
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+        // No-ops (scale 1, offset 0) when nothing is focused — `focusRect`
+        // then equals the full `canvasSize` rect.
+        .scaleEffect(x: zoomScaleX, y: zoomScaleY, anchor: .topLeading)
+        .offset(x: -focusRect.minX * zoomScaleX, y: -focusRect.minY * zoomScaleY)
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+        .clipped()
+
         // The frame is already expressed in image-space pixels/points. Rendering
         // it at 3x attempted textures up to nine times larger than necessary and
         // stalled room toggles on the main actor. Keep the longest edge within a
@@ -469,11 +490,9 @@ final class PinPawn {
 final class RoomHitArea {
     let roomId: UUID
     let entity: Entity
-    private var currentCoordinates: [CGPoint]
 
     init(entry: MapEntryModel, projection: MapTableProjection) {
         roomId = entry.id
-        currentCoordinates = entry.coordinates
         let hitEntity = Entity()
         hitEntity.name = "RoomHitArea-\(entry.name)"
         hitEntity.components.set(RoomComponent(roomId: entry.id))
@@ -489,10 +508,11 @@ final class RoomHitArea {
         entity = hitEntity
     }
 
-    /// Rebuilds the hit volume when the room's outline changed.
+    /// Always rebuilds: besides the room's own outline changing, the
+    /// projection itself changes whenever a *different* room becomes focused
+    /// (or focus clears) — same coordinates, different crop — so the
+    /// `entry.coordinates` comparison alone can't gate this.
     func update(entry: MapEntryModel, projection: MapTableProjection) {
-        guard entry.coordinates != currentCoordinates else { return }
-        currentCoordinates = entry.coordinates
         entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
     }
 
@@ -589,7 +609,7 @@ struct Die20: EntityEquipment {
         // conditions), fall back to a plain procedural mesh so the die still renders,
         // rolls, and reports a value — just without its custom artwork.
         do {
-            self.entity = try Entity.load(named: "D20Blue", in: tabletopGameContentBunlde)
+            self.entity = try Entity.load(named: "D20Blue", in: tabletopGameContentBundle)
         } catch {
             Logger.gameTable.error(
                 "Failed to load the bundled D20Blue RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
@@ -606,7 +626,7 @@ struct Die20: EntityEquipment {
             let audioResource = try AudioFileResource.load(
                 named: "/Root/dieSoundLong_mp3",
                 from: "static_scene.usda",
-                in: tabletopGameContentBunlde
+                in: tabletopGameContentBundle
             )
             self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         } catch {
@@ -684,7 +704,7 @@ struct Die: EntityEquipment {
         // protocol — see the matching comment on `Die20.init` for why this degrades to a
         // procedural fallback mesh instead of crashing.
         do {
-            self.entity = try Entity.load(named: "Die", in: tabletopGameContentBunlde)
+            self.entity = try Entity.load(named: "Die", in: tabletopGameContentBundle)
         } catch {
             Logger.gameTable.error(
                 "Failed to load the bundled Die RealityKit asset: \(error.localizedDescription, privacy: .public); using a procedural fallback mesh"
@@ -698,7 +718,7 @@ struct Die: EntityEquipment {
             let audioResource = try AudioFileResource.load(
                 named: "/Root/dieSoundShort_mp3",
                 from: "static_scene.usda",
-                in: tabletopGameContentBunlde
+                in: tabletopGameContentBundle
             )
             self.audioPlaybackController = self.entity.prepareAudio(audioResource)
         } catch {

@@ -4,9 +4,13 @@ import CoreRPG
 import SwiftUI
 import CharacterRPG
 
-struct GameToolBar: View {
+/// Shared by the 2D map canvas (`MapEditorSession`) and GameRPG's 3D table
+/// (`GameTableModel`, via `GameToolBarSession`) — the exact same toolbar,
+/// buttons, and button actions render for both, so the game master sees one
+/// consistent set of controls regardless of which representation is on screen.
+struct GameToolBar<Session: GameToolBarSession>: View {
     let editController: EditController
-    let model: MapEditorSession
+    let model: Session
     let isMaster: Bool
 
     @Environment(MapRootModel.self) private var root
@@ -15,15 +19,8 @@ struct GameToolBar: View {
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @Environment(ScenesManager.self) private var scenesManager
-
-    @State private var showPinSelection: Bool = false
-    @State private var selectedPin: ItemSelectionModel = ItemSelectionModel(isSingleSelection: false, allowCollections: true)
-
     @State private var showToolBar: Bool = true
     @State private var hideScales: Bool = true
-
-    @Namespace private var pinSpace
 
     var body: some View {
         GlassEffectContainerAll {
@@ -60,30 +57,32 @@ struct GameToolBar: View {
                     Image(systemName: showToolBar ? "arrow.left.square.fill" : "arrow.right.square")
                         .contentTransition(.symbolEffect(.replace.downUp))
                         .frame(height: 24)
-                        .accessibilityLabel(
-                            showToolBar
-                                ? Text("Hide Toolbar", bundle: .module)
-                                : Text("Show Toolbar", bundle: .module)
-                        )
                 }
-                .frame(minWidth: 44, minHeight: 44)
-                .gameOverlayControlStyle(isSelected: showToolBar)
+                .selectedRoundButton(
+                    title: String(localized: toggleToolBarTitle),
+                    module: .map,
+                    isSelected: showToolBar
+                )
             }
             HStack {
                 if showToolBar {
                     HStack {
                         if isMaster {
                             Button {
-                                withAnimation(reduceMotion ? nil : .default) { model.toggleDisplayMode() }
+                                withAnimation(reduceMotion ? nil : .default) {
+                                    model.displayMode = model.displayMode.toggled()
+                                }
                             } label: {
-                                Image(systemName: model.iconDisplayMode)
+                                Image(systemName: model.displayMode.toolBarIcon)
                                     .contentTransition(.symbolEffect(.replace.byLayer))
                                     .frame(width: 28, height: 24)
-                                    .accessibilityLabel(Text("Display Mode", bundle: .module))
                                     .accessibilityValue(displayModeAccessibilityValue)
                             }
-                            .frame(minWidth: 44, minHeight: 44)
-                            .gameOverlayControlStyle(isSelected: model.displayMode != .master)
+                            .selectedRoundButton(
+                                title: String(localized: "Display Mode", bundle: .module),
+                                module: .map,
+                                isSelected: model.displayMode != .master
+                            )
 
                             barButtonViews
 
@@ -118,35 +117,12 @@ struct GameToolBar: View {
             value: showToolBar
         )
         }
-        .sheet(isPresented: $showPinSelection) {
-            ManagedPresentationView {
-                root.viewController.characterSelection(root: root, selectionModel: selectedPin)
-#if !os(macOS)
-                    .navigationTransition(.zoom(sourceID: "gamePin", in: pinSpace))
-#endif
-            }
-        }
-        .onChange(of: showPinSelection, initial: false) { _, newValue in
-            guard !newValue, !selectedPin.selection.isEmpty else { return }
-            let map = root.gameController.currentItem()
-            let monsters = selectedPin.selection.map { ItemRowModel(itemId: $0.itemId, typeId: .value) }
-            withAnimation(reduceMotion ? nil : .bouncy) {
-                root.editController.addMonsters(
-                    map: map,
-                    entryId: selectedRoomId,
-                    location: nil,
-                    monsters: monsters,
-                    number: 1
-                )
-            }
-            if model.isStreaming { model.actions.sendMapUpdates?() }
-            selectedPin.resetSelection(itemId: nil, entryId: nil)
-        }
     }
 
-    private var selectedRoomId: UUID? {
-        model.focusId
-            ?? model.entries.entries.first(where: \.focused)?.id
+    private var toggleToolBarTitle: LocalizedStringResource {
+        showToolBar
+            ? LocalizedStringResource("Hide Toolbar", bundle: .module)
+            : LocalizedStringResource("Show Toolbar", bundle: .module)
     }
 
     @ViewBuilder
@@ -156,56 +132,70 @@ struct GameToolBar: View {
                 model.isStreaming.toggle()
             }
             if model.isStreaming {
-                model.actions.sendMapUpdates?()
+                model.sendMapUpdates()
             }
         } label: {
             let symbolName = "person.2\(model.isStreaming ? ".fill" : ".slash")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
                 .frame(height: 24)
-                .accessibilityLabel(Text("Share Map", bundle: .module))
                 .accessibilityValue(
                     model.isStreaming
                         ? Text("Enabled", bundle: .module)
                         : Text("Disabled", bundle: .module)
                 )
         }
-        .frame(minWidth: 44, minHeight: 44)
-        .gameOverlayControlStyle(isSelected: model.isStreaming)
+        .selectedRoundButton(
+            title: String(localized: "Share Map", bundle: .module),
+            module: .map,
+            isSelected: model.isStreaming
+        )
 
-        Button {
-#if os(macOS)
-            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
-#else
-            showPinSelection.toggle()
-#endif
-        } label: {
-            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
-            Image(systemName: symbolName)
-                .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .frame(width: 24, height: 24)
-                .accessibilityLabel(Text("Choose Map Pins", bundle: .module))
+        ChooseMapPinsButton(root: root, focusedRoomId: model.focusedRoomId) {
+            if model.isStreaming { model.sendMapUpdates() }
         }
-        .frame(minWidth: 44, minHeight: 44)
-        .gameOverlayControlStyle()
-        .matchedTransitionSource(id: "gamePin", in: pinSpace)
 
         Button {
-            withAnimation(reduceMotion ? nil : .default) { model.isPointing.toggle() }
+            togglePointingMode()
         } label: {
             let symbolName = "hand.point.up.left\(model.isPointing ? ".fill" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.offUp))
                 .frame(height: 24)
-                .accessibilityLabel(Text("Pointing Mode", bundle: .module))
                 .accessibilityValue(
                     model.isPointing
                         ? Text("Enabled", bundle: .module)
                         : Text("Disabled", bundle: .module)
                 )
         }
-        .frame(minWidth: 44, minHeight: 44)
-        .gameOverlayControlStyle(isSelected: model.isPointing)
+        .selectedRoundButton(
+            title: String(localized: "Pointing Mode", bundle: .module),
+            module: .map,
+            isSelected: model.isPointing
+        )
+    }
+
+    /// Turning the shared pointer on reveals and centers it — folding in what
+    /// used to be the 3D table's separate "Center Pointer" button; turning it
+    /// off hides it. One action for both renderers: it only mutates the map's
+    /// pointer pin through `root`, nothing view-specific.
+    private func togglePointingMode() {
+        guard let mapId = model.currentMapId else { return }
+        withAnimation(reduceMotion ? nil : .default) {
+            if model.isPointing {
+                guard root.gameController.togglePointer(itemId: mapId) else { return }
+            } else {
+                let mapModel = root.gameController.currentItem()
+                let center = CGPoint(x: mapModel.width / 2, y: mapModel.height / 2)
+                let moved = root.gameController.movePointer(itemId: mapId, location: center)
+                let revealed = mapModel.pointer.isShown
+                    ? false
+                    : root.gameController.togglePointer(itemId: mapId)
+                guard moved || revealed else { return }
+            }
+            model.isPointing.toggle()
+        }
+        if model.isStreaming { model.sendMapUpdates() }
     }
 
     @ViewBuilder
@@ -230,14 +220,38 @@ struct GameToolBar: View {
 
     @ViewBuilder
     var hexMapScaleView: some View {
-        HexMapScaleView(
-            model: model,
-            appearance: .gameOverlay,
-            onToggle: {
-                model.route(.toggleHexGrid)
-            },
-            onScaleChanged: { _ in }
-        )
+        @Bindable var model = model
+        HStack {
+#if !os(tvOS)
+            Button {
+                withAnimation(reduceMotion ? nil : .default) {
+                    model.toggleHexMap()
+                }
+            } label: {
+                let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
+                Image(systemName: symbolName)
+                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                    .frame(width: 24, height: 24)
+                    .accessibilityLabel(Text("Hex Grid", bundle: .module))
+                    .accessibilityValue(
+                        model.isHexMap
+                            ? Text("Enabled", bundle: .module)
+                            : Text("Disabled", bundle: .module)
+                    )
+            }
+            .frame(minWidth: 44, minHeight: 44)
+            .gameOverlayControlStyle(isSelected: model.isHexMap)
+
+            Text("Hex Scale", bundle: .module)
+                .foregroundStyle(.primary)
+
+            Slider(value: $model.hexScale, in: 20 ... 200) {
+                Text("Hex Scale", bundle: .module)
+            }
+            .labelsHidden()
+            .accessibilityValue(model.hexScale.formatted(.number.precision(.fractionLength(0))))
+#endif
+        }
     }
 
     @ViewBuilder
@@ -248,16 +262,18 @@ struct GameToolBar: View {
             let symbolName = "square.arrowtriangle.4.outward"
             Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
-                .accessibilityLabel(Text("Toggle Scale Controls", bundle: .module))
         }
-        .frame(minWidth: 44, minHeight: 44)
-        .gameOverlayControlStyle(isSelected: !hideScales)
+        .selectedRoundButton(
+            title: String(localized: "Toggle Scale Controls", bundle: .module),
+            module: .map,
+            isSelected: !hideScales
+        )
     }
 
     @ViewBuilder
     var reshareButtonView: some View {
         Button {
-            let mapId = model.mapId
+            guard let mapId = model.currentMapId else { return }
             Task {
                 let update = await root.gameController.networkMapContentUpdate(for: mapId)
                 networkActions?.game(update, .generic, nil)
@@ -269,14 +285,16 @@ struct GameToolBar: View {
             let symbolName = "square.and.arrow.up"
             Image(systemName: symbolName)
                 .frame(width: 24, height: 24)
-                .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
         }
         .disabled(!model.canReshare)
         .opacity(model.canReshare ? 1 : 0)
         .allowsHitTesting(model.canReshare)
         .accessibilityHidden(!model.canReshare)
-        .frame(minWidth: 44, minHeight: 44)
-        .gameOverlayControlStyle()
+        .selectedRoundButton(
+            title: String(localized: "Refresh Shared Map", bundle: .module),
+            module: .map,
+            isSelected: false
+        )
     }
 
     private var displayModeAccessibilityValue: Text {

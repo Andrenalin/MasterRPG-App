@@ -24,7 +24,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 
 ## Tech Stack
 - **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
-- **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift conurrency)
+- **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift concurrency)
 - **SDK**: iOS26, iPadOS26, tvOS26, visionOS26, macOS26 or later
 - Swift 6.3 or later, using modern Swift concurrency. Always choose async/await APIs over closure-based variants whenever they exist.
 - SwiftUI backed up by `@Observable` classes for shared data.
@@ -109,16 +109,16 @@ If CoreData is configured to use CloudKit:
 **Data Persistence**: Core Data with CloudKit sync (`NSPersistentCloudKitContainer`). Saved rpg data across all devices in  iCloud or stores only locally
 
 ### Key Modules
-- AdventureRPG: Module Adventure manage and manipluate the adventure for a game. It is the story and link all other modules
-- AudioRPG: Module Audio manage and manipluate the music for a game, It manages the files in iCloud.
-- CharacterRPG: Module Character manage and manipluate the character (player), NPC and monster for a game. It link tables, dice, photo and pdf into the values. It groupes values.
-- DiceRPG: Module Dice manage and manipluate the dice for a game. It rolls a dice and feed the dice widget
-- MapRPG: Module Map manage and manipluate the maps for a game. A map is photo with layers to hide content from the players. It has a own MapEditor to create these layers (rooms). It can link to charactere, maps, dice, tables, audio, pdf and photo. 
-- PdfRPG: Module Pdf manage and manipluate the pdf for a game. It manages the files in iCloud.
-- PhotoRPG: Module Photo manage and manipluate the photo for a game. It manages the files in iCloud.
-- SpaceRPG: Module Space manage and manipluate the 3d objects for a game. It manages the files in iCloud.
-- TableRPG: Module Table manage and manipluate the tables for a game. It can link to dice, pdf and tables.
-- WeatherRPG: Module Weather manage and manipluate the weather for a game. It can link to photo.
+- AdventureRPG: Module Adventure manage and manipulate the adventure for a game. It is the story and link all other modules
+- AudioRPG: Module Audio manage and manipulate the music for a game, It manages the files in iCloud.
+- CharacterRPG: Module Character manage and manipulate the character (player), NPC and monster for a game. It link tables, dice, photo and pdf into the values. It groups values.
+- DiceRPG: Module Dice manage and manipulate the dice for a game. It rolls a dice and feed the dice widget
+- MapRPG: Module Map manage and manipulate the maps for a game. A map is photo with layers to hide content from the players. It has a own MapEditor to create these layers (rooms). It can link to character, maps, dice, tables, audio, pdf and photo. 
+- PdfRPG: Module Pdf manage and manipulate the pdf for a game. It manages the files in iCloud.
+- PhotoRPG: Module Photo manage and manipulate the photo for a game. It manages the files in iCloud.
+- SpaceRPG: Module Space manage and manipulate the 3d objects for a game. It manages the files in iCloud.
+- TableRPG: Module Table manage and manipulate the tables for a game. It can link to dice, pdf and tables.
+- WeatherRPG: Module Weather manage and manipulate the weather for a game. It can link to photo.
 
 ### Other Modules
 - CoreRPG: It is the shared code for the modules and has core views, models and controller.
@@ -137,13 +137,12 @@ If CoreData is configured to use CloudKit:
 - **Tests** Tests for modules
 - **TestPlans** Test plan for MasterRPG and modules
 
-#### Module Folder Sturcture
+#### Module Folder Structure
 - **Controller** for the different controllers
-- **Intent** for App-Intentm, Siri, Shrotcuts and Widgets
+- **Intent** for App-Intents, Siri, Shortcuts and Widgets
 - **Menu** for Menu on mac / iPad command
 - **Model** Domain Model and Database Model
-- **Module** Module specific code
-- **Resources** Database file, LOcalaizations
+- **Resources** Database file, Localizations
 - **Root** Root View, Models and entry of the module
 - **Route** Routes for the Navigator
 - **View** Other views

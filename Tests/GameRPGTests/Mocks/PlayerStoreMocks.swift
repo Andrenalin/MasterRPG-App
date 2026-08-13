@@ -23,8 +23,11 @@ final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Se
     var calledToggleConnection = 0
     var calledRequest = 0
 
-    func toggleConnection(to _: BrowserGameModel) {
+    var lastPasscode: String?
+
+    func toggleConnection(to _: BrowserGameModel, passcode: String) {
         calledToggleConnection += 1
+        lastPasscode = passcode
     }
 
     func stop() {

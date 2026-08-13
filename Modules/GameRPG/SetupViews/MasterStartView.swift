@@ -50,7 +50,7 @@ struct MasterStartView: View {
             )
         }
     }
-    
+
     private var overlayAnimation: some View {
         Capsule()
             .stroke(Color.accentColor, lineWidth: 4)

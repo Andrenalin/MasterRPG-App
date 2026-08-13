@@ -234,6 +234,16 @@ extension MapRootModel {
 }
 
 public extension MapRootModel {
+    /// Toggles the hex overlay grid for the given map, generating or clearing
+    /// its grid entries. Wraps the MapRPG-internal `EditController` so other
+    /// modules (GameRPG's 3D table toolbar) can reuse the exact same
+    /// grid-generation logic the 2D map editor uses.
+    @discardableResult
+    @MainActor
+    func toggleHexMap(itemId: UUID) -> Bool {
+        editController.toggleHexMap(for: gameController.gameItem(for: itemId))
+    }
+
     @MainActor
     func listItems() -> [MapModel] {
         itemController.itemDataModel.items.map {

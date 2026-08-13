@@ -63,7 +63,11 @@ struct GameRootViewer: View {
                     EmptyGameContent(
                         title: emptyTitle,
                         startTime: root.gameModel.startGameTime,
-                        showsElapsedTime: contentType == .master
+                        showsElapsedTime: contentType == .master,
+                        // An external/mirrored display is a shared, public
+                        // screen (e.g. a second monitor for the whole table) —
+                        // never reveal a private join code there.
+                        joinCode: contentType == .externalPlayer ? nil : root.ownJoinCode(isMaster: contentType == .master)
                     )
                 }
             } else if playerController.gameModel.gameUpdateType != .map {
@@ -76,11 +80,38 @@ struct GameRootViewer: View {
         .themedSurface()
         .moduleTint(.game)
         .ignoresSafeArea()
+        .onChange(of: root.mapRoot.gameControllable.gameModel.currentItemId, initial: true) { _, newMapId in
+            // Only ever turns this on — several `GameRootViewer` instances
+            // (master, player, external mirror) can observe independent
+            // `currentItemId`s, and flipping back to false from one instance
+            // could otherwise race a moment ago's true from another.
+            guard newMapId != nil else { return }
+            MasterRPGTips.setGameContentVisible(true)
+        }
 #if os(visionOS)
         .onChange(of: root.photoRoot.gameControllable.gameModel.currentItemId) {
             guard let photoId = root.photoRoot.gameControllable.gameModel.currentItemId else { return }
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
+        }
+        // Goes straight to the immersive space instead of routing through the
+        // `otherViews` reveal panel (see the `.space` case below): that panel
+        // is a full-window 2D overlay meant for bounded content (pdf/photo/
+        // table/weather); on visionOS it was hosting only SpaceQuickLook's
+        // near-invisible trigger button, which briefly blanked the game
+        // window while the real `ImmersiveSpace` opened in the background.
+        //
+        // Skipped while the volumetric game-table window is open: its own
+        // `GameTableView`/`GameTableModel.loadSpaceObject(itemId:spaceRoot:)`
+        // renders the shared object directly above the table (same TabletopKit
+        // scene/seating), so opening a second, separate immersive space here
+        // would just duplicate it.
+        .onChange(of: root.spaceRoot.gameControllable.gameModel.currentItemId) {
+            guard let spaceId = root.spaceRoot.gameControllable.gameModel.currentItemId,
+                  scenesManager.getSceneState(for: .gameTable) != .opened else { return }
+            Task {
+                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: spaceId, entryId: nil))
+            }
         }
 #endif
     }
@@ -136,7 +167,14 @@ struct GameRootViewer: View {
                         trailingViewportReservation: mapTrailingViewportReservation
                     )
                 case .space:
+                    // visionOS opens the immersive space directly from the
+                    // `.onChange` above instead of rendering anything here —
+                    // see that handler's comment.
+#if os(visionOS)
+                    EmptyView()
+#else
                     root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
+#endif
                 case .table:
                     root.tableRoot.viewController.gameViewer(root: root.tableRoot)
                     .padding(20)
@@ -207,6 +245,7 @@ private struct EmptyGameContent: View {
     let title: LocalizedStringKey
     let startTime: Date
     let showsElapsedTime: Bool
+    let joinCode: String?
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -224,6 +263,13 @@ private struct EmptyGameContent: View {
                         )
                         .monospacedDigit()
                     }
+                }
+                if let joinCode {
+                    Text("Join Code: \(joinCode)", bundle: .module)
+                        .font(.title3)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                 }
                 Spacer()
             }

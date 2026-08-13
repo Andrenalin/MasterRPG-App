@@ -30,7 +30,7 @@ struct PdfSummaryAnalysisProgress: Equatable, Sendable {
 }
 
 @MainActor @Observable
-final class PdfSummaryAnalyzyerResultModel {
+final class PdfSummaryAnalyzerResultModel {
     var analysisProgress: PdfSummaryAnalysisProgress?
     var pageProgress: PdfAnalysisProgress?
 

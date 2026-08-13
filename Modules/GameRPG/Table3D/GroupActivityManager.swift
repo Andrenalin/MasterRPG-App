@@ -5,16 +5,16 @@ import GroupActivities
 import SwiftUI
 @preconcurrency import TabletopKit
 
+@MainActor
 class GroupActivityManager: Observable {
     var tabletopGame: TabletopGame
 
-    @MainActor
     init(tabletopGame: TabletopGame, sharePlayController: RPGSharePlayController) {
         self.tabletopGame = tabletopGame
         sharePlayController.setup(tabletopGame: tabletopGame)
     }
 
-    deinit {
+    isolated deinit {
         tabletopGame.detachNetworkCoordinator()
     }
 }

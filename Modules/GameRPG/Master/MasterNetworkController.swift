@@ -27,22 +27,22 @@ actor MasterNetworkControllerDelegateBox {
 
 final class MasterNetworkController: Sendable {
     private let delegate: MasterNetworkControllerDelegateBox
-    let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, any ListenerManagerDelegate) -> any ListenerManaging
-    let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable
+    let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging
+    let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkNodel
     @MainActor private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
 
-    static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, any ListenerManagerDelegate) -> any ListenerManaging {
-        return { name, supporterTier, proxy, delegate in
-            let manager = ListenerManager(name: name, supporterTier: supporterTier, serviceType: proxy ? .proxyServer : .player)
+    static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging {
+        return { name, supporterTier, proxy, passcode, delegate in
+            let manager = ListenerManager(name: name, supporterTier: supporterTier, serviceType: proxy ? .proxyServer : .player, passcode: passcode)
             manager.delegate = delegate
             return manager
         }
     }
 
-    static func gameBrowserConnectionBuilder() -> @MainActor @Sendable (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable {
-        return { endpoint, delegate in
-            ConnectionController(id: UUID(), endpoint: endpoint, delegate: delegate)
+    static func gameBrowserConnectionBuilder() -> @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable {
+        return { endpoint, passcode, delegate in
+            ConnectionController(id: UUID(), endpoint: endpoint, passcode: passcode, delegate: delegate)
         }
     }
 
@@ -50,8 +50,8 @@ final class MasterNetworkController: Sendable {
     init(
         name: String,
         delegate: MasterNetworkControllerDelegate? = nil,
-        listnerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, any ListenerManagerDelegate) -> any ListenerManaging,
-        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
+        listnerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging,
+        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
     ) {
         self.networkModel = MasterNetworkNodel(name: name)
         self.delegate = MasterNetworkControllerDelegateBox(delegate)
@@ -69,13 +69,14 @@ final class MasterNetworkController: Sendable {
 
 extension MasterNetworkController: MasterNetworkControllable {
     @MainActor
-    func startStreaming() {
+    func startStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Streaming")
 
         resetConntections()
         networkModel.isStreaming = true
+        networkModel.passcode = passcode
 
-        networkModel.listener = listnerBuilder(networkModel.name, networkModel.supporterTier, false, self)
+        networkModel.listener = listnerBuilder(networkModel.name, networkModel.supporterTier, false, passcode, self)
         networkModel.listener?.startListening()
 
         networkModel.browserManager = BrowserManager(serviceType: .master)
@@ -84,13 +85,14 @@ extension MasterNetworkController: MasterNetworkControllable {
     }
 
     @MainActor
-    func startProxyStreaming() {
+    func startProxyStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Proxy Streaming")
 
         resetConntections()
         networkModel.isStreaming = true
+        networkModel.passcode = passcode
 
-        networkModel.listener = listnerBuilder(networkModel.name, networkModel.supporterTier, true, self)
+        networkModel.listener = listnerBuilder(networkModel.name, networkModel.supporterTier, true, passcode, self)
         networkModel.listener?.startListening()
 
         networkModel.browserManager = BrowserManager(serviceType: .proxyClient)
@@ -107,11 +109,11 @@ extension MasterNetworkController: MasterNetworkControllable {
     }
 
     @MainActor
-    func toggleStreaming() {
+    func toggleStreaming(passcode: String) {
         if networkModel.isStreaming {
             stopStreaming()
         } else {
-            startStreaming()
+            startStreaming(passcode: passcode)
         }
     }
 
@@ -289,7 +291,10 @@ extension MasterNetworkController {
     @MainActor func connectToPlayer(endpoint: NWEndpoint) {
         guard !networkModel.browserConnections.contains(endpoint) else { return }
         networkModel.browserConnections.append(endpoint)
-        let connection = browserConnectionBuilder(endpoint, self)
+        // Reuses the same passcode this session's listener was started with —
+        // this is a reconnect dial-out to a player already admitted earlier
+        // in the session, not a new join, so no new code entry is needed.
+        let connection = browserConnectionBuilder(endpoint, networkModel.passcode, self)
         browserConnectionEndpoints[connection.id] = endpoint
         addNew(connection)
     }

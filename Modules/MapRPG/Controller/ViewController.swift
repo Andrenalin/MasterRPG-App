@@ -135,4 +135,17 @@ public extension ViewController {
                 .environment(root)
         }
     }
+
+    /// Cross-module entry point: other modules (GameRPG's 3D table) reach the
+    /// same `GameToolBar` this way, supplying their own `GameToolBarSession`
+    /// conformance instead of the 2D map's `MapEditorSession`.
+    @MainActor @ViewBuilder
+    func gameToolBarView<Session: GameToolBarSession>(
+        root: MapRootModel,
+        isMaster: Bool,
+        session: Session
+    ) -> some View {
+        GameToolBar(editController: root.editController, model: session, isMaster: isMaster)
+            .environment(root)
+    }
 }

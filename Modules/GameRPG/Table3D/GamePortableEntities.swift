@@ -37,18 +37,43 @@ final class Board {
         plane.name = "MapImagePlane"
         plane.position.y = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
         plane.isEnabled = false
+        // Hit-testable so `viewportPanGesture` (GameTableView) can target the
+        // map surface directly, separately from pins and room fog. The
+        // collision shape sits well *below* the plane's own Y (`Self.hitTestYOffset`,
+        // clear of `RoomHitArea`'s ±0.004 box around `MapTableProjection.pinHeight`
+        // — the same height this plane is placed at) so a touch over a room's
+        // fog always hits the closer room volume first, never this one: an
+        // earlier attempt at this gesture placed the two coincident, which
+        // made the board volume randomly win room long-press/double-tap.
+        plane.components.set(BoardSurfaceComponent())
+        plane.components.set(InputTargetComponent())
+        plane.components.set(
+            CollisionComponent(shapes: [
+                ShapeResource
+                    .generateBox(width: mapSize, height: Self.hitTestBoxHeight, depth: mapSize)
+                    .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
+            ])
+        )
         boardEntity.addChild(plane)
         imagePlane = plane
 
         entity = boardEntity
     }
 
+    private static let hitTestBoxHeight: Float = 0.002
+    /// Local offset (relative to `imagePlane`, itself at world Y ==
+    /// `MapTableProjection.pinHeight`) putting the hit-test box's whole
+    /// height range below `pinHeight - 0.004` — `RoomHitArea`'s lower bound —
+    /// with a clear margin.
+    private static let hitTestYOffset: Float = -0.006
+
     func updateMap(
         image: AKImage,
         degrees: Double,
         displayConfig: DisplayConfigModel?,
         mapModel: MapModel?,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        panOffset: CGPoint
     ) {
         let orientedSize: CGSize
         if let mapModel, mapModel.width > 0, mapModel.height > 0 {
@@ -72,13 +97,21 @@ final class Board {
             planeWidth = mapSize * Float(aspectRatio)
         }
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
+        imagePlane.components.set(
+            CollisionComponent(shapes: [
+                ShapeResource
+                    .generateBox(width: planeWidth, height: Self.hitTestBoxHeight, depth: planeDepth)
+                    .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
+            ])
+        )
 
         guard let compositeImage = GameTableTextureRenderer.render(
             image: image,
             degrees: degrees,
             mapModel: mapModel,
             displayConfig: displayConfig,
-            isGameMaster: isGameMaster
+            isGameMaster: isGameMaster,
+            panOffset: panOffset
         ) else { return }
 
         do {
@@ -115,7 +148,8 @@ private enum GameTableTextureRenderer {
         degrees: Double,
         mapModel: MapModel?,
         displayConfig: DisplayConfigModel?,
-        isGameMaster: Bool
+        isGameMaster: Bool,
+        panOffset: CGPoint
     ) -> CGImage? {
         guard let sourceImage = GameTableImage.cgImage(from: image) else { return nil }
 
@@ -149,12 +183,18 @@ private enum GameTableTextureRenderer {
         } else {
             coordinateSize = fallbackCoordinateSize
         }
+        let focusRect = GameTableModel.boardFocusRect(
+            entries: mapModel?.entries ?? [],
+            imageSize: coordinateSize,
+            panOffset: panOffset
+        )
 
         let content = GameTableTextureView(
             image: image,
             sourceRenderSize: sourceRenderSize,
             outputSize: outputSize,
             coordinateSize: coordinateSize,
+            focusRect: focusRect,
             degrees: normalizedDegrees,
             entries: mapModel?.entries ?? [],
             displayConfig: displayConfig,
@@ -182,12 +222,26 @@ private struct GameTableTextureView: View {
     let sourceRenderSize: CGSize
     let outputSize: CGSize
     let coordinateSize: CGSize
+    /// The `coordinateSize`-space rect to zoom the composited image+fog to —
+    /// the full map by default, or a room-centered crop when a room is
+    /// focused. See `GameTableModel.boardFocusRect`.
+    let focusRect: CGRect
     let degrees: Double
     let entries: [MapEntryModel]
     let displayConfig: DisplayConfigModel?
     let isGameMaster: Bool
 
     var body: some View {
+        // Per-axis, matching `drawFog`'s own scaleX/scaleY below, rather than
+        // assuming coordinateSize and outputSize share exactly one aspect
+        // ratio (they're independently derived and only approximately equal).
+        let scaleX = coordinateSize.width > 0 ? outputSize.width / coordinateSize.width : 1
+        let scaleY = coordinateSize.height > 0 ? outputSize.height / coordinateSize.height : 1
+        let focusOrigin = CGPoint(x: focusRect.minX * scaleX, y: focusRect.minY * scaleY)
+        let focusSize = CGSize(width: focusRect.width * scaleX, height: focusRect.height * scaleY)
+        let zoomScaleX = focusSize.width > 0 ? outputSize.width / focusSize.width : 1
+        let zoomScaleY = focusSize.height > 0 ? outputSize.height / focusSize.height : 1
+
         ZStack {
             Image(akImage: image)
                 .resizable()
@@ -201,7 +255,12 @@ private struct GameTableTextureView: View {
                 drawFog(in: &context, size: size)
             }
         }
-        .frame(width: outputSize.width, height: outputSize.height)
+        .frame(width: outputSize.width, height: outputSize.height, alignment: .topLeading)
+        // No-ops (scale 1, offset 0) when nothing is focused — `focusRect`
+        // then equals the full `coordinateSize` rect.
+        .scaleEffect(x: zoomScaleX, y: zoomScaleY, anchor: .topLeading)
+        .offset(x: -focusOrigin.x * zoomScaleX, y: -focusOrigin.y * zoomScaleY)
+        .frame(width: outputSize.width, height: outputSize.height, alignment: .topLeading)
         .clipped()
     }
 
@@ -277,12 +336,18 @@ private struct GameTableTextureView: View {
         sourceRenderSize: CGSize(width: 320, height: 240),
         outputSize: CGSize(width: 320, height: 240),
         coordinateSize: CGSize(width: 320, height: 240),
+        focusRect: CGRect(x: 0, y: 0, width: 320, height: 240),
         degrees: 0,
         entries: [room],
         displayConfig: displayConfig,
         isGameMaster: true
     )
 }
+
+/// Identifies the board's map-image plane for entity-targeted gestures, so a
+/// drag started on the map itself can be told apart from one started on a pin
+/// or a room's fog.
+struct BoardSurfaceComponent: Component {}
 
 /// Identifies a map token for entity-targeted gestures.
 struct PinComponent: Component {
@@ -539,11 +604,9 @@ final class PinPawn {
 final class RoomHitArea {
     let roomId: UUID
     let entity: Entity
-    private var currentCoordinates: [CGPoint]
 
     init(entry: MapEntryModel, projection: MapTableProjection) {
         roomId = entry.id
-        currentCoordinates = entry.coordinates
         let hitEntity = Entity()
         hitEntity.name = "RoomHitArea-\(entry.name)"
         hitEntity.components.set(RoomComponent(roomId: entry.id))
@@ -559,10 +622,11 @@ final class RoomHitArea {
         entity = hitEntity
     }
 
-    /// Rebuilds the hit volume when the room's outline changed.
+    /// Always rebuilds: besides the room's own outline changing, the
+    /// projection itself changes whenever a *different* room becomes focused
+    /// (or focus clears) — same coordinates, different crop — so the
+    /// `entry.coordinates` comparison alone can't gate this.
     func update(entry: MapEntryModel, projection: MapTableProjection) {
-        guard entry.coordinates != currentCoordinates else { return }
-        currentCoordinates = entry.coordinates
         entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
     }
 

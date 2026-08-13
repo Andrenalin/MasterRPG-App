@@ -18,7 +18,7 @@ struct MasterNetworkControllerTestEnvironment {
     /// Creates a MasterNetworkController with test dependencies
     static func create(
         name: String = "TestMasterTest",
-        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
+        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
     ) async -> MasterNetworkControllerTestEnvironment {
         let delegateSpy = MasterNetworkControllerDelegateMock()
         let listenerSpy = GameListnerAbstractionMock()
@@ -26,7 +26,7 @@ struct MasterNetworkControllerTestEnvironment {
         let controller = MasterNetworkController(
             name: name,
             delegate: delegateSpy,
-            listnerBuilder: { _, _, _, _ in listenerSpy as any ListenerManaging },
+            listnerBuilder: { _, _, _, _, _ in listenerSpy as any ListenerManaging },
             browserConnectionBuilder: browserConnectionBuilder
         )
 
@@ -94,7 +94,7 @@ struct MasterNetworkControllerTests {
         let env = await MasterNetworkControllerTestEnvironment.create()
 
         // Act
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
 
         // Assert
         #expect(env.controller.networkModel.name == "TestMasterTest")
@@ -109,10 +109,10 @@ struct MasterNetworkControllerTests {
     func toggleStreaming() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
 
         // Act - Toggle off
-        env.controller.toggleStreaming()
+        env.controller.toggleStreaming(passcode: "1234")
 
         // Assert - Streaming stopped
         var isStreaming = env.controller.networkModel.isStreaming
@@ -121,7 +121,7 @@ struct MasterNetworkControllerTests {
         #expect((env.controller.networkModel.browserManager?.isBrowsing ?? false) == false)
 
         // Act - Toggle back on
-        env.controller.toggleStreaming()
+        env.controller.toggleStreaming(passcode: "1234")
 
         // Assert - Streaming restarted
         isStreaming = env.controller.networkModel.isStreaming
@@ -135,7 +135,7 @@ struct MasterNetworkControllerTests {
     func newConnection() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
 
         // Act
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
@@ -148,7 +148,7 @@ struct MasterNetworkControllerTests {
     func readyConnection() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
         let connectionId = env.controller.networkModel.connections.first!.id
 
@@ -163,7 +163,7 @@ struct MasterNetworkControllerTests {
     func receivedData() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
         let connectionId = env.controller.networkModel.connections.first!.id
 
@@ -178,7 +178,7 @@ struct MasterNetworkControllerTests {
     func sendResponse() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
         let connectionId = env.controller.networkModel.connections.first!.id
 
@@ -287,7 +287,7 @@ struct MasterNetworkControllerTests {
     func lostConnectionUnknownId() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
 
         // Act
@@ -302,7 +302,7 @@ struct MasterNetworkControllerTests {
     func failedConnectionUnknownId() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
 
         // Act
@@ -317,7 +317,7 @@ struct MasterNetworkControllerTests {
     func failedConnectionValidId() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
         await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
         let connectionId = env.controller.networkModel.connections.first!.id
 
@@ -334,7 +334,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let factory = BrowserConnectionFactorySpy()
         let env = await MasterNetworkControllerTestEnvironment.create(
-            browserConnectionBuilder: { endpoint, _ in
+            browserConnectionBuilder: { endpoint, _, _ in
                 factory.makeConnection(endpoint: endpoint)
             }
         )
@@ -363,7 +363,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let factory = BrowserConnectionFactorySpy()
         let env = await MasterNetworkControllerTestEnvironment.create(
-            browserConnectionBuilder: { endpoint, _ in
+            browserConnectionBuilder: { endpoint, _, _ in
                 factory.makeConnection(endpoint: endpoint)
             }
         )
@@ -372,7 +372,7 @@ struct MasterNetworkControllerTests {
             endpointName: "FallbackPlayer",
             connectionMode: .proxy
         )
-        env.controller.startProxyStreaming()
+        env.controller.startProxyStreaming(passcode: "1234")
 
         // Act
         env.controller.refresh(games: [game])
@@ -391,7 +391,7 @@ struct MasterNetworkControllerTests {
     func cancelled() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
-        env.controller.startStreaming()
+        env.controller.startStreaming(passcode: "1234")
 
         // Act
         await env.controller.listenerCancelled()

@@ -19,6 +19,16 @@ class GameRenderer: TabletopGame.RenderDelegate {
     let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: 0)
     weak var game: GameTableModel?
     private var didLoadAssets = false
+
+    /// The GM-shared 3D object (SpaceRPG), floating above the board. Lives as
+    /// a plain child of `root` — the same coordinate space and TabletopKit
+    /// seating every other table entity uses — rather than in a separate
+    /// `ImmersiveSpace`/RealityKit scene, so it appears exactly over the table
+    /// for as long as this volumetric window is open. `SpaceViewer`'s own
+    /// `ImmersiveSpace` remains the fallback for when it isn't (see
+    /// `GameRootViewer`'s space `.onChange` handler).
+    private var spaceObjectEntity: Entity?
+    private var loadedSpaceObjectId: UUID?
     
     @MainActor
     init() {
@@ -40,7 +50,7 @@ class GameRenderer: TabletopGame.RenderDelegate {
         didLoadAssets = true
 
         do {
-            let table = try await Self.makePlainWoodTable()
+            let table = try await TableAssetFactory.makePlainWoodTable()
             table.setParent(root)
         } catch {
             Logger.gameTable.error(
@@ -83,6 +93,57 @@ class GameRenderer: TabletopGame.RenderDelegate {
         root.transform.translation.y = bottomY
     }
 
+    /// Removes the shared 3D object, if one is loaded. Called when the game
+    /// master stops revealing a Space item.
+    func clearSpaceObject() {
+        spaceObjectEntity?.removeFromParent()
+        spaceObjectEntity = nil
+        loadedSpaceObjectId = nil
+    }
+
+    /// Loads a GM-shared 3D object and centers it above the board. Scaled
+    /// smaller than `SpaceViewer`'s own immersive-space presentation (which
+    /// fills a person's whole view) since this one shares the board with the
+    /// map, pins, hands, and deck.
+    func loadSpaceObject(itemId: UUID, from url: URL) async {
+        guard loadedSpaceObjectId != itemId else { return }
+        clearSpaceObject()
+
+        let hasAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if hasAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        guard let entity = try? await Entity(contentsOf: url, withName: "SharedSpaceObject"),
+              entity.children.count > 0 || entity.components.count > 0 else {
+            Logger.gameTable.error("Failed to load shared 3D object for the table")
+            return
+        }
+
+        // Same world-space normalization `SpaceViewer.loadEntity` uses: undo
+        // any embedded USDZ unit transform, then scale to a fixed footprint.
+        let baseExtents = entity.visualBounds(relativeTo: nil).extents / entity.scale
+        let maxBase = max(baseExtents.x, max(baseExtents.y, baseExtents.z))
+        if maxBase > 0.0001, maxBase.isFinite {
+            entity.scale = SIMD3<Float>(repeating: Self.spaceObjectTargetSize / maxBase)
+        }
+
+        let visualCenter = entity.visualBounds(relativeTo: nil).center
+        entity.position = SIMD3(
+            -visualCenter.x,
+            MapTableProjection.pinHeight + Self.spaceObjectHeightAboveBoard - visualCenter.y,
+            -visualCenter.z
+        )
+        root.addChild(entity)
+        spaceObjectEntity = entity
+        loadedSpaceObjectId = itemId
+    }
+
+    private static let spaceObjectTargetSize: Float = 0.3
+    private static let spaceObjectHeightAboveBoard: Float = 0.3
+
     nonisolated func updateCursor(_ proposedDestination: EquipmentIdentifier?, valid: Bool = false) {
         Task { @MainActor in
             guard let game = game else {
@@ -90,51 +151,6 @@ class GameRenderer: TabletopGame.RenderDelegate {
             }
             game.renderer.cursorTransform = nil
         }
-    }
-}
-
-private extension GameRenderer {
-    static func makePlainWoodTable() async throws -> ModelEntity {
-        // Reuse only the package's wood material. The referenced table mesh is
-        // deliberately discarded because it contains the decorative opening
-        // and props that do not belong on the game board.
-        let materialSource = try await Entity(
-            named: "table_assembly",
-            in: tabletopGameContentBunlde
-        )
-        let table = ModelEntity(
-            mesh: .generateBox(
-                width: GameMetrics.tableEdge,
-                height: GameMetrics.tableThickness,
-                depth: GameMetrics.tableEdge
-            )
-        )
-        if let sourceModel = firstModelComponent(in: materialSource) {
-            table.model?.materials = sourceModel.materials
-        } else {
-            var fallbackMaterial = PhysicallyBasedMaterial()
-            fallbackMaterial.baseColor = .init(
-                tint: .init(red: 0.38, green: 0.2, blue: 0.08, alpha: 1)
-            )
-            fallbackMaterial.roughness = .init(floatLiteral: 0.75)
-            table.model?.materials = [fallbackMaterial]
-        }
-        table.name = "PlainWoodTable"
-        table.position.y = GameMetrics.tableThickness / 2
-        return table
-    }
-
-    static func firstModelComponent(in entity: Entity) -> ModelComponent? {
-        if let model = entity.components[ModelComponent.self],
-           !model.materials.isEmpty {
-            return model
-        }
-        for child in entity.children {
-            if let model = firstModelComponent(in: child) {
-                return model
-            }
-        }
-        return nil
     }
 }
 

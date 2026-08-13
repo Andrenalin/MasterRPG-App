@@ -22,18 +22,11 @@ struct GameTableWindowButton: View {
                 Image(systemName: "cube.transparent")
             }
         }
-        .labelStyle(.iconOnly)
-        .imageScale(.large)
-        .padding(8)
-        .contentShape(.circle)
-        .modifier(
-            GameWindowButtonAppearance(
-                module: .map,
-                isWindowPresented: isPresented
-            )
+        .selectedRoundButton(
+            title: String(localized: actionTitle),
+            module: .map,
+            isSelected: isPresented
         )
-        .help(Text(actionTitle))
-        .accessibilityLabel(Text(actionTitle))
     }
 
     private var isPresented: Bool {

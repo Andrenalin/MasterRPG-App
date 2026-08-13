@@ -1096,7 +1096,7 @@ final class PlayerController: Sendable {
 
 extension PlayerController {
     @MainActor
-    func start(to model: BrowserGameModel?) async -> Bool {
+    func start(to model: BrowserGameModel?, joinCode: String = "") async -> Bool {
         Logger.networking.debug("PlayerController: Start")
         // Observers are a read-only local-network role. Do not let a nil Bonjour
         // target silently turn an observer into a SharePlay participant.
@@ -1104,11 +1104,13 @@ extension PlayerController {
             return false
         }
         if root.gameModel.gameType == .player {
-            root.networkProxyStore.startProxyServer()
+            // This device also relays for further players — its own stored
+            // Player code, not the code just entered to join the master.
+            root.networkProxyStore.startProxyServer(passcode: root.gameJoinCodeModel.playerCode)
         } else if root.gameModel.gameType == .proxy {
-            return await root.networkProxyStore.startPlayerGame(to: model)
+            return await root.networkProxyStore.startPlayerGame(to: model, passcode: joinCode)
         }
-        return await root.networkStore.startPlayerGame(to: model)
+        return await root.networkStore.startPlayerGame(to: model, passcode: joinCode)
     }
     
     @MainActor
@@ -3782,7 +3784,7 @@ extension PlayerController {
         gameModel.sendCharacterTaskId = taskId
         gameModel.sendCharacterTask = Task { [weak self] in
             await self?.sendCharacter()
-            await self?.clearSendCharacterTask(if: taskId)
+            self?.clearSendCharacterTask(if: taskId)
         }
     }
 
@@ -3811,14 +3813,14 @@ extension PlayerController {
             do {
                 try await Task.sleep(for: .seconds(1))
             } catch {
-                await clearProxyFocusTask(if: taskId)
+                clearProxyFocusTask(if: taskId)
                 return
             }
             guard !Task.isCancelled else {
-                await clearProxyFocusTask(if: taskId)
+                clearProxyFocusTask(if: taskId)
                 return
             }
-            await completeProxyFocus(characterId: characterId, if: taskId)
+            completeProxyFocus(characterId: characterId, if: taskId)
         }
     }
 

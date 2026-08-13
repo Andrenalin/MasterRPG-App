@@ -32,6 +32,7 @@ final class ListenerManager: ListenerManaging {
     let serviceType: GameServiceType
     let name: String
     let supporterTier: SupporterTier
+    let passcode: String
 
     private(set) var state: NetworkState = .cancelled
 
@@ -39,10 +40,11 @@ final class ListenerManager: ListenerManaging {
     @ObservationIgnored private var networkTask: Task<Void, Never>?
     weak var delegate: (any ListenerManagerDelegate)?
 
-    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType) {
+    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String) {
         self.name = name
         self.supporterTier = supporterTier
         self.serviceType = serviceType
+        self.passcode = passcode
         Logger.listenerController.debug("ListenerManager: Init \(name, privacy: .public)")
     }
 
@@ -57,7 +59,7 @@ final class ListenerManager: ListenerManaging {
         cancelTasks()
         state = .connecting
 
-        let controller = ListenerServerController(name: name, supporterTier: supporterTier, serviceType: serviceType)
+        let controller = ListenerServerController(name: name, supporterTier: supporterTier, serviceType: serviceType, passcode: passcode)
 
         monitorTask = Task { @MainActor [weak self] in
             for await event in controller.events {
@@ -115,16 +117,18 @@ actor ListenerServerController {
     private let name: String
     private let supporterTier: SupporterTier
     private let serviceType: GameServiceType
+    private let passcode: String
 
-    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType) {
+    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String) {
         self.name = name
         self.supporterTier = supporterTier
         self.serviceType = serviceType
+        self.passcode = passcode
         (self.events, self.continuation) = AsyncStream.makeStream(of: ListenerEvent.self)
     }
 
     func run() async throws {
-        let listener = try NWListener(using: NWParameters(passcode: GameSecurity.passcode))
+        let listener = try NWListener(using: NWParameters(passcode: passcode))
         let txtRecord = NWTXTRecord([NWTXTRecord.supporterTierKey: String(supporterTier.rawValue)])
         listener.service = NWListener.Service(name: name, type: serviceType.serviceName, txtRecord: txtRecord)
         defer {

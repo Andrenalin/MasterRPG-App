@@ -9,49 +9,14 @@ struct GameConnectionStatusIndicatorView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         Label {
-            Text(title, bundle: .module)
+            Text(status.title, bundle: .module)
         } icon: {
-            Image(systemName: systemImage)
+            Image(systemName: status.systemImage)
         }
         .labelStyle(.iconOnly)
-        .foregroundStyle(tint)
-        .help(Text(title, bundle: .module))
-        .accessibilityLabel(Text(title, bundle: .module))
-    }
-
-    private var title: LocalizedStringKey {
-        switch status {
-        case .localNetworkConnected, .sharePlayConnected:
-            "Connected"
-        case .localNetworkLost, .sharePlayLost:
-            "Connection Lost"
-        case .sharePlayWaiting:
-            "Waiting for SharePlay"
-        }
-    }
-
-    private var systemImage: String {
-        switch status {
-        case .localNetworkConnected:
-            "wifi"
-        case .localNetworkLost:
-            "wifi.slash"
-        case .sharePlayWaiting, .sharePlayConnected:
-            "shareplay"
-        case .sharePlayLost:
-            "shareplay.slash"
-        }
-    }
-
-    private var tint: Color {
-        switch status {
-        case .localNetworkConnected, .sharePlayConnected:
-            .teal
-        case .sharePlayWaiting:
-            .orange
-        case .localNetworkLost, .sharePlayLost:
-            .red
-        }
+        .foregroundStyle(status.tint)
+        .help(Text(status.title, bundle: .module))
+        .accessibilityLabel(Text(status.title, bundle: .module))
     }
 }
 

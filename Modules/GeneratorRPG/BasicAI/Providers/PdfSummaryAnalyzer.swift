@@ -26,7 +26,7 @@ struct PdfSummaryAnalyzer: Sendable {
         self.instructions = instructions ?? Self.defaultInstructions
     }
 
-    func analyzeWithProgress(from pdfDocument: PDFDocument, resultModel: PdfSummaryAnalyzyerResultModel, outputLanguage: String = "English") async throws -> PdfSummaryAnalysis {
+    func analyzeWithProgress(from pdfDocument: PDFDocument, resultModel: PdfSummaryAnalyzerResultModel, outputLanguage: String = "English") async throws -> PdfSummaryAnalysis {
         // Check model availability
         guard SystemLanguageModel.default.availability == .available else {
             throw PdfSummaryAnalysisError.modelUnavailable

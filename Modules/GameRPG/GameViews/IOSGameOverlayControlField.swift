@@ -34,9 +34,11 @@ struct IOSGameOverlayControlField: View {
                     .zIndex(1)
             }
 
-            if playerController != nil {
-                IOSGameConnectionStatusView(status: presentation.connectionStatus)
-            }
+            GameJoinCodeRevealButton(
+                root: root,
+                isMaster: isMaster,
+                connectionStatus: (isMaster ? nil : playerController) != nil ? presentation.connectionStatus : nil
+            )
 
             BatteryView()
         }

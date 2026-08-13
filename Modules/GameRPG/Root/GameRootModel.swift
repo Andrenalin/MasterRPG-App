@@ -293,6 +293,7 @@ public final class GameRoot {
     let weatherRoot: WeatherRootModel
 
     let gameModel: GameRootModel
+    let gameJoinCodeModel = GameJoinCodeModel()
     let statisticsModel: GameStatisticsModel
     let gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
@@ -345,6 +346,14 @@ public final class GameRoot {
 
     public func updateSupporterTier(_ supporterTier: SupporterTier) {
         gameModel.updateLocalSupporterTier(supporterTier)
+    }
+
+    /// This device's own join code — the Master code when hosting, otherwise
+    /// this device's Player code (used should it relay for further players).
+    /// Always available, mirroring how the Master always sees theirs. Read by
+    /// [[GameJoinCodeRevealButton]] and `GameRootViewer`'s empty state.
+    func ownJoinCode(isMaster: Bool) -> String? {
+        isMaster ? gameJoinCodeModel.masterCode : gameJoinCodeModel.playerCode
     }
     
     lazy var searchController: SearchGlobalController = {
@@ -554,7 +563,8 @@ extension GameRoot {
     func startGame(
         to model: BrowserGameModel?,
         mode: GameType,
-        supporterTier: SupporterTier = .none
+        supporterTier: SupporterTier = .none,
+        joinCode: String = ""
     ) async {
         // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
         // boundary as well as in the setup UI so programmatic callers cannot join
@@ -595,7 +605,7 @@ extension GameRoot {
 #if !os(macOS)
             UIApplication.shared.isIdleTimerDisabled = true
 #endif
-        } else if await player.start(to: model) {
+        } else if await player.start(to: model, joinCode: joinCode) {
             await joinGame(for: mode, supporterTier: supporterTier)
 
 #if !os(macOS)

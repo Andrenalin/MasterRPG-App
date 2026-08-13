@@ -105,16 +105,38 @@ struct SelectedPlayerView: View {
     }
 
     var sharePlayStart: some View {
-        VStack(alignment: .trailing, spacing: 12) {
+        // A phone-width layout lines the SharePlay and code buttons up in
+        // one row, with a spacer opening up the space between them, instead
+        // of stacking them so the card stays compact.
+        let layout: AnyLayout = isCompactLayout
+            ? AnyLayout(HStackLayout(spacing: 12))
+            : AnyLayout(VStackLayout(alignment: .trailing, spacing: 12))
+
+        return layout {
 #if !os(tvOS)
-            SharePlayButton("Play RPG Online", activity: RPGActivity())
-                .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
-                .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
-                .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+            sharePlayButton
+            if isCompactLayout {
+                Spacer()
+            }
+            playerJoinCodeButton
 #endif
         }
         .padding(12)
     }
+
+#if !os(tvOS)
+    private var sharePlayButton: some View {
+        SharePlayButton("Play RPG Online", activity: RPGActivity())
+            .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+            .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+            .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+    }
+
+    private var playerJoinCodeButton: some View {
+        @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
+        return GameJoinCodeSetupButton(title: "Your Player Code", code: $gameJoinCodeModel.playerCode)
+    }
+#endif
 }
 
 #Preview(traits: .mockData) {

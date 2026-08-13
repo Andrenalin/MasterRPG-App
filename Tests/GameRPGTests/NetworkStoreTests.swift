@@ -86,7 +86,7 @@ struct NetworkStoreTests {
         let env = try await NetworkStoreTestEnvironment.create()
 
         // Act & Assert - Start master game
-        await env.networkController.startMasterGame(game: .master, titleImage: nil)
+        await env.networkController.startMasterGame(game: .master, titleImage: nil, passcode: "1234")
         #expect(env.masterNetworkSpy.calledStartStreaming == 1)
 
         // Act & Assert - Master ready
@@ -1155,13 +1155,14 @@ struct NetworkStoreTests {
         let env = try await NetworkStoreTestEnvironment.create()
 
         // Act & Assert - Start player game with no device (should fail)
-        let result = await env.networkController.startPlayerGame(to: nil)
+        let result = await env.networkController.startPlayerGame(to: nil, passcode: "1234")
         #expect(result == false)
         #expect(env.playerNetworkSpy.calledToggleConnection == 0)
 
         // Act & Assert - Start player game with device (should succeed)
         let connectResult = await env.networkController.startPlayerGame(
-            to: BrowserGameModel(id: UUID(), endpointName: "MasterTestDevice", connectionMode: .observer)
+            to: BrowserGameModel(id: UUID(), endpointName: "MasterTestDevice", connectionMode: .observer),
+            passcode: "1234"
         )
         #expect(connectResult)
         #expect(env.playerNetworkSpy.calledToggleConnection == 1)

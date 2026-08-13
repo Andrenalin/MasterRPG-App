@@ -7,6 +7,7 @@ import Foundation
 import GroupActivities
 import MapRPG
 import RealityKit
+import SpaceRPG
 import SwiftUI
 import TabletopKit
 
@@ -43,7 +44,7 @@ public struct GameTableView: View {
                             if let pinId = event.entity.components[PinComponent.self]?.pinId {
                                 loadedGame.pinDoubleTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                                loadedGame.toggleRoomFocus(roomId)
+                                Task { await loadedGame.toggleRoomFocus(roomId) }
                             }
                         }
                         accessibilitySubscriptions.append(zoomSubscription)
@@ -131,7 +132,7 @@ public struct GameTableView: View {
                                 loadedGame.pinTapped(pinId: pinId)
                             case .second(.first(let roomLongPress)):
                                 guard let roomId = roomLongPress.entity.components[RoomComponent.self]?.roomId else { return }
-                                loadedGame.toggleRoomFocus(roomId)
+                                Task { await loadedGame.toggleRoomFocus(roomId) }
                             case .second(.second(let roomDoubleTap)):
                                 guard let roomId = roomDoubleTap.entity.components[RoomComponent.self]?.roomId else { return }
                                 Task { await loadedGame.toggleRoomVisibility(roomId) }
@@ -147,6 +148,13 @@ public struct GameTableView: View {
             guard let game else { return }
             await game.handleMapChange(
                 isGameMaster: root.gameModel.gameConfig.isMaster
+            )
+        }
+        .task(id: root.spaceRoot.gameControllable.gameModel.currentItemId) {
+            guard let game else { return }
+            await game.loadSpaceObject(
+                itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
+                spaceRoot: root.spaceRoot
             )
         }
         .task {
@@ -173,6 +181,10 @@ public struct GameTableView: View {
             root.networkStore.sharePlayStore.applyShareState()
             configureSessionState(for: game)
             await game.handleMapChange(isGameMaster: game.isGameMaster)
+            await game.loadSpaceObject(
+                itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
+                spaceRoot: root.spaceRoot
+            )
             return
         }
 
@@ -205,6 +217,13 @@ public struct GameTableView: View {
         )
         guard !Task.isCancelled else { return }
         initializedGame.syncPawnsWithMapPins()
+
+        // Same reasoning: the volume can open after a Space item is already
+        // revealed — don't wait for the next reveal to show it.
+        await initializedGame.loadSpaceObject(
+            itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
+            spaceRoot: root.spaceRoot
+        )
     }
 
     private func configureSessionState(for game: GameTableModel) {
@@ -342,6 +361,11 @@ private struct GameTableRealityContent: View {
     @Binding var accessibilitySubscriptions: [any Cancellable]
     let showsEmbeddedToolbar: Bool
 
+    /// Captured on `viewportPanGesture`'s first `.onChanged` call, cleared on
+    /// `.onEnded` — the pan commits once, in a single step, rather than
+    /// re-rendering the board texture on every touch-move event.
+    @State private var viewportPanStart: SIMD3<Float>?
+
     var body: some View {
         RealityView { content in
             content.camera = .virtual
@@ -366,6 +390,15 @@ private struct GameTableRealityContent: View {
             game.renderer.updateCamera(for: size)
         }
         .highPriorityGesture(pinDragGesture)
+        // Wins over `.orbit`'s bundled one-finger drag (see the comment
+        // above) only for touches starting on the map surface itself, so a
+        // room, once focused/zoomed, can be panned within its own crop by
+        // dragging it — like the 2D map's viewport, not by moving anything
+        // in 3D space (see `GameTableModel.manualViewportOffset`). Distinct
+        // from `BoardSurfaceComponent`'s hit-test volume: pins and room fog
+        // sit closer to the camera and keep winning ties, so this never
+        // steals from `pinDragGesture` or `roomTapGesture` below.
+        .highPriorityGesture(viewportPanGesture)
         // A pin sitting over a room's fog always wins the tap — pinTapGesture
         // is listed first, and exclusively(before:) gives it precedence; its
         // targetedToEntity predicate simply never matches when the touch
@@ -397,6 +430,26 @@ private struct GameTableRealityContent: View {
                       let parent = value.entity.parent,
                       let position = value.tablePosition(relativeTo: parent) else { return }
                 game.pinDragEnded(pinId: pinId, position: position)
+            }
+    }
+
+    /// Pans the zoomed viewport instead of moving a pin or the table itself —
+    /// see `GameTableModel.panViewport(fromTableStart:toTableEnd:)`. Commits
+    /// once, on release, rather than re-rendering the board texture (an
+    /// `ImageRenderer` pass, not cheap) on every touch-move event.
+    private var viewportPanGesture: some Gesture {
+        DragGesture(minimumDistance: 5)
+            .targetedToEntity(where: .has(BoardSurfaceComponent.self))
+            .onChanged { value in
+                guard viewportPanStart == nil,
+                      let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
+                viewportPanStart = position
+            }
+            .onEnded { value in
+                defer { viewportPanStart = nil }
+                guard let start = viewportPanStart,
+                      let end = value.tablePosition(relativeTo: game.renderer.root) else { return }
+                game.panViewport(fromTableStart: start, toTableEnd: end)
             }
     }
 
@@ -440,7 +493,7 @@ private struct GameTableRealityContent: View {
                 switch value {
                 case .first(let longPress):
                     guard let roomId = longPress.entity.components[RoomComponent.self]?.roomId else { return }
-                    game.toggleRoomFocus(roomId)
+                    Task { await game.toggleRoomFocus(roomId) }
                 case .second(let doubleTap):
                     guard let roomId = doubleTap.entity.components[RoomComponent.self]?.roomId else { return }
                     Task { await game.toggleRoomVisibility(roomId) }
@@ -466,7 +519,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinDoubleTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    game.toggleRoomFocus(roomId)
+                    await game.toggleRoomFocus(roomId)
                 }
             }
         }

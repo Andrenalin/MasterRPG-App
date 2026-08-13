@@ -32,20 +32,25 @@ final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked
     var sendResponseExceptData: MessageMapper?
     var lastExceptId: ConnectionController.ID?
 
-    func startStreaming() {
+    var lastPasscode: String?
+
+    func startStreaming(passcode: String) {
         calledStartStreaming += 1
+        lastPasscode = passcode
     }
 
     func stopStreaming() {
         calledStopStreaming += 1
     }
 
-    func toggleStreaming() {
+    func toggleStreaming(passcode: String) {
         calledToggleStreaming += 1
+        lastPasscode = passcode
     }
 
-    func startProxyStreaming() {
+    func startProxyStreaming(passcode: String) {
         calledStartProxyStreaming += 1
+        lastPasscode = passcode
     }
 
     /// Stubbed delivery result — set to false to exercise the broadcast fallback.

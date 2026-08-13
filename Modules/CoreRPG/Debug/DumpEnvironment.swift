@@ -26,7 +26,7 @@ public struct DumpingEnvironment<Content: View>: View {
     func printing(_ environmentValues: EnvironmentValues) {
         #if DEBUG
         print("--- Environment Values - BEGIN ---")
-        let keyValuePair = environmentValues.asTextualRepresentationWithNonReaptingKeys
+        let keyValuePair = environmentValues.asTextualRepresentationWithNonRepeatingKeys
         keyValuePair.forEach { print($0) }
         print("--- Environment Values - END ---")
         #endif
@@ -40,7 +40,7 @@ public struct DumpingEnvironment<Content: View>: View {
 }
 
 extension EnvironmentValues {
-    var asTextualRepresentationWithNonReaptingKeys: [String] {
+    var asTextualRepresentationWithNonRepeatingKeys: [String] {
         // split description into lines starting with EnvironmentPropertyKey
         let lineIndices = description.indices(of: "EnvironmentPropertyKey")
         var entries: [String] = []

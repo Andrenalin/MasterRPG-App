@@ -232,14 +232,6 @@ final class DiceSpaceModel {
             entityMap[anchor.id] = entity
             rootEntity?.addChild(entity)
         }
-
-        /*
-        guard let rootEntity else {
-            return
-        }
-        print("*** - \(anchor.transform)")
-        entityMap[anchor.id]?.setTransformMatrix(anchor.transform, relativeTo: rootEntity)
-         */
     }
 
     func removePlane(_ anchor: PlaneAnchor) {

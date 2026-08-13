@@ -1,22 +1,12 @@
 // @copyright André Trettin
 
 #if os(iOS) || os(macOS)
+import CoreGraphics
 import CoreRPG
 import Foundation
 import MapRPG
 import RealityKit
 import os.log
-
-enum GameMetrics {
-    static let tableEdge: Float = 0.7
-    static let tableThickness: Float = 0.0146
-    static let mapSurfaceClearance: Float = 0.0005
-    static let playerAreaDistanceFromCenter: Float = 0.29
-    static let smallHeight: Float = 0.001
-    static let boardHeight: Float = 0.055
-    static let playerAreaSize = SIMD2<Float>(0.4, 0.1)
-    static let playerHandSize = SIMD2<Float>(0.2, 0.1)
-}
 
 @MainActor
 final class GameSetup {
@@ -32,6 +22,7 @@ final class GameSetup {
         self.root = root
         PinComponent.registerComponent()
         RoomComponent.registerComponent()
+        BoardSurfaceComponent.registerComponent()
 
         board = Board()
         root.addChild(board.entity)
@@ -52,7 +43,8 @@ final class GameSetup {
         mapImage: AKImage?,
         degrees: Double,
         isGameMaster: Bool,
-        activeAttackerPinId: UUID?
+        activeAttackerPinId: UUID?,
+        viewportPan: CGPoint
     ) -> [UUID: UUID] {
         let allPins: [MapPinModel]
         if let mapModel {
@@ -73,7 +65,7 @@ final class GameSetup {
             } ?? true
         }
 
-        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
+        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees, viewportPan: viewportPan)
         let existingPawns = Dictionary(
             pinPawns.map { ($0.pinId, $0) },
             uniquingKeysWith: { current, _ in current }
@@ -150,8 +142,8 @@ final class GameSetup {
     /// table. Clears every hit area when there's no map or image to project
     /// coordinates against — the room menu still works then, only the
     /// on-table gesture is unavailable.
-    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) {
-        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees) else {
+    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, viewportPan: CGPoint) {
+        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees, viewportPan: viewportPan) else {
             for area in roomHitAreas {
                 area.entity.removeFromParent()
             }
@@ -184,11 +176,17 @@ final class GameSetup {
 
     /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
     /// coordinate conversion, authoritative from `MapModel` when available.
-    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) -> MapTableProjection? {
+    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, viewportPan: CGPoint) -> MapTableProjection? {
         if let mapModel, mapModel.width > 0, mapModel.height > 0 {
+            let imageSize = CGSize(width: mapModel.width, height: mapModel.height)
             return MapTableProjection(
-                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
-                degrees: 0
+                imageSize: imageSize,
+                degrees: 0,
+                focusRect: GameTableModel.boardFocusRect(
+                    entries: mapModel.entries,
+                    imageSize: imageSize,
+                    panOffset: viewportPan
+                )
             )
         } else if let mapImage {
             return MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
@@ -212,15 +210,22 @@ extension GameTableModel {
             mapImage: currentMapImage,
             degrees: currentMapDegrees,
             isGameMaster: isGameMaster,
-            activeAttackerPinId: activeAttackerPinId
+            activeAttackerPinId: activeAttackerPinId,
+            viewportPan: manualViewportOffset
         )
-        setup.syncRooms(mapModel: mapModel, mapImage: currentMapImage, degrees: currentMapDegrees)
+        setup.syncRooms(
+            mapModel: mapModel,
+            mapImage: currentMapImage,
+            degrees: currentMapDegrees,
+            viewportPan: manualViewportOffset
+        )
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
             guard beginPinPhotoLoad(pinId: pinId, photoId: photoId) else { continue }
-            Task { [weak self] in
+            let task = Task { [weak self] in
                 await self?.loadPinThumbnail(pinId: pinId, photoId: photoId)
             }
+            trackThumbnailTask(for: pinId, task)
         }
     }
 }
@@ -241,17 +246,31 @@ struct MapTableProjection {
     let degrees: Double
     let planeWidth: Float
     let planeDepth: Float
+    /// The portion of `imageSize` currently mapped onto the full board plane —
+    /// the whole image by default, or a room-centered crop when a room is
+    /// focused (see `GameTableModel.boardFocusRect`). A pin located outside
+    /// this rect projects beyond the physical table edges.
+    let focusRect: CGRect
 
     /// Table meters per source-image point, at this projection's scale.
     /// Multiplying a 2D pin's point size by this (and by `MapModel.pinScale`)
     /// gives the 3D token the same size relative to the table that the pin
     /// has relative to the map image.
+    ///
+    /// Uses `focusRect`, not the full `imageSize` — when a room is focused,
+    /// the board shows that (smaller) crop magnified to fill the same plane,
+    /// so a pin needs to grow by the same magnification to keep its size
+    /// relative to the now-larger map features around it, matching how the
+    /// 2D map's room-focus zoom scales its pins right along with the map
+    /// image (`MapEditorCanvas`'s `scaleEffect` covers both together).
+    /// Otherwise a pin stays a constant physical size while the map zooms in
+    /// around it, and visibly shrinks in comparison.
     var metersPerPoint: Float {
-        guard imageSize.width > 0 else { return 0 }
-        return planeWidth / Float(imageSize.width)
+        guard focusRect.width > 0 else { return 0 }
+        return planeWidth / Float(focusRect.width)
     }
 
-    init(imageSize: CGSize, degrees: Double) {
+    init(imageSize: CGSize, degrees: Double, focusRect: CGRect? = nil) {
         let normalizedDegrees = Self.normalizedDegrees(degrees)
         let orientedSize = Self.orientedImageSize(
             imageSize,
@@ -263,6 +282,7 @@ struct MapTableProjection {
         )
         self.imageSize = safeSize
         self.degrees = normalizedDegrees
+        self.focusRect = focusRect ?? CGRect(origin: .zero, size: safeSize)
 
         let aspectRatio = safeSize.width / safeSize.height
         if aspectRatio > 1 {
@@ -275,8 +295,8 @@ struct MapTableProjection {
     }
 
     func tablePosition(for location: CGPoint) -> SIMD3<Float> {
-        let normalizedX = location.x / imageSize.width
-        let normalizedY = location.y / imageSize.height
+        let normalizedX = (location.x - focusRect.minX) / focusRect.width
+        let normalizedY = (location.y - focusRect.minY) / focusRect.height
         return SIMD3<Float>(
             Float(normalizedX - 0.5) * planeWidth,
             Self.pinHeight,
@@ -284,9 +304,12 @@ struct MapTableProjection {
         )
     }
 
+    /// Exact inverse of `tablePosition(for:)`, clamped to the full image
+    /// bounds (not just `focusRect`) since a pin may be dropped anywhere on
+    /// the table even while a room crop is showing.
     func mapLocation(for position: SIMD3<Float>) -> CGPoint {
-        let x = (CGFloat(position.x / planeWidth) + 0.5) * imageSize.width
-        let y = (CGFloat(position.z / planeDepth) + 0.5) * imageSize.height
+        let x = (CGFloat(position.x / planeWidth) + 0.5) * focusRect.width + focusRect.minX
+        let y = (CGFloat(position.z / planeDepth) + 0.5) * focusRect.height + focusRect.minY
         return CGPoint(
             x: min(max(x, 0), imageSize.width),
             y: min(max(y, 0), imageSize.height)

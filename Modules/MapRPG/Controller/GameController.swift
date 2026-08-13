@@ -399,7 +399,9 @@ extension GameController: MapGameStorable {
     @MainActor func startGameAsMaster() {
         root.rootModel.gameEditorModel?.displayMode = .master
     }
-    
+
+    // MARK: - Pin, room & pointer state
+
     @MainActor
     func setPlayerPin(for playerId: UUID, name: String, characterId: UUID) {
         let photoId = root.characterRoot.valueGameControllable.playerPinPhoto(for: characterId)
@@ -1256,6 +1258,8 @@ extension GameController: MapGameStorable {
         battleRoundModel.reset()
     }
 
+    // MARK: - Map content sync
+
     @MainActor
     @discardableResult
     func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
@@ -1341,6 +1345,8 @@ private extension GameController {
         let core: PackageCoreMetadata
         let data: Data?
     }
+
+    // MARK: - Package & version metadata
 
     @MainActor
     func networkGeneration(for itemId: UUID) -> MapGameModel.AuthoritativeGeneration {

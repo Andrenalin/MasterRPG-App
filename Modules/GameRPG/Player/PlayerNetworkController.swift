@@ -55,7 +55,7 @@ final class PlayerNetworkController {
 
 extension PlayerNetworkController: PlayerNetworkControllable {
     @MainActor
-    func toggleConnection(to model: BrowserGameModel) async {
+    func toggleConnection(to model: BrowserGameModel, passcode: String) async {
         Logger.networking.debug("PlayerNetworkController: Start")
         guard networkModel.playerConnectionId == nil else {
             await stop()
@@ -66,6 +66,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         let playerModel = PlayerBrowserModel(name: model.deviceName, endpoint: endpoint, interface: nil)
         networkModel.model = playerModel
         networkModel.playerConnectionId = model.id
+        networkModel.passcode = passcode
         await start(model: playerModel)
 
         observeRemovedConnection()
@@ -97,7 +98,8 @@ extension PlayerNetworkController: PlayerNetworkControllable {
 private extension PlayerNetworkController {
     func start(model: PlayerBrowserModel) async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Start with browser model")
-        await networkModel.reset(controller: ConnectionController(id: UUID(), endpoint: model.endpoint, delegate: self))
+        let passcode = await networkModel.passcode
+        await networkModel.reset(controller: ConnectionController(id: UUID(), endpoint: model.endpoint, passcode: passcode, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
 
@@ -115,7 +117,10 @@ private extension PlayerNetworkController {
 
     @MainActor
     private func setUpListener() {
-        let manager = ListenerManager(name: networkModel.name, supporterTier: networkModel.supporterTier, serviceType: fallbackServiceType)
+        // Reuses the passcode this session's outbound connection was made
+        // with — the peer on the other end already knows it, so no new code
+        // entry is needed to re-admit them if they reconnect.
+        let manager = ListenerManager(name: networkModel.name, supporterTier: networkModel.supporterTier, serviceType: fallbackServiceType, passcode: networkModel.passcode)
         manager.delegate = self
         networkModel.reset(listener: manager)
         manager.startListening()

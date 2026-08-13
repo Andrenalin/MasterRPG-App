@@ -5952,6 +5952,9 @@
         }
       }
     },
+    "See your join code" : {
+
+    },
     "Select" : {
       "localizations" : {
         "de" : {
@@ -6691,6 +6694,9 @@
           }
         }
       }
+    },
+    "Tap here anytime to see the code others need to join your game." : {
+
     },
     "Text" : {
       "localizations" : {

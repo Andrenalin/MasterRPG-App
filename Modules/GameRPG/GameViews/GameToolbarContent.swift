@@ -56,13 +56,16 @@ struct GameToolbarContent: ToolbarContent {
                 )
             }
 
-            if let playerController {
-                let connectionStatus = GameConnectionStatusPresentation(
-                    lostMaster: playerController.gameModel.lostMaster,
-                    sharePlayState: root.networkStore.sharePlayStore.connectionState
-                )
-                PlayerConnectionStatusView(status: connectionStatus)
-            }
+            GameJoinCodeRevealButton(
+                root: root,
+                isMaster: role == .master,
+                connectionStatus: playerController.map {
+                    GameConnectionStatusPresentation(
+                        lostMaster: $0.gameModel.lostMaster,
+                        sharePlayState: root.networkStore.sharePlayStore.connectionState
+                    )
+                }
+            )
 
             BatteryView()
         }

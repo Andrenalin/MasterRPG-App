@@ -6,6 +6,14 @@ import MapRPG
 import PhotoRPG
 import SwiftUI
 
+/// Hosts the exact same `GameToolBar` the 2D map uses (via `GameToolBarSession`
+/// conformance on `GameTableModel`), so the game master gets one consistent
+/// set of controls and actions regardless of which representation is on
+/// screen. No bespoke 3D-only buttons remain: "Show/Hide Pointer" and
+/// "Center Pointer" merged into the shared toolbar's single pointing-mode
+/// toggle (see `GameToolBar.togglePointingMode()`), and the room-visibility
+/// menu was dropped — both representations already toggle a room's fog by
+/// interacting with it directly (`GameTableModel.toggleRoomVisibility`).
 @MainActor
 struct GameTableToolbar: View {
     let game: GameTableModel
@@ -14,123 +22,12 @@ struct GameTableToolbar: View {
         HStack {
             GameTableWindowButton()
 
-            if game.isGameMaster {
-                RoomVisibilityMenu(game: game)
-
-                Button {
-                    game.togglePointerVisibility()
-                } label: {
-                    Label {
-                        Text(pointerTitle)
-                    } icon: {
-                        Image(systemName: game.pointer?.isShown == true ? "hand.point.up.left.fill" : "hand.point.up.left")
-                    }
-                }
-                .selectedRoundButton(
-                    title: String(localized: pointerTitle),
-                    module: .table,
-                    isSelected: game.pointer?.isShown == true
-                )
-
-                Button {
-                    game.movePointerToMapCenter()
-                } label: {
-                    Label {
-                        Text("Center Pointer", bundle: .module)
-                    } icon: {
-                        Image(systemName: "scope")
-                    }
-                }
-                .selectedRoundButton(
-                    title: String(localized: "Center Pointer", bundle: .module),
-                    module: .table,
-                    isSelected: false
-                )
-            }
-
-            Button {
-                game.resetGame()
-            } label: {
-                Label {
-                    Text("Reset", bundle: .module)
-                } icon: {
-                    Image(systemName: "arrow.counterclockwise")
-                }
-            }
-            .selectedRoundButton(
-                title: String(localized: "Reset", bundle: .module),
-                module: .table,
-                isSelected: false
+            game.mapRoot.viewController.gameToolBarView(
+                root: game.mapRoot,
+                isMaster: game.isGameMaster,
+                session: game
             )
         }
-        .padding()
-    }
-
-    private var pointerTitle: LocalizedStringResource {
-        game.pointer?.isShown == true
-            ? LocalizedStringResource("Hide Pointer", bundle: .module)
-            : LocalizedStringResource("Show Pointer", bundle: .module)
-    }
-}
-
-@MainActor
-private struct RoomVisibilityMenu: View {
-    let game: GameTableModel
-
-    var body: some View {
-        Menu {
-            Button {
-                Task { await game.setAllRoomsShown(true) }
-            } label: {
-                Label {
-                    Text("Show All Rooms", bundle: .module)
-                } icon: {
-                    Image(systemName: "eye")
-                }
-            }
-            .disabled(game.rooms.allSatisfy { $0.isShown })
-
-            Button {
-                Task { await game.setAllRoomsShown(false) }
-            } label: {
-                Label {
-                    Text("Hide All Rooms", bundle: .module)
-                } icon: {
-                    Image(systemName: "eye.slash")
-                }
-            }
-            .disabled(game.rooms.allSatisfy { !$0.isShown })
-
-            Divider()
-
-            ForEach(game.rooms) { room in
-                Button {
-                    Task { await game.toggleRoomVisibility(room.id) }
-                } label: {
-                    Label {
-                        if room.name.isEmpty {
-                            Text("Unnamed Room", bundle: .module)
-                        } else {
-                            Text(room.name)
-                        }
-                    } icon: {
-                        Image(systemName: room.isShown ? "eye" : "eye.slash")
-                    }
-                }
-            }
-        } label: {
-            Label {
-                Text("Rooms", bundle: .module)
-            } icon: {
-                Image(systemName: "door.left.hand.open")
-            }
-        }
-        .selectedRoundButton(
-            title: String(localized: "Room Visibility", bundle: .module),
-            module: .table,
-            isSelected: false
-        )
-        .disabled(game.rooms.isEmpty)
     }
 }
 

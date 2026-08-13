@@ -25,6 +25,27 @@ public struct PersistentHistoryCleaner {
     let userDefault: UserDefaults?
     let appActors = AppPersistentActor.allCases
 
+    /// Delay before the first cleanup run, so it doesn't compete with launch.
+    static let initialCleanupDelay: Duration = .seconds(5)
+    /// Cadence for every cleanup run after the first.
+    static let recurringCleanupInterval: Duration = .seconds(24 * 60 * 60)
+
+    /// Runs `cleanup` once after `initialCleanupDelay`, then every
+    /// `recurringCleanupInterval` until the returned task is cancelled.
+    /// Shared by both `CoreDataPersistenceController` and
+    /// `CloudKitCoreDataPersistenceController` so the schedule can't drift
+    /// between the two setup paths.
+    public static func scheduleRecurringCleanup(_ cleanup: @MainActor @escaping () -> Void) -> Task<Void, Never> {
+        Task {
+            try? await Task.sleep(for: initialCleanupDelay)
+            await cleanup()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: recurringCleanupInterval)
+                await cleanup()
+            }
+        }
+    }
+
     public func clean() {
         guard let userDefault else {
             Logger.persistentHistory.error("Skipping history cleanup: App Group container is unavailable")

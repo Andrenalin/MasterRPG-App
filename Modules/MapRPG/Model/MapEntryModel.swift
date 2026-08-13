@@ -4,12 +4,15 @@ import CoreRPG
 import CoreGraphics
 import Foundation
 
-enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable, Sendable {
+/// Public so the 3D table (GameRPG, a separate module) can hold and cycle its
+/// own `displayMode` to satisfy `GameToolBarSession` — the same shared-toolbar
+/// preview mode the 2D map already offers.
+public enum MapDisplayMode: Int, Identifiable, Equatable, Hashable, CaseIterable, Sendable {
     case master = 0
     case player = 1
     case reader = 2
 
-    var id: Int {
+    public var id: Int {
         rawValue
     }
 

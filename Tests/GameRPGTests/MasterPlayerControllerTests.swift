@@ -2188,10 +2188,10 @@ private final class InMemoryMasterNetworkStore: MasterNetworkControllable, @unch
         self.networkModel = networkModel
     }
 
-    @MainActor func startStreaming() {}
+    @MainActor func startStreaming(passcode: String) {}
     @MainActor func stopStreaming() {}
-    @MainActor func toggleStreaming() {}
-    @MainActor func startProxyStreaming() {}
+    @MainActor func toggleStreaming(passcode: String) {}
+    @MainActor func startProxyStreaming(passcode: String) {}
 
     @discardableResult
     func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
@@ -2220,7 +2220,7 @@ private final class InMemoryPlayerNetworkStore: PlayerNetworkControllable, @unch
         self.browserManager = browserManager
     }
 
-    @MainActor func toggleConnection(to _: BrowserGameModel) async {}
+    @MainActor func toggleConnection(to _: BrowserGameModel, passcode: String) async {}
     @MainActor func stop() async {}
 
     func request(with content: MessageMapper?) async {

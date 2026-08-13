@@ -14,10 +14,10 @@ protocol MasterNetworkControllerDelegate: Sendable & AnyObject {
 protocol MasterNetworkControllable: Sendable & AnyObject {
     var networkModel: MasterNetworkNodel { get }
 
-    @MainActor func startStreaming()
+    @MainActor func startStreaming(passcode: String)
     @MainActor func stopStreaming()
-    @MainActor func toggleStreaming()
-    @MainActor func startProxyStreaming()
+    @MainActor func toggleStreaming(passcode: String)
+    @MainActor func startProxyStreaming(passcode: String)
 
     /// Returns whether a connection with that id exists and the data was handed
     /// to it — false means the id is unknown here (e.g. a SharePlay participant)
@@ -38,7 +38,13 @@ final class MasterNetworkNodel {
     var supporterTier: SupporterTier = .none
     var connections: [any ConnectionControllable] = []
     var isStreaming: Bool = false
-    
+
+    /// The join code this session's listener was started with. Captured once
+    /// at `startStreaming(passcode:)`/`startProxyStreaming(passcode:)` and
+    /// reused for every reconnect dial-out to a lost player for the lifetime
+    /// of the session, even if the user changes their stored code afterwards.
+    @ObservationIgnored var passcode: String = ""
+
     @ObservationIgnored var browserManager: BrowserManager? = nil
     @ObservationIgnored var observeConnectionsTask: Task<Void, Never>? = nil
     @ObservationIgnored var connectionStartTasks: [ConnectionController.ID: Task<Void, Never>] = [:]
@@ -82,14 +88,16 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
 
     // MARK: - Spy: Call Recording
 
-    /// Number of times `startStreaming()` was called
+    /// Number of times `startStreaming(passcode:)` was called
     public var calledStartStreaming = 0
     /// Number of times `stopStreaming()` was called
     public var calledStopStreaming = 0
-    /// Number of times `toggleStreaming()` was called
+    /// Number of times `toggleStreaming(passcode:)` was called
     public var calledToggleStreaming = 0
-    /// Number of times `startProxyStreaming()` was called
+    /// Number of times `startProxyStreaming(passcode:)` was called
     public var calledStartProxyStreaming = 0
+    /// Last passcode passed to `startStreaming(passcode:)`/`startProxyStreaming(passcode:)`
+    public var lastPasscode: String?
     /// Number of times `sendResponse(data:id:)` was called
     public var calledSendResponseId = 0
     /// Stubbed delivery result for `sendResponse(data:id:)`
@@ -118,8 +126,9 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
     // MARK: - Protocol Methods
 
     @MainActor
-    func startStreaming() {
+    func startStreaming(passcode: String) {
         calledStartStreaming += 1
+        lastPasscode = passcode
     }
 
     @MainActor
@@ -128,13 +137,15 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
     }
 
     @MainActor
-    func toggleStreaming() {
+    func toggleStreaming(passcode: String) {
         calledToggleStreaming += 1
+        lastPasscode = passcode
     }
 
     @MainActor
-    func startProxyStreaming() {
+    func startProxyStreaming(passcode: String) {
         calledStartProxyStreaming += 1
+        lastPasscode = passcode
     }
 
     @discardableResult

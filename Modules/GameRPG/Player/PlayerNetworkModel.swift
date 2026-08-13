@@ -15,7 +15,7 @@ protocol PlayerNetworkControllable: Sendable & AnyObject {
     var networkModel: PlayerNetworkNodel { get }
     var browserManager: BrowserManager { get }
 
-    @MainActor func toggleConnection(to model: BrowserGameModel) async
+    @MainActor func toggleConnection(to model: BrowserGameModel, passcode: String) async
     @MainActor func stop() async
 
     func request(with content: MessageMapper?) async
@@ -35,7 +35,13 @@ final class PlayerNetworkNodel {
     var supporterTier: SupporterTier = .none
     var model: PlayerBrowserModel?
     var playerConnectionId: UUID?
-    
+
+    /// The join code entered to establish the current session. Captured once
+    /// at `toggleConnection(to:passcode:)` and reused both for the outbound
+    /// connection and any fallback listener this device opens afterwards, so
+    /// automatic reconnects never need a fresh code entry.
+    @ObservationIgnored var passcode: String = ""
+
     var isConnected: Bool
     
     enum ConnectionState {
@@ -96,15 +102,17 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
 
     /// Number of times `stop()` was called
     public var calledStop = 0
-    /// Number of times `toggleConnection(to:)` was called
+    /// Number of times `toggleConnection(to:passcode:)` was called
     public var calledToggleConnection = 0
     /// Number of times `request(with:)` was called
     public var calledRequest = 0
 
     // MARK: - Spy: Captured Arguments
 
-    /// Last game model passed to `toggleConnection(to:)`
+    /// Last game model passed to `toggleConnection(to:passcode:)`
     public var lastToggledGame: BrowserGameModel?
+    /// Last passcode passed to `toggleConnection(to:passcode:)`
+    public var lastPasscode: String?
     /// Last message mapper passed to `request(with:)`
     public var lastRequestData: MessageMapper?
 
@@ -122,9 +130,10 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
     // MARK: - Protocol Methods
 
     @MainActor
-    func toggleConnection(to model: BrowserGameModel) async {
+    func toggleConnection(to model: BrowserGameModel, passcode: String) async {
         calledToggleConnection += 1
         lastToggledGame = model
+        lastPasscode = passcode
     }
 
     @MainActor

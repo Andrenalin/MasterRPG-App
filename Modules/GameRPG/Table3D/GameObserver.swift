@@ -5,6 +5,7 @@
 import TabletopKit
 import RealityKit
 
+@MainActor
 class GameObserver: TabletopGame.Observer {
     let tabletop: TabletopGame
     let renderer: GameRenderer
@@ -22,9 +23,7 @@ class GameObserver: TabletopGame.Observer {
             of: Die20.self,
             matching: action.equipmentID
         ) {
-            Task { @MainActor in
-                die20.playTossSound()
-            }
+            die20.playTossSound()
         }
     }
 
