@@ -131,7 +131,7 @@ final class GameTableModel: Sendable {
             renderer.clearSpaceObject()
             return
         }
-        guard let url = await spaceRoot.itemController.loadableUrl(itemId: itemId) else {
+        guard let url = await spaceRoot.itemControllable.loadableUrl(itemId: itemId) else {
             Logger.gameTable.error("Could not access the shared 3D object file for item \(itemId.uuidString, privacy: .public)")
             return
         }
