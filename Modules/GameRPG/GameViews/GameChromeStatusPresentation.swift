@@ -1,5 +1,7 @@
 // @copyright André Trettin
 
+import SwiftUI
+
 enum GameBattleRoundIndicator: Equatable, Sendable {
     case inactive
     case round(Int)
@@ -22,6 +24,45 @@ enum GameConnectionStatusPresentation: Equatable, Sendable {
             self = lostMaster ? .sharePlayLost : .sharePlayConnected
         case .disconnected:
             self = .sharePlayLost
+        }
+    }
+}
+
+/// Shared presentation used by every connection-status icon, including the
+/// merged join-code/wifi button — see `GameJoinCodeRevealButton`.
+extension GameConnectionStatusPresentation {
+    var title: LocalizedStringKey {
+        switch self {
+        case .localNetworkConnected, .sharePlayConnected:
+            "Connected"
+        case .localNetworkLost, .sharePlayLost:
+            "Connection Lost"
+        case .sharePlayWaiting:
+            "Waiting for SharePlay"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .localNetworkConnected:
+            "wifi"
+        case .localNetworkLost:
+            "wifi.slash"
+        case .sharePlayWaiting, .sharePlayConnected:
+            "shareplay"
+        case .sharePlayLost:
+            "shareplay.slash"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .localNetworkConnected, .sharePlayConnected:
+            .teal
+        case .sharePlayWaiting:
+            .orange
+        case .localNetworkLost, .sharePlayLost:
+            .red
         }
     }
 }

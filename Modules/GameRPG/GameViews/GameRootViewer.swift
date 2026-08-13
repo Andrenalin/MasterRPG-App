@@ -80,6 +80,14 @@ struct GameRootViewer: View {
         .themedSurface()
         .moduleTint(.game)
         .ignoresSafeArea()
+        .onChange(of: root.mapRoot.gameControllable.gameModel.currentItemId, initial: true) { _, newMapId in
+            // Only ever turns this on — several `GameRootViewer` instances
+            // (master, player, external mirror) can observe independent
+            // `currentItemId`s, and flipping back to false from one instance
+            // could otherwise race a moment ago's true from another.
+            guard newMapId != nil else { return }
+            MasterRPGTips.setGameContentVisible(true)
+        }
 #if os(visionOS)
         .onChange(of: root.photoRoot.gameControllable.gameModel.currentItemId) {
             guard let photoId = root.photoRoot.gameControllable.gameModel.currentItemId else { return }

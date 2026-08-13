@@ -90,6 +90,9 @@ public enum MasterRPGTipState {
     @Parameter static var hasSelectedAdventure: Bool = false
     @Parameter static var hasSelectedCharacter: Bool = false
     @Parameter static var aiAvailable: Bool = false
+    /// True once the game screen's empty/setup backdrop has been replaced by
+    /// real content (a map), for either the Game Master or a Player.
+    @Parameter static var isShowingGameContent: Bool = false
 
     /// Session-only override used by the production "Show Tips Again" action.
     @Parameter(.transient) static var forceReplay: Bool = false
@@ -121,6 +124,7 @@ public enum MasterRPGTips {
     public static let openMapEditor = OpenMapEditorTip()
     public static let useMapTools = UseMapToolsTip()
     public static let openAnotherWindow = OpenAnotherWindowTip()
+    public static let showJoinCode = ShowJoinCodeTip()
 
     public static let importCampaignActionID = "import-campaign"
     public static let importCampaignRequested = Notification.Name(
@@ -139,7 +143,8 @@ public enum MasterRPGTips {
             askAI,
             openMapEditor,
             useMapTools,
-            openAnotherWindow
+            openAnotherWindow,
+            showJoinCode
         ]
     }
 
@@ -282,6 +287,13 @@ public enum MasterRPGTips {
         MasterRPGTipState.aiAvailable = isAvailable
     }
 
+    /// Call once the game screen's empty/setup backdrop is replaced by real
+    /// content, for either role — see `ShowJoinCodeTip`.
+    @MainActor
+    public static func setGameContentVisible(_ isVisible: Bool) {
+        MasterRPGTipState.isShowingGameContent = isVisible
+    }
+
     static func localizedString(
         _ key: String,
         locale: Locale
@@ -341,6 +353,10 @@ public enum MasterRPGTips {
 
     public static func donateWindowOpened() async {
         await OpenAnotherWindowTip.windowOpened.donate()
+    }
+
+    public static func donateJoinCodeViewed() async {
+        await ShowJoinCodeTip.joinCodeViewed.donate()
     }
 
     @MainActor
@@ -768,6 +784,42 @@ public struct UseMapToolsTip: Tip {
             forceReplay || event.donations.count > 0
         }
         #Rule(MasterRPGTipState.$forceReplay, Self.mapToolUsed) { forceReplay, event in
+            forceReplay || event.donations.count == 0
+        }
+    }
+
+    public var options: [Option] {
+        MaxDisplayCount(3)
+    }
+}
+
+/// Points at the wifi icon once the game screen shows real content, telling
+/// the Game Master or a Player they can tap it to see their join code.
+public struct ShowJoinCodeTip: Tip {
+    static let joinCodeViewed = Event(id: "game.join-code-viewed.v1")
+
+    public var id: String { "game.show-join-code.v1" }
+
+    public var title: Text {
+        Text("See your join code", bundle: .module)
+    }
+
+    public var message: Text? {
+        Text("Tap here anytime to see the code others need to join your game.", bundle: .module)
+    }
+
+    public var image: Image? {
+        Image(systemName: "wifi")
+    }
+
+    public var rules: [Rule] {
+        #Rule(
+            MasterRPGTipState.$forceReplay,
+            MasterRPGTipState.$isShowingGameContent
+        ) { forceReplay, isShowingGameContent in
+            forceReplay || isShowingGameContent
+        }
+        #Rule(MasterRPGTipState.$forceReplay, Self.joinCodeViewed) { forceReplay, event in
             forceReplay || event.donations.count == 0
         }
     }

@@ -2,23 +2,35 @@
 
 import CoreRPG
 import SwiftUI
+import TipKit
 
-/// Tap-to-reveal display of this device's own join code — the same code
-/// edited in [[GameJoinCodeField]] on the setup screen — so a host can read
-/// it aloud to players who want to join. Renders nothing when this device
-/// has no code of its own to share (e.g. a connected Observer/Proxy client).
+/// The merged wifi/connection-status icon: shows this device's live
+/// connection status when one is known (a Player's link to the Master or
+/// SharePlay group), and tapping it reveals this device's own join code —
+/// the same code edited in [[GameJoinCodeField]] on the setup screen — so a
+/// host can read it aloud to players who want to join. Renders nothing when
+/// this device has no code of its own to share.
 struct GameJoinCodeRevealButton: View {
     let root: GameRoot
     let isMaster: Bool
+    var connectionStatus: GameConnectionStatusPresentation? = nil
 
     @State private var isPresented = false
 
     var body: some View {
         if let code = root.ownJoinCode(isMaster: isMaster) {
-            Button("Join Code", systemImage: "wifi") {
+            Button {
                 isPresented = true
+                Task { await MasterRPGTips.donateJoinCodeViewed() }
+            } label: {
+                Label {
+                    Text(title, bundle: .module)
+                } icon: {
+                    Image(systemName: connectionStatus?.systemImage ?? "wifi")
+                }
             }
             .labelStyle(.iconOnly)
+            .foregroundStyle(connectionStatus?.tint ?? .primary)
 #if os(tvOS)
             .sheet(isPresented: $isPresented) {
                 GameJoinCodeRevealContent(isMaster: isMaster, code: code)
@@ -31,8 +43,18 @@ struct GameJoinCodeRevealButton: View {
 #endif
             }
 #endif
-            .help(Text("Show your join code", bundle: .module))
+            .help(Text(title, bundle: .module))
+            .accessibilityLabel(Text(title, bundle: .module))
+            .popoverTip(MasterRPGTips.showJoinCode)
         }
+    }
+
+    /// The connection status's own title when one is known (so VoiceOver/help
+    /// still announces "Connection Lost" etc.), falling back to a plain
+    /// "Join Code" label for the Master, who has no connection status of
+    /// their own to report.
+    private var title: LocalizedStringKey {
+        connectionStatus?.title ?? "Join Code"
     }
 }
 
@@ -45,7 +67,8 @@ private struct GameJoinCodeRevealContent: View {
             Text(title, bundle: .module)
                 .font(.headline)
             Text(code)
-                .font(.system(.largeTitle, design: .rounded).monospacedDigit())
+                .font(.largeTitle)
+                .fontDesign(.monospaced)
                 .bold()
             Text("Share this code with players who want to join.", bundle: .module)
                 .font(.caption)

@@ -100,33 +100,77 @@ struct SelectedAdventureView: View {
         }
     }
     
+    @ViewBuilder
     var optionView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if hasMapGameItems {
-                Button {
-                    clearMapGameItems()
-                } label: {
-                    Label { Text("Clear Saved Game", bundle: .module) } icon: { Image(systemName: "trash") }
+        if isCompactLayout {
+            // Phone width: Import/Play stack together as one leading
+            // column, a spacer opens up the row, and the code button forms
+            // its own trailing column, bottom-aligned against the column.
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(alignment: .leading, spacing: 12) {
+                    importOrClearButton
+#if !os(tvOS)
+                    if root.gameModel.selectedAdventure != nil {
+                        sharePlayButton
+                    }
+#endif
                 }
-            } else {
-                Button {
-                    navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
-                } label: {
-                    Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
+#if !os(tvOS)
+                if root.gameModel.selectedAdventure != nil {
+                    Spacer()
+                    masterJoinCodeButton
                 }
+#endif
             }
+            .padding(12)
+        } else {
+            // iPad/Mac/visionOS width: this block is itself pinned to the
+            // card's trailing edge (see the `.overlay(alignment: .trailing)`
+            // above), so its own options align trailing too instead of
+            // hugging the block's leading edge.
+            VStack(alignment: .trailing, spacing: 12) {
+                importOrClearButton
+#if !os(tvOS)
+                if root.gameModel.selectedAdventure != nil {
+                    sharePlayButton
+                    masterJoinCodeButton
+                }
+#endif
+            }
+            .padding(12)
+        }
+    }
+
+    @ViewBuilder
+    private var importOrClearButton: some View {
+        if hasMapGameItems {
+            Button {
+                clearMapGameItems()
+            } label: {
+                Label { Text("Clear Saved Game", bundle: .module) } icon: { Image(systemName: "trash") }
+            }
+        } else {
+            Button {
+                navigator.navigate(to: ImportRoute.importGame, method: .managedSheet)
+            } label: {
+                Label { Text("Import Saved Game", bundle: .module) } icon: { Image(systemName: "square.and.arrow.down") }
+            }
+        }
+    }
 
 #if !os(tvOS)
-            if root.gameModel.selectedAdventure != nil {
-                SharePlayButton("Play RPG Online", activity: RPGActivity())
-                    .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
-                    .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
-                    .accessibilityHidden(sharePlayStore.canActivateSharePlay)
-            }
-#endif
-        }
-        .padding(12)
+    private var sharePlayButton: some View {
+        SharePlayButton("Play RPG Online", activity: RPGActivity())
+            .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+            .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+            .accessibilityHidden(sharePlayStore.canActivateSharePlay)
     }
+
+    private var masterJoinCodeButton: some View {
+        @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
+        return GameJoinCodeSetupButton(title: "Game Master Code", code: $gameJoinCodeModel.masterCode)
+    }
+#endif
 
     private var hasMapGameItems: Bool {
         !root.mapRoot.gameControllable.gameModel.items.isEmpty

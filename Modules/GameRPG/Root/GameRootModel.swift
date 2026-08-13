@@ -348,16 +348,12 @@ public final class GameRoot {
         gameModel.updateLocalSupporterTier(supporterTier)
     }
 
-    /// This device's own join code, for the role it can currently host under
-    /// — `nil` when it has no listener of its own to share a code for (a
-    /// connected Observer or Proxy client). Read by [[GameJoinCodeRevealButton]]
-    /// and `GameRootViewer`'s empty state.
+    /// This device's own join code — the Master code when hosting, otherwise
+    /// this device's Player code (used should it relay for further players).
+    /// Always available, mirroring how the Master always sees theirs. Read by
+    /// [[GameJoinCodeRevealButton]] and `GameRootViewer`'s empty state.
     func ownJoinCode(isMaster: Bool) -> String? {
-        if isMaster {
-            return gameJoinCodeModel.masterCode
-        }
-        guard gameModel.gameType == .player else { return nil }
-        return gameJoinCodeModel.playerCode
+        isMaster ? gameJoinCodeModel.masterCode : gameJoinCodeModel.playerCode
     }
     
     lazy var searchController: SearchGlobalController = {

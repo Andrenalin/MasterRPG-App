@@ -14,36 +14,36 @@ struct GameJoinCodeField: View {
     let title: LocalizedStringKey
     @Binding var code: String
     var onRandomize: (() -> Void)?
+    var submitLabel: SubmitLabel = .done
+    var onSubmit: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(spacing: 4) {
                 Text(title, bundle: .module)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                TextField("0000", text: $code)
-#if os(iOS) || os(tvOS)
-                    .keyboardType(.numberPad)
-#endif
-                    .font(.title2.monospacedDigit())
-                    .multilineTextAlignment(.center)
-#if !os(tvOS)
-                    .textFieldStyle(.roundedBorder)
-#endif
-                    .frame(maxWidth: 100)
-                    .onChange(of: code, initial: false) { _, newValue in
-                        let filtered = String(newValue.filter(\.isNumber).prefix(4))
-                        if filtered != newValue {
-                            code = filtered
-                        }
-                    }
+                GameJoinCodeOTPField(
+                    code: $code,
+                    accessibilityLabel: title,
+                    submitLabel: submitLabel,
+                    onSubmit: onSubmit
+                )
             }
 
             if let onRandomize {
-                Button("New Code", systemImage: "shuffle", action: onRandomize)
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.bordered)
-                    .help(Text("Generate a new random code", bundle: .module))
+                Button(action: onRandomize) {
+                    Label {
+                        Text("New Code", bundle: .module)
+                    } icon: {
+                        Image(systemName: "shuffle")
+                    }
+                }
+                .selectedRoundButton(
+                    title: String(localized: "New Code", bundle: .module),
+                    module: .game,
+                    isSelected: false
+                )
             }
         }
     }
