@@ -86,6 +86,25 @@ struct GameRootViewer: View {
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
+        // Goes straight to the immersive space instead of routing through the
+        // `otherViews` reveal panel (see the `.space` case below): that panel
+        // is a full-window 2D overlay meant for bounded content (pdf/photo/
+        // table/weather); on visionOS it was hosting only SpaceQuickLook's
+        // near-invisible trigger button, which briefly blanked the game
+        // window while the real `ImmersiveSpace` opened in the background.
+        //
+        // Skipped while the volumetric game-table window is open: its own
+        // `GameTableView`/`GameTableModel.loadSpaceObject(itemId:spaceRoot:)`
+        // renders the shared object directly above the table (same TabletopKit
+        // scene/seating), so opening a second, separate immersive space here
+        // would just duplicate it.
+        .onChange(of: root.spaceRoot.gameControllable.gameModel.currentItemId) {
+            guard let spaceId = root.spaceRoot.gameControllable.gameModel.currentItemId,
+                  scenesManager.getSceneState(for: .gameTable) != .opened else { return }
+            Task {
+                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: spaceId, entryId: nil))
+            }
+        }
 #endif
     }
 
@@ -140,7 +159,14 @@ struct GameRootViewer: View {
                         trailingViewportReservation: mapTrailingViewportReservation
                     )
                 case .space:
+                    // visionOS opens the immersive space directly from the
+                    // `.onChange` above instead of rendering anything here —
+                    // see that handler's comment.
+#if os(visionOS)
+                    EmptyView()
+#else
                     root.spaceRoot.viewController.gameViewer(root: root.spaceRoot)
+#endif
                 case .table:
                     root.tableRoot.viewController.gameViewer(root: root.tableRoot)
                     .padding(20)

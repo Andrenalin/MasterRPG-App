@@ -7,6 +7,7 @@ import Foundation
 import GroupActivities
 import MapRPG
 import RealityKit
+import SpaceRPG
 import SwiftUI
 import TabletopKit
 
@@ -43,7 +44,7 @@ public struct GameTableView: View {
                             if let pinId = event.entity.components[PinComponent.self]?.pinId {
                                 loadedGame.pinDoubleTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                                loadedGame.toggleRoomFocus(roomId)
+                                Task { await loadedGame.toggleRoomFocus(roomId) }
                             }
                         }
                         accessibilitySubscriptions.append(zoomSubscription)
@@ -131,7 +132,7 @@ public struct GameTableView: View {
                                 loadedGame.pinTapped(pinId: pinId)
                             case .second(.first(let roomLongPress)):
                                 guard let roomId = roomLongPress.entity.components[RoomComponent.self]?.roomId else { return }
-                                loadedGame.toggleRoomFocus(roomId)
+                                Task { await loadedGame.toggleRoomFocus(roomId) }
                             case .second(.second(let roomDoubleTap)):
                                 guard let roomId = roomDoubleTap.entity.components[RoomComponent.self]?.roomId else { return }
                                 Task { await loadedGame.toggleRoomVisibility(roomId) }
@@ -147,6 +148,13 @@ public struct GameTableView: View {
             guard let game else { return }
             await game.handleMapChange(
                 isGameMaster: root.gameModel.gameConfig.isMaster
+            )
+        }
+        .task(id: root.spaceRoot.gameControllable.gameModel.currentItemId) {
+            guard let game else { return }
+            await game.loadSpaceObject(
+                itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
+                spaceRoot: root.spaceRoot
             )
         }
         .task {
@@ -173,6 +181,10 @@ public struct GameTableView: View {
             root.networkStore.sharePlayStore.applyShareState()
             configureSessionState(for: game)
             await game.handleMapChange(isGameMaster: game.isGameMaster)
+            await game.loadSpaceObject(
+                itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
+                spaceRoot: root.spaceRoot
+            )
             return
         }
 
@@ -205,6 +217,13 @@ public struct GameTableView: View {
         )
         guard !Task.isCancelled else { return }
         initializedGame.syncPawnsWithMapPins()
+
+        // Same reasoning: the volume can open after a Space item is already
+        // revealed — don't wait for the next reveal to show it.
+        await initializedGame.loadSpaceObject(
+            itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
+            spaceRoot: root.spaceRoot
+        )
     }
 
     private func configureSessionState(for game: GameTableModel) {
@@ -440,7 +459,7 @@ private struct GameTableRealityContent: View {
                 switch value {
                 case .first(let longPress):
                     guard let roomId = longPress.entity.components[RoomComponent.self]?.roomId else { return }
-                    game.toggleRoomFocus(roomId)
+                    Task { await game.toggleRoomFocus(roomId) }
                 case .second(let doubleTap):
                     guard let roomId = doubleTap.entity.components[RoomComponent.self]?.roomId else { return }
                     Task { await game.toggleRoomVisibility(roomId) }
@@ -466,7 +485,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinDoubleTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    game.toggleRoomFocus(roomId)
+                    await game.toggleRoomFocus(roomId)
                 }
             }
         }

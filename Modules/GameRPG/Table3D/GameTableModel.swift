@@ -10,6 +10,7 @@ import SwiftUI
 import os.log
 
 #if os(visionOS)
+import SpaceRPG
 import TabletopKit
 #endif
 
@@ -32,6 +33,27 @@ final class GameTableModel: Sendable {
     var currentMapDegrees: Double = 0
     var networkActions: NetworkActions?
     var isGameMaster = false
+
+    // MARK: - Shared toolbar state (`GameToolBarSession`)
+
+    /// Defaults to true: the volumetric table is inherently already shared
+    /// once it's open (unlike the 2D map, there's no private-editing mode to
+    /// opt out of), but the game master can still pause broadcasting
+    /// toolbar-driven edits (added pins, pointer moves) if they want to.
+    var isStreaming = true
+    /// Local GM preview of how the board reads in another role, same as the
+    /// 2D map's display mode. Purely a rendering lens — it never changes
+    /// what's actually shared; see `renderIsGameMaster`.
+    var displayMode: MapDisplayMode = .master {
+        didSet {
+            guard oldValue != displayMode else { return }
+            Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+        }
+    }
+    private var lastPinScale: CGFloat = 1
+    private var lastHexScale: Double = 0
+    private var lastIsHexMap: Bool = false
+
     /// The local player's own pin id (== the player's game id); nil on the master.
     var playerPinId: UUID?
     /// The game master's local menu selection. Highlighting is intentionally
@@ -83,6 +105,23 @@ final class GameTableModel: Sendable {
             Logger.sharePlay.debug("Setting up seating for single-player")
             tabletopGame.claimAnySeat()
         }
+    }
+
+    /// Loads (or clears) the game master's shared 3D object above the board.
+    /// Every participant with this volumetric window open calls this the same
+    /// way, from `currentItemId` — there's no role check because the reveal
+    /// itself is already the shared/broadcast state, same as a revealed photo
+    /// or pdf.
+    func loadSpaceObject(itemId: UUID?, spaceRoot: SpaceRootModel) async {
+        guard let itemId else {
+            renderer.clearSpaceObject()
+            return
+        }
+        guard let url = await spaceRoot.itemController.loadableUrl(itemId: itemId) else {
+            Logger.gameTable.error("Could not access the shared 3D object file for item \(itemId.uuidString, privacy: .public)")
+            return
+        }
+        await renderer.loadSpaceObject(itemId: itemId, from: url)
     }
 #endif
 
@@ -143,7 +182,7 @@ final class GameTableModel: Sendable {
             currentMapImage = nil
             currentMapDegrees = 0
             currentPhotoVersion = nil
-            fogSignature = Self.renderSignature(of: mapModel, degrees: 0, isGameMaster: isGameMaster)
+            fogSignature = Self.renderSignature(of: mapModel, degrees: 0, isGameMaster: renderIsGameMaster)
             setup.board.clearMap()
             Logger.gameTable.debug("Map has no photo")
             return
@@ -164,13 +203,13 @@ final class GameTableModel: Sendable {
         currentMapImage = image
         currentMapDegrees = degrees
         currentPhotoVersion = metadata?.version
-        fogSignature = Self.renderSignature(of: mapModel, degrees: degrees, isGameMaster: isGameMaster)
+        fogSignature = Self.renderSignature(of: mapModel, degrees: degrees, isGameMaster: renderIsGameMaster)
         setup.board.updateMap(
             image: image,
             degrees: degrees,
             displayConfig: mapModel.displayConfig,
             mapModel: mapModel,
-            isGameMaster: isGameMaster
+            isGameMaster: renderIsGameMaster
         )
         Logger.gameTable.debug("Map updated (rotation: \(degrees, privacy: .public)°, GM: \(isGameMaster, privacy: .public))")
     }
@@ -202,7 +241,7 @@ final class GameTableModel: Sendable {
         let signature = Self.renderSignature(
             of: mapModel,
             degrees: currentMapDegrees,
-            isGameMaster: isGameMaster
+            isGameMaster: renderIsGameMaster
         )
         guard signature != fogSignature else { return }
         fogSignature = signature
@@ -212,9 +251,18 @@ final class GameTableModel: Sendable {
             degrees: currentMapDegrees,
             displayConfig: mapModel.displayConfig,
             mapModel: mapModel,
-            isGameMaster: isGameMaster
+            isGameMaster: renderIsGameMaster
         )
         Logger.gameTable.debug("Fog of war updated - \(mapModel.entries.filter { !$0.isShown }.count, privacy: .public) hidden areas (GM: \(isGameMaster, privacy: .public))")
+    }
+
+    /// The effective GM/fog flag used for rendering only — real role-gating
+    /// (`isGameMaster`, checked everywhere a mutation is permission-gated)
+    /// stays untouched by the local preview. Reader and player both preview
+    /// as fog-limited today; the 3D board has no separate "full view without
+    /// GM overlays" render path the way the 2D map's reader mode does.
+    private var renderIsGameMaster: Bool {
+        isGameMaster && displayMode != .player
     }
 
     /// Includes all board inputs, not merely room visibility, so edits to room
@@ -237,16 +285,141 @@ final class GameTableModel: Sendable {
             hasher.combine(entry.coordinates)
             hasher.combine(entry.isHexGrid)
             hasher.combine(entry.isShown)
+            hasher.combine(entry.focused)
         }
         return hasher.finalize()
+    }
+
+    /// The crop rect (in the given map's oriented coordinate space, same
+    /// units as `MapEntryModel.coordinates`) the 3D board should show: the
+    /// full map by default, or — when a room is focused — a room-centered,
+    /// aspect-matched crop that fills the board with that room. Mirrors the
+    /// 2D map's own room-focus zoom (`MapEditorSession.focus(on:)`), but as a
+    /// fill-and-clip crop rather than a scroll, since the 3D board is a
+    /// fixed-size surface, not a scrollable canvas. Shared here because both
+    /// `GameSetup` implementations (visionOS and iOS/macOS) duplicate
+    /// `MapTableProjection` and its board texture rendering — this keeps the
+    /// geometry itself in one place.
+    static func boardFocusRect(entries: [MapEntryModel], imageSize: CGSize) -> CGRect {
+        let fullRect = CGRect(origin: .zero, size: imageSize)
+        guard imageSize.width > 0, imageSize.height > 0,
+              let focused = entries.first(where: \.focused),
+              let bounds = boundingBox(of: focused.coordinates),
+              bounds.width > 0, bounds.height > 0 else {
+            return fullRect
+        }
+
+        // Same fit computation the 2D map's `focus(on:)` uses (padding + the
+        // smaller of the two axis scales), just used to size a crop rect
+        // instead of a viewport scale — `scale` is floored at 1 so a room
+        // that's already as big as (or bigger than) the full map falls back
+        // to showing the whole map rather than "zooming out" past it.
+        let padding: CGFloat = 50
+        let paddedSize = CGSize(width: bounds.width + padding * 2, height: bounds.height + padding * 2)
+        let widthScale = imageSize.width / paddedSize.width
+        let heightScale = imageSize.height / paddedSize.height
+        let scale = max(min(widthScale, heightScale), 1)
+        guard scale.isFinite, scale > 0 else { return fullRect }
+
+        let cropSize = CGSize(width: imageSize.width / scale, height: imageSize.height / scale)
+        var origin = CGPoint(x: bounds.midX - cropSize.width / 2, y: bounds.midY - cropSize.height / 2)
+        origin.x = min(max(origin.x, 0), imageSize.width - cropSize.width)
+        origin.y = min(max(origin.y, 0), imageSize.height - cropSize.height)
+        return CGRect(origin: origin, size: cropSize)
+    }
+
+    private static func boundingBox(of coordinates: [CGPoint]) -> CGRect? {
+        guard let first = coordinates.first else { return nil }
+        var minX = first.x, maxX = first.x, minY = first.y, maxY = first.y
+        for point in coordinates.dropFirst() {
+            minX = min(minX, point.x)
+            maxX = max(maxX, point.x)
+            minY = min(minY, point.y)
+            maxY = max(maxY, point.y)
+        }
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     var rooms: [MapEntryModel] {
         currentMapModel()?.entries ?? []
     }
 
+    /// The room the game master currently has zoomed/focused, mirroring the
+    /// 2D map's own notion of a focus room. Used by the shared
+    /// `ChooseMapPinsButton` toolbar control to know where a newly added
+    /// monster pin should land.
+    var focusedRoomId: UUID? {
+        rooms.first(where: \.focused)?.id
+    }
+
+    /// Re-syncs pawns and re-broadcasts after a map mutation made outside this
+    /// model — e.g. `ChooseMapPinsButton` adding monster pins directly through
+    /// `EditController`, bypassing this model's own mutation methods (which
+    /// all sync/broadcast themselves). Local sync always runs so the game
+    /// master sees the change immediately; broadcasting respects `isStreaming`
+    /// the same way the 2D toolbar's "Share Map" toggle does.
+    func syncAfterExternalEdit() {
+        syncPawnsWithMapPins()
+        guard isStreaming, isGameMaster, let mapId = currentMapId else { return }
+        broadcastMapState(for: mapId)
+    }
+
     var pointer: MapPinModel? {
         currentMapModel()?.pointer
+    }
+
+    // MARK: - GameToolBarSession
+
+    /// Reflects the pointer pawn's real visibility rather than tracking a
+    /// separate armed/disarmed flag — the 3D table has no mouse-follow
+    /// concept the way the 2D map does, so "pointing" and "pointer visible"
+    /// are the same thing here. `GameToolBar.togglePointingMode()` mutates
+    /// the pointer directly through `MapRootModel`; this just reports the
+    /// result, so the setter is a no-op.
+    var isPointing: Bool {
+        get { pointer?.isShown ?? false }
+        set {}
+    }
+
+    var pinScale: CGFloat {
+        get { currentMapModel()?.pinScale ?? 1 }
+        set { currentMapModel()?.pinScale = newValue }
+    }
+
+    var hexScale: Double {
+        get { currentMapModel()?.hexMapScale ?? 0 }
+        set { currentMapModel()?.hexMapScale = newValue }
+    }
+
+    var isHexMap: Bool {
+        rooms.contains(where: \.isHexGrid)
+    }
+
+    var canReshare: Bool {
+        lastPinScale != pinScale
+            || lastHexScale != hexScale
+            || lastIsHexMap != isHexMap
+    }
+
+    func resetReshare() {
+        lastPinScale = pinScale
+        lastHexScale = hexScale
+        lastIsHexMap = isHexMap
+    }
+
+    /// Toggles the hex overlay grid via the same `EditController` grid
+    /// generation the 2D map editor uses (exposed publicly for this by
+    /// `MapRootModel.toggleHexMap(itemId:)`), then re-syncs the board so the
+    /// grid appears immediately.
+    func toggleHexMap() {
+        guard let mapId = currentMapId else { return }
+        _ = mapRoot.toggleHexMap(itemId: mapId)
+        syncAfterExternalEdit()
+    }
+
+    func sendMapUpdates() {
+        guard let mapId = currentMapId else { return }
+        broadcastMapState(for: mapId)
     }
 
     /// Game-master room action used by every tabletop platform.
@@ -259,12 +432,15 @@ final class GameTableModel: Sendable {
     }
 
     /// Toggles the same "focused" flag the 2D map's room long-press uses to
-    /// zoom its viewport to a room. The 3D table has no camera to move — this
-    /// just keeps a concurrently open 2D map view in sync when the master
-    /// long-presses a room's fog on the table instead.
-    func toggleRoomFocus(_ roomId: UUID) {
+    /// zoom its viewport to a room — keeping a concurrently open 2D map view
+    /// in sync, and, unlike the 2D map's scrollable viewport, re-rendering
+    /// the 3D board's own fixed-size texture as a fill-and-clip crop onto the
+    /// focused room (see `boardFocusRect`).
+    func toggleRoomFocus(_ roomId: UUID) async {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
+        await updateFogOfWar(isGameMaster: true)
+        syncPawnsWithMapPins()
         broadcastMapState(for: mapId)
     }
 
@@ -431,7 +607,16 @@ final class GameTableModel: Sendable {
                 mapImage.fixedSize,
                 degrees: currentMapDegrees
             )
-        let projection = MapTableProjection(imageSize: coordinateSize, degrees: 0)
+        // Must match whatever projection actually rendered the board (and
+        // thus whatever the user saw under their finger) — otherwise a pin
+        // dropped while a room is focused/zoomed converts back to the wrong
+        // map location, since the un-cropped projection denormalizes against
+        // the whole map instead of the visible crop.
+        let projection = MapTableProjection(
+            imageSize: coordinateSize,
+            degrees: 0,
+            focusRect: Self.boardFocusRect(entries: mapModel.entries, imageSize: coordinateSize)
+        )
         let location = projection.mapLocation(
             for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
         )
@@ -635,6 +820,10 @@ final class GameTableModel: Sendable {
 #endif
     }
 }
+
+/// Lets the 3D table host the exact same `GameToolBar` (and its button
+/// actions) as the 2D map — see `GameToolBarSession` for what this promises.
+extension GameTableModel: GameToolBarSession {}
 
 extension Logger {
     static let gameTable = Logger(subsystem: subsystem, category: "GameTable")

@@ -149,12 +149,17 @@ private enum GameTableTextureRenderer {
         } else {
             coordinateSize = fallbackCoordinateSize
         }
+        let focusRect = GameTableModel.boardFocusRect(
+            entries: mapModel?.entries ?? [],
+            imageSize: coordinateSize
+        )
 
         let content = GameTableTextureView(
             image: image,
             sourceRenderSize: sourceRenderSize,
             outputSize: outputSize,
             coordinateSize: coordinateSize,
+            focusRect: focusRect,
             degrees: normalizedDegrees,
             entries: mapModel?.entries ?? [],
             displayConfig: displayConfig,
@@ -182,12 +187,26 @@ private struct GameTableTextureView: View {
     let sourceRenderSize: CGSize
     let outputSize: CGSize
     let coordinateSize: CGSize
+    /// The `coordinateSize`-space rect to zoom the composited image+fog to —
+    /// the full map by default, or a room-centered crop when a room is
+    /// focused. See `GameTableModel.boardFocusRect`.
+    let focusRect: CGRect
     let degrees: Double
     let entries: [MapEntryModel]
     let displayConfig: DisplayConfigModel?
     let isGameMaster: Bool
 
     var body: some View {
+        // Per-axis, matching `drawFog`'s own scaleX/scaleY below, rather than
+        // assuming coordinateSize and outputSize share exactly one aspect
+        // ratio (they're independently derived and only approximately equal).
+        let scaleX = coordinateSize.width > 0 ? outputSize.width / coordinateSize.width : 1
+        let scaleY = coordinateSize.height > 0 ? outputSize.height / coordinateSize.height : 1
+        let focusOrigin = CGPoint(x: focusRect.minX * scaleX, y: focusRect.minY * scaleY)
+        let focusSize = CGSize(width: focusRect.width * scaleX, height: focusRect.height * scaleY)
+        let zoomScaleX = focusSize.width > 0 ? outputSize.width / focusSize.width : 1
+        let zoomScaleY = focusSize.height > 0 ? outputSize.height / focusSize.height : 1
+
         ZStack {
             Image(akImage: image)
                 .resizable()
@@ -201,7 +220,12 @@ private struct GameTableTextureView: View {
                 drawFog(in: &context, size: size)
             }
         }
-        .frame(width: outputSize.width, height: outputSize.height)
+        .frame(width: outputSize.width, height: outputSize.height, alignment: .topLeading)
+        // No-ops (scale 1, offset 0) when nothing is focused — `focusRect`
+        // then equals the full `coordinateSize` rect.
+        .scaleEffect(x: zoomScaleX, y: zoomScaleY, anchor: .topLeading)
+        .offset(x: -focusOrigin.x * zoomScaleX, y: -focusOrigin.y * zoomScaleY)
+        .frame(width: outputSize.width, height: outputSize.height, alignment: .topLeading)
         .clipped()
     }
 
@@ -277,6 +301,7 @@ private struct GameTableTextureView: View {
         sourceRenderSize: CGSize(width: 320, height: 240),
         outputSize: CGSize(width: 320, height: 240),
         coordinateSize: CGSize(width: 320, height: 240),
+        focusRect: CGRect(x: 0, y: 0, width: 320, height: 240),
         degrees: 0,
         entries: [room],
         displayConfig: displayConfig,
@@ -539,11 +564,9 @@ final class PinPawn {
 final class RoomHitArea {
     let roomId: UUID
     let entity: Entity
-    private var currentCoordinates: [CGPoint]
 
     init(entry: MapEntryModel, projection: MapTableProjection) {
         roomId = entry.id
-        currentCoordinates = entry.coordinates
         let hitEntity = Entity()
         hitEntity.name = "RoomHitArea-\(entry.name)"
         hitEntity.components.set(RoomComponent(roomId: entry.id))
@@ -559,10 +582,11 @@ final class RoomHitArea {
         entity = hitEntity
     }
 
-    /// Rebuilds the hit volume when the room's outline changed.
+    /// Always rebuilds: besides the room's own outline changing, the
+    /// projection itself changes whenever a *different* room becomes focused
+    /// (or focus clears) — same coordinates, different crop — so the
+    /// `entry.coordinates` comparison alone can't gate this.
     func update(entry: MapEntryModel, projection: MapTableProjection) {
-        guard entry.coordinates != currentCoordinates else { return }
-        currentCoordinates = entry.coordinates
         entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
     }
 

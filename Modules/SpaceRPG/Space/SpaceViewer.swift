@@ -65,8 +65,6 @@ struct SpaceViewer: View {
                 progressView
 
                 contentView
-
-                spaceContentView
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -232,42 +230,61 @@ private extension SpaceViewer {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    var contentView: some View {
+    // Split out from `contentView`: the multiple-trailing-closure `RealityView`
+    // initializer (three trailing closures on visionOS, once attachments were
+    // added) combined with the long `.accessibilityElement`/`.accessibilityAction`
+    // chain in one expression was too much for the type checker to solve as a
+    // single unit — it reported a spurious "cannot infer contextual base" on
+    // `.accessibilityElement` instead of pointing at the real expression.
+    // Isolating the `RealityView` construction into its own small `@ViewBuilder`
+    // property lets each half type-check independently.
+    @ViewBuilder
+    private var platformRealityView: some View {
+#if os(visionOS)
+        RealityView { content, attachments in
+            await loadEntity(into: content)
+            attachCloseButtonIfNeeded(attachments)
+        } update: { content, attachments in
+            // Only update if entity is loaded and valid
+            guard let objectEntity, loadedItemId == id else { return }
+
+            // TODO(visionOS): auto-fit the loaded model to the volumetric window's bounds
+            // (scale + reposition so it fills the volume) — not yet implemented.
+
+            objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
+                .init(angle: yaw, axis: .upward)
+
+            // Belt-and-suspenders: `loadEntity` can finish (and set `rootEntity`)
+            // after `make` already ran when loading is slow, so retry here too.
+            attachCloseButtonIfNeeded(attachments)
+            updateCloseButtonPosition()
+        } attachments: {
+            Attachment(id: "NameBarView") {
+                closeButton
+            }
+        }
+        .installGestures(canDrag)
+        .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
+#else
         RealityView { content in
             await loadEntity(into: content)
-#if !os(visionOS)
             // content here is RealityViewContent (concrete), which exposes cameraTarget.
             // loadEntity receives only RealityViewContentProtocol so it can't set this.
             if let entity = objectEntity {
                 content.cameraTarget = entity
             }
-#endif
         } update: { content in
             // Only update if entity is loaded and valid
             guard let objectEntity, loadedItemId == id else { return }
-
-#if os(visionOS)
-            // TODO(visionOS): auto-fit the loaded model to the volumetric window's bounds
-            // (scale + reposition so it fills the volume) — not yet implemented.
-#endif
-
-#if os(visionOS)
-            objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
-                .init(angle: yaw, axis: .upward)
-
-            if let nameEntity {
-                nameEntity.setPosition([0, 2, 0], relativeTo: objectEntity)
-            }
-#endif
         }
-#if os(visionOS)
-        .installGestures(canDrag)
-        .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
-#else
         // installGestures is visionOS-only: its DragGesture/MagnifyGesture targeted to
         // entities steal from .orbit — orbit handles both rotation and zoom natively.
         .realityViewCameraControls(.orbit)
 #endif
+    }
+
+    var contentView: some View {
+        platformRealityView
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spaceAccessibilityLabel)
         .accessibilityValue(
@@ -454,47 +471,52 @@ private extension SpaceViewer {
         hasLoaded = true
     }
 
-    @ViewBuilder
-    var spaceContentView: some View {
 #if os(visionOS)
-        if let rootEntity {
-            RealityView { content, attachments in
-                guard let nameBarView = attachments.entity(for: "NameBarView") else {
-                    return
-                }
-                // Position name bar above the root entity in world space.
-                // Do NOT call rootEntity.addChild(nameBarView) — rootEntity lives in a
-                // different RealityView scene and cross-scene addChild corrupts both scenes.
-                let worldPos = rootEntity.position(relativeTo: nil)
-                nameBarView.position = worldPos + SIMD3(x: 0, y: 0.7, z: 0)
-                nameEntity = nameBarView
-                content.add(nameBarView)
-            } attachments: {
-                Attachment(id: "NameBarView") {
-                    Button {
-                        Task {
-                            await scenesManager.dismissSpaceViewer()
-                        }
-                    } label: {
-                        Label {
-                            Text(
-                                "Close \(root.itemController.nameSync(itemId: id))",
-                                bundle: .module
-                            )
-                        } icon: {
-                            Image(systemName: "xmark")
-                        }
-                    }
-                    .frame(width: 250, height: 60, alignment: .center)
-                    .padding(20)
-                    .glassBackgroundEffect()
-                }
+    /// Adds the close-button attachment as a child of `rootEntity` (the
+    /// anchor, not `objectEntity`) the first time both exist. Parenting it —
+    /// instead of computing a one-shot world position in a second, separate
+    /// `RealityView` scene (the previous approach) — means the button is
+    /// governed by the *same* RealityKit scene graph as the model and tracks
+    /// automatically as the anchor is re-parented (`applySharedPlacementIfNeeded`)
+    /// or the model is dragged, matching `GameTableModel.registerPinMenuAttachment`'s
+    /// convention of parenting UI to a stable ancestor rather than the entity
+    /// it labels, so drag/rotate/scale manipulation never distorts the button.
+    @MainActor
+    func attachCloseButtonIfNeeded(_ attachments: RealityViewAttachments) {
+        guard nameEntity == nil,
+              let rootEntity,
+              let closeButtonEntity = attachments.entity(for: "NameBarView") else { return }
+        rootEntity.addChild(closeButtonEntity)
+        nameEntity = closeButtonEntity
+        updateCloseButtonPosition()
+    }
+
+    @MainActor
+    func updateCloseButtonPosition() {
+        guard let nameEntity, let objectEntity else { return }
+        nameEntity.position = objectEntity.position + SIMD3(x: 0, y: 0.7, z: 0)
+    }
+
+    var closeButton: some View {
+        Button {
+            Task {
+                await scenesManager.dismissSpaceViewer()
+            }
+        } label: {
+            Label {
+                Text(
+                    "Close \(root.itemController.nameSync(itemId: id))",
+                    bundle: .module
+                )
+            } icon: {
+                Image(systemName: "xmark")
             }
         }
-#else
-        EmptyView()
-#endif
+        .frame(width: 250, height: 60, alignment: .center)
+        .padding(20)
+        .glassBackgroundEffect()
     }
+#endif
 
     var spaceAccessibilityLabel: Text {
         let name = root.itemController.nameSync(itemId: id)

@@ -230,9 +230,11 @@ class GameSetup {
         if let mapModel, mapModel.width > 0, mapModel.height > 0 {
             // MapModel is authoritative: room/pin coordinates were already
             // normalized into this oriented canvas by the 2D editor.
+            let imageSize = CGSize(width: mapModel.width, height: mapModel.height)
             return MapTableProjection(
-                imageSize: CGSize(width: mapModel.width, height: mapModel.height),
-                degrees: 0
+                imageSize: imageSize,
+                degrees: 0,
+                focusRect: GameTableModel.boardFocusRect(entries: mapModel.entries, imageSize: imageSize)
             )
         } else if let mapImage {
             return MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
@@ -289,17 +291,31 @@ struct MapTableProjection {
     let degrees: Double
     let planeWidth: Float
     let planeDepth: Float
+    /// The portion of `imageSize` currently mapped onto the full board plane —
+    /// the whole image by default, or a room-centered crop when a room is
+    /// focused (see `GameTableModel.boardFocusRect`). A pin located outside
+    /// this rect projects beyond the physical table edges.
+    let focusRect: CGRect
 
     /// Table meters per source-image point, at this projection's scale.
     /// Multiplying a 2D pin's point size by this (and by `MapModel.pinScale`)
     /// gives the 3D token the same size relative to the table that the pin
     /// has relative to the map image.
+    ///
+    /// Uses `focusRect`, not the full `imageSize` — when a room is focused,
+    /// the board shows that (smaller) crop magnified to fill the same plane,
+    /// so a pin needs to grow by the same magnification to keep its size
+    /// relative to the now-larger map features around it, matching how the
+    /// 2D map's room-focus zoom scales its pins right along with the map
+    /// image (`MapEditorCanvas`'s `scaleEffect` covers both together).
+    /// Otherwise a pin stays a constant physical size while the map zooms in
+    /// around it, and visibly shrinks in comparison.
     var metersPerPoint: Float {
-        guard imageSize.width > 0 else { return 0 }
-        return planeWidth / Float(imageSize.width)
+        guard focusRect.width > 0 else { return 0 }
+        return planeWidth / Float(focusRect.width)
     }
 
-    init(imageSize: CGSize, degrees: Double) {
+    init(imageSize: CGSize, degrees: Double, focusRect: CGRect? = nil) {
         let normalizedDegrees = Self.normalizedDegrees(degrees)
         let orientedSize = Self.orientedImageSize(imageSize, degrees: normalizedDegrees)
         let safeSize = CGSize(
@@ -308,6 +324,7 @@ struct MapTableProjection {
         )
         self.imageSize = safeSize
         self.degrees = normalizedDegrees
+        self.focusRect = focusRect ?? CGRect(origin: .zero, size: safeSize)
         let aspectRatio = safeSize.width / safeSize.height
         if aspectRatio > 1.0 {
             planeWidth = Self.mapSize
@@ -319,17 +336,19 @@ struct MapTableProjection {
     }
 
     func tablePosition(for location: CGPoint) -> SIMD3<Float> {
-        let normalizedX = location.x / imageSize.width
-        let normalizedY = location.y / imageSize.height
+        let normalizedX = (location.x - focusRect.minX) / focusRect.width
+        let normalizedY = (location.y - focusRect.minY) / focusRect.height
         let tableX = Float(normalizedX - 0.5) * planeWidth
         let tableZ = Float(normalizedY - 0.5) * planeDepth
         return SIMD3<Float>(tableX, Self.pinHeight, tableZ)
     }
 
-    /// Exact inverse of `tablePosition(for:)`, clamped to the image bounds.
+    /// Exact inverse of `tablePosition(for:)`, clamped to the full image
+    /// bounds (not just `focusRect`) since a pin may be dropped anywhere on
+    /// the table even while a room crop is showing.
     func mapLocation(for position: SIMD3<Float>) -> CGPoint {
-        let x = (CGFloat(position.x / planeWidth) + 0.5) * imageSize.width
-        let y = (CGFloat(position.z / planeDepth) + 0.5) * imageSize.height
+        let x = (CGFloat(position.x / planeWidth) + 0.5) * focusRect.width + focusRect.minX
+        let y = (CGFloat(position.z / planeDepth) + 0.5) * focusRect.height + focusRect.minY
         return CGPoint(x: min(max(x, 0), imageSize.width), y: min(max(y, 0), imageSize.height))
     }
 

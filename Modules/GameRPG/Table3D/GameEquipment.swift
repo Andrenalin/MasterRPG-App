@@ -147,7 +147,19 @@ final class Board {
         } else {
             mapModel?.entries.filter { !$0.isShown } ?? []
         }
-        
+
+        // The crop to zoom the composited image+fog to — the full map by
+        // default, or a room-centered crop when a room is focused. `canvasSize`
+        // doubles as both the entries' coordinate space and the output frame
+        // here (unlike the iOS/macOS renderer, which keeps them separate), so
+        // the crop needs no unit conversion before use below.
+        let focusRect = GameTableModel.boardFocusRect(
+            entries: mapModel?.entries ?? [],
+            imageSize: canvasSize
+        )
+        let zoomScaleX = focusRect.width > 0 ? canvasSize.width / focusRect.width : 1
+        let zoomScaleY = focusRect.height > 0 ? canvasSize.height / focusRect.height : 1
+
         // Create a SwiftUI view that layers the image with fog of war overlays
         let compositeView = ZStack {
             ZStack {
@@ -214,8 +226,14 @@ final class Board {
                 }
             }
         }
-        .frame(width: canvasSize.width, height: canvasSize.height)
-        
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+        // No-ops (scale 1, offset 0) when nothing is focused — `focusRect`
+        // then equals the full `canvasSize` rect.
+        .scaleEffect(x: zoomScaleX, y: zoomScaleY, anchor: .topLeading)
+        .offset(x: -focusRect.minX * zoomScaleX, y: -focusRect.minY * zoomScaleY)
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+        .clipped()
+
         // The frame is already expressed in image-space pixels/points. Rendering
         // it at 3x attempted textures up to nine times larger than necessary and
         // stalled room toggles on the main actor. Keep the longest edge within a
@@ -469,11 +487,9 @@ final class PinPawn {
 final class RoomHitArea {
     let roomId: UUID
     let entity: Entity
-    private var currentCoordinates: [CGPoint]
 
     init(entry: MapEntryModel, projection: MapTableProjection) {
         roomId = entry.id
-        currentCoordinates = entry.coordinates
         let hitEntity = Entity()
         hitEntity.name = "RoomHitArea-\(entry.name)"
         hitEntity.components.set(RoomComponent(roomId: entry.id))
@@ -489,10 +505,11 @@ final class RoomHitArea {
         entity = hitEntity
     }
 
-    /// Rebuilds the hit volume when the room's outline changed.
+    /// Always rebuilds: besides the room's own outline changing, the
+    /// projection itself changes whenever a *different* room becomes focused
+    /// (or focus clears) — same coordinates, different crop — so the
+    /// `entry.coordinates` comparison alone can't gate this.
     func update(entry: MapEntryModel, projection: MapTableProjection) {
-        guard entry.coordinates != currentCoordinates else { return }
-        currentCoordinates = entry.coordinates
         entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
     }
 
