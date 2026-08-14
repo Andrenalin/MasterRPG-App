@@ -72,14 +72,8 @@ public struct ManagedPresentationView<Content: View>: View {
             .environment(\.navigator, navigator)
             .themedSurface()
             .onAppear {
-                Navigator.set(current: navigator)
+                navigator.set(current: navigator)
             }
     }
 
-}
-
-#Preview {
-    ManagedPresentationView(name: "Preview") {
-        Text(verbatim: "Managed presentation")
-    }
 }

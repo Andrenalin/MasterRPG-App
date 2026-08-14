@@ -93,39 +93,27 @@ extension Navigator {
 
 }
 
-internal struct NavigationSceneRestorationModifier: ViewModifier {
+internal struct NavigationSceneStorageModifier: ViewModifier {
 
-    internal let navigator: Navigator
-    internal let name: String?
-
-    @Environment(\.navigationSceneRestorationEnabled) private var isEnabled
-
-    @ViewBuilder
-    internal func body(content: Content) -> some View {
-        if isEnabled, let name {
-            content.modifier(NavigationSceneStorageModifier(navigator: navigator, name: name))
-        } else {
-            content
-        }
-    }
-
-}
-
-private struct NavigationSceneStorageModifier: ViewModifier {
-
-    let navigator: Navigator
+    internal var navigator: Navigator
 
     @Environment(\.scenePhase) private var scenePhase
     @SceneStorage private var sceneStorage: Data?
 
-    init(navigator: Navigator, name: String) {
+    private let name: String?
+
+    init(navigator: Navigator, name: String? = nil) {
         self.navigator = navigator
-        self._sceneStorage = SceneStorage("NavigationSceneStorage.\(name)")
+        self.name = name
+        self._sceneStorage = SceneStorage("NavigationSceneStorage.\(name ?? "*")")
     }
 
     func body(content: Content) -> some View {
         content
             .onChange(of: scenePhase) { _, phase in
+                guard name != nil else {
+                    return
+                }
                 if phase == .active, let data = sceneStorage {
                     navigator.restore(from: data)
                 } else {
@@ -134,22 +122,4 @@ private struct NavigationSceneStorageModifier: ViewModifier {
             }
     }
 
-}
-
-private struct NavigationSceneRestorationEnabledKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
-private extension EnvironmentValues {
-    var navigationSceneRestorationEnabled: Bool {
-        get { self[NavigationSceneRestorationEnabledKey.self] }
-        set { self[NavigationSceneRestorationEnabledKey.self] = newValue }
-    }
-}
-
-public extension View {
-    /// Controls whether named managed navigation scenes persist and restore their navigation state.
-    func navigationSceneRestorationEnabled(_ enabled: Bool) -> some View {
-        environment(\.navigationSceneRestorationEnabled, enabled)
-    }
 }
