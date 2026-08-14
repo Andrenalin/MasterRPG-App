@@ -191,18 +191,15 @@ struct GeneratorController: Sendable {
     
     // MARK: - Conversation
 
+    /// Resets the session when the focused sheet changes. `sheetIndex` (entry titles, which
+    /// can originate from untrusted Foundry VTT import data) is deliberately NOT folded in
+    /// here — `instructions:` is the elevated-trust channel. It's attached per-turn to the
+    /// `prompt:` in `prompt(for:module:rootSheetModel:focusedContent:)` instead. See CODE_AUDIT §6.3.
     @MainActor func seedConversationContext(sheetModel: SheetModel) {
         let itemId = sheetModel.source.itemId
         guard model.lastItemId != itemId else { return }
         model.lastItemId = itemId
-
-        let sheetIndex = compactSheetIndex(from: sheetModel)
-        guard !sheetIndex.isEmpty else { return }
-
-        let enrichedInstructions = Self.defaultInstructions
-            + "\n\nExisting sheet entries (for consistency only — do NOT summarize or answer from these; always generate NEW content):\n"
-            + sheetIndex
-        model.conversationEngine.rebuild(baseInstructions: enrichedInstructions)
+        model.conversationEngine.rebuild(baseInstructions: Self.defaultInstructions)
     }
 
     @MainActor func preparaEngine(module: NetworkModules) async {
@@ -472,7 +469,15 @@ private extension GeneratorController {
     @MainActor func prompt(for message: String, module: NetworkModules, rootSheetModel: SheetModel, focusedContent: SheetModel?, maxCharacters: Int = 2_800) -> String {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
         let userRequest = trimmed.isEmpty ? "Generate useful new content for this sheet." : trimmed
-        return "Generate new fictional RPG content for the \(module.title) sheet.\nGame master's request: \(userRequest)"
+        var result = "Generate new fictional RPG content for the \(module.title) sheet.\nGame master's request: \(userRequest)"
+
+        // Sheet entry names can originate from untrusted Foundry VTT import data, so this
+        // stays in the prompt: rather than being folded into instructions:. See CODE_AUDIT §6.3.
+        let sheetIndex = compactSheetIndex(from: rootSheetModel)
+        if !sheetIndex.isEmpty {
+            result += "\n\nExisting sheet entries (for consistency only — do NOT summarize or answer from these; always generate NEW content):\n\(sheetIndex)"
+        }
+        return result
     }
     
     func cleaned(_ value: String) -> String {

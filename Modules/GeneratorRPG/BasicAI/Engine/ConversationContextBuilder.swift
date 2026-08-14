@@ -24,14 +24,16 @@ enum ConversationContextBuilder {
         .joined(separator: "\n\n")
     }
 
-    static func contextInstructions(
-        baseInstructions: String,
+    /// Builds the post-overflow continuation prompt. Deliberately returns a `prompt:`-bound
+    /// string rather than an `instructions:`-bound one: `summary` is model-generated from a
+    /// transcript that may itself carry untrusted, import-derived text (see CODE_AUDIT §6.3),
+    /// so it must not be elevated into the session's higher-trust instructions channel.
+    static func contextPrompt(
         summary: ConversationSummary,
-        continuationNote: String? = nil
+        continuationNote: String? = nil,
+        userMessage: String
     ) -> String {
-        var contextInstructions = """
-        \(baseInstructions)
-
+        var contextPrompt = """
         You are continuing a conversation with a user. Here's a summary of your previous conversation:
 
         CONVERSATION SUMMARY:
@@ -45,10 +47,11 @@ enum ConversationContextBuilder {
         """
 
         if let continuationNote, !continuationNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            contextInstructions += "\n\n\(continuationNote)"
+            contextPrompt += "\n\n\(continuationNote)"
         }
 
-        return contextInstructions
+        contextPrompt += "\n\n\(userMessage)"
+        return contextPrompt
     }
 }
 
