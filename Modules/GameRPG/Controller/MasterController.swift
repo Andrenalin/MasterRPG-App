@@ -440,6 +440,7 @@ final class MasterControllerModel: Sendable {
     }
 }
 
+@MainActor
 final class MasterController: Sendable {
     private struct MapRecoveryBundle: Sendable {
         let full: NetworkCodableDataType
@@ -463,7 +464,6 @@ final class MasterController: Sendable {
     let asProxy: Bool
     let messagePipeline = GameMessagePipeline()
 
-    @MainActor
     init(root: GameRoot, asProxy: Bool) {
         self.root = root
         self.asProxy = asProxy
@@ -486,7 +486,6 @@ final class MasterController: Sendable {
 // MARK: - Control
 
 extension MasterController {
-    @MainActor
     func start() async {
         Logger.networking.debug("MasterController: Start")
         gameModel.resetPlayerJournalAdmissions()
@@ -499,7 +498,6 @@ extension MasterController {
         )
     }
     
-    @MainActor
     func stop() async {
         Logger.networking.debug("MasterController: Stop")
         await messagePipeline.cancelAll()
@@ -904,7 +902,7 @@ extension MasterController: MasterNetworkStoreDelegate {
     /// detail. Bonjour players and observers connect to the main master;
     /// SharePlay and Journal accept only players; private LAN mirrors connect
     /// only to the host player's proxy master.
-    private func acceptsTransportRole(
+    private nonisolated func acceptsTransportRole(
         _ role: GameType,
         origin: GameMessageOrigin
     ) -> Bool {
@@ -922,7 +920,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
     }
 
-    private static func isPlayerBootstrapEnvelope(_ model: GameNetworkModel) -> Bool {
+    private nonisolated static func isPlayerBootstrapEnvelope(_ model: GameNetworkModel) -> Bool {
         guard model.sender.role == .player ||
                 model.sender.role == .observer ||
                 model.sender.role == .proxy,
@@ -1309,7 +1307,6 @@ extension MasterController {
         }
     }
 
-    @MainActor
     private func applyAudioList(_ model: GameNetworkModel) -> Bool {
         guard !model.sender.isMaster,
               gameModel.canApplyAudioList(from: model.sender.id, counter: model.counter),
@@ -1324,7 +1321,6 @@ extension MasterController {
         return true
     }
 
-    @MainActor
     func requestAudioPlay(_ data: NetworkCodableDataType) async {
         if !root.audioRoot.audioGameControllable.shouldPlay(with: data) {
             gameModel.pendingAudioPlays[data.id] = nil
@@ -1337,7 +1333,6 @@ extension MasterController {
         await fulfillPendingAudioPlay(id: data.id, data: data)
     }
 
-    @MainActor
     private func continuePendingAudioPlays() async {
         let pending = gameModel.pendingAudioPlays
         for (id, data) in pending {
@@ -1345,7 +1340,6 @@ extension MasterController {
         }
     }
 
-    @MainActor
     private func fulfillPendingAudioPlay(id: UUID, data: NetworkCodableDataType) async {
         let missingPlayers = Set(root.audioRoot.audioGameControllable.missingPlayers(for: id))
         if missingPlayers.isEmpty {
@@ -1383,19 +1377,16 @@ extension MasterController {
         }
     }
 
-    @MainActor
     private func audioTransferFailed(itemId: UUID, playerId: UUID) {
         gameModel.audioTransferPlayers[itemId]?.remove(playerId)
     }
 
-    @MainActor
     private func resetAudioTransfers(for playerId: UUID) {
         for itemId in gameModel.audioTransferPlayers.keys {
             gameModel.audioTransferPlayers[itemId]?.remove(playerId)
         }
     }
 
-    @MainActor
     private func broadcastAudioPlay(_ data: NetworkCodableDataType) async {
         await send(type: .update, subtype: .playAudio, updated: data)
         let hasLocalPlayer = root.networkStore.model.hasLocalPlayer
@@ -1802,7 +1793,6 @@ extension MasterController {
         }
     }
 
-    @MainActor
     private func applyPdfList(_ model: GameNetworkModel) async -> Bool {
         guard !model.sender.isMaster,
               gameModel.canApplyPdfList(from: model.sender.id, counter: model.counter),
@@ -1947,7 +1937,6 @@ extension MasterController {
         }
     }
 
-    @MainActor
     private func applyPhotoList(_ model: GameNetworkModel) async -> Bool {
         guard !model.sender.isMaster,
               gameModel.canApplyPhotoList(from: model.sender.id, counter: model.counter),
@@ -2270,7 +2259,6 @@ extension MasterController {
         }
     }
 
-    @MainActor
     private func applySpaceList(_ model: GameNetworkModel) async -> Bool {
         guard !model.sender.isMaster,
               gameModel.canApplySpaceList(from: model.sender.id, counter: model.counter),

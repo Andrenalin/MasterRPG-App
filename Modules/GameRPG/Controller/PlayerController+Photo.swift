@@ -119,7 +119,6 @@ extension PlayerController {
         return nil
     }
 
-    @MainActor
     private func applyPhotoList(_ model: GameNetworkModel) async -> Bool {
         guard model.sender.isMaster,
               gameModel.canApplyPhotoList(from: model.masterId, counter: model.counter),

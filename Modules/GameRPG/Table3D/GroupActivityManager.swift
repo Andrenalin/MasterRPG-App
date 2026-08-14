@@ -5,8 +5,8 @@ import GroupActivities
 import SwiftUI
 @preconcurrency import TabletopKit
 
-@MainActor
-class GroupActivityManager: Observable {
+@MainActor @Observable
+class GroupActivityManager {
     var tabletopGame: TabletopGame
 
     init(tabletopGame: TabletopGame, sharePlayController: RPGSharePlayController) {

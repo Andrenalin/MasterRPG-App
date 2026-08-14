@@ -171,7 +171,6 @@ extension PlayerController {
         return nil
     }
 
-    @MainActor
     private func applySpaceList(_ model: GameNetworkModel) async -> Bool {
         guard model.sender.isMaster,
               gameModel.canApplySpaceList(from: model.masterId, counter: model.counter),

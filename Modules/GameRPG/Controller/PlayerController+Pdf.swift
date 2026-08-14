@@ -126,7 +126,6 @@ extension PlayerController {
         }
     }
 
-    @MainActor
     private func applyPdfList(_ model: GameNetworkModel) async -> Bool {
         guard model.sender.isMaster,
               gameModel.canApplyPdfList(from: model.masterId, counter: model.counter),

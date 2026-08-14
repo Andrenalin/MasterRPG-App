@@ -25,12 +25,13 @@ actor MasterNetworkControllerDelegateBox {
     }
 }
 
-final class MasterNetworkController: Sendable {
+@MainActor
+final class MasterNetworkController {
     private let delegate: MasterNetworkControllerDelegateBox
     let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkNodel
-    @MainActor private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
+    private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
 
     static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, supporterTier, proxy, passcode, delegate in
@@ -46,7 +47,6 @@ final class MasterNetworkController: Sendable {
         }
     }
 
-    @MainActor
     init(
         name: String,
         delegate: MasterNetworkControllerDelegate? = nil,
@@ -68,7 +68,6 @@ final class MasterNetworkController: Sendable {
 // MARK: - Control
 
 extension MasterNetworkController: MasterNetworkControllable {
-    @MainActor
     func startStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Streaming")
 
@@ -84,7 +83,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         observeConnections()
     }
 
-    @MainActor
     func startProxyStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Proxy Streaming")
 
@@ -100,7 +98,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         observeConnections()
     }
 
-    @MainActor
     func stopStreaming() {
         Logger.networking.debug("MasterNetworkController: Stop Streaming")
 
@@ -108,7 +105,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.isStreaming = false
     }
 
-    @MainActor
     func toggleStreaming(passcode: String) {
         if networkModel.isStreaming {
             stopStreaming()
@@ -117,7 +113,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         }
     }
 
-    @MainActor
     private func resetConntections() {
         networkModel.observeConnectionsTask?.cancel()
         networkModel.observeConnectionsTask = nil
@@ -214,7 +209,6 @@ extension MasterNetworkController: ListenerManagerDelegate {
 // MARK: - Observe BrowserManager for Connections
 
 extension MasterNetworkController {
-    @MainActor
     func observeConnections() {
         guard networkModel.browserManager != nil else { return }
         _ = withObservationTracking {
@@ -226,7 +220,6 @@ extension MasterNetworkController {
         }
     }
 
-    @MainActor
     private func scheduleConnectionCheck() {
         networkModel.observeConnectionsTask?.cancel()
         networkModel.observeConnectionsTask = Task { @MainActor [weak self] in
@@ -234,7 +227,6 @@ extension MasterNetworkController {
         }
     }
 
-    @MainActor
     func checkForConnections() {
         guard networkModel.browserManager != nil else { return }
         let games = networkModel.browserManager?.games ?? []
@@ -242,7 +234,7 @@ extension MasterNetworkController {
         observeConnections()
     }
 
-    @MainActor func refresh(games: [BrowserGameModel]) {
+    func refresh(games: [BrowserGameModel]) {
         guard let manager = networkModel.browserManager, manager.isBrowsing else {
             networkModel.browserManager = nil
             networkModel.browserConnections = []
@@ -263,7 +255,7 @@ extension MasterNetworkController {
 }
 
 private extension MasterNetworkController {
-    @MainActor func removeConnection(id: ConnectionController.ID) -> Bool {
+    func removeConnection(id: ConnectionController.ID) -> Bool {
         guard networkModel.removeConnection(id: id) else { return false }
 
         networkModel.connectionStartTasks[id]?.cancel()
@@ -275,7 +267,7 @@ private extension MasterNetworkController {
         return true
     }
 
-    @MainActor func addNew(_ connection: any ConnectionControllable) {
+    func addNew(_ connection: any ConnectionControllable) {
         networkModel.connections.append(connection)
         let id = connection.id
         networkModel.connectionStartTasks[id]?.cancel()
@@ -288,7 +280,7 @@ private extension MasterNetworkController {
 }
 
 extension MasterNetworkController {
-    @MainActor func connectToPlayer(endpoint: NWEndpoint) {
+    func connectToPlayer(endpoint: NWEndpoint) {
         guard !networkModel.browserConnections.contains(endpoint) else { return }
         networkModel.browserConnections.append(endpoint)
         // Reuses the same passcode this session's listener was started with —

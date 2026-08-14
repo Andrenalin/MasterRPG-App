@@ -500,6 +500,7 @@ actor SharePlayPlayerJournalAdmission {
 /// - `proxy: true`  — proxy mode: no SharePlay, no fan-out (avoids relay loops).
 ///
 /// `GameRoot` holds two instances: `networkStore` (direct) and `networkProxyStore` (proxy).
+@MainActor
 final class GameNetworkController: Sendable {
     let proxy: Bool
     let model: GameNetworkControllerModel
@@ -507,7 +508,6 @@ final class GameNetworkController: Sendable {
     private let sharePlayPlayerJournalAdmission = SharePlayPlayerJournalAdmission()
     private let sharePlayDeferredPeerGroupEvents = SharePlayDeferredPeerGroupEvents()
 
-    @MainActor
     let sharePlayStore: RPGSharePlayController
 
     /// Only accepted peer-visible events cross a transport bridge. Reports,
@@ -537,22 +537,21 @@ final class GameNetworkController: Sendable {
 
     // MARK: Static builders
 
-    @MainActor static let defaultMasterStoreBuilder: (String, MasterNetworkControllerDelegate) -> any MasterNetworkControllable = { name, delegate in
+    static let defaultMasterStoreBuilder: (String, MasterNetworkControllerDelegate) -> any MasterNetworkControllable = { name, delegate in
         MasterNetworkController(name: name, delegate: delegate, listnerBuilder: MasterNetworkController.gameListnerBuilder())
     }
 
-    @MainActor static let directPlayerStoreBuilder: (String, PlayerNetworkControllerDelegate) -> any PlayerNetworkControllable = { name, delegate in
+    static let directPlayerStoreBuilder: (String, PlayerNetworkControllerDelegate) -> any PlayerNetworkControllable = { name, delegate in
         PlayerNetworkController(name: name, delegate: delegate)
     }
 
-    @MainActor static let proxyPlayerStoreBuilder: (String, PlayerNetworkControllerDelegate) -> any PlayerNetworkControllable = { name, delegate in
+    static let proxyPlayerStoreBuilder: (String, PlayerNetworkControllerDelegate) -> any PlayerNetworkControllable = { name, delegate in
         PlayerNetworkController(name: name, proxy: true, delegate: delegate)
     }
 
     // MARK: Inits
 
     /// Designated init — used by tests to inject spy implementations.
-    @MainActor
     init(
         name: String,
         proxy: Bool,
@@ -569,7 +568,6 @@ final class GameNetworkController: Sendable {
     }
 
     /// Convenience init for direct (non-proxy) mode.
-    @MainActor
     convenience init(name: String = "") {
         self.init(
             name: name,
@@ -580,7 +578,6 @@ final class GameNetworkController: Sendable {
     }
 
     /// Convenience init for proxy mode.
-    @MainActor
     convenience init(proxyName name: String = "") {
         self.init(
             name: name,
@@ -596,7 +593,6 @@ final class GameNetworkController: Sendable {
     }
 
     /// Sets up SharePlay integration. Only meaningful in direct (non-proxy) mode.
-    @MainActor
     func setup(gameModel: GameRootModel) {
         guard !model.isSetup else { return }
         sharePlayStore.setup(gameModel: gameModel)
@@ -604,7 +600,6 @@ final class GameNetworkController: Sendable {
         model.didSetup()
     }
 
-    @MainActor
     func setupLocal() {
         model.setLocalPlayers(to: true)
     }
@@ -613,7 +608,6 @@ final class GameNetworkController: Sendable {
 // MARK: - Control
 
 extension GameNetworkController {
-    @MainActor
     func startMasterGame(game: GameConfigModel, titleImage: AKImage?, passcode: String) async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .public)")
@@ -626,14 +620,12 @@ extension GameNetworkController {
         }
     }
 
-    @MainActor
     func startProxyServer(passcode: String) {
         let name = model.name
         Logger.networking.debug("GameNetworkController: start proxy server \(name, privacy: .public)")
         model.masterStore?.startProxyStreaming(passcode: passcode)
     }
 
-    @MainActor
     func startPlayerGame(to model: BrowserGameModel?, passcode: String) async -> Bool {
         let name = self.model.name
         Logger.networking.debug("GameNetworkController: start player game \(name, privacy: .public)")
@@ -648,7 +640,6 @@ extension GameNetworkController {
         return false
     }
 
-    @MainActor
     func stopGame() async {
         let name = model.name
         Logger.networking.debug("GameNetworkController: stop game \(name, privacy: .public)")
@@ -677,13 +668,11 @@ extension GameNetworkController {
     /// controller on the game-master device. The originating message has
     /// already been fanned out to LAN and SharePlay peers, so this path must not
     /// publish it to either transport again.
-    @MainActor
     func sendLocalPlayer(_ data: GameNetworkModel) async {
         guard !proxy, model.hasLocalPlayer else { return }
         await model.playerDelegate?.received(data)
     }
 
-    @MainActor
     func sendPlayer(_ data: GameNetworkModel, to connectionId: ConnectionController.ID) async {
         let delivered = await model.masterStore?.sendResponse(data: data, id: connectionId) ?? false
         guard delivered else {
@@ -695,7 +684,6 @@ extension GameNetworkController {
     /// Sends a response back over the transport that carried the request. A
     /// SharePlay participant UUID is not a LAN connection UUID and must never
     /// fall through to a cross-transport broadcast.
-    @MainActor
     func sendPlayer(_ data: GameNetworkModel, to origin: GameMessageOrigin) async {
         switch origin {
         case let .direct(connectionId):
@@ -725,7 +713,6 @@ extension GameNetworkController {
         }
     }
 
-    @MainActor
     func sendPlayer(data: GameNetworkModel, fileJournal: Bool = false) async {
         await model.masterStore?.sendResponse(data: data)
         if !proxy {
@@ -740,7 +727,6 @@ extension GameNetworkController {
     /// the one that originated it. The originating mirror has already applied
     /// its own action and sending it back there would manufacture a second
     /// receipt for the same user gesture.
-    @MainActor
     func sendPlayer(data: GameNetworkModel, except connectionId: ConnectionController.ID) async {
         guard proxy else { return }
         await model.masterStore?.sendResponse(data: data, except: connectionId)
@@ -795,7 +781,6 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
 // MARK: - Player send
 
 extension GameNetworkController {
-    @MainActor
     func sendMaster(data: GameNetworkModel, fileJournal: Bool = false) async {
         if !proxy { guard !model.hasLocalPlayer else { return } }
         await model.playerStore?.request(with: data)
@@ -840,14 +825,12 @@ extension GameNetworkController: PlayerNetworkControllerDelegate {
 // MARK: - SharePlayControllerDelegate
 
 extension GameNetworkController: SharePlayControllerDelegate {
-    @MainActor
     func handleUpdate(_ model: GameNetworkModel, id: UUID) async {
         // The messenger already yields messages in order. Await routing so that
         // order is not lost by creating one unstructured task per message.
         await routeSharePlayUpdate(model, id: id)
     }
 
-    @MainActor
     func handleFileUpdate(_ model: GameNetworkModel) async {
         // Journal snapshots may briefly contain both an old and replacement
         // attachment. Await routing so their established order is preserved;
@@ -855,12 +838,10 @@ extension GameNetworkController: SharePlayControllerDelegate {
         await routeSharePlayFileUpdate(model)
     }
 
-    @MainActor
     func handleFileLoadFailure(_ message: GameNetworkModel) async {
         await routeSharePlayFileUpdate(message, callbackKind: .loadFailure)
     }
 
-    @MainActor
     func sharePlayLostPlayer(id: UUID) async {
         let lostPinnedMaster = await model.playerDelegate?
             .isPinnedSharePlayMasterParticipant(id: id) == true
@@ -874,14 +855,12 @@ extension GameNetworkController: SharePlayControllerDelegate {
         await model.playerDelegate?.sharePlayParticipantLeft(id: id)
     }
 
-    @MainActor
     func sharePlayLostConnection() async {
         await sharePlayPlayerJournalAdmission.reset()
         await sharePlayDeferredPeerGroupEvents.reset()
         await model.playerDelegate?.lostConnection()
     }
 
-    @MainActor
     func sharePlaySessionConfigured() async {
         await sharePlayPlayerJournalAdmission.reset()
         await sharePlayDeferredPeerGroupEvents.reset()
@@ -892,7 +871,6 @@ extension GameNetworkController: SharePlayControllerDelegate {
         await model.playerDelegate?.ready()
     }
 
-    @MainActor
     func sharePlayJoinedPlayer(id: UUID) async {
         // `id` is a GroupActivities transport participant, not the player's
         // later in-game sender ID. Preserve that origin so replay is physically
@@ -908,7 +886,6 @@ extension GameNetworkController: SharePlayControllerDelegate {
         }
     }
 
-    @MainActor
     func routeSharePlayUpdate(_ message: GameNetworkModel, id: UUID) async {
         await routeSharePlayUpdate(
             message,
@@ -917,7 +894,6 @@ extension GameNetworkController: SharePlayControllerDelegate {
         )
     }
 
-    @MainActor
     private func routeSharePlayUpdate(
         _ message: GameNetworkModel,
         id: UUID,
@@ -1100,7 +1076,6 @@ extension GameNetworkController: SharePlayControllerDelegate {
         }
     }
 
-    @MainActor
     func routeSharePlayFileUpdate(
         _ message: GameNetworkModel,
         callbackKind: SharePlayJournalCallbackKind = .update
@@ -1171,7 +1146,6 @@ extension GameNetworkController {
         await model.masterStore?.networkModel.isStreaming ?? false
     }
 
-    @MainActor
     func resetName(name: String, supporterTier: SupporterTier = .none) {
         model.masterStore?.networkModel.name = name
         model.masterStore?.networkModel.supporterTier = supporterTier

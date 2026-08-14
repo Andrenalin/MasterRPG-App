@@ -46,7 +46,6 @@ extension PlayerController {
     /// The whole task-scheduling block (nil-check, id mint, task assignment)
     /// needs to stay one @MainActor unit so a concurrent caller can't observe
     /// a half-scheduled task. See CODE_AUDIT §3.1.
-    @MainActor
     private func scheduleSendCharacterTask() {
         guard gameModel.sendCharacterTask == nil else { return }
         let taskId = UUID()
@@ -57,7 +56,6 @@ extension PlayerController {
         }
     }
 
-    @MainActor
     private func clearSendCharacterTask(if taskId: UUID) {
         guard gameModel.sendCharacterTaskId == taskId else { return }
         gameModel.sendCharacterTask = nil

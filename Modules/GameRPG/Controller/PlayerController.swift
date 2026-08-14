@@ -19,6 +19,7 @@ import AppKit
 import UIKit
 #endif
 
+@MainActor
 final class PlayerController: Sendable {
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
     // PlayerController → GameRoot that stopGame() breaks by dropping the controllers.
@@ -30,7 +31,6 @@ final class PlayerController: Sendable {
     let proxyMasterController: MasterController?
     let messagePipeline = GameMessagePipeline()
 
-    @MainActor
     init(root: GameRoot, asGameMaster: Bool) {
         self.root = root
         self.gameModel = PlayerControllerModel()
@@ -55,7 +55,6 @@ final class PlayerController: Sendable {
 // MARK: - Control
 
 extension PlayerController {
-    @MainActor
     func start(to model: BrowserGameModel?, joinCode: String = "") async -> Bool {
         Logger.networking.debug("PlayerController: Start")
         // Observers are a read-only local-network role. Do not let a nil Bonjour
@@ -73,7 +72,6 @@ extension PlayerController {
         return await root.networkStore.startPlayerGame(to: model, passcode: joinCode)
     }
 
-    @MainActor
     func stop() async {
         Logger.networking.debug("PlayerController: Stop")
         await messagePipeline.cancelAll()
@@ -104,7 +102,6 @@ extension PlayerController {
 
     /// Combines `GameRootModel.applyMasterBroadcast` with `resetPlayers()` in one
     /// @MainActor call so both happen atomically — see CODE_AUDIT §3.1.
-    @MainActor
     func applyMasterBroadcastAndResetPlayers(
         masterId: UUID,
         masterName: String,
@@ -123,7 +120,6 @@ extension PlayerController {
     /// Spans two separate @MainActor models (`gameModel` and `root.gameModel`), so
     /// it lives on the controller rather than either model — one @MainActor call
     /// keeps both updates atomic. See CODE_AUDIT §3.1.
-    @MainActor
     func setMapUpdateTypeAndSyncPawns() {
         gameModel.setGameUpdateType(.map)
         #if !os(tvOS)
@@ -136,7 +132,6 @@ extension PlayerController {
     /// models (`gameModel` and `root.gameModel`), so it lives on the
     /// controller — one @MainActor call keeps all three updates atomic.
     /// See CODE_AUDIT §3.1.
-    @MainActor
     func completeSpaceReveal(itemId: UUID) {
         gameModel.requestedSpaceRepairIds.remove(itemId)
         gameModel.setGameUpdateType(.space)
@@ -147,7 +142,6 @@ extension PlayerController {
         #endif
     }
 
-    @MainActor
     func resetPlayers() {
         let players = root.gameModel.gameControl.controls.compactMap { $0.show ? $0.id : nil }
         root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()

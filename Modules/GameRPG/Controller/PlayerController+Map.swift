@@ -565,7 +565,6 @@ extension PlayerController {
         await refreshMapVisuals(itemId: itemId)
     }
 
-    @MainActor
     private func applyPlayerMapPin(_ model: GameNetworkModel) -> PlayerMapPinApplication {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == model.data.id else {
             return .awaitingMapGeneration
@@ -592,7 +591,6 @@ extension PlayerController {
         return .applied
     }
 
-    @MainActor
     private func retryDeferredMapPins(itemId: UUID) {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == itemId else { return }
         let generation = root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)

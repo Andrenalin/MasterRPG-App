@@ -66,7 +66,6 @@ extension PlayerController {
         return nil
     }
 
-    @MainActor
     private func applyAudioList(_ model: GameNetworkModel) -> Bool {
         guard model.sender.isMaster,
               gameModel.canApplyAudioList(from: model.masterId, counter: model.counter),
@@ -81,7 +80,6 @@ extension PlayerController {
         return true
     }
 
-    @MainActor
     private func reportAudioAvailableToCurrentPlayers(itemId: UUID, model: GameNetworkModel) {
         var playerIds = Set(root.audioRoot.gameControllable.gameModel.currentPlayers)
         if playerIds.isEmpty {

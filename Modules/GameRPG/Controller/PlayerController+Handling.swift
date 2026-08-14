@@ -69,7 +69,6 @@ extension PlayerController {
         nil
     }
 
-    @MainActor
     func handleGeneratedValue(_ model: GameNetworkModel) -> GameNetworkModel? {
         guard model.sender.isMaster,
               model.type == .update,

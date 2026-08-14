@@ -25,7 +25,8 @@ actor PlayerNetworkControllerDelegateBox {
     }
 }
 
-final class PlayerNetworkController {
+@MainActor
+final class PlayerNetworkController: Sendable {
     let proxy: Bool
     private let delegate: PlayerNetworkControllerDelegateBox
 
@@ -39,7 +40,6 @@ final class PlayerNetworkController {
         proxy ? .proxyClient : .master
     }
 
-    @MainActor
     init(name: String, proxy: Bool = false, delegate: PlayerNetworkControllerDelegate? = nil) {
         self.networkModel = PlayerNetworkNodel(name: name)
         self.proxy = proxy
@@ -54,7 +54,6 @@ final class PlayerNetworkController {
 }
 
 extension PlayerNetworkController: PlayerNetworkControllable {
-    @MainActor
     func toggleConnection(to model: BrowserGameModel, passcode: String) async {
         Logger.networking.debug("PlayerNetworkController: Start")
         guard networkModel.playerConnectionId == nil else {
@@ -72,7 +71,6 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         observeRemovedConnection()
     }
 
-    @MainActor
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
         let connectionController = networkModel.connectionController
@@ -115,7 +113,6 @@ private extension PlayerNetworkController {
         await setUpListener()
     }
 
-    @MainActor
     private func setUpListener() {
         // Reuses the passcode this session's outbound connection was made
         // with — the peer on the other end already knows it, so no new code
@@ -172,12 +169,10 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
 }
 
 private extension PlayerNetworkController {
-    @MainActor
     func isCurrentConnection(_ id: ConnectionController.ID) -> Bool {
         networkModel.connectionController?.id == id
     }
 
-    @MainActor
     func markLostIfCurrent(_ id: ConnectionController.ID) -> Bool {
         guard isCurrentConnection(id),
               networkModel.playerConnectionId != nil,
@@ -186,7 +181,6 @@ private extension PlayerNetworkController {
         return true
     }
 
-    @MainActor
     func markReadyIfCurrent(_ id: ConnectionController.ID) -> Bool {
         guard isCurrentConnection(id), networkModel.connectionState != .lost else { return false }
         networkModel.reset(isConnected: true)
@@ -194,7 +188,6 @@ private extension PlayerNetworkController {
         return true
     }
 
-    @MainActor
     func stop(connection id: ConnectionController.ID) async {
         guard isCurrentConnection(id) else { return }
         await stop()
@@ -204,7 +197,6 @@ private extension PlayerNetworkController {
 // MARK: - Observe BrowserManager for Lost Connection
 
 extension PlayerNetworkController {
-    @MainActor
     func observeRemovedConnection() {
         guard networkModel.model != nil else { return }
         _ = withObservationTracking {
@@ -216,7 +208,6 @@ extension PlayerNetworkController {
         }
     }
 
-    @MainActor
     private func scheduleRemovalCheck() {
         networkModel.observeRemovalTask?.cancel()
         networkModel.observeRemovalTask = Task { @MainActor [weak self] in
@@ -224,7 +215,6 @@ extension PlayerNetworkController {
         }
     }
 
-    @MainActor
     func checkForRemoval() async {
         guard networkModel.model != nil else { return }
         for game in browserManager.removed {
