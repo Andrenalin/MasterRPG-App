@@ -24,15 +24,6 @@ struct ExportController: Sendable {
     }
 
     let exportModel: ExportModel
-    var hubControllable: any RootExportControllable {
-        get {
-            guard let hub = exportModel.hubControllable else {
-                preconditionFailure("MapRPG export requires its Adventure export hub after setup.")
-            }
-            return hub
-        }
-        set { exportModel.hubControllable = newValue }
-    }
     let root: MapRootModel
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
@@ -43,7 +34,7 @@ struct ExportController: Sendable {
     let itemController: ItemController
 }
 
-extension ExportController: ExportControllable {
+extension ExportController: ExportModelBacked {
     var itemControllable: any ItemControllable { itemController }
 
     public func exportingAll() -> ItemModuleIds {

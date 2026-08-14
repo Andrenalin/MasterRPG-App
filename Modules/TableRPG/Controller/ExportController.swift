@@ -15,21 +15,12 @@ struct ExportController: Sendable {
     }
 
     let exportModel: ExportModel
-    var hubControllable: any RootExportControllable {
-        get {
-            guard let hub = exportModel.hubControllable else {
-                preconditionFailure("TableRPG export requires its Adventure export hub after setup.")
-            }
-            return hub
-        }
-        set { exportModel.hubControllable = newValue }
-    }
     let diceRoot: DiceRootModel
     let pdfRoot: PdfRootModel
     let itemController: ItemController
 }
 
-extension ExportController: ExportControllable {
+extension ExportController: ExportModelBacked {
     var itemControllable: any ItemControllable { itemController }
 
     public func exportingAll() -> ItemModuleIds {

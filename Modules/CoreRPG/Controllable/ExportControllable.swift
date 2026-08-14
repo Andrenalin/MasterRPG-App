@@ -19,6 +19,31 @@ public protocol ExportControllable: Sendable {
     func finalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds
 }
 
+/// An `ExportControllable` conformer that resolves `hubControllable` through a
+/// shared `ExportModel` box — every module except `AdventureRPG` (which *is*
+/// the hub, and returns `root` directly instead). Refining the protocol here
+/// rather than adding `exportModel` straight onto `ExportControllable` keeps
+/// Adventure's `ExportController` from having to carry an unused property
+/// just to satisfy a requirement it doesn't need.
+/// Conforming modules only need `let exportModel = ExportModel()` — the
+/// getter/preconditionFailure/setter boilerplate every one of them
+/// hand-wrote is now this single shared default. See CODE_AUDIT §9.2.
+public protocol ExportModelBacked: ExportControllable {
+    var exportModel: ExportModel { get }
+}
+
+public extension ExportModelBacked {
+    var hubControllable: any RootExportControllable {
+        get {
+            guard let hub = exportModel.hubControllable else {
+                preconditionFailure("\(itemControllable.config.module.token) export requires its Adventure export hub after setup.")
+            }
+            return hub
+        }
+        set { exportModel.hubControllable = newValue }
+    }
+}
+
 public extension ExportControllable {
     // Overwritten in specific
     @MainActor func exportingAll() -> ItemModuleIds {

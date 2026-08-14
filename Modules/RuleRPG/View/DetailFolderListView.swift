@@ -10,16 +10,16 @@ struct DetailFolderListView: View {
     var isSubFolder = false
 
     var body: some View {
-        ItemDetailRootView(
+        DetailFolderList(
             root: root.rootController,
+            openFileWindowModel: root.openFileWindowModel,
             detailListController: folderListController,
             selectedModel: model,
             configuration: .init(isSubFolder: isSubFolder),
             linkTypes: LinkRuleModuleTransferable.self
         ) {
             DetailEditorView(root: root, model: model)
-        }
-        .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
+        } viewer: { itemId, dismiss in
             root.viewController.viewer(
                 root: root,
                 itemId: itemId,
