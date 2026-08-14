@@ -31,23 +31,7 @@ public struct ThumbnailRowPhotoView: View {
         VStack {
             if let image = cachedImage {
                 imageView(image: image)
-#if os(iOS)
-                    .clipShape(
-                        .rect(
-                            bottomTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
-                            topTrailingRadius: listDisplayModel.isPadStyle ? 24 : 0,
-                            style: .continuous
-                        )
-                    )
-#else
-                    .clipShape(
-                        .rect(
-                            bottomTrailingRadius: 8,
-                            topTrailingRadius: 8,
-                            style: .continuous
-                        )
-                    )
-#endif
+                    .clipShape(.rect(cornerRadius: 12, style: .continuous))
             } else {
                 placeHolder(size: CGSize(width: listDisplayModel.imageHeight, height: listDisplayModel.imageHeight))
             }
