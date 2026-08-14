@@ -524,34 +524,34 @@ extension MasterController {
             (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
         }
 
-        let previousAudioPlayers = Set(await root.audioRoot.gameControllable.gameModel.currentPlayers)
+        let previousAudioPlayers = Set(root.audioRoot.gameControllable.gameModel.currentPlayers)
         var players = gameControl.controls.compactMap { $0.show ? $0.id : nil }.sorted()
         if asProxy {
             players.append(gameConfig.master.id)
             players.sort()
         }
-        await root.audioRoot.gameControllable.gameModel.setCurrent(players: players)
-        await root.photoRoot.gameControllable.gameModel.setCurrent(players: players)
-        await root.pdfRoot.gameControllable.gameModel.setCurrent(players: players)
-        await root.spaceRoot.gameControllable.gameModel.setCurrent(players: players)
-        await root.tableRoot.gameControllable.gameModel.setCurrent(players: players)
-        await root.weatherRoot.gameControllable.gameModel.setCurrent(players: players)
+        root.audioRoot.gameControllable.gameModel.setCurrent(players: players)
+        root.photoRoot.gameControllable.gameModel.setCurrent(players: players)
+        root.pdfRoot.gameControllable.gameModel.setCurrent(players: players)
+        root.spaceRoot.gameControllable.gameModel.setCurrent(players: players)
+        root.tableRoot.gameControllable.gameModel.setCurrent(players: players)
+        root.weatherRoot.gameControllable.gameModel.setCurrent(players: players)
 
         var playerNames = gameRoster.players.filter { $0.type != .observer }.map { $0.name }.sorted()
         if asProxy {
             playerNames.append(gameConfig.master.name)
             playerNames.sort()
         }
-        await root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
+        root.diceRoot.diceGameControllable.resetPlayerDice(to: playerNames)
         if !asProxy {
-            await root.mapRoot.mapGameControllable.resetPlayerPins(for: gameRoster.players.filter { $0.type != .observer })
+            root.mapRoot.mapGameControllable.resetPlayerPins(for: gameRoster.players.filter { $0.type != .observer })
             #if !os(tvOS)
-            await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+            root.gameModel.gameTableModel?.syncPawnsWithMapPins()
             #endif
             // Push the changed player pins to everyone right away — otherwise
             // a joining player's pin only appears on the next unrelated map
             // state update.
-            if let mapId = await root.mapRoot.gameControllable.gameModel.currentItemId {
+            if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 // Messenger messages have no history. Replay the latest
                 // photo-free structural snapshot when the roster changes so a
                 // SharePlay participant joining after the Journal publication
@@ -559,11 +559,11 @@ extension MasterController {
                 await send(
                     type: .update,
                     subtype: .generic,
-                    updated: await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
+                    updated: root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
                 )
                 await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
-                if await root.mapRoot.mapGameControllable.battleRoundModel.isRunning,
-                   let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                if root.mapRoot.mapGameControllable.battleRoundModel.isRunning,
+                   let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                        for: mapId
                    ) {
                     await send(type: .update, subtype: .battleRound, updated: battleUpdate)

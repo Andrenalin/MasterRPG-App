@@ -32,6 +32,13 @@ final class PlayerNetworkController: Sendable {
 
     let browserManager: BrowserManager
     let networkModel: PlayerNetworkNodel
+    // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the
+    // reconnect-fallback listener (`setUpListener`/`restart`). The outbound
+    // `start(model:)` join path is never throttled — this device is the one
+    // dialing out there with a code the user entered, not receiving an
+    // unknown attempt.
+    private let connectionThrottle = ConnectionAttemptThrottle()
+    private var pendingConnectionSources: [ConnectionController.ID: String] = [:]
 
     /// Bonjour role advertised after the outbound connection is lost. Direct
     /// players wait for the game master to reconnect, while proxy clients wait
@@ -103,7 +110,11 @@ private extension PlayerNetworkController {
 
     func restart(connection: NWConnection) async {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
-        await networkModel.reset(controller: ConnectionController(id: UUID(), connection: connection, delegate: self))
+        let id = UUID()
+        if let source = connection.endpoint.throttleSourceKey {
+            pendingConnectionSources[id] = source
+        }
+        await networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
 
@@ -127,6 +138,7 @@ private extension PlayerNetworkController {
 // MARK: - ConnectionControllerDelegate
 
 extension PlayerNetworkController: ConnectionControllerDelegate {
+    @MainActor
     func failed(with error: String?, for id: ConnectionController.ID) async {
         guard await isCurrentConnection(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore failure from replaced connection \(id.uuidString, privacy: .public)")
@@ -135,12 +147,22 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         if await networkModel.connectionState != .notReady {
             await lostConnection(for: id)
         } else {
+            // A fresh reconnect attempt (state == .notReady) failing immediately
+            // is a handshake/auth failure, not a previously-established
+            // connection dropping — this is the passcode-guessing signal the
+            // throttle tracks. Outbound `start(model:)` attempts never appear
+            // here, since only `restart(connection:)` registers a pending source.
+            if let source = pendingConnectionSources.removeValue(forKey: id) {
+                await connectionThrottle.recordFailure(source: source)
+            }
             await stop(connection: id)
         }
     }
 
+    @MainActor
     func lostConnection(for id: ConnectionController.ID) async {
         Logger.networking.debug("PlayerNetworkController: Lost connection")
+        pendingConnectionSources.removeValue(forKey: id)
 
         guard await markLostIfCurrent(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore stale or duplicate loss \(id.uuidString, privacy: .public)")
@@ -151,10 +173,14 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         await delegate.playerLostMaster()
     }
 
+    @MainActor
     func readyConnection(for id: ConnectionController.ID) async {
         guard await markReadyIfCurrent(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore ready callback from replaced connection \(id.uuidString, privacy: .public)")
             return
+        }
+        if let source = pendingConnectionSources.removeValue(forKey: id) {
+            await connectionThrottle.recordSuccess(source: source)
         }
         await delegate.playerReady()
     }
@@ -243,7 +269,13 @@ extension PlayerNetworkController: ListenerManagerDelegate {
         await stop()
     }
 
+    @MainActor
     func listenerNewConnection(_ connection: NWConnection) async {
+        if let source = connection.endpoint.throttleSourceKey, await !connectionThrottle.shouldAllow(source: source) {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Rejected connection attempt from throttled source")
+            connection.cancel()
+            return
+        }
         await networkModel.reset(listener: nil)
         await networkModel.reset(isConnected: false)
         let shouldRestart = await networkModel.connectionState == .lost
