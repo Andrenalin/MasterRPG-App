@@ -9,31 +9,16 @@ extension RPGPdfEntry: CoreDataId {}
 
 extension RPGPdf {
     var entriesModel: [RPGPdfEntry] {
-        get {
-            guard let entries = entries as? Set<RPGPdfEntry> else {
-                return []
-            }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGPdfEntry }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGPdfEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGPdfEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGPdf must belong to a managed object context before adding entries.")
-        }
-        return RPGPdfEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entriesModel)
     }
 }
 
-extension RPGPdf: SpotlightIndexerAtyribute {
+extension RPGPdf: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
@@ -54,7 +39,7 @@ extension RPGPdf: SpotlightIndexerAtyribute {
 #endif
 }
 
-extension RPGPdfEntry: SpotlightIndexerAtyribute {
+extension RPGPdfEntry: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)

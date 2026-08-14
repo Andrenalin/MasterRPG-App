@@ -9,31 +9,16 @@ extension RPGWeatherEntry: CoreDataId {}
 
 extension RPGWeather {
     var entriesModel: [RPGWeatherEntry] {
-        get {
-            guard let entries = entries as? Set<RPGWeatherEntry> else {
-                return []
-            }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGWeatherEntry }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGWeatherEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGWeatherEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGWeather must belong to a managed object context before adding entries.")
-        }
-        return RPGWeatherEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entriesModel)
     }
 }
 
-extension RPGWeather: SpotlightIndexerAtyribute {
+extension RPGWeather: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)

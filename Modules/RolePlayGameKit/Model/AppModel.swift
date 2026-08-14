@@ -284,7 +284,7 @@ public final class AppModel: Sendable {
     }
 }
  
-// MARK: - Maintanence
+// MARK: - Maintenance
 
 extension AppModel {
     /// Defers opportunistic saves without allowing one overlapping operation to clear another's
@@ -330,17 +330,9 @@ extension AppModel {
     }
     
     public func cleanDatabase() async {
-        try? await adventureRoot.itemDataCleanup()
-        try? await audioRoot.itemDataCleanup()
-        try? await characterRoot.itemDataCleanup()
-        try? await diceRoot.itemDataCleanup()
-        try? await mapRoot.itemDataCleanup()
-        try? await pdfRoot.itemDataCleanup()
-        try? await photoRoot.itemDataCleanup()
-        try? await ruleRoot.itemDataCleanup()
-        try? await tableRoot.itemDataCleanup()
-        try? await spaceRoot.itemDataCleanup()
-        try? await weatherRoot.itemDataCleanup()
+        for step in moduleFolderRepairSteps {
+            try? await step.root.itemDataCleanup()
+        }
     }
 
     public func installExampleData(isGerman: Bool = false) {
@@ -353,16 +345,6 @@ extension AppModel {
             if case .success = await task.result {
                 refreshTipEligibility()
             }
-        }
-    }
-
-    func loadFreePackages(tag: String) {
-        let importController = adventureRoot.importControllable
-        let bundle = RPGResources.Resources.bundle
-        guard let url = bundle.url(forResource: tag, withExtension: "gmz") else { return }
-        let task = importController.importUrl(from: url)
-        Task {
-            let _ = await task.result
         }
     }
 

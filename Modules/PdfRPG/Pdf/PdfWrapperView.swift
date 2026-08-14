@@ -145,10 +145,6 @@ struct PdfWrapperView: CustomViewRepresentable {
         init(parent: PdfWrapperView) {
             self.parent = parent
         }
-        
-        @objc func handlePageChange(notification: Notification) {
-            //parent.pageLabel(pdfView: parent.pdfView, viewSize: parent.viewSize)
-        }
     }
 }
 

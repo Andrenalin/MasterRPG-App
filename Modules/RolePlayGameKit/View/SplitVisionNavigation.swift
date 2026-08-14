@@ -23,7 +23,7 @@ struct SplitVisionNavigation: View {
         TabView(selection: $appModel.selectedModule) {
             ForEach(RootRoute.visionTabs) { tab in
                 Tab(tab.title, systemImage: tab.icon, value: tab, role: tab == .search ? .search : nil) {
-                    tabView(tab: tab)
+                    SplitTabContentView(tab: tab, appModel: appModel, column: $column, preferredCompactColumn: $preferredCompactColumn)
                 }
             }
         }
@@ -39,12 +39,12 @@ struct SplitVisionNavigation: View {
                 return .immediately
             }
             appModel.selectedModule = route
-            return .after(0.8)
+            return .after(NavigationTiming.tabSwitchMountDelay)
         }
 #if os(visionOS)
         .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
             VStack {
-                menuView
+                ModuleWindowMenuView()
             }
             .padding(12)
             .environment(scenesManager)
@@ -73,46 +73,6 @@ struct SplitVisionNavigation: View {
     private func openEditorWindow() {
         scenesManager.openWindow(.editor)
         MasterRPGTips.recordWindowOpened()
-    }
-    
-    @ViewBuilder func tabView(tab: RootRoute) -> some View {
-        if tab.hasDetailView {
-            splitWithDetail(tab: tab)
-        } else {
-            contentView(tab: tab)
-        }
-    }
-    
-    func contentView(tab: RootRoute) -> some View {
-        ManagedPresentationView {
-            tab
-        }
-        .environment(appModel.itemRootController(for: tab.module))
-    }
-    
-    @ViewBuilder func splitWithDetail(tab: RootRoute) -> some View {
-        NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-            contentView(tab: tab)
-        } detail: {
-            SplitDetailView(module: tab.module)
-                .environment(appModel.itemRootController(for: tab.module))
-        }
-    }
-    
-    var menuView: some View {
-        Group {
-            MenuWindowButtonView(valueType: .adventure)
-            MenuWindowButtonView(valueType: .audio)
-            MenuWindowButtonView(valueType: .dice)
-            MenuWindowButtonView(valueType: .map)
-            MenuWindowButtonView(valueType: .pdf)
-            MenuWindowButtonView(valueType: .photo)
-            MenuWindowButtonView(valueType: .rule)
-            MenuWindowButtonView(valueType: .space)
-            MenuWindowButtonView(valueType: .table)
-            MenuWindowButtonView(valueType: .value)
-            MenuWindowButtonView(valueType: .weather)
-        }
     }
 }
 

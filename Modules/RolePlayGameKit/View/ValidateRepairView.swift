@@ -2,17 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import PhotoRPG
-import AdventureRPG
-import AudioRPG
-import PdfRPG
-import MapRPG
-import RuleRPG
-import CharacterRPG
-import DiceRPG
-import TableRPG
-import SpaceRPG
-import WeatherRPG
 
 struct ValidateRepairController {
     let appModel: AppModel
@@ -20,115 +9,29 @@ struct ValidateRepairController {
 
     @MainActor
     func start() async {
-        var counter = 0
-        counter += appModel.adventureRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.audioRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.characterRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.diceRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.mapRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.pdfRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.photoRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.ruleRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.spaceRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.tableRoot.itemControllable.itemDataModel.items.count
-        counter += appModel.weatherRoot.itemControllable.itemDataModel.items.count
+        let steps = appModel.moduleFolderRepairSteps
+        let counter = steps.reduce(into: 0) { total, step in
+            total += step.root.itemControllable.itemDataModel.items.count
+        }
 
         // Each item is visited twice: once in repairFolders, once in validateLinks
         model.update(total: counter * 2)
 
         // Phase 1: repair folder/hidden state for each module
         model.update(phase: .repairFolders)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .photo)
-        await appModel.photoRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .rule)
-        await appModel.ruleRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .audio)
-        await appModel.audioRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .space)
-        await appModel.spaceRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .pdf)
-        await appModel.pdfRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .dice)
-        await appModel.diceRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .weather)
-        await appModel.weatherRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .table)
-        await appModel.tableRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .value)
-        await appModel.characterRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .map)
-        await appModel.mapRoot.checkFolders(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .adventure)
-        await appModel.adventureRoot.checkFolders(reportModel: model)
+        for step in steps {
+            guard !Task.isCancelled else { return }
+            model.update(module: step.module)
+            await step.root.checkFolders(reportModel: model)
+        }
 
         // Phase 2: validate and repair cross-module links for each module
         model.update(phase: .validateLinks)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .photo)
-        await appModel.photoRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .rule)
-        await appModel.ruleRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .audio)
-        await appModel.audioRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .space)
-        await appModel.spaceRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .pdf)
-        await appModel.pdfRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .dice)
-        await appModel.diceRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .weather)
-        await appModel.weatherRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .table)
-        await appModel.tableRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .value)
-        await appModel.characterRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .map)
-        await appModel.mapRoot.validateLinks(reportModel: model)
-
-        guard !Task.isCancelled else { return }
-        model.update(module: .adventure)
-        await appModel.adventureRoot.validateLinks(reportModel: model)
+        for step in steps {
+            guard !Task.isCancelled else { return }
+            model.update(module: step.module)
+            await step.root.validateLinks(reportModel: model)
+        }
     }
 
     @MainActor

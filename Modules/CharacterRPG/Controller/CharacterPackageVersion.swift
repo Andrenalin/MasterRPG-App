@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CryptoKit
 import Foundation
 
 extension GameController {
@@ -42,15 +41,6 @@ private enum CharacterPackageVersion {
 
     static func digest(_ components: [Component]) -> Int {
         let canonical = components.sorted { $0.id.uuidString < $1.id.uuidString }
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(canonical) else { return 1 }
-
-        let digest = SHA256.hash(data: data)
-        let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
-            partialResult << 8 | UInt64(byte)
-        }
-        let version = Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
-        return version == 0 ? 1 : version
+        return StableVersionDigest.digest(canonical)
     }
 }

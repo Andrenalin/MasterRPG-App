@@ -11,47 +11,21 @@ extension RPGMapPin: CoreDataId {}
 
 extension RPGMap {
     var entryModels: [RPGMapEntry] {
-        get {
-            guard let all = entries?.allObjects as? [RPGMapEntry] else {
-                return []
-            }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGMapEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGMapEntry {
-        if let entry = entryModels.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGMap must belong to a managed object context before adding entries.")
-        }
-        return RPGMapEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entryModels)
     }
-    
+
     var mapPinModels: [RPGMapPin] {
-        get {
-            guard let all = mapPins?.allObjects as? [RPGMapPin] else {
-                return []
-            }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            mapPins = NSSet(array: newValue)
-        }
+        get { RPGMapPin.sortedArray(from: mapPins) }
+        set { mapPins = NSSet(array: newValue) }
     }
-    
+
     func mapPinOrNew(for uuid: UUID) -> RPGMapPin {
-        if let mapPin = mapPinModels.first(where: { $0.uuid == uuid }) {
-            return mapPin
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGMap must belong to a managed object context before adding map pins.")
-        }
-        return RPGMapPin(context: managedObjectContext)
+        childOrNew(uuid, in: mapPinModels)
     }
 
     func displyConfigOrNew(for _: UUID) -> RPGDisplayConfig {
@@ -67,17 +41,10 @@ extension RPGMap {
 
 extension RPGMapEntry {
     var coordinateModels: [RPGPosition] {
-        get {
-            guard let all = coordinates?.allObjects as? [RPGPosition] else {
-                return []
-            }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            coordinates = NSSet(array: newValue)
-        }
+        get { RPGPosition.sortedArray(from: coordinates) }
+        set { coordinates = NSSet(array: newValue) }
     }
-    
+
     func newCoordinate() -> RPGPosition {
         guard let managedObjectContext else {
             preconditionFailure("RPGMapEntry must belong to a managed object context before adding coordinates.")
@@ -88,17 +55,10 @@ extension RPGMapEntry {
 
 extension RPGDisplayConfig {
     var tileCoordinateModels: [RPGPosition] {
-        get {
-            guard let all = tileCoordinates?.allObjects as? [RPGPosition] else {
-                return []
-            }
-            return all.sorted { $0.index < $1.index }
-        }
-        set {
-            tileCoordinates = NSSet(array: newValue)
-        }
+        get { RPGPosition.sortedArray(from: tileCoordinates) }
+        set { tileCoordinates = NSSet(array: newValue) }
     }
-    
+
     func newCoordinate() -> RPGPosition {
         guard let managedObjectContext else {
             preconditionFailure("RPGDisplayConfig must belong to a managed object context before adding coordinates.")
@@ -119,7 +79,7 @@ extension RPGMapPin {
     }
 }
 
-extension RPGMap: SpotlightIndexerAtyribute {
+extension RPGMap: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
@@ -140,7 +100,7 @@ extension RPGMap: SpotlightIndexerAtyribute {
 #endif
 }
 
-extension RPGMapEntry: SpotlightIndexerAtyribute {
+extension RPGMapEntry: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)

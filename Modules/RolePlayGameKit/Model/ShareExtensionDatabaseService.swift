@@ -5,24 +5,6 @@ import CoreData
 import Foundation
 import os.log
 
-// Import ALL module bundles - we need the complete database for proper saving
-import PhotoRPG
-import RuleRPG
-import PdfRPG
-import AudioRPG
-import AdventureRPG
-import DiceRPG
-import TableRPG
-import MapRPG
-import CharacterRPG
-import WeatherRPG
-import SpaceRPG
-import GameRPG
-
-#if !os(tvOS)
-import GeneratorRPG
-#endif
-
 /// Database service for the Share Extension
 /// Loads the FULL database (all modules) to prevent Core Data corruption
 /// Uses lightweight data controllers instead of full root models
@@ -53,8 +35,8 @@ public final class ShareExtensionDatabaseService {
         guard !isReady else { return }
         
         // Load ALL module bundles
-        let bundles = allModuleBundles()
-        
+        let bundles = DataBaseModel.rpgModuleBundles
+
         // Create persistence controller
         persistence = CoreDataPersistenceController(
             inMemory: false,
@@ -82,32 +64,6 @@ public final class ShareExtensionDatabaseService {
         self.isReady = true
     }
     
-    
-    // MARK: - Module Management
-    
-    private func allModuleBundles() -> [Bundle] {
-        var bundles = [
-            CoreRPG.Resources.bundle,
-            PhotoRPG.Resources.bundle,
-            RuleRPG.Resources.bundle,
-            PdfRPG.Resources.bundle,
-            AudioRPG.Resources.bundle,
-            AdventureRPG.Resources.bundle,
-            DiceRPG.Resources.bundle,
-            TableRPG.Resources.bundle,
-            MapRPG.Resources.bundle,
-            CharacterRPG.Resources.bundle,
-            WeatherRPG.Resources.bundle,
-            SpaceRPG.Resources.bundle,
-            GameRPG.Resources.bundle
-        ]
-        
-        #if !os(tvOS)
-        bundles.append(GeneratorRPG.Resources.bundle)
-        #endif
-        
-        return bundles
-    }
     
     // MARK: - Save Operations
     

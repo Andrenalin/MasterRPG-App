@@ -61,9 +61,6 @@ extension CharacterEntity: Transferable {
             let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
-//                Image(landmark.landmark.backgroundImageName)
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
                 Text(verbatim: item.name)
                 Text(verbatim: item.description)
             }.frame(width: 600))

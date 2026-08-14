@@ -275,7 +275,7 @@
         }
       }
     },
-    "Becareful this removes all data and resets the database." : {
+    "Be careful, this removes all data and resets the database." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -291,7 +291,7 @@
         }
       }
     },
-    "Becareful this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched." : {
+    "Be careful, this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {

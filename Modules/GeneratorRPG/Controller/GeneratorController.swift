@@ -7,6 +7,8 @@ import Foundation
 import FoundationModels
 import SwiftUI
 
+// MARK: - Session Model
+
 @Observable
 @MainActor
 final class GeneratorSessionModel {
@@ -132,6 +134,8 @@ final class GeneratorSessionModel {
     var blockResponse: [BlockEntryGenModel.PartiallyGenerated] = []
 }
 
+// MARK: - Controller
+
 struct GeneratorController: Sendable {
     @MainActor init() {
         let configuration = ConversationConfiguration(
@@ -185,6 +189,8 @@ struct GeneratorController: Sendable {
         foundationManager.isModelAvailable
     }
     
+    // MARK: - Conversation
+
     @MainActor func seedConversationContext(sheetModel: SheetModel) {
         let itemId = sheetModel.source.itemId
         guard model.lastItemId != itemId else { return }
@@ -284,6 +290,8 @@ struct GeneratorController: Sendable {
         model.showError = false
         model.syncConversationState()
     }
+
+    // MARK: - Extraction
 
     @MainActor func extract(message: String, rootModel: SheetRootModel) {
         model.cancelExtraction()
@@ -401,6 +409,8 @@ struct GeneratorController: Sendable {
 }
 
 private extension GeneratorController {
+    // MARK: Prompt & Sheet Building
+
     @MainActor func compactSheetIndex(from sheetModel: SheetModel, maxCharacters: Int = 600) -> String {
         var parts: [String] = []
         
@@ -488,6 +498,8 @@ private var generatedAcceptanceTransitions: [GeneratedAcceptanceKey: UUID] = [:]
      model.hasGenerationContent ||
      (model.entries + model.inlineEntries).contains(where: containsGenerationContent)
  }
+
+ // MARK: Generation Queue
 
  @discardableResult
  public func queueGeneration(prompt: String, module defaultModule: NetworkModules) -> SheetGenerationRequest? {
@@ -693,6 +705,8 @@ private var generatedAcceptanceTransitions: [GeneratedAcceptanceKey: UUID] = [:]
      finishGenerationRequest(requestID)
      return true
  }
+
+ // MARK: Preview Acceptance
 
  func generatedEntries(after entryModel: SheetModel, in parentModel: SheetModel) -> [SheetModel] {
      guard let generatedBatch,
@@ -920,6 +934,8 @@ private var generatedAcceptanceTransitions: [GeneratedAcceptanceKey: UUID] = [:]
          children: children
      )
  }
+
+ // MARK: Entry Commit
 
  /// Creates real, persisted entries via the module's EditController — not transient
  /// in-memory SheetModels — under `parent` (defaults to the root sheetModel), re-syncs

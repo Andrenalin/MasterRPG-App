@@ -77,7 +77,6 @@ public final class LinkReplaceController: Sendable {
             }
             let markDown = updatedLink.markDown(for: scheme)
             let range = text.range(of: markDown) ?? text.startIndex..<text.endIndex
-//            let (updatedName, updatedMarkDown) = currentName(linkController: linkControllable, itemId: $0.table, entryId: nil, module: module) ?? ($0.name, markDown)
             return LinkReplaceModel(name: $0.name, module: module, linkNumber: linkNumber, itemId: $0.table, entryId: nil, markDown: markDown, command: $0.command, range: range)
         }
         var seenEntryId: [UUID: [UUID: Int]] = [:]

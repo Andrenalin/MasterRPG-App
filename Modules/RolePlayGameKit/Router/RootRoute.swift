@@ -75,27 +75,14 @@ extension RootRoute: RawRepresentable {
     public var rawValue: String {
         module.token
     }
-    
+
+    /// Derived from `init(networkModule:)` rather than hand-rolling a second
+    /// token-to-case table, so the module list only needs to be kept in sync in one place.
     public init?(rawValue: String) {
-        switch rawValue {
-        case NetworkModules.adventure.token: self = .adventures
-        case NetworkModules.audio.token: self = .audios
-        case NetworkModules.dice.token: self = .dice
-        case NetworkModules.editor.token: self = .editors
-        case NetworkModules.game.token: self = .game
-        case NetworkModules.generator.token: self = .generator
-        case NetworkModules.map.token: self = .maps
-        case NetworkModules.pdf.token: self = .pdfs
-        case NetworkModules.photo.token: self = .photos
-        case NetworkModules.rule.token: self = .rules
-        case NetworkModules.search.token: self = .search
-        case NetworkModules.setting.token: self = .settings
-        case NetworkModules.space.token: self = .space
-        case NetworkModules.table.token: self = .tables
-        case NetworkModules.value.token: self = .values
-        case NetworkModules.weather.token: self = .weathers
-        default: return nil
+        guard let networkModule = NetworkModules.allCases.first(where: { $0.token == rawValue }) else {
+            return nil
         }
+        self.init(networkModule: networkModule)
     }
 }
 

@@ -5,7 +5,7 @@ import Combine
 import CoreData
 import CoreSpotlight
 
-public protocol SpotlightIndexerAtyribute {
+public protocol SpotlightIndexerAttribute {
 #if !os(tvOS)
     func attributeSet() -> CSSearchableItemAttributeSet
 #endif
@@ -39,7 +39,7 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     }
     
     public override func attributeSet(for object: NSManagedObject) -> CSSearchableItemAttributeSet? {
-        guard let objectAttritube = object as? SpotlightIndexerAtyribute else { return nil }
+        guard let objectAttritube = object as? SpotlightIndexerAttribute else { return nil }
         return objectAttritube.attributeSet()
     }
     

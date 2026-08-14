@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CryptoKit
 import Foundation
 import Observation
 
@@ -258,7 +257,7 @@ extension ValueModel: nonisolated ItemDiffComparable {
     /// bytes, device-local availability, list hierarchy, and UI state are
     /// deliberately not represented.
     public var version: Int {
-        StableValueVersion.digest(CanonicalValueContent(self))
+        StableVersionDigest.digest(CanonicalValueContent(self))
     }
 }
 
@@ -362,20 +361,6 @@ private struct CanonicalValueEntry: Codable, Sendable {
         value = entry.value
         diceId = entry.diceId
         valueId = entry.valueId
-    }
-}
-
-private enum StableValueVersion {
-    static func digest<Value: Encodable>(_ value: Value) -> Int {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(value) else { return 1 }
-        let digest = SHA256.hash(data: data)
-        let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
-            partialResult << 8 | UInt64(byte)
-        }
-        let version = Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
-        return version == 0 ? 1 : version
     }
 }
 

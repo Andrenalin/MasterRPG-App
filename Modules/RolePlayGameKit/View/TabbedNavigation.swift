@@ -47,13 +47,13 @@ struct TabbedNavigation: View {
             guard RootRoute.fiveTabs.contains(route) else {
                 guard appModel.selectedModule != .editors else { return .immediately }
                 appModel.selectedModule = .editors
-                return .after(0.8)
+                return .after(NavigationTiming.tabSwitchMountDelay)
             }
             if appModel.selectedModule == route {
                 return .immediately
             }
             appModel.selectedModule = route
-            return .after(0.8)
+            return .after(NavigationTiming.tabSwitchMountDelay)
         }
     }
     

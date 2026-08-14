@@ -9,31 +9,16 @@ extension RPGDiceEntry: CoreDataId {}
 
 extension RPGDice {
     var entriesModel: [RPGDiceEntry] {
-        get {
-            guard let entries = entries as? Set<RPGDiceEntry> else {
-                return []
-            }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGDiceEntry }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGDiceEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGDiceEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGDice must belong to a managed object context before adding entries.")
-        }
-        return RPGDiceEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entriesModel)
     }
 }
 
-extension RPGDice: SpotlightIndexerAtyribute {
+extension RPGDice: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)

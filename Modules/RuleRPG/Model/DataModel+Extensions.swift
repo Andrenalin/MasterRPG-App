@@ -9,27 +9,16 @@ extension RPGRuleEntry: CoreDataId {}
 
 extension RPGRule {
     var entriesModel: [RPGRuleEntry] {
-        get {
-            let values = (entries as? Set<RPGRuleEntry>) ?? []
-            return values.sorted { lhs, rhs in lhs.index < rhs.index }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGRuleEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
 
     func entryOrNew(for id: UUID) -> RPGRuleEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == id }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGRule must belong to a managed object context before adding entries.")
-        }
-        return RPGRuleEntry(context: managedObjectContext)
+        childOrNew(id, in: entriesModel)
     }
 }
 
-extension RPGRule: SpotlightIndexerAtyribute {
+extension RPGRule: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributes = CSSearchableItemAttributeSet(contentType: .text)
@@ -44,7 +33,7 @@ extension RPGRule: SpotlightIndexerAtyribute {
 #endif
 }
 
-extension RPGRuleEntry: SpotlightIndexerAtyribute {
+extension RPGRuleEntry: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributes = CSSearchableItemAttributeSet(contentType: .text)

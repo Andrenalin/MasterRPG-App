@@ -25,40 +25,31 @@ import WeatherRPG
 @MainActor @Observable
 public final class DataBaseModel {
 
-#if os(tvOS)
-    public static let rpgModuleBundles: [Bundle] = [
-        CoreRPG.Resources.bundle,
-        AdventureRPG.Resources.bundle,
-        AudioRPG.Resources.bundle,
-        CharacterRPG.Resources.bundle,
-        DiceRPG.Resources.bundle,
-        GameRPG.Resources.bundle,
-        MapRPG.Resources.bundle,
-        PdfRPG.Resources.bundle,
-        PhotoRPG.Resources.bundle,
-        RuleRPG.Resources.bundle,
-        SpaceRPG.Resources.bundle,
-        TableRPG.Resources.bundle,
-        WeatherRPG.Resources.bundle
-    ]
-#else
-    public static let rpgModuleBundles: [Bundle] = [
-        CoreRPG.Resources.bundle,
-        AdventureRPG.Resources.bundle,
-        AudioRPG.Resources.bundle,
-        CharacterRPG.Resources.bundle,
-        DiceRPG.Resources.bundle,
-        GameRPG.Resources.bundle,
-        GeneratorRPG.Resources.bundle,
-        MapRPG.Resources.bundle,
-        PdfRPG.Resources.bundle,
-        PhotoRPG.Resources.bundle,
-        RuleRPG.Resources.bundle,
-        SpaceRPG.Resources.bundle,
-        TableRPG.Resources.bundle,
-        WeatherRPG.Resources.bundle
-    ]
+    /// Every module's Core Data resource bundle, merged into one model at load time.
+    /// Shared by the main app (`setup()` below) and the Share Extension
+    /// (`ShareExtensionDatabaseService`), which both need the complete database to
+    /// avoid corrupting the store by loading only a subset of the modules.
+    public static let rpgModuleBundles: [Bundle] = {
+        var bundles: [Bundle] = [
+            CoreRPG.Resources.bundle,
+            AdventureRPG.Resources.bundle,
+            AudioRPG.Resources.bundle,
+            CharacterRPG.Resources.bundle,
+            DiceRPG.Resources.bundle,
+            GameRPG.Resources.bundle,
+            MapRPG.Resources.bundle,
+            PdfRPG.Resources.bundle,
+            PhotoRPG.Resources.bundle,
+            RuleRPG.Resources.bundle,
+            SpaceRPG.Resources.bundle,
+            TableRPG.Resources.bundle,
+            WeatherRPG.Resources.bundle
+        ]
+#if !os(tvOS)
+        bundles.append(GeneratorRPG.Resources.bundle)
 #endif
+        return bundles
+    }()
 
     public private(set) var context: NSManagedObjectContext?
     public private(set) var batchContext: NSManagedObjectContext?
