@@ -8,7 +8,7 @@ struct CarouselPhotoView: View {
     let selection: GroupItemSelectionModel
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             LazyHStack {
                 ForEach(photoIds.selection, id: \.self.itemId) { photoSelection in
                     CarouselPhotoItemView(
@@ -23,6 +23,7 @@ struct CarouselPhotoView: View {
                     .frame(height: 128)
             }
         }
+        .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
         .environment(selection)

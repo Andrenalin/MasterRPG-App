@@ -21,7 +21,6 @@ struct BattleRoundCompactCardLayout: View {
                 BattleParticipantColumn(
                     state: state,
                     presentation: presentation.attacker,
-                    isAttacker: true,
                     isActive: presentation.isActive,
                     tint: presentation.isActive ? .blue : .gray,
                     controller: controller,

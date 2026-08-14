@@ -9,7 +9,6 @@ import SwiftUI
 struct BattleParticipantColumn: View {
     let state: BattleRoundCardState
     let presentation: BattleRoundParticipantPresentation
-    let isAttacker: Bool
     let isActive: Bool
     let tint: Color
     let controller: BattleRoundController
@@ -41,13 +40,11 @@ struct BattleParticipantColumn: View {
                     )
                 )
                 
-                //if !isAttacker {
-                    Text(combatant.name)
-                        .font(.caption2)
-                        .lineLimit(1)
-                        .frame(maxWidth: nameMaxWidth)
-                        .help(Text(verbatim: combatant.name))
-                //}
+                Text(combatant.name)
+                    .font(.caption2)
+                    .lineLimit(1)
+                    .frame(maxWidth: nameMaxWidth)
+                    .help(Text(verbatim: combatant.name))
             }
             
             HStack(alignment: .center, spacing: 8) {
@@ -73,11 +70,6 @@ struct BattleParticipantColumn: View {
                                 .foregroundStyle(.white, combatant.color)
                                 .padding(3)
                                 .background(.black.opacity(0.55), in: .circle)
-//                                .frame(
-//                                    maxWidth: .infinity,
-//                                    maxHeight: .infinity,
-//                                    alignment: .bottomTrailing
-//                                )
                         }
                     }
                     .overlay {
@@ -275,7 +267,6 @@ struct BattleParticipantColumn: View {
             BattleParticipantColumn(
                 state: BattleRoundCardState(),
                 presentation: participant,
-                isAttacker: false,
                 isActive: true,
                 tint: .red,
                 controller: controller,

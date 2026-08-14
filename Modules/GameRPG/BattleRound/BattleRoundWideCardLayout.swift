@@ -20,7 +20,6 @@ struct BattleRoundWideCardLayout: View {
             BattleParticipantColumn(
                 state: state,
                 presentation: presentation.attacker,
-                isAttacker: true,
                 isActive: presentation.isActive,
                 tint: presentation.isActive ? .blue : .gray,
                 controller: controller,
@@ -33,7 +32,6 @@ struct BattleRoundWideCardLayout: View {
                 isActive: presentation.isActive,
                 controller: controller
             )
-            //Spacer(minLength: 8)
             Image(systemName: "arrow.right")
                 .foregroundStyle(.tertiary)
                 .padding(.top, 20)

@@ -20,7 +20,6 @@ struct BattleRoundView: View {
             VStack(spacing: 0) {
                 BattleRoundHeader(
                     isRunning: controller.model.isRunning,
-                    hasEntries: !controller.model.entries.isEmpty,
                     round: controller.model.roundCounter,
                     activeAttackerName: screenModel.activeAttackerName,
                     initiativeOrder: controller.model.initiativeOrder,

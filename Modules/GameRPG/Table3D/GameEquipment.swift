@@ -55,11 +55,33 @@ final class Board {
         plane.position.y = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
         plane.name = "MapImagePlane"
         plane.isEnabled = false
+        // Hit-testable so `viewportPanGesture` (GameTableView) can target the
+        // map surface directly, separately from pins and room fog — mirrors
+        // `GamePortableEntities.Board`'s iOS/macOS setup exactly, including
+        // its hit-test box sitting below `RoomHitArea`'s ±0.004 box around
+        // this same Y so a touch over a room's fog always hits the closer
+        // room volume first. See CODE_AUDIT §8.1.
+        plane.components.set(BoardSurfaceComponent())
+        plane.components.set(InputTargetComponent())
+        plane.components.set(
+            CollisionComponent(shapes: [
+                ShapeResource
+                    .generateBox(width: mapSize, height: Self.hitTestBoxHeight, depth: mapSize)
+                    .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
+            ])
+        )
         boardEntity.addChild(plane)
         self.imagePlane = plane
-        
+
         self.entity = boardEntity
     }
+
+    private static let hitTestBoxHeight: Float = 0.002
+    /// Local offset (relative to `imagePlane`, itself at world Y ==
+    /// `GameSetup.pinHeight`) putting the hit-test box's whole height range
+    /// below `pinHeight - 0.004` — `RoomHitArea`'s lower bound — with a clear
+    /// margin. Matches `GamePortableEntities.Board`'s identical constants.
+    private static let hitTestYOffset: Float = -0.006
         
     // Update the map from PhotoModel data while preserving its aspect ratio.
     func updateMap(image: AKImage, degrees: Double, displayConfig: DisplayConfigModel?, mapModel: MapModel?, isGameMaster: Bool, panOffset: CGPoint) {
@@ -334,6 +356,15 @@ struct PinComponent: Component {
 /// Identifies a room's fog hit-test volume for gesture targeting.
 struct RoomComponent: Component {
     let roomId: UUID
+}
+
+/// Identifies a die entity for VoiceOver's accessibility "activate" gesture
+/// — see `GameTableModel.tossDieForAccessibility`. Mirrors `PinComponent`/
+/// `RoomComponent`, but on `Die20`/`Die` themselves (TabletopKit equipment,
+/// not a plain entity), rather than on a wrapper class. See CODE_AUDIT §8.2.
+struct DiceComponent: Component {
+    let dieId: EquipmentIdentifier
+    let sides: Int
 }
 
 /// A map pin token on the 3D table (player or monster), synced with the pins
@@ -635,7 +666,7 @@ struct Die20: EntityEquipment {
     ]
     
     @MainActor
-    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any) {
+    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
         // protocol. Rather than crash the whole tabletop feature over a missing/corrupt
@@ -672,6 +703,24 @@ struct Die20: EntityEquipment {
         representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
             //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
         initialState = .init(value: 1, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
+
+        // The direct on-table toss gesture otherwise has no accessible
+        // equivalent — see CODE_AUDIT §8.2. `GameTableModel.tossDieForAccessibility`
+        // reads `DiceComponent` back out to apply a random result the same
+        // way a character-sheet roll does (§5.1).
+        self.entity.components.set(DiceComponent(dieId: id, sides: 20))
+        var accessibility = AccessibilityComponent()
+        accessibility.isAccessibilityElement = true
+        accessibility.label = Self.accessibilityLabel(seatIndex: seatIndex, dieNumber: dieNumber)
+        accessibility.systemActions = .activate
+        self.entity.components.set(accessibility)
+    }
+
+    /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
+    private static func accessibilityLabel(seatIndex: Int, dieNumber: Int) -> LocalizedStringResource {
+        seatIndex == 0
+            ? LocalizedStringResource("Game master's D20 die \(dieNumber)", bundle: .module)
+            : LocalizedStringResource("Player seat \(seatIndex) D20 die \(dieNumber)", bundle: .module)
     }
 
     @MainActor
@@ -728,7 +777,7 @@ struct Die: EntityEquipment {
     }
     
     @MainActor
-    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any) {
+    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
         // protocol — see the matching comment on `Die20.init` for why this degrades to a
@@ -759,6 +808,21 @@ struct Die: EntityEquipment {
         }
         representation = .cube(height: entity.visualBounds(relativeTo: nil).extents.x)
         initialState = .init(value: 1, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
+
+        // See the matching accessibility setup on `Die20.init` (CODE_AUDIT §8.2).
+        self.entity.components.set(DiceComponent(dieId: id, sides: 6))
+        var accessibility = AccessibilityComponent()
+        accessibility.isAccessibilityElement = true
+        accessibility.label = Self.accessibilityLabel(seatIndex: seatIndex, dieNumber: dieNumber)
+        accessibility.systemActions = .activate
+        self.entity.components.set(accessibility)
+    }
+
+    /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
+    private static func accessibilityLabel(seatIndex: Int, dieNumber: Int) -> LocalizedStringResource {
+        seatIndex == 0
+            ? LocalizedStringResource("Game master's die \(dieNumber)", bundle: .module)
+            : LocalizedStringResource("Player seat \(seatIndex) die \(dieNumber)", bundle: .module)
     }
 
     @MainActor

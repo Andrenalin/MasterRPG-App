@@ -30,7 +30,6 @@ struct BattleDefenderStrip: View {
                         BattleParticipantColumn(
                             state: state,
                             presentation: defender,
-                            isAttacker: false,
                             isActive: isActiveEntry,
                             tint: isActiveEntry ? .red : .gray,
                             controller: controller,

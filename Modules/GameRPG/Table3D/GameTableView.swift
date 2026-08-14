@@ -20,6 +20,10 @@ public struct GameTableView: View {
     @State private var activityManager: GroupActivityManager?
     @State private var scaleController = TableScaleGestureController()
     @State private var accessibilitySubscriptions: [any Cancellable] = []
+    /// Captured on the board-pan gesture's first `.onChanged` call, cleared
+    /// on `.onEnded` — mirrors the iOS/macOS `viewportPanGesture`'s
+    /// `viewportPanStart`. See CODE_AUDIT §8.1.
+    @State private var viewportPanStart: SIMD3<Float>?
 
     public init(root: GameRoot) {
         self.root = root
@@ -38,6 +42,8 @@ public struct GameTableView: View {
                                 loadedGame.pinTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
                                 Task { await loadedGame.toggleRoomVisibility(roomId) }
+                            } else if let dice = event.entity.components[DiceComponent.self] {
+                                loadedGame.tossDieForAccessibility(dieId: dice.dieId, sides: dice.sides)
                             }
                         }
                         accessibilitySubscriptions.append(subscription)
@@ -92,6 +98,28 @@ public struct GameTableView: View {
                                   let parent = value.entity.parent else { return }
                             let position = value.convert(value.location3D, from: .local, to: parent)
                             loadedGame.pinDragEnded(pinId: pinId, position: position)
+                        }
+                )
+                // Pans the zoomed viewport instead of moving anything in 3D
+                // space — see `GameTableModel.panViewport(fromTableStart:toTableEnd:)`.
+                // The iOS/macOS camera table already has this (`viewportPanGesture`
+                // in this file's `#if os(iOS) || os(macOS)` half); visionOS's board
+                // surface wasn't even hit-testable for it until `Board.init()`
+                // (GameEquipment.swift) started setting `BoardSurfaceComponent`.
+                // Commits once, on release, rather than re-rendering the board
+                // texture on every touch-move event. See CODE_AUDIT §8.1.
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 5)
+                        .targetedToEntity(where: .has(BoardSurfaceComponent.self))
+                        .onChanged { value in
+                            guard viewportPanStart == nil, let parent = value.entity.parent else { return }
+                            viewportPanStart = value.convert(value.location3D, from: .local, to: parent)
+                        }
+                        .onEnded { value in
+                            defer { viewportPanStart = nil }
+                            guard let start = viewportPanStart, let parent = value.entity.parent else { return }
+                            let end = value.convert(value.location3D, from: .local, to: parent)
+                            loadedGame.panViewport(fromTableStart: start, toTableEnd: end)
                         }
                 )
                 // Double tap toggles zoom, single tap toggles highlight, and a

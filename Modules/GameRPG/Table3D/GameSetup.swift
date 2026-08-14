@@ -97,8 +97,8 @@ class GameSetup {
             // rendering (vs. only interaction). Ownership here is visual/
             // positional only.
             let dicePoses = PlayerSeat.diceLayout(inFrontOf: pose)
-            let firstD20 = Die20(id: EquipmentIdentifier(idGenerator.newId()), pose: dicePoses[0])
-            let secondD20 = Die20(id: EquipmentIdentifier(idGenerator.newId()), pose: dicePoses[1])
+            let firstD20 = Die20(id: EquipmentIdentifier(idGenerator.newId()), pose: dicePoses[0], seatIndex: index, dieNumber: 1)
+            let secondD20 = Die20(id: EquipmentIdentifier(idGenerator.newId()), pose: dicePoses[1], seatIndex: index, dieNumber: 2)
             setup.add(equipment: firstD20)
             setup.add(equipment: secondD20)
             playerDiceIds[seatId] = [firstD20.id, secondD20.id]

@@ -216,6 +216,26 @@ final class GameTableModel: Sendable {
         }
     }
 
+    /// VoiceOver's "activate" gesture on a die entity (see `DiceComponent`,
+    /// wired in `GameTableView`'s accessibility subscription) — the direct
+    /// on-table toss gesture otherwise has no accessible equivalent. Picks a
+    /// random result and applies it through the same `TabletopGame.addAction`
+    /// path a physical toss uses — `GameObserver.actionIsPending` already
+    /// plays the toss sound for any `Die20` update, the same as it does for
+    /// `applyDiceRoll`'s. See CODE_AUDIT §8.2.
+    func tossDieForAccessibility(dieId: EquipmentIdentifier, sides: Int) {
+        let result = Int.random(in: 1...sides)
+        if let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        } else if let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) {
+            tabletopGame.addAction(
+                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        }
+    }
+
 #endif
 
     /// Refreshes the standalone tabletop from the current game selection. The

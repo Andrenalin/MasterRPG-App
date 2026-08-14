@@ -5,7 +5,6 @@ import SwiftUI
 
 struct BattleRoundHeader: View {
     let isRunning: Bool
-    let hasEntries: Bool
     let round: Int
     let activeAttackerName: String?
     let initiativeOrder: BattleInitiativeOrder
@@ -78,7 +77,6 @@ private struct BattleRoundConfigurationButton: View {
 
     BattleRoundHeader(
         isRunning: model.isRunning,
-        hasEntries: !model.entries.isEmpty,
         round: model.roundCounter,
         activeAttackerName: model.activeEntry.flatMap { model.attacker(for: $0) }?.name,
         initiativeOrder: model.initiativeOrder,

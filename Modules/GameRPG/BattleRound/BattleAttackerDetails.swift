@@ -11,10 +11,6 @@ struct BattleAttackerDetails: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
-//                Text(combatant.name)
-//                    .font(.headline)
-//                    .lineLimit(1)
-
                 if combatant.isPlayer {
                     Image(systemName: "person.fill")
                         .foregroundStyle(.secondary)

@@ -344,11 +344,6 @@ private struct GameTableTextureView: View {
     )
 }
 
-/// Identifies the board's map-image plane for entity-targeted gestures, so a
-/// drag started on the map itself can be told apart from one started on a pin
-/// or a room's fog.
-struct BoardSurfaceComponent: Component {}
-
 /// Identifies a map token for entity-targeted gestures.
 struct PinComponent: Component {
     let pinId: UUID

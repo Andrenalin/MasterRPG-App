@@ -43,23 +43,24 @@ struct ExportControllerTests {
         let itemId = await root.itemController.addNew(type: .item)
 
         let newId = await root.itemController.addNew(type: .item)
+        let entry = SpaceEntryModel(id: UUID(), spaceId: newId)
+        root.itemController.itemOrEmpty(for: itemId).entries.append(entry)
 
-        let _ = SpaceEntryModel(id: UUID(), spaceId: newId)
         var ids = sut.exporting(itemIds: ItemModuleIds(ids: Set(arrayLiteral: itemId), module: .space))
         var spaceIds = ids.ids[.space]
         try #require(spaceIds != nil)
-        #expect(spaceIds!.count == 1)
+        #expect(spaceIds!.count == 2)
         #expect(spaceIds!.contains(itemId))
-        #expect(!spaceIds!.contains(newId))
+        #expect(spaceIds!.contains(newId))
 
         let notConnected = await root.itemController.addNew(type: .item)
-        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId, notConnected]), module: .space))
+        ids = sut.exporting(itemIds: ItemModuleIds(ids: Set([itemId]), module: .space))
         spaceIds = ids.ids[.space]
         try #require(spaceIds != nil)
         #expect(spaceIds!.count == 2)
         #expect(spaceIds!.contains(itemId))
-        #expect(!spaceIds!.contains(newId))
-        #expect(spaceIds!.contains(notConnected))
+        #expect(spaceIds!.contains(newId))
+        #expect(!spaceIds!.contains(notConnected))
     }
 }
 #endif

@@ -17,4 +17,11 @@ enum GameMetrics {
     static let playerAreaSize = SIMD2<Float>(0.4, 0.1)
     static let playerHandSize = SIMD2<Float>(0.2, 0.1)
 }
+
+/// Marks the map surface's hit-test volume for `viewportPanGesture`
+/// (`GameTableView`), so it can be targeted separately from pins and room
+/// fog on every platform's `Board`. Shared here (rather than declared once
+/// per platform's `Board`) so iOS/macOS and visionOS gesture code can target
+/// the exact same component type. See CODE_AUDIT §8.1.
+struct BoardSurfaceComponent: Component {}
 #endif
