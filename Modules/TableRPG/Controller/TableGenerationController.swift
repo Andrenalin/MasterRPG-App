@@ -39,6 +39,7 @@ struct TableGenerationController: Sendable {
         in occurrence: TableGenerationOccurrence,
         model: TableGenerationModel
     ) {
+        discardOutcomeSession(model: model)
         model.errorMessage = nil
         occurrence.lastRoll = nil
         clearPendingRoll(in: occurrence)
@@ -86,6 +87,7 @@ struct TableGenerationController: Sendable {
         model: TableGenerationModel
     ) {
         guard canHide(entryId: entryId, in: occurrence) else { return }
+        discardOutcomeSession(model: model)
         model.errorMessage = nil
         occurrence.lastRoll = nil
         clearPendingRoll(in: occurrence)
@@ -97,6 +99,7 @@ struct TableGenerationController: Sendable {
         occurrence: TableGenerationOccurrence,
         model: TableGenerationModel
     ) {
+        discardOutcomeSession(model: model)
         model.errorMessage = nil
         occurrence.selectedEntryIds = []
         occurrence.hiddenEntryIds = []
@@ -118,6 +121,7 @@ struct TableGenerationController: Sendable {
         to occurrence: TableGenerationOccurrence,
         model: TableGenerationModel
     ) {
+        discardOutcomeSession(model: model)
         model.errorMessage = nil
         guard let entry = matchingEntry(for: result, in: occurrence) else {
             clearPendingRoll(in: occurrence)
@@ -319,5 +323,97 @@ struct TableGenerationController: Sendable {
             tablePath: tablePath + [table.id],
             sourceEntryId: sourceEntryId
         )
+    }
+}
+
+// MARK: - Outcome Sheet Editing
+
+extension TableGenerationController {
+    /// Opens (creating on first use) the in-memory-only sheet-editing
+    /// session backing the "Edit as Sheet" outcome editor. Only sets state —
+    /// the view drives the actual transition (see `TableGenerationResultView`),
+    /// which pauses briefly before switching `model.isEditingOutcomeSheet`.
+    ///
+    /// Seeds one entry row per selection, so the sheet reads like a nice,
+    /// labeled value rather than one opaque blob of combined text:
+    /// - A single table/entry result stays flat — one entry, with the
+    ///   table's own name as the entry's name and its content as the entry's
+    ///   content (e.g. "Loot Table: Sword").
+    /// - Multiple results get a header sheet named after the table that was
+    ///   rolled, with each result following underneath as its own entry row
+    ///   (name = that entry's own table, content = its value) — so a nested
+    ///   roll across several tables reads as a small, editable list instead
+    ///   of one run-on line.
+    @MainActor
+    func beginEditingOutcomeSheet(model: TableGenerationModel) {
+        guard model.isFullyDecided else { return }
+        guard model.outcomeEditingSession == nil else { return }
+
+        let selections = model.currentSelections
+        guard !selections.isEmpty else { return }
+
+        let session: SimpleSheetEditingSession
+        if selections.count == 1 {
+            session = SimpleSheetEditingSession(module: .table)
+        } else {
+            session = SimpleSheetEditingSession(module: .table, name: model.root.tableName.withoutLink())
+        }
+        for selection in selections {
+            _ = session.editController.insertEntry(
+                itemId: session.itemId,
+                name: selection.tableName,
+                content: selection.content,
+                position: .end
+            )
+        }
+        // `SheetRootModel` already captured its `SheetModel` tree (empty
+        // entries) at construction, before the seeding above ran — flag it
+        // for a reconcile so the seeded rows actually render the moment the
+        // sheet editor first appears, instead of staying stale until some
+        // unrelated interaction happens to trigger one.
+        session.sheetRootModel.syncFrom(itemId: session.itemId)
+        model.outcomeEditingSession = session
+    }
+
+    /// Flattens the session's current entries back into `model.editedOutcome`
+    /// and leaves the sheet editor — but keeps the session itself around so
+    /// reopening the editor resumes exactly where the user left off.
+    @MainActor
+    func endEditingOutcomeSheet(model: TableGenerationModel) {
+        if let current = model.outcomeEditingSession?.currentModel {
+            model.editedOutcome = flattenOutcomeText(from: current)
+        }
+        model.isEditingOutcomeSheet = false
+    }
+
+    /// Drops the outcome sheet-editing session entirely — nothing to tear
+    /// down beyond clearing the reference, since it never touched Core Data.
+    @MainActor
+    func discardOutcomeSession(model: TableGenerationModel) {
+        guard model.outcomeEditingSession != nil else { return }
+        model.outcomeEditingSession = nil
+        model.isEditingOutcomeSheet = false
+    }
+
+    /// Joins the edited entries back into the plain outcome string
+    /// `model.summary` reads — mirrors the seeding in
+    /// `beginEditingOutcomeSheet(model:)` symmetrically: a single row stays
+    /// flat (just its content, falling back to its name if the user cleared
+    /// the content), while multiple rows are each labeled with their own
+    /// name so the result stays attributable to the table it came from
+    /// (e.g. "Loot Table: Sword\nMonster Table: Goblin"). Based on the
+    /// session's *current* entries, not the original selection count, so it
+    /// stays correct however the user reshaped the sheet (merged rows into
+    /// one, split one into several, ...).
+    @MainActor
+    private func flattenOutcomeText(from item: SimpleModel) -> String {
+        let rows = item.entries.filter { !$0.name.isEmpty || !$0.content.isEmpty }
+        if rows.count <= 1 {
+            guard let only = rows.first else { return "" }
+            return only.content.isEmpty ? only.name : only.content
+        }
+        return rows
+            .map { entry in entry.name.isEmpty ? entry.content : "\(entry.name): \(entry.content)" }
+            .joined(separator: "\n")
     }
 }

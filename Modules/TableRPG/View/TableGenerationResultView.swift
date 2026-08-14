@@ -5,8 +5,9 @@ import SwiftUI
 
 /// Previews the generated outcome. While choices are still being made it's
 /// a compact single line (sized like `EntryNameEditor`'s row); once every
-/// table is fully decided it expands into an editable multiline field so
-/// the result can be hand-finalized before confirming.
+/// table is fully decided it expands to show the full text — editing itself
+/// happens through the sheet editor opened via `TableGenerationEditAsSheetButton`
+/// (see `TableGenerationPanelView`), not inline here.
 struct TableGenerationResultView: View {
     let model: TableGenerationModel
 
@@ -16,7 +17,7 @@ struct TableGenerationResultView: View {
     var body: some View {
         Group {
             if model.isFullyDecided {
-                editableOutcome
+                expandedOutcome
             } else {
                 compactOutcome
             }
@@ -50,7 +51,7 @@ struct TableGenerationResultView: View {
         )
     }
 
-    private var editableOutcome: some View {
+    private var expandedOutcome: some View {
         VStack(alignment: .leading, spacing: 4) {
             Label {
                 Text("Outcome", bundle: .module)
@@ -60,30 +61,13 @@ struct TableGenerationResultView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
-#if os(tvOS)
-            // `TextEditor`/`scrollContentBackground` are unavailable on tvOS;
-            // fall back to a read-only display of the current outcome.
-            Text(outcomeBinding.wrappedValue)
-                .frame(minHeight: 88, maxHeight: 160, alignment: .topLeading)
-                .accessibilityLabel(Text("Outcome", bundle: .module))
-#else
-            TextEditor(text: outcomeBinding)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: 88, maxHeight: 160)
-                .accessibilityLabel(Text("Outcome", bundle: .module))
-#endif
+            Text(model.editedOutcome ?? model.currentOutcome ?? "")
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
         .background(
             theme.tint(for: .table).opacity(0.18),
             in: .rect(cornerRadius: 16, style: .continuous)
-        )
-    }
-
-    private var outcomeBinding: Binding<String> {
-        Binding(
-            get: { model.editedOutcome ?? model.currentOutcome ?? "" },
-            set: { model.editedOutcome = $0 }
         )
     }
 }

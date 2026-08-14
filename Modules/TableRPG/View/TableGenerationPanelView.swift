@@ -22,18 +22,44 @@ struct TableGenerationPanelView: View {
             if model.currentOutcome != nil {
                 TableGenerationResultView(model: model)
 
-                // Only offered once every table is fully decided — that's
-                // exactly when the outcome becomes an editable TextEditor.
+                // Takes the confirm button's old spot once every table is
+                // fully decided — toggles the sheet editor open/closed;
+                // the actual Save/Send confirm only appears once inside it.
                 if model.isFullyDecided {
-                    TableGenerationSaveSendButton(
-                        saveAction: saveAction,
-                        sendAction: sendAction
-                    )
+                    TableGenerationEditAsSheetButton(model: model, controller: controller)
                 }
             }
 
             Divider()
 
+            if model.isEditingOutcomeSheet, let session = model.outcomeEditingSession {
+                outcomeSheetEditor(session: session)
+            } else {
+                occurrenceList
+            }
+
+            Divider()
+
+            TableGenerationFooterView(
+                closeAction: closeAction,
+                isEditingOutcomeSheet: model.isEditingOutcomeSheet,
+                saveAction: saveAction,
+                sendAction: sendAction
+            )
+        }
+        .frame(maxWidth: 760, maxHeight: 820)
+        .themedSurface()
+        .clipShape(.rect(cornerRadius: 28, style: .continuous))
+#if os(visionOS)
+        .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
+#else
+        .glassEffectAll(.regular, in: .rect(cornerRadius: 28, style: .continuous))
+#endif
+        .shadow(radius: 24)
+    }
+
+    private var occurrenceList: some View {
+        VStack {
             ScrollView {
                 LazyVStack(alignment: .leading) {
                     TableGenerationOccurrenceView(
@@ -54,20 +80,24 @@ struct TableGenerationPanelView: View {
                 .foregroundStyle(.red)
                 .padding(.horizontal)
             }
-
-            Divider()
-
-            TableGenerationFooterView(closeAction: closeAction)
         }
-        .frame(maxWidth: 760, maxHeight: 820)
-        .themedSurface()
-        .clipShape(.rect(cornerRadius: 28, style: .continuous))
-#if os(visionOS)
-        .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
-#else
-        .glassEffectAll(.regular, in: .rect(cornerRadius: 28, style: .continuous))
-#endif
-        .shadow(radius: 24)
+        .transition(.opacity.combined(with: .move(edge: .leading)))
+    }
+
+    private func outcomeSheetEditor(session: SimpleSheetEditingSession) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 4) {
+                SheetRootEditorView(
+                    root: session.rootController,
+                    sheetRootModel: session.sheetRootModel,
+                    headerTitle: String(localized: "Outcome", bundle: .module),
+                    linkTypes: EmptyLinkTransferable.self
+                )
+            }
+            .padding(.horizontal)
+        }
+        .scrollIndicators(.hidden)
+        .transition(.opacity.combined(with: .move(edge: .trailing)))
     }
 }
 

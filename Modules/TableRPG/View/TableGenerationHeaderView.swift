@@ -35,7 +35,11 @@ struct TableGenerationHeaderView: View {
                 module: .table,
                 isSelected: false
             )
-            .disabled(model.root.entries.isEmpty)
+            // Once every table is fully decided there's nothing left to
+            // roll — re-enabled automatically the moment a selection change
+            // makes a new choice available again (`isFullyDecided` goes
+            // back to `false`).
+            .disabled(model.root.entries.isEmpty || model.isFullyDecided)
         }
         .padding()
     }
