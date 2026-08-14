@@ -187,7 +187,12 @@ final class TableGenerationModel: Identifiable {
         let selected = currentSelections
         guard !selected.isEmpty else { return nil }
         return ItemGenerationSummary(
-            name: root.tableName.withoutLink(),
+            // The sheet's own root header can't be edited in place, but its
+            // first entry can (see `TableGenerationController.beginEditingOutcomeSheet(model:)`)
+            // — that's the editable "title" for both Save and Send, once the
+            // sheet editor has been opened; before that, or if it never was,
+            // this just falls back to the root table's name.
+            name: outcomeEditingSession?.currentModel?.entries.first?.name ?? root.tableName.withoutLink(),
             value: editedOutcome ?? combinedValue(for: selected),
             selections: selected
         )

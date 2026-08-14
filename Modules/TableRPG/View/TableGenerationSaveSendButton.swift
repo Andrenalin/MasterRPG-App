@@ -27,7 +27,7 @@ struct TableGenerationSaveSendButton: View {
 
     private var saveButton: some View {
         Button(action: saveAction) {
-            Image(systemName: "checkmark")
+            Image(systemName: "square.and.arrow.down")
         }
         .selectedRoundButton(
             title: String(localized: "Save", bundle: .module),
@@ -42,7 +42,7 @@ struct TableGenerationSaveSendButton: View {
                 Label {
                     Text("Save", bundle: .module)
                 } icon: {
-                    Image(systemName: "checkmark")
+                    Image(systemName: "square.and.arrow.down")
                 }
             }
 

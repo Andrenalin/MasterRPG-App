@@ -20,6 +20,15 @@ public protocol EditControllable: Sendable {
     @MainActor func willRestore(item: inout Model)
     @MainActor func isOrphanedHidden(itemId: UUID) -> Bool
     @MainActor func willRepairOrphan(itemId: UUID)
+
+    /// Creates a new real, persisted item from a sheet built elsewhere
+    /// (e.g. a generated table outcome) — the sheet's `name`/`description`
+    /// become the new item's, and its `entries` become the new item's own
+    /// entries. Returns the new item's id, or `nil` if nothing was created.
+    /// Default is a no-op: only modules that can meaningfully turn an
+    /// arbitrary sheet into one of their own items (currently CharacterRPG's
+    /// values) need to implement this.
+    @MainActor func addItem(sheet: SheetModel) async -> UUID?
 }
 
 public extension EditControllable {
@@ -36,6 +45,7 @@ public extension EditControllable {
     @MainActor func validateBeforeSave(model: Model) {}
     @MainActor func willDeleteChildren(of item: Model) async {}
     @MainActor func willRestore(item: inout Model) {}
+    @MainActor func addItem(sheet: SheetModel) async -> UUID? { nil }
 }
 
 // MARK: - Editor Basic Properties

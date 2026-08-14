@@ -21,10 +21,12 @@ struct TableGenerationRootView: View {
     let dismissAction: @MainActor @Sendable () -> Void
 
     @State private var model: TableGenerationModel
+    @State private var createdValueItemId: UUID?
+    @State private var createdValueName = ""
+    @State private var isShowingCreatedAlert = false
 
-    @Environment(\.itemGenerationResultAction) private var resultAction
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.routeActions) private var routeActions
 
     var body: some View {
         ZStack {
@@ -54,29 +56,74 @@ struct TableGenerationRootView: View {
             controller.discardOutcomeSession(model: model)
             sessionStore.unregister(model)
         }
+        .alert(
+            Text("Created item \(createdValueName)", bundle: .module),
+            isPresented: $isShowingCreatedAlert
+        ) {
+            Button {
+                finishAfterCreatedAlert(showItem: true)
+            } label: {
+                Text("Yes", bundle: .module)
+            }
+            Button(role: .cancel) {
+                finishAfterCreatedAlert(showItem: false)
+            } label: {
+                Text("No", bundle: .module)
+            }
+        } message: {
+            Text("Do you want to go to the item?", bundle: .module)
+        }
     }
 
-    /// Discards the session without saving anything.
-    private func close() {
+    /// The one closing path every exit uses — Cancel, Save (both the
+    /// failure case and after the post-save alert), and Send — so the panel
+    /// always closes the same way no matter how it's left. Safe to call
+    /// even if the session was already discarded (`discardOutcomeSession`
+    /// is a no-op then).
+    private func closeSession() {
         controller.discardOutcomeSession(model: model)
         sessionStore.unregister(model)
         dismissAction()
     }
 
-    /// Adds the generated outcome as a new value to the character.
+    /// Discards the session without saving anything.
+    private func close() {
+        closeSession()
+    }
+
+    /// Adds the generated outcome as a new value on the character, built
+    /// directly from the outcome's edited sheet (name/description/entries)
+    /// via `TableGenerationController.addOutcomeToCharacter(session:)` —
+    /// only ever tappable while the sheet editor is open, so a session is
+    /// always present here. Confirms success with an alert offering to jump
+    /// straight to the new value.
     private func save() {
-        // Save/Send now only ever appears while the sheet editor is open —
-        // flatten its current entries into `editedOutcome` first, so
-        // `model.summary` reflects what's on screen even if the user never
-        // explicitly toggled back to "Done" before confirming.
-        controller.endEditingOutcomeSheet(model: model)
-        guard let summary = model.summary else { return }
-        resultAction(summary)
-        controller.discardOutcomeSession(model: model)
-        sessionStore.unregister(model)
-        withAnimation(reduceMotion ? nil : .smooth) {
-            dismissAction()
+        guard let session = model.outcomeEditingSession else { return }
+        // The sheet's own root header can't be edited in place — its first
+        // entry stands in as the editable "root" instead (see
+        // `TableGenerationController.beginEditingOutcomeSheet(model:)`), and
+        // is what `addOutcomeToCharacter(session:)` reads as the new
+        // value's name.
+        let itemName = session.currentModel?.entries.first?.name ?? ""
+        Task {
+            let itemId = await controller.addOutcomeToCharacter(session: session)
+            guard let itemId else {
+                closeSession()
+                return
+            }
+            controller.discardOutcomeSession(model: model)
+            sessionStore.unregister(model)
+            createdValueItemId = itemId
+            createdValueName = itemName
+            isShowingCreatedAlert = true
         }
+    }
+
+    private func finishAfterCreatedAlert(showItem: Bool) {
+        if showItem, let createdValueItemId {
+            routeActions.routePage(.value, createdValueItemId, nil)
+        }
+        closeSession()
     }
 
     /// Sends the generated outcome to a player (or every visible player)
@@ -98,11 +145,7 @@ struct TableGenerationRootView: View {
             .generatedValue,
             playerId
         )
-        controller.discardOutcomeSession(model: model)
-        sessionStore.unregister(model)
-        withAnimation(reduceMotion ? nil : .smooth) {
-            dismissAction()
-        }
+        closeSession()
     }
 }
 

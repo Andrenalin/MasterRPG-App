@@ -4,9 +4,20 @@ import CoreRPG
 import DiceRPG
 import Foundation
 
+/// Breaks the construction-order cycle: `TableGenerationController` is
+/// built inside `TableRootModel.init()`, before `TableRootModel.setUp(...)`
+/// runs — which is when the real, whole-app `RootManager` (with every
+/// module's real root, not this feature's own throwaway `SimpleSheetEditingSession`
+/// one) becomes available. `TableRootModel.setUp(...)` fills this in.
+@MainActor
+final class TableGenerationRootManagerBox: Sendable {
+    var rootManager: RootManager?
+}
+
 struct TableGenerationController: Sendable {
     let itemController: ItemController
     let diceRoot: DiceRootModel
+    let rootManagerBox: TableGenerationRootManagerBox
 
     @MainActor
     func makeModel(itemId: UUID) -> TableGenerationModel {
@@ -334,16 +345,13 @@ extension TableGenerationController {
     /// the view drives the actual transition (see `TableGenerationResultView`),
     /// which pauses briefly before switching `model.isEditingOutcomeSheet`.
     ///
-    /// Seeds one entry row per selection, so the sheet reads like a nice,
-    /// labeled value rather than one opaque blob of combined text:
-    /// - A single table/entry result stays flat — one entry, with the
-    ///   table's own name as the entry's name and its content as the entry's
-    ///   content (e.g. "Loot Table: Sword").
-    /// - Multiple results get a header sheet named after the table that was
-    ///   rolled, with each result following underneath as its own entry row
-    ///   (name = that entry's own table, content = its value) — so a nested
-    ///   roll across several tables reads as a small, editable list instead
-    ///   of one run-on line.
+    /// Opens the sheet editor on a wrapping root whose one entry (its name
+    /// — the editable stand-in for the root's own uneditable title, see
+    /// `SimpleSheetEditingSession`) is seeded from the outcome's computed
+    /// name; nested underneath it, the actual result item gets one entry
+    /// per selection, so it reads like a nice, labeled value list rather
+    /// than one opaque blob of combined text — one entry per result, one
+    /// per table (name = that entry's own table, content = its value).
     @MainActor
     func beginEditingOutcomeSheet(model: TableGenerationModel) {
         guard model.isFullyDecided else { return }
@@ -352,25 +360,21 @@ extension TableGenerationController {
         let selections = model.currentSelections
         guard !selections.isEmpty else { return }
 
-        let session: SimpleSheetEditingSession
-        if selections.count == 1 {
-            session = SimpleSheetEditingSession(module: .table)
-        } else {
-            session = SimpleSheetEditingSession(module: .table, name: model.root.tableName.withoutLink())
-        }
+        let session = SimpleSheetEditingSession(module: .table, name: model.root.tableName.withoutLink())
         for selection in selections {
             _ = session.editController.insertEntry(
-                itemId: session.itemId,
+                itemId: session.resultItemId,
                 name: selection.tableName,
                 content: selection.content,
                 position: .end
             )
         }
-        // `SheetRootModel` already captured its `SheetModel` tree (empty
-        // entries) at construction, before the seeding above ran — flag it
-        // for a reconcile so the seeded rows actually render the moment the
-        // sheet editor first appears, instead of staying stale until some
-        // unrelated interaction happens to trigger one.
+        // `SheetRootModel` already captured its `SheetModel` tree (with an
+        // empty nested result sheet) at construction, before the seeding
+        // above ran — flag it for a reconcile so the seeded rows actually
+        // render the moment the sheet editor first appears, instead of
+        // staying stale until some unrelated interaction happens to
+        // trigger one.
         session.sheetRootModel.syncFrom(itemId: session.itemId)
         model.outcomeEditingSession = session
     }
@@ -380,8 +384,8 @@ extension TableGenerationController {
     /// reopening the editor resumes exactly where the user left off.
     @MainActor
     func endEditingOutcomeSheet(model: TableGenerationModel) {
-        if let current = model.outcomeEditingSession?.currentModel {
-            model.editedOutcome = flattenOutcomeText(from: current)
+        if let result = model.outcomeEditingSession?.resultModel {
+            model.editedOutcome = flattenOutcomeText(from: result)
         }
         model.isEditingOutcomeSheet = false
     }
@@ -395,16 +399,30 @@ extension TableGenerationController {
         model.isEditingOutcomeSheet = false
     }
 
-    /// Joins the edited entries back into the plain outcome string
-    /// `model.summary` reads — mirrors the seeding in
+    /// Adds the edited outcome as a new value on the character — via the
+    /// real, whole-app `RootManager` (not this session's own throwaway
+    /// one), resolving Character's real `editControllable` and calling
+    /// `EditControllable.addItem(sheet:)`, returning the new value's id.
+    /// `nil` if the real `RootManager` isn't available yet (shouldn't happen
+    /// once the app has finished setup, which always completes before the
+    /// generation panel can be shown) or Character's own conformer didn't
+    /// create anything.
+    @MainActor
+    func addOutcomeToCharacter(session: SimpleSheetEditingSession) async -> UUID? {
+        guard let editControllable = rootManagerBox.rootManager?.characterRoot.editControllable else { return nil }
+        return await editControllable.addItem(sheet: session.sheetRootModel.sheetModel)
+    }
+
+    /// Joins the result item's current entries back into the plain outcome
+    /// string `model.summary` reads — mirrors the seeding in
     /// `beginEditingOutcomeSheet(model:)` symmetrically: a single row stays
     /// flat (just its content, falling back to its name if the user cleared
     /// the content), while multiple rows are each labeled with their own
     /// name so the result stays attributable to the table it came from
     /// (e.g. "Loot Table: Sword\nMonster Table: Goblin"). Based on the
-    /// session's *current* entries, not the original selection count, so it
-    /// stays correct however the user reshaped the sheet (merged rows into
-    /// one, split one into several, ...).
+    /// result item's *current* entries, not the original selection count,
+    /// so it stays correct however the user reshaped the sheet (merged rows
+    /// into one, split one into several, ...).
     @MainActor
     private func flattenOutcomeText(from item: SimpleModel) -> String {
         let rows = item.entries.filter { !$0.name.isEmpty || !$0.content.isEmpty }

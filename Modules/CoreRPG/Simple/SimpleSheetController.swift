@@ -12,6 +12,16 @@ import Foundation
 /// implementation, minus the TableRPG-specific dice-inline row and
 /// cross-module link embedding — a `SimpleModel` entry has nothing to link
 /// to.
+///
+/// One addition beyond a plain flat item: an entry whose `childId` resolves
+/// to another real, registered item (see `SimpleSheetEditingSession`'s
+/// wrapping-root/result-item pair) gets that item's own sheet nested as its
+/// single child — mirroring `Modules/CharacterRPG/Controller/SheetController.swift`'s
+/// `entry.valueId`-linked "group" pattern. This is how a session gives the
+/// user something genuinely editable to serve as the whole outcome's title:
+/// the root item's own header can never be edited in place, but an *entry*
+/// can, so the actual content lives one level down, wrapped by one entry
+/// whose name stands in for the root.
 public struct SimpleSheetController: SheetControllable {
     public init(itemController: SimpleItemController) {
         self.itemController = itemController
@@ -29,8 +39,35 @@ public struct SimpleSheetController: SheetControllable {
     @MainActor public func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
         let item = itemController.itemOrEmpty(for: itemId)
         return item.entries.map { entry in
-            SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), level: level, name: entry.name, description: entry.content, entries: [])
+            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
         }
+    }
+
+    @MainActor private func sheet(entry: SimpleEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
+        let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
+        var nested: [SheetModel] = []
+        if let child = itemController.itemSync(for: entry.childId) {
+            // Built directly rather than through `sheet(root:itemId:...)`:
+            // that method's `isFolded`/`isShown` defaults assume the usual
+            // multi-module link-recursion case, which would leave this
+            // single level of nesting collapsed and hidden — requiring an
+            // extra manual "unfold" tap just to see the entries it exists
+            // to hold. There's no reason for that here, so it's always
+            // shown, always expanded.
+            nested = [
+                SheetModel(
+                    source: ItemRowModel(itemId: entry.childId, typeId: itemController.config.module),
+                    destination: destination,
+                    level: level + 1,
+                    isShown: true,
+                    isFolded: false,
+                    name: child.name,
+                    description: child.description,
+                    entries: sheetEntries(root: root, itemId: entry.childId, level: level + 1, moduleDepth: 0, isEditor: isEditor)
+                )
+            ]
+        }
+        return SheetModel(source: destination, level: level, name: entry.name, description: entry.content, entries: nested)
     }
 
     @MainActor public func update(root: RootManager, sheetModel: SheetModel, isEditor: Bool) {
@@ -60,9 +97,15 @@ public struct SimpleSheetController: SheetControllable {
                 unequalSet(lhs: &existing.description, rhs: entry.content) { changed in
                     existing.hasChanged = existing.hasChanged || changed
                 }
+                // Cascade the reconcile into the nested child sheet (if
+                // this entry links to a real item) so edits made to the
+                // linked item's own entries refresh too.
+                if let childSheet = existing.entries.first, itemController.itemSync(for: entry.childId) != nil {
+                    update(root: root, sheetModel: childSheet, isEditor: isEditor)
+                }
                 updatedEntries.append(existing)
             } else {
-                updatedEntries.append(SheetModel(source: ItemRowModel(itemId: model.id, entryId: entry.id, typeId: itemController.config.module), level: sheetModel.level, name: entry.name, description: entry.content, entries: []))
+                updatedEntries.append(sheet(entry: entry, root: root, itemId: model.id, level: sheetModel.level, moduleDepth: 0, isEditor: isEditor))
             }
         }
         sheetModel.entries = updatedEntries
