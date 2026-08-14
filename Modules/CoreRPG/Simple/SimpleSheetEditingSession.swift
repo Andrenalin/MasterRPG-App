@@ -21,6 +21,14 @@ import Foundation
 /// search/folder-list/view) are never exercised by a pure add/edit-entries
 /// sheet session, so this reuses the existing internal `Fake*` equivalents
 /// directly rather than duplicating them.
+///
+/// A consumer embedding `SheetRootEditorView` also needs to present
+/// `EntryEditorView(rootManager: rootController.rootManager!, editorModel:
+/// sheetEditorModel, linkTypes:)` as its own `.overlay(alignment: .center)`
+/// — that overlay isn't part of `SheetRootEditorView`/`SheetRootView`
+/// themselves; in the real app it's supplied by the ancestor
+/// `ItemDetailContentView`, which this session has no equivalent of. See
+/// `sheetEditorModel`'s doc comment for why it must be this exact instance.
 @MainActor
 public final class SimpleSheetEditingSession {
     public init(module: NetworkModules, name: String = "", description: String = "") {
@@ -28,11 +36,23 @@ public final class SimpleSheetEditingSession {
         let itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         let linkRegisterController = LinkRegisterController(root: nil)
         let itemController = SimpleItemController(config: config, linkRegisterController: linkRegisterController, itemDataModel: itemDataModel)
+
+        let itemId = UUID()
+        // Shared with `SheetRootModel` below — `EntryEditorView` reads
+        // `editControllable.editorModel.sheetEditorModel` (this instance),
+        // while tapping an entry's edit button writes to
+        // `SheetRootModel.editorModel`. In the real app those are wired to
+        // be the same object (see `TableRootModel`/`CharacterRootModel`
+        // passing `editController.editorModel.sheetEditorModel` into
+        // `SheetRootModel(..., editorModel:)`); two separate instances
+        // would mean tapping edit mutates one and the overlay reads the
+        // other, so it would never appear.
+        let sheetEditorModel = SheetEditorModel(itemId: itemId, module: module)
         let editController = SimpleEditController(
             itemControllable: itemController,
             tagController: TagController(),
             linkRegisterController: linkRegisterController,
-            editorModel: ItemEditorModel(sheetEditorModel: SheetEditorModel())
+            editorModel: ItemEditorModel(sheetEditorModel: sheetEditorModel)
         )
         let linkController = SimpleLinkController(itemControllable: itemController)
         let sheetController = SimpleSheetController(itemController: itemController)
@@ -62,19 +82,20 @@ public final class SimpleSheetEditingSession {
         // standalone session with no other modules to link to needs.
         root.rootManager = RootManager.preview(fake: root)
 
-        let itemId = UUID()
         itemController.resetModel(with: SimpleModel(id: itemId, name: name, description: description))
 
         self.itemId = itemId
         self.rootController = root
         self.itemController = itemController
         self.editController = editController
+        self.sheetEditorModel = sheetEditorModel
         self.sheetRootModel = SheetRootModel(
             rootManager: root.rootManager!,
             linkControllable: linkController,
             sheetControllable: sheetController,
             itemId: itemId,
-            isEditor: true
+            isEditor: true,
+            editorModel: sheetEditorModel
         )
     }
 
@@ -82,6 +103,10 @@ public final class SimpleSheetEditingSession {
     public let rootController: ItemRootController
     public let editController: SimpleEditController
     public let sheetRootModel: SheetRootModel
+
+    /// Pass to `EntryEditorView(rootManager:editorModel:linkTypes:)` — see
+    /// the type-level doc comment for why this exact instance matters.
+    public let sheetEditorModel: SheetEditorModel
 
     private let itemController: SimpleItemController
 

@@ -97,6 +97,19 @@ struct TableGenerationPanelView: View {
             .padding(.horizontal)
         }
         .scrollIndicators(.hidden)
+        // `SheetRootEditorView`/`SheetRootView` don't present the entry
+        // editor themselves — in the real app that's supplied by the
+        // ancestor `ItemDetailContentView`, which this embedding has no
+        // equivalent of, so it's added here instead.
+        .overlay(alignment: .center) {
+            if let rootManager = session.rootController.rootManager {
+                EntryEditorView(
+                    rootManager: rootManager,
+                    editorModel: session.sheetEditorModel,
+                    linkTypes: EmptyLinkTransferable.self
+                )
+            }
+        }
         .transition(.opacity.combined(with: .move(edge: .trailing)))
     }
 }
