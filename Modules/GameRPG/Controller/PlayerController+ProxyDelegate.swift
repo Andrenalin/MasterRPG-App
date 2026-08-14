@@ -49,12 +49,11 @@ extension PlayerController {
 
 extension PlayerController {
     func scheduleProxyFocus(characterId: UUID) async {
-        await scheduleProxyFocusTask(characterId: characterId)
+        scheduleProxyFocusTask(characterId: characterId)
     }
 
     /// Same reasoning as `scheduleSendCharacterTask` — the cancel/mint/assign
     /// sequence must stay one @MainActor unit. See CODE_AUDIT §3.1.
-    @MainActor
     private func scheduleProxyFocusTask(characterId: UUID) {
         gameModel.proxyFocusTask?.cancel()
         let taskId = UUID()
@@ -77,14 +76,12 @@ extension PlayerController {
         }
     }
 
-    @MainActor
     private func clearProxyFocusTask(if taskId: UUID) {
         guard gameModel.proxyFocusTaskId == taskId else { return }
         gameModel.proxyFocusTask = nil
         gameModel.proxyFocusTaskId = nil
     }
 
-    @MainActor
     private func completeProxyFocus(characterId: UUID, if taskId: UUID) {
         guard gameModel.proxyFocusTaskId == taskId else { return }
         root.gameModel.selectedCharacter = characterId

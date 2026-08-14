@@ -1806,7 +1806,12 @@
 		8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RPGShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		8E13A4052BCE88BB00B2FCD4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8E13A40E2BCEA66100B2FCD4 /* RPGShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RPGShare.entitlements; sourceTree = "<group>"; };
+		8E1E4E8E302F0AF600D69D99 /* MasterRPG-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MasterRPG-Debug.entitlements"; sourceTree = "<group>"; };
+		8E1E4E8F302F0AFA00D69D99 /* MasterRPG-Release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MasterRPG-Release.entitlements"; sourceTree = "<group>"; };
+		8E1E4E90302F0AFC00D69D99 /* MasterTV-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MasterTV-Debug.entitlements"; sourceTree = "<group>"; };
+		8E1E4E91302F0AFE00D69D99 /* MasterTV-Release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MasterTV-Release.entitlements"; sourceTree = "<group>"; };
+		8E1E4E92302F0B0C00D69D99 /* RPGShare-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RPGShare-Debug.entitlements"; sourceTree = "<group>"; };
+		8E1E4E93302F0B0E00D69D99 /* RPGShare-Release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "RPGShare-Release.entitlements"; sourceTree = "<group>"; };
 		8E3620AD2E1A80FF00E5C99A /* CoreRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CoreRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E3620DB2E1A9EAF00E5C99A /* PhotoRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = PhotoRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E49F9D92B8F654D00527E6D /* MasterRPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterRPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1824,7 +1829,6 @@
 		8E6BC9CB2AFB0B2200E5E098 /* MasterRPG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterRPG.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E6BC9CD2AFB0B2300E5E098 /* MasterTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MasterTVApp.swift; sourceTree = "<group>"; };
 		8E6BC9D12AFB0B2400E5E098 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		8E6BC9FD2AFB0D9300E5E098 /* MasterTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MasterTV.entitlements; sourceTree = "<group>"; };
 		8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = AppShortcuts.xcstrings; sourceTree = "<group>"; };
 		8E7093B73008B8F000BB7EED /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
@@ -2530,12 +2534,13 @@
 				59DC213C2BD75537001140B1 /* Localizable.xcstrings */,
 				8E5104E02BD20D9E00F10E87 /* ModuleChooserView.swift */,
 				8E5104E62BD23FBD00F10E87 /* PhotoSection.swift */,
-				8E13A40E2BCEA66100B2FCD4 /* RPGShare.entitlements */,
 				8E0DCF8F2F86806C0045FE8D /* ShareExtensionSaveController.swift */,
 				8E13A4002BCE88BB00B2FCD4 /* ShareViewController.swift */,
 				8E5104E42BD23F5000F10E87 /* SharingHeader.swift */,
 				8E5104E82BD2413900F10E87 /* SharingInput.swift */,
 				8E0DAFD72F85EC380045FE8D /* SharingView.swift */,
+				8E1E4E92302F0B0C00D69D99 /* RPGShare-Debug.entitlements */,
+				8E1E4E93302F0B0E00D69D99 /* RPGShare-Release.entitlements */,
 			);
 			path = RPGShare;
 			sourceTree = "<group>";
@@ -2749,10 +2754,13 @@
 				8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */,
 				8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */,
 				8EC4E48E28DDAAF300D0279F /* MasterRPG.entitlements */,
-				8E6BC9FD2AFB0D9300E5E098 /* MasterTV.entitlements */,
 				8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */,
 				8E4B274E2CD79E7D009AB4D1 /* RPGResources */,
 				8E8EE7012CD8E3E10010A25B /* RPGResourcesDebug */,
+				8E1E4E8E302F0AF600D69D99 /* MasterRPG-Debug.entitlements */,
+				8E1E4E8F302F0AFA00D69D99 /* MasterRPG-Release.entitlements */,
+				8E1E4E90302F0AFC00D69D99 /* MasterTV-Debug.entitlements */,
+				8E1E4E91302F0AFE00D69D99 /* MasterTV-Release.entitlements */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -7051,7 +7059,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CODE_SIGN_ENTITLEMENTS = Sources/RPGShare/RPGShare.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Sources/RPGShare/RPGShare-Debug.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
@@ -7095,7 +7103,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CODE_SIGN_ENTITLEMENTS = Sources/RPGShare/RPGShare.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Sources/RPGShare/RPGShare-Release.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=appletvos*]" = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
@@ -7602,7 +7610,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Resources/MasterTV.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Resources/MasterTV-Debug.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 564;
@@ -7648,7 +7656,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Resources/MasterTV.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Resources/MasterTV-Release.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILATION_CACHING = YES;
 				CURRENT_PROJECT_VERSION = 564;
@@ -8944,7 +8952,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				AUTOMATION_APPLE_EVENTS = YES;
-				CODE_SIGN_ENTITLEMENTS = Resources/MasterRPG.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Resources/MasterRPG-Debug.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -9012,7 +9020,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				AUTOMATION_APPLE_EVENTS = YES;
-				CODE_SIGN_ENTITLEMENTS = Resources/MasterRPG.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Resources/MasterRPG-Release.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;

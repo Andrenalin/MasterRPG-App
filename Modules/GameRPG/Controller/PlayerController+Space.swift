@@ -29,18 +29,18 @@ extension PlayerController {
            model.type == .reveal,
            model.subType == .show,
            model.targetId == nil {
-            await gameModel.removeDeferredSpaceReveals(from: masterId)
+            gameModel.removeDeferredSpaceReveals(from: masterId)
         }
         if model.sender.isMaster,
            !(model.type == .update && (model.subType == .spaceList || model.subType == .spaceTransform)) {
-            let previousBaseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+            let previousBaseline = root.spaceRoot.spaceGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: masterId
             )
             if previousBaseline != nil, previousBaseline != model.data.effectiveAssetVersion {
-                await gameModel.removeRequestedSpaceRepairId(model.data.id)
+                gameModel.removeRequestedSpaceRepairId(model.data.id)
             }
-            await root.spaceRoot.spaceGameControllable.setMasterVersion(
+            root.spaceRoot.spaceGameControllable.setMasterVersion(
                 itemId: model.data.id,
                 version: model.data.effectiveAssetVersion,
                 masterId: masterId
@@ -57,7 +57,7 @@ extension PlayerController {
             case .valid:
                 validPlayerReveal = true
             case .awaitingAuthoritativeList:
-                await gameModel.deferSpaceReveal(model)
+                gameModel.deferSpaceReveal(model)
                 return nil
             case .mismatch:
                 return nil
@@ -80,16 +80,16 @@ extension PlayerController {
                 // Switching the presentation mode: the modeChanged observer
                 // reconfigures the spatial template, and the game screen opens
                 // the immersive space when it shows the space module.
-                await completeSpaceReveal(itemId: model.data.id)
-                let localPlayerId = await root.gameModel.gameConfig.id
-                await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
+                completeSpaceReveal(itemId: model.data.id)
+                let localPlayerId = root.gameModel.gameConfig.id
+                root.spaceRoot.spaceGameControllable.markSpaceAvailable(
                     itemId: model.data.id,
                     version: model.data.effectiveAssetVersion,
                     for: [localPlayerId, model.sender.id],
                     masterId: masterId
                 )
                 if model.data.data != nil, model.targetId == nil {
-                    await root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
+                    root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
                         itemId: model.data.id,
                         version: model.data.effectiveAssetVersion,
                         masterId: masterId
@@ -97,9 +97,9 @@ extension PlayerController {
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                let isFirstRequest = await gameModel.insertRequestedSpaceRepairId(model.data.id)
+                let isFirstRequest = gameModel.insertRequestedSpaceRepairId(model.data.id)
                 guard isFirstRequest else { return nil }
-                let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+                let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
                     for: model.data.id,
                     masterId: masterId
                 )
@@ -114,13 +114,13 @@ extension PlayerController {
             try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.spaceRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                let completesReveal = await gameModel.removeRequestedSpaceRepairId(model.data.id)
+                let completesReveal = gameModel.removeRequestedSpaceRepairId(model.data.id)
                 if completesReveal,
                    await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                    await completeSpaceReveal(itemId: model.data.id)
+                    completeSpaceReveal(itemId: model.data.id)
                 }
-                let localPlayerId = await root.gameModel.gameConfig.id
-                await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
+                let localPlayerId = root.gameModel.gameConfig.id
+                root.spaceRoot.spaceGameControllable.markSpaceAvailable(
                     itemId: model.data.id,
                     version: model.data.effectiveAssetVersion,
                     for: [localPlayerId],
@@ -128,7 +128,7 @@ extension PlayerController {
                 )
                 return await response(for: model, isSuccess: true, requestData: false)
             }
-            let isFirstRequest = await gameModel.insertRequestedSpaceRepairId(model.data.id)
+            let isFirstRequest = gameModel.insertRequestedSpaceRepairId(model.data.id)
             guard isFirstRequest else { return nil }
             return await response(for: model, isSuccess: true, requestData: true)
         case .update:
@@ -139,7 +139,7 @@ extension PlayerController {
                 await retryDeferredSpaceTransforms(from: model.masterId)
                 return nil
             case .spaceTransform:
-                let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+                let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
                     for: model.data.id,
                     masterId: model.masterId
                 )
@@ -149,13 +149,13 @@ extension PlayerController {
                     case .valid:
                         break
                     case .awaitingAuthoritativeList:
-                        await gameModel.deferSpaceTransform(model)
+                        gameModel.deferSpaceTransform(model)
                         return nil
                     case .mismatch:
                         return nil
                     }
                 }
-                _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                _ = root.spaceRoot.spaceGameControllable.applySpaceTransform(
                     data: model.data,
                     counter: model.counter,
                     timestamp: model.timestamp
@@ -165,13 +165,12 @@ extension PlayerController {
                 break
             }
             if await root.spaceRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await gameModel.setGameUpdateType(.space)
+                gameModel.setGameUpdateType(.space)
             }
         }
         return nil
     }
 
-    @MainActor
     private func applySpaceList(_ model: GameNetworkModel) async -> Bool {
         guard model.sender.isMaster,
               gameModel.canApplySpaceList(from: model.masterId, counter: model.counter),
@@ -188,23 +187,23 @@ extension PlayerController {
     }
 
     private func playerSpaceRevealValidation(for model: GameNetworkModel) async -> PlayerSpaceRevealValidation {
-        if await gameModel.asGameMaster {
-            let senderIsAvailable = await root.spaceRoot.spaceGameControllable.isSpaceAvailable(
+        if gameModel.asGameMaster {
+            let senderIsAvailable = root.spaceRoot.spaceGameControllable.isSpaceAvailable(
                 itemId: model.data.id,
                 for: model.sender.id,
                 masterId: model.masterId
             )
-            let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+            let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: model.masterId
             )
             return senderIsAvailable && baseline == model.data.effectiveAssetVersion ? .valid : .mismatch
         }
 
-        guard await gameModel.hasAuthoritativeSpaceList(from: model.masterId) else {
+        guard gameModel.hasAuthoritativeSpaceList(from: model.masterId) else {
             return .awaitingAuthoritativeList
         }
-        guard let senderVersion = await root.spaceRoot.spaceGameControllable.reportedVersion(
+        guard let senderVersion = root.spaceRoot.spaceGameControllable.reportedVersion(
             for: model.data.id,
             playerId: model.sender.id
         ) else {
@@ -213,7 +212,7 @@ extension PlayerController {
         guard senderVersion == model.data.effectiveAssetVersion else {
             return .mismatch
         }
-        guard let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+        guard let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
             for: model.data.id,
             masterId: model.masterId
         ) else {
@@ -223,15 +222,15 @@ extension PlayerController {
     }
 
     private func retryDeferredSpaceReveals(from masterId: UUID) async {
-        let deferred = await gameModel.deferredSpaceReveals(from: masterId)
+        let deferred = gameModel.deferredSpaceReveals(from: masterId)
         for model in deferred {
             switch await playerSpaceRevealValidation(for: model) {
             case .awaitingAuthoritativeList:
                 continue
             case .mismatch:
-                await gameModel.removeDeferredSpaceReveal(model)
+                gameModel.removeDeferredSpaceReveal(model)
             case .valid:
-                await gameModel.removeDeferredSpaceReveal(model)
+                gameModel.removeDeferredSpaceReveal(model)
                 guard await deferredPresentationIsCurrent(model) else { continue }
                 do {
                     if let response = try await handleSpace(model) {
@@ -249,14 +248,14 @@ extension PlayerController {
     private func playerSpaceTransformValidation(
         for model: GameNetworkModel
     ) async -> PlayerSpaceTransformValidation {
-        guard await root.gameModel.gameControl.features.spaceSharing else {
+        guard root.gameModel.gameControl.features.spaceSharing else {
             return .mismatch
         }
-        if await !gameModel.asGameMaster,
-           await !gameModel.hasAuthoritativeSpaceList(from: model.masterId) {
+        if !gameModel.asGameMaster,
+           !gameModel.hasAuthoritativeSpaceList(from: model.masterId) {
             return .awaitingAuthoritativeList
         }
-        guard let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+        guard let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
             for: model.data.id,
             masterId: model.masterId
         ) else {
@@ -265,7 +264,7 @@ extension PlayerController {
         guard baseline == model.data.effectiveAssetVersion else {
             return .mismatch
         }
-        guard let senderVersion = await root.spaceRoot.spaceGameControllable.reportedVersion(
+        guard let senderVersion = root.spaceRoot.spaceGameControllable.reportedVersion(
             for: model.data.id,
             playerId: model.sender.id
         ) else {
@@ -275,16 +274,16 @@ extension PlayerController {
     }
 
     private func retryDeferredSpaceTransforms(from masterId: UUID) async {
-        let deferred = await gameModel.deferredSpaceTransforms(from: masterId)
+        let deferred = gameModel.deferredSpaceTransforms(from: masterId)
         for model in deferred {
             switch await playerSpaceTransformValidation(for: model) {
             case .awaitingAuthoritativeList:
                 continue
             case .mismatch:
-                await gameModel.removeDeferredSpaceTransform(model)
+                gameModel.removeDeferredSpaceTransform(model)
             case .valid:
-                await gameModel.removeDeferredSpaceTransform(model)
-                _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                gameModel.removeDeferredSpaceTransform(model)
+                _ = root.spaceRoot.spaceGameControllable.applySpaceTransform(
                     data: model.data,
                     counter: model.counter,
                     timestamp: model.timestamp
@@ -296,7 +295,7 @@ extension PlayerController {
     func sendSpaceList() async {
         // A proxy mirrors its host and must not appear as a separate participant
         // in the Space availability/version matrix.
-        guard await root.gameModel.gameType != .proxy else { return }
+        guard root.gameModel.gameType != .proxy else { return }
         let spaceList = await root.spaceRoot.spaceGameControllable.spaceList(
             allPlayers: false,
             with: root.gameModel.gameConfig.master.id

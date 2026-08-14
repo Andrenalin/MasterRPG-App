@@ -14,7 +14,7 @@ extension PlayerController {
                 itemId: model.data.id,
                 data: model.data
             ) {
-                await gameModel.setGameUpdateType(.weather)
+                gameModel.setGameUpdateType(.weather)
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
@@ -23,7 +23,7 @@ extension PlayerController {
             // Weather packages are game-session assets. Even legacy store
             // messages must stay in game memory and never enter persistence.
             try await root.weatherRoot.gameControllable.updateGame(data: model.data, hide: true, deep: true)
-            await root.weatherRoot.weatherGameControllable.markWeatherAvailable(
+            root.weatherRoot.weatherGameControllable.markWeatherAvailable(
                 itemId: model.data.id,
                 version: model.data.version
             )

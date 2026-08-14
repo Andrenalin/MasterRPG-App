@@ -25,12 +25,18 @@ actor MasterNetworkControllerDelegateBox {
     }
 }
 
-final class MasterNetworkController: Sendable {
+@MainActor
+final class MasterNetworkController {
     private let delegate: MasterNetworkControllerDelegateBox
     let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkNodel
-    @MainActor private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
+    private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
+    // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the inbound
+    // listener. connectToPlayer's outbound reconnect dial-outs are never throttled —
+    // this device is the one connecting there, not receiving an unknown attempt.
+    private let connectionThrottle = ConnectionAttemptThrottle()
+    private var pendingConnectionSources: [ConnectionController.ID: String] = [:]
 
     static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, supporterTier, proxy, passcode, delegate in
@@ -46,7 +52,6 @@ final class MasterNetworkController: Sendable {
         }
     }
 
-    @MainActor
     init(
         name: String,
         delegate: MasterNetworkControllerDelegate? = nil,
@@ -68,7 +73,6 @@ final class MasterNetworkController: Sendable {
 // MARK: - Control
 
 extension MasterNetworkController: MasterNetworkControllable {
-    @MainActor
     func startStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Streaming")
 
@@ -84,7 +88,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         observeConnections()
     }
 
-    @MainActor
     func startProxyStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Proxy Streaming")
 
@@ -100,7 +103,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         observeConnections()
     }
 
-    @MainActor
     func stopStreaming() {
         Logger.networking.debug("MasterNetworkController: Stop Streaming")
 
@@ -108,7 +110,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.isStreaming = false
     }
 
-    @MainActor
     func toggleStreaming(passcode: String) {
         if networkModel.isStreaming {
             stopStreaming()
@@ -117,7 +118,6 @@ extension MasterNetworkController: MasterNetworkControllable {
         }
     }
 
-    @MainActor
     private func resetConntections() {
         networkModel.observeConnectionsTask?.cancel()
         networkModel.observeConnectionsTask = nil
@@ -129,6 +129,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.listener = nil
         networkModel.browserConnections = []
         browserConnectionEndpoints = [:]
+        pendingConnectionSources = [:]
         networkModel.connections = []
     }
 }
@@ -138,14 +139,14 @@ extension MasterNetworkController: MasterNetworkControllable {
 extension MasterNetworkController {
     @discardableResult
     func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
-        guard let connection = await networkModel.connections.first(where: { $0.id == id }) else { return false }
+        guard let connection = networkModel.connections.first(where: { $0.id == id }) else { return false }
         let encodedData = data?.encodeData()
         await connection.response(type: .gameData, encodedContent: encodedData)
         return true
     }
 
     func sendResponse(data: MessageMapper?) async {
-        let connections = await networkModel.connections
+        let connections = networkModel.connections
         guard !connections.isEmpty else { return }
         let encodedData = data?.encodeData()
         await withDiscardingTaskGroup { group in
@@ -158,7 +159,7 @@ extension MasterNetworkController {
     }
 
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
-        let connections = await networkModel.connections.filter { $0.id != except }
+        let connections = networkModel.connections.filter { $0.id != except }
         guard !connections.isEmpty else { return }
         let encodedData = data?.encodeData()
         await withDiscardingTaskGroup { group in
@@ -174,17 +175,28 @@ extension MasterNetworkController {
 // MARK: - MasterConnectionDelegate
 
 extension MasterNetworkController: ConnectionControllerDelegate {
+    @MainActor
     func failed(with error: String?, for id: ConnectionController.ID) async {
-        if await removeConnection(id: id) {
-            await delegate.masterLostPlayer(with: id)
+        if let source = pendingConnectionSources.removeValue(forKey: id) {
+            await connectionThrottle.recordFailure(source: source)
         }
+        await removeConnectionAndNotify(id: id)
     }
 
+    /// A clean cancellation (peer disconnected, backgrounded, network drop) is
+    /// not a bad-passcode attempt, unlike `failed(with:for:)` above — clear its
+    /// pending entry without penalizing the source.
+    @MainActor
     func lostConnection(for id: ConnectionController.ID) async {
-        await failed(with: "Player disconnected", for: id)
+        pendingConnectionSources.removeValue(forKey: id)
+        await removeConnectionAndNotify(id: id)
     }
 
+    @MainActor
     func readyConnection(for id: ConnectionController.ID) async {
+        if let source = pendingConnectionSources.removeValue(forKey: id) {
+            await connectionThrottle.recordSuccess(source: source)
+        }
         await delegate.masterReady(for: id)
     }
 
@@ -200,9 +212,20 @@ extension MasterNetworkController: ListenerManagerDelegate {
         await stopStreaming()
     }
 
+    @MainActor
     func listenerNewConnection(_ connection: NWConnection) async {
+        let source = connection.endpoint.throttleSourceKey
+        if let source, await !connectionThrottle.shouldAllow(source: source) {
+            Logger.networking.debug("MasterNetworkController: Rejected connection attempt from throttled source")
+            connection.cancel()
+            return
+        }
         Logger.networking.debug("MasterNetworkController: New Connection")
-        await addNew(ConnectionController(id: UUID(), connection: connection, delegate: self))
+        let id = UUID()
+        if let source {
+            pendingConnectionSources[id] = source
+        }
+        addNew(ConnectionController(id: id, connection: connection, delegate: self))
     }
 
     /// Convenience accessor used by tests to inject a connection directly.
@@ -214,7 +237,6 @@ extension MasterNetworkController: ListenerManagerDelegate {
 // MARK: - Observe BrowserManager for Connections
 
 extension MasterNetworkController {
-    @MainActor
     func observeConnections() {
         guard networkModel.browserManager != nil else { return }
         _ = withObservationTracking {
@@ -226,7 +248,6 @@ extension MasterNetworkController {
         }
     }
 
-    @MainActor
     private func scheduleConnectionCheck() {
         networkModel.observeConnectionsTask?.cancel()
         networkModel.observeConnectionsTask = Task { @MainActor [weak self] in
@@ -234,7 +255,6 @@ extension MasterNetworkController {
         }
     }
 
-    @MainActor
     func checkForConnections() {
         guard networkModel.browserManager != nil else { return }
         let games = networkModel.browserManager?.games ?? []
@@ -242,7 +262,7 @@ extension MasterNetworkController {
         observeConnections()
     }
 
-    @MainActor func refresh(games: [BrowserGameModel]) {
+    func refresh(games: [BrowserGameModel]) {
         guard let manager = networkModel.browserManager, manager.isBrowsing else {
             networkModel.browserManager = nil
             networkModel.browserConnections = []
@@ -263,7 +283,13 @@ extension MasterNetworkController {
 }
 
 private extension MasterNetworkController {
-    @MainActor func removeConnection(id: ConnectionController.ID) -> Bool {
+    func removeConnectionAndNotify(id: ConnectionController.ID) async {
+        if removeConnection(id: id) {
+            await delegate.masterLostPlayer(with: id)
+        }
+    }
+
+    func removeConnection(id: ConnectionController.ID) -> Bool {
         guard networkModel.removeConnection(id: id) else { return false }
 
         networkModel.connectionStartTasks[id]?.cancel()
@@ -275,7 +301,7 @@ private extension MasterNetworkController {
         return true
     }
 
-    @MainActor func addNew(_ connection: any ConnectionControllable) {
+    func addNew(_ connection: any ConnectionControllable) {
         networkModel.connections.append(connection)
         let id = connection.id
         networkModel.connectionStartTasks[id]?.cancel()
@@ -288,7 +314,7 @@ private extension MasterNetworkController {
 }
 
 extension MasterNetworkController {
-    @MainActor func connectToPlayer(endpoint: NWEndpoint) {
+    func connectToPlayer(endpoint: NWEndpoint) {
         guard !networkModel.browserConnections.contains(endpoint) else { return }
         networkModel.browserConnections.append(endpoint)
         // Reuses the same passcode this session's listener was started with —

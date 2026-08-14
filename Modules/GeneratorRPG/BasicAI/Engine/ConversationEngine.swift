@@ -268,9 +268,10 @@ private extension ConversationEngine {
             notifyStateChange()
         }
 
+        let promptWithContext: String
         do {
             let summary = try await generateConversationSummary()
-            createNewSession(with: summary)
+            promptWithContext = createNewSession(with: summary, userMessage: userMessage)
         } catch {
             createFreshSessionAfterOverflow()
 
@@ -286,12 +287,12 @@ private extension ConversationEngine {
         switch responseMode {
         case .streaming:
             response = try await streamResponse(
-                to: userMessage,
+                to: promptWithContext,
                 generationOptions: generationOptions,
                 onPartialResponse: onPartialResponse
             )
         case .oneShot:
-            response = try await respond(to: userMessage, generationOptions: generationOptions)
+            response = try await respond(to: promptWithContext, generationOptions: generationOptions)
         }
 
         await updateTokenCount()
@@ -323,21 +324,25 @@ private extension ConversationEngine {
         return summaryResponse.content
     }
 
-    func createNewSession(with summary: ConversationSummary) {
-        let contextInstructions = ConversationContextBuilder.contextInstructions(
-            baseInstructions: configuration.baseInstructions,
-            summary: summary,
-            continuationNote: configuration.continuationNote
-        )
-
+    /// Recreates the session with only the static, developer-authored base instructions —
+    /// never the model-generated `summary` (see `ConversationContextBuilder.contextPrompt`'s
+    /// doc comment) — and returns the continuation prompt to send as this session's first
+    /// `prompt:`, carrying `summary` and `userMessage` instead.
+    func createNewSession(with summary: ConversationSummary, userMessage: String) -> String {
         session = Self.makeSession(
             model: model,
             tools: configuration.tools,
-            instructions: contextInstructions
+            instructions: configuration.baseInstructions
         )
         sessionCount += 1
         currentTokenCount = 0
         notifyStateChange()
+
+        return ConversationContextBuilder.contextPrompt(
+            summary: summary,
+            continuationNote: configuration.continuationNote,
+            userMessage: userMessage
+        )
     }
 
     func createFreshSessionAfterOverflow() {

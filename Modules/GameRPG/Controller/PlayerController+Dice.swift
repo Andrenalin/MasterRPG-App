@@ -6,8 +6,8 @@ import Foundation
 
 extension PlayerController {
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        let features = await root.gameModel.gameControl.features
-        guard await (root.gameModel.gameConfig.id != model.sender.id) &&
+        let features = root.gameModel.gameControl.features
+        guard (root.gameModel.gameConfig.id != model.sender.id) &&
                 (features.diceMaster || !model.sender.isMaster) &&
                 (features.dicePlayers || model.sender.isMaster)
         else { return await response(for: model, isSuccess: false, requestData: false) }
@@ -33,7 +33,7 @@ extension PlayerController {
             case .show, .store:
                 try await root.diceRoot.diceGameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
             case .generic:
-                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(
+                _ = root.diceRoot.diceGameControllable.addGameDiceResult(
                     data: model.data,
                     name: model.senderName,
                     supporterTier: model.sender.supporterTier,

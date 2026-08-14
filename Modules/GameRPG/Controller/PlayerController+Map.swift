@@ -21,18 +21,18 @@ extension PlayerController {
             model.data.type == .map &&
             model.effectiveAudience == .group
         if isPlayerMapPin {
-            switch await applyPlayerMapPin(model) {
+            switch applyPlayerMapPin(model) {
             case .applied, .rejected:
                 break
             case .awaitingMapGeneration:
-                await gameModel.deferMapPin(model)
+                gameModel.deferMapPin(model)
             }
             return nil
         }
 
         guard model.sender.isMaster else { return nil }
 
-        if await root.gameModel.gameConfig.isMaster {
+        if root.gameModel.gameConfig.isMaster {
             // The game master's own co-located screen (and any external
             // display reading the same state) is always seeing its own
             // broadcast here: master and player share one `GameRoot`, so
@@ -49,17 +49,17 @@ extension PlayerController {
             let isRepairPayload = model.targetId != nil || model.subType == .store
             if !isRepairPayload,
                model.data.data != nil,
-               let pending = await gameModel.pendingMapRepairRequirement(itemId: model.data.id),
-               await !gameModel.pendingMapRepairMatches(model.data),
+               let pending = gameModel.pendingMapRepairRequirement(itemId: model.data.id),
+               !gameModel.pendingMapRepairMatches(model.data),
                model.counter > pending.counter {
                 // A newer ordinary show is a fresh authoritative intent, not an
                 // answer to the older request. Replace the queued repair so its
                 // stale state/content cannot be applied to the new generation.
-                await gameModel.supersedeMapRepair(itemId: model.data.id)
+                gameModel.supersedeMapRepair(itemId: model.data.id)
             }
             if isRepairPayload {
-                guard await gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil,
-                      await gameModel.pendingMapRepairMatches(model.data)
+                guard gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil,
+                      gameModel.pendingMapRepairMatches(model.data)
                 else { return nil }
             }
 
@@ -77,7 +77,7 @@ extension PlayerController {
             if model.data.data == nil {
                 shouldImportFullPayload = true
             } else {
-                shouldImportFullPayload = await gameModel.shouldImportFullMapContent(
+                shouldImportFullPayload = gameModel.shouldImportFullMapContent(
                     itemId: model.data.id,
                     counter: model.counter
                 )
@@ -138,7 +138,7 @@ extension PlayerController {
             }
 
             guard revealed else {
-                await gameModel.clearGameUpdateTypeIfPhoto()
+                gameModel.clearGameUpdateTypeIfPhoto()
                 guard !isRepairPayload else { return nil }
                 return await requestFullMap(
                     for: model,
@@ -154,7 +154,7 @@ extension PlayerController {
             // generations are locally available. Missing a structural update is
             // repaired exactly once for that advertised content fingerprint.
             if model.data.data == nil,
-               await !gameModel.hasMapContentVersion(
+               !gameModel.hasMapContentVersion(
                     itemId: model.data.id,
                     contentVersion: model.data.contentVersion
                ) {
@@ -177,7 +177,7 @@ extension PlayerController {
             }
 
             _ = await applyPendingMapState(itemId: model.data.id)
-            let hadPendingRepair = await gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil
+            let hadPendingRepair = gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil
             let completedRepair = await completeMapRepairIfSatisfied(itemId: model.data.id)
             guard !hadPendingRepair || completedRepair != nil else { return nil }
             await presentMap(itemId: model.data.id)
@@ -185,13 +185,13 @@ extension PlayerController {
 
         case .store:
             guard model.data.data != nil else { return nil }
-            if await gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil,
-               await !gameModel.pendingMapRepairMatches(model.data) {
+            if gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil,
+               !gameModel.pendingMapRepairMatches(model.data) {
                 return nil
             }
 
             let hasBaseMap = await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: 0)
-            let shouldImport = await gameModel.shouldImportFullMapContent(
+            let shouldImport = gameModel.shouldImportFullMapContent(
                 itemId: model.data.id,
                 counter: model.counter
             )
@@ -208,10 +208,10 @@ extension PlayerController {
                     return nil
                 }
                 importedFullPayload = true
-                await root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
+                root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
                     model.data
                 )
-                await gameModel.recordFullMapContentVersion(
+                gameModel.recordFullMapContentVersion(
                     itemId: model.data.id,
                     contentVersion: model.data.contentVersion,
                     counter: model.counter
@@ -222,7 +222,7 @@ extension PlayerController {
 
             _ = await applyPendingMapContentUpdate(itemId: model.data.id)
             _ = await applyPendingMapState(itemId: model.data.id)
-            await retryDeferredMapPins(itemId: model.data.id)
+            retryDeferredMapPins(itemId: model.data.id)
             guard await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) else {
                 return await requestFullMap(
                     for: model,
@@ -233,7 +233,7 @@ extension PlayerController {
                 )
             }
 
-            let hadPendingRepair = await gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil
+            let hadPendingRepair = gameModel.pendingMapRepairRequirement(itemId: model.data.id) != nil
             let completesPresentation = await completeMapRepairIfSatisfied(itemId: model.data.id)
             guard !hadPendingRepair || completesPresentation != nil else { return nil }
             if completesPresentation == true {
@@ -248,7 +248,7 @@ extension PlayerController {
             case .generic:
                 return await handleMapContentUpdate(model)
             case .mapState:
-                guard await gameModel.shouldApplyMapState(
+                guard gameModel.shouldApplyMapState(
                         itemId: model.data.id,
                         counter: model.counter
                       )
@@ -259,12 +259,12 @@ extension PlayerController {
                     version: 0
                 )
                 let hasMatchingAsset = await hasMatchingMapAsset(model.data)
-                let hasMatchingContent = await gameModel.hasMapContentVersion(
+                let hasMatchingContent = gameModel.hasMapContentVersion(
                     itemId: model.data.id,
                     contentVersion: model.data.contentVersion
                 )
                 guard hasBaseMap, hasMatchingAsset else {
-                    await gameModel.queueMapState(model.data, counter: model.counter)
+                    gameModel.queueMapState(model.data, counter: model.counter)
                     return await requestFullMap(
                         for: model,
                         requestType: .reveal,
@@ -273,29 +273,29 @@ extension PlayerController {
                     )
                 }
                 guard hasMatchingContent else {
-                    await gameModel.queueMapState(model.data, counter: model.counter)
+                    gameModel.queueMapState(model.data, counter: model.counter)
                     return await requestMapContent(for: model, presentsMap: true)
                 }
 
-                guard await root.mapRoot.mapGameControllable.updateMap(
+                guard root.mapRoot.mapGameControllable.updateMap(
                     for: model.data.id,
                     with: model.data
                 ) else { return nil }
-                await gameModel.markMapStateApplied(itemId: model.data.id, counter: model.counter)
+                gameModel.markMapStateApplied(itemId: model.data.id, counter: model.counter)
                 _ = await completeMapRepairIfSatisfied(itemId: model.data.id)
-                await retryDeferredMapPins(itemId: model.data.id)
-                await gameModel.setGameUpdateType(.map)
+                retryDeferredMapPins(itemId: model.data.id)
+                gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
 
             case .mapPin:
                 // Player pin events are handled before the master-only switch.
                 return nil
             case .battleRound:
-                guard await root.mapRoot.mapGameControllable.applyBattleRoundUpdate(
+                guard root.mapRoot.mapGameControllable.applyBattleRoundUpdate(
                     for: model.data.id,
                     with: model.data
                 ) else { return nil }
-                await setMapUpdateTypeAndSyncPawns()
+                setMapUpdateTypeAndSyncPawns()
             default:
                 return nil
             }
@@ -320,11 +320,11 @@ extension PlayerController {
         case .update:
             switch model.subType {
             case .mapState:
-                await retryDeferredMapPins(itemId: model.data.id)
-                await gameModel.setGameUpdateType(.map)
+                retryDeferredMapPins(itemId: model.data.id)
+                gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
             case .battleRound:
-                await setMapUpdateTypeAndSyncPawns()
+                setMapUpdateTypeAndSyncPawns()
             case .generic, .mapPin:
                 // A structural/content resync or a player-authored pin move:
                 // this device's own map already reflects it. Neither one is
@@ -344,7 +344,7 @@ extension PlayerController {
               model.data.type == .map,
               model.data.data != nil
         else { return nil }
-        guard await gameModel.shouldApplyMapContentUpdate(
+        guard gameModel.shouldApplyMapContentUpdate(
             itemId: model.data.id,
             counter: model.counter
         ) else { return nil }
@@ -352,7 +352,7 @@ extension PlayerController {
         let hasBaseMap = await root.mapRoot.gameControllable.hasItem(id: model.data.id, version: 0)
         let hasMatchingAsset = await hasMatchingMapAsset(model.data)
         guard hasBaseMap, hasMatchingAsset else {
-            await gameModel.queueMapContentUpdate(model.data, counter: model.counter)
+            gameModel.queueMapContentUpdate(model.data, counter: model.counter)
             return await requestFullMap(
                 for: model,
                 requestType: .reveal,
@@ -361,21 +361,21 @@ extension PlayerController {
             )
         }
 
-        guard await root.mapRoot.mapGameControllable.applyMapContentUpdate(
+        guard root.mapRoot.mapGameControllable.applyMapContentUpdate(
             for: model.data.id,
             with: model.data
         ) else { return nil }
-        await gameModel.markMapContentUpdateApplied(
+        gameModel.markMapContentUpdateApplied(
             itemId: model.data.id,
             counter: model.counter,
             contentVersion: model.data.contentVersion
         )
         _ = await applyPendingMapState(itemId: model.data.id)
-        await retryDeferredMapPins(itemId: model.data.id)
+        retryDeferredMapPins(itemId: model.data.id)
         let completesPresentation = await completeMapRepairIfSatisfied(itemId: model.data.id)
         if completesPresentation == true {
             await presentMap(itemId: model.data.id)
-        } else if let pending = await gameModel.pendingMapRepairRequirement(itemId: model.data.id),
+        } else if let pending = gameModel.pendingMapRepairRequirement(itemId: model.data.id),
                   await !root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: model.data.id) {
             return await requestFullMap(
                 for: model,
@@ -391,23 +391,23 @@ extension PlayerController {
     }
 
     func applyPendingMapContentUpdate(itemId: UUID) async -> Bool {
-        guard let pending = await gameModel.pendingMapContentUpdate(for: itemId) else { return false }
-        guard await gameModel.shouldApplyMapContentUpdate(
+        guard let pending = gameModel.pendingMapContentUpdate(for: itemId) else { return false }
+        guard gameModel.shouldApplyMapContentUpdate(
             itemId: itemId,
             counter: pending.counter
         ) else {
-            await gameModel.discardPendingMapContentUpdate(itemId: itemId)
+            gameModel.discardPendingMapContentUpdate(itemId: itemId)
             return false
         }
         guard await root.mapRoot.gameControllable.hasItem(id: itemId, version: 0),
               await hasMatchingMapAsset(pending.data),
-              await root.mapRoot.mapGameControllable.applyMapContentUpdate(
+              root.mapRoot.mapGameControllable.applyMapContentUpdate(
                 for: itemId,
                 with: pending.data
               )
         else { return false }
 
-        await gameModel.markMapContentUpdateApplied(
+        gameModel.markMapContentUpdateApplied(
             itemId: itemId,
             counter: pending.counter,
             contentVersion: pending.data.contentVersion
@@ -416,27 +416,27 @@ extension PlayerController {
     }
 
     func applyPendingMapState(itemId: UUID) async -> Bool {
-        guard let pending = await gameModel.pendingMapState(for: itemId) else { return false }
-        guard await gameModel.shouldApplyMapState(itemId: itemId, counter: pending.counter) else {
-            await gameModel.discardPendingMapState(itemId: itemId)
+        guard let pending = gameModel.pendingMapState(for: itemId) else { return false }
+        guard gameModel.shouldApplyMapState(itemId: itemId, counter: pending.counter) else {
+            gameModel.discardPendingMapState(itemId: itemId)
             return false
         }
         guard await root.mapRoot.gameControllable.hasItem(id: itemId, version: 0),
               await hasMatchingMapAsset(pending.data),
-              await gameModel.hasMapContentVersion(
+              gameModel.hasMapContentVersion(
                 itemId: itemId,
                 contentVersion: pending.data.contentVersion
               )
         else { return false }
 
-        guard await root.mapRoot.mapGameControllable.updateMap(
+        guard root.mapRoot.mapGameControllable.updateMap(
             for: itemId,
             with: pending.data
         ) else {
-            await gameModel.discardPendingMapState(itemId: itemId)
+            gameModel.discardPendingMapState(itemId: itemId)
             return false
         }
-        await gameModel.markMapStateApplied(itemId: itemId, counter: pending.counter)
+        gameModel.markMapStateApplied(itemId: itemId, counter: pending.counter)
         return true
     }
 
@@ -446,10 +446,10 @@ extension PlayerController {
     }
 
     func recordImportedFullMapGeneration(_ model: GameNetworkModel) async {
-        await root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
+        root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
             model.data
         )
-        await gameModel.recordFullMapContentVersion(
+        gameModel.recordFullMapContentVersion(
             itemId: model.data.id,
             contentVersion: model.data.contentVersion,
             counter: model.counter
@@ -457,20 +457,20 @@ extension PlayerController {
     }
 
     func completeMapRepairIfSatisfied(itemId: UUID) async -> Bool? {
-        guard let requirement = await gameModel.pendingMapRepairRequirement(itemId: itemId) else {
+        guard let requirement = gameModel.pendingMapRepairRequirement(itemId: itemId) else {
             return nil
         }
         if let expectedAssetVersion = requirement.assetVersion,
            await root.mapRoot.mapGameControllable.mapAssetVersion(for: itemId) != expectedAssetVersion {
             return nil
         }
-        guard await gameModel.hasMapContentVersion(
+        guard gameModel.hasMapContentVersion(
             itemId: itemId,
             contentVersion: requirement.contentVersion
         ), await root.mapRoot.mapGameControllable.hasBackgroundImage(itemId: itemId) else {
             return nil
         }
-        return await gameModel.completeMapRepair(itemId: itemId)
+        return gameModel.completeMapRepair(itemId: itemId)
     }
 
     func requestFullMap(
@@ -481,7 +481,7 @@ extension PlayerController {
         backgroundRetry: Bool = false
     ) async -> GameNetworkModel? {
         let shouldRequest = if backgroundRetry {
-            await gameModel.beginMapBackgroundRepair(
+            gameModel.beginMapBackgroundRepair(
                 itemId: model.data.id,
                 assetVersion: model.data.assetVersion,
                 contentVersion: model.data.contentVersion,
@@ -489,7 +489,7 @@ extension PlayerController {
                 counter: model.counter
             )
         } else {
-            await gameModel.beginMapRepair(
+            gameModel.beginMapRepair(
                 itemId: model.data.id,
                 assetVersion: model.data.assetVersion,
                 contentVersion: model.data.contentVersion,
@@ -499,7 +499,7 @@ extension PlayerController {
         }
         guard shouldRequest else { return nil }
 
-        return await root.gameModel.outgoingMessage(
+        return root.gameModel.outgoingMessage(
             replyToMessageID: model.messageID,
             counter: model.counter,
             proxyCounter: model.proxyCounter,
@@ -522,7 +522,7 @@ extension PlayerController {
         for model: GameNetworkModel,
         presentsMap: Bool
     ) async -> GameNetworkModel? {
-        guard await gameModel.beginMapRepair(
+        guard gameModel.beginMapRepair(
             itemId: model.data.id,
             assetVersion: model.data.assetVersion,
             contentVersion: model.data.contentVersion,
@@ -530,7 +530,7 @@ extension PlayerController {
             counter: model.counter
         ) else { return nil }
 
-        return await root.gameModel.outgoingMessage(
+        return root.gameModel.outgoingMessage(
             replyToMessageID: model.messageID,
             counter: model.counter,
             proxyCounter: model.proxyCounter,
@@ -551,21 +551,20 @@ extension PlayerController {
 
     func presentMap(itemId: UUID) async {
         _ = await root.mapRoot.gameControllable.setCurrent(itemId: itemId)
-        if await root.gameModel.gameConfig.isMaster {
-            _ = await root.mapRoot.mapGameControllable.synchronizePlayerPins(for: itemId)
+        if root.gameModel.gameConfig.isMaster {
+            _ = root.mapRoot.mapGameControllable.synchronizePlayerPins(for: itemId)
             // Pin reconciliation just above can change this map's structural
             // content right after this reveal recorded its generation's
             // fingerprint. Refresh it so the game master's own co-located
             // screen keeps recognizing this exact, unedited map on a later
             // reference-only reshow instead of chasing a phantom repair.
-            await root.mapRoot.mapGameControllable.refreshAuthoritativeMapContentVersion(for: itemId)
+            root.mapRoot.mapGameControllable.refreshAuthoritativeMapContentVersion(for: itemId)
         }
-        await retryDeferredMapPins(itemId: itemId)
-        await gameModel.setGameUpdateType(.map)
+        retryDeferredMapPins(itemId: itemId)
+        gameModel.setGameUpdateType(.map)
         await refreshMapVisuals(itemId: itemId)
     }
 
-    @MainActor
     private func applyPlayerMapPin(_ model: GameNetworkModel) -> PlayerMapPinApplication {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == model.data.id else {
             return .awaitingMapGeneration
@@ -592,7 +591,6 @@ extension PlayerController {
         return .applied
     }
 
-    @MainActor
     private func retryDeferredMapPins(itemId: UUID) {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == itemId else { return }
         let generation = root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)
@@ -618,9 +616,9 @@ extension PlayerController {
         // The background itself remains exclusive to the full Map package.
         await requestMissingMapImages(itemId: itemId)
         #if !os(tvOS)
-        let isGameMaster = await root.gameModel.gameConfig.isMaster
+        let isGameMaster = root.gameModel.gameConfig.isMaster
         await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
-        await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+        root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
     }
 
@@ -631,7 +629,7 @@ extension PlayerController {
     func requestMissingMapImages(itemId: UUID) async {
         let missingImages = await root.mapRoot.mapGameControllable.missingMapImages(itemId: itemId)
         for idType in missingImages {
-            let isFirstRequest = await gameModel.insertRequestedRepairId(idType.id)
+            let isFirstRequest = gameModel.insertRequestedRepairId(idType.id)
             guard isFirstRequest else { continue }
             await send(
                 type: .store,
