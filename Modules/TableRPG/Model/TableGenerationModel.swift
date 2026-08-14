@@ -148,7 +148,20 @@ final class TableGenerationModel: Identifiable {
     /// User-typed override of the generated outcome text. Offered once
     /// `isFullyDecided` so the result can be hand-finalized before
     /// confirming; `nil` while the computed outcome should still be shown.
+    /// Populated by flattening `outcomeEditingSession`'s entries once the
+    /// user leaves the sheet editor (see `TableGenerationController.endEditingOutcomeSheet(model:)`).
     var editedOutcome: String?
+
+    /// The in-memory-only sheet-editing session backing the "Edit as Sheet"
+    /// outcome editor, created once the user first opens it
+    /// (`TableGenerationController.beginEditingOutcomeSheet(model:)`) and
+    /// reused across Back/re-open cycles within this generation session —
+    /// nothing here ever touches Core Data or CloudKit.
+    var outcomeEditingSession: SimpleSheetEditingSession?
+
+    /// Whether the rich sheet editor is currently shown in place of the
+    /// occurrence selection tree.
+    var isEditingOutcomeSheet = false
 
     var occurrences: [TableGenerationOccurrence] {
         flattened(root)
@@ -192,7 +205,9 @@ final class TableGenerationModel: Identifiable {
         occurrences.first { $0.id == id }
     }
 
-    private var currentSelections: [ItemGenerationSelection] {
+    /// Also used by `TableGenerationController.beginEditingOutcomeSheet(model:)`
+    /// to seed the outcome sheet editor with one entry row per selection.
+    var currentSelections: [ItemGenerationSelection] {
         occurrences.flatMap { occurrence in
             occurrence.selectedEntries.map { entry in
                 ItemGenerationSelection(
