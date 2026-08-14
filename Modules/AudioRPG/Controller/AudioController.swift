@@ -139,10 +139,19 @@ extension AudioController {
                 guard let url else { return nil }
                 // Copy file-to-file: AVURLAsset streams from disk, so the track never
                 // needs to be loaded into memory.
+                //
+                // Stable per-item filename (no per-play UUID suffix) so replaying —
+                // or switching playlists back and forth over — the same track
+                // overwrites its own temp copy instead of leaking a fresh file every
+                // time; mirrors GameController.audioAsset(for:)'s existing pattern.
+                // See CODE_AUDIT §7.1.
                 let tempUrl = URL.temporaryDirectory
-                    .appending(path: "\(request.id.uuidString)-\(UUID().uuidString)")
+                    .appending(path: request.id.uuidString)
                     .appendingPathExtension(url.pathExtension)
                 let fileManager = FileManager.default
+                // `copyItem` throws if the destination already exists (unlike
+                // `Data.write(to:)` below), so clear out a previous play's copy first.
+                try? fileManager.removeItem(at: tempUrl)
                 try fileManager.copyItem(at: url, to: tempUrl)
                 return try await self.playlistItem(for: request, assetUrl: tempUrl)
             }
@@ -153,7 +162,7 @@ extension AudioController {
         do {
             if audioAsset == nil, let data = request.fileUrl.data {
                 let tempUrl = URL.temporaryDirectory
-                    .appending(path: "\(request.id.uuidString)-\(UUID().uuidString)")
+                    .appending(path: request.id.uuidString)
                     .appendingPathExtension(itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
                 return try await playlistItem(for: request, assetUrl: tempUrl)
@@ -192,6 +201,10 @@ extension AudioController {
             togglePlay()
         }
         guard let index = model.playList.firstIndex(where: { $0.id == id }) else { return }
+        // Free the item's temp copy along with its playlist entry — its
+        // filename is stable per item (see `audioAsset(for:)`), so nothing
+        // else will reclaim it once it's gone from the list. See CODE_AUDIT §7.1.
+        try? FileManager.default.removeItem(at: model.playList[index].url)
         model.playList.remove(at: index)
     }
 

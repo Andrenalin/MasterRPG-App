@@ -144,6 +144,13 @@ public final class BattleRoundModel: Sendable {
     private var retainedPlayerInitiatives: [UUID: Int] = [:]
     private var retainedPlayerCombatants: [UUID: BattleCombatant] = [:]
 
+    /// Backing store for `cardPresentations` (see `BattleRoundCardPresentation.swift`).
+    /// A stored property can only live on the type's own declaration, not on
+    /// the extension that defines the computed property itself, which is why
+    /// it's declared here rather than alongside `cardPresentations`. See
+    /// CODE_AUDIT §7.2.
+    var cardPresentationsCache: (key: CardPresentationsCacheKey, value: [BattleRoundCardPresentation])?
+
     public var activeEntry: BattleRoundEntry? {
         guard let activeAttackerId else { return nil }
         return entries.first { $0.attackerId == activeAttackerId }
