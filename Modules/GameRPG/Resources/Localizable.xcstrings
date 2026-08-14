@@ -2387,6 +2387,12 @@
         }
       }
     },
+    "Game master's D20 die %lld" : {
+
+    },
+    "Game master's die %lld" : {
+
+    },
     "Game Sidebar" : {
       "localizations" : {
         "de" : {
@@ -4026,6 +4032,26 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ไม่พบผู้เล่น"
+          }
+        }
+      }
+    },
+    "Player seat %lld D20 die %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld D20 die %2$lld"
+          }
+        }
+      }
+    },
+    "Player seat %lld die %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Player seat %1$lld die %2$lld"
           }
         }
       }
