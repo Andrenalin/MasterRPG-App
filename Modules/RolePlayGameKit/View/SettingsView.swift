@@ -142,12 +142,12 @@ public struct SettingsView: View {
                         Text("Reset", bundle: .module)
                     }
                 } message: {
-                    Text("Becareful this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched.", bundle: .module)
+                    Text("Be careful, this removes all data from the database, all files in local and appCloud storage associated with the database. Files in other or iCloud will not be touched.", bundle: .module)
                 }
             } header: {
                 Text("Reset", bundle: .module)
             } footer: {
-                Text("Becareful this removes all data and resets the database.", bundle: .module)
+                Text("Be careful, this removes all data and resets the database.", bundle: .module)
             }
         }
         .themedListSurface()

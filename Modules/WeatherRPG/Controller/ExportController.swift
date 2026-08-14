@@ -12,20 +12,11 @@ struct ExportController: Sendable {
     }
 
     let exportModel: ExportModel
-    var hubControllable: any RootExportControllable {
-        get {
-            guard let hub = exportModel.hubControllable else {
-                preconditionFailure("WeatherRPG export requires its Adventure export hub after setup.")
-            }
-            return hub
-        }
-        set { exportModel.hubControllable = newValue }
-    }
     let photoRoot: PhotoRootModel
     let itemController: ItemController
 }
 
-extension ExportController: ExportControllable {
+extension ExportController: ExportModelBacked {
     var itemControllable: any ItemControllable { itemController }
 
     @MainActor public func exportingAll() -> ItemModuleIds {

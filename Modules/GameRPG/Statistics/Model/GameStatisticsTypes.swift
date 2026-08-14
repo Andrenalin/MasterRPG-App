@@ -3,6 +3,8 @@
 import CoreRPG
 import Foundation
 
+// MARK: - Classification Enums
+
 enum GameStatisticRole: Int16, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     case unknown
     case gameMaster
@@ -216,6 +218,8 @@ enum GameStatisticsSection: Int, CaseIterable, Codable, Hashable, Identifiable, 
     }
 }
 
+// MARK: - Dashboard Configuration
+
 struct GameStatisticsDashboardConfiguration: Codable, Hashable, Sendable {
     var dateRange: GameStatisticsDateRange = .lastSixMonths
     var granularity: GameStatisticsGranularity = .week
@@ -230,6 +234,8 @@ struct GameStatisticsDashboardConfiguration: Codable, Hashable, Sendable {
         sectionOrder.filter { !hiddenSections.contains($0) }
     }
 }
+
+// MARK: - Draft Types (Recording Input)
 
 struct GameStatisticSessionDraft: Sendable {
     let id: UUID
@@ -286,6 +292,8 @@ struct GameStatisticEventDraft: Sendable {
     let deduplicationKey: String
 }
 
+// MARK: - Snapshot Types (Read Models)
+
 struct GameStatisticSessionSnapshot: Identifiable, Hashable, Sendable {
     let id: UUID
     let startedAt: Date
@@ -329,6 +337,8 @@ struct GameStatisticEventSnapshot: Identifiable, Hashable, Sendable {
     let payloadByteCount: Int64
     let success: Bool
 }
+
+// MARK: - Chart Data Points
 
 struct GameStatisticsDataSet: Sendable {
     let sessions: [GameStatisticSessionSnapshot]
@@ -376,6 +386,8 @@ struct GameStatisticHeatMapPoint: Identifiable, Hashable, Sendable {
 
     var id: String { "\(weekday)-\(hour)" }
 }
+
+// MARK: - Aggregated Summary
 
 struct GameStatisticsSummary: Sendable {
     let sessionCount: Int

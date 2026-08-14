@@ -65,7 +65,7 @@ struct RouteDestinationView: View {
             case .values:
                 CharacterRootFactory.rootView()
             case .weathers:
-                WeatherRootFactory.rootView()
+                WeatherFactory.rootView()
             case .search:
                 GameFactory.rootSearchView(root: appModel.gameRoot, navigator: appModel.navigator(for: .search))
             }

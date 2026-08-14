@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Role
 You are a **Senior iOS Engineer**, specializing in SwiftUI, CoreData, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
 ## About MasterRPG
-MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Characters, Maps, Photos, Audios, PDFs, 3D Objects, Tables, Weathers. It has a game mode there players can join via Shareplay or local network. Platforms: iOS, macOS, tvOS, visionOS.
+MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Characters, Maps, Photos, Audios, PDFs, 3D Objects, Tables, Weathers. It has a game mode where players can join via Shareplay or local network. Platforms: iOS, macOS, tvOS, visionOS.
 
 ## Build Commands
 ```bash
@@ -78,7 +78,7 @@ If CoreData is configured to use CloudKit:
 - All relationships must be marked optional.
 
 ## Architecture
-- MVC: Model @Observable classes, Controller stateless structs, View swiftUI structs
+- MVC: Model @Observable classes, Controller stateless structs, View SwiftUI structs
 - RootModel for each module, that holds the controller hierarchy as ItemRootController
 - RootManager hold the root models for the modules
 - Module Factory builds the root model and root views
@@ -95,7 +95,7 @@ If CoreData is configured to use CloudKit:
 - **EditController** manipulate the item model and entry model
 - **DataController** is the mapper between domain model and database model
 - **SyncDataController** merges the cloudkit core data updates into the ItemController.
-- **CacheController** is the cache for the imsges and thumbnails
+- **CacheController** is the cache for the images and thumbnails
 - **ImportController** handles the import from file or network
 - **ExportController** exports the item model into streamable json / binary data
 - **FolderListController** handles the list / folder display, selection state
@@ -123,8 +123,8 @@ If CoreData is configured to use CloudKit:
 ### Other Modules
 - CoreRPG: It is the shared code for the modules and has core views, models and controller.
 - GeneratorRPG: FoundationModel and Views used in Pdf, Adventure. Planned in Character.
-- GameRPG: All Game Views, Shareplay, Network, Bonjour and MasterController, PlayerController to send the gamestate. GameTableView uses TableTopKit for visionOS
-- RolePlayGameKit: Merges all Moduls and provide navigation / layoput views for all apps.  
+- GameRPG: All Game Views, Shareplay, Network, Bonjour and MasterController, PlayerController to send the gamestate. GameTableView uses TabletopKit for visionOS
+- RolePlayGameKit: Merges all Modules and provide navigation / layout views for all apps.  
 
 ### Dependencies (SPM)
 - **RPGTabletopGameContent**: visionOS 3D content

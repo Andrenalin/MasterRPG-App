@@ -4,6 +4,8 @@ import CoreGraphics
 import CoreRPG
 import Foundation
 
+// MARK: - Needle Drag Geometry
+
 /// Pure needle-drag conversion. Gesture locations are expressed in viewport
 /// space while persisted room coordinates live in logical map space.
 enum MapNeedleDragGeometry {
@@ -28,6 +30,8 @@ enum MapNeedleDragGeometry {
         )
     }
 }
+
+// MARK: - Adaptive Fan Placement
 
 /// The viewport-space quadrant occupied by an adaptive map action menu.
 enum MapOverlayQuadrant: CaseIterable, Equatable, Sendable {
@@ -560,6 +564,8 @@ private struct FanCandidate: Sendable {
     let capacity: CGFloat
     let preferenceRank: Int
 }
+
+// MARK: - Loupe Geometry
 
 enum MapLoupeInteractionKind: Equatable, Sendable {
     case touch

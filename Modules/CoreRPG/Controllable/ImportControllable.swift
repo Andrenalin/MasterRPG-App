@@ -4,6 +4,8 @@ import Foundation
 import os.log
 import Observation
 
+// MARK: - Import State
+
 public enum ImportMode: Hashable, Sendable, CaseIterable {
     case merge, overwrite, manual
 }
@@ -60,6 +62,8 @@ public final class ItemDataImportModel {
     }
 }
 
+// MARK: - Protocol
+
 public protocol ImportControllable: Sendable {
     var itemControllable: any ItemControllable { get }
     var editControllable: any EditControllable { get }
@@ -75,6 +79,8 @@ public enum ItemDataImportableError: Error {
     case fileWithoutItem
     case cancel
 }
+
+// MARK: - Import Entry Points
 
 public extension ImportControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
@@ -229,6 +235,8 @@ public extension ImportControllable {
         try await importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
     }
 
+    // MARK: - Import Lifecycle
+
     func logImport(title: String, count: Int, importModel: ItemDataImportModel) async {
         let token = await self.token()
         let (importedItems, totalItems) = await importProgress(importModel)
@@ -319,6 +327,8 @@ private extension ImportControllable {
     private func incrementImportedItems(_ importModel: ItemDataImportModel) {
         importModel.importedItems += 1
     }
+
+    // MARK: - Item Application
 
     func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false, locallyReusedFileIds: Set<UUID> = []) async throws {
         let mode = await importModel.importMode
@@ -417,6 +427,8 @@ private extension ImportControllable {
         )
         importModel.pendingModules[module, default: []].append(reviewItemModel)
     }
+
+    // MARK: - Manual Review Diffing
 
     @MainActor
     func logManualReviewDifference(
@@ -538,6 +550,8 @@ private extension ImportControllable {
         guard existing != imported else { return }
         differences.append("\(label): existing='\(existing.importLogPreview)' imported='\(imported.importLogPreview)'")
     }
+
+    // MARK: - File Handling
 
     func skip(itemCount: Int, from inputStream: InputStream, importModel: ItemDataImportModel) async throws {
         await logImport(title: "skip", count: itemCount, importModel: importModel)
@@ -679,6 +693,8 @@ private extension String {
         return "\(String(flattened.prefix(maxLength)))..."
     }
 }
+
+// MARK: - Binary Stream Reading
 
 extension InputStream {
     func readHeader() throws -> GmzFileHeader {

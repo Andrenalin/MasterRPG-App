@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CryptoKit
 import Foundation
 import Observation
 
@@ -232,7 +231,7 @@ extension TableModel: nonisolated ItemDiffComparable {
     /// Dice results are presentation-only game state and must not force a new
     /// package version when somebody rolls the same Table.
     public var version: Int {
-        StableTableVersion.digest(CanonicalTableContent(self))
+        StableVersionDigest.digest(CanonicalTableContent(self))
     }
 }
 
@@ -274,20 +273,6 @@ private struct CanonicalTableEntry: Codable, Sendable {
         name = entry.name
         content = entry.content
         displayState = entry.displayState
-    }
-}
-
-private enum StableTableVersion {
-    static func digest<Value: Encodable>(_ value: Value) -> Int {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(value) else { return 1 }
-        let digest = SHA256.hash(data: data)
-        let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
-            partialResult << 8 | UInt64(byte)
-        }
-        let version = Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
-        return version == 0 ? 1 : version
     }
 }
 

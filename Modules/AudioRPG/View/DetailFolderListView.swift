@@ -16,7 +16,13 @@ struct DetailFolderListView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
+
+        // Deliberately does NOT use the shared `DetailFolderList` (CoreRPG,
+        // see CODE_AUDIT §9.3): the audio bar's `safeAreaInset`/`overlay`
+        // must sit *between* the editor content and `.openFileWindowOverlay`
+        // so the file viewer still renders above the audio bar — wrapping
+        // them the other way around (chained onto `DetailFolderList`'s
+        // already-composed result) would swap that stacking order.
         ItemDetailRootView(
             root: root.rootController,
             detailListController: folderListController,

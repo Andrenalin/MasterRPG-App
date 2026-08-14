@@ -3,6 +3,8 @@
 import Foundation
 import Observation
 
+// MARK: - Provenance & Attachments
+
 /// Identifies where a staged external item came from without coupling CoreRPG to
 /// a particular importer (Foundry, another VTT, or a future interchange format).
 public struct ExternalImportProvenance: Hashable, Codable, Sendable {
@@ -87,6 +89,8 @@ public struct ExternalImportAttachment: Identifiable, Sendable {
         try await loader()
     }
 }
+
+// MARK: - Batch Items
 
 /// One fully converted domain model waiting for review. Creating this value must
 /// not insert the model or write its optional attachment.
@@ -190,6 +194,8 @@ public struct ExternalImportBatch: Identifiable, Sendable {
     public var isPartial: Bool { true }
 }
 
+// MARK: - Decisions & Status
+
 public enum ExternalImportDecision: String, CaseIterable, Hashable, Codable, Sendable {
     case skip
     case merge
@@ -212,6 +218,8 @@ public enum ExternalImportPhase: Equatable, Sendable {
     case failed
     case cancelled
 }
+
+// MARK: - Results & Errors
 
 public struct ExternalImportResult: Equatable, Sendable {
     public init(
@@ -285,6 +293,8 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
     }
 }
 
+// MARK: - Review Session
+
 @MainActor @Observable
 public final class ExternalImportReviewSession {
     public init(batch: ExternalImportBatch, defaultDecision: ExternalImportDecision = .merge) {
@@ -337,6 +347,8 @@ public final class ExternalImportReviewSession {
         conflictStatuses[Self.key(for: item)]
     }
 
+    // MARK: - Conflict Preflight
+
     /// Computes review-only conflict labels without mutating module controllers.
     public func preflightConflicts(rootManager: RootManager) async throws {
         var statuses: [DecisionKey: ExternalImportConflictStatus] = [:]
@@ -359,6 +371,8 @@ public final class ExternalImportReviewSession {
         }
         conflictStatuses = statuses
     }
+
+    // MARK: - Commit
 
     public func commit(
         rootManager: RootManager,
@@ -590,6 +604,8 @@ public final class ExternalImportReviewSession {
 }
 
 private extension ExternalImportReviewSession {
+    // MARK: - Decision Keys & Rollback Recording
+
     struct DecisionKey: Hashable {
         let module: NetworkModules
         let itemId: UUID
@@ -717,6 +733,8 @@ private extension ExternalImportReviewSession {
             )
         }
     }
+
+    // MARK: - Validation & Attachment
 
     func validatedSelectedItems(rootManager: RootManager) throws -> [ExternalImportBatchItem] {
         var seen: Set<DecisionKey> = []
@@ -914,6 +932,8 @@ private extension ExternalImportReviewSession {
         }
         return updated
     }
+
+    // MARK: - Rollback
 
     func rollback(
         mutations: [AppliedMutation],

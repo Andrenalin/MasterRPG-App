@@ -15,18 +15,16 @@ struct DetailFolderListView: View {
     var isSubFolder: Bool = false
     
     var body: some View {
-        let _ = Self.printViewChangesOnlyInDebug()
-
-        ItemDetailRootView(
+        DetailFolderList(
             root: root.rootController,
+            openFileWindowModel: root.openFileWindowModel,
             detailListController: folderListController,
             selectedModel: model,
             configuration: .init(editorAsBackground: true, isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
             ViewerRootView(model: model, configuration: ViewerConfiguration(addToolbar: false))
-        }
-        .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
+        } viewer: { itemId, dismiss in
             root.viewController.viewer(
                 root: root,
                 itemId: itemId,

@@ -57,15 +57,12 @@ public struct AdventureEntity: IndexedEntity {
 
 extension AdventureEntity: Transferable {
     public static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor landmark in
-            let url = URL.cachesDirectory.appending(component: "\(landmark.name).pdf")
+        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
+            let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
 
             let renderer = ImageRenderer(content: VStack {
-//                Image(landmark.landmark.backgroundImageName)
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-                Text(verbatim: landmark.name)
-                Text(verbatim: landmark.description)
+                Text(verbatim: item.name)
+                Text(verbatim: item.description)
             }.frame(width: 600))
 
             renderer.render { size, renderer in

@@ -254,10 +254,6 @@ public extension LinkRegisterController {
             return newModel
         }
     }
-    
-//    func markDownLinkDataModel(for link: LinkRegisterModel) -> String {
-//        "[\(link.name)](\(URL.appScheme)://\(link.id))"
-//    }
 }
 
 private struct LegacyLinkKey: Hashable {

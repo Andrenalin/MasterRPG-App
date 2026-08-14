@@ -172,9 +172,7 @@ extension GameController {
                 let fileExtension = url.pathExtension
                 let tempUrl = URL.temporaryDirectory.appending(path: itemId.uuidString).appendingPathExtension(fileExtension)
                 try data.write(to: tempUrl)
-                let asset = AVURLAsset(url: tempUrl)
-                let duration = try await asset.load(.duration)
-                return PlaylistItem(id: itemId, url: asset.url, title: title, artist: "MasterRPG", duration: duration)
+                return try await PlaylistItem.loading(id: itemId, title: title, artist: "MasterRPG", from: tempUrl)
             }
         } catch {
             Logger.gameController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
@@ -184,9 +182,7 @@ extension GameController {
             if audioAsset == nil, let data = fileUrl.data {
                 let tempUrl = URL.temporaryDirectory.appending(path: itemId.uuidString).appendingPathExtension("mp4")
                 try data.write(to: tempUrl)
-                let asset = AVURLAsset(url: tempUrl)
-                let duration = try await asset.load(.duration)
-                return PlaylistItem(id: itemId, url: asset.url, title: title, artist: "MasterRPG", duration: duration)
+                return try await PlaylistItem.loading(id: itemId, title: title, artist: "MasterRPG", from: tempUrl)
             }
         } catch {
             Logger.gameController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")

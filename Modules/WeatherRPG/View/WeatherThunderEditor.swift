@@ -88,10 +88,8 @@ private extension WeatherThunderEditor {
         } label: {
             Text("Frequency", bundle: .module)
         }
-        .onChange(of: lightningFrequency.value) { oldValue, newValue in
-            if abs(oldValue - newValue) >= 1 {
-                lightningFrequency.save()
-            }
+        .onSignificantChange(of: lightningFrequency.value) {
+            lightningFrequency.save()
         }
     }
 
@@ -109,10 +107,8 @@ private extension WeatherThunderEditor {
         } label: {
             Text("Max Bolts", bundle: .module)
         }
-        .onChange(of: lightningMaxBolts.value) { oldValue, newValue in
-            if abs(oldValue - newValue) >= 1 {
-                lightningMaxBolts.save()
-            }
+        .onSignificantChange(of: lightningMaxBolts.value) {
+            lightningMaxBolts.save()
         }
     }
 
@@ -130,10 +126,29 @@ private extension WeatherThunderEditor {
         } label: {
             Text("Fork %", bundle: .module)
         }
-        .onChange(of: lightningForkProbability.value) { oldValue, newValue in
-            if abs(oldValue - newValue) >= 1 {
-                lightningForkProbability.save()
-            }
+        .onSignificantChange(of: lightningForkProbability.value) {
+            lightningForkProbability.save()
         }
+    }
+}
+
+private struct SignificantChangeModifier: ViewModifier {
+    let value: Double
+    var threshold: Double = 1
+    let onSignificantChange: () -> Void
+
+    func body(content: Content) -> some View {
+        content.onChange(of: value) { oldValue, newValue in
+            guard abs(oldValue - newValue) >= threshold else { return }
+            onSignificantChange()
+        }
+    }
+}
+
+private extension View {
+    /// Runs `action` when `value` changes by at least `threshold`, collapsing the
+    /// repeated "debounce tiny slider jitter, then save" pattern used by this editor's sliders.
+    func onSignificantChange(of value: Double, threshold: Double = 1, perform action: @escaping () -> Void) -> some View {
+        modifier(SignificantChangeModifier(value: value, threshold: threshold, onSignificantChange: action))
     }
 }

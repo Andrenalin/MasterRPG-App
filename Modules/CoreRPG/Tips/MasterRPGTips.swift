@@ -5,6 +5,8 @@ import SwiftUI
 import TipKit
 import os
 
+// MARK: - Eligibility Snapshot
+
 /// A testable summary of the user data that controls contextual guidance.
 ///
 /// TipKit events remember that a workflow was completed. This snapshot prevents
@@ -397,6 +399,8 @@ public enum MasterRPGTips {
     }
 }
 
+// MARK: - Onboarding Tips
+
 public struct FirstItemTip: Tip {
     static let itemCreated = Event(id: "onboarding.item-created.v2")
 
@@ -565,6 +569,8 @@ public struct LinkContentTip: Tip {
     }
 }
 
+// MARK: - Game Setup Tips
+
 public struct ChooseAdventureTip: Tip {
     static let adventureSelected = Event(id: "game.adventure-selected.v1")
 
@@ -681,6 +687,8 @@ public struct StartOrJoinGameTip: Tip {
     }
 }
 
+// MARK: - Feature Discovery Tips
+
 public struct AskAITip: Tip {
     static let generatedContentAccepted = Event(id: "editor.ai-content-accepted.v1")
 
@@ -792,6 +800,8 @@ public struct UseMapToolsTip: Tip {
         MaxDisplayCount(3)
     }
 }
+
+// MARK: - Sharing & Window Tips
 
 /// Points at the wifi icon once the game screen shows real content, telling
 /// the Game Master or a Player they can tap it to see their join code.

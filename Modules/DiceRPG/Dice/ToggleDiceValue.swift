@@ -7,14 +7,14 @@ import SwiftUI
     @Previewable @Environment(DiceRootModel.self) var root
     ToggleDiceValue(
         model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),
-        toggleKetpath: \.sumUp
+        toggleKeyPath: \.sumUp
     )
     .padding()
 }
 
 struct ToggleDiceValue: View {
     let model: DiceModel
-    let toggleKetpath: WritableKeyPath<DiceModel, Bool>
+    let toggleKeyPath: WritableKeyPath<DiceModel, Bool>
     
     var canToggle: Bool = true
     var title: LocalizedStringKey = "Hidden"
@@ -31,19 +31,19 @@ struct ToggleDiceValue: View {
             .onChange(of: model, initial: true) {
                 updateToggleValue()
             }
-            .onChange(of: model[keyPath: toggleKetpath]) {
+            .onChange(of: model[keyPath: toggleKeyPath]) {
                 updateToggleValue()
             }
     }
     
     func updateToggleValue() {
-        let toggleValue = model[keyPath: toggleKetpath]
+        let toggleValue = model[keyPath: toggleKeyPath]
         guard model.id != toggleEditModel.valueId || toggleValue != toggleEditModel.value else { return }
         let editController = root.editController
         toggleEditModel.reset(valueId: model.id, value: toggleValue) { itemId, value in
             guard var item = editController.editModel(for: itemId) else { return }
-            if value != item[keyPath: toggleKetpath] {
-                item[keyPath: toggleKetpath] = value
+            if value != item[keyPath: toggleKeyPath] {
+                item[keyPath: toggleKeyPath] = value
                 editController.save(updated: item, message: saveMessage)
             }
         }

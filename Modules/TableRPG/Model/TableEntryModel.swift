@@ -116,12 +116,4 @@ extension TableEntryModel {
         return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold): \(content)\(otherValue)"
     }
 
-    public var nameLinkText: String {
-        let bold = name.starts(with: "**") ? "" : "**"
-        return "\(bold)\(name.trimmingCharacters(in: .whitespacesAndNewlines))\(bold)"
-    }
-
-    public func contentLinkText(otherValue: String) -> String {
-        return "\(content)\(otherValue)"
-    }
 }

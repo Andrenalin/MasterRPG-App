@@ -75,7 +75,7 @@ struct DiceRPGDynamicPreviewSnapshotTests {
         try await assertPreviewSnapshot("ToggleDiceValue") { root in
             ToggleDiceValue(
                 model: root.itemController.itemOrEmpty(for: DiceModel.previewId),
-                toggleKetpath: \.sumUp
+                toggleKeyPath: \.sumUp
             )
             .padding()
         }

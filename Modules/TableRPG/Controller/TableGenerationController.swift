@@ -152,7 +152,7 @@ struct TableGenerationController: Sendable {
         model.errorMessage = nil
         let result: Int
         if let diceId = occurrence.diceId {
-            result = diceRoot.role(diceId: diceId)
+            result = diceRoot.roll(diceId: diceId)
         } else {
             guard !occurrence.entries.isEmpty else {
                 model.errorMessage = String(
@@ -168,7 +168,7 @@ struct TableGenerationController: Sendable {
             // — which `matchingEntry` can't resolve since only index 0
             // exists, surfacing a confusing error for an otherwise
             // unremarkable single-entry table. See CODE_AUDIT §5.3.
-            result = occurrence.entries.count == 1 ? 1 : diceRoot.role(number: occurrence.entries.count)
+            result = occurrence.entries.count == 1 ? 1 : diceRoot.roll(number: occurrence.entries.count)
         }
         apply(result: result, to: occurrence, model: model)
         return result

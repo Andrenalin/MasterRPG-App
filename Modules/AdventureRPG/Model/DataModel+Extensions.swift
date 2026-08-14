@@ -9,31 +9,16 @@ extension RPGAdventureEntry: CoreDataId {}
 
 extension RPGAdventure {
     var entriesModel: [RPGAdventureEntry] {
-        get {
-            guard let entries = entries as? Set<RPGAdventureEntry> else {
-                return []
-            }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGAdventureEntry }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGAdventureEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGAdventureEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGAdventure must belong to a managed object context before adding entries.")
-        }
-        return RPGAdventureEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entriesModel)
     }
 }
 
-extension RPGAdventure: SpotlightIndexerAtyribute {
+extension RPGAdventure: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)
@@ -54,7 +39,7 @@ extension RPGAdventure: SpotlightIndexerAtyribute {
 #endif
 }
 
-extension RPGAdventureEntry: SpotlightIndexerAtyribute {
+extension RPGAdventureEntry: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)

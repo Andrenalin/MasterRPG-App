@@ -120,6 +120,8 @@ final class GameTableModel: Sendable {
     }
 
 #if os(visionOS)
+    // MARK: - Seating & Space Setup
+
     /// Called when the 3D table view appears to set up seating.
     func setupSeating(sharePlayController: RPGSharePlayController) {
         let isMaster = sharePlayController.gameModel?.gameConfig.isMaster ?? false
@@ -170,6 +172,8 @@ final class GameTableModel: Sendable {
     /// `GameTableView` can surface a "N results not shown on table" notice
     /// instead of the drop being silent. See CODE_AUDIT §5.1.
     private(set) var diceOverflowCount: Int?
+
+    // MARK: - Dice
 
     /// Mirrors a character-sheet roll onto the local player's own seat dice
     /// (see `GameSetup.playerDiceIds`) — only d20 is supported right now, the
@@ -237,6 +241,8 @@ final class GameTableModel: Sendable {
     }
 
 #endif
+
+    // MARK: - Map Sync & Fog of War
 
     /// Refreshes the standalone tabletop from the current game selection. The
     /// method deliberately rechecks the same map id because mapState updates can
@@ -420,6 +426,8 @@ final class GameTableModel: Sendable {
         }
         return hasher.finalize()
     }
+
+    // MARK: - Viewport & Board Projection
 
     /// The crop rect (in the given map's oriented coordinate space, same
     /// units as `MapEntryModel.coordinates`) the 3D board should show: the
@@ -676,6 +684,8 @@ final class GameTableModel: Sendable {
         broadcastMapState(for: mapId)
     }
 
+    // MARK: - Pin Thumbnails & Menu
+
     /// Loads the pin's photo thumbnail (2D pin pipeline) onto the 3D token.
     func loadPinThumbnail(pinId: UUID, photoId: UUID) async {
         defer {
@@ -739,6 +749,8 @@ final class GameTableModel: Sendable {
         }
         updatePinMenuAttachmentPosition()
     }
+
+    // MARK: - Pin Selection & Gestures
 
     func updateSelectedPinState(mapModel: MapModel?) {
         guard isGameMaster,
@@ -941,6 +953,8 @@ final class GameTableModel: Sendable {
         broadcastBattleRoundState(for: mapId)
         return true
     }
+
+    // MARK: - Broadcast Helpers
 
     private func mapModel(for mapId: UUID) async -> MapModel? {
         if let liveMap = mapRoot.mapGameControllable.gameModel.itemData[mapId] as? MapModel {

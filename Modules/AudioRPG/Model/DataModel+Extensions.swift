@@ -9,31 +9,16 @@ extension RPGAudioEntry: CoreDataId {}
 
 extension RPGAudio {
     var entriesModel: [RPGAudioEntry] {
-        get {
-            guard let entries = entries as? Set<RPGAudioEntry> else {
-                return []
-            }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGAudioEntry }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGAudioEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGAudioEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGAudio must belong to a managed object context before adding entries.")
-        }
-        return RPGAudioEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entriesModel)
     }
 }
 
-extension RPGAudio: SpotlightIndexerAtyribute {
+extension RPGAudio: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .text)

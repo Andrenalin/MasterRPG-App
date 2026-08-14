@@ -316,7 +316,7 @@ extension GameController {
         reset(for: itemId)
         
         let rollFunction = {
-            role(die: nil, for: itemId)
+            roll(die: nil, for: itemId)
             
             if let networkActions {
                 Task {
@@ -340,7 +340,7 @@ extension GameController {
     @MainActor
     private func diceName(for itemId: UUID, isOne: Bool) -> String {
         if isOne || gameItem(for: itemId).dice.count == 1 {
-            let result = RawDie.role(.number(9))
+            let result = RawDie.roll(.number(9))
             switch result {
             case 1:
                 return RPGResources.Resources.Dice.d20_1.rawValue
@@ -362,7 +362,7 @@ extension GameController {
                 return RPGResources.Resources.Dice.d20_9.rawValue
             }
         }
-        let result = RawDie.role(.number(6))
+        let result = RawDie.roll(.number(6))
         switch result {
         case 1:
             return RPGResources.Resources.Dice.TwoD20_1.rawValue
@@ -432,17 +432,7 @@ extension GameController {
                 orderedDice.enumerated().forEach { index, die in
                     let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
                     die.result.forEach { diceValue in
-                        var value: Int
-                        if let rerole = item.rerollOptions.first(where: { $0.number == diceValue }) {
-                            value = rerole.maxDiceValue ? maxValue : rerole.value
-                        } else {
-                            if diceValue <= maxValue {
-                                value = diceValue
-                            } else {
-                                value = 0
-                            }
-                        }
-                        result += value
+                        result += resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions)
                     }
                 }
                 result += Int(item.modifier)
@@ -454,13 +444,9 @@ extension GameController {
     @MainActor
     func coup(for itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
-        let allResults = item.coupOnlyOnFirstDie ? [item.dice.first?.result.first ?? 0] : item.dice.compactMap { $0.result.first }
-        let coup = allResults.contains(where: { value in item.coupValues.contains(where: { $0.isDiceValue(value) }) })
-        if coup { return true }
-        let result = allResults.reduce(0) { $0 + $1 }
-        return item.coupValues.contains(where: { $0.isResultValue(result) })
+        return matchesSpecialValue(onlyFirstDie: item.coupOnlyOnFirstDie, values: item.coupValues, dice: item.dice)
     }
-    
+
     @MainActor
     func diceSuccess(for itemId: UUID) -> [(UUID, [Bool])] {
         let item = gameItem(for: itemId)
@@ -474,30 +460,37 @@ extension GameController {
         return orderedDice.enumerated().map { index, die in
             let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
             let dieResult = die.result.map { diceValue in
-                var value: Int
-                if let rerole = item.rerollOptions.first(where: { $0.number == diceValue }) {
-                    value = rerole.maxDiceValue ? maxValue : rerole.value
-                } else {
-                    if diceValue <= maxValue {
-                        value = diceValue
-                    } else {
-                        value = 0
-                    }
-                }
-                return value > 0
+                resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions) > 0
             }
             return (die.id, dieResult)
         }
     }
-    
+
     @MainActor
     func fumble(for itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
-        let allResults = item.fumbleOnlyOnFirstDie ? [item.dice.first?.result.first ?? 0] : item.dice.compactMap { $0.result.first }
-        let fumble = allResults.contains(where: { value in item.fumbleValues.contains(where: { $0.isDiceValue(value) }) })
-        if fumble { return true }
+        return matchesSpecialValue(onlyFirstDie: item.fumbleOnlyOnFirstDie, values: item.fumbleValues, dice: item.dice)
+    }
+
+    /// Shared by `coup(for:)`/`fumble(for:)`: both check whether the rolled dice match a
+    /// special value, either on an individual die (respecting `onlyFirstDie`) or on their sum.
+    @MainActor
+    private func matchesSpecialValue(onlyFirstDie: Bool, values: [DiceModel.CoupFumbleOption], dice: [DieModel]) -> Bool {
+        let allResults = onlyFirstDie ? [dice.first?.result.first ?? 0] : dice.compactMap { $0.result.first }
+        let matchesDiceValue = allResults.contains(where: { value in values.contains(where: { $0.isDiceValue(value) }) })
+        if matchesDiceValue { return true }
         let result = allResults.reduce(0) { $0 + $1 }
-        return item.fumbleValues.contains(where: { $0.isResultValue(result) })
+        return values.contains(where: { $0.isResultValue(result) })
+    }
+
+    /// Shared by `sumResult(itemId:)`/`diceSuccess(for:)`: a rolled die value counts as its
+    /// reroll-option override when one applies, otherwise itself if within `maxValue`, else 0.
+    @MainActor
+    private func resolvedDiceValue(for diceValue: Int, maxValue: Int, rerollOptions: [DiceModel.RerollOption]) -> Int {
+        if let rerollOption = rerollOptions.first(where: { $0.number == diceValue }) {
+            return rerollOption.maxDiceValue ? maxValue : rerollOption.value
+        }
+        return diceValue <= maxValue ? diceValue : 0
     }
     
     @MainActor
@@ -575,7 +568,7 @@ extension GameController {
     }
     
     @MainActor
-    func role(die: DieModel?, for itemId: UUID) {
+    func roll(die: DieModel?, for itemId: UUID) {
         if let dicePath = Resources.bundle.path(forResource: diceName(for: itemId, isOne: die != nil), ofType: "m4a") {
             let diceUrl = URL(fileURLWithPath: dicePath)
             let item = AVPlayerItem(url: diceUrl)
@@ -583,13 +576,13 @@ extension GameController {
             diceGameModel.audioPlayer.play()
             diceGameModel.audioPlayer.volume = 0.33
         }
-        
+
         let item = gameItem(for: itemId)
         if let die, let index = item.dice.firstIndex(where: { $0.id == die.id }) {
-            gameItem(for: itemId).dice[index] = die.role(reroleOptions: item.rerollOptions)
+            gameItem(for: itemId).dice[index] = die.roll(rerollOptions: item.rerollOptions)
         } else {
             gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
-                die.role(reroleOptions: item.rerollOptions)
+                die.roll(rerollOptions: item.rerollOptions)
             }
         }
         Task {

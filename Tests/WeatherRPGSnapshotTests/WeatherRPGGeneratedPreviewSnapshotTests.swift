@@ -95,14 +95,6 @@ struct WeatherRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: WeatherRPG::ResidueView
-    @Test("ResidueView")
-    func snapshotResidueView() async throws {
-        try await assertPreviewSnapshot("ResidueView") {
-            WeatherRPG.ResidueView(type: .rain, strength: 200)
-        }
-    }
-
     // snapshot-root: WeatherRPG::StarsView
     @Test("StarsView")
     func snapshotStarsView() async throws {

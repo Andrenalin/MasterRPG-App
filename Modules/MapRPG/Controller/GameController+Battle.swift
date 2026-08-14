@@ -1,0 +1,507 @@
+// @copyright André Trettin
+
+import CoreRPG
+import Foundation
+import Observation
+import TableRPG
+import SwiftUI
+import CharacterRPG
+import PhotoRPG
+
+extension GameController {
+    @MainActor
+    func battleStartPins(itemId: UUID) -> (playerPins: [MapPinModel], roomPins: [MapPinModel])? {
+        guard gameModel.currentItemId == itemId,
+              let map = gameModel.itemData[itemId] as? MapModel else {
+            return nil
+        }
+
+        let playerPins = map.mapPins.filter { $0.isPlayer && $0.characterId != nil }
+        let roomId = mapGameModel.lastActivatedRoomId(for: itemId)
+            ?? map.entries.first(where: \.focused)?.id
+        let room = roomId.flatMap { selectedId in
+            map.entries.first { $0.id == selectedId }
+        }
+        let roomPins = room.map { selectedRoom in
+            map.mapPins.filter { !$0.isPlayer && selectedRoom.contains($0.location) }
+        } ?? []
+
+        guard !playerPins.isEmpty || !roomPins.isEmpty else { return nil }
+        return (playerPins, roomPins)
+    }
+
+    @MainActor
+    @discardableResult
+    func beginBattle(
+        itemId: UUID,
+        playerCombatants: [BattleCombatant],
+        roomCombatants: [BattleCombatant],
+        initiativeOrder: BattleInitiativeOrder
+    ) -> Bool {
+        guard let map = gameModel.itemData[itemId] as? MapModel else { return false }
+        battleRoundModel.begin(
+            mapId: itemId,
+            players: playerCombatants,
+            roomCombatants: roomCombatants,
+            initiativeOrder: initiativeOrder
+        )
+        battleRoundSettings.initiativeOrder = initiativeOrder
+        resolveBattleConfiguredValues()
+        _ = battleRoundModel.synchronize(pins: map.mapPins)
+        return true
+    }
+
+    @MainActor
+    func startBattle(
+        itemId: UUID,
+        initiativeOrder: BattleInitiativeOrder
+    ) -> Bool {
+        guard let pins = battleStartPins(itemId: itemId) else { return false }
+
+        let playerCombatants = pins.playerPins.map { pin in
+            return BattleCombatant(
+                pin: pin,
+                sourceCharacterId: pin.characterId,
+                // A player's Character is already the authoritative game
+                // identity. Never clone it merely because a battle starts.
+                gameCharacterId: pin.characterId,
+                isPlayer: true
+            )
+        }
+        let roomCombatants = pins.roomPins.compactMap { pin in
+            makeBattleCombatant(itemId: itemId, pinId: pin.id)
+        }
+
+        clearBattleHighlights(itemId: itemId)
+        return beginBattle(
+            itemId: itemId,
+            playerCombatants: playerCombatants,
+            roomCombatants: roomCombatants,
+            initiativeOrder: initiativeOrder
+        )
+    }
+
+    @MainActor
+    func makeBattleCombatant(itemId: UUID, pinId: UUID) -> BattleCombatant? {
+        guard let map = gameModel.itemData[itemId] as? MapModel,
+              let pinIndex = map.mapPins.firstIndex(where: { $0.id == pinId }) else {
+            return nil
+        }
+        var pin = map.mapPins[pinIndex]
+        let sourceCharacterId = pin.characterId
+        let gameCharacterId: UUID?
+        if pin.isPlayer {
+            gameCharacterId = sourceCharacterId
+        } else if let sourceCharacterId,
+                  root.characterRoot.valueGameControllable.battleCharacterCopy(
+                      for: sourceCharacterId
+                  ) != nil {
+            gameCharacterId = sourceCharacterId
+        } else if let sourceCharacterId,
+                  let copyId = root.characterRoot.valueGameControllable
+                    .createBattleCharacterCopy(for: sourceCharacterId) {
+            mapGameModel.registerBattleCharacterCopy(copyId)
+            pin.characterId = copyId
+            pin.timeInterval = max(
+                Date.now.timeIntervalSince1970,
+                pin.timeInterval.nextUp
+            )
+            map.mapPins[pinIndex] = pin
+            gameCharacterId = copyId
+        } else {
+            gameCharacterId = nil
+        }
+        return BattleCombatant(
+            pin: pin,
+            sourceCharacterId: sourceCharacterId,
+            gameCharacterId: gameCharacterId,
+            isPlayer: pin.isPlayer
+        )
+    }
+
+    @MainActor
+    func clearBattleHighlights(itemId: UUID) {
+        guard let map = gameModel.itemData[itemId] as? MapModel else { return }
+        for index in map.mapPins.indices where map.mapPins[index].isHighlighted {
+            map.mapPins[index].isHighlighted = false
+            map.mapPins[index].timeInterval = max(
+                Date.now.timeIntervalSince1970,
+                map.mapPins[index].timeInterval.nextUp
+            )
+            if map.mapPins[index].isPlayer,
+               let playerIndex = mapGameModel.playerPins.firstIndex(where: {
+                   $0.id == map.mapPins[index].id
+               }) {
+                mapGameModel.playerPins[playerIndex] = map.mapPins[index]
+            }
+        }
+    }
+
+    @MainActor
+    func endBattle(itemId: UUID) -> Bool {
+        guard battleRoundModel.isRunning,
+              battleRoundModel.mapId == itemId,
+              let map = gameModel.itemData[itemId] as? MapModel else {
+            return false
+        }
+        clearBattleHighlights(itemId: itemId)
+        battleRoundModel.end()
+        _ = battleRoundModel.synchronize(pins: map.mapPins)
+        return true
+    }
+
+    @MainActor
+    func setBattleInitiative(
+        itemId: UUID,
+        combatantId: UUID,
+        value: Int?
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId else { return false }
+        return battleRoundModel.setInitiative(value, for: combatantId)
+    }
+
+    @MainActor
+    func adjustBattleInitiative(
+        itemId: UUID,
+        combatantId: UUID,
+        amount: Int
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId else { return false }
+        return battleRoundModel.adjustInitiative(by: amount, for: combatantId)
+    }
+
+    @MainActor
+    func setBattleInitiativeOrder(
+        itemId: UUID,
+        order: BattleInitiativeOrder
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId else { return false }
+        battleRoundSettings.initiativeOrder = order
+        return battleRoundModel.setInitiativeOrder(order)
+    }
+
+    @MainActor
+    func moveBattleEntries(from source: IndexSet, to destination: Int) {
+        battleRoundModel.moveEntries(from: source, to: destination)
+    }
+
+    @MainActor
+    func activateBattleAttacker(itemId: UUID, combatantId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.activateAttacker(combatantId) else {
+            return false
+        }
+        applyActiveBattleHighlights(itemId: itemId)
+        return true
+    }
+
+    @MainActor
+    func nextBattleAttacker(itemId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.nextAttacker() else {
+            return false
+        }
+        applyActiveBattleHighlights(itemId: itemId)
+        return true
+    }
+
+    @MainActor
+    func nextBattleRound(itemId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.nextRound() else {
+            return false
+        }
+        applyActiveBattleHighlights(itemId: itemId)
+        return true
+    }
+
+    /// Adds a pin that was outside the initially focused room while the
+    /// surprise round is still being prepared.
+    @MainActor
+    func addBattleCombatant(itemId: UUID, pinId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.isPreparingSurprise,
+              battleRoundModel.combatant(pinId: pinId) == nil,
+              let combatant = makeBattleCombatant(itemId: itemId, pinId: pinId),
+              battleRoundModel.addCombatant(combatant) else {
+            return false
+        }
+        resolveBattleConfiguredValues(for: combatant.id)
+        return true
+    }
+
+    /// Drops a combatant from the battle roster entirely, distinct from
+    /// `setBattleCombatantDead` which only flags it. The map pin itself is
+    /// untouched, so highlighting it again re-adds a fresh combatant.
+    @MainActor
+    func removeBattleCombatant(itemId: UUID, combatantId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              battleRoundModel.removeCombatant(combatantId) else {
+            return false
+        }
+        applyActiveBattleHighlights(itemId: itemId)
+        return true
+    }
+
+    @MainActor
+    func addBattleRoll(
+        itemId: UUID,
+        combatantId: UUID,
+        total: Int,
+        expression: String?
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId else { return false }
+        return battleRoundModel.addRoll(
+            combatantId: combatantId,
+            total: total,
+            expression: expression
+        )
+    }
+
+    @MainActor
+    func selectBattleRollRecipient(itemId: UUID, combatantId: UUID) -> Bool {
+        guard battleRoundModel.mapId == itemId else { return false }
+        return battleRoundModel.selectRollRecipient(combatantId)
+    }
+
+    @MainActor
+    func setBattleCombatantDead(
+        itemId: UUID,
+        combatantId: UUID,
+        isDead: Bool
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId,
+              let combatant = battleRoundModel.combatant(id: combatantId),
+              combatant.isDead != isDead,
+              updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { pin in
+                  pin.isDead = isDead
+              }) else {
+            return false
+        }
+        _ = synchronizeBattleDefenders(itemId: itemId)
+        return true
+    }
+
+    /// Associates a Character with a battle token without touching the source
+    /// database. Empty tokens receive an independent runtime copy. Existing
+    /// player identities are reused, while non-player runtime identities are
+    /// reused only when their copy is still present in Character game memory.
+    @MainActor
+    func assignBattleCharacter(
+        itemId: UUID,
+        combatantId: UUID,
+        characterId: UUID
+    ) -> Bool {
+        guard battleRoundModel.isRunning,
+              battleRoundModel.mapId == itemId,
+              let combatant = battleRoundModel.combatant(id: combatantId),
+              let map = gameModel.itemData[itemId] as? MapModel,
+              let pinIndex = map.mapPins.firstIndex(where: { $0.id == combatant.pinId }) else {
+            return false
+        }
+
+        let currentCharacterId = map.mapPins[pinIndex].characterId
+        let sourceCharacterId: UUID
+        let gameCharacterId: UUID
+
+        if combatant.isPlayer, let currentCharacterId {
+            // Player Characters are shared game identities and must not fork
+            // into an isolated monster-style runtime copy.
+            sourceCharacterId = currentCharacterId
+            gameCharacterId = currentCharacterId
+        } else if let currentCharacterId,
+                  root.characterRoot.valueGameControllable.battleCharacterCopy(
+                      for: currentCharacterId
+                  ) != nil {
+            // This token already owns a live runtime Character. Treat another
+            // selection as a no-op so it cannot advance map state or fork the
+            // association while the battle is running.
+            return false
+        } else {
+            let source = currentCharacterId ?? characterId
+            guard let copyId = root.characterRoot.valueGameControllable
+                .createBattleCharacterCopy(for: source) else {
+                return false
+            }
+            mapGameModel.registerBattleCharacterCopy(copyId)
+            sourceCharacterId = source
+            gameCharacterId = copyId
+        }
+
+        var updatedPin = map.mapPins[pinIndex]
+        updatedPin.characterId = gameCharacterId
+        updatedPin.timeInterval = max(
+            Date.now.timeIntervalSince1970,
+            updatedPin.timeInterval.nextUp
+        )
+        map.mapPins[pinIndex] = updatedPin
+        if updatedPin.isPlayer,
+           let playerIndex = mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
+            mapGameModel.playerPins[playerIndex] = updatedPin
+        }
+        let changed = battleRoundModel.assignCharacter(
+            combatantId: combatantId,
+            sourceCharacterId: sourceCharacterId,
+            gameCharacterId: gameCharacterId,
+            pin: updatedPin
+        )
+        if changed {
+            resolveBattleConfiguredValues(for: combatantId)
+        }
+        return changed
+    }
+
+    /// The orchestration (resolving the dropped/picked entry, remapping it to
+    /// the combatant's own battle-copy entry by name, deriving an initiative
+    /// value) lives in GameRPG's `BattleRoundController`, which is the only
+    /// place that can reach `GameRoot`. This is the narrow primitive it
+    /// composes to actually change `battleRoundModel`'s private state.
+    @MainActor
+    @discardableResult
+    func setBattleValueEntry(
+        itemId: UUID,
+        combatantId: UUID,
+        entryId: UUID?,
+        kind: BattleValueKind
+    ) -> Bool {
+        guard battleRoundModel.mapId == itemId else { return false }
+        return battleRoundModel.setValueEntry(entryId, kind: kind, for: combatantId)
+    }
+
+    @MainActor
+    func refreshBattleConfiguredValues(itemId: UUID) {
+        guard battleRoundModel.mapId == itemId else { return }
+        resolveBattleConfiguredValues(remap: true)
+    }
+
+    @MainActor
+    func synchronizeBattleDefenders(itemId: UUID) -> Bool {
+        guard battleRoundModel.isRunning,
+              battleRoundModel.mapId == itemId,
+              let map = gameModel.itemData[itemId] as? MapModel else {
+            return false
+        }
+
+        var repairedAttacker = false
+        if let attackerPinId = battleRoundModel.activePinId,
+           let attacker = map.mapPins.first(where: { $0.id == attackerPinId }),
+           !attacker.isHighlighted {
+            repairedAttacker = updatePinState(
+                itemId: itemId,
+                pinId: attackerPinId,
+                mutation: { $0.isHighlighted = true }
+            )
+        }
+
+        let additionalDefenderPinIds = map.mapPins.compactMap { pin -> UUID? in
+            guard pin.isHighlighted,
+                  pin.id != battleRoundModel.activePinId,
+                  battleRoundModel.combatant(pinId: pin.id) == nil else {
+                return nil
+            }
+            return pin.id
+        }
+        let additionalDefenders = additionalDefenderPinIds.compactMap { pinId in
+            makeBattleCombatant(itemId: itemId, pinId: pinId)
+        }
+        let changed = battleRoundModel.synchronize(
+            pins: map.mapPins,
+            additionalDefenders: additionalDefenders
+        )
+
+        // Runs on every master tick while a battle is active, so a hit-points
+        // entry edited on the Character sheet (outside any Map/BattleRound
+        // action) still reaches the pin's health-bar border without a
+        // dedicated notification path.
+        var healthChanged = false
+        for combatant in battleRoundModel.combatants {
+            let percent = healthPercent(for: combatant)
+            guard combatant.pin.healthPercent != percent else { continue }
+            if updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { $0.healthPercent = percent }) {
+                healthChanged = true
+            }
+        }
+        if healthChanged {
+            _ = battleRoundModel.synchronize(pins: map.mapPins)
+        }
+
+        return repairedAttacker || changed || healthChanged
+    }
+
+    /// Also called directly by `MapPinView` to render a tracked combatant's
+    /// pin live — reading `entry.value` here touches the same `@Observable`
+    /// `ValueModel.entries` storage the Character sheet edits, so that render
+    /// updates the instant the game master changes hit points, with no
+    /// dependency on the periodic broadcast in `synchronizeBattleDefenders`
+    /// above. A player has no combatant locally (only the master's
+    /// `battleRoundModel` is ever populated with combatants — see
+    /// `BattleRoundNetworkState`), so this path only ever fires for the
+    /// master; players still see `pin.healthPercent`, the persisted value
+    /// `synchronizeBattleDefenders`/`resolveBattleConfiguredValues` push onto
+    /// the pin for the network.
+    ///
+    /// `entry.value` follows the same "base|modifier" convention as
+    /// `ValueEntryModel.valueCalculated`: the text before "|" is the maximum
+    /// (100%); `gameEntryDisplayValue` already resolves links and evaluates
+    /// "base|modifier" as "base+modifier" into the current amount.
+    @MainActor
+    func healthPercent(for combatant: BattleCombatant) -> Double? {
+        guard let gameCharacterId = combatant.gameCharacterId,
+              let entryId = combatant.hitPointsEntryId,
+              let entry = root.characterRoot.valueGameControllable.gameEntry(
+                  characterId: gameCharacterId,
+                  entryId: entryId
+              ),
+              let baseText = entry.value.split(separator: "|").first,
+              let base = Double(baseText),
+              base > 0,
+              let displayText = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+                  characterId: gameCharacterId,
+                  entryId: entryId
+              ),
+              let current = Double(displayText) else {
+            return nil
+        }
+        return min(max(current / base * 100, 0), 100)
+    }
+
+    @MainActor
+    func networkBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType? {
+        guard battleRoundModel.mapId == itemId,
+              let state = battleRoundModel.networkState() else {
+            return nil
+        }
+        let generation = networkGeneration(for: itemId)
+        return NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: generation.version,
+            data: state.encodeData(),
+            assetVersion: generation.assetVersion,
+            contentVersion: generation.contentVersion
+        )
+    }
+
+    @MainActor
+    func applyBattleRoundUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
+        let generation = networkGeneration(for: itemId)
+        guard data.id == itemId,
+              data.type == .map,
+              gameModel.currentItemId == itemId,
+              data.version == generation.version,
+              data.assetVersion == generation.assetVersion,
+              data.contentVersion == generation.contentVersion,
+              let state = BattleRoundNetworkState.decodeData(of: data.data),
+              state.mapId == itemId else {
+            return false
+        }
+        return battleRoundModel.applyRemoteState(state)
+    }
+
+    @MainActor
+    func resetBattleRound() {
+        releaseBattleCharacters(includingPlayers: true)
+        mapGameModel.clearBattleCharacterCopies()
+        battleRoundModel.reset()
+    }
+}

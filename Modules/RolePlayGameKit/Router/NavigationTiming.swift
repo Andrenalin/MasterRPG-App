@@ -13,4 +13,9 @@ import Foundation
 enum NavigationTiming {
     /// Delay between opening a window and performing a route on that window's navigator.
     static let crossWindowRouteDelay: Duration = .milliseconds(150)
+
+    /// Delay between switching tabs/columns and delivering a route to the newly selected
+    /// module's navigator, for the same reason as `crossWindowRouteDelay`: the destination
+    /// `ManagedNavigationStack` needs a moment to mount and subscribe after becoming selected.
+    static let tabSwitchMountDelay: TimeInterval = 0.8
 }

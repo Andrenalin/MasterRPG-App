@@ -45,4 +45,13 @@ struct PlaylistItem: Equatable, Hashable, Identifiable, Sendable {
         self.artist = artist
         self.duration = duration
     }
+
+    /// Loads `assetUrl`'s duration and builds the resulting item — the "AVURLAsset →
+    /// load duration → PlaylistItem" step shared by `AudioController` and `GameController`'s
+    /// otherwise-differing asset-loading strategies (see CODE_AUDIT §9.17/§7.1).
+    static func loading(id: UUID, title: String, artist: String, from assetUrl: URL) async throws -> PlaylistItem {
+        let asset = AVURLAsset(url: assetUrl)
+        let duration = try await asset.load(.duration)
+        return PlaylistItem(id: id, url: asset.url, title: title, artist: artist, duration: duration)
+    }
 }

@@ -9,32 +9,17 @@ extension RPGPhotoEntry: CoreDataId {}
 
 extension RPGPhoto {
     var entriesModel: [RPGPhotoEntry] {
-        get {
-            guard let entries = entries as? Set<RPGPhotoEntry> else {
-                return []
-            }
-            // Use NSSortDescriptor for efficient database-level sorting
-            let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
-            return (entries as NSSet).sortedArray(using: [sortDescriptor]).compactMap { $0 as? RPGPhotoEntry }
-        }
-        set {
-            entries = NSSet(array: newValue)
-        }
+        get { RPGPhotoEntry.sortedArray(from: entries) }
+        set { entries = NSSet(array: newValue) }
     }
-    
+
     func entryOrNew(for uuid: UUID) -> RPGPhotoEntry {
-        if let entry = entriesModel.first(where: { $0.uuid == uuid }) {
-            return entry
-        }
-        guard let managedObjectContext else {
-            preconditionFailure("RPGPhoto must belong to a managed object context before adding entries.")
-        }
-        return RPGPhotoEntry(context: managedObjectContext)
+        childOrNew(uuid, in: entriesModel)
     }
 }
 
 
-extension RPGPhoto: SpotlightIndexerAtyribute {
+extension RPGPhoto: SpotlightIndexerAttribute {
 #if !os(tvOS)
     public func attributeSet() -> CSSearchableItemAttributeSet {
         let attributeSet = CSSearchableItemAttributeSet(contentType: .image)

@@ -1,0 +1,49 @@
+// @copyright André Trettin
+
+import CoreRPG
+import DiceRPG
+import Foundation
+
+extension PlayerController {
+    func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+        let features = await root.gameModel.gameControl.features
+        guard await (root.gameModel.gameConfig.id != model.sender.id) &&
+                (features.diceMaster || !model.sender.isMaster) &&
+                (features.dicePlayers || model.sender.isMaster)
+        else { return await response(for: model, isSuccess: false, requestData: false) }
+
+        // Peers may contribute only a complete roll. Dice focus/visibility and
+        // package commands remain master-authoritative even if a player stamps
+        // the envelope with a group audience.
+        guard model.sender.isMaster || model.isPlayerDiceGroupEvent else {
+            return nil
+        }
+
+        switch model.type {
+        case .reveal:
+            if try await !root.diceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
+                return await response(for: model, isSuccess: true, requestData: true)
+            }
+            return await response(for: model, isSuccess: true, requestData: false)
+        case .store:
+            try await root.diceRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: model.subType == .show)
+            return await response(for: model, isSuccess: true, requestData: false)
+        case .update:
+            switch model.subType {
+            case .show, .store:
+                try await root.diceRoot.diceGameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
+            case .generic:
+                _ = await root.diceRoot.diceGameControllable.addGameDiceResult(
+                    data: model.data,
+                    name: model.senderName,
+                    supporterTier: model.sender.supporterTier,
+                    isGameMaster: model.sender.isMaster
+                )
+                break
+            default:
+                break
+            }
+        }
+        return nil
+    }
+}

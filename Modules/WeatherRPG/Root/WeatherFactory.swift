@@ -4,7 +4,7 @@ import CoreRPG
 import PhotoRPG
 import SwiftUI
 
-public enum WeatherRootFactory {
+public enum WeatherFactory {
     @MainActor public static func root(tagController: TagController, photoRoot: PhotoRootModel) -> WeatherRootModel {
         WeatherRootModel(tagController: tagController, photoRoot: photoRoot)
     }

@@ -28,7 +28,7 @@ struct SplitNavigation: View {
                 $0.modifier(SplitNavigationRestorationModifier(appModel: appModel))
             }
             .focusedSceneValue(\.selectedModule, $appModel.menuSelectedModule)
-            .onNavigationReceive(assign: $appModel.selectedModule, delay: 0.8)
+            .onNavigationReceive(assign: $appModel.selectedModule, delay: NavigationTiming.tabSwitchMountDelay)
 #if os(macOS)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {

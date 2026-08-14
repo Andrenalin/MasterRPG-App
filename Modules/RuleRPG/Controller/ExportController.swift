@@ -28,23 +28,13 @@ struct ExportController: Sendable {
         return rootManager
     }
 
-    var hubControllable: any RootExportControllable {
-        get {
-            guard let root = exportModel.hubControllable else {
-                preconditionFailure("RuleRPG export requires its Adventure export hub after setup.")
-            }
-            return root
-        }
-        set { exportModel.hubControllable = newValue }
-    }
-
     @MainActor
     func setUp(rootManager: RootManager) {
         rootReference.rootManager = rootManager
     }
 }
 
-extension ExportController: ExportControllable {
+extension ExportController: ExportModelBacked {
     var itemControllable: any ItemControllable { itemController }
 
     @MainActor
