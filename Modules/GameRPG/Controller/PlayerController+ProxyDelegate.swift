@@ -49,7 +49,7 @@ extension PlayerController {
 
 extension PlayerController {
     func scheduleProxyFocus(characterId: UUID) async {
-        await scheduleProxyFocusTask(characterId: characterId)
+        scheduleProxyFocusTask(characterId: characterId)
     }
 
     /// Same reasoning as `scheduleSendCharacterTask` — the cancel/mint/assign

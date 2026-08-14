@@ -11,7 +11,7 @@ extension PlayerController {
         usesSharePlayPlaybackCoordination: Bool = false
     ) async throws -> GameNetworkModel? {
         if model.subType == .ok {
-            await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
+            root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         guard model.subType != .failed else { return nil }
@@ -20,35 +20,35 @@ extension PlayerController {
         case .reveal:
             let revealed = try await root.audioRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true)
             if revealed, await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) {
-                await gameModel.removePendingAudioRequest(model.data.id)
-                await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+                gameModel.removePendingAudioRequest(model.data.id)
+                root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                await gameModel.insertPendingAudioRequest(model.data.id)
+                gameModel.insertPendingAudioRequest(model.data.id)
                 return await response(for: model, isSuccess: true, requestData: true)
             }
         case .store:
             try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             guard await root.audioRoot.audioGameControllable.hasLocalAudioData(for: model.data.id) else {
-                await gameModel.insertPendingAudioRequest(model.data.id)
+                gameModel.insertPendingAudioRequest(model.data.id)
                 return await response(for: model, isSuccess: true, requestData: true)
             }
-            let completesReveal = await gameModel.removePendingAudioRequest(model.data.id)
+            let completesReveal = gameModel.removePendingAudioRequest(model.data.id)
             if completesReveal {
                 _ = await root.audioRoot.gameControllable.setCurrent(itemId: model.data.id)
             }
-            await root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
+            root.audioRoot.audioGameControllable.applyAudio(id: model.data.id, for: [root.gameModel.gameConfig.id, model.sender.id])
             return await response(for: model, isSuccess: true, requestData: false)
         case .update:
             switch model.subType {
             case .audioList:
-                _ = await applyAudioList(model)
+                _ = applyAudioList(model)
             case .playAudio:
                 guard model.sender.isMaster else { return nil }
-                if await root.audioRoot.audioGameControllable.shouldPlay(with: model.data) {
-                    await reportAudioAvailableToCurrentPlayers(itemId: model.data.id, model: model)
+                if root.audioRoot.audioGameControllable.shouldPlay(with: model.data) {
+                    reportAudioAvailableToCurrentPlayers(itemId: model.data.id, model: model)
                 }
-                let asGameMaster = await gameModel.asGameMaster
+                let asGameMaster = gameModel.asGameMaster
                 if Self.shouldStartAudioPlayback(
                     isSharePlayActive: usesSharePlayPlaybackCoordination,
                     asGameMaster: asGameMaster
@@ -94,7 +94,7 @@ extension PlayerController {
     func sendAudioList() async {
         // A proxy device stays invisible: the host answers for its audio
         // availability, and the host consumes any list that still arrives.
-        guard await root.gameModel.gameType != .proxy else { return }
+        guard root.gameModel.gameType != .proxy else { return }
         let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: false, with: root.gameModel.gameConfig.id)
         await send(type: .update, subType: .audioList, updated: audioList, useJournal: false)
     }

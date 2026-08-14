@@ -23,18 +23,18 @@ extension PlayerController {
            model.type == .reveal,
            model.subType == .show,
            model.targetId == nil {
-            await gameModel.removeDeferredPdfReveals(from: masterId)
+            gameModel.removeDeferredPdfReveals(from: masterId)
         }
         if model.sender.isMaster,
            !(model.type == .update && model.subType == .pdfList) {
-            let previousBaseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+            let previousBaseline = root.pdfRoot.pdfGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: masterId
             )
             if previousBaseline != nil, previousBaseline != model.data.effectiveAssetVersion {
-                await gameModel.removeRequestedPdfRepairId(model.data.id)
+                gameModel.removeRequestedPdfRepairId(model.data.id)
             }
-            await root.pdfRoot.pdfGameControllable.setMasterVersion(
+            root.pdfRoot.pdfGameControllable.setMasterVersion(
                 itemId: model.data.id,
                 version: model.data.effectiveAssetVersion,
                 masterId: masterId
@@ -51,7 +51,7 @@ extension PlayerController {
             case .valid:
                 validPlayerReveal = true
             case .awaitingAuthoritativeList:
-                await gameModel.deferPdfReveal(model)
+                gameModel.deferPdfReveal(model)
                 return nil
             case .mismatch:
                 return nil
@@ -63,16 +63,16 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.pdfRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await gameModel.completePdfRepairAndSetUpdateType(model.data.id)
-                let localPlayerId = await root.gameModel.gameConfig.id
-                await root.pdfRoot.pdfGameControllable.markPdfAvailable(
+                gameModel.completePdfRepairAndSetUpdateType(model.data.id)
+                let localPlayerId = root.gameModel.gameConfig.id
+                root.pdfRoot.pdfGameControllable.markPdfAvailable(
                     itemId: model.data.id,
                     version: model.data.effectiveAssetVersion,
                     for: [localPlayerId, model.sender.id],
                     masterId: masterId
                 )
                 if model.data.data != nil, model.targetId == nil {
-                    await root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
+                    root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
                         itemId: model.data.id,
                         version: model.data.effectiveAssetVersion,
                         masterId: masterId
@@ -81,9 +81,9 @@ extension PlayerController {
                 return await response(for: model, isSuccess: true, requestData: false)
             }
 
-            let isFirstRequest = await gameModel.insertRequestedPdfRepairId(model.data.id)
+            let isFirstRequest = gameModel.insertRequestedPdfRepairId(model.data.id)
             guard isFirstRequest else { return nil }
-            let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+            let baseline = root.pdfRoot.pdfGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: masterId
             )
@@ -104,12 +104,12 @@ extension PlayerController {
             )
             let hasLocalData = await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                let completesReveal = await gameModel.removeRequestedPdfRepairId(model.data.id)
+                let completesReveal = gameModel.removeRequestedPdfRepairId(model.data.id)
                 if completesReveal, await root.pdfRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                    await gameModel.setGameUpdateType(.pdf)
+                    gameModel.setGameUpdateType(.pdf)
                 }
-                let localPlayerId = await root.gameModel.gameConfig.id
-                await root.pdfRoot.pdfGameControllable.markPdfAvailable(
+                let localPlayerId = root.gameModel.gameConfig.id
+                root.pdfRoot.pdfGameControllable.markPdfAvailable(
                     itemId: model.data.id,
                     version: model.data.effectiveAssetVersion,
                     for: [localPlayerId],
@@ -142,23 +142,23 @@ extension PlayerController {
     }
 
     private func playerPdfRevealValidation(for model: GameNetworkModel) async -> PlayerPdfRevealValidation {
-        if await gameModel.asGameMaster {
-            let senderIsAvailable = await root.pdfRoot.pdfGameControllable.isPdfAvailable(
+        if gameModel.asGameMaster {
+            let senderIsAvailable = root.pdfRoot.pdfGameControllable.isPdfAvailable(
                 itemId: model.data.id,
                 for: model.sender.id,
                 masterId: model.masterId
             )
-            let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+            let baseline = root.pdfRoot.pdfGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: model.masterId
             )
             return senderIsAvailable && baseline == model.data.effectiveAssetVersion ? .valid : .mismatch
         }
 
-        guard await gameModel.hasAuthoritativePdfList(from: model.masterId) else {
+        guard gameModel.hasAuthoritativePdfList(from: model.masterId) else {
             return .awaitingAuthoritativeList
         }
-        guard let senderVersion = await root.pdfRoot.pdfGameControllable.reportedVersion(
+        guard let senderVersion = root.pdfRoot.pdfGameControllable.reportedVersion(
             for: model.data.id,
             playerId: model.sender.id
         ) else {
@@ -167,7 +167,7 @@ extension PlayerController {
         guard senderVersion == model.data.effectiveAssetVersion else {
             return .mismatch
         }
-        guard let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+        guard let baseline = root.pdfRoot.pdfGameControllable.masterVersion(
             for: model.data.id,
             masterId: model.masterId
         ) else {
@@ -177,15 +177,15 @@ extension PlayerController {
     }
 
     private func retryDeferredPdfReveals(from masterId: UUID) async {
-        let deferred = await gameModel.deferredPdfReveals(from: masterId)
+        let deferred = gameModel.deferredPdfReveals(from: masterId)
         for model in deferred {
             switch await playerPdfRevealValidation(for: model) {
             case .awaitingAuthoritativeList:
                 continue
             case .mismatch:
-                await gameModel.removeDeferredPdfReveal(model)
+                gameModel.removeDeferredPdfReveal(model)
             case .valid:
-                await gameModel.removeDeferredPdfReveal(model)
+                gameModel.removeDeferredPdfReveal(model)
                 guard await deferredPresentationIsCurrent(model) else { continue }
                 do {
                     if let response = try await handlePdf(model) {
@@ -201,7 +201,7 @@ extension PlayerController {
     func sendPdfList() async {
         // A proxy mirrors its host and must not become an availability-report
         // participant of its own.
-        guard await root.gameModel.gameType != .proxy else { return }
+        guard root.gameModel.gameType != .proxy else { return }
         let pdfList = await root.pdfRoot.pdfGameControllable.pdfList(
             allPlayers: false,
             with: root.gameModel.gameConfig.master.id

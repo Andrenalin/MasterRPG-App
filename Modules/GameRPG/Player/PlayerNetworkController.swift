@@ -103,8 +103,8 @@ extension PlayerNetworkController: PlayerNetworkControllable {
 private extension PlayerNetworkController {
     func start(model: PlayerBrowserModel) async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Start with browser model")
-        let passcode = await networkModel.passcode
-        await networkModel.reset(controller: ConnectionController(id: UUID(), endpoint: model.endpoint, passcode: passcode, delegate: self))
+        let passcode = networkModel.passcode
+        networkModel.reset(controller: ConnectionController(id: UUID(), endpoint: model.endpoint, passcode: passcode, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
 
@@ -114,14 +114,14 @@ private extension PlayerNetworkController {
         if let source = connection.endpoint.throttleSourceKey {
             pendingConnectionSources[id] = source
         }
-        await networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
+        networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
 
     func startPlayerServer() async {
-        guard await networkModel.listener == nil else { return }
+        guard networkModel.listener == nil else { return }
         Logger.networking.debug("PlayerNetworkController: Create Listener")
-        await setUpListener()
+        setUpListener()
     }
 
     private func setUpListener() {
@@ -140,11 +140,11 @@ private extension PlayerNetworkController {
 extension PlayerNetworkController: ConnectionControllerDelegate {
     @MainActor
     func failed(with error: String?, for id: ConnectionController.ID) async {
-        guard await isCurrentConnection(id) else {
+        guard isCurrentConnection(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore failure from replaced connection \(id.uuidString, privacy: .public)")
             return
         }
-        if await networkModel.connectionState != .notReady {
+        if networkModel.connectionState != .notReady {
             await lostConnection(for: id)
         } else {
             // A fresh reconnect attempt (state == .notReady) failing immediately
@@ -164,7 +164,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         Logger.networking.debug("PlayerNetworkController: Lost connection")
         pendingConnectionSources.removeValue(forKey: id)
 
-        guard await markLostIfCurrent(id) else {
+        guard markLostIfCurrent(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore stale or duplicate loss \(id.uuidString, privacy: .public)")
             return
         }
@@ -175,7 +175,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
 
     @MainActor
     func readyConnection(for id: ConnectionController.ID) async {
-        guard await markReadyIfCurrent(id) else {
+        guard markReadyIfCurrent(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore ready callback from replaced connection \(id.uuidString, privacy: .public)")
             return
         }
@@ -251,10 +251,10 @@ extension PlayerNetworkController {
     }
 
     func removedConnection(endpoint: NWEndpoint) async {
-        guard let model = await networkModel.model else { return }
+        guard let model = networkModel.model else { return }
         Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription, privacy: .public)")
         if model.endpoint == endpoint {
-            guard let id = await networkModel.connectionController?.id else { return }
+            guard let id = networkModel.connectionController?.id else { return }
             await lostConnection(for: id)
         }
     }
@@ -276,10 +276,10 @@ extension PlayerNetworkController: ListenerManagerDelegate {
             connection.cancel()
             return
         }
-        await networkModel.reset(listener: nil)
-        await networkModel.reset(isConnected: false)
-        let shouldRestart = await networkModel.connectionState == .lost
-        await networkModel.reset(state: .notReady)
+        networkModel.reset(listener: nil)
+        networkModel.reset(isConnected: false)
+        let shouldRestart = networkModel.connectionState == .lost
+        networkModel.reset(state: .notReady)
         if shouldRestart {
             Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
             await restart(connection: connection)

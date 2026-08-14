@@ -7,7 +7,7 @@ import os.log
 
 extension PlayerController {
     func handleValue(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
-        guard await root.gameModel.gameType != .proxy else { return try await handleProxyValue(model) }
+        guard root.gameModel.gameType != .proxy else { return try await handleProxyValue(model) }
         // A normal player accepts only the master's targeted response to the
         // join announcement. No Value reveal, result, loot, or live update is
         // processed during the game.
@@ -15,7 +15,7 @@ extension PlayerController {
               model.type == .update,
               model.subType == .store,
               model.data.data == nil,
-              let characterId = await root.gameModel.gamePlayer.characterId,
+              let characterId = root.gameModel.gamePlayer.characterId,
               characterId == model.data.id
         else { return nil }
 
@@ -40,7 +40,7 @@ extension PlayerController {
 
 extension PlayerController {
     func scheduleSendCharacter() async {
-        await scheduleSendCharacterTask()
+        scheduleSendCharacterTask()
     }
 
     /// The whole task-scheduling block (nil-check, id mint, task assignment)
@@ -63,12 +63,12 @@ extension PlayerController {
     }
 
     func sendCharacter() async {
-        let gameType = await root.gameModel.gameType
-        let canSend = await gameModel.canSendCharacter
+        let gameType = root.gameModel.gameType
+        let canSend = gameModel.canSendCharacter
         // A proxy device never announces a character: it mirrors the host
         // player and receives the host's character on readyProxy instead.
         guard canSend, gameType != .observer, gameType != .proxy,
-              let characterId = await root.gameModel.gamePlayer.characterId
+              let characterId = root.gameModel.gamePlayer.characterId
         else { return }
 
         do {
@@ -85,9 +85,9 @@ extension PlayerController {
                 useJournal: false,
                 relayToProxyClients: false
             )
-            let lostMaster = await gameModel.lostMaster
+            let lostMaster = gameModel.lostMaster
             guard !Task.isCancelled, !lostMaster else { return }
-            await gameModel.reset(sendPlayer: true)
+            gameModel.reset(sendPlayer: true)
         } catch is CancellationError {
             return
         } catch {

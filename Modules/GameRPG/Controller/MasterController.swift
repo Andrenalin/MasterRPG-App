@@ -603,8 +603,8 @@ extension MasterController {
             resolvedIdType = idType
         }
         if resolvedIdType.type == .space {
-            let masterId = await root.gameModel.gameConfig.id
-            await root.spaceRoot.spaceGameControllable.setMasterVersion(
+            let masterId = root.gameModel.gameConfig.id
+            root.spaceRoot.spaceGameControllable.setMasterVersion(
                 itemId: resolvedIdType.id,
                 version: resolvedIdType.effectiveAssetVersion,
                 masterId: masterId
@@ -617,15 +617,15 @@ extension MasterController {
         // journal as one shared attachment. A same-version reshow sends only the
         // reference; players still holding the item show it from memory, the
         // others request it.
-        if Self.sendsFullPayloadOnFirstShow(resolvedIdType.type), await !gameModel.hasSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion) {
+        if Self.sendsFullPayloadOnFirstShow(resolvedIdType.type), !gameModel.hasSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion) {
             if let fullData = try? await createGameData(for: resolvedIdType) {
-                await gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
+                gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
                 await send(type: .reveal, subtype: .show, updated: fullData)
                 if fullData.type == .map,
-                   let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                   let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                        for: fullData.id
                    ),
-                   await root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+                   root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
                     await send(type: .update, subtype: .battleRound, updated: battleUpdate)
                 }
                 return
@@ -634,10 +634,10 @@ extension MasterController {
         }
         await send(type: .reveal, subtype: .show, updated: resolvedIdType)
         if resolvedIdType.type == .map,
-           let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+           let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                for: resolvedIdType.id
            ),
-           await root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+           root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
             await send(type: .update, subtype: .battleRound, updated: battleUpdate)
         }
     }
@@ -677,7 +677,7 @@ extension MasterController {
         if message.type == .dice,
            actionType == .generic,
            let diceResult = DiceResultModel.decodeData(of: message.data) {
-            await root.battleRoundController.recordDiceResult(
+            root.battleRoundController.recordDiceResult(
                 diceResult,
                 senderId: root.gameModel.gameConfig.id,
                 isMaster: true
@@ -688,8 +688,8 @@ extension MasterController {
             return
         }
         if message.type == .space, actionType == .spaceTransform {
-            guard await root.spaceRoot.spaceGameControllable.isValidSpaceTransform(message),
-                  await root.spaceRoot.gameControllable.gameModel.currentItemId == message.id
+            guard root.spaceRoot.spaceGameControllable.isValidSpaceTransform(message),
+                  root.spaceRoot.gameControllable.gameModel.currentItemId == message.id
             else { return }
             let version = await root.spaceRoot.gameControllable.networkVersion(for: message.id)
             let canonical = NetworkCodableDataType(
@@ -733,7 +733,7 @@ extension MasterController {
                   type == .update,
                   subtype == .spaceTransform,
                   updated.type == .space {
-            guard let causalTimestamp = await root.spaceRoot.spaceGameControllable
+            guard let causalTimestamp = root.spaceRoot.spaceGameControllable
                 .causalSpaceTransformTimestamp(
                     itemId: updated.id,
                     version: updated.effectiveAssetVersion
@@ -744,12 +744,12 @@ extension MasterController {
             outgoingTimestamp = Date.now.timeIntervalSince1970
         }
 
-        let counter = await gameModel.nextMessageCounter()
+        let counter = gameModel.nextMessageCounter()
         Logger.networking.debug("MasterController: Send \(counter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subtype.debugDescription, privacy: .public) for \(updated.type.token, privacy: .public) -> \(updated.id, privacy: .public)")
 
         // Built from local state in one MainActor hop; a playerId becomes the
         // message target so only the addressee processes it.
-        let networtData = await root.gameModel.outgoingMessage(
+        let networtData = root.gameModel.outgoingMessage(
             replyToMessageID: replyToMessageID,
             timestamp: outgoingTimestamp,
             counter: counter,
@@ -765,7 +765,7 @@ extension MasterController {
            networtData.sender.isMaster,
            type == .update,
            subtype == .spaceTransform {
-            guard await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+            guard root.spaceRoot.spaceGameControllable.applySpaceTransform(
                 data: networtData.data,
                 counter: networtData.counter,
                 timestamp: networtData.timestamp
@@ -773,11 +773,11 @@ extension MasterController {
         }
 
         if let wireID = networtData.messageID {
-            let deliveryID = await gameModel.trackDelivery(
+            let deliveryID = gameModel.trackDelivery(
                 wireID: wireID,
                 counter: counter
             )
-            await root.logGameController.addMessage(
+            root.logGameController.addMessage(
                 messageID: deliveryID,
                 type: type,
                 subType: subtype,
@@ -786,7 +786,7 @@ extension MasterController {
                 targetID: networtData.targetId
             )
         } else {
-            await root.logGameController.addMessage(
+            root.logGameController.addMessage(
                 counter: counter,
                 type: type,
                 subType: subtype,
@@ -1015,7 +1015,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
 
         if !receivedModel.sender.isMaster, receivedModel.sender.role != .notSet {
-            if await root.gameModel.add(playerId: receivedModel.sender.id, playerModel: receivedModel.sender.playerModel, sharingModel: SharingControlModel(id: receivedModel.sender.id, name: receivedModel.sender.name, show: true)) {
+            if root.gameModel.add(playerId: receivedModel.sender.id, playerModel: receivedModel.sender.playerModel, sharingModel: SharingControlModel(id: receivedModel.sender.id, name: receivedModel.sender.name, show: true)) {
                 await resetPlayers()
             }
         }
@@ -1026,8 +1026,8 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
 
         if await shouldTrackPeerAvailabilitySource(model) {
-            let recipients = await root.logGameController.recipientIDs()
-            await gameModel.trackPeerAvailabilitySource(
+            let recipients = root.logGameController.recipientIDs()
+            gameModel.trackPeerAvailabilitySource(
                 model,
                 recipients: recipients
             )
@@ -1038,7 +1038,7 @@ extension MasterController: MasterNetworkStoreDelegate {
             let peerPresentationAuthorizesAvailability = if masterDeliveryAuthorizesAvailability {
                 false
             } else {
-                await gameModel.acceptsPeerAvailabilityReceipt(model)
+                gameModel.acceptsPeerAvailabilityReceipt(model)
             }
             guard masterDeliveryAuthorizesAvailability || peerPresentationAuthorizesAvailability else {
                 Logger.networking.debug("MasterController: Ignored uncorrelated availability acknowledgement from \(model.sender.id, privacy: .public)")
@@ -1058,7 +1058,7 @@ extension MasterController: MasterNetworkStoreDelegate {
                     // are requester-only repairs (including photo-free generic
                     // updates). Only show(for:) publishes the full Map package
                     // to the group and may establish the shared sent baseline.
-                    await gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.effectiveAssetVersion)
+                    gameModel.markSentGameItem(type: requestedData.type, id: requestedData.id, version: requestedData.effectiveAssetVersion)
                 }
                 // Target the answer at the requester: an untargeted full payload
                 // re-triggered "show" on every peer and flipped everyone's screen.
@@ -1090,7 +1090,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         let baseline: Int
         switch model.data.type {
         case .photo:
-            guard await root.gameModel.gameControl.features.photoSharing else {
+            guard root.gameModel.gameControl.features.photoSharing else {
                 return false
             }
             baseline = await root.photoRoot.gameControllable.networkVersion(
@@ -1101,7 +1101,7 @@ extension MasterController: MasterNetworkStoreDelegate {
                 for: model.data.id
             )
         case .space:
-            guard await root.gameModel.gameControl.features.spaceSharing else {
+            guard root.gameModel.gameControl.features.spaceSharing else {
                 return false
             }
             baseline = await root.spaceRoot.gameControllable.networkVersion(
@@ -1124,11 +1124,11 @@ extension MasterController: MasterNetworkStoreDelegate {
 
         let deliveryID: GameDeliveryMessageID?
         if let replyToMessageID = model.replyToMessageID {
-            deliveryID = await gameModel.deliveryMessageID(replyingTo: replyToMessageID)
+            deliveryID = gameModel.deliveryMessageID(replyingTo: replyToMessageID)
         } else if model.messageID == nil {
             // V1 has no stable wire identity. Retain its counter compatibility,
             // but only for an exact module/item receipt shape.
-            deliveryID = await root.gameModel.logData[model.counter]?.messageID
+            deliveryID = root.gameModel.logData[model.counter]?.messageID
         } else {
             deliveryID = nil
         }
@@ -1150,7 +1150,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
         guard deliveryMatch.matches else { return false }
 
-        let recorded = await root.logGameController.updateMessage(
+        let recorded = root.logGameController.updateMessage(
             messageID: deliveryID,
             player: model.sender.id
         )
@@ -1274,12 +1274,12 @@ extension MasterController {
 
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
-            await root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
+            root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             await continuePendingAudioPlays()
             return nil
         }
         if model.subType == .failed {
-            await audioTransferFailed(itemId: model.data.id, playerId: model.sender.id)
+            audioTransferFailed(itemId: model.data.id, playerId: model.sender.id)
             return nil
         }
         switch model.type {
@@ -1288,15 +1288,15 @@ extension MasterController {
         case .update:
             switch model.subType {
             case .generic:
-                guard await root.gameModel.gameControl.features.audioSharing else { return nil }
+                guard root.gameModel.gameControl.features.audioSharing else { return nil }
                 try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                 await send(type: .reveal, subtype: .show, updated: model.data)
             case .playAudio:
-                guard await root.gameModel.gameControl.features.audioSharing else { return nil }
+                guard root.gameModel.gameControl.features.audioSharing else { return nil }
                 await requestAudioPlay(model.data)
             case .audioList:
-                guard await applyAudioList(model) else { return nil }
-                await resetAudioTransfers(for: model.sender.id)
+                guard applyAudioList(model) else { return nil }
+                resetAudioTransfers(for: model.sender.id)
                 let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
                 await send(type: .update, subtype: .audioList, updated: audioList)
                 await continuePendingAudioPlays()
@@ -1409,16 +1409,16 @@ extension MasterController {
         case .reveal, .store:
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
-            guard await root.gameModel.gameControl.features.dicePlayers else { return nil }
+            guard root.gameModel.gameControl.features.dicePlayers else { return nil }
             guard model.sender.isMaster || model.isPlayerDiceGroupEvent else { return nil }
             if let diceResult = DiceResultModel.decodeData(of: model.data.data) {
-                await root.battleRoundController.recordDiceResult(
+                root.battleRoundController.recordDiceResult(
                     diceResult,
                     senderId: model.sender.id,
                     isMaster: model.sender.isMaster
                 )
             }
-            let (_, resultCategory) = await root.diceRoot.diceGameControllable.addGameDiceResult(
+            let (_, resultCategory) = root.diceRoot.diceGameControllable.addGameDiceResult(
                 data: model.data,
                 name: model.senderName,
                 supporterTier: model.sender.supporterTier,
@@ -1426,7 +1426,7 @@ extension MasterController {
             )
             if let diceResult = DiceResultModel.decodeData(of: model.data.data),
                let resultCategory {
-                await root.tableRoot.tableGameControllable.addResult(
+                root.tableRoot.tableGameControllable.addResult(
                     resultCategory,
                     diceResult: diceResult
                 )
@@ -1436,7 +1436,7 @@ extension MasterController {
     }
     
     func handleGame(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
-        await root.logGameController.updateScreen(counter: model.counter, player: model.sender.id, data: model.data.data)
+        root.logGameController.updateScreen(counter: model.counter, player: model.sender.id, data: model.data.data)
         return nil
     }
     
@@ -1505,9 +1505,9 @@ extension MasterController {
                     playerId: model.sender.id,
                     authoritativeMaster: true
                 )
-                if let battleUpdate = await root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                     for: model.data.id
-                ), await root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
+                ), root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
                     await send(
                         type: .update,
                         subtype: .battleRound,
@@ -1554,16 +1554,16 @@ extension MasterController {
                       model.purpose == .event,
                       model.effectiveAudience == .group
                 else { return nil }
-                if await root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
+                if root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
                     itemId: model.data.id,
                     data: model.data,
                     playerId: model.sender.id
                 ) {
-                    _ = await root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
+                    _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
                         itemId: model.data.id
                     )
                     #if !os(tvOS)
-                    await root.gameModel.gameTableModel?.syncPawnsWithMapPins()
+                    root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     #endif
                 }
             default:
@@ -1593,7 +1593,7 @@ extension MasterController {
             let content = await root.mapRoot.mapGameControllable.networkMapContentUpdate(
                 for: itemId
             )
-            let state = await root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)
+            let state = root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)
             guard full.id == itemId,
                   content.id == itemId,
                   state.id == itemId,
@@ -1666,14 +1666,14 @@ extension MasterController {
 
     func handlePdf(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
-            let masterId = await root.gameModel.gameConfig.id
+            let masterId = root.gameModel.gameConfig.id
             let baseline = await root.pdfRoot.gameControllable.networkVersion(for: model.data.id)
-            await root.pdfRoot.pdfGameControllable.setMasterVersion(
+            root.pdfRoot.pdfGameControllable.setMasterVersion(
                 itemId: model.data.id,
                 version: baseline,
                 masterId: masterId
             )
-            await root.pdfRoot.pdfGameControllable.markPdfAvailable(
+            root.pdfRoot.pdfGameControllable.markPdfAvailable(
                 itemId: model.data.id,
                 version: model.data.effectiveAssetVersion,
                 for: [model.sender.id],
@@ -1683,7 +1683,7 @@ extension MasterController {
         }
         guard model.subType != .failed else { return nil }
 
-        let masterId = await root.gameModel.gameConfig.id
+        let masterId = root.gameModel.gameConfig.id
         if model.purpose == .assetRequest {
             guard model.type == .reveal || model.type == .store,
                   await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id)
@@ -1694,12 +1694,12 @@ extension MasterController {
         switch model.type {
         case .reveal:
             let reference = await root.pdfRoot.gameControllable.share(id: model.data.id)
-            await root.pdfRoot.pdfGameControllable.setMasterVersion(
+            root.pdfRoot.pdfGameControllable.setMasterVersion(
                 itemId: reference.id,
                 version: reference.effectiveAssetVersion,
                 masterId: masterId
             )
-            let senderIsAvailable = await root.pdfRoot.pdfGameControllable.isPdfAvailable(
+            let senderIsAvailable = root.pdfRoot.pdfGameControllable.isPdfAvailable(
                 itemId: model.data.id,
                 for: model.sender.id,
                 masterId: masterId
@@ -1708,7 +1708,7 @@ extension MasterController {
 
             if senderIsAvailable, matchesBaseline {
                 if model.data.data != nil {
-                    await gameModel.markSentGameItem(
+                    gameModel.markSentGameItem(
                         type: .pdf,
                         id: model.data.id,
                         version: reference.effectiveAssetVersion
@@ -1727,7 +1727,7 @@ extension MasterController {
             guard await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id) else { return nil }
             do {
                 let canonical = try await root.pdfRoot.gameControllable.createGameData(for: model.data.id)
-                await gameModel.markSentGameItem(
+                gameModel.markSentGameItem(
                     type: .pdf,
                     id: canonical.id,
                     version: canonical.effectiveAssetVersion
@@ -1746,7 +1746,7 @@ extension MasterController {
                 // own canonical copy, then relay exactly what was received.
                 guard model.data.data != nil else { return nil }
                 try await root.pdfRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
-                await gameModel.markSentGameItem(
+                gameModel.markSentGameItem(
                     type: .pdf,
                     id: model.data.id,
                     version: model.data.effectiveAssetVersion
@@ -1779,7 +1779,7 @@ extension MasterController {
                 // master asset, but never import the peer's bytes.
                 guard await root.pdfRoot.gameControllable.hasLocalFileData(for: model.data.id) else { return nil }
                 if let canonical = try? await root.pdfRoot.gameControllable.createGameData(for: model.data.id) {
-                    await gameModel.markSentGameItem(
+                    gameModel.markSentGameItem(
                         type: .pdf,
                         id: canonical.id,
                         version: canonical.effectiveAssetVersion
@@ -1810,14 +1810,14 @@ extension MasterController {
 
     func handlePhoto(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
-            let masterId = await root.gameModel.gameConfig.id
+            let masterId = root.gameModel.gameConfig.id
             let baseline = await root.photoRoot.gameControllable.networkVersion(for: model.data.id)
-            await root.photoRoot.photoGameControllable.setMasterVersion(
+            root.photoRoot.photoGameControllable.setMasterVersion(
                 itemId: model.data.id,
                 version: baseline,
                 masterId: masterId
             )
-            await root.photoRoot.photoGameControllable.markPhotoAvailable(
+            root.photoRoot.photoGameControllable.markPhotoAvailable(
                 itemId: model.data.id,
                 version: model.data.effectiveAssetVersion,
                 for: [model.sender.id],
@@ -1827,7 +1827,7 @@ extension MasterController {
         }
         guard model.subType != .failed else { return nil }
 
-        let masterId = await root.gameModel.gameConfig.id
+        let masterId = root.gameModel.gameConfig.id
         if model.purpose == .assetRequest {
             guard model.type == .reveal || model.type == .store else { return nil }
             return try await root.photoRoot.gameControllable.createGameData(for: model.data.id)
@@ -1835,14 +1835,14 @@ extension MasterController {
 
         switch model.type {
         case .reveal:
-            guard await root.gameModel.gameControl.features.photoSharing else { return nil }
+            guard root.gameModel.gameControl.features.photoSharing else { return nil }
             let reference = await root.photoRoot.gameControllable.share(id: model.data.id)
-            await root.photoRoot.photoGameControllable.setMasterVersion(
+            root.photoRoot.photoGameControllable.setMasterVersion(
                 itemId: reference.id,
                 version: reference.effectiveAssetVersion,
                 masterId: masterId
             )
-            let senderIsAvailable = await root.photoRoot.photoGameControllable.isPhotoAvailable(
+            let senderIsAvailable = root.photoRoot.photoGameControllable.isPhotoAvailable(
                 itemId: model.data.id,
                 for: model.sender.id,
                 masterId: masterId
@@ -1854,7 +1854,7 @@ extension MasterController {
                 // reveal (and its Journal attachment). Only the game master's
                 // co-located player controller did not receive that fan-out.
                 if model.data.data != nil {
-                    await gameModel.markSentGameItem(
+                    gameModel.markSentGameItem(
                         type: .photo,
                         id: model.data.id,
                         version: reference.effectiveAssetVersion
@@ -1870,7 +1870,7 @@ extension MasterController {
             // replaces the master's own.
             do {
                 let canonical = try await root.photoRoot.gameControllable.createGameData(for: model.data.id)
-                await gameModel.markSentGameItem(
+                gameModel.markSentGameItem(
                     type: .photo,
                     id: canonical.id,
                     version: canonical.effectiveAssetVersion
@@ -1891,7 +1891,7 @@ extension MasterController {
                 // converge on it without a redundant re-export round trip.
                 guard model.data.data != nil else { return nil }
                 try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
-                await gameModel.markSentGameItem(
+                gameModel.markSentGameItem(
                     type: .photo,
                     id: model.data.id,
                     version: model.data.effectiveAssetVersion
@@ -1921,9 +1921,9 @@ extension MasterController {
             case .generic:
                 // Compatibility with older players that uploaded a generic
                 // photo update. Their bytes are never authoritative.
-                guard await root.gameModel.gameControl.features.photoSharing else { return nil }
+                guard root.gameModel.gameControl.features.photoSharing else { return nil }
                 if let canonical = try? await root.photoRoot.gameControllable.createGameData(for: model.data.id) {
-                    await gameModel.markSentGameItem(
+                    gameModel.markSentGameItem(
                         type: .photo,
                         id: canonical.id,
                         version: canonical.effectiveAssetVersion
@@ -1958,7 +1958,7 @@ extension MasterController {
         if model.subType == .ok {
             let currentVersion = await root.tableRoot.gameControllable.networkVersion(for: model.data.id)
             guard model.data.version != 0, model.data.version == currentVersion else { return nil }
-            await root.tableRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
+            root.tableRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         guard model.subType != .failed else { return nil }
@@ -1980,17 +1980,17 @@ extension MasterController {
                   characterId == model.data.id,
                   let update = GameValueEntryUpdate.decodeData(of: model.data.data),
                   update.characterId == characterId,
-                  await root.gameModel.canApplyValueUpdate(
+                  root.gameModel.canApplyValueUpdate(
                       senderId: model.sender.id,
                       characterId: characterId,
                       entryId: update.entryId,
                       timestamp: model.timestamp
                   ),
-                  await root.characterRoot.valueGameControllable
+                  root.characterRoot.valueGameControllable
                     .applyGameValueEntryUpdate(update) else {
                 return nil
             }
-            await root.gameModel.recordValueUpdate(
+            root.gameModel.recordValueUpdate(
                 senderId: model.sender.id,
                 characterId: characterId,
                 entryId: update.entryId,
@@ -2016,7 +2016,7 @@ extension MasterController {
             // package. Silence is the successful response; only a mismatch
             // asks the originating player for its potentially large package.
             guard localVersion != model.data.version else {
-                await root.mapRoot.mapGameControllable.setPlayerPin(
+                root.mapRoot.mapGameControllable.setPlayerPin(
                     for: model.sender.id,
                     name: model.senderName,
                     characterId: characterId
@@ -2028,7 +2028,7 @@ extension MasterController {
         }
 
         try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
-        await root.mapRoot.mapGameControllable.setPlayerPin(
+        root.mapRoot.mapGameControllable.setPlayerPin(
             for: model.sender.id,
             name: model.senderName,
             characterId: characterId
@@ -2042,7 +2042,7 @@ extension MasterController {
     /// structural pin metadata and authoritative live state once the Character
     /// is known so every peer replaces that bootstrap copy immediately.
     private func publishCurrentMapAfterPlayerPinChange() async {
-        guard let mapId = await root.mapRoot.mapGameControllable.gameModel.currentItemId else {
+        guard let mapId = root.mapRoot.mapGameControllable.gameModel.currentItemId else {
             return
         }
         await send(
@@ -2061,7 +2061,7 @@ extension MasterController {
         if model.subType == .ok {
             let baseline = await root.weatherRoot.weatherGameControllable.weatherVersion(for: model.data.id)
             guard model.data.version == baseline else { return nil }
-            await root.weatherRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
+            root.weatherRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             return nil
         }
         guard model.subType != .failed else { return nil }
@@ -2080,14 +2080,14 @@ extension MasterController {
     
     func handleSpace(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
-            let masterId = await root.gameModel.gameConfig.id
+            let masterId = root.gameModel.gameConfig.id
             let baseline = await root.spaceRoot.gameControllable.networkVersion(for: model.data.id)
-            await root.spaceRoot.spaceGameControllable.setMasterVersion(
+            root.spaceRoot.spaceGameControllable.setMasterVersion(
                 itemId: model.data.id,
                 version: baseline,
                 masterId: masterId
             )
-            await root.spaceRoot.spaceGameControllable.markSpaceAvailable(
+            root.spaceRoot.spaceGameControllable.markSpaceAvailable(
                 itemId: model.data.id,
                 version: model.data.effectiveAssetVersion,
                 for: [model.sender.id],
@@ -2097,7 +2097,7 @@ extension MasterController {
         }
         guard model.subType != .failed else { return nil }
 
-        let masterId = await root.gameModel.gameConfig.id
+        let masterId = root.gameModel.gameConfig.id
         if model.purpose == .assetRequest {
             guard model.type == .reveal || model.type == .store,
                   await root.spaceRoot.gameControllable.hasLocalFileData(for: model.data.id)
@@ -2107,14 +2107,14 @@ extension MasterController {
 
         switch model.type {
         case .reveal:
-            let playerSharingEnabled = await root.gameModel.gameControl.features.spaceSharing
+            let playerSharingEnabled = root.gameModel.gameControl.features.spaceSharing
             let reference = await root.spaceRoot.gameControllable.share(id: model.data.id)
-            await root.spaceRoot.spaceGameControllable.setMasterVersion(
+            root.spaceRoot.spaceGameControllable.setMasterVersion(
                 itemId: reference.id,
                 version: reference.effectiveAssetVersion,
                 masterId: masterId
             )
-            let senderIsAvailable = await root.spaceRoot.spaceGameControllable.isSpaceAvailable(
+            let senderIsAvailable = root.spaceRoot.spaceGameControllable.isSpaceAvailable(
                 itemId: model.data.id,
                 for: model.sender.id,
                 masterId: masterId
@@ -2123,7 +2123,7 @@ extension MasterController {
 
             if playerSharingEnabled, senderIsAvailable, matchesBaseline {
                 if model.data.data != nil {
-                    await gameModel.markSentGameItem(
+                    gameModel.markSentGameItem(
                         type: .space,
                         id: model.data.id,
                         version: reference.effectiveAssetVersion
@@ -2151,7 +2151,7 @@ extension MasterController {
             // replaces the master's own.
             do {
                 let canonical = try await root.spaceRoot.gameControllable.createGameData(for: model.data.id)
-                await gameModel.markSentGameItem(
+                gameModel.markSentGameItem(
                     type: .space,
                     id: canonical.id,
                     version: canonical.effectiveAssetVersion
@@ -2174,7 +2174,7 @@ extension MasterController {
                 // redundant re-export round trip.
                 guard model.data.data != nil else { return nil }
                 try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
-                await gameModel.markSentGameItem(
+                gameModel.markSentGameItem(
                     type: .space,
                     id: model.data.id,
                     version: model.data.effectiveAssetVersion
@@ -2205,23 +2205,23 @@ extension MasterController {
                 guard model.sender.role == .player,
                       model.purpose == .event,
                       model.effectiveAudience == .group,
-                      await root.gameModel.gameControl.features.spaceSharing,
-                      await root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data)
+                      root.gameModel.gameControl.features.spaceSharing,
+                      root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data)
                 else { return nil }
 
                 let baseline = await root.spaceRoot.gameControllable.networkVersion(for: model.data.id)
-                await root.spaceRoot.spaceGameControllable.setMasterVersion(
+                root.spaceRoot.spaceGameControllable.setMasterVersion(
                     itemId: model.data.id,
                     version: baseline,
                     masterId: masterId
                 )
                 guard model.data.effectiveAssetVersion == baseline,
-                      await root.spaceRoot.spaceGameControllable.isSpaceAvailable(
+                      root.spaceRoot.spaceGameControllable.isSpaceAvailable(
                           itemId: model.data.id,
                           for: model.sender.id,
                           masterId: masterId
                       ),
-                      await gameModel.canApplySpaceTransform(
+                      gameModel.canApplySpaceTransform(
                           from: model.sender.id,
                           itemId: model.data.id,
                           version: baseline,
@@ -2229,12 +2229,12 @@ extension MasterController {
                       )
                 else { return nil }
 
-                guard await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                guard root.spaceRoot.spaceGameControllable.applySpaceTransform(
                     data: model.data,
                     counter: model.counter,
                     timestamp: model.timestamp
                 ) else { return nil }
-                await gameModel.recordSpaceTransform(
+                gameModel.recordSpaceTransform(
                     from: model.sender.id,
                     itemId: model.data.id,
                     version: baseline,
@@ -2243,9 +2243,9 @@ extension MasterController {
             case .generic:
                 // Compatibility with older players. Peer bytes never replace the
                 // game master's canonical Space asset.
-                guard await root.gameModel.gameControl.features.spaceSharing else { return nil }
+                guard root.gameModel.gameControl.features.spaceSharing else { return nil }
                 if let canonical = try? await root.spaceRoot.gameControllable.createGameData(for: model.data.id) {
-                    await gameModel.markSentGameItem(
+                    gameModel.markSentGameItem(
                         type: .space,
                         id: canonical.id,
                         version: canonical.effectiveAssetVersion
@@ -2326,11 +2326,11 @@ private extension MasterController {
 
         if model.data.type == .dice, model.type == .update {
             guard model.isDiceRollEvent else { return true }
-            guard await root.gameModel.gameControl.features.dicePlayers else { return true }
+            guard root.gameModel.gameControl.features.dicePlayers else { return true }
             // The proxy rolls as the host player — show it on the host as well.
-            let hostName = await root.gameModel.gamePlayer.name
-            let hostSupporterTier = await root.gameModel.gamePlayer.supporterTier
-            _ = await root.diceRoot.diceGameControllable.addGameDiceResult(
+            let hostName = root.gameModel.gamePlayer.name
+            let hostSupporterTier = root.gameModel.gamePlayer.supporterTier
+            _ = root.diceRoot.diceGameControllable.addGameDiceResult(
                 data: model.data,
                 name: hostName,
                 supporterTier: hostSupporterTier,
@@ -2348,8 +2348,8 @@ private extension MasterController {
            model.subType == .mapPin,
            model.purpose == .event {
             // Update the host's own map first, then tell the master.
-            let hostId = await root.gameModel.gameConfig.id
-            guard await root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
+            let hostId = root.gameModel.gameConfig.id
+            guard root.mapRoot.mapGameControllable.updatePinIfCurrentGeneration(
                 itemId: model.data.id,
                 data: model.data,
                 playerId: hostId
@@ -2367,10 +2367,10 @@ private extension MasterController {
            model.type == .update,
            model.subType == .spaceTransform,
            model.purpose == .event {
-            guard await root.gameModel.gameControl.features.spaceSharing,
-                  await root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
+            guard root.gameModel.gameControl.features.spaceSharing,
+                  root.spaceRoot.spaceGameControllable.isValidSpaceTransform(model.data),
                   await root.spaceRoot.gameControllable.networkVersion(for: model.data.id) == model.data.effectiveAssetVersion,
-                  await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+                  root.spaceRoot.spaceGameControllable.applySpaceTransform(
                       data: model.data,
                       counter: model.counter,
                       timestamp: model.timestamp
@@ -2387,7 +2387,7 @@ private extension MasterController {
            model.type == .reveal,
            model.subType == .show,
            (model.data.type == .photo || model.data.type == .pdf || model.data.type == .space) {
-            guard let playerController = await root.gameModel.playerController else {
+            guard let playerController = root.gameModel.playerController else {
                 await remapUpstream(model)
                 return true
             }
@@ -2461,7 +2461,7 @@ private extension MasterController {
     /// Re-sends a proxy client's message as the host player's own — fresh host
     /// counter, host sender identity, same payload.
     func remapUpstream(_ model: GameNetworkModel) async {
-        guard let playerController = await root.gameModel.playerController else {
+        guard let playerController = root.gameModel.playerController else {
             Logger.networking.error("MasterController: No player controller to remap proxy message \(model.debugDescription, privacy: .public)")
             return
         }
@@ -2509,7 +2509,7 @@ private extension MasterController {
             }
             return true
         case .weather:
-            return await root.weatherRoot.weatherGameControllable.isWeatherAvailable(
+            return root.weatherRoot.weatherGameControllable.isWeatherAvailable(
                 itemId: data.id,
                 version: data.version
             )
@@ -2526,24 +2526,24 @@ private extension MasterController {
 
 private extension MasterController {
     func replayCurrentPresentation(to origin: GameMessageOrigin) async {
-        guard let presentation = await root.gameModel.playerController?.gameModel.gameUpdateType else { return }
+        guard let presentation = root.gameModel.playerController?.gameModel.gameUpdateType else { return }
 
         let reference: NetworkCodableDataType?
         switch presentation {
         case .map:
-            reference = if let id = await root.mapRoot.gameControllable.gameModel.currentItemId {
+            reference = if let id = root.mapRoot.gameControllable.gameModel.currentItemId {
                 await root.mapRoot.mapGameControllable.shareMap(id: id)
             } else {
                 nil
             }
         case .pdf:
-            reference = if let id = await root.pdfRoot.gameControllable.gameModel.currentItemId {
+            reference = if let id = root.pdfRoot.gameControllable.gameModel.currentItemId {
                 await root.pdfRoot.gameControllable.share(id: id)
             } else {
                 nil
             }
         case .photo:
-            reference = if let id = await root.photoRoot.gameControllable.gameModel.currentItemId {
+            reference = if let id = root.photoRoot.gameControllable.gameModel.currentItemId {
                 await root.photoRoot.gameControllable.share(id: id)
             } else {
                 nil
@@ -2555,7 +2555,7 @@ private extension MasterController {
             // the existing LAN/proxy reconnect policy, but send the master's
             // canonical Table reference to the newly active SharePlay peer.
             reference = if case .sharePlay = origin,
-                           let id = await root.tableRoot.gameControllable.gameModel.currentItemId {
+                           let id = root.tableRoot.gameControllable.gameModel.currentItemId {
                 await root.tableRoot.gameControllable.share(id: id)
             } else {
                 nil
@@ -2565,13 +2565,13 @@ private extension MasterController {
             // Character through readyProxy(for:) immediately below instead.
             reference = nil
         case .weather:
-            reference = if let id = await root.weatherRoot.gameControllable.gameModel.currentItemId {
+            reference = if let id = root.weatherRoot.gameControllable.gameModel.currentItemId {
                 await root.weatherRoot.weatherGameControllable.shareWeather(id: id)
             } else {
                 nil
             }
         case .space:
-            reference = if let id = await root.spaceRoot.gameControllable.gameModel.currentItemId {
+            reference = if let id = root.spaceRoot.gameControllable.gameModel.currentItemId {
                 await root.spaceRoot.gameControllable.share(id: id)
             } else {
                 nil
@@ -2598,7 +2598,7 @@ private extension MasterController {
                 origin: origin,
                 authoritativeMaster: true
             )
-            let mapState = await root.mapRoot.mapGameControllable.networkMapUpdate(for: reference.id)
+            let mapState = root.mapRoot.mapGameControllable.networkMapUpdate(for: reference.id)
             await send(
                 type: .update,
                 subtype: .mapState,
@@ -2607,7 +2607,7 @@ private extension MasterController {
                 authoritativeMaster: true
             )
         } else if presentation == .space,
-                  let transformReplay = await root.spaceRoot.spaceGameControllable.latestSpaceTransformReplay(
+                  let transformReplay = root.spaceRoot.spaceGameControllable.latestSpaceTransformReplay(
                       for: reference.id,
                       version: reference.effectiveAssetVersion
                   ) {

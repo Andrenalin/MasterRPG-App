@@ -25,11 +25,11 @@ extension PlayerController {
            model.targetId == nil {
             // A canonical master presentation supersedes any peer reveal that
             // was waiting for availability evidence from this master.
-            await gameModel.removeDeferredPhotoReveals(from: masterId)
+            gameModel.removeDeferredPhotoReveals(from: masterId)
         }
         if model.sender.isMaster,
            !(model.type == .update && model.subType == .photoList) {
-            await root.photoRoot.photoGameControllable.setMasterVersion(
+            root.photoRoot.photoGameControllable.setMasterVersion(
                 itemId: model.data.id,
                 version: model.data.effectiveAssetVersion,
                 masterId: masterId
@@ -46,7 +46,7 @@ extension PlayerController {
             case .valid:
                 validPlayerReveal = true
             case .awaitingAuthoritativeList:
-                await gameModel.deferPhotoReveal(model)
+                gameModel.deferPhotoReveal(model)
                 return nil
             case .mismatch:
                 return nil
@@ -58,17 +58,17 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                await gameModel.setGameUpdateType(.photo)
+                gameModel.setGameUpdateType(.photo)
 
-                let localPlayerId = await root.gameModel.gameConfig.id
-                await root.photoRoot.photoGameControllable.markPhotoAvailable(
+                let localPlayerId = root.gameModel.gameConfig.id
+                root.photoRoot.photoGameControllable.markPhotoAvailable(
                     itemId: model.data.id,
                     version: model.data.effectiveAssetVersion,
                     for: [localPlayerId, model.sender.id],
                     masterId: masterId
                 )
                 if model.data.data != nil, model.targetId == nil {
-                    await root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
+                    root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
                         itemId: model.data.id,
                         version: model.data.effectiveAssetVersion,
                         masterId: masterId
@@ -76,7 +76,7 @@ extension PlayerController {
                 }
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
-                let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+                let baseline = root.photoRoot.photoGameControllable.masterVersion(
                     for: model.data.id,
                     masterId: masterId
                 )
@@ -91,9 +91,9 @@ extension PlayerController {
             try await root.photoRoot.gameControllable.updateGame(data: model.data, hide: model.subType == .store, deep: true)
             let hasLocalData = await root.photoRoot.gameControllable.hasLocalFileData(for: model.data.id)
             if hasLocalData {
-                await gameModel.removeRequestedRepairId(model.data.id)
-                let localPlayerId = await root.gameModel.gameConfig.id
-                await root.photoRoot.photoGameControllable.markPhotoAvailable(
+                gameModel.removeRequestedRepairId(model.data.id)
+                let localPlayerId = root.gameModel.gameConfig.id
+                root.photoRoot.photoGameControllable.markPhotoAvailable(
                     itemId: model.data.id,
                     version: model.data.effectiveAssetVersion,
                     for: [localPlayerId],
@@ -113,7 +113,7 @@ extension PlayerController {
                 }
             }
             if await root.photoRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await gameModel.setGameUpdateType(.photo)
+                gameModel.setGameUpdateType(.photo)
             }
         }
         return nil
@@ -135,24 +135,24 @@ extension PlayerController {
     }
 
     private func playerPhotoRevealValidation(for model: GameNetworkModel) async -> PlayerPhotoRevealValidation {
-        if await gameModel.asGameMaster {
-            let senderIsAvailable = await root.photoRoot.photoGameControllable.isPhotoAvailable(
+        if gameModel.asGameMaster {
+            let senderIsAvailable = root.photoRoot.photoGameControllable.isPhotoAvailable(
                 itemId: model.data.id,
                 for: model.sender.id,
                 masterId: model.masterId
             )
-            let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+            let baseline = root.photoRoot.photoGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: model.masterId
             )
             return senderIsAvailable && baseline == model.data.effectiveAssetVersion ? .valid : .mismatch
         }
 
-        guard await gameModel.hasAuthoritativePhotoList(from: model.masterId) else {
+        guard gameModel.hasAuthoritativePhotoList(from: model.masterId) else {
             return .awaitingAuthoritativeList
         }
 
-        guard let senderVersion = await root.photoRoot.photoGameControllable.reportedVersion(
+        guard let senderVersion = root.photoRoot.photoGameControllable.reportedVersion(
             for: model.data.id,
             playerId: model.sender.id
         ) else {
@@ -164,7 +164,7 @@ extension PlayerController {
         guard senderVersion == model.data.effectiveAssetVersion else {
             return .mismatch
         }
-        guard let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+        guard let baseline = root.photoRoot.photoGameControllable.masterVersion(
             for: model.data.id,
             masterId: model.masterId
         ) else {
@@ -174,15 +174,15 @@ extension PlayerController {
     }
 
     private func retryDeferredPhotoReveals(from masterId: UUID) async {
-        let deferred = await gameModel.deferredPhotoReveals(from: masterId)
+        let deferred = gameModel.deferredPhotoReveals(from: masterId)
         for model in deferred {
             switch await playerPhotoRevealValidation(for: model) {
             case .awaitingAuthoritativeList:
                 continue
             case .mismatch:
-                await gameModel.removeDeferredPhotoReveal(model)
+                gameModel.removeDeferredPhotoReveal(model)
             case .valid:
-                await gameModel.removeDeferredPhotoReveal(model)
+                gameModel.removeDeferredPhotoReveal(model)
                 guard await deferredPresentationIsCurrent(model) else { continue }
                 do {
                     if let response = try await handlePhoto(model) {
@@ -200,7 +200,7 @@ extension PlayerController {
     func sendPhotoList() async {
         // A proxy is a private mirror of its host and must not become a separate
         // availability-report participant.
-        guard await root.gameModel.gameType != .proxy else { return }
+        guard root.gameModel.gameType != .proxy else { return }
         let photoList = await root.photoRoot.photoGameControllable.photoList(
             allPlayers: false,
             with: root.gameModel.gameConfig.master.id

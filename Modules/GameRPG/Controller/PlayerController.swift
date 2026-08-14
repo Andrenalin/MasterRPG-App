@@ -159,17 +159,17 @@ extension PlayerController {
 
 extension PlayerController {
     func send(updated: NetworkCodableDataType) async {
-        guard await root.gameModel.gameType != .observer else { return }
+        guard root.gameModel.gameType != .observer else { return }
         guard updated.type != .value else { return }
         await send(type: .store, subType: .store, updated: updated)
     }
 
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType) async {
-        guard await root.gameModel.gameType != .observer else { return }
+        guard root.gameModel.gameType != .observer else { return }
         // Players cannot publish Weather and Weather has no live updates yet.
         guard message.type != .table, message.type != .weather else { return }
         if message.type == .value {
-            let playerCharacterId = await root.gameModel.gamePlayer.characterId
+            let playerCharacterId = root.gameModel.gamePlayer.characterId
             guard actionType == .valueUpdate,
                   message.data != nil,
                   message.id == playerCharacterId else {
@@ -186,7 +186,7 @@ extension PlayerController {
             return
         }
         if message.type == .photo, actionType == .generic {
-            guard await root.gameModel.gameControl.features.photoSharing else { return }
+            guard root.gameModel.gameControl.features.photoSharing else { return }
             await sharePhoto(message)
             return
         }
@@ -199,13 +199,13 @@ extension PlayerController {
             return
         }
         if message.type == .space, actionType == .spaceTransform {
-            guard await root.gameModel.gameControl.features.spaceSharing else { return }
+            guard root.gameModel.gameControl.features.spaceSharing else { return }
         }
         if message.type == .audio {
-            guard await root.gameModel.gameControl.features.audioSharing else { return }
+            guard root.gameModel.gameControl.features.audioSharing else { return }
         }
         if message.type == .dice {
-            guard await root.gameModel.gameControl.features.dicePlayers else { return }
+            guard root.gameModel.gameControl.features.dicePlayers else { return }
         }
         await send(type: .update, subType: actionType, updated: message)
     }
@@ -214,11 +214,11 @@ extension PlayerController {
         let (playerId, masterId) = await MainActor.run {
             (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
         }
-        let baseline = await root.photoRoot.photoGameControllable.masterVersion(
+        let baseline = root.photoRoot.photoGameControllable.masterVersion(
             for: fullData.id,
             masterId: masterId
         )
-        let senderIsAvailable = await root.photoRoot.photoGameControllable.isPhotoAvailable(
+        let senderIsAvailable = root.photoRoot.photoGameControllable.isPhotoAvailable(
             itemId: fullData.id,
             for: playerId,
             masterId: masterId
@@ -227,7 +227,7 @@ extension PlayerController {
 
         let outgoing: NetworkCodableDataType
         if senderIsAvailable, matchesBaseline {
-            let allPlayersHavePhoto = await root.photoRoot.gameControllable.allPlayersReported(for: fullData.id)
+            let allPlayersHavePhoto = root.photoRoot.gameControllable.allPlayersReported(for: fullData.id)
             outgoing = NetworkCodableDataType(
                 id: fullData.id,
                 type: fullData.type,
@@ -237,7 +237,7 @@ extension PlayerController {
                 contentVersion: fullData.contentVersion
             )
             if await root.photoRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                await gameModel.setGameUpdateType(.photo)
+                gameModel.setGameUpdateType(.photo)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
@@ -261,7 +261,7 @@ extension PlayerController {
         await send(type: .reveal, subType: .show, updated: outgoing)
 
         if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            await root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
+            root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
                 itemId: fullData.id,
                 version: baseline,
                 masterId: masterId
@@ -273,11 +273,11 @@ extension PlayerController {
         let (playerId, masterId) = await MainActor.run {
             (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
         }
-        let baseline = await root.pdfRoot.pdfGameControllable.masterVersion(
+        let baseline = root.pdfRoot.pdfGameControllable.masterVersion(
             for: fullData.id,
             masterId: masterId
         )
-        let senderIsAvailable = await root.pdfRoot.pdfGameControllable.isPdfAvailable(
+        let senderIsAvailable = root.pdfRoot.pdfGameControllable.isPdfAvailable(
             itemId: fullData.id,
             for: playerId,
             masterId: masterId
@@ -286,7 +286,7 @@ extension PlayerController {
 
         let outgoing: NetworkCodableDataType
         if senderIsAvailable, matchesBaseline {
-            let allPlayersHavePdf = await root.pdfRoot.gameControllable.allPlayersReported(for: fullData.id)
+            let allPlayersHavePdf = root.pdfRoot.gameControllable.allPlayersReported(for: fullData.id)
             outgoing = NetworkCodableDataType(
                 id: fullData.id,
                 type: fullData.type,
@@ -296,7 +296,7 @@ extension PlayerController {
                 contentVersion: fullData.contentVersion
             )
             if await root.pdfRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                await gameModel.setGameUpdateType(.pdf)
+                gameModel.setGameUpdateType(.pdf)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
@@ -319,7 +319,7 @@ extension PlayerController {
         await send(type: .reveal, subType: .show, updated: outgoing)
 
         if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            await root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
+            root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
                 itemId: fullData.id,
                 version: baseline,
                 masterId: masterId
@@ -328,15 +328,15 @@ extension PlayerController {
     }
 
     private func shareSpace(_ fullData: NetworkCodableDataType) async {
-        guard await root.gameModel.gameControl.features.spaceSharing else { return }
+        guard root.gameModel.gameControl.features.spaceSharing else { return }
         let (playerId, masterId) = await MainActor.run {
             (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
         }
-        let baseline = await root.spaceRoot.spaceGameControllable.masterVersion(
+        let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
             for: fullData.id,
             masterId: masterId
         )
-        let senderIsAvailable = await root.spaceRoot.spaceGameControllable.isSpaceAvailable(
+        let senderIsAvailable = root.spaceRoot.spaceGameControllable.isSpaceAvailable(
             itemId: fullData.id,
             for: playerId,
             masterId: masterId
@@ -345,7 +345,7 @@ extension PlayerController {
 
         let outgoing: NetworkCodableDataType
         if senderIsAvailable, matchesBaseline {
-            let allPlayersHaveSpace = await root.spaceRoot.gameControllable.allPlayersReported(for: fullData.id)
+            let allPlayersHaveSpace = root.spaceRoot.gameControllable.allPlayersReported(for: fullData.id)
             outgoing = NetworkCodableDataType(
                 id: fullData.id,
                 type: fullData.type,
@@ -355,7 +355,7 @@ extension PlayerController {
                 contentVersion: fullData.contentVersion
             )
             if await root.spaceRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                await gameModel.setGameUpdateType(.space)
+                gameModel.setGameUpdateType(.space)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
@@ -378,7 +378,7 @@ extension PlayerController {
         await send(type: .reveal, subType: .show, updated: outgoing)
 
         if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            await root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
+            root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
                 itemId: fullData.id,
                 version: baseline,
                 masterId: masterId
@@ -403,7 +403,7 @@ extension PlayerController {
         if type == .update,
            subType == .spaceTransform,
            updated.type == .space {
-            guard let timestamp = await root.spaceRoot.spaceGameControllable
+            guard let timestamp = root.spaceRoot.spaceGameControllable
                 .causalSpaceTransformTimestamp(
                     itemId: updated.id,
                     version: updated.effectiveAssetVersion
@@ -420,10 +420,10 @@ extension PlayerController {
         if let counter {
             outgoingCounter = counter
         } else {
-            outgoingCounter = await gameModel.nextOutgoingMessageCounter()
+            outgoingCounter = gameModel.nextOutgoingMessageCounter()
         }
         Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
-        let networtData = await root.gameModel.outgoingMessage(
+        let networtData = root.gameModel.outgoingMessage(
             timestamp: outgoingTimestamp,
             counter: outgoingCounter,
             type: type,
@@ -441,14 +441,14 @@ extension PlayerController {
            networtData.type == .update,
            networtData.subType == .spaceTransform,
            networtData.data.type == .space {
-            _ = await root.spaceRoot.spaceGameControllable.applySpaceTransform(
+            _ = root.spaceRoot.spaceGameControllable.applySpaceTransform(
                 data: networtData.data,
                 counter: networtData.counter,
                 timestamp: networtData.timestamp
             )
         }
 
-        let origin: GameMessageOrigin = await root.gameModel.gameType == .proxy ? .proxy(nil) : .direct(nil)
+        let origin: GameMessageOrigin = root.gameModel.gameType == .proxy ? .proxy(nil) : .direct(nil)
         await root.statisticsModel.record(networtData, direction: .outgoing, origin: origin)
 
         let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
@@ -475,8 +475,8 @@ extension PlayerController {
 
         // Both are @MainActor method calls (not property writes) — `await` alone hops,
         // no `MainActor.run` wrapper needed.
-        let outgoingCounter = await gameModel.nextOutgoingMessageCounter()
-        let remapped = await root.gameModel.outgoingMessage(
+        let outgoingCounter = gameModel.nextOutgoingMessageCounter()
+        let remapped = root.gameModel.outgoingMessage(
             timestamp: source.timestamp,
             counter: outgoingCounter,
             type: source.type,
@@ -525,8 +525,8 @@ extension PlayerController {
 
         // Both are @MainActor method calls (not property writes) — `await` alone hops,
         // no `MainActor.run` wrapper needed.
-        let outgoingCounter = await gameModel.nextOutgoingMessageCounter()
-        let remapped = await root.gameModel.outgoingMessage(
+        let outgoingCounter = gameModel.nextOutgoingMessageCounter()
+        let remapped = root.gameModel.outgoingMessage(
             timestamp: source.timestamp,
             counter: outgoingCounter,
             type: source.type,
@@ -549,24 +549,24 @@ extension PlayerController {
     }
 
     private func canApplyRemappedProxyPresentation(_ model: GameNetworkModel) async -> Bool {
-        let masterId = await root.gameModel.gameConfig.master.id
+        let masterId = root.gameModel.gameConfig.master.id
         let version = model.data.effectiveAssetVersion
 
         switch model.data.type {
         case .photo:
-            guard await root.gameModel.gameControl.features.photoSharing else { return false }
-            return await root.photoRoot.photoGameControllable.masterVersion(
+            guard root.gameModel.gameControl.features.photoSharing else { return false }
+            return root.photoRoot.photoGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: masterId
             ) == version
         case .pdf:
-            return await root.pdfRoot.pdfGameControllable.masterVersion(
+            return root.pdfRoot.pdfGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: masterId
             ) == version
         case .space:
-            guard await root.gameModel.gameControl.features.spaceSharing else { return false }
-            return await root.spaceRoot.spaceGameControllable.masterVersion(
+            guard root.gameModel.gameControl.features.spaceSharing else { return false }
+            return root.spaceRoot.spaceGameControllable.masterVersion(
                 for: model.data.id,
                 masterId: masterId
             ) == version
@@ -596,7 +596,7 @@ extension PlayerController {
         useJournal: Bool = false,
         relayToProxyClients: Bool = true
     ) async {
-        if await root.gameModel.gameType == .proxy {
+        if root.gameModel.gameType == .proxy {
             await root.networkProxyStore.sendMaster(data: model)
         } else {
             await root.networkStore.sendMaster(data: model, fileJournal: useJournal)
@@ -609,7 +609,7 @@ extension PlayerController {
     /// Called cross-file by the per-module `retryDeferredXReveals` helpers
     /// (Photo/Pdf/Space), so this stays internal rather than `private`.
     func sendUpstream(model: GameNetworkModel) async {
-        if await root.gameModel.gameType == .proxy {
+        if root.gameModel.gameType == .proxy {
             await root.networkProxyStore.sendMaster(data: model)
         } else {
             await root.networkStore.sendMaster(data: model, fileJournal: false)
@@ -633,10 +633,10 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         preservingSharePlayRebind: Bool
     ) async {
         Logger.networking.debug("PlayerController: Lost Connection - Reset State")
-        await gameModel.resetForLostConnection(preservingSharePlayRebind: preservingSharePlayRebind)
-        await root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
-        await gameModel.reset(lostMaster: true)
-        await gameModel.reset(sendPlayer: false)
+        gameModel.resetForLostConnection(preservingSharePlayRebind: preservingSharePlayRebind)
+        root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
+        gameModel.reset(lostMaster: true)
+        gameModel.reset(sendPlayer: false)
     }
 
     func ready() async {
@@ -806,7 +806,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         _ model: GameNetworkModel,
         origin: GameMessageOrigin
     ) async -> Bool {
-        let config = await root.gameModel.gameConfig
+        let config = root.gameModel.gameConfig
         let acceptsLogicalAuthority: Bool
 
         if origin == .local {
@@ -837,7 +837,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // as well as the logical master UUID so another peer cannot copy the
         // public master identity into a forged envelope. Journal callbacks do
         // not expose a publisher and therefore remain logically authenticated.
-        switch await gameModel.acceptSharePlayMasterParticipant(
+        switch gameModel.acceptSharePlayMasterParticipant(
             id: participantId,
             isCompleteMasterBroadcast: model.masterState != nil
         ) {
@@ -867,20 +867,20 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // are deliberately invisible upstream and every proxy request is remapped
         // to its host ID, so a target belonging to another host can never live
         // behind this device.
-        if let targetId = model.targetId, await targetId != root.gameModel.gameConfig.id {
+        if let targetId = model.targetId, targetId != root.gameModel.gameConfig.id {
             Logger.networking.debug("PlayerController: Message ignored, targeted at \(targetId, privacy: .public)")
             return false
         }
 
-        if await !gameModel.asGameMaster {
+        if !gameModel.asGameMaster {
             let controls = if let authoritativeControls = model.masterState?.controls {
                 authoritativeControls
             } else {
-                await root.gameModel.gameControl.controls
+                root.gameModel.gameControl.controls
             }
             if let masterState = model.masterState,
                model.sender.isMaster,
-               await gameModel.shouldApplyMasterState(from: model.masterId, counter: model.counter) {
+               gameModel.shouldApplyMasterState(from: model.masterId, counter: model.counter) {
                 // One MainActor hop for the whole broadcast: applying config,
                 // controls and roster in separate steps lets concurrent message
                 // builders capture a torn state and send it back to the master.
@@ -888,7 +888,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 // same way `MainActor.run` did — two separate `await`-ed calls
                 // would each be a scheduling point another queued task could
                 // interleave between.
-                await applyMasterBroadcastAndResetPlayers(
+                applyMasterBroadcastAndResetPlayers(
                     masterId: model.masterId,
                     masterName: model.sender.name,
                     supporterTier: model.sender.supporterTier,
@@ -896,11 +896,11 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 )
             }
 
-            let localId = await root.gameModel.gameConfig.id
-            let type = await root.gameModel.gameType
-            let photoSharing = await root.gameModel.gameControl.features.photoSharing
-            let spaceSharing = await root.gameModel.gameControl.features.spaceSharing
-            let dicePlayers = await root.gameModel.gameControl.features.dicePlayers
+            let localId = root.gameModel.gameConfig.id
+            let type = root.gameModel.gameType
+            let photoSharing = root.gameModel.gameControl.features.photoSharing
+            let spaceSharing = root.gameModel.gameControl.features.spaceSharing
+            let dicePlayers = root.gameModel.gameControl.features.dicePlayers
             guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
                 Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
                 return false
@@ -934,7 +934,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 model.data.type == .space &&
                 spaceSharing &&
                 model.effectiveAudience == .group
-            guard await root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal || acceptsPlayerMapPin || acceptsPlayerSpaceTransform else {
+            guard root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal || acceptsPlayerMapPin || acceptsPlayerSpaceTransform else {
                 Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
                 return false
             }
@@ -964,7 +964,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 presentationVersion = model.data.version
                 allowsUnversionedMapState = false
             }
-            let shouldProcess = await gameModel.shouldProcessPresentation(
+            let shouldProcess = gameModel.shouldProcessPresentation(
                 from: model.masterId,
                 senderID: model.sender.id,
                 module: model.data.type,
@@ -989,7 +989,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 // rejected above and never reach this point. Character bootstrap bypasses
                 // this path and is sent directly by the proxy master controller.
                 var forwarded = model
-                if await forwarded.targetId == root.gameModel.gameConfig.id {
+                if forwarded.targetId == root.gameModel.gameConfig.id {
                     forwarded.targetId = nil
                 }
                 await root.networkProxyStore.sendPlayer(data: forwarded)
@@ -1017,10 +1017,10 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 if let response, event.origin != .local {
                     await sendUpstream(model: response)
                     if response.subType == .ok {
-                        await gameModel.increaseMessageCounter()
+                        gameModel.increaseMessageCounter()
                     }
                 } else {
-                    await gameModel.increaseMessageCounter()
+                    gameModel.increaseMessageCounter()
                 }
                 await root.statisticsModel.record(
                     event.model,

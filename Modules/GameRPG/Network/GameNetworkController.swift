@@ -1143,7 +1143,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
 
 extension GameNetworkController {
     func isStreaming() async -> Bool {
-        await model.masterStore?.networkModel.isStreaming ?? false
+        model.masterStore?.networkModel.isStreaming ?? false
     }
 
     func resetName(name: String, supporterTier: SupporterTier = .none) {

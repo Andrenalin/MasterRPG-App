@@ -26,7 +26,7 @@ extension PlayerController {
         case .none, .game, .rule, .setting, .editor, .search:
             return nil
         case .generator:
-            return await handleGeneratedValue(model)
+            return handleGeneratedValue(model)
         case .adventure:
             return handleAdventure(model)
         case .audio:
@@ -84,7 +84,7 @@ extension PlayerController {
     /// Shared by every module's `retryDeferredXReveals`: whether a deferred reveal still
     /// matches the master's latest presentation intent before applying it late.
     func deferredPresentationIsCurrent(_ model: GameNetworkModel) async -> Bool {
-        await gameModel.shouldProcessPresentation(
+        gameModel.shouldProcessPresentation(
             from: model.masterId,
             senderID: model.sender.id,
             module: model.data.type,

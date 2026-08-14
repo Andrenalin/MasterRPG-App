@@ -139,14 +139,14 @@ extension MasterNetworkController: MasterNetworkControllable {
 extension MasterNetworkController {
     @discardableResult
     func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
-        guard let connection = await networkModel.connections.first(where: { $0.id == id }) else { return false }
+        guard let connection = networkModel.connections.first(where: { $0.id == id }) else { return false }
         let encodedData = data?.encodeData()
         await connection.response(type: .gameData, encodedContent: encodedData)
         return true
     }
 
     func sendResponse(data: MessageMapper?) async {
-        let connections = await networkModel.connections
+        let connections = networkModel.connections
         guard !connections.isEmpty else { return }
         let encodedData = data?.encodeData()
         await withDiscardingTaskGroup { group in
@@ -159,7 +159,7 @@ extension MasterNetworkController {
     }
 
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
-        let connections = await networkModel.connections.filter { $0.id != except }
+        let connections = networkModel.connections.filter { $0.id != except }
         guard !connections.isEmpty else { return }
         let encodedData = data?.encodeData()
         await withDiscardingTaskGroup { group in
@@ -225,7 +225,7 @@ extension MasterNetworkController: ListenerManagerDelegate {
         if let source {
             pendingConnectionSources[id] = source
         }
-        await addNew(ConnectionController(id: id, connection: connection, delegate: self))
+        addNew(ConnectionController(id: id, connection: connection, delegate: self))
     }
 
     /// Convenience accessor used by tests to inject a connection directly.
@@ -284,7 +284,7 @@ extension MasterNetworkController {
 
 private extension MasterNetworkController {
     func removeConnectionAndNotify(id: ConnectionController.ID) async {
-        if await removeConnection(id: id) {
+        if removeConnection(id: id) {
             await delegate.masterLostPlayer(with: id)
         }
     }

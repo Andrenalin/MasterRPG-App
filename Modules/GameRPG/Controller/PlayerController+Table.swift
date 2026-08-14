@@ -17,13 +17,13 @@ extension PlayerController {
             // local echo asks for bytes, but that upstream request is correctly
             // suppressed to avoid a master/local-player loop and the master UI
             // never changes.
-            if await gameModel.asGameMaster,
+            if gameModel.asGameMaster,
                model.sender.isMaster,
                model.data.data == nil,
                model.data.version != 0,
                await root.tableRoot.gameControllable.networkVersion(for: model.data.id) == model.data.version,
                await root.tableRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                await gameModel.setGameUpdateType(.table)
+                gameModel.setGameUpdateType(.table)
                 return await response(for: model, isSuccess: true, requestData: false)
             }
             if try await root.tableRoot.tableGameControllable.receiveTable(
@@ -31,7 +31,7 @@ extension PlayerController {
                 data: model.data,
                 makeCurrent: true
             ) {
-                await gameModel.setGameUpdateType(.table)
+                gameModel.setGameUpdateType(.table)
                 return await response(for: model, isSuccess: true, requestData: false)
             } else {
                 return await response(for: model, isSuccess: true, requestData: true)
