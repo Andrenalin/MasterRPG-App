@@ -24,12 +24,9 @@ extension ItemController: ItemControllable {
         itemDataModel.dataController
     }
 
-    @MainActor
-    var linkRegisterController: LinkRegisterController {
-        guard let controller = itemDataModel.linkRegisterController else {
-            preconditionFailure("RuleRPG requires a LinkRegisterController after setup.")
-        }
-        return controller
-    }
+    // `linkRegisterController` now comes from `ItemControllable`'s own
+    // shared default (see CODE_AUDIT §5.5) — this module's bespoke
+    // preconditionFailure message was the pattern the other 11 modules'
+    // force-unwraps were fixed to match, and is now redundant with it.
 }
 

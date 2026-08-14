@@ -91,7 +91,6 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 
     var canAddGroups: Bool { true }
     var canConvertGroups: Bool { true }

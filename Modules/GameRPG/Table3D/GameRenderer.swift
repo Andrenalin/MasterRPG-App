@@ -164,7 +164,7 @@ extension ModelEntity {
         cursorMaterial.baseColor = PhysicallyBasedMaterial.BaseColor(tint: .init(white: 0, alpha: 0.3))
         cursorMaterial.roughness = PhysicallyBasedMaterial.Roughness(floatLiteral: 1)
         cursorMaterial.blending = .transparent(opacity: 0.6)
-        cursorEntity.model!.materials.append(cursorMaterial)
+        cursorEntity.model?.materials.append(cursorMaterial)
         return cursorEntity
     }
 }

@@ -55,7 +55,6 @@ extension EditController: EntryDataEditable {
     
     var itemControllable: any ItemControllable { itemController }
     var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
     
 // MARK: - EntryList editor

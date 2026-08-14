@@ -21,5 +21,4 @@ extension ItemController: ItemControllable {
     typealias Model = AdventureModel
 
     @MainActor var dataControllable: (any DataPersistenceControllable)? { itemDataModel.dataController }
-    @MainActor var linkRegisterController: LinkRegisterController { itemDataModel.linkRegisterController! }
 }

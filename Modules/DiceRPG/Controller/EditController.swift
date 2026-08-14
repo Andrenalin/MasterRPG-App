@@ -29,7 +29,6 @@ extension EditController: EditControllable {
         itemControllable.fileUrlDataController
     }
 
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
 
 extension EditController {

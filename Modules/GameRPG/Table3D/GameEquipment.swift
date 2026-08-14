@@ -786,10 +786,24 @@ struct Die: EntityEquipment {
 
 extension GameTableModel {
     /// Assigns seats to SharePlay participants. Master always gets seat 0; players fill seats 1+.
+    ///
+    /// The table only has `PlayerSeat.seatPoses.count - 1` physical player
+    /// seats (currently 2 — see the diagram atop `GameSetup`: the table's
+    /// 4th side is reserved for the shared die/deck, not a seat). A party of
+    /// 3+ players therefore always has multiple players share a seat — and
+    /// with it, the seat's 2 `Die20` equipment ids from
+    /// `GameSetup.playerDiceIds`, so a character-sheet roll from one of
+    /// those players moves the dice the other(s) also treat as their own.
+    /// This can't be eliminated purely by reindexing (there are only 2
+    /// buckets for 3+ players), but it's now deterministic — every device
+    /// computes the same sorted `activeParticipants` list — and surfaced via
+    /// `sharedSeatPlayerCount` and a log instead of being silent. See
+    /// CODE_AUDIT §5.2.
     @MainActor
     func assignSeatsForSharePlay(groupSession: GroupSession<RPGActivity>?, isMaster: Bool) {
         guard let groupSession else {
             Logger.sharePlay.debug("No active GroupSession — claiming any seat for single player")
+            sharedSeatPlayerCount = nil
             tabletopGame.claimAnySeat()
             return
         }
@@ -798,17 +812,23 @@ extension GameTableModel {
 
         if isMaster {
             tabletopGame.claimSeat(matching: TableSeatIdentifier(0))
+            sharedSeatPlayerCount = nil
             Logger.sharePlay.debug("Assigned seat 0 (master)")
             return
         }
 
-        // Players sort by ID for consistent assignment; seat 0 is reserved for master
+        // Players sort by ID for consistent assignment; seat 0 is reserved
+        // for master. `activeParticipants` carries no host/role marker, so
+        // the master's own participant can't be excluded from this ranking
+        // — it simply occupies one rank alongside everyone else and is
+        // handled entirely by the `isMaster` branch above.
         let localParticipant = groupSession.localParticipant
-        let sortedPlayers = Array(groupSession.activeParticipants)
+        let sortedParticipants = groupSession.activeParticipants
             .sorted { $0.id.uuidString < $1.id.uuidString }
 
-        guard let localIndex = sortedPlayers.firstIndex(where: { $0.id == localParticipant.id }) else {
+        guard let localIndex = sortedParticipants.firstIndex(where: { $0.id == localParticipant.id }) else {
             Logger.sharePlay.debug("Could not find local participant — claiming any seat")
+            sharedSeatPlayerCount = nil
             tabletopGame.claimAnySeat()
             return
         }
@@ -816,6 +836,20 @@ extension GameTableModel {
         // Seat 0 is master; player seats start at 1 and wrap within available slots
         let playerSeatCount = PlayerSeat.seatPoses.count - 1
         let seatIndex = (localIndex % playerSeatCount) + 1
+        // `sortedParticipants` includes the master (there's no way to
+        // exclude them specifically — see the doc comment above), so this
+        // slightly overcounts the true player count by one. Harmless here:
+        // it only feeds the ">" oversubscription check and the logged
+        // number, not the seat math itself.
+        let playerCount = sortedParticipants.count - 1
+        if playerCount > playerSeatCount {
+            sharedSeatPlayerCount = playerCount
+            Logger.sharePlay.warning(
+                "\(playerCount, privacy: .public) players but only \(playerSeatCount, privacy: .public) table seats — seat \(seatIndex, privacy: .public) (and its dice) may be shared with another player"
+            )
+        } else {
+            sharedSeatPlayerCount = nil
+        }
         Logger.sharePlay.debug("Assigned seat \(seatIndex, privacy: .public) to player (index \(localIndex, privacy: .public))")
         tabletopGame.claimSeat(matching: TableSeatIdentifier(seatIndex))
     }

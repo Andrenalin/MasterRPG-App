@@ -24,7 +24,11 @@ public protocol EditControllable: Sendable {
 
 public extension EditControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
-    
+
+    // Delegates to `itemControllable`'s own safe default rather than
+    // force-unwrapping a second time here. See CODE_AUDIT §5.5.
+    @MainActor var linkRegisterController: LinkRegisterController { itemControllable.linkRegisterController }
+
     @MainActor var cacheItemListModel: CacheItemListModel {
         editorModel.cacheItemListModel
     }

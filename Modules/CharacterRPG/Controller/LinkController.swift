@@ -183,9 +183,9 @@ extension LinkController {
 }
 
 extension LinkController {
-    @MainActor
-    public func validate(id: UUID?, isCharacter: Bool = false, isGameMaster: Bool = false) -> UUID? {
-        itemController.itemDataModel.items.first(where: { $0 == id })
+    @MainActor public func validate(id: UUID?) -> UUID? {
+        guard let itemId = itemController.itemDataModel.items.first(where: { $0 == id }) else { return nil }
+        return itemId
     }
 }
 

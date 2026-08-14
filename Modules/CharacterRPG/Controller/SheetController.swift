@@ -10,7 +10,7 @@ struct SheetController {
 }
 
 extension SheetController: SheetControllable {
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
+    @MainActor var linkRegisterController: LinkRegisterController { itemController.linkRegisterController }
 
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
         let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)

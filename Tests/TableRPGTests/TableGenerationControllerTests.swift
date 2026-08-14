@@ -324,6 +324,35 @@ struct TableGenerationControllerTests {
         #expect(model.summary?.value == "Rations")
     }
 
+    @Test("Rolling a single-entry table always resolves its only entry")
+    func singleEntryTableAlwaysResolves() {
+        // Given: a table with exactly one entry and no dedicated dice — the
+        // exact configuration that CODE_AUDIT §5.3 found had a ~50% chance
+        // of hitting "Roll 2 does not match an entry" instead of resolving.
+        let root = makeRoot()
+        let onlyEntry = TableEntryModel.fixture(
+            id: .fixture2,
+            name: "Only",
+            content: "Only"
+        )
+        let table = TableModel(
+            id: .fixture1,
+            name: "Table",
+            entries: [onlyEntry]
+        )
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: table.id)
+
+        // When
+        let result = root.generationController.roll(occurrence: model.root, model: model)
+
+        // Then: deterministic (no dice involved for a single entry), so a
+        // single call is enough to catch a regression, not just a flaky one.
+        #expect(result == 1)
+        #expect(model.errorMessage == nil)
+        #expect(model.root.selectedEntryIds == [onlyEntry.id])
+    }
+
     @Test("Changing a parent selection resets linked Table decisions")
     func parentSelectionChangeResetsChildren() throws {
         // Given

@@ -23,5 +23,4 @@ extension ItemController: ItemControllable {
     typealias Model = DiceModel
 
     @MainActor var dataControllable: (any DataPersistenceControllable)? { itemDataModel.dataController }
-    @MainActor var linkRegisterController: LinkRegisterController { itemDataModel.linkRegisterController! }
 }

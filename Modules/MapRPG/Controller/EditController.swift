@@ -68,7 +68,6 @@ extension EditController: EntryDataEditable {
         itemControllable.fileUrlDataController
     }
 
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 
     public var linkModules: [NetworkModules] { [.audio, .value, .dice, .map, .pdf, .photo, .table] }
     

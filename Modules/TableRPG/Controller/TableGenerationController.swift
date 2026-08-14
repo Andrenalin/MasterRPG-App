@@ -157,7 +157,14 @@ struct TableGenerationController: Sendable {
                 )
                 return nil
             }
-            result = diceRoot.role(number: occurrence.entries.count)
+            // A single-entry table has only one possible outcome. Rolling
+            // through `RawDie` would go through `Sides.number()`'s clamp of
+            // any side count below 2 up to 2 (avoiding a crashing
+            // `Int.random(in: 1...0)`), giving a ~50% chance of a roll of 2
+            // — which `matchingEntry` can't resolve since only index 0
+            // exists, surfacing a confusing error for an otherwise
+            // unremarkable single-entry table. See CODE_AUDIT §5.3.
+            result = occurrence.entries.count == 1 ? 1 : diceRoot.role(number: occurrence.entries.count)
         }
         apply(result: result, to: occurrence, model: model)
         return result

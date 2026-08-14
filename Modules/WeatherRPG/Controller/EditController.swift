@@ -30,7 +30,6 @@ extension EditController: EditControllable {
     typealias Model = WeatherModel
     
     var itemControllable: any ItemControllable { itemController }
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
 
 // MARK: - Module Editor

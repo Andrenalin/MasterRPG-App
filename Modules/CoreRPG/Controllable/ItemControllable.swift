@@ -67,6 +67,21 @@ public extension ItemControllable {
     var cacheControllable: ImageCacheControllable? { nil }
     var collectionCategory: ItemListCategory { .collection }
     var fileUrlDataController: FileUrlDataController? { nil }
+
+    /// `RootModel.init()` assigns `itemDataModel.linkRegisterController`
+    /// shortly after construction, so it's expected to always be present by
+    /// the time any conformer's controllers run — but reading it before that
+    /// (a Preview, a test, a reset-without-reassign) is a real, if rare,
+    /// possibility. A single shared default here — instead of a bare
+    /// force-unwrap repeated per module — turns that into a diagnostic
+    /// crash message rather than a generic "unexpectedly found nil". See
+    /// CODE_AUDIT §5.5.
+    @MainActor var linkRegisterController: LinkRegisterController {
+        guard let controller = itemDataModel.linkRegisterController else {
+            preconditionFailure("\(Self.self) requires a LinkRegisterController after setup.")
+        }
+        return controller
+    }
 }
 
 // MARK: - ContextMenuMultiController

@@ -26,7 +26,6 @@ extension EditController: EditControllable {
     typealias Model = GeneratorModel
     
     var itemControllable: any ItemControllable { itemController }
-    @MainActor var linkRegisterController: LinkRegisterController { itemController.itemDataModel.linkRegisterController! }
 }
 
 // MARK: - Module Editor

@@ -76,20 +76,28 @@ struct PdfContentView: View {
         }
     }
     
-    private var horizontalThumnailSize: CGSize {
+    private var horizontalThumbnailSize: CGSize {
         CGSize(width: 54, height: 75)
     }
-    
-    private var verticalThumnailSize: CGSize {
+
+    private var verticalThumbnailSize: CGSize {
         CGSize(width: 71, height: 100)
     }
-    
+
     @ViewBuilder
     private var thumbnails: some View {
         if let pdfView = searchModel.pdfView, let pdfDoc = searchModel.pdfDoc {
-            ScrollView(.vertical) {
-                ThumbnailPdfView(pdfView: pdfView, horizontal: horizontal, thumbnailSize: verticalThumnailSize)
-                    .frame(width: verticalThumnailSize.width + 20, height: CGFloat(pdfDoc.pageCount + 1) * (verticalThumnailSize.height))
+            // Both the thumbnail size and the scroll axis/frame need to
+            // follow `horizontal` — a horizontal filmstrip scrolls along
+            // its width (which grows with page count), a vertical list
+            // along its height. See CODE_AUDIT §5.7.
+            let thumbnailSize = horizontal ? horizontalThumbnailSize : verticalThumbnailSize
+            ScrollView(horizontal ? .horizontal : .vertical) {
+                ThumbnailPdfView(pdfView: pdfView, horizontal: horizontal, thumbnailSize: thumbnailSize)
+                    .frame(
+                        width: horizontal ? CGFloat(pdfDoc.pageCount + 1) * thumbnailSize.width : thumbnailSize.width + 20,
+                        height: horizontal ? thumbnailSize.height + 20 : CGFloat(pdfDoc.pageCount + 1) * thumbnailSize.height
+                    )
             }
             .background(.tertiary)
             .border(.primary)

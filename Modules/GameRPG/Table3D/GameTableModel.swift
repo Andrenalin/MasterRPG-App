@@ -57,6 +57,18 @@ final class GameTableModel: Sendable {
 
     /// The local player's own pin id (== the player's game id); nil on the master.
     var playerPinId: UUID?
+    /// Set by `assignSeatsForSharePlay` (see `GameEquipment.swift`) to the
+    /// total player count whenever the party has more players than the
+    /// table has non-master seats (currently 2; the 4th table side is
+    /// reserved for the shared die/deck, not a seat) — meaning this device's
+    /// seat, and the seat's 2 `Die20` equipment ids, may be shared with
+    /// another player. `nil` when every player has an exclusive seat.
+    /// Deliberately not a precise "shared with N others" count: which
+    /// specific players share a seat can't be determined locally (SharePlay
+    /// participants carry no host/role marker to exclude the master from
+    /// the ranking — see the method's doc comment), only that sharing is
+    /// happening somewhere. See CODE_AUDIT §5.2.
+    var sharedSeatPlayerCount: Int?
     /// The game master's local menu selection. Highlighting is intentionally
     /// not represented here because multiple shared pins may be highlighted.
     private(set) var selectedPinId: UUID?
@@ -151,6 +163,14 @@ final class GameTableModel: Sendable {
         return result
     }
 
+    /// Set by `applyDiceRoll` whenever a roll contains more d20s than this
+    /// seat has physical table slots for (currently 2 — see
+    /// `GameSetup.playerDiceIds`); `nil` when the last roll fit entirely. The
+    /// count of results that could not be mirrored onto the table, so
+    /// `GameTableView` can surface a "N results not shown on table" notice
+    /// instead of the drop being silent. See CODE_AUDIT §5.1.
+    private(set) var diceOverflowCount: Int?
+
     /// Mirrors a character-sheet roll onto the local player's own seat dice
     /// (see `GameSetup.playerDiceIds`) — only d20 is supported right now, the
     /// only die the pool has. Reuses DiceRPG's existing focus-dice mechanism
@@ -158,10 +178,17 @@ final class GameTableModel: Sendable {
     /// new, separate notion of "selected dice" for the table.
     /// `TabletopGame.addAction` syncs the result to every other participant
     /// automatically, the same way a physical toss already does.
+    ///
+    /// Each seat only has `d20Ids.count` (currently 2) physical dice slots;
+    /// a roll of 3+ d20 (a homebrew "roll 3d20", or a GM batch-rolling for
+    /// multiple NPCs at once) has its extra results dropped rather than
+    /// mirrored. See CODE_AUDIT §5.1 — this is surfaced via `diceOverflowCount`
+    /// and a log, rather than silently discarded as before.
     func applyDiceRoll(_ diceModel: DiceModel) {
         guard let seat = localSeat, let d20Ids = setup.playerDiceIds[seat] else { return }
 
         var nextD20Index = 0
+        var overflowCount = 0
         for die in diceModel.dice {
             guard let result = die.result.last else { continue }
             // Compare the *resolved* side count (`RawDie.max`, public), not
@@ -169,12 +196,22 @@ final class GameTableModel: Sendable {
             // sheet's own UI can end up as `.number(20)` instead of the
             // dedicated `.twenty` case, and those don't compare equal to
             // each other despite meaning the same die.
-            guard die.die.max == 20,
-                  nextD20Index < d20Ids.count,
-                  let equipment = tabletopGame.equipment(of: Die20.self, matching: d20Ids[nextD20Index]) else { continue }
+            guard die.die.max == 20 else { continue }
+            guard nextD20Index < d20Ids.count else {
+                overflowCount += 1
+                continue
+            }
+            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: d20Ids[nextD20Index]) else { continue }
             nextD20Index += 1
             tabletopGame.addAction(
                 .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+            )
+        }
+
+        diceOverflowCount = overflowCount > 0 ? overflowCount : nil
+        if overflowCount > 0 {
+            Logger.gameTable.warning(
+                "Roll had \(overflowCount, privacy: .public) more d20(s) than this seat's \(d20Ids.count, privacy: .public) table dice slots; those results were not mirrored onto the table"
             )
         }
     }

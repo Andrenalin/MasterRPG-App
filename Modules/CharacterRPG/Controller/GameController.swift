@@ -205,7 +205,7 @@ extension GameController: ValueGameStorable {
 
     @MainActor
     public func playerPinPhoto(for characterId: UUID) -> UUID? {
-        guard let itemId = root.linkController.validate(id: characterId, isCharacter: true) else { return nil }
+        guard let itemId = root.linkController.validate(id: characterId) else { return nil }
         return itemController.itemOrEmpty(for: itemId).photoId
     }
 
