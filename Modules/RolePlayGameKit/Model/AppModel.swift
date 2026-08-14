@@ -195,7 +195,7 @@ public final class AppModel: Sendable {
 #else
         let tableRoot = TableFactory.root(tagController: tagController, diceRoot: diceRoot, generatorRoot: generatorRoot, pdfRoot: pdfRoot)
 #endif
-        let weatherRoot = WeatherRootFactory.root(tagController: tagController, photoRoot: photoRoot)
+        let weatherRoot = WeatherFactory.root(tagController: tagController, photoRoot: photoRoot)
 
 #if os(tvOS)
         let characterRoot = CharacterRootFactory.root(tagController: tagController, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)

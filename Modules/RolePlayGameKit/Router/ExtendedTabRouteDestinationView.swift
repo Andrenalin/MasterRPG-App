@@ -47,7 +47,7 @@ struct ExtendedTabRouteDestinationView: View {
         case .tables:
             TableFactory.rootView()
         case .weathers:
-            WeatherRootFactory.rootView()
+            WeatherFactory.rootView()
         case .settings:
             SettingsView(store: appModel)
         }

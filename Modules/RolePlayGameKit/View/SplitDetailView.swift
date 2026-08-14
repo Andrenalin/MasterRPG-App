@@ -58,7 +58,7 @@ struct SplitDetailView: View {
         case .value:
             CharacterRootFactory.detailView(root: appModel.characterRoot)
         case .weather:
-            WeatherRootFactory.detailView(root: appModel.weatherRoot)
+            WeatherFactory.detailView(root: appModel.weatherRoot)
         case .setting:
             EmptyView()
         default:
