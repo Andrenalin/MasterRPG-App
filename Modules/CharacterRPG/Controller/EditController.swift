@@ -606,6 +606,32 @@ extension EditController {
     }
 }
 
+// MARK: - EditControllable
+
+extension EditController {
+    /// Creates a new character value from a sheet built elsewhere (e.g. a
+    /// generated table outcome, see `TableGenerationController`/
+    /// `SimpleSheetEditingSession` in TableRPG/CoreRPG). `sheet` is a
+    /// wrapping root whose own name is never user-editable — its one entry
+    /// stands in as that editable "root" instead, and links to a nested
+    /// sheet (that entry's own `entries.first`) holding the actual result
+    /// entries: the wrapping entry's name/content become the new value's
+    /// name/description, and the nested sheet's entries become the new
+    /// value's own entries.
+    @MainActor func addItem(sheet: SheetModel) async -> UUID? {
+        guard let wrapper = sheet.entries.first else { return nil }
+        let itemId = await itemController.addNew(type: .item)
+        guard let item = editModel(for: itemId) else { return nil }
+        item.name = wrapper.name
+        item.description = wrapper.description
+        save(updated: item, message: String(localized: "Add from Generator", bundle: .module).localizedString)
+        for entry in wrapper.entries.first?.entries ?? [] {
+            _ = insertEntry(itemId: itemId, name: entry.name, content: entry.description, position: .end)
+        }
+        return itemId
+    }
+}
+
 // MARK: - Final Repair
 
 extension EditController {

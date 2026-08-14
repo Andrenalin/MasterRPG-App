@@ -34,9 +34,11 @@ public final class TableRootModel {
 
         let itemController = ItemController(config: config)
         self.itemController = itemController
+        let generationRootManagerBox = TableGenerationRootManagerBox()
         let generationController = TableGenerationController(
             itemController: itemController,
-            diceRoot: diceRoot
+            diceRoot: diceRoot,
+            rootManagerBox: generationRootManagerBox
         )
         self.generationController = generationController
         let generationSessionStore = TableGenerationSessionStore(
@@ -114,6 +116,7 @@ public final class TableRootModel {
 
     @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         rootController.rootManager = rootManager
+        generationController.rootManagerBox.rootManager = rootManager
 
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController

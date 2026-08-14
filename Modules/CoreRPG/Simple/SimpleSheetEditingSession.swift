@@ -8,11 +8,23 @@ import Foundation
 /// absent from every controller involved (`SimpleItemController.dataControllable`
 /// is always `nil`).
 ///
+/// The session's own root header can't be edited in place — that's a
+/// structural limit of `SheetRootView`'s root name row, not something this
+/// stack can work around — so what's actually shown by `sheetRootModel` is
+/// a *wrapping* root with exactly one entry (an entry, unlike a root
+/// header, is genuinely editable). That one entry links (`childId`) to a
+/// second, real item — `resultItemId` — which holds whatever entries the
+/// caller seeds via `editController`/`resultItemId`, nested one level
+/// underneath. `Modules/CoreRPG/Simple/SimpleSheetController.swift` is what
+/// resolves that link into a nested sheet, mirroring
+/// `Modules/CharacterRPG/Controller/SheetController.swift`'s `entry.valueId`
+/// "group" pattern.
+///
 /// Any module can spin one of these up to let the user shape freeform
 /// content with the real sheet-editing UI — add/edit/reorder/delete entries
-/// — without persisting anything, then read `currentModel` back out to
-/// build its own real, persisted domain model from the result (e.g.
-/// Character's `ValueModel`/`ValueEntryModel`).
+/// — without persisting anything, then read `resultModel`/`currentModel`
+/// back out to build its own real, persisted domain model from the result
+/// (e.g. Character's `ValueModel`/`ValueEntryModel`).
 ///
 /// Only `itemControllable`/`editControllable`/`linkControllable`/
 /// `sheetControllable` are real (`SimpleItemController`/`SimpleEditController`/
@@ -31,23 +43,21 @@ import Foundation
 /// `sheetEditorModel`'s doc comment for why it must be this exact instance.
 @MainActor
 public final class SimpleSheetEditingSession {
-    public init(module: NetworkModules, name: String = "", description: String = "") {
+    /// - Parameters:
+    ///   - name: Seeds the *wrapping entry's* name (the real, editable
+    ///     stand-in for the root's own uneditable title) — not the root
+    ///     item's own name, which is never shown or edited.
+    public init(module: NetworkModules, name: String = "") {
         let config = SimpleModuleConfiguration(module: module)
         let itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
         let linkRegisterController = LinkRegisterController(root: nil)
         let itemController = SimpleItemController(config: config, linkRegisterController: linkRegisterController, itemDataModel: itemDataModel)
 
-        let itemId = UUID()
-        // Shared with `SheetRootModel` below — `EntryEditorView` reads
-        // `editControllable.editorModel.sheetEditorModel` (this instance),
-        // while tapping an entry's edit button writes to
-        // `SheetRootModel.editorModel`. In the real app those are wired to
-        // be the same object (see `TableRootModel`/`CharacterRootModel`
-        // passing `editController.editorModel.sheetEditorModel` into
-        // `SheetRootModel(..., editorModel:)`); two separate instances
-        // would mean tapping edit mutates one and the overlay reads the
-        // other, so it would never appear.
-        let sheetEditorModel = SheetEditorModel(itemId: itemId, module: module)
+        let rootItemId = UUID()
+        // Shared with `SheetRootModel` below — see the type-level doc
+        // comment on `sheetEditorModel` for why it must be this exact
+        // instance.
+        let sheetEditorModel = SheetEditorModel(itemId: rootItemId, module: module)
         let editController = SimpleEditController(
             itemControllable: itemController,
             tagController: TagController(),
@@ -82,9 +92,17 @@ public final class SimpleSheetEditingSession {
         // standalone session with no other modules to link to needs.
         root.rootManager = RootManager.preview(fake: root)
 
-        itemController.resetModel(with: SimpleModel(id: itemId, name: name, description: description))
+        // The result item holds whatever the caller seeds afterward — the
+        // actual outcome content. Registered before the wrapping root so
+        // the root's one entry can link to it immediately.
+        let resultItemId = UUID()
+        itemController.resetModel(with: SimpleModel(id: resultItemId))
 
-        self.itemId = itemId
+        let wrappingEntry = SimpleEntryModel(childId: resultItemId, name: name, content: "")
+        itemController.resetModel(with: SimpleModel(id: rootItemId, entries: [wrappingEntry]))
+
+        self.itemId = rootItemId
+        self.resultItemId = resultItemId
         self.rootController = root
         self.itemController = itemController
         self.editController = editController
@@ -93,13 +111,23 @@ public final class SimpleSheetEditingSession {
             rootManager: root.rootManager!,
             linkControllable: linkController,
             sheetControllable: sheetController,
-            itemId: itemId,
+            itemId: rootItemId,
             isEditor: true,
             editorModel: sheetEditorModel
         )
     }
 
+    /// The wrapping root's id — what `sheetRootModel` displays. Its own
+    /// name/description are never shown or editable; only its one entry
+    /// (linked to `resultItemId`) is.
     public let itemId: UUID
+
+    /// The result item's id — seed its entries via `editController` (e.g.
+    /// `editController.insertEntry(itemId: resultItemId, ...)`) to populate
+    /// the actual outcome content, nested one level under the wrapping
+    /// entry.
+    public let resultItemId: UUID
+
     public let rootController: ItemRootController
     public let editController: SimpleEditController
     public let sheetRootModel: SheetRootModel
@@ -110,10 +138,17 @@ public final class SimpleSheetEditingSession {
 
     private let itemController: SimpleItemController
 
-    /// The current state of the edited item, read back out once the user is
-    /// done — e.g. to flatten its entries into a plain string, or to seed a
-    /// real persisted domain model in another module.
+    /// The wrapping root's current state — `entries.first?.name` is the
+    /// real, editable title for the whole outcome (see the type-level doc
+    /// comment).
     public var currentModel: SimpleModel? {
         itemController.itemSync(for: itemId)
+    }
+
+    /// The result item's current state, read back out once the user is
+    /// done — e.g. to flatten its entries into a plain string, or to seed a
+    /// real persisted domain model in another module.
+    public var resultModel: SimpleModel? {
+        itemController.itemSync(for: resultItemId)
     }
 }
