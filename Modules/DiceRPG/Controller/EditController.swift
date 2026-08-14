@@ -91,8 +91,8 @@ extension EditController {
 
     @MainActor func add(reroll: Int, value: Int, isMaxDiceValue: Bool, itemId: UUID) {
         guard let editModel = editModel(for: itemId) else { return }
-        let rerole = DiceModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
-        editModel.rerollOptions.append(rerole)
+        let rerollOption = DiceModel.RerollOption(number: reroll, value: value, maxDiceValue: isMaxDiceValue)
+        editModel.rerollOptions.append(rerollOption)
         save(updated: editModel, message: String(localized: "Add reroll options", bundle: .module).localizedString)
     }
 

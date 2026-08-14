@@ -36,7 +36,7 @@ extension DataController: CoreDataSnapshotPersistable {
             coupOnlyOnFirstDie: model.coupOnlyOnFirstDie,
             fumbleValues: coupFumble(from: model.fumbleValues),
             fumbleOnlyOnFirstDie: model.fumbleOnlyOnFirstDie,
-            rerollOptions: reroleOptions(from: model.rerollOptions),
+            rerollOptions: rerollOptions(from: model.rerollOptions),
             reorderDice: model.reorderDice,
             addDiceEvery: Int(model.addDiceEvery),
             entries: CRDTDataUpdate(wrappedValue: model.entriesModel.map { map($0) }, update: CRDT(string: model.entriesUpdate ?? "", defaultValue: UUID())),
@@ -111,15 +111,15 @@ extension DataController: CoreDataSnapshotPersistable {
         }
     }
 
-    private func reroleOptions(from model: String?) -> [DiceModel.RerollOption] {
+    private func rerollOptions(from model: String?) -> [DiceModel.RerollOption] {
         guard let model else { return [] }
 
         return model.components(separatedBy: ",").compactMap {
             let comp = $0.split(separator: "/")
             guard comp.count == 3 else { return nil }
-            let rerole = DiceModel.RerollOption(number: Int(comp[0]) ?? 0, value: Int(comp[1]) ?? 0, maxDiceValue: comp[2] == "1")
-            if rerole.number > 0 {
-                return rerole
+            let reroll = DiceModel.RerollOption(number: Int(comp[0]) ?? 0, value: Int(comp[1]) ?? 0, maxDiceValue: comp[2] == "1")
+            if reroll.number > 0 {
+                return reroll
             }
             return nil
         }

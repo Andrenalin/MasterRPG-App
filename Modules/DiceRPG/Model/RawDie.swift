@@ -5,11 +5,11 @@ import CoreRPG
 public struct RawDie: Equatable, Hashable, Codable, Sendable {
     // MARK: - static
 
-    public static func role(_ sides: Sides) -> Int {
+    public static func roll(_ sides: Sides) -> Int {
         Int.random(in: 1 ... sides.number())
     }
 
-    public static func rolePercent() -> Double {
+    public static func rollPercent() -> Double {
         Double.random(in: 0 ... 100)
     }
 
@@ -55,7 +55,7 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
         }
     }
 
-    public func role() -> Int {
+    public func roll() -> Int {
         Int.random(in: 1 ... sides.number())
     }
 

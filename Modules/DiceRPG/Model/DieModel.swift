@@ -71,7 +71,7 @@ extension DieModel {
         var code = color
         if die.sides == .four || die.sides == .twenty {
             if color == ColorCode.Random.rawValue || color.isEmpty {
-                if RawDie(.number(2)).role() == 1 {
+                if RawDie(.number(2)).roll() == 1 {
                     code = ColorCode.A.rawValue
                 } else {
                     code = ColorCode.G.rawValue
@@ -136,24 +136,24 @@ extension DieModel {
     }
 
     func applyResult(values: [Int]) -> DieModel {
-        DieModel(id: id, die: die, rotation: RawDie.rolePercent() * 360, result: values)
+        DieModel(id: id, die: die, rotation: RawDie.rollPercent() * 360, result: values)
     }
 
-    public func role(resetResults: Bool = false, reroleOptions: [DiceModel.RerollOption]) -> DieModel {
-        var roleResult: [Int] = []
-        var role: Int
+    public func roll(resetResults: Bool = false, rerollOptions: [DiceModel.RerollOption]) -> DieModel {
+        var rollResult: [Int] = []
+        var roll: Int
         repeat {
-            role = die.role()
-            roleResult.append(role)
-        } while reroleOptions.contains(where: { $0.number == role })
+            roll = die.roll()
+            rollResult.append(roll)
+        } while rerollOptions.contains(where: { $0.number == roll })
 
         let updatedResult: [Int]
         if resetResults {
-            updatedResult = roleResult
+            updatedResult = rollResult
         } else {
-            updatedResult = result + roleResult
+            updatedResult = result + rollResult
         }
-        return DieModel(id: id, die: die, rotation: (1800 + RawDie.rolePercent() * 360), result: updatedResult)
+        return DieModel(id: id, die: die, rotation: (1800 + RawDie.rollPercent() * 360), result: updatedResult)
     }
 
     public static var die4: DieModel {

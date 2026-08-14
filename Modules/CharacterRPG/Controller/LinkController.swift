@@ -217,7 +217,7 @@ extension LinkController {
                 valid = false
                 return
             }
-            guard deep < 10, let linkValue = calculate(itemId: link.itemId, entryId: entryId, deep: deep + 1) else {
+            guard deep < RecursionLimits.maxValueLinkDepth, let linkValue = calculate(itemId: link.itemId, entryId: entryId, deep: deep + 1) else {
                 valid = false
                 return
             }

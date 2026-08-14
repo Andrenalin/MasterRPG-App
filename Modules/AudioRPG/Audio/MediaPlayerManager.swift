@@ -5,10 +5,11 @@ import Foundation
 import MediaPlayer
 
 /// Types of remote commands.
+///
+/// `skipForward`/`skipBackward` were removed: `handleRemoteCommands` disables both
+/// commands at the source (`skipForwardCommand.isEnabled = false`), so they could never fire.
 enum RemoteCommand {
     case pause, play, nextTrack, previousTrack
-    case skipForward(TimeInterval)
-    case skipBackward(TimeInterval)
     case changePlaybackPosition(TimeInterval)
 }
 

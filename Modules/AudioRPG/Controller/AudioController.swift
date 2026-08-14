@@ -81,11 +81,6 @@ extension AudioController {
         }
     }
 
-    @MainActor
-    func skip(by distance: TimeInterval) {
-        let offset = model.currentTime + Double(distance)
-        skip(to: offset)
-    }
 }
 
 // MARK: - Playlist
@@ -153,7 +148,7 @@ extension AudioController {
                 // `Data.write(to:)` below), so clear out a previous play's copy first.
                 try? fileManager.removeItem(at: tempUrl)
                 try fileManager.copyItem(at: url, to: tempUrl)
-                return try await self.playlistItem(for: request, assetUrl: tempUrl)
+                return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
@@ -165,7 +160,7 @@ extension AudioController {
                     .appending(path: request.id.uuidString)
                     .appendingPathExtension(itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
-                return try await playlistItem(for: request, assetUrl: tempUrl)
+                return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
@@ -173,12 +168,6 @@ extension AudioController {
         return audioAsset
     }
 
-    private func playlistItem(for request: AudioAssetRequest, assetUrl: URL) async throws -> PlaylistItem {
-        let asset = AVURLAsset(url: assetUrl)
-        let duration = try await asset.load(.duration)
-        return PlaylistItem(id: request.id, url: asset.url, title: request.title, artist: request.artist, duration: duration)
-    }
-    
     @MainActor func loadAndPlay(id: UUID) {
         // If item is already in playlist, just play it
         guard !model.playList.contains(where: { $0.id == id }) else {
@@ -398,10 +387,6 @@ extension AudioController: RemoteCommandHandler {
                 skipToCurrentItem(offsetBy: 1)
             case .previousTrack:
                 skipToCurrentItem(offsetBy: -1)
-            case .skipForward(let distance):
-                skip(by: distance)
-            case .skipBackward(let distance):
-                skip(by: -distance)
             case .changePlaybackPosition(let offset):
                 skip(to: offset)
             }

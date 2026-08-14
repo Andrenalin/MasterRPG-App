@@ -30,7 +30,7 @@ struct DiceRootTests {
             coupOnlyOnFirstDie: false,
             fumbleValues: [DiceModel.CoupFumbleOption.diceValue(20)],
             fumbleOnlyOnFirstDie: true,
-            reroleOptions: [DiceModel.RerollOption(number: 1, value: 0, maxDiceValue: true)],
+            rerollOptions: [DiceModel.RerollOption(number: 1, value: 0, maxDiceValue: true)],
             reorderDice: true,
             addDiceEvery: 20,
             resultCategory: ResultCategory(id: UUID(), module: .table)

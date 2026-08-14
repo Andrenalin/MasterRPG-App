@@ -173,7 +173,7 @@ extension DiceModel {
         coupOnlyOnFirstDie: true,
         fumbleValues: [.diceValue(20)],
         fumbleOnlyOnFirstDie: true,
-        reroleOptions: [RerollOption(number: 1, value: 0, maxDiceValue: true)],
+        rerollOptions: [RerollOption(number: 1, value: 0, maxDiceValue: true)],
         reorderDice: true,
         addDiceEvery: 20,
         resultCategory: nil
@@ -183,7 +183,7 @@ extension DiceModel {
     static let diceCoC: DiceModel = .init(
         id: uuidCoC,
         name: "CoC",
-        description: "This is a dice for Call of Cthuhlu. A percent five where you need to role equal or lower the value. 01 is a critical and 05 is extreme success. 100 is a fumble.",
+        description: "This is a dice for Call of Cthuhlu. A percent five where you need to roll equal or lower the value. 01 is a critical and 05 is extreme success. 100 is a fumble.",
         tags: ["CoC", "Example"],
         category: .game,
         displayState: 0,
@@ -212,7 +212,7 @@ extension DiceModel {
         coupOnlyOnFirstDie: false,
         fumbleValues: [.result(100)],
         fumbleOnlyOnFirstDie: false,
-        reroleOptions: [],
+        rerollOptions: [],
         reorderDice: false,
         addDiceEvery: 0,
         resultCategory: nil
@@ -222,7 +222,7 @@ extension DiceModel {
     static let diceERPS: DiceModel = .init(
         id: uuidERPS,
         name: "ERPS",
-        description: "ERPS uses 2d10 and sum up the values. 10 is a re-role and count as 10. Fumble is 2 with 2d10.",
+        description: "ERPS uses 2d10 and sum up the values. 10 is a re-roll and count as 10. Fumble is 2 with 2d10.",
         tags: ["ERPS", "Example"],
         category: .game,
         displayState: 0,
@@ -251,7 +251,7 @@ extension DiceModel {
         coupOnlyOnFirstDie: false,
         fumbleValues: [.result(2)],
         fumbleOnlyOnFirstDie: false,
-        reroleOptions: [RerollOption(number: 10, value: 10, maxDiceValue: false)],
+        rerollOptions: [RerollOption(number: 10, value: 10, maxDiceValue: false)],
         reorderDice: false,
         addDiceEvery: 0,
         resultCategory: nil

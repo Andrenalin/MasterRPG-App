@@ -178,12 +178,12 @@ extension DiceRootModel {
 
 public extension DiceRootModel {
     @MainActor
-    func role(diceId: UUID) -> Int {
-        itemController.itemOrEmpty(for: diceId).dice.reduce(0) { $0 + ($1.role(resetResults: true, reroleOptions: itemController.itemOrEmpty(for: diceId).rerollOptions).result.first ?? 0) }
+    func roll(diceId: UUID) -> Int {
+        itemController.itemOrEmpty(for: diceId).dice.reduce(0) { $0 + ($1.roll(resetResults: true, rerollOptions: itemController.itemOrEmpty(for: diceId).rerollOptions).result.first ?? 0) }
     }
 
-    func role(number: Int) -> Int {
-        RawDie(.number(number)).role()
+    func roll(number: Int) -> Int {
+        RawDie(.number(number)).roll()
     }
 }
 

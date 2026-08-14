@@ -239,7 +239,7 @@ extension GameController: ValueGameStorable {
         characterId: UUID,
         depth: Int
     ) -> ValueEntryModel? {
-        guard depth < 10 else { return nil }
+        guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
         let normalizedNames = names
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
@@ -287,7 +287,7 @@ extension GameController: ValueGameStorable {
 
     @MainActor
     private func gameEntry(characterId: UUID, entryId: UUID, depth: Int) -> ValueEntryModel? {
-        guard depth < 10 else { return nil }
+        guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
         let item = gameItem(for: characterId)
         if let direct = item.entries.first(where: { $0.id == entryId }) {
             return direct

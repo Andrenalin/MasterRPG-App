@@ -270,35 +270,21 @@ extension AdventureRootModel: RootExportControllable {
 extension AdventureRootModel: StoreManiplable {
     public func resetData() async {
         await itemController.resetData()
-        await audioRoot.itemControllable.resetData()
-        await diceRoot.itemControllable.resetData()
-        await mapRoot.itemControllable.resetData()
-        await pdfRoot.itemControllable.resetData()
-        await photoRoot.itemControllable.resetData()
-        await ruleRoot.itemControllable.resetData()
-        await spaceRoot.itemControllable.resetData()
-        await tableRoot.itemControllable.resetData()
-        await characterRoot.itemControllable.resetData()
-        await weatherRoot.itemControllable.resetData()
+        for root in siblingModuleRoots {
+            await root.itemControllable.resetData()
+        }
         await linkRegisterController.resetData()
         await searchModel.tagController.resetData()
     }
 
     @Sendable public func save() async {
         // Flush all module pending operations into the shared context without saving yet.
-        await audioRoot.itemControllable.flushPendingOperations()
-        await diceRoot.itemControllable.flushPendingOperations()
+        for root in siblingModuleRoots {
+            await root.itemControllable.flushPendingOperations()
+        }
         #if !os(tvOS)
         await generatorRoot?.itemControllable.flushPendingOperations()
         #endif
-        await mapRoot.itemControllable.flushPendingOperations()
-        await pdfRoot.itemControllable.flushPendingOperations()
-        await photoRoot.itemControllable.flushPendingOperations()
-        await ruleRoot.itemControllable.flushPendingOperations()
-        await spaceRoot.itemControllable.flushPendingOperations()
-        await tableRoot.itemControllable.flushPendingOperations()
-        await characterRoot.itemControllable.flushPendingOperations()
-        await weatherRoot.itemControllable.flushPendingOperations()
         await linkRegisterController.savePendingLinks()
         await searchModel.tagController.savePendingTags()
         // One context.save() covers all flushed changes from every module above.
@@ -309,19 +295,12 @@ extension AdventureRootModel: StoreManiplable {
     /// External import uses this boundary so it can roll back newly installed attachments when
     /// the consolidated Core Data save fails.
     @Sendable public func saveExternalImport() async throws {
-        try await audioRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await diceRoot.itemControllable.dataControllable?.flushPendingOperations()
+        for root in siblingModuleRoots {
+            try await root.itemControllable.dataControllable?.flushPendingOperations()
+        }
         #if !os(tvOS)
         try await generatorRoot?.itemControllable.dataControllable?.flushPendingOperations()
         #endif
-        try await mapRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await pdfRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await photoRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await ruleRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await spaceRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await tableRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await characterRoot.itemControllable.dataControllable?.flushPendingOperations()
-        try await weatherRoot.itemControllable.dataControllable?.flushPendingOperations()
         await linkRegisterController.savePendingLinks()
         await searchModel.tagController.savePendingTags()
         try await itemController.dataControllable?.save()
@@ -334,29 +313,15 @@ extension AdventureRootModel: StoreManiplable {
 
             report.update(phase: .repairFolders)
             await checkFolders(reportModel: report)
-            await audioRoot.checkFolders(reportModel: report)
-            await diceRoot.checkFolders(reportModel: report)
-            await mapRoot.checkFolders(reportModel: report)
-            await pdfRoot.checkFolders(reportModel: report)
-            await photoRoot.checkFolders(reportModel: report)
-            await ruleRoot.checkFolders(reportModel: report)
-            await spaceRoot.checkFolders(reportModel: report)
-            await tableRoot.checkFolders(reportModel: report)
-            await characterRoot.checkFolders(reportModel: report)
-            await weatherRoot.checkFolders(reportModel: report)
+            for root in siblingModuleRoots {
+                await root.checkFolders(reportModel: report)
+            }
 
             report.update(phase: .validateLinks)
             await validateLinks(reportModel: report)
-            await audioRoot.validateLinks(reportModel: report)
-            await diceRoot.validateLinks(reportModel: report)
-            await mapRoot.validateLinks(reportModel: report)
-            await pdfRoot.validateLinks(reportModel: report)
-            await photoRoot.validateLinks(reportModel: report)
-            await ruleRoot.validateLinks(reportModel: report)
-            await spaceRoot.validateLinks(reportModel: report)
-            await tableRoot.validateLinks(reportModel: report)
-            await characterRoot.validateLinks(reportModel: report)
-            await weatherRoot.validateLinks(reportModel: report)
+            for root in siblingModuleRoots {
+                await root.validateLinks(reportModel: report)
+            }
         }
     }
 }
@@ -366,16 +331,9 @@ extension AdventureRootModel: StoreManiplable {
 public extension AdventureRootModel {
     @MainActor func startGame() {
         itemController.itemDataModel.isGameMode = true
-        audioRoot.itemControllable.itemDataModel.isGameMode = true
-        diceRoot.itemControllable.itemDataModel.isGameMode = true
-        mapRoot.itemControllable.itemDataModel.isGameMode = true
-        pdfRoot.itemControllable.itemDataModel.isGameMode = true
-        photoRoot.itemControllable.itemDataModel.isGameMode = true
-        ruleRoot.itemControllable.itemDataModel.isGameMode = true
-        spaceRoot.itemControllable.itemDataModel.isGameMode = true
-        tableRoot.itemControllable.itemDataModel.isGameMode = true
-        characterRoot.itemControllable.itemDataModel.isGameMode = true
-        weatherRoot.itemControllable.itemDataModel.isGameMode = true
+        for root in siblingModuleRoots {
+            root.itemControllable.itemDataModel.isGameMode = true
+        }
     }
 
     @MainActor func networkTitle(for id: UUID) -> String {

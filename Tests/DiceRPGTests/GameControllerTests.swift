@@ -335,19 +335,19 @@ struct GameControllerTests {
         #expect(dice.dice.map { $0.result } == [[], [], []])
     }
     
-    @Test func role() async throws {
+    @Test func roll() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController
 
         dice.dice = GameControllerTests.diceResult(values: [[], [], []])
-        sut.role(die: dice.dice[0], for: dice.id)
+        sut.roll(die: dice.dice[0], for: dice.id)
         #expect(dice.dice.map { $0.result.count > 0 } == [true, false, false])
-        sut.role(die: dice.dice[1], for: dice.id)
+        sut.roll(die: dice.dice[1], for: dice.id)
         #expect(dice.dice.map { $0.result.count > 0 } == [true, true, false])
-        sut.role(die: dice.dice[2], for: dice.id)
+        sut.roll(die: dice.dice[2], for: dice.id)
         #expect(dice.dice.map { $0.result.count > 0 } == [true, true, true])
         dice.dice = GameControllerTests.diceResult(values: [[], [], []])
-        sut.role(die: nil, for: dice.id)
+        sut.roll(die: nil, for: dice.id)
         #expect(dice.dice.map { $0.result.count > 0 } == [true, true, true])
     }
     
@@ -407,7 +407,7 @@ private extension GameControllerTests {
             coupOnlyOnFirstDie: false,
             fumbleValues: [DiceModel.CoupFumbleOption.diceValue(20)],
             fumbleOnlyOnFirstDie: true,
-            reroleOptions: [DiceModel.RerollOption(number: 1, value: 0, maxDiceValue: true)],
+            rerollOptions: [DiceModel.RerollOption(number: 1, value: 0, maxDiceValue: true)],
             reorderDice: true,
             addDiceEvery: 20,
             resultCategory: ResultCategory(id: UUID(), module: .table)

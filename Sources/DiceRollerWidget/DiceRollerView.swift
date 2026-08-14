@@ -276,7 +276,7 @@ struct DiceRollerView: View {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(0.6))
 
-                let rolledDie = selectedDie.role(resetResults: true, reroleOptions: [])
+                let rolledDie = selectedDie.roll(resetResults: true, rerollOptions: [])
                 let value = rolledDie.result.first ?? selectedDie.die.max
 
                 // Create dice model with the rolled die

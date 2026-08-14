@@ -38,11 +38,4 @@ extension ItemController {
         guard let valueId = parent[entryId].valueId, let value = itemSync(for: valueId) else { return [] }
         return [value]
     }
-        
-    @MainActor private func subchildren(itemId: UUID, deep: Int) -> [Model] {
-        guard deep < 25, let parent = itemSync(for: itemId) else { return [] }
-        return [parent] + parent.entries.compactMap(\.valueId).flatMap {
-            subchildren(itemId: $0, deep: deep + 1)
-        }
-    }
 }

@@ -32,7 +32,7 @@ struct RollDiceIntent: AppIntent {
 private enum DiceIntentPerformer {
     static func roll(_ diceType: IntentDiceType) async {
         let die = diceType.toDieModel()
-        let rolledDie = die.role(resetResults: true, reroleOptions: [])
+        let rolledDie = die.roll(resetResults: true, rerollOptions: [])
         let result = rolledDie.result.first ?? die.die.max
 
         // Create dice model with the rolled die

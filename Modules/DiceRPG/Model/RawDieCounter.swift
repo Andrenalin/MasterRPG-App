@@ -26,9 +26,9 @@ public struct RawDieCounter: Equatable, Hashable {
         die = RawDie(text: text)
     }
 
-    public func role() -> Int {
+    public func roll() -> Int {
         var result = 0
-        (1 ... abs(count)).forEach { _ in result += die.role() }
+        (1 ... abs(count)).forEach { _ in result += die.roll() }
         if count < 0 {
             result *= -1
         }

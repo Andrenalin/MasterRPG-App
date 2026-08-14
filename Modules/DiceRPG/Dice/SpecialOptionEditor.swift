@@ -12,9 +12,9 @@ struct SpecialOptionEditor: View {
 
     var body: some View {
         Section {
-            ToggleDiceValue(model: model, toggleKetpath: \.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123", saveMessage: String(localized: "change reorder dice option", bundle: .module).localizedString)
+            ToggleDiceValue(model: model, toggleKeyPath: \.reorderDice, title: "Reorder dice by value", bundle: .module, icon: "textformat.123", saveMessage: String(localized: "change reorder dice option", bundle: .module).localizedString)
 
-            ToggleDiceValue(model: model, toggleKetpath: \.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice", saveMessage: String(localized: "change add dice", bundle: .module).localizedString)
+            ToggleDiceValue(model: model, toggleKeyPath: \.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice", saveMessage: String(localized: "change add dice", bundle: .module).localizedString)
 
             if model.addDiceActivate {
                 addDiceEditorView

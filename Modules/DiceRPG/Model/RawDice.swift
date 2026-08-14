@@ -68,9 +68,9 @@ public struct RawDice: Equatable, Hashable {
         removeDie(RawDieCounter(die: die))
     }
 
-    public func role() -> Int {
+    public func roll() -> Int {
         var result = 0
-        dieCounters.forEach { result += $0.role() }
+        dieCounters.forEach { result += $0.roll() }
         return result + modifier
     }
 

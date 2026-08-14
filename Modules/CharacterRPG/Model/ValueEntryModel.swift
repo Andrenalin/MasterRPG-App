@@ -110,16 +110,6 @@ public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
 }
 
 extension ValueEntryModel {
-    func nameText(otherValue: String) -> String {
-        let bold = name.starts(with: "**") ? "" : "**"
-        let first = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        var firstBold = first
-        if !first.isEmpty {
-            firstBold = "\(bold)\(first)\(bold)"
-        }
-        return firstBold
-    }
-    
     func valueLinkText(otherValue: String, withoutName: Bool = false) -> String {
         let bold = name.starts(with: "**") ? "" : "**"
         var first: String

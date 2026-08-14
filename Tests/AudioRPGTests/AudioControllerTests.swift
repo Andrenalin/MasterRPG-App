@@ -100,8 +100,6 @@ struct AudioControllerTests {
         #expect(model.currentId == second.id)
 
         sut.performRemoteCommand(.previousTrack)
-        sut.performRemoteCommand(.skipForward(5))
-        sut.performRemoteCommand(.skipBackward(2))
         sut.performRemoteCommand(.changePlaybackPosition(1))
         sut.performRemoteCommand(.pause)
         sut.performRemoteCommand(.play)

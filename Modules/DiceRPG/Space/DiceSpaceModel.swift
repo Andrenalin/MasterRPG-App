@@ -86,7 +86,7 @@ final class DiceSpaceModel {
     }
 
     func rollDice(diceEntity: Entity, usePhysics: Bool = false) {
-        let result = RawDie.twenty.role()
+        let result = RawDie.twenty.roll()
         #if DEBUG
         print("*** Dice result = \(result)")
         #endif
