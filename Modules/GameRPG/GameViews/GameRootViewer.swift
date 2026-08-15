@@ -107,8 +107,19 @@ struct GameRootViewer: View {
         // scene/seating), so opening a second, separate immersive space here
         // would just duplicate it.
         .onChange(of: root.spaceRoot.gameControllable.gameModel.currentItemId) {
-            guard let spaceId = root.spaceRoot.gameControllable.gameModel.currentItemId,
-                  scenesManager.getSceneState(for: .gameTable) != .opened else { return }
+            guard let spaceId = root.spaceRoot.gameControllable.gameModel.currentItemId else {
+                // The GM un-revealed the space entirely — clear any earlier
+                // explicit dismiss so a future re-reveal (even of the same
+                // item) opens fresh instead of staying permanently suppressed.
+                scenesManager.clearExplicitlyDismissedSpaceItem()
+                return
+            }
+            guard scenesManager.getSceneState(for: .gameTable) != .opened else { return }
+            // A player who explicitly closed this exact reveal (the space
+            // viewer's own close button) shouldn't have it popped back open
+            // by a resync that re-broadcasts the same still-revealed item —
+            // see `ScenesManager.explicitlyDismissedSpaceItemId`.
+            guard scenesManager.explicitlyDismissedSpaceItemId != spaceId else { return }
             Task {
                 await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: spaceId, entryId: nil))
             }

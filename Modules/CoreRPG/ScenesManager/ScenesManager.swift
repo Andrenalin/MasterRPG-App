@@ -471,6 +471,36 @@ import OSLog
         await toggleSpaceViewer(selection: nil)
     }
 
+    /// The item id a player explicitly dismissed via the space viewer's own
+    /// close button, if any. `GameRootViewer`'s reveal-resync auto-open
+    /// (`onChange(of: currentItemId)`) checks this so a resync of the *same*
+    /// still-revealed item — a reconnect, another player joining, the GM's
+    /// state re-broadcasting — doesn't pop the space back open on top of an
+    /// explicit local dismiss. Cleared once the GM's reveal moves on (a
+    /// different item, or un-revealing entirely), so a genuinely new reveal —
+    /// even of the same item, after the GM clears and re-reveals it — still
+    /// opens normally.
+    public private(set) var explicitlyDismissedSpaceItemId: UUID?
+
+    /// Dismisses the space viewer and marks `itemId` as explicitly dismissed
+    /// by this player — see `explicitlyDismissedSpaceItemId`. Only the
+    /// person tapping the in-space close button should call this.
+    /// SharePlay/system-driven dismissals (e.g. the whole group leaving
+    /// immersion together) should keep calling `dismissSpaceViewer()` plain:
+    /// those aren't the player opting out of the GM's reveal.
+    @MainActor
+    public func userDismissedSpaceViewer(itemId: UUID) async {
+        explicitlyDismissedSpaceItemId = itemId
+        await dismissSpaceViewer()
+    }
+
+    /// Clears a prior explicit dismiss — call when the GM's reveal moves off
+    /// the dismissed item (un-revealed, or a different item revealed), so a
+    /// later re-reveal of that same item isn't permanently suppressed.
+    public func clearExplicitlyDismissedSpaceItem() {
+        explicitlyDismissedSpaceItemId = nil
+    }
+
     private func resumePendingSpaceViewerIfNeeded() {
         guard pendingSpaceViewerSelection != nil else { return }
         Task { @MainActor [weak self] in

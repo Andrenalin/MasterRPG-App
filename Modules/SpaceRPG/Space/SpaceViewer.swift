@@ -566,32 +566,38 @@ private extension SpaceViewer {
             let newRootEntity = loadedEntity
             self.objectEntity = loadedEntity
 
-            // Configure interaction on the first mesh entity on all platforms.
-            // This keeps hit-testing sized to the actual model, not an oversized proxy.
-            if let firstMesh = loadedEntity.firstModelEntity {
-                firstMesh.components.set(InputTargetComponent())
+            // Configure interaction on the root entity, not one arbitrarily-found
+            // sub-mesh: `firstModelEntity` used to walk only the first-child chain
+            // looking for a single ModelEntity, so a multi-part USDZ (siblings, not
+            // nested under a single "first child" path) only got interactivity —
+            // and only moved — on whichever one part it happened to find, and a
+            // model whose mesh wasn't reachable that way at all (e.g. the root
+            // entity is itself the ModelEntity, with no children to descend into)
+            // got none. Putting these on the root and generating collision shapes
+            // recursively covers the whole hierarchy as one hit-testable, draggable
+            // unit regardless of how the file's internal structure is organized.
+            loadedEntity.components.set(InputTargetComponent())
 
-                var gestureComponent = GestureComponent()
-                gestureComponent.pivotOnDrag = false
-                firstMesh.components.set(gestureComponent)
-                firstMesh.components.set(HoverEffectComponent(.shader(.default)))
-                firstMesh.components.set(GroundingShadowComponent(castsShadow: true))
+            var gestureComponent = GestureComponent()
+            gestureComponent.pivotOnDrag = false
+            loadedEntity.components.set(gestureComponent)
+            loadedEntity.components.set(HoverEffectComponent(.shader(.default)))
+            loadedEntity.components.set(GroundingShadowComponent(castsShadow: true))
 
-                // Generate collision shapes asynchronously so this doesn't block the rest of
-                // `loadEntity`. `Task.detached` was pointless here: `Entity`/`ModelEntity` are
-                // MainActor-bound, so the detached task immediately hopped back via
-                // `MainActor.run` anyway — this is already running on the Main Actor (`loadEntity`
-                // is `@MainActor`), so a plain structured Task keeps the same "don't block, run
-                // shortly after" behavior without the detach/re-attach indirection.
-                Task(name: "RealityKit Collision Shapes", priority: .utility) { @MainActor in
-                    let trace = PerformanceTrace.begin(
-                        "CollisionShapeGeneration",
-                        source: "SpaceViewer",
-                        count: 1
-                    )
-                    defer { trace?.end() }
-                    firstMesh.generateCollisionShapes(recursive: false, static: true)
-                }
+            // Generate collision shapes asynchronously so this doesn't block the rest of
+            // `loadEntity`. `Task.detached` was pointless here: `Entity`/`ModelEntity` are
+            // MainActor-bound, so the detached task immediately hopped back via
+            // `MainActor.run` anyway — this is already running on the Main Actor (`loadEntity`
+            // is `@MainActor`), so a plain structured Task keeps the same "don't block, run
+            // shortly after" behavior without the detach/re-attach indirection.
+            Task(name: "RealityKit Collision Shapes", priority: .utility) { @MainActor in
+                let trace = PerformanceTrace.begin(
+                    "CollisionShapeGeneration",
+                    source: "SpaceViewer",
+                    count: 1
+                )
+                defer { trace?.end() }
+                loadedEntity.generateCollisionShapes(recursive: true, static: true)
             }
 
             // Normalize scale using world-space base extents (Apple VolumetricWindow pattern).
@@ -706,7 +712,10 @@ private extension SpaceViewer {
     var closeButton: some View {
         Button {
             Task {
-                await scenesManager.dismissSpaceViewer()
+                // Marks this item as explicitly dismissed so a GM reveal
+                // resync of the same item doesn't reopen it — see
+                // `ScenesManager.explicitlyDismissedSpaceItemId`.
+                await scenesManager.userDismissedSpaceViewer(itemId: id)
             }
         } label: {
             Label {
@@ -919,18 +928,6 @@ extension ModelEntity {
     }
 }
 
-extension Entity {
-    var firstModelEntity: ModelEntity? {
-        var nextChild = children.first
-        while nextChild != nil {
-            if let model = nextChild as? ModelEntity {
-                return model
-            }
-            nextChild = nextChild?.children.first
-        }
-        return nil
-    }
-}
 
 #if os(visionOS)
 // Note: SharePlay synchronization is handled at the GameRPG layer when opening
