@@ -111,21 +111,16 @@ struct PlayerControllerTests {
         // game-only memory (see `ItemControllable.replace(model:isInsert:forceSave:)`).
         let character = try #require(env.root.characterRoot.itemController.itemSync(for: characterId, noGame: true))
         let groupEntry = try #require(character.entries.first)
-        let newValueId = groupEntry.childId
+        let newValueId = try #require(groupEntry.valueId)
         let added = try #require(env.root.characterRoot.itemController.itemSync(for: newValueId, noGame: true))
         #expect(added.name == "Weapon")
         #expect(added.description == "Found in the chest")
         #expect(added.entries.map(\.name) == ["Damage"])
-        // Grouped under the character, not a second top-level entry —
-        // `displayState == 1` is the "hidden group item" marker `addGroup`
-        // sets (see `EditController.repairCharacterContrains()`).
-        #expect(added.displayState == 1)
-        // The live game view reads `gameModel.itemData`, a separate cache
-        // from the persisted store — confirms `GameController.addItem`
-        // re-seeded it so the character's grouped entry is visible without
-        // reopening the sheet.
-        let refreshedGameCharacter = env.root.characterRoot.gameController.gameModel.itemData[characterId] as? ValueModel
-        #expect(refreshedGameCharacter?.entries.first?.childId == newValueId)
+        // Grouped under the character, not a disconnected top-level value —
+        // `groupId`/`isGroupHiddenToggle` is the nested-group marker
+        // `addItemAsGroup` sets, mirroring `addNewGroup(itemId:)`.
+        #expect(added.groupId == characterId)
+        #expect(added.isGroupHiddenToggle == true)
     }
 
     @Test("Handle photo reveal with data and ID")

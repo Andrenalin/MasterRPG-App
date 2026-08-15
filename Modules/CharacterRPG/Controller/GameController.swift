@@ -445,7 +445,7 @@ extension GameController: ValueGameStorable {
     @MainActor
     public func addItem(sheet: SheetModel, characterId: UUID, forceSave: Bool) async -> UUID? {
         guard let newValueId = await root.editController.addItem(sheet: sheet, forceSave: forceSave) else { return nil }
-        let entryId = await root.editController.addItemAsGroup(itemId: characterId, groupId: newValueId)
+        let entryId = await root.editController.addItemAsGroup(itemId: characterId, groupId: newValueId, forceSave: forceSave)
         root.editController.editorModel.gameSheetRootModel?.updateFromRoot()
         return entryId
     }

@@ -111,11 +111,11 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Changed tags", bundle: .module).localizedString, forceSave: forceSave)
     }
     
-    @MainActor func reset(hidden: Bool, itemId: UUID) {
+    @MainActor func reset(hidden: Bool, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.isGroupHiddenToggle != hidden else { return }
         item.isGroupHiddenToggle = hidden
-        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor func reset(fileUrl: FileUrl?, itemId: UUID) {

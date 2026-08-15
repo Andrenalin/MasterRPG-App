@@ -395,15 +395,15 @@ extension EditController {
         return entry.id
     }
     
-    @MainActor func addItemAsGroup(itemId: UUID, groupId: UUID) async -> UUID {
-        reset(hidden: true, itemId: groupId)
+    @MainActor func addItemAsGroup(itemId: UUID, groupId: UUID, forceSave: Bool = false) async -> UUID {
+        reset(hidden: true, itemId: groupId, forceSave: forceSave)
         guard let group = editModel(for: groupId) else { return groupId }
         group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
+        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString, forceSave: forceSave)
         var entry = Model.Entry.empty
         entry.name = group.name
         entry.valueId = groupId
-        add(entry: entry, itemId: itemId)
+        add(entry: entry, itemId: itemId, forceSave: forceSave)
         return entry.id
     }
 
