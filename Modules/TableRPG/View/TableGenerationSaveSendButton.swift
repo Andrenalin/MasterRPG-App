@@ -13,6 +13,7 @@ struct TableGenerationSaveSendButton: View {
     let saveAction: () -> Void
     let sendAction: (UUID?) -> Void
 
+    @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingControlActions) private var sharingControlActions
     @Environment(AppGameStateModel.self) private var gameState
 
@@ -81,7 +82,9 @@ struct TableGenerationSaveSendButton: View {
     }
 
     private var isGameSendMode: Bool {
-        gameState.isGameRunning && gameState.gameModus == .master
+        gameState.isGameRunning
+            && gameState.gameModus == .master
+            && networkActions != nil
     }
 
     private var visiblePlayers: [SharingControlModel] {
@@ -107,6 +110,10 @@ struct TableGenerationSaveSendButton: View {
     TableGenerationSaveSendButton(saveAction: {}, sendAction: { _ in })
         .padding()
         .environment(gameState)
+        .environment(
+            \.networkActions,
+            NetworkActions(shareId: { _ in }, send: { _ in }, game: { _, _, _ in })
+        )
         .environment(
             \.sharingControlActions,
             SharingControlActions(

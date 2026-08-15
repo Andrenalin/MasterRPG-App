@@ -75,6 +75,59 @@ struct PlayerControllerTestEnvironment {
 @MainActor
 struct PlayerControllerTests {
 
+    @Test("Table-generated outcome pushed by the master is nested under the player's Character and persisted")
+    func handlesAddItem() async throws {
+        let env = try await PlayerControllerTestEnvironment.create()
+        let characterId = UUID()
+        env.root.characterRoot.itemController.replace(
+            model: ValueModel(id: characterId, name: "Aria", entries: []),
+            isInsert: true
+        )
+        env.root.gameModel.gameRoster.players[0].characterId = characterId
+
+        let payload = SheetItemTransfer(
+            name: "Weapon",
+            description: "Found in the chest",
+            entries: [SheetItemTransfer.Entry(name: "Damage", content: "1d8")]
+        )
+        let data = NetworkCodableDataType(
+            id: payload.id,
+            type: .value,
+            version: 1,
+            data: payload.encodeData()
+        )
+        let model = Self.networkModel(
+            type: .update,
+            subType: .addItem,
+            data: data,
+            gameConfig: Self.masterConfig()
+        )
+
+        let response = try await env.playerController.handle(model)
+
+        #expect(response == nil)
+        // `noGame: true` reads straight from the persisted store, proving
+        // `handleAddItem` forced the save through rather than leaving it in
+        // game-only memory (see `ItemControllable.replace(model:isInsert:forceSave:)`).
+        let character = try #require(env.root.characterRoot.itemController.itemSync(for: characterId, noGame: true))
+        let groupEntry = try #require(character.entries.first)
+        let newValueId = groupEntry.childId
+        let added = try #require(env.root.characterRoot.itemController.itemSync(for: newValueId, noGame: true))
+        #expect(added.name == "Weapon")
+        #expect(added.description == "Found in the chest")
+        #expect(added.entries.map(\.name) == ["Damage"])
+        // Grouped under the character, not a second top-level entry —
+        // `displayState == 1` is the "hidden group item" marker `addGroup`
+        // sets (see `EditController.repairCharacterContrains()`).
+        #expect(added.displayState == 1)
+        // The live game view reads `gameModel.itemData`, a separate cache
+        // from the persisted store — confirms `GameController.addItem`
+        // re-seeded it so the character's grouped entry is visible without
+        // reopening the sheet.
+        let refreshedGameCharacter = env.root.characterRoot.gameController.gameModel.itemData[characterId] as? ValueModel
+        #expect(refreshedGameCharacter?.entries.first?.childId == newValueId)
+    }
+
     @Test("Handle photo reveal with data and ID")
     func handlePhoto() async throws {
         // Arrange
