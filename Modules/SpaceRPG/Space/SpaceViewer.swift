@@ -131,31 +131,15 @@ struct SpaceViewer: View {
             $0.immersiveSpaceTracker()
         }
         .applyIf(!isImmersiveSpace) {
-            // "Grab" the object and drag it toward the edge of the window to
-            // move it into the immersive space. `installGestures` already
-            // drags the entity within this RealityView via `GestureComponent`
-            // — this second, simultaneous gesture doesn't move anything
-            // itself, it only watches how far the same drag traveled and,
-            // once it's released past a distance relative to the window's own
-            // size, hands the (already-dragged) entity off. A live drag can't
-            // continue past the window into the surrounding space — there's
-            // no gesture-continuation API for that — so "released past the
-            // threshold" stands in for "let go outside the window."
-            // A double-tap on the object does the same thing instantly, for
-            // people who'd rather not drag.
+            // A double-tap on the object moves it into the immersive space
+            // instantly. Dragging it there instead is handled by chaining
+            // onto `installGestures`' own drag in `platformRealityView` (see
+            // `handleWindowDragEnded`) rather than adding a second
+            // `DragGesture().targetedToAnyEntity()` here: two entity-targeted
+            // drag recognizers on the same RealityView content fight over
+            // which one owns the gesture, which is what broke normal
+            // dragging entirely — not just the handoff.
             $0.simultaneousGesture(
-                DragGesture()
-                    .targetedToAnyEntity()
-                    .onEnded { value in
-                        let translation = value.gestureValue.translation
-                        let threshold = min(windowViewSize.width, windowViewSize.height) * 0.6
-                        guard threshold > 0,
-                              hypot(translation.width, translation.height) > threshold
-                        else { return }
-                        moveToImmersiveSpace()
-                    }
-            )
-            .simultaneousGesture(
                 SpatialTapGesture(count: 2)
                     .targetedToAnyEntity()
                     .onEnded { _ in
@@ -306,6 +290,39 @@ private extension SpaceViewer {
 // MARK: - Window → immersive space handoff
 
 private extension SpaceViewer {
+    /// Extracted out of the `.installGestures(...)` call site: an inline
+    /// `isImmersiveSpace ? nil : handleWindowDragEnded` ternary there was
+    /// enough to make the type checker choke on the already-large
+    /// `platformRealityView` modifier chain ("failed to produce diagnostic
+    /// for expression") — see the comment on `platformRealityView` for the
+    /// same pattern with the `RealityView` initializer itself.
+    var windowDragEndedHandler: ((EntityTargetValue<DragGesture.Value>) -> Void)? {
+        // Not a `cond ? nil : handleWindowDragEnded` ternary: the type
+        // checker can't unify a bare method reference against `nil` in that
+        // form ("failed to produce diagnostic for expression"). Each `return`
+        // here is checked against the declared type independently instead.
+        if isImmersiveSpace {
+            return nil
+        }
+        return handleWindowDragEnded
+    }
+
+    /// Chained onto `installGestures`' own drag (see its `onDragEnded`
+    /// parameter) rather than a second gesture: if the drag that just ended
+    /// traveled far enough — relative to how big this window actually is —
+    /// treat it as "dragged out of the window" and hand the (already-dragged)
+    /// entity off. A live drag can't continue past the window into the
+    /// surrounding space — there's no gesture-continuation API for that — so
+    /// "released past the threshold" stands in for "let go outside the
+    /// window." A double-tap on the object does the same thing instantly.
+    @MainActor
+    func handleWindowDragEnded(_ value: EntityTargetValue<DragGesture.Value>) {
+        let translation = value.gestureValue.translation
+        let threshold = min(windowViewSize.width, windowViewSize.height) * 0.6
+        guard threshold > 0, hypot(translation.width, translation.height) > threshold else { return }
+        moveToImmersiveSpace()
+    }
+
     /// "Grabs" the object out of this (window-embedded) instance and moves it
     /// into the immersive space: hands the live entity off via
     /// `SpaceHandoffModel` — so the immersive instance re-parents it instead
@@ -442,7 +459,7 @@ private extension SpaceViewer {
                 }
             }
         }
-        .installGestures(canDrag)
+        .installGestures(canDrag, onDragEnded: windowDragEndedHandler)
         .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
         .applyIf(isImmersiveSpace) {
             // Tap directly on the object to reveal the close button; tap again
