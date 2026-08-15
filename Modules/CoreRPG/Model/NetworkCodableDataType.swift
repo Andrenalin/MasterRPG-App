@@ -5,6 +5,14 @@ import SwiftUI
 
 public extension EnvironmentValues {
     @Entry var networkActions: NetworkActions? = nil
+
+    /// True only while an actual SharePlay `GroupSession` is active for the
+    /// current game. Unlike `networkActions` — present for solo, local-network,
+    /// *and* SharePlay sessions alike — this specifically gates behavior that
+    /// depends on visionOS's system-provided spatial-persona coordinate
+    /// alignment across SharePlay participants (e.g. SpaceViewer's shared
+    /// immersive placement, which must stay head-anchored otherwise).
+    @Entry var isSpaceSharePlayActive: Bool = false
 }
 
 public struct NetworkActions: Sendable {

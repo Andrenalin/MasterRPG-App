@@ -37,7 +37,10 @@ struct InlineRowViewer: View, Equatable {
     }
     
     private func actionHandler() {
-#if os(visionOS) || os(macOS)
+#if os(visionOS)
+        // No 2D window for 3D objects on visionOS — open the ImmersiveSpace instead.
+        Task { await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: source.itemId, entryId: nil)) }
+#elseif os(macOS)
         scenesManager.openWindow(SceneId(rawValue: root.configurable.module.viewerWindowId), selection: WindowItemSelection(itemId: source.itemId, entryId: nil))
 #else
         navigator.navigate(to: DetailRoute.viewer(source.itemId), method: .managedSheet)

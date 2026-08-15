@@ -105,7 +105,8 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                     root: root,
                     folderListController: folderListController,
                     fileTypes: fileTypes,
-                    shouldShowContent: shouldShowContent
+                    shouldShowContent: shouldShowContent,
+                    editorOnTop: configuration.editorOnTop
                 )
             } else {
                 ItemEditorForegroundView(

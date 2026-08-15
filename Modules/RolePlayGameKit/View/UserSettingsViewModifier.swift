@@ -4,11 +4,16 @@ import CoreRPG
 import SwiftUI
 
 public struct UserSettingsViewModifier: ViewModifier {
-    public init(appModel: AppModel) {
+    public init(appModel: AppModel, appliesBackground: Bool = true) {
         self.settingsModel = appModel.settingsModel
+        self.appliesBackground = appliesBackground
     }
-    
+
     let settingsModel: AppSettingsModel
+    /// False for visionOS ImmersiveSpace content: an opaque themed background
+    /// filling an `.ignoresSafeArea()` frame renders as a solid floating panel
+    /// in the space instead of leaving passthrough/mixed reality visible.
+    let appliesBackground: Bool
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -23,13 +28,15 @@ public struct UserSettingsViewModifier: ViewModifier {
 
         content
             .tint(theme.accentColor)
-            .background {
-                if reduceTransparency {
-                    theme.canvas.color
-                        .ignoresSafeArea()
-                } else {
-                    theme.backgroundGradient
-                        .ignoresSafeArea()
+            .applyIf(appliesBackground) {
+                $0.background {
+                    if reduceTransparency {
+                        theme.canvas.color
+                            .ignoresSafeArea()
+                    } else {
+                        theme.backgroundGradient
+                            .ignoresSafeArea()
+                    }
                 }
             }
             .environment(\.appTheme, theme)

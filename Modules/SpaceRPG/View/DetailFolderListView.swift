@@ -13,14 +13,14 @@ struct DetailFolderListView: View {
     let model: SpaceModel
     let folderListController: any FolderListControllable
     var isSubFolder: Bool = false
-    
+
     var body: some View {
         DetailFolderList(
             root: root.rootController,
             openFileWindowModel: root.openFileWindowModel,
             detailListController: folderListController,
             selectedModel: model,
-            configuration: .init(editorAsBackground: true, isSubFolder: isSubFolder),
+            configuration: .init(editorAsBackground: true, editorOnTop: editorOnTop, isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
             ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))
@@ -32,5 +32,18 @@ struct DetailFolderListView: View {
                 dismissAction: dismiss
             )
         }
+    }
+
+    // The RealityView has real depth, so a flat overlay drawn "in front of" it
+    // in the view tree doesn't reliably stay visually in front on visionOS —
+    // the model can protrude past the overlay's plane. Layering the editor on
+    // top instead (with top padding clearing the file-importer overlay) avoids
+    // that collision. See ItemEditorBackgroundView.editorOnTop.
+    private var editorOnTop: Bool {
+#if os(visionOS)
+        true
+#else
+        false
+#endif
     }
 }

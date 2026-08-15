@@ -30,6 +30,14 @@ enum ItemPrimaryAction {
         fileModel.itemId = selectedItemId
         fileModel.entryId = nil
 
+#if os(visionOS)
+        // SpaceRPG has no 2D window on visionOS — route straight to its
+        // ImmersiveSpace instead of the generic windowed viewer below.
+        if root.configurable.module == .space {
+            Task { await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: selectedItemId, entryId: nil)) }
+            return
+        }
+#endif
 #if os(macOS) || os(visionOS)
         if let windowId = fileModel.windowId {
             scenesManager.openWindow(

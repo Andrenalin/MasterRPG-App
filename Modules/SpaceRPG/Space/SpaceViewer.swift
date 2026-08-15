@@ -47,9 +47,20 @@ struct SpaceViewer: View {
     @State private var loadError: String?
 
 #if os(visionOS)
+    /// Shows the small floating close button — only while the immersive space
+    /// is displaying it, and only after a direct tap on the object.
+    @State private var showCloseButton = false
+#endif
+
+#if os(visionOS)
     // Shared immersive space (SharePlay): placement and manipulation sync.
     @Environment(\.immersiveSpaceDisplacement) private var immersiveSpaceDisplacement
     @Environment(\.networkActions) private var networkActions
+    // `networkActions` alone doesn't distinguish a real SharePlay GroupSession
+    // from a solo or local-network game — it's populated for all three. Only
+    // this flag means "the system actually aligned a shared immersive space",
+    // which is the one case the head-anchored placement below must give way to.
+    @Environment(\.isSpaceSharePlayActive) private var isSpaceSharePlayActive
 
     @State private var lastSentTransform: SpaceTransformModel?
     @State private var lastAcknowledgedTransform: SpaceTransformModel?
@@ -87,13 +98,29 @@ struct SpaceViewer: View {
             }
         }
 #if os(visionOS)
-        .immersiveSpaceTracker()  // ✅ Track immersive space lifecycle for ScenesManager
+        .applyIf(isImmersiveSpace) {
+            // ✅ Track immersive space lifecycle for ScenesManager. Only the real
+            // ImmersiveSpace instance (spaceImmersionWindow) may do this — every
+            // other SpaceViewer on screen is a plain 2D-embedded preview (detail
+            // view, inline row, etc.), and its onAppear/onDisappear firing this
+            // would falsely flip ScenesManager.immersiveSpaceState to .open/.closed
+            // whenever that preview appears/disappears, desyncing it from whether
+            // an immersive space is actually open (openSpaceViewer silently no-ops,
+            // toggleSpaceViewer tries to dismiss a space that was never opened).
+            $0.immersiveSpaceTracker()
+        }
         .onChange(of: immersiveSpaceDisplacement) {
             // A defensive re-check for SharePlay starting (or realigning) after
             // the model already loaded. `applySharedPlacementIfNeeded` no longer
             // keys its own gate off this value (see its doc comment) — this is
             // just "something about space alignment changed, make sure we've
             // switched off the head anchor if we're in a shared session."
+            applySharedPlacementIfNeeded()
+        }
+        .onChange(of: isSpaceSharePlayActive) {
+            // Re-check when SharePlay activates after the space already opened
+            // solo — that's the only transition that should move the model off
+            // the head anchor.
             applySharedPlacementIfNeeded()
         }
         .onChange(
@@ -122,19 +149,23 @@ private extension SpaceViewer {
     /// Re-anchors the model from the local head pose to the immersive space
     /// origin, which the system aligns across all SharePlay participants.
     ///
-    /// Gated on `networkActions != nil` (shared/networked game session), not
-    /// on `immersiveSpaceDisplacement != .identity`. Per Apple's docs, the
-    /// system reports `.identity` for whichever participant's own default
-    /// space position already *is* the shared meeting point — that's a
-    /// legitimate steady-state value, not an "alignment hasn't happened yet"
-    /// signal. Gating on it meant that participant's model never left the
-    /// head-locked anchor: everyone else's world-anchor-relative position/
-    /// rotation broadcasts would land on a still-head-anchored entity for
-    /// them, which is exactly the "translation/rotation not mapped into the
-    /// other person's coordinate system" symptom.
+    /// Gated on `isSpaceSharePlayActive` (an actual SharePlay `GroupSession`),
+    /// not on `networkActions != nil` — `networkActions` is populated for solo
+    /// and local-network games too, so gating on it fired this re-anchor on
+    /// every open and dropped the model at the (fixed, world-origin) anchor,
+    /// i.e. right on top of the user, instead of leaving it head-anchored in
+    /// front of them. It's also not gated on `immersiveSpaceDisplacement !=
+    /// .identity`. Per Apple's docs, the system reports `.identity` for
+    /// whichever participant's own default space position already *is* the
+    /// shared meeting point — that's a legitimate steady-state value, not an
+    /// "alignment hasn't happened yet" signal. Gating on it meant that
+    /// participant's model never left the head-locked anchor: everyone else's
+    /// world-anchor-relative position/rotation broadcasts would land on a
+    /// still-head-anchored entity for them, which is exactly the "translation/
+    /// rotation not mapped into the other person's coordinate system" symptom.
     @MainActor
     func applySharedPlacementIfNeeded() {
-        guard isImmersiveSpace, networkActions != nil, !isSharedPlacement else { return }
+        guard isImmersiveSpace, isSpaceSharePlayActive, !isSharedPlacement else { return }
         guard let anchor = rootEntity as? AnchorEntity, let objectEntity else { return }
         isSharedPlacement = true
 
@@ -257,7 +288,9 @@ private extension SpaceViewer {
 #if os(visionOS)
         RealityView { content, attachments in
             await loadEntity(into: content)
-            attachCloseButtonIfNeeded(attachments)
+            if isImmersiveSpace {
+                attachCloseButtonIfNeeded(attachments)
+            }
         } update: { content, attachments in
             // Only update if entity is loaded and valid
             guard let objectEntity, loadedItemId == id else { return }
@@ -270,15 +303,38 @@ private extension SpaceViewer {
 
             // Belt-and-suspenders: `loadEntity` can finish (and set `rootEntity`)
             // after `make` already ran when loading is slow, so retry here too.
-            attachCloseButtonIfNeeded(attachments)
-            updateCloseButtonPosition()
+            // Only the real ImmersiveSpace instance gets a close button — every
+            // other SpaceViewer on screen is a plain 2D-embedded preview (detail
+            // view, inline row, etc.) with its own dismiss affordance.
+            if isImmersiveSpace {
+                attachCloseButtonIfNeeded(attachments)
+                nameEntity?.isEnabled = showCloseButton
+                updateCloseButtonPosition()
+            }
         } attachments: {
-            Attachment(id: "NameBarView") {
-                closeButton
+            if isImmersiveSpace {
+                Attachment(id: "NameBarView") {
+                    closeButton
+                }
             }
         }
         .installGestures(canDrag)
         .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
+        .applyIf(isImmersiveSpace) {
+            // Tap directly on the object to reveal the close button; tap again
+            // to hide it. `.targetedToAnyEntity()` only fires when the tap
+            // actually hits an entity with InputTargetComponent — i.e. the
+            // model itself — so taps elsewhere in the space don't toggle it.
+            $0.simultaneousGesture(
+                SpatialTapGesture()
+                    .targetedToAnyEntity()
+                    .onEnded { _ in
+                        withAnimation(reduceMotion ? nil : .default) {
+                            showCloseButton.toggle()
+                        }
+                    }
+            )
+        }
 #else
         RealityView { content in
             await loadEntity(into: content)
@@ -435,8 +491,9 @@ private extension SpaceViewer {
                 // which world-locks the entity at the current head position.
                 let headAnchor = AnchorEntity(.head)
                 headAnchor.anchoring.trackingMode = .once
-                // Combine centering offset with 2 m in front of the head anchor.
-                loadedEntity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 2.0)
+                // Combine centering offset with 1.5 m in front of the head anchor —
+                // roughly where a window sits by default, straight ahead.
+                loadedEntity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 1.5)
                 headAnchor.addChild(loadedEntity)
                 content.add(headAnchor)
                 self.rootEntity = headAnchor
@@ -505,10 +562,14 @@ private extension SpaceViewer {
         updateCloseButtonPosition()
     }
 
+    /// Keeps the close button just above the object's actual bounding box
+    /// (not a flat offset tuned for one size) so it tracks correctly as the
+    /// object is dragged, rescaled, or swapped for a differently sized model.
     @MainActor
     func updateCloseButtonPosition() {
-        guard let nameEntity, let objectEntity else { return }
-        nameEntity.position = objectEntity.position + SIMD3(x: 0, y: 0.7, z: 0)
+        guard let nameEntity, let objectEntity, let rootEntity else { return }
+        let bounds = objectEntity.visualBounds(relativeTo: rootEntity)
+        nameEntity.position = SIMD3(bounds.center.x, bounds.max.y + 0.08, bounds.center.z)
     }
 
     var closeButton: some View {
@@ -525,10 +586,11 @@ private extension SpaceViewer {
             } icon: {
                 Image(systemName: "xmark")
             }
+            .labelStyle(.iconOnly)
         }
-        .frame(width: 250, height: 60, alignment: .center)
-        .padding(20)
+        .frame(width: 44, height: 44)
         .glassBackgroundEffect()
+        .accessibilityLabel(Text("Close \(root.itemController.nameSync(itemId: id))", bundle: .module))
     }
 #endif
 

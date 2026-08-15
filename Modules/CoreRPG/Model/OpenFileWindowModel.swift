@@ -120,7 +120,18 @@ struct OpenFileWindowView: View {
     }
     
     private func actionHandler(windowId: String) {
-#if os(visionOS) || os(macOS)
+#if os(visionOS)
+        // SpaceRPG has no 2D window on visionOS — its 3D objects only appear
+        // in the ImmersiveSpace (SceneId.spaceViewer), placed in the space in
+        // front of the user rather than in a windowed viewer.
+        if module == .space {
+            Task {
+                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: model.itemId, entryId: model.entryId))
+            }
+            return
+        }
+        scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
+#elseif os(macOS)
         scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
 #elseif os(iOS)
         if horizontalSizeClass == .compact, let route = model.route?(model.itemId) {

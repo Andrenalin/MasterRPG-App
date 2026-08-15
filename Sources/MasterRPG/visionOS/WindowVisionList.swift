@@ -55,7 +55,7 @@ struct WindowVisionList: Scene {
                     defaultSize: defaultSize
                 )
                     .sceneTracker(for: SceneId.spaceViewer)
-                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .space))
+                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .space, isImmersiveSpace: true))
             }
             .environment(appModel.scenesManager)
         }

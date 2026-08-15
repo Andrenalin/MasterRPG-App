@@ -22,15 +22,21 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     /// Configuration for ItemDetailRootView behavior
     public struct Configuration {
         public var editorAsBackground: Bool
+        /// When `editorAsBackground` is true, layers the editor above the
+        /// file-importer/description overlays instead of beneath them, padded
+        /// clear of the top overlay. See `ItemEditorBackgroundView`.
+        public var editorOnTop: Bool
         public var disableHideHeader: Bool
         public var isSubFolder: Bool
 
         public init(
             editorAsBackground: Bool = false,
+            editorOnTop: Bool = false,
             disableHideHeader: Bool = false,
             isSubFolder: Bool = false
         ) {
             self.editorAsBackground = editorAsBackground
+            self.editorOnTop = editorOnTop
             self.disableHideHeader = disableHideHeader
             self.isSubFolder = isSubFolder
         }

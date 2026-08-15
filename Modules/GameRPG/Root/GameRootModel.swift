@@ -56,6 +56,10 @@ final class GameRootModel: Sendable {
 
     #if os(visionOS)
     var shareState = GameShareStateModel()
+
+    /// True only while an actual SharePlay `GroupSession` is active — see
+    /// `EnvironmentValues.isSpaceSharePlayActive`, which this backs.
+    public var isSharePlayActive: Bool { shareState.isSharePlayActive }
     #endif
 
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
@@ -366,6 +370,12 @@ public final class GameRoot {
     /// the same `BattleRoundModel` instance, so retained player identity and
     /// initiative carry over as already implemented in `BattleRoundModel`.
     lazy var battleRoundController = BattleRoundController(root: self)
+
+    #if os(visionOS)
+    /// True only while an actual SharePlay `GroupSession` is active — see
+    /// `EnvironmentValues.isSpaceSharePlayActive`, which this backs.
+    public var isSharePlayActive: Bool { gameModel.isSharePlayActive }
+    #endif
 
     public lazy var networkActions: NetworkActions = NetworkActions { @MainActor [weak self] idType in
         guard let store = self?.gameModel.masterController else { return }

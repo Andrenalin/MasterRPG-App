@@ -80,6 +80,9 @@ struct AppActionEnvironmentSetUpViewModifier: ViewModifier {
             .environment(\.networkActions, appModel.gameRoot.networkActions)
             .environment(\.sharingControlActions, appModel.gameRoot.sharingControlActions)
             .environment(\.sharingFeatureActions, appModel.gameRoot.sharingFeatureActions)
+#if os(visionOS)
+            .environment(\.isSpaceSharePlayActive, appModel.gameRoot.isSharePlayActive)
+#endif
     }
 }
 
