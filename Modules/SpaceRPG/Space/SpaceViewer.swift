@@ -50,6 +50,15 @@ struct SpaceViewer: View {
     /// Shows the small floating close button — only while the immersive space
     /// is displaying it, and only after a direct tap on the object.
     @State private var showCloseButton = false
+
+    /// True once this (window-embedded, non-immersive) instance has handed
+    /// its entity off to the immersive space — see `SpaceHandoffModel`.
+    @State private var handedOffToImmersive = false
+
+    /// This view's own size, captured for the drag-to-edge handoff gesture —
+    /// how far a drag has to travel before it counts as "dragged out of the
+    /// window" is relative to how big the window actually is.
+    @State private var windowViewSize: CGSize = .zero
 #endif
 
 #if os(visionOS)
@@ -70,6 +79,17 @@ struct SpaceViewer: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
+#if os(visionOS)
+            if handedOffToImmersive {
+                movedToImmersiveSpaceView
+            } else if let loadError {
+                errorView(message: loadError)
+            } else {
+                progressView
+
+                contentView
+            }
+#else
             if let loadError {
                 errorView(message: loadError)
             } else {
@@ -77,6 +97,7 @@ struct SpaceViewer: View {
 
                 contentView
             }
+#endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .applyIf(isModal) {
@@ -108,6 +129,40 @@ struct SpaceViewer: View {
             // an immersive space is actually open (openSpaceViewer silently no-ops,
             // toggleSpaceViewer tries to dismiss a space that was never opened).
             $0.immersiveSpaceTracker()
+        }
+        .applyIf(!isImmersiveSpace) {
+            // "Grab" the object and drag it toward the edge of the window to
+            // move it into the immersive space. `installGestures` already
+            // drags the entity within this RealityView via `GestureComponent`
+            // — this second, simultaneous gesture doesn't move anything
+            // itself, it only watches how far the same drag traveled and,
+            // once it's released past a distance relative to the window's own
+            // size, hands the (already-dragged) entity off. A live drag can't
+            // continue past the window into the surrounding space — there's
+            // no gesture-continuation API for that — so "released past the
+            // threshold" stands in for "let go outside the window."
+            // A double-tap on the object does the same thing instantly, for
+            // people who'd rather not drag.
+            $0.simultaneousGesture(
+                DragGesture()
+                    .targetedToAnyEntity()
+                    .onEnded { value in
+                        let translation = value.gestureValue.translation
+                        let threshold = min(windowViewSize.width, windowViewSize.height) * 0.6
+                        guard threshold > 0,
+                              hypot(translation.width, translation.height) > threshold
+                        else { return }
+                        moveToImmersiveSpace()
+                    }
+            )
+            .simultaneousGesture(
+                SpatialTapGesture(count: 2)
+                    .targetedToAnyEntity()
+                    .onEnded { _ in
+                        moveToImmersiveSpace()
+                    }
+            )
+            .onGeometryChange(for: CGSize.self, of: \.size) { windowViewSize = $0 }
         }
         .onChange(of: immersiveSpaceDisplacement) {
             // A defensive re-check for SharePlay starting (or realigning) after
@@ -247,6 +302,61 @@ private extension SpaceViewer {
         )
     }
 }
+
+// MARK: - Window → immersive space handoff
+
+private extension SpaceViewer {
+    /// "Grabs" the object out of this (window-embedded) instance and moves it
+    /// into the immersive space: hands the live entity off via
+    /// `SpaceHandoffModel` — so the immersive instance re-parents it instead
+    /// of reloading the file — then opens the immersive space. One-way only;
+    /// see `SpaceHandoffModel`'s doc comment.
+    @MainActor
+    func moveToImmersiveSpace() {
+        guard !isImmersiveSpace, let objectEntity else { return }
+        root.handoffModel.handOff(itemId: id, entity: objectEntity, yaw: yaw, pitch: pitch)
+        self.objectEntity = nil
+        self.rootEntity = nil
+        self.loadedItemId = nil
+        self.hasLoaded = false
+        handedOffToImmersive = true
+        Task {
+            await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: id, entryId: nil))
+        }
+    }
+
+    /// Adopts an entity handed off by a window instance instead of loading
+    /// the file again — see `SpaceHandoffModel`.
+    @MainActor
+    func adopt(_ handoff: SpaceHandoffModel.Pending, into content: some RealityViewContentProtocol) {
+        let entity = handoff.entity
+        self.objectEntity = entity
+        yaw = handoff.yaw
+        pitch = handoff.pitch
+
+        // The entity already went through `loadEntity`'s centering once; this
+        // re-centers relative to its now-parentless bounds, which is close
+        // enough to a no-op that it's safe to apply again rather than special-
+        // cased away.
+        let headAnchor = AnchorEntity(.head)
+        headAnchor.anchoring.trackingMode = .once
+        let visualCenter = entity.visualBounds(relativeTo: nil).center
+        entity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 1.5)
+        headAnchor.addChild(entity)
+        content.add(headAnchor)
+        self.rootEntity = headAnchor
+        applySharedPlacementIfNeeded()
+
+        self.loadedItemId = id
+        apply(
+            remote: root.gameController.spaceGameModel.transform(
+                for: id,
+                version: root.gameController.gameItem(for: id).version
+            )
+        )
+        hasLoaded = true
+    }
+}
 #endif
 
 private extension SpaceViewer {
@@ -274,6 +384,20 @@ private extension SpaceViewer {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+#if os(visionOS)
+    var movedToImmersiveSpaceView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "arrow.up.right.and.arrow.down.left.rectangle")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("Moved to Immersive Space", bundle: .module)
+                .font(.headline)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+#endif
 
     // Split out from `contentView`: the multiple-trailing-closure `RealityView`
     // initializer (three trailing closures on visionOS, once attachments were
@@ -399,6 +523,13 @@ private extension SpaceViewer {
     func loadEntity(into content: some RealityViewContentProtocol) async {
         // Prevent reloading same model
         guard loadedItemId != id else { return }
+
+#if os(visionOS)
+        if isImmersiveSpace, let handoff = root.handoffModel.takePending(for: id) {
+            adopt(handoff, into: content)
+            return
+        }
+#endif
 
         do {
             guard let url = await root.itemController.loadableUrl(itemId: id) else {

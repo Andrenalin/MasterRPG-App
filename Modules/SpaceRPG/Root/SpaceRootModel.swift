@@ -130,6 +130,13 @@ public final class SpaceRootModel {
     @ObservationIgnored private let _viewController: ViewController
     public var viewController: ViewController { _viewController }
 
+#if os(visionOS)
+    /// Shared with every `SpaceViewer` instance so "move to immersive space"
+    /// can hand a loaded entity from the window preview to the immersive
+    /// space instead of reloading it. See `SpaceHandoffModel`.
+    let handoffModel = SpaceHandoffModel()
+#endif
+
     @ObservationIgnored let folderListController: FolderListController
     @ObservationIgnored let folderLinkController: FolderListController
 
