@@ -392,7 +392,7 @@ public extension ItemControllable {
             Logger.itemController.error("save() failed: \(error.localizedDescription, privacy: .public)")
             itemDataModel.lastPersistenceError = error
         }
-        await AppIntentContentInvalidator.invalidate()
+        AppIntentContentInvalidator.invalidate()
     }
 
     @MainActor func flushPendingOperations() async {
