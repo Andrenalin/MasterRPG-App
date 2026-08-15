@@ -23,10 +23,8 @@ extension PlayerController {
         locallyMirroredProxyPresentation: Bool = false
     ) async throws -> GameNetworkModel? {
         switch model.data.type {
-        case .none, .game, .rule, .setting, .editor, .search:
+        case .none, .game, .rule, .setting, .editor, .generator, .search:
             return nil
-        case .generator:
-            return handleGeneratedValue(model)
         case .adventure:
             return handleAdventure(model)
         case .audio:
@@ -67,18 +65,6 @@ extension PlayerController {
 
     func handleAdventure(_ model: GameNetworkModel) -> GameNetworkModel? {
         nil
-    }
-
-    func handleGeneratedValue(_ model: GameNetworkModel) -> GameNetworkModel? {
-        guard model.sender.isMaster,
-              model.type == .update,
-              model.subType == .generatedValue,
-              let summary = ItemGenerationSummary.decodeData(of: model.data.data)
-        else {
-            return nil
-        }
-        root.gameModel.receivedGenerationSummary = summary
-        return nil
     }
 
     /// Shared by every module's `retryDeferredXReveals`: whether a deferred reveal still
