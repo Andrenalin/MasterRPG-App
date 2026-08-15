@@ -26,18 +26,6 @@ struct GameRootView: View {
                     appGameStateModel.gameModus = newModus
                 }
             }
-            .overlay(alignment: .top) {
-                if let summary = root.gameModel.receivedGenerationSummary {
-                    GeneratedValueMessageView(
-                        summary: summary,
-                        dismissAction: {
-                            root.gameModel.receivedGenerationSummary = nil
-                        }
-                    )
-                    .padding()
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
     }
 
     private var gameView: some View {

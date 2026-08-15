@@ -25,10 +25,14 @@ public protocol EditControllable: Sendable {
     /// (e.g. a generated table outcome) — the sheet's `name`/`description`
     /// become the new item's, and its `entries` become the new item's own
     /// entries. Returns the new item's id, or `nil` if nothing was created.
+    /// `forceSave` bypasses the in-game-memory-only save path (see
+    /// `ItemControllable.replace(model:isInsert:forceSave:)`) — pass `true`
+    /// when adding on behalf of a network push during an active game, where
+    /// there's no later UI save to eventually flush the change.
     /// Default is a no-op: only modules that can meaningfully turn an
     /// arbitrary sheet into one of their own items (currently CharacterRPG's
     /// values) need to implement this.
-    @MainActor func addItem(sheet: SheetModel) async -> UUID?
+    @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID?
 }
 
 public extension EditControllable {
@@ -45,7 +49,14 @@ public extension EditControllable {
     @MainActor func validateBeforeSave(model: Model) {}
     @MainActor func willDeleteChildren(of item: Model) async {}
     @MainActor func willRestore(item: inout Model) {}
-    @MainActor func addItem(sheet: SheetModel) async -> UUID? { nil }
+    @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID? { nil }
+
+    /// Convenience overload preserving every pre-existing 1-argument call
+    /// site (memory-only during an active game, matching historical
+    /// behavior).
+    @MainActor func addItem(sheet: SheetModel) async -> UUID? {
+        await addItem(sheet: sheet, forceSave: false)
+    }
 }
 
 // MARK: - Editor Basic Properties
@@ -74,11 +85,11 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString, forceSave: forceSave)
     }
     
-    @MainActor func reset(displayState: Int, itemId: UUID) {
+    @MainActor func reset(displayState: Int, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.displayState != displayState else { return }
         item.displayState = displayState
-        save(updated: item, message: String(localized: "Change Display", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change Display", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor func reset(name: String, itemId: UUID, forceSave: Bool = false) {
@@ -100,11 +111,11 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Changed tags", bundle: .module).localizedString, forceSave: forceSave)
     }
     
-    @MainActor func reset(hidden: Bool, itemId: UUID) {
+    @MainActor func reset(hidden: Bool, itemId: UUID, forceSave: Bool = false) {
         guard var item = editModel(for: itemId) else { return }
         guard item.isGroupHiddenToggle != hidden else { return }
         item.isGroupHiddenToggle = hidden
-        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Change to \(hidden ? "hide" : "show")", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor func reset(fileUrl: FileUrl?, itemId: UUID) {
@@ -179,7 +190,7 @@ public extension EditControllable {
 // MARK: - Group Items / Carousell Items
 
 public extension EditControllable {
-    @MainActor func addGroup(itemId: UUID, childId: UUID) {
+    @MainActor func addGroup(itemId: UUID, childId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
         guard item.id != childId && item.hasEntry(entryId: childId) == false else { return }
         let childItem = itemControllable.itemOrEmpty(for: childId)
@@ -190,8 +201,8 @@ public extension EditControllable {
         entries.append(entry)
         item.entries = entries
 
-        reset(displayState: 1, itemId: childId)
-        save(updated: item, message: String(localized: "Add groupped item", bundle: .module).localizedString)
+        reset(displayState: 1, itemId: childId, forceSave: forceSave)
+        save(updated: item, message: String(localized: "Add groupped item", bundle: .module).localizedString, forceSave: forceSave)
     }
 
     @MainActor func removeGroup(itemId: UUID, childId: UUID) {

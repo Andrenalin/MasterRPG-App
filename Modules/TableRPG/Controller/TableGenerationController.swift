@@ -15,6 +15,14 @@ final class TableGenerationRootManagerBox: Sendable {
 }
 
 struct TableGenerationController: Sendable {
+    /// A table may legitimately link back to a table already in its own
+    /// ancestry — e.g. a random encounter table rolling on itself again is a
+    /// normal, intentional loop, not malformed data — so only genuinely
+    /// runaway recursion needs stopping, not the first repeat. Mirrors
+    /// `RecursionLimits.maxValueLinkDepth` in CharacterRPG, the same guard
+    /// against a link chain recursing indefinitely.
+    static let maxTableRecursionCount = 10
+
     let itemController: ItemController
     let diceRoot: DiceRootModel
     let rootManagerBox: TableGenerationRootManagerBox
@@ -265,7 +273,12 @@ struct TableGenerationController: Sendable {
 
         for entry in occurrence.selectedEntries {
             for link in entry.tableLinks {
-                if occurrence.tablePath.contains(link.itemId) {
+                // Only ignore the link once this table has already recurred
+                // `maxTableRecursionCount` times in its own ancestry — a
+                // single repeat (e.g. Table A linking straight back to
+                // itself) is a legitimate loop the player can keep rolling
+                // on, not a cycle to break immediately.
+                if occurrence.tablePath.count(where: { $0 == link.itemId }) >= Self.maxTableRecursionCount {
                     occurrence.ignoredCycleNames.append(link.name)
                     continue
                 }

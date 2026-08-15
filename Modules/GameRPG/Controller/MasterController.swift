@@ -671,9 +671,12 @@ extension MasterController {
     func game(message: NetworkCodableDataType, actionType: RPGMessageActionType, playerId: UUID? = nil) async {
         // Weather is immutable during a game. It is presented and repaired via
         // reveal messages only; live update messages are not supported yet.
-        // Character/Value updates likewise have no in-game protocol; the only
-        // supported Value exchange is the player join handshake below.
-        guard message.type != .table, message.type != .value, message.type != .weather else { return }
+        guard message.type != .table, message.type != .weather else { return }
+        // Character/Value updates have no general in-game protocol — the
+        // player join handshake has its own exchange elsewhere, and the only
+        // Value push a master can trigger here is `.addItem` (a Table-
+        // generated outcome sent to a player as a new Character value).
+        guard message.type != .value || actionType == .addItem else { return }
         if message.type == .dice,
            actionType == .generic,
            let diceResult = DiceResultModel.decodeData(of: message.data) {

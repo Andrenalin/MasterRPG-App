@@ -126,23 +126,28 @@ struct TableGenerationRootView: View {
         closeSession()
     }
 
-    /// Sends the generated outcome to a player (or every visible player)
-    /// over the active game session.
+    /// Sends the generated outcome to a player (or every visible player) as
+    /// a new Character value — the same wrapper/nested-rows shape `save()`
+    /// above hands to `addItem(sheet:)` locally, just carried over the
+    /// active game session so the receiving `PlayerController` can call the
+    /// identical function on its own device (see
+    /// `PlayerController+Value.handleAddItem(_:)`).
     private func send(to playerId: UUID?) {
         controller.endEditingOutcomeSheet(model: model)
-        guard let summary = model.summary,
-              let data = summary.encodeData()
+        guard let session = model.outcomeEditingSession,
+              let payload = SheetItemTransfer(sheet: session.sheetRootModel.sheetModel),
+              let data = payload.encodeData()
         else {
             return
         }
         networkActions?.game(
             NetworkCodableDataType(
-                id: summary.id,
-                type: .generator,
+                id: payload.id,
+                type: .value,
                 version: 1,
                 data: data
             ),
-            .generatedValue,
+            .addItem,
             playerId
         )
         closeSession()

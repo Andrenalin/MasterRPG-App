@@ -80,6 +80,17 @@ public protocol ValueGameStorable {
     @MainActor func removeBattleCharacterCopies(_ gameCharacterIds: Set<UUID>)
     @MainActor func startGame(for id: UUID?) async
     func updatePlayer(data: NetworkCodableDataType) async throws
+    /// Creates a new Character value from a sheet built elsewhere (e.g. a
+    /// Table-generated outcome pushed by the master over the active game
+    /// session — see `PlayerController+Value.handleAddItem(_:)`) and nests
+    /// it as a group entry directly under `characterId`, rather than
+    /// leaving it a disconnected top-level value the way the local Save
+    /// button's `EditControllable.addItem(sheet:forceSave:)` does.
+    /// `forceSave` bypasses the in-game-memory-only save path (see
+    /// `ItemControllable.replace(model:isInsert:forceSave:)`). Returns the
+    /// new value's id, or `nil` if `characterId` doesn't resolve to a real
+    /// Character or nothing was created.
+    @MainActor func addItem(sheet: SheetModel, characterId: UUID, forceSave: Bool) async -> UUID?
 }
 
 struct GameController: Sendable {
@@ -429,5 +440,13 @@ extension GameController: ValueGameStorable {
               let encodedData = data.data
         else { throw ItemGameStorableError.wrongData }
         try await importNetwork(from: encodedData, forceSave: true)
+    }
+
+    @MainActor
+    public func addItem(sheet: SheetModel, characterId: UUID, forceSave: Bool) async -> UUID? {
+        guard let newValueId = await root.editController.addItem(sheet: sheet, forceSave: forceSave) else { return nil }
+        let entryId = await root.editController.addItemAsGroup(itemId: characterId, groupId: newValueId, forceSave: forceSave)
+        root.editController.editorModel.gameSheetRootModel?.updateFromRoot()
+        return entryId
     }
 }

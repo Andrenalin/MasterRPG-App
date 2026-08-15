@@ -75,31 +75,30 @@ struct PlayerControllerTestEnvironment {
 @MainActor
 struct PlayerControllerTests {
 
-    @Test("Generated table value from the game master is stored for presentation")
-    func handlesGeneratedTableValue() async throws {
+    @Test("Table-generated outcome pushed by the master is nested under the player's Character and persisted")
+    func handlesAddItem() async throws {
         let env = try await PlayerControllerTestEnvironment.create()
-        let selection = ItemGenerationSelection(
-            id: UUID(),
-            tableId: UUID(),
-            tableName: "Weapon",
-            entryId: UUID(),
-            entryName: "5",
-            content: "Mace"
+        let characterId = UUID()
+        env.root.characterRoot.itemController.replace(
+            model: ValueModel(id: characterId, name: "Aria", entries: []),
+            isInsert: true
         )
-        let summary = ItemGenerationSummary(
+        env.root.gameModel.gameRoster.players[0].characterId = characterId
+
+        let payload = SheetItemTransfer(
             name: "Weapon",
-            value: "Mace",
-            selections: [selection]
+            description: "Found in the chest",
+            entries: [SheetItemTransfer.Entry(name: "Damage", content: "1d8")]
         )
         let data = NetworkCodableDataType(
-            id: summary.id,
-            type: .generator,
+            id: payload.id,
+            type: .value,
             version: 1,
-            data: summary.encodeData()
+            data: payload.encodeData()
         )
         let model = Self.networkModel(
             type: .update,
-            subType: .generatedValue,
+            subType: .addItem,
             data: data,
             gameConfig: Self.masterConfig()
         )
@@ -107,7 +106,21 @@ struct PlayerControllerTests {
         let response = try await env.playerController.handle(model)
 
         #expect(response == nil)
-        #expect(env.root.gameModel.receivedGenerationSummary == summary)
+        // `noGame: true` reads straight from the persisted store, proving
+        // `handleAddItem` forced the save through rather than leaving it in
+        // game-only memory (see `ItemControllable.replace(model:isInsert:forceSave:)`).
+        let character = try #require(env.root.characterRoot.itemController.itemSync(for: characterId, noGame: true))
+        let groupEntry = try #require(character.entries.first)
+        let newValueId = try #require(groupEntry.valueId)
+        let added = try #require(env.root.characterRoot.itemController.itemSync(for: newValueId, noGame: true))
+        #expect(added.name == "Weapon")
+        #expect(added.description == "Found in the chest")
+        #expect(added.entries.map(\.name) == ["Damage"])
+        // Grouped under the character, not a disconnected top-level value —
+        // `groupId`/`isGroupHiddenToggle` is the nested-group marker
+        // `addItemAsGroup` sets, mirroring `addNewGroup(itemId:)`.
+        #expect(added.groupId == characterId)
+        #expect(added.isGroupHiddenToggle == true)
     }
 
     @Test("Handle photo reveal with data and ID")

@@ -477,9 +477,12 @@ struct TableGenerationControllerTests {
         #expect(model.canConfirm)
     }
 
-    @Test("A linked-table cycle is ignored only on the active path")
+    @Test("A linked-table cycle keeps recursing until it hits the shared recursion limit, not on the first repeat")
     func cycleProtection() {
-        // Given
+        // Given — Root ⇄ Child link back to each other, a legitimate loop
+        // (e.g. a random encounter table that can roll on itself again)
+        // that should stay navigable for a while, not be cut off the moment
+        // either table reappears on the path.
         let root = makeRoot()
         let rootId = UUID.fixture1
         let childId = UUID.fixture2
@@ -508,23 +511,68 @@ struct TableGenerationControllerTests {
         root.itemController.replace(model: table, isInsert: true)
         let model = root.generationController.makeModel(itemId: rootId)
 
-        // When
-        root.generationController.select(
-            entryId: rootEntry.id,
-            in: model.root,
-            model: model
-        )
-        let childOccurrence = model.root.children[0]
-        root.generationController.select(
-            entryId: childEntry.id,
-            in: childOccurrence,
-            model: model
-        )
+        // When — alternate Root ⇄ Child selections until the guard against
+        // runaway recursion finally kicks in. Each individual table only
+        // recurs on every other level here (Root, Child, Root, Child, ...),
+        // so the limit is reached later than in the direct self-referencing
+        // case (see `selfReferencingTableRecursesUntilLimit`).
+        var occurrence = model.root
+        var nextEntry = rootEntry
+        var level = 0
+        let maxLevelsToTry = TableGenerationController.maxTableRecursionCount * 2 + 2
+        while level < maxLevelsToTry {
+            level += 1
+            root.generationController.select(entryId: nextEntry.id, in: occurrence, model: model)
+            if !occurrence.ignoredCycleNames.isEmpty { break }
+            guard let child = occurrence.children.first else {
+                Issue.record("Expected a nested occurrence or an ignored cycle at level \(level)")
+                return
+            }
+            occurrence = child
+            nextEntry = occurrence.tableId == rootId ? rootEntry : childEntry
+        }
 
-        // Then
-        #expect(childOccurrence.children.isEmpty)
-        #expect(childOccurrence.ignoredCycleNames.count == 1)
+        // Then — the cycle keeps recursing well past the first repeat...
+        #expect(level > TableGenerationController.maxTableRecursionCount)
+        // ...but is eventually ignored rather than recursing forever.
+        #expect(level <= maxLevelsToTry)
+        #expect(occurrence.ignoredCycleNames.count == 1)
         #expect(model.canConfirm)
+    }
+
+    @Test("A table linking straight back to itself keeps recursing until the shared recursion limit, not on the first selection")
+    func selfReferencingTableRecursesUntilLimit() {
+        // Given — Table A has an entry linking back to Table A itself, the
+        // exact shape a self-rolling table takes.
+        let root = makeRoot()
+        let rootId = UUID.fixture1
+        let selfEntry = TableEntryModel.fixture(
+            id: .fixture3,
+            name: "1",
+            content: root.linkController.generateLink(itemId: rootId)
+        )
+        let table = TableModel(id: rootId, name: "Root", entries: [selfEntry])
+        root.itemController.replace(model: table, isInsert: true)
+        let model = root.generationController.makeModel(itemId: rootId)
+
+        // When — re-selecting the self-link keeps recursing up to (but
+        // excluding) the shared limit.
+        var occurrence = model.root
+        for level in 1..<TableGenerationController.maxTableRecursionCount {
+            root.generationController.select(entryId: selfEntry.id, in: occurrence, model: model)
+            #expect(occurrence.ignoredCycleNames.isEmpty, "level \(level)")
+            guard let child = occurrence.children.first else {
+                Issue.record("Expected a nested occurrence at level \(level)")
+                return
+            }
+            occurrence = child
+        }
+
+        // Then — one more recursion is where the table would appear a
+        // `maxTableRecursionCount`th time, so it's finally ignored.
+        root.generationController.select(entryId: selfEntry.id, in: occurrence, model: model)
+        #expect(occurrence.children.isEmpty)
+        #expect(occurrence.ignoredCycleNames.count == 1)
     }
 
     @Test("A returned player DiceResult selects its exact table occurrence")

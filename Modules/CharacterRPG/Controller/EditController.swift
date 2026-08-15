@@ -394,6 +394,19 @@ extension EditController {
         add(entry: entry, itemId: itemId)
         return entry.id
     }
+    
+    @MainActor func addItemAsGroup(itemId: UUID, groupId: UUID, forceSave: Bool = false) async -> UUID {
+        reset(hidden: true, itemId: groupId, forceSave: forceSave)
+        guard let group = editModel(for: groupId) else { return groupId }
+        group.groupId = itemId
+        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString, forceSave: forceSave)
+        var entry = Model.Entry.empty
+        entry.name = group.name
+        entry.valueId = groupId
+        add(entry: entry, itemId: itemId, forceSave: forceSave)
+        return entry.id
+    }
+
 
     @MainActor func canBecomeGroup(itemId: UUID) -> Bool {
         guard let item = itemControllable.itemSync(for: itemId) as? ValueModel else { return false }
@@ -618,15 +631,19 @@ extension EditController {
     /// entries: the wrapping entry's name/content become the new value's
     /// name/description, and the nested sheet's entries become the new
     /// value's own entries.
-    @MainActor func addItem(sheet: SheetModel) async -> UUID? {
+    @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID? {
         guard let wrapper = sheet.entries.first else { return nil }
         let itemId = await itemController.addNew(type: .item)
         guard let item = editModel(for: itemId) else { return nil }
         item.name = wrapper.name
         item.description = wrapper.description
-        save(updated: item, message: String(localized: "Add from Generator", bundle: .module).localizedString)
+        save(
+            updated: item,
+            message: String(localized: "Add from Generator", bundle: .module).localizedString,
+            forceSave: forceSave
+        )
         for entry in wrapper.entries.first?.entries ?? [] {
-            _ = insertEntry(itemId: itemId, name: entry.name, content: entry.description, position: .end)
+            _ = insertEntry(itemId: itemId, name: entry.name, content: entry.description, position: .end, forceSave: forceSave)
         }
         return itemId
     }
