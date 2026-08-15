@@ -111,7 +111,7 @@ extension SpaceModel {
 
 extension SpaceModel: nonisolated Comparable {
     nonisolated public static func < (lhs: SpaceModel, rhs: SpaceModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -123,7 +123,7 @@ extension SpaceModel: nonisolated ItemLinkRegistable {}
 
 extension SpaceModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: SpaceModel) -> SpaceModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[SpaceEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -152,7 +152,7 @@ extension SpaceModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: SpaceModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -184,7 +184,7 @@ extension SpaceModel {
 
 extension SpaceModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> SpaceModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
     
@@ -289,7 +289,7 @@ extension SpaceModel: nonisolated Codable {
 
 extension SpaceModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: SpaceModel, rhs: SpaceModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

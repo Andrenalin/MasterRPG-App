@@ -13,7 +13,7 @@ extension AttributedString {
         var openLinks = 0
         var level = 0
 
-        let searchUrl = url.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+        let searchUrl = (url.split(separator: "]").last ?? Substring(url)).trimmingCharacters(in: CharacterSet(charactersIn: "()"))
 
         for run in runs {
             

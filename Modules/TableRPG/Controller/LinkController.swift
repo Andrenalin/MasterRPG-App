@@ -89,7 +89,7 @@ extension LinkController: LinkControllable {
             }                
         }
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Table: \(replacedItem.name, privacy: .public) will be replaced from reparing links.")
+            Logger.linkController.info("Table: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)

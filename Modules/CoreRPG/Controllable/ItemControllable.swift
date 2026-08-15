@@ -2,6 +2,7 @@
 
 import Foundation
 import Observation
+import os.log
 
 public enum GameMutationPolicy: Equatable, Sendable {
     case memoryOnly
@@ -371,16 +372,37 @@ public extension ItemControllable {
         itemDataModel.publishContentWidgetSnapshot()
 
         // Batch delete all items from Core Data for better performance
-        try? await dataControllable?.batchDelete(ids: allItemIds)
+        do {
+            try await dataControllable?.batchDelete(ids: allItemIds)
+            itemDataModel.lastPersistenceError = nil
+        } catch {
+            Logger.itemController.error("resetData() batch delete failed: \(error.localizedDescription, privacy: .public)")
+            itemDataModel.lastPersistenceError = error
+        }
     }
 
-    func save() async {
-        try? await dataControllable?.save()
+    @MainActor func save() async {
+        do {
+            try await dataControllable?.save()
+            itemDataModel.lastPersistenceError = nil
+        } catch {
+            // The in-memory edit already applied, so a failed save here leaves the UI
+            // showing a change that never reached disk — log and surface it rather than
+            // silently discarding the failure. See CODE_AUDIT §5.1.
+            Logger.itemController.error("save() failed: \(error.localizedDescription, privacy: .public)")
+            itemDataModel.lastPersistenceError = error
+        }
         await AppIntentContentInvalidator.invalidate()
     }
 
-    func flushPendingOperations() async {
-        try? await dataControllable?.flushPendingOperations()
+    @MainActor func flushPendingOperations() async {
+        do {
+            try await dataControllable?.flushPendingOperations()
+            itemDataModel.lastPersistenceError = nil
+        } catch {
+            Logger.itemController.error("flushPendingOperations() failed: \(error.localizedDescription, privacy: .public)")
+            itemDataModel.lastPersistenceError = error
+        }
     }
 
     @MainActor func updates(_ models: [ModelType]) async {

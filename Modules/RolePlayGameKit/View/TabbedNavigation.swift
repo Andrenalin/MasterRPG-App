@@ -38,6 +38,7 @@ struct TabbedNavigation: View {
         .phoneTabBottomAccessory(isEnabled: shouldShowPhoneBottomAccessory) {
             AudioPlayerMiniBarView()
         }
+        .tabBarMinimizeBehavior(.onScrollDown)
 #endif
         .applyIf(restoresState) {
             $0.modifier(TabbedNavigationRestorationModifier(appModel: appModel))

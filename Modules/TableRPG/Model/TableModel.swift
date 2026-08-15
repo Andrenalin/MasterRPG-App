@@ -116,7 +116,7 @@ public final class TableModel: nonisolated Identifiable {
 
 extension TableModel: nonisolated Comparable {
     nonisolated public static func < (lhs: TableModel, rhs: TableModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -179,7 +179,7 @@ extension TableModel: nonisolated ItemLinkRegistable {
 
 extension TableModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: TableModel) -> TableModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[TableEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -209,7 +209,7 @@ extension TableModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: TableModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -293,7 +293,7 @@ extension TableModel {
 
 extension TableModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> TableModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return TableModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, tableType: tableType, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil)
     
@@ -406,7 +406,7 @@ extension TableModel: nonisolated Codable {
 
 extension TableModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: TableModel, rhs: TableModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

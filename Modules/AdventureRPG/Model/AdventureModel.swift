@@ -156,7 +156,7 @@ extension AdventureModel: nonisolated ItemLinkRegistable {
 
 extension AdventureModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: AdventureModel) -> AdventureModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[AdventureEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -186,7 +186,7 @@ extension AdventureModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: AdventureModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -219,7 +219,7 @@ extension AdventureModel {
 
 extension AdventureModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> AdventureModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil)
     
@@ -227,7 +227,7 @@ extension AdventureModel: nonisolated ItemDuplicatable {
     }
 
     nonisolated func duplicateWithoutCopy() -> AdventureModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId)
         }
     }
@@ -304,7 +304,7 @@ extension AdventureModel: nonisolated ItemDataAccessable {
 
 extension AdventureModel: nonisolated Comparable {
     nonisolated public static func < (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -348,7 +348,7 @@ extension AdventureModel: nonisolated Codable {
 
 extension AdventureModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

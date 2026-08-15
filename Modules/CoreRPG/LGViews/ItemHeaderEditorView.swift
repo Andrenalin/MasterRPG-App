@@ -81,10 +81,10 @@ public struct ItemHeaderEditorView: View {
 
     private var editorCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            headerRow
-            nameSection
-            descriptionSection
-            tagsSection
+            ItemHeaderEditorHeaderRow(dismissAction: dismissAction, saveAction: saveChanges, isSaveEnabled: isNameValid)
+            ItemHeaderEditorNameSection(attributedName: $attributedName, currentFocus: $currentFocus)
+            ItemHeaderEditorDescriptionSection(attributedInformation: $attributedInformation, currentFocus: $currentFocus)
+            ItemHeaderEditorTagsSection(tags: $tags)
         }
         .padding(20)
         .background {
@@ -136,8 +136,17 @@ private extension View {
     }
 }
 
-private extension ItemHeaderEditorView {
-    var headerRow: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.2)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed `some View`
+// properties on `ItemHeaderEditorView` itself.
+
+private struct ItemHeaderEditorHeaderRow: View {
+    let dismissAction: () -> Void
+    let saveAction: () -> Void
+    let isSaveEnabled: Bool
+
+    var body: some View {
         HStack(spacing: 12) {
             GlassButton(action: dismissAction) {
                 Label {
@@ -156,7 +165,7 @@ private extension ItemHeaderEditorView {
 
             Spacer(minLength: 0)
 
-            GlassButton(isProminent: true, action: saveChanges) {
+            GlassButton(isProminent: true, action: saveAction) {
                 Label {
                     Text("Save", bundle: .module)
                 } icon: {
@@ -167,12 +176,18 @@ private extension ItemHeaderEditorView {
             .buttonSizing(.fitted)
             .buttonBorderShape(.circle)
             .controlSize(.large)
-            .disabled(!isNameValid)
+            .disabled(!isSaveEnabled)
         }
     }
+}
 
-    @ViewBuilder
-    var nameSection: some View {
+private struct ItemHeaderEditorNameSection: View {
+    @Binding var attributedName: AttributedString
+    var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Name", bundle: .module)
                 .font(.caption)
@@ -185,12 +200,12 @@ private extension ItemHeaderEditorView {
                     links: [],
                     minHeight: 44,
                     maxHeight: 44,
-                    isFocused: currentFocus == .name,
+                    isFocused: currentFocus.wrappedValue == .name,
                     layout: .singleLine
                 )
-                .focused($currentFocus, equals: .name)
+                .focused(currentFocus, equals: .name)
                 .onSubmit {
-                    currentFocus = .information
+                    currentFocus.wrappedValue = .information
                 }
                 .overlay(alignment: .leading) {
                     if attributedName.characters.isEmpty {
@@ -224,9 +239,13 @@ private extension ItemHeaderEditorView {
             value: attributedName.characters.isEmpty
         )
     }
+}
 
-    @ViewBuilder
-    var descriptionSection: some View {
+private struct ItemHeaderEditorDescriptionSection: View {
+    @Binding var attributedInformation: AttributedString
+    var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Description", bundle: .module)
                 .font(.caption)
@@ -248,22 +267,25 @@ private extension ItemHeaderEditorView {
             .frame(minHeight: 120, maxHeight: 200)
             .border(Color.accentColor.secondary)
             .padding(.bottom, 6)
-            .focused($currentFocus, equals: .information)
+            .focused(currentFocus, equals: .information)
 #else
             AttributedTextEditorSurface(
                 text: $attributedInformation,
                 links: [],
                 minHeight: 120,
                 maxHeight: 200,
-                isFocused: currentFocus == .information
+                isFocused: currentFocus.wrappedValue == .information
             )
-            .focused($currentFocus, equals: .information)
+            .focused(currentFocus, equals: .information)
 #endif
         }
     }
+}
 
-    @ViewBuilder
-    var tagsSection: some View {
+private struct ItemHeaderEditorTagsSection: View {
+    @Binding var tags: [String]
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Tags", bundle: .module)
                 .font(.caption)

@@ -47,35 +47,23 @@ extension DataController: CoreDataSnapshotPersistable {
         model.displayState <=> Int32(snapshot.displayState)
         model.photoUUID <=> snapshot.photoId.rawValue
         unequalSet(lhs: &model.photosUpdate, rhs: snapshot.photos.$update.rawValue) {
-            let oldPhotos = model.photoIds
-            let newPhotos = snapshot.photos.wrappedValue.enumerated().map {
-                let entry = model.photoOrNew(for: $1)
-                entry.uuid = $1
-                entry.index = Int16($0)
-                return entry
-            }
-            model.photoIds = newPhotos
-            // The inverse rule is Nullify, so photos dropped from the relationship
-            // would remain as orphaned rows (locally and in CloudKit) — delete them.
-            let keptPhotos = Set(newPhotos.map(ObjectIdentifier.init))
-            for photo in oldPhotos where !keptPhotos.contains(ObjectIdentifier(photo)) {
-                model.managedObjectContext?.delete(photo)
-            }
+            model.photoIds = model.syncEntries(
+                incoming: snapshot.photos.wrappedValue,
+                current: model.photoIds,
+                childId: { $0 },
+                map: { uuid, entry, index in
+                    entry.uuid = uuid
+                    entry.index = Int16(index)
+                }
+            )
         }
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
-            let oldEntries = model.entriesModel
-            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
-                let entry = model.entryOrNew(for: $1.id)
-                self.map($1, into: entry, index: $0)
-                return entry
-            }
-            model.entriesModel = newEntries
-            // The inverse rule is Nullify, so entries dropped from the relationship
-            // would remain as orphaned rows (locally and in CloudKit) — delete them.
-            let keptEntries = Set(newEntries.map(ObjectIdentifier.init))
-            for entry in oldEntries where !keptEntries.contains(ObjectIdentifier(entry)) {
-                model.managedObjectContext?.delete(entry)
-            }
+            model.entriesModel = model.syncEntries(
+                incoming: snapshot.entries.wrappedValue,
+                current: model.entriesModel,
+                childId: { $0.id },
+                map: { self.map($0, into: $1, index: $2) }
+            )
         }
         model.parentUUID <=> snapshot.parentId
         model.diceUUID <=> snapshot.diceId

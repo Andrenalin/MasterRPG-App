@@ -105,7 +105,6 @@ public final class AdventureRootModel {
     @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?) {
         let linkRegisterController = LinkRegisterController(root: root)
         linkRegisterController.setup(context: context)
-        _linkRegisterController = linkRegisterController
 
         itemController.itemDataModel.dataController = context.map { DataController(context: $0, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
@@ -185,8 +184,11 @@ public final class AdventureRootModel {
     }()
     @ObservationIgnored var searchController: SearchController
 
-    @ObservationIgnored private(set) var _linkRegisterController: LinkRegisterController?
-    var linkRegisterController: LinkRegisterController { _linkRegisterController! }
+    // Aligns with the other 10 modules' root models: there's no separate optional-storage
+    // force-unwrapped accessor here, just the shared `ItemControllable.linkRegisterController`
+    // default (CODE_AUDIT §5.5), which fails with a diagnostic message instead of a bare `!`
+    // if read before `setUp(root:context:batchContext:)` runs.
+    @ObservationIgnored var linkRegisterController: LinkRegisterController { itemController.linkRegisterController }
 
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {
         ItemRootController(

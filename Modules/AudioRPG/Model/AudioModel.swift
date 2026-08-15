@@ -106,7 +106,7 @@ extension AudioModel: nonisolated Comparable {
     // Nonisolated shim: Comparable is a nonisolated protocol; all real call sites
     // are on the MainActor — assumeIsolated turns a violation into a trap.
     nonisolated public static func < (lhs: AudioModel, rhs: AudioModel) -> Bool {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             lhs.name < rhs.name
         }
     }
@@ -119,7 +119,7 @@ extension AudioModel: nonisolated ItemDiffComparable {
     // Legacy concrete shims remain nonisolated for direct Equatable-style calls.
     // Generic ItemDiffComparable access is MainActor-isolated by the protocol.
     nonisolated public func merge(_ other: AudioModel) -> AudioModel {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             mergeOnMain(other)
         }
     }
@@ -150,7 +150,7 @@ extension AudioModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: AudioModel) -> Bool {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -175,7 +175,7 @@ extension AudioModel: nonisolated ItemDuplicatable {
     // Nonisolated shim remains for legacy concrete callers. Generic item access
     // is MainActor-isolated by ItemDuplicatable and ItemDataAccessable.
     nonisolated public func duplicate() -> AudioModel {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
         }
@@ -290,7 +290,7 @@ extension AudioModel: nonisolated Equatable, nonisolated Hashable {
     // Nonisolated shim: Equatable is a nonisolated protocol; content comparison
     // requires model state, so the body runs isolated via assumeIsolated.
     nonisolated public static func == (lhs: AudioModel, rhs: AudioModel) -> Bool {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
         }
     }

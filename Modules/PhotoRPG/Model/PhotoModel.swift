@@ -113,7 +113,7 @@ extension PhotoModel {
 
 extension PhotoModel: nonisolated Comparable {
     nonisolated public static func < (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -122,7 +122,7 @@ extension PhotoModel: nonisolated Comparable {
 
 extension PhotoModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: PhotoModel) -> PhotoModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[PhotoEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -151,7 +151,7 @@ extension PhotoModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: PhotoModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -176,7 +176,7 @@ extension PhotoModel: nonisolated ItemDiffComparable {
 
 extension PhotoModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> PhotoModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return PhotoModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() })
     
@@ -298,7 +298,7 @@ extension PhotoModel: nonisolated Codable {
 
 extension PhotoModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

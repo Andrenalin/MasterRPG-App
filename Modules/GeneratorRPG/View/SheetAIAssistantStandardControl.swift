@@ -16,6 +16,9 @@ struct SheetAIAssistantStandardControl: View {
     let module: NetworkModules
     @Binding var messageText: String
     let isExpanded: Bool
+    // Not `private`: unlike a `@FocusState` the view owns, this is a `.Binding` projection
+    // supplied by the parent (functions like a `@Binding` parameter) — see CODE_AUDIT §8.5,
+    // and `SheetEntryView.focusedEntryId` for the established codebase pattern.
     @FocusState.Binding var isTextFieldFocused: Bool
     let submitAction: () -> Void
     let toggleAction: () -> Void

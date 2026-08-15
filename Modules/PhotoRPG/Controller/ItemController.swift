@@ -38,20 +38,29 @@ extension ItemController {
 #if os(macOS)
     static let importImageTypes = AKImage.imageTypes.compactMap { UTType($0) }
 
-    static func importImageFromProviders(_ itemProviders: [NSItemProvider], completion: @Sendable @escaping @MainActor (Data?) -> Void) -> Bool {
-        guard let provider = itemProviders.first else { return false }
+    /// Imports image data dropped from an external device (e.g. Image Capture, Photos, or a
+    /// Finder window backed by a camera/SD card/external drive) via drag-and-drop — the Mac-only
+    /// counterpart to the iOS Camera/Photos-library pickers `InlineImporterView` already offers.
+    ///
+    /// Modernized from a completion-handler `loadDataRepresentation` callback (wrapped in a
+    /// hand-rolled `Task { @MainActor in ... }` hop) to `async throws`, matching the idiom in
+    /// `Sources/RPGShare/ItemProviderImporter.swift`. See CODE_AUDIT §4.2.
+    static func importImageFromProviders(_ itemProviders: [NSItemProvider]) async throws -> Data? {
+        guard let provider = itemProviders.first else { return nil }
         for type in importImageTypes {
             let typeIdentifier = type.identifier
-            if provider.hasItemConformingToTypeIdentifier(typeIdentifier) {
-                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
-                    Task { @MainActor in
-                        completion(data)
+            guard provider.hasItemConformingToTypeIdentifier(typeIdentifier) else { continue }
+            return try await withCheckedThrowingContinuation { continuation in
+                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: data)
                     }
                 }
-                return true
             }
         }
-        return false
+        return nil
     }
 #endif
 }

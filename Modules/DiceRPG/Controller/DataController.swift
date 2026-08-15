@@ -70,19 +70,12 @@ extension DataController: CoreDataSnapshotPersistable {
         model.reorderDice <=> snapshot.reorderDice
         model.addDiceEvery <=> Int16(snapshot.addDiceEvery)
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries_.$update.rawValue) {
-            let oldEntries = model.entriesModel
-            let newEntries = snapshot.entries.enumerated().map {
-                let entry = model.entryOrNew(for: $1.id)
-                self.map($1, into: entry, index: $0)
-                return entry
-            }
-            model.entriesModel = newEntries
-            // The inverse rule is Nullify, so entries dropped from the relationship
-            // would remain as orphaned rows (locally and in CloudKit) — delete them.
-            let keptEntries = Set(newEntries.map(ObjectIdentifier.init))
-            for entry in oldEntries where !keptEntries.contains(ObjectIdentifier(entry)) {
-                model.managedObjectContext?.delete(entry)
-            }
+            model.entriesModel = model.syncEntries(
+                incoming: snapshot.entries,
+                current: model.entriesModel,
+                childId: { $0.id },
+                map: { self.map($0, into: $1, index: $2) }
+            )
         }
         model.parentId <=> snapshot.parentId
     }

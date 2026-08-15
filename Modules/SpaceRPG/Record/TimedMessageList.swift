@@ -8,7 +8,6 @@ A timed queue of messages that modifies published properties.
 #if os(iOS) && !targetEnvironment(simulator)
 
 import Combine
-import Dispatch
 import Foundation
 import SwiftUI
 
@@ -60,38 +59,36 @@ final class TimedMessageList {
     /// An ordered list of the messages in the list.
     private var messages = [Message]() {
         didSet {
-            dispatchPrecondition(condition: .onQueue(.main))
-
             if activeMessage?.message != messages.first?.message {
                 activeMessage = messages.first
             }
         }
     }
 
-    /// A timer the message list configures to fire at the time when the
+    /// A cancellable task the message list schedules to fire at the time when the
     /// message with the nearest expiration date (in the future) expires.
-    private var timer: Timer?
+    ///
+    /// Replaces a selector-based `Timer`: `@MainActor` isolation already guarantees
+    /// main-actor execution at compile time, so the old `dispatchPrecondition` runtime
+    /// checks throughout this file are redundant and have been removed. See CODE_AUDIT §3.5.
+    private var expirationTask: Task<Void, Never>?
 
     private let feedbackMessageMinimumDurationSecs: Double = 2.0
 
     /// Creates a new message from a string and adds it to the list.
     /// - Parameter string: The text of a message.
     func add(_ msg: String) {
-        dispatchPrecondition(condition: .onQueue(.main))
-
         if let index = messages.lastIndex(where: { $0.message == msg }) {
             messages[index].endTime = nil
         } else {
             messages.append(Message(msg))
         }
-        setTimer()
+        scheduleExpiration()
     }
 
     /// Removes the message with the given string.
     /// - Parameter msg: A string to display for the message
     func remove(_ msg: String) {
-        dispatchPrecondition(condition: .onQueue(.main))
-
         guard let index = messages.lastIndex(where: { $0.message == msg }) else { return }
         var endTime = Date()
         let earliestAcceptableEndTime = messages[index].startTime + feedbackMessageMinimumDurationSecs
@@ -99,46 +96,39 @@ final class TimedMessageList {
             endTime = earliestAcceptableEndTime
         }
         messages[index].endTime = endTime
-        setTimer()
+        scheduleExpiration()
     }
 
-    /// Sets timer to fire when the message with the nearest expiration
-    /// date (in the future) expires.
-    private func setTimer() {
-        dispatchPrecondition(condition: .onQueue(.main))
+    /// Schedules a task to fire when the message with the nearest expiration
+    /// date (in the future) expires. Cancels and replaces any in-flight task, so a
+    /// superseding `add`/`remove` call always reschedules cleanly.
+    private func scheduleExpiration() {
+        expirationTask?.cancel()
+        expirationTask = nil
 
-        timer?.invalidate()
-        timer = nil
-
-        // Removes expired timers.
+        // Removes expired messages.
         cullExpired()
 
         // Finds the next expiration time in the future.
-        if let nearestEndTime = (messages.compactMap { $0.endTime }).min() {
+        guard let nearestEndTime = (messages.compactMap { $0.endTime }).min() else { return }
 
-            // Makes a new timer that fires when the message expires.
-            let duration = nearestEndTime.timeIntervalSinceNow
-            timer = Timer.scheduledTimer(timeInterval: duration,
-                                         target: self,
-                                         selector: #selector(onTimer),
-                                         userInfo: nil,
-                                         repeats: false)
-
+        let duration = nearestEndTime.timeIntervalSinceNow
+        expirationTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(duration, 0)))
+            guard !Task.isCancelled else { return }
+            self?.handleExpiration()
         }
     }
 
     private func cullExpired() {
-        dispatchPrecondition(condition: .onQueue(.main))
-
         messages.removeAll(where: { $0.hasExpired() })
     }
 
-    @objc
-    private func onTimer() {
-        dispatchPrecondition(condition: .onQueue(.main))
-        timer?.invalidate()
+    private func handleExpiration() {
+        expirationTask?.cancel()
+        expirationTask = nil
         cullExpired()
-        setTimer()
+        scheduleExpiration()
     }
 }
 

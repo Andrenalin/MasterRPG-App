@@ -67,20 +67,13 @@ extension DataController: CoreDataSnapshotPersistable {
         model.mapCategory <=> snapshot.category.rawValue
         model.displayState <=> Int32(snapshot.displayState)
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
-            let oldEntries = model.entryModels
-            let newEntries = snapshot.entries.wrappedValue.enumerated().map {
-                let entry = model.entryOrNew(for: $1.id)
-                self.map($1, into: entry, index: $0)
-                return entry
-            }
-            model.entryModels = newEntries
-            // The inverse rule is Nullify, so entries dropped from the relationship
-            // would remain as orphaned rows (locally and in CloudKit) — delete them.
-            // Deleting an entry cascades to its coordinates.
-            let keptEntries = Set(newEntries.map(ObjectIdentifier.init))
-            for entry in oldEntries where !keptEntries.contains(ObjectIdentifier(entry)) {
-                model.managedObjectContext?.delete(entry)
-            }
+            // Deleting a dropped entry cascades to its coordinates.
+            model.entryModels = model.syncEntries(
+                incoming: snapshot.entries.wrappedValue,
+                current: model.entryModels,
+                childId: { $0.id },
+                map: { self.map($0, into: $1, index: $2) }
+            )
         }
         unequalSet(lhs: &model.displayConfigUpdate, rhs: snapshot.displayConfig.$update.rawValue) {
             let displayConfig = model.displyConfigOrNew(for: snapshot.id)
@@ -93,20 +86,13 @@ extension DataController: CoreDataSnapshotPersistable {
             model.height = snapshot.height
         }
         unequalSet(lhs: &model.mapPinsUpdate, rhs: snapshot.mapPins.$update.rawValue) {
-            let oldPins = model.mapPinModels
-            let newPins = snapshot.mapPins.wrappedValue.enumerated().map {
-                let entry = model.mapPinOrNew(for: $1.id)
-                self.map($1, into: entry, index: $0)
-                return entry
-            }
-            model.mapPinModels = newPins
-            // The inverse rule is Nullify, so pins dropped from the relationship
-            // would remain as orphaned rows (locally and in CloudKit) — delete them.
-            // Deleting a pin cascades to its location.
-            let keptPins = Set(newPins.map(ObjectIdentifier.init))
-            for pin in oldPins where !keptPins.contains(ObjectIdentifier(pin)) {
-                model.managedObjectContext?.delete(pin)
-            }
+            // Deleting a dropped pin cascades to its location.
+            model.mapPinModels = model.syncEntries(
+                incoming: snapshot.mapPins.wrappedValue,
+                current: model.mapPinModels,
+                childId: { $0.id },
+                map: { self.map($0, into: $1, index: $2) }
+            )
         }
         if let wallsData = MapWallPersistenceCodec.encode(snapshot.walls) {
             model.wallsData <=> wallsData

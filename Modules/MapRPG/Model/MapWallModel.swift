@@ -131,7 +131,7 @@ enum MapWallPersistenceCodec {
             return CRDTDataUpdate(wrappedValue: [])
         }
 
-        let decoder = JSONDecoder()
+        let decoder = JSONCoding.decoder
         if let payload = try? decoder.decode(PersistedMapWalls.self, from: data) {
             return payload.walls
         }
@@ -144,10 +144,16 @@ enum MapWallPersistenceCodec {
         return CRDTDataUpdate(wrappedValue: [])
     }
 
-    static func encode(_ walls: CRDTDataUpdate<[MapWallModel]>) -> String? {
+    // `.sortedKeys` formatting means this can't share `JSONCoding.encoder`'s plain instance —
+    // allocated once per process instead of per call. See CODE_AUDIT §7.4.
+    private static let sortedKeysEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(PersistedMapWalls(walls: walls)) else {
+        return encoder
+    }()
+
+    static func encode(_ walls: CRDTDataUpdate<[MapWallModel]>) -> String? {
+        guard let data = try? sortedKeysEncoder.encode(PersistedMapWalls(walls: walls)) else {
             return nil
         }
         return String(data: data, encoding: .utf8)

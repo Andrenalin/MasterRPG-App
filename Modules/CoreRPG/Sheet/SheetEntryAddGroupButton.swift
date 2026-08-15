@@ -18,14 +18,13 @@ struct SheetEntryAddGroupButton: View {
                 }
             }
         } label: {
-            if onlyIcon {
+            Label {
+                Text("New group in \(parentModel.name.withoutLink())", bundle: .module)
+            } icon: {
                 Image(systemName: "plus.square.fill.on.square.fill")
-            } else {
-                Label {
-                    Text("New group in \(parentModel.name.withoutLink())", bundle: .module)
-                } icon: {
-                    Image(systemName: "plus.square.fill.on.square.fill")
-                }
+            }
+            .applyIf(onlyIcon) {
+                $0.labelStyle(.iconOnly)
             }
         }
     }

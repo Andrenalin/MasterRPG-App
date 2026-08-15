@@ -84,15 +84,8 @@ public struct StorageOptionEditor<Sync: View>: View {
         .preferredColorScheme(.dark)
 }
 
-private struct CloudKitAccountChecksEnabledKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
 private extension EnvironmentValues {
-    var cloudKitAccountChecksEnabled: Bool {
-        get { self[CloudKitAccountChecksEnabledKey.self] }
-        set { self[CloudKitAccountChecksEnabledKey.self] = newValue }
-    }
+    @Entry var cloudKitAccountChecksEnabled: Bool = true
 }
 
 public extension View {

@@ -128,15 +128,8 @@ enum ItemStateRestorationPreviewRoute: @MainActor ItemDetailRoute {
         .environment(AppWindowSizeModel())
 }
 
-private struct ItemStateRestorationEnabledKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
 private extension EnvironmentValues {
-    var itemStateRestorationEnabled: Bool {
-        get { self[ItemStateRestorationEnabledKey.self] }
-        set { self[ItemStateRestorationEnabledKey.self] = newValue }
-    }
+    @Entry var itemStateRestorationEnabled: Bool = true
 }
 
 public extension View {

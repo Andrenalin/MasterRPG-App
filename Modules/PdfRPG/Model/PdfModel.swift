@@ -105,7 +105,7 @@ extension PdfModel: nonisolated Comparable {
     }
 
     nonisolated public static func < (lhs: PdfModel, rhs: PdfModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -116,7 +116,7 @@ extension PdfModel: nonisolated ItemLinkRegistable {}
 
 extension PdfModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: PdfModel) -> PdfModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[PdfEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -144,7 +144,7 @@ extension PdfModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: PdfModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -168,7 +168,7 @@ extension PdfModel: nonisolated ItemDiffComparable {
 
 extension PdfModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> PdfModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return PdfModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() })
     
@@ -268,7 +268,7 @@ extension PdfModel: nonisolated Codable {
 
 extension PdfModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: PdfModel, rhs: PdfModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

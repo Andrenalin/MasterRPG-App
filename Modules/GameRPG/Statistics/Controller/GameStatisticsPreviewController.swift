@@ -4,6 +4,17 @@ import CoreRPG
 import Foundation
 
 struct GameStatisticsPreviewController: Sendable {
+    /// Cached fixture summary for the dashboard's empty-state placeholder.
+    ///
+    /// `GamePreviewData.referenceDate`/`.calendar` are fixed constants, so this fixture is
+    /// deterministic — compute it once instead of rebuilding it (several array literals plus
+    /// multiple `Calendar.date(byAdding:)` calls) on every SwiftUI re-render of the dashboard's
+    /// root view, which is recreated on every parent redraw.
+    static let dashboardPreviewSummary = GameStatisticsPreviewController().summary(
+        referenceDate: GamePreviewData.referenceDate,
+        calendar: GamePreviewData.calendar
+    )
+
     func summary(
         referenceDate: Date = .now,
         calendar: Calendar = .autoupdatingCurrent

@@ -14,14 +14,13 @@ struct SheetEntryConvertToGroupButton: View {
         Button {
             navigator.navigate(to: InternalRoute.convertGroup(source: entryModel.source), method: .sheet)
         } label: {
-            if onlyIcon {
+            Label {
+                Text("Convert \(entryModel.name.withoutLink()) to group", bundle: .module)
+            } icon: {
                 Image(systemName: "arrow.triangle.2.circlepath")
-            } else {
-                Label {
-                    Text("Convert \(entryModel.name.withoutLink()) to group", bundle: .module)
-                } icon: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                }
+            }
+            .applyIf(onlyIcon) {
+                $0.labelStyle(.iconOnly)
             }
         }
     }

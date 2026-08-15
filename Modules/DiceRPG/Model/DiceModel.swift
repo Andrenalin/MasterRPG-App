@@ -394,7 +394,7 @@ extension DiceModel {
 
 extension DiceModel: nonisolated Comparable {
     nonisolated public static func < (lhs: DiceModel, rhs: DiceModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -405,7 +405,7 @@ extension DiceModel: nonisolated ItemLinkRegistable {}
 
 extension DiceModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: DiceModel) -> DiceModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedDice = dice_.merged(other: other.dice_)
             let isLeftDice = mergedDice.update == dice_.update
             return DiceModel(
@@ -437,7 +437,7 @@ extension DiceModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: DiceModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             // Split comparison into typed chunks for faster type-checking
             let basicFieldsMatch: Bool = (
                 name == other.name &&
@@ -502,7 +502,7 @@ extension DiceModel {
 
 extension DiceModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> DiceModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             let dupDice = dice.map { dieVM -> DieModel in
                 DieModel(id: UUID(), die: dieVM.die)
@@ -675,7 +675,7 @@ extension DiceModel: nonisolated Codable {
 
 extension DiceModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: DiceModel, rhs: DiceModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState && lhs.resultCategory == rhs.resultCategory
     
         }

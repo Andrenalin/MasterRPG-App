@@ -14,15 +14,16 @@ struct GameStatisticsScheduleChart: View {
             if points.isEmpty {
                 GameStatisticsNoChartDataView()
             } else {
+                let weekdaySymbols = Calendar.autoupdatingCurrent.shortWeekdaySymbols
                 Chart(points) { point in
                     RectangleMark(
                         x: .value(String(localized: "Hour", bundle: .module), point.hour),
-                        y: .value(String(localized: "Weekday", bundle: .module), weekdayTitle(for: point.weekday))
+                        y: .value(String(localized: "Weekday", bundle: .module), weekdayTitle(for: point.weekday, symbols: weekdaySymbols))
                     )
                     .foregroundStyle(by: .value(String(localized: "Hours Played", bundle: .module), point.duration / 3_600))
                     .accessibilityLabel(
                         Text(
-                            "\(weekdayTitle(for: point.weekday)), \(point.hour.formatted())",
+                            "\(weekdayTitle(for: point.weekday, symbols: weekdaySymbols)), \(point.hour.formatted())",
                             bundle: .module
                         )
                     )
@@ -40,8 +41,7 @@ struct GameStatisticsScheduleChart: View {
         }
     }
 
-    private func weekdayTitle(for weekday: Int) -> String {
-        let symbols = Calendar.autoupdatingCurrent.shortWeekdaySymbols
+    private func weekdayTitle(for weekday: Int, symbols: [String]) -> String {
         guard symbols.indices.contains(weekday - 1) else { return weekday.formatted() }
         return symbols[weekday - 1]
     }

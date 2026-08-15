@@ -30,4 +30,32 @@ public extension NSManagedObject {
         }
         return Child(context: managedObjectContext)
     }
+
+    /// Syncs a to-many Core Data relationship from an incoming list of snapshot entries: maps
+    /// each entry onto a found-or-new managed `Child` (via `childOrNew`, keyed by `childId`),
+    /// then deletes any previously-held `current` children that didn't survive the sync.
+    ///
+    /// The relationship's inverse rule is `Nullify` in every conforming model, so entries
+    /// dropped from the relationship would otherwise remain as orphaned rows — locally and in
+    /// CloudKit — if not explicitly deleted here. This exact ~15-line block (diff/map/delete)
+    /// was duplicated verbatim across 10 modules' `DataController.applySnapshot(_:into:)`.
+    /// See CODE_AUDIT §9.1.
+    @discardableResult
+    func syncEntries<Entry, Child: NSManagedObject & CoreDataId>(
+        incoming: [Entry],
+        current: [Child],
+        childId: (Entry) -> UUID,
+        map: (Entry, Child, Int) -> Void
+    ) -> [Child] {
+        let newChildren = incoming.enumerated().map { index, entry -> Child in
+            let child = childOrNew(childId(entry), in: current)
+            map(entry, child, index)
+            return child
+        }
+        let kept = Set(newChildren.map(ObjectIdentifier.init))
+        for child in current where !kept.contains(ObjectIdentifier(child)) {
+            managedObjectContext?.delete(child)
+        }
+        return newChildren
+    }
 }

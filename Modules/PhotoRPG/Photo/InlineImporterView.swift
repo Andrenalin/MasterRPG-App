@@ -192,6 +192,19 @@ struct InlineImporterView: View, Equatable {
             }
         }
 #endif
+#if os(macOS)
+        // Mac has no camera/Photos-library picker sheet — instead, this whole importer accepts
+        // an image dragged in from an external device (Image Capture, Photos, or a Finder
+        // window backed by a camera/SD card/external drive). See CODE_AUDIT §4.2.
+        .onDrop(of: ItemController.importImageTypes, isTargeted: nil) { providers in
+            let id = itemId
+            Task {
+                guard let data = try? await ItemController.importImageFromProviders(providers) else { return }
+                await update(id: id, image: AKImage(data: data))
+            }
+            return true
+        }
+#endif
     }
     
     private var importerTitle: String {

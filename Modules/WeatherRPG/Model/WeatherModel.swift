@@ -139,7 +139,7 @@ extension WeatherModel {
 
 extension WeatherModel: nonisolated Comparable {
     nonisolated public static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -167,7 +167,7 @@ extension WeatherModel: nonisolated ItemLinkRegistable {
 
 extension WeatherModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: WeatherModel) -> WeatherModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let merged = weatherUpdate_.merged(other: other.weatherUpdate_)
             let shouldUpdate = merged.wrappedValue == weatherUpdate_.wrappedValue
             let mergedCategory = category_.merged(other: other.category_)
@@ -206,7 +206,7 @@ extension WeatherModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: WeatherModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             // Split comparison into typed chunks for faster type-checking
             let basicFieldsMatch: Bool = (
                 name == other.name &&
@@ -285,7 +285,7 @@ extension WeatherModel {
 
 extension WeatherModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> WeatherModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
     
@@ -424,7 +424,7 @@ extension WeatherModel: nonisolated Codable {
 
 extension WeatherModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

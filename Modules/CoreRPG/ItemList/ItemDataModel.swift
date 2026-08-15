@@ -18,6 +18,12 @@ public final class ItemDataModel: Sendable {
     @ObservationIgnored public var linkRegisterController: LinkRegisterController?
     @ObservationIgnored public var contentWidgetPublisher: (@MainActor @Sendable () -> Void)?
 
+    /// Set whenever `ItemControllable.save()`/`flushPendingOperations()`/`resetData()`'s batch
+    /// delete fails. `nil` once a following persistence call succeeds. UI can observe this to
+    /// surface a recoverable-error alert instead of silently discarding an edit that never
+    /// reached disk. See CODE_AUDIT §5.1.
+    public internal(set) var lastPersistenceError: (any Error)?
+
     public var items: [UUID] = []
     public var itemData: [UUID: ModelType] = [:]
     

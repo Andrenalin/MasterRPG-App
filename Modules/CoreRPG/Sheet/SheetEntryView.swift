@@ -70,8 +70,10 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .sheetBorderColor(level: parentModel.level)
         .overlay {
             ZStack {
-                generatedSelectionBorder
-                selectionBorder
+                SheetEntryGeneratedSelectionBorder(isGeneratedAnswer: entryModel.isGeneratedAnswer, isGeneratedSelected: entryModel.isGeneratedSelected)
+                    .equatable()
+                SheetEntrySelectionBorder(isSelected: entryModel.isSelected, tint: theme.tint(for: entryModel.source.typeId))
+                    .equatable()
             }
             .allowsHitTesting(false)
         }
@@ -112,9 +114,17 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     }
 }
 
+/// Shared by every extracted subview below that needs to resolve a viewer for a row's source
+/// — kept file-scoped rather than promoted onto `SheetRootModel` to keep this decomposition
+/// self-contained. See CODE_AUDIT §8.2.
+@MainActor
+private func resolvedViewController(for source: ItemRowModel, rootModel: SheetRootModel) -> ViewControllable? {
+    rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
+}
+
 private extension SheetEntryView {
     func viewController(for source: ItemRowModel) -> ViewControllable? {
-        rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
+        resolvedViewController(for: source, rootModel: rootModel)
     }
 
     @ViewBuilder var rowContent: some View {
@@ -127,10 +137,17 @@ private extension SheetEntryView {
             } else {
                 beforeInline
 
-                mainRow
+                SheetEntryMainRowView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult)
 
-                contentRow
-                    .allowsHitTesting(!entryModel.isGeneratedAnswer)
+                SheetEntryContentRowView(
+                    rootModel: rootModel,
+                    parentModel: parentModel,
+                    entryModel: entryModel,
+                    isEditor: isEditor,
+                    shareResult: shareResult,
+                    isEditTypePickerPresented: $isEditTypePickerPresented
+                )
+                .allowsHitTesting(!entryModel.isGeneratedAnswer)
 
                 inlineEditorRow
 
@@ -164,156 +181,6 @@ private extension SheetEntryView {
         }
     }
 
-    var mainRow: some View {
-        HStack {
-            if entryModel.isGeneratedAnswer {
-                SheetEntryTakeOverButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
-            }
-
-            if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
-                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
-            }
-
-            if !entryModel.isGeneratedAnswer, rootModel.isAIModeActive, canGoDeeper {
-                Button {
-                    rootModel.focusAISheetModel = entryModel
-                } label: {
-                    Label {
-                        Text("Ask AI about this entry", bundle: .module)
-                    } icon: {
-                        Image(systemName: "questionmark.bubble")
-                    }
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .frame(minWidth: 44, minHeight: 44)
-                .disabled(!hasDetailContent)
-                .help(Text("Ask AI about this entry", bundle: .module))
-            }
-
-            Group {
-                switch entryModel.sheetType {
-                case .item, .group:
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .font(.headline)
-
-                case .dice:
-                    viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                case .photo:
-                    viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                        .frame(height: 256)
-                        .clipShape(.rect(cornerRadius: 16))
-                case .pdf, .space, .weather:
-                    viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                        .frame(height: 256)
-
-                case .audio:
-                    HStack {
-                        viewController(for: entryModel.source)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
-                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
-                    }
-                    .font(.body)
-                }
-            }
-            .allowsHitTesting(!entryModel.isGeneratedAnswer)
-                            
-            if isEditor && (entryModel.isGeneratedAnswer || entryModel.sheetType == .item || entryModel.sheetType == .group) {
-                SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
-            }
-
-            if !entryModel.isGeneratedAnswer,
-               let reviewModel = entryModel.entryReviewModel,
-               reviewModel.hasDifferences {
-                SheetEntryReviewButton(model: reviewModel)
-            }
-
-        }
-    }
-
-    @ViewBuilder var contentRow: some View {
-        if !entryModel.description.isEmpty {
-            HStack {
-                if entryModel.editType.isEditable {
-                    editTypeIndicator
-                }
-                switch entryModel.sheetType {
-                case .item:
-                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.description, shareResults: shareResult))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .font(.body)
-                default:
-                    EmptyView()
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    var editTypeIndicator: some View {
-        if isEditor, !supportedEditTypes.isEmpty {
-            Button {
-                isEditTypePickerPresented = true
-            } label: {
-                Label {
-                    Text(entryModel.editType.localizedTitle)
-                } icon: {
-                    Image(systemName: entryModel.editType.icon)
-                }
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.plain)
-            .imageScale(.small)
-            .foregroundStyle(.foreground, .tint)
-            .padding(4)
-            .background {
-                Circle().stroke(
-                    theme.tint(for: entryModel.source.typeId).opacity(0.3)
-                )
-            }
-#if !os(tvOS)
-            .popover(isPresented: $isEditTypePickerPresented, arrowEdge: .leading) {
-                Picker(
-                    selection: Binding(
-                        get: { entryModel.editType },
-                        set: { rootModel.updateEditType($0, for: entryModel, parent: parentModel) }
-                    )
-                ) {
-                    ForEach(supportedEditTypes) { editType in
-                        Label {
-                            Text(editType.localizedTitle)
-                        } icon: {
-                            Image(systemName: editType.icon)
-                        }
-                        .tag(editType)
-                    }
-                } label: {
-                    Text("Value Type", bundle: .module)
-                }
-                .pickerStyle(.inline)
-                .padding()
-                .presentationCompactAdaptation(.popover)
-            }
-            .accessibilityLabel(Text("Change Value Type", bundle: .module))
-#endif
-        } else {
-            Image(systemName: entryModel.editType.icon)
-                .imageScale(.small)
-                .foregroundStyle(.foreground, .tint)
-                .padding(4)
-                .background {
-                    Circle().stroke(
-                        theme.tint(for: entryModel.source.typeId).opacity(0.3)
-                    )
-                }
-                .accessibilityHidden(true)
-        }
-    }
-
-    var supportedEditTypes: [SheetModelEditType] {
-        rootModel.supportedEditTypes(for: entryModel.source)
-    }
-    
     @ViewBuilder var afterInline: some View {
         if entryModel.entryReviewModel == nil {
             ForEach(entryModel.inlineEntries) { inlineSheet in
@@ -373,66 +240,6 @@ private extension SheetEntryView {
         )
     }
 
-    var audioDisplayText: String {
-        if entryModel.description.isEmpty {
-            entryModel.name
-        } else if entryModel.name.isEmpty {
-            entryModel.description
-        } else {
-            "**\(entryModel.name)**: \(entryModel.description)"
-        }
-    }
-
-    var canGoDeeper: Bool {
-        entryModel.sheetType == .item || entryModel.sheetType == .group
-    }
-    
-    var hasDetailContent: Bool {
-        !entryModel.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        !entryModel.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    @ViewBuilder var generatedSelectionBorder: some View {
-        if entryModel.isGeneratedAnswer {
-            let green = Color.green
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(green.opacity(entryModel.isGeneratedSelected ? 0.14 : 0.06))
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [green, .mint.opacity(0.75)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: entryModel.isGeneratedSelected ? 3 : 2
-                    )
-            }
-            .shadow(
-                color: green.opacity(entryModel.isGeneratedSelected ? 0.35 : 0.2),
-                radius: entryModel.isGeneratedSelected ? 6 : 4
-            )
-            .transition(.scale(scale: 0.98).combined(with: .opacity))
-        }
-    }
-
-
-    @ViewBuilder var selectionBorder: some View {
-        if entryModel.isSelected {
-            let tint = theme.tint(for: entryModel.source.typeId)
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(tint.opacity(0.08))
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(colors: [tint, tint.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 2
-                    )
-            }
-            .shadow(color: tint.opacity(0.35), radius: 6)
-        }
-    }
-
     func toggleGeneratedSelection() {
         withAnimation(accessibilityReduceMotion ? nil : .smooth) {
             entryModel.isGeneratedSelected.toggle()
@@ -464,6 +271,269 @@ private extension SheetEntryView {
         return entryModel.isGeneratedSelected
             ? Text("Selected", bundle: .module)
             : Text("Not selected", bundle: .module)
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.2)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` properties on `SheetEntryView` itself that all re-evaluated whenever any part
+// of `SheetEntryView`'s body did.
+
+/// The row's primary content: name/preview viewer, edit/delete/take-over/AI-assist buttons.
+private struct SheetEntryMainRowView: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+    let isEditor: Bool
+    let shareResult: ShareValueResult
+
+    var body: some View {
+        HStack {
+            if entryModel.isGeneratedAnswer {
+                SheetEntryTakeOverButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
+            }
+
+            if !entryModel.isGeneratedAnswer && (isEditor || entryModel.editType != .none) && (entryModel.sheetType == .item || entryModel.sheetType == .group) {
+                SheetEntryEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, isEditor: isEditor, onlyIcon: true)
+            }
+
+            if !entryModel.isGeneratedAnswer, rootModel.isAIModeActive, canGoDeeper {
+                Button {
+                    rootModel.focusAISheetModel = entryModel
+                } label: {
+                    Label {
+                        Text("Ask AI about this entry", bundle: .module)
+                    } icon: {
+                        Image(systemName: "questionmark.bubble")
+                    }
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .frame(minWidth: 44, minHeight: 44)
+                .disabled(!hasDetailContent)
+                .help(Text("Ask AI about this entry", bundle: .module))
+            }
+
+            Group {
+                switch entryModel.sheetType {
+                case .item, .group:
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.name, shareResults: shareResult))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.headline)
+
+                case .dice:
+                    resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                case .photo:
+                    resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        .frame(height: 256)
+                        .clipShape(.rect(cornerRadius: 16))
+                case .pdf, .space, .weather:
+                    resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        .frame(height: 256)
+
+                case .audio:
+                    HStack {
+                        resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
+                    }
+                    .font(.body)
+                }
+            }
+            .allowsHitTesting(!entryModel.isGeneratedAnswer)
+
+            if isEditor && (entryModel.isGeneratedAnswer || entryModel.sheetType == .item || entryModel.sheetType == .group) {
+                SheetEntryDeleteButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: true)
+            }
+
+            if !entryModel.isGeneratedAnswer,
+               let reviewModel = entryModel.entryReviewModel,
+               reviewModel.hasDifferences {
+                SheetEntryReviewButton(model: reviewModel)
+            }
+        }
+    }
+
+    private var audioDisplayText: String {
+        if entryModel.description.isEmpty {
+            entryModel.name
+        } else if entryModel.name.isEmpty {
+            entryModel.description
+        } else {
+            "**\(entryModel.name)**: \(entryModel.description)"
+        }
+    }
+
+    private var canGoDeeper: Bool {
+        entryModel.sheetType == .item || entryModel.sheetType == .group
+    }
+
+    private var hasDetailContent: Bool {
+        !entryModel.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !entryModel.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+/// The row's description text plus its leading edit-type indicator/picker.
+private struct SheetEntryContentRowView: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+    let isEditor: Bool
+    let shareResult: ShareValueResult
+    @Binding var isEditTypePickerPresented: Bool
+
+    var body: some View {
+        if !entryModel.description.isEmpty {
+            HStack {
+                if entryModel.editType.isEditable {
+                    SheetEntryEditTypeIndicatorView(
+                        rootModel: rootModel,
+                        parentModel: parentModel,
+                        entryModel: entryModel,
+                        isEditor: isEditor,
+                        isPickerPresented: $isEditTypePickerPresented
+                    )
+                }
+                switch entryModel.sheetType {
+                case .item:
+                    LinkHighlightTextView(model: rootModel.linkTextModel(for: .entryContent(entryModel.source.entryId ?? entryModel.source.itemId), text: entryModel.description, shareResults: shareResult))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.body)
+                default:
+                    EmptyView()
+                }
+            }
+        }
+    }
+}
+
+/// The small edit-type glyph/picker shown beside a description row.
+private struct SheetEntryEditTypeIndicatorView: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+    let isEditor: Bool
+    @Binding var isPickerPresented: Bool
+
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
+        if isEditor, !supportedEditTypes.isEmpty {
+            Button {
+                isPickerPresented = true
+            } label: {
+                Label {
+                    Text(entryModel.editType.localizedTitle)
+                } icon: {
+                    Image(systemName: entryModel.editType.icon)
+                }
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .imageScale(.small)
+            .foregroundStyle(.foreground, .tint)
+            .padding(4)
+            .background {
+                Circle().stroke(
+                    theme.tint(for: entryModel.source.typeId).opacity(0.3)
+                )
+            }
+#if !os(tvOS)
+            .popover(isPresented: $isPickerPresented, arrowEdge: .leading) {
+                Picker(
+                    selection: Binding(
+                        get: { entryModel.editType },
+                        set: { rootModel.updateEditType($0, for: entryModel, parent: parentModel) }
+                    )
+                ) {
+                    ForEach(supportedEditTypes) { editType in
+                        Label {
+                            Text(editType.localizedTitle)
+                        } icon: {
+                            Image(systemName: editType.icon)
+                        }
+                        .tag(editType)
+                    }
+                } label: {
+                    Text("Value Type", bundle: .module)
+                }
+                .pickerStyle(.inline)
+                .padding()
+                .presentationCompactAdaptation(.popover)
+            }
+            .accessibilityLabel(Text("Change Value Type", bundle: .module))
+#endif
+        } else {
+            Image(systemName: entryModel.editType.icon)
+                .imageScale(.small)
+                .foregroundStyle(.foreground, .tint)
+                .padding(4)
+                .background {
+                    Circle().stroke(
+                        theme.tint(for: entryModel.source.typeId).opacity(0.3)
+                    )
+                }
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var supportedEditTypes: [SheetModelEditType] {
+        rootModel.supportedEditTypes(for: entryModel.source)
+    }
+}
+
+/// The green "generated answer" glow border. No `@Environment` dependencies, so it's safe to
+/// mark `Equatable` and skip re-rendering when neither flag changed. See CODE_AUDIT §8.4.
+private struct SheetEntryGeneratedSelectionBorder: View, Equatable {
+    let isGeneratedAnswer: Bool
+    let isGeneratedSelected: Bool
+
+    var body: some View {
+        if isGeneratedAnswer {
+            let green = Color.green
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(green.opacity(isGeneratedSelected ? 0.14 : 0.06))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [green, .mint.opacity(0.75)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: isGeneratedSelected ? 3 : 2
+                    )
+            }
+            .shadow(
+                color: green.opacity(isGeneratedSelected ? 0.35 : 0.2),
+                radius: isGeneratedSelected ? 6 : 4
+            )
+            .transition(.scale(scale: 0.98).combined(with: .opacity))
+        }
+    }
+}
+
+/// The tinted selection border. `tint` is resolved from `\.appTheme` by the caller (which
+/// already re-renders on theme changes), so this leaf view itself has no `@Environment`
+/// dependency and is safe to mark `Equatable`. See CODE_AUDIT §8.4.
+private struct SheetEntrySelectionBorder: View, Equatable {
+    let isSelected: Bool
+    let tint: Color
+
+    var body: some View {
+        if isSelected {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(tint.opacity(0.08))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(colors: [tint, tint.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 2
+                    )
+            }
+            .shadow(color: tint.opacity(0.35), radius: 6)
+        }
     }
 }
 

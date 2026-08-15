@@ -26,7 +26,7 @@ actor MasterNetworkControllerDelegateBox {
 }
 
 @MainActor
-final class MasterNetworkController {
+final class MasterNetworkController: Sendable {
     private let delegate: MasterNetworkControllerDelegateBox
     let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable

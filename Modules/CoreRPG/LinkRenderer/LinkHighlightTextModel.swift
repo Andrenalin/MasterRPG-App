@@ -65,7 +65,7 @@ public final class LinkHighlightTextModel {
 
     func handle(link: LinkReplaceModel) {
         guard let linkControllable else { return }
-        let searchUrl = link.markDown.split(separator: "]").last!.trimmingCharacters(in: CharacterSet(charactersIn: "()"))
+        let searchUrl = (link.markDown.split(separator: "]").last ?? Substring(link.markDown)).trimmingCharacters(in: CharacterSet(charactersIn: "()"))
         guard let url = URL(string: searchUrl) else { return }
 
         var repariedText = text

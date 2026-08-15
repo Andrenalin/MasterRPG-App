@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-struct ListRowItemView: View {
+struct ListRowItemView: View, Equatable {
     let root: any ItemRootControllable
     let item: FolderListItemModel
     let listController: any FolderListControllable
@@ -13,6 +13,19 @@ struct ListRowItemView: View {
     var focusedRowId: FocusState<UUID?>.Binding
 
     @State private var isDropTargeted = false
+
+    /// `root`/`listController` are existentials (capability bags, not row content) and
+    /// `menuController`/`listModel`/`focusedRowId` are long-lived reference/binding
+    /// dependencies passed down unchanged across parent redraws — none of those are compared.
+    /// `isDropTargeted` is `@State`-owned and drives its own re-render independent of this
+    /// conformance. What actually determines this row's rendered output is: which item it
+    /// shows, where in the hierarchy, its content, and whether it's selected. See CODE_AUDIT §8.4.
+    static func == (lhs: ListRowItemView, rhs: ListRowItemView) -> Bool {
+        lhs.item.id == rhs.item.id
+            && lhs.item.level == rhs.item.level
+            && lhs.isSelected == rhs.isSelected
+            && lhs.model.isEqualErased(to: rhs.model)
+    }
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()

@@ -173,7 +173,7 @@ extension SimpleModel: nonisolated ItemLinkRegistable {}
 
 extension SimpleModel: nonisolated Equatable, nonisolated Hashable, nonisolated Codable {
     nonisolated public static func == (lhs: SimpleModel, rhs: SimpleModel) -> Bool {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
         }
     }

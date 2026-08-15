@@ -103,8 +103,11 @@ public struct GestureComponent: Component, Codable {
     mutating private func handlePivotDrag(value: EntityTargetValue<DragGesture.Value>) {
         
         let state = EntityGestureState.shared
-        guard let entity = state.targetedEntity else { fatalError("Gesture contained no entity") }
-        
+        // No targeted entity means the gesture's target changed or ended mid-flight (e.g. a
+        // concurrent SharePlay-synced placement change) — drop this drag frame instead of
+        // crashing. See CODE_AUDIT §5.2.
+        guard let entity = state.targetedEntity else { return }
+
         // The transform that the pivot will be moved to.
         var targetPivotTransform = Transform()
         
@@ -123,9 +126,11 @@ public struct GestureComponent: Component, Codable {
         if !state.isDragging {
             // If this drag just started, create the pivot entity.
             let pivotEntity = Entity()
-            
-            guard let parent = entity.parent else { fatalError("Non-root entity is missing a parent.") }
-            
+
+            // A parentless entity mid-drag can't be reparented under a pivot — bail out rather
+            // than crash. See CODE_AUDIT §5.2.
+            guard let parent = entity.parent else { return }
+
             // Add the pivot entity into the scene.
             parent.addChild(pivotEntity)
             
@@ -155,8 +160,10 @@ public struct GestureComponent: Component, Codable {
     
     mutating private func handleFixedDrag(value: EntityTargetValue<DragGesture.Value>) {
         let state = EntityGestureState.shared
-        guard let entity = state.targetedEntity else { fatalError("Gesture contained no entity") }
-        
+        // See CODE_AUDIT §5.2: drop this drag frame instead of crashing if the target changed
+        // or cleared mid-gesture.
+        guard let entity = state.targetedEntity else { return }
+
         if !state.isDragging {
             state.isDragging = true
             state.dragStartPosition = entity.scenePosition
@@ -185,16 +192,21 @@ public struct GestureComponent: Component, Codable {
     /// Handle `.onEnded` actions for drag gestures.
     mutating func onEnded(value: EntityTargetValue<DragGesture.Value>) {
         let state = EntityGestureState.shared
+        // Gesture state must always be cleared on end, even if the reparent below is skipped
+        // because the pivot/targeted entity was mutated out from under this drag. See CODE_AUDIT §5.2.
+        defer {
+            state.pivotEntity = nil
+            state.targetedEntity = nil
+        }
         state.isDragging = false
-        
+
         if let pivotEntity = state.pivotEntity,
-           pivotOnDrag {
-            pivotEntity.parent!.addChild(state.targetedEntity!, preservingWorldTransform: true)
+           pivotOnDrag,
+           let parent = pivotEntity.parent,
+           let targetedEntity = state.targetedEntity {
+            parent.addChild(targetedEntity, preservingWorldTransform: true)
             pivotEntity.removeFromParent()
         }
-        
-        state.pivotEntity = nil
-        state.targetedEntity = nil
     }
     
     // MARK: - Magnify (Scale) Logic

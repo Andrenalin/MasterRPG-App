@@ -20,10 +20,7 @@ struct GameStatisticsDashboardView: View {
         self.showsDismissButton = showsDismissButton
     }
 
-    private let previewSummary = GameStatisticsPreviewController().summary(
-        referenceDate: GamePreviewData.referenceDate,
-        calendar: GamePreviewData.calendar
-    )
+    private let previewSummary = GameStatisticsPreviewController.dashboardPreviewSummary
 
     var body: some View {
 #if os(iOS)

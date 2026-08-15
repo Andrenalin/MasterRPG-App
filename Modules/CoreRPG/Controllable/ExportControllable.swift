@@ -42,6 +42,17 @@ public extension ExportModelBacked {
         }
         set { exportModel.hubControllable = newValue }
     }
+
+    /// Default `exporting(itemIds:)` for "simple" modules (no `diceId`/`photoId`/`mapPins`-style
+    /// per-item companion assets to also collect) — forwards straight to
+    /// `exportingSimpleEntries(itemIds:)`. Modules that do have companion assets (e.g.
+    /// `CharacterRPG`, `MapRPG`) still provide their own `exporting(itemIds:)` override, which
+    /// takes precedence over this default via normal witness-table dispatch. Lets a "simple"
+    /// module's `ExportController` conform to `ExportModelBacked` with no method body of its
+    /// own at all, instead of hand-copying this one-line forward. See CODE_AUDIT §9.2.
+    @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
+        exportingSimpleEntries(itemIds: itemIds)
+    }
 }
 
 public extension ExportControllable {

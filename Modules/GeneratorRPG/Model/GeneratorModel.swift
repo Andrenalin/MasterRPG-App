@@ -118,7 +118,7 @@ extension GeneratorModel: nonisolated ItemLinkRegistable {}
 
 extension GeneratorModel: nonisolated ItemDiffComparable {
     nonisolated func merge(_ other: GeneratorModel) -> GeneratorModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
             if mergedCategory.wrappedValue == .folder {
@@ -147,7 +147,7 @@ extension GeneratorModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated func isSame(_ other: GeneratorModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             name == other.name &&
             description == other.description &&
             tags == other.tags &&
@@ -163,7 +163,7 @@ extension GeneratorModel: nonisolated ItemDiffComparable {
 
 extension GeneratorModel: nonisolated ItemDuplicatable {
     nonisolated func duplicate() -> GeneratorModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return GeneratorModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, parentId: parentId, genType: genType, referenceId: referenceId)
     
@@ -238,14 +238,14 @@ extension GeneratorModel: nonisolated ItemDataAccessable {
 
 extension GeneratorModel: nonisolated Equatable, nonisolated Hashable, nonisolated Comparable, nonisolated Codable {
     nonisolated static func == (lhs: GeneratorModel, rhs: GeneratorModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }
     }
     
     nonisolated static func < (lhs: GeneratorModel, rhs: GeneratorModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }

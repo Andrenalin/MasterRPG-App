@@ -109,15 +109,8 @@ struct DatabaseInitializationView: View {
         .environment(AppModel.previewWithoutDatabase)
 }
 
-private struct RolePlayDatabaseInitializationEnabledKey: EnvironmentKey {
-    static let defaultValue = true
-}
-
 extension EnvironmentValues {
-    var rolePlayDatabaseInitializationEnabled: Bool {
-        get { self[RolePlayDatabaseInitializationEnabledKey.self] }
-        set { self[RolePlayDatabaseInitializationEnabledKey.self] = newValue }
-    }
+    @Entry var rolePlayDatabaseInitializationEnabled: Bool = true
 }
 
 extension View {

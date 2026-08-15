@@ -29,6 +29,7 @@ struct ItemRowsView: View {
                     leadingPadding: leadingPadding,
                     focusedRowId: focusedRowId
                 )
+                .equatable()
 
                 if item.isOpen {
                     Divider().padding(.leading, 8)

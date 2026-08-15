@@ -95,6 +95,18 @@ public protocol ItemDataAccessable: Sendable, Equatable {
 }
 
 public extension ItemDataAccessable {
+    /// Type-erased content equality for `any ItemDataAccessable` existentials.
+    ///
+    /// `isEqual(other:)` requires `Self`, so two existential boxes can't be compared with it
+    /// directly — this opens `self`'s concrete type via a dynamic cast of `other` instead.
+    /// Lets SwiftUI-facing wrapper types (e.g. row views holding `any ItemDataAccessable`)
+    /// build an `Equatable` render snapshot without hand-picking individual fields. See
+    /// CODE_AUDIT §8.4.
+    func isEqualErased(to other: any ItemDataAccessable) -> Bool {
+        guard let other = other as? Self else { return false }
+        return isEqual(other: other)
+    }
+
     var reviewProperties: [ReviewCustomProperty] { [] }
     var url: URL? {
         fileUrl?.rawUrl

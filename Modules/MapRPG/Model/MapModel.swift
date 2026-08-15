@@ -403,7 +403,7 @@ extension MapModel {
 
 extension MapModel: nonisolated Comparable {
     nonisolated public static func < (lhs: MapModel, rhs: MapModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.name < rhs.name
     
         }
@@ -481,7 +481,7 @@ extension MapModel: nonisolated ItemLinkRegistable {
 
 extension MapModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: MapModel) -> MapModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let mergedPhotoId = photoId_.merged(other: other.photoId_)
             let mergedMapPins = mapPins_.merged(other: other.mapPins_)
             let mergedWalls = walls_.merged(other: other.walls_)
@@ -521,7 +521,7 @@ extension MapModel: nonisolated ItemDiffComparable {
     }
 
     nonisolated public func isSame(_ other: MapModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             // Split comparison into typed chunks for faster type-checking
             let basicFieldsMatch: Bool = (
                 name == other.name &&
@@ -595,7 +595,7 @@ extension MapModel {
 
 extension MapModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> MapModel {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, walls: walls, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
     
@@ -730,7 +730,7 @@ extension MapModel: nonisolated Codable {
 
 extension MapModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: MapModel, rhs: MapModel) -> Bool {
-        return MainActor.assumeIsolated {
+        return assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.isSame(rhs) && lhs.displayState == rhs.displayState
     
         }

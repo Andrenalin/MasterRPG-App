@@ -996,11 +996,21 @@ extension GameNetworkModel {
 }
 
 extension GameNetworkModel: MessageMapper {
+    // NetworkCodableDataType stores file bytes as Base64. Escaping every slash can nearly
+    // double valid Base64 output and unnecessarily halves the Messenger fallback limit. All
+    // supported decoders accept literal JSON slashes, so keep the canonical payload compact.
+    // Allocated once per process instead of per call — see CODE_AUDIT §7.4. This encoder's
+    // custom `outputFormatting` means it can't share `JSONCoding.encoder`'s plain instance.
+    private static let outboundEncoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .withoutEscapingSlashes
+        return encoder
+    }()
+
     static func decodeData(of data: Data?) -> GameNetworkModel? {
         guard let data else { return nil }
-        let decoder = JSONDecoder()
         do {
-            return try decoder.decode(GameNetworkModel.self, from: data)
+            return try JSONCoding.decoder.decode(GameNetworkModel.self, from: data)
         } catch {
             Logger.networking.error("GameNetworkModel: Failed to decode inbound message: \(error.localizedDescription, privacy: .public)")
         }
@@ -1008,12 +1018,6 @@ extension GameNetworkModel: MessageMapper {
     }
 
     func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        // NetworkCodableDataType stores file bytes as Base64. Escaping every
-        // slash can nearly double valid Base64 output and unnecessarily halves
-        // the Messenger fallback limit. All supported decoders accept literal
-        // JSON slashes, so keep the canonical payload compact.
-        encoder.outputFormatting = .withoutEscapingSlashes
-        return try? encoder.encode(self)
+        try? Self.outboundEncoder.encode(self)
     }
 }

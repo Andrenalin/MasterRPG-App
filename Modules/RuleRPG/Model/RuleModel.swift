@@ -768,7 +768,7 @@ extension RuleModel: Codable {
 
 extension RuleModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: RuleModel, rhs: RuleModel) -> Bool {
-        MainActor.assumeIsolated {
+        assumeMainActorIsolated {
             lhs.id == rhs.id && lhs.displayState == rhs.displayState && lhs.isSame(rhs)
         }
     }

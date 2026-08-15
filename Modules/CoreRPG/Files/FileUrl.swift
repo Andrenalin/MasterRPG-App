@@ -23,7 +23,7 @@ public struct FileUrl: Equatable, Hashable, Codable, Sendable {
     }
 
     public init?(string: String, fileId: UUID? = nil, module: String? = nil, unconvertedData: Data? = nil) {
-        if let data = string.data(using: .utf8), let value = try? JSONDecoder().decode(FileUrl.self, from: data) {
+        if let data = string.data(using: .utf8), let value = try? JSONCoding.decoder.decode(FileUrl.self, from: data) {
             self.fileId = value.fileId
             self._url = value._url
             self.location = value.location
@@ -128,7 +128,7 @@ public extension FileUrl {
     var rawValue: String {
         var fileUrl = self
         fileUrl.data = nil
-        guard let data = try? JSONEncoder().encode(fileUrl), let text = String(data: data, encoding: .utf8) else { return "" }
+        guard let data = try? JSONCoding.encoder.encode(fileUrl), let text = String(data: data, encoding: .utf8) else { return "" }
         return text
     }
 
