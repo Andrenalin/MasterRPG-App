@@ -65,6 +65,10 @@ struct PlayerGameScreen: View {
         )
 #if os(visionOS)
         .gameImmersiveSpaceSync(root: root)
+        .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .bottomLeading) {
+            GameOrnamentCloseButton()
+                .environment(gameScreenModel)
+        }
         .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
             root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
                 .environment(diceShowOptionModel)
@@ -109,7 +113,15 @@ private extension PlayerGameScreen {
             return
         }
 
-#if os(macOS) || os(visionOS)
+#if os(visionOS)
+        // The character game view never appears inline on visionOS; it always
+        // opens in its own external window, and nothing is persisted to
+        // UserDefaults. The 3D GameTable volume always starts closed
+        // (GameTableWindowButton opens it on demand).
+        if let characterId = root.gameModel.selectedCharacter {
+            scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
+        }
+#elseif os(macOS)
         let savedMode = GameMainTabDisplayMode(rawValue: appSettingsModel.playerMainTabDisplayMode) ?? .hidden
         gameScreenModel.gameMainTabDisplayMode = savedMode
 
@@ -143,12 +155,6 @@ private extension PlayerGameScreen {
 #endif
         } else {
             withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .none }
-        }
-#endif
-
-#if os(visionOS)
-        if appSettingsModel.showGameTableVolume {
-            scenesManager.openWindow(SceneId.gameTable)
         }
 #endif
     }

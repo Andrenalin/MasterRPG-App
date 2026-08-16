@@ -45,18 +45,12 @@ private extension OverlayGameMenu {
                     .padding(.horizontal, marginWidth)
                     .padding(.leading, marginWidth / 2)
                     .zIndex(2)
-                
-                toolIconView
-                enlargerView
-                
-#if !os(tvOS)
-                GameTableWindowButton()
-#endif
-                
-                wifiView
-            }
 
-            closeFieldView
+                wifiView
+
+                GameTableWindowButton()
+                    .padding(.leading, 32)
+            }
         }
     }
 #endif
@@ -150,21 +144,6 @@ private extension OverlayGameMenu {
         )
     }
     
-    var firstOptionView: some View {
-        Button {
-            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.resetToMainTab() }
-        } label: {
-            Image(systemName: NetworkModules.game.icon)
-                .frame(height: 24)
-        }
-        .selectedBorderedStype(isSelected: gameScreenModel.showMainTab != .none)
-        .accessibilityLabel(
-            gameScreenModel.showMainTab == .none
-                ? Text("Show game view inline", bundle: .module)
-                : Text("Hide game view", bundle: .module)
-        )
-    }
-    
     var secondOptionView: some View {
         Button {
 #if os(macOS) || os(visionOS)
@@ -193,12 +172,6 @@ private extension OverlayGameMenu {
             toolIconMacViewMaster
         } else {
             toolIconMacViewPlayer
-        }
-#elseif os(visionOS)
-        if isMaster {
-            toolIconVisionViewMaster
-        } else {
-            toolIconVisionViewPlayer
         }
 #else
         // iOS and tvOS
@@ -232,32 +205,6 @@ private extension OverlayGameMenu {
         .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
             handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: false)
         }
-    }
-    
-    // MARK: - visionOS Views
-    
-    @ViewBuilder
-    var toolIconVisionViewMaster: some View {
-        @Bindable var gameScreenModel = gameScreenModel
-        
-        firstOptionView
-        
-        GameMainTabButtonView(isMaster: true, displayMode: $gameScreenModel.gameMainTabDisplayMode)
-            .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
-                handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: true)
-            }
-    }
-    
-    @ViewBuilder
-    var toolIconVisionViewPlayer: some View {
-        @Bindable var gameScreenModel = gameScreenModel
-        
-        firstOptionView
-        
-        GameMainTabButtonView(isMaster: false, displayMode: $gameScreenModel.gameMainTabDisplayMode)
-            .onChange(of: gameScreenModel.gameMainTabDisplayMode) { oldValue, newValue in
-                handleMainTabDisplayModeChange(oldValue: oldValue, newValue: newValue, isMaster: false)
-            }
     }
     
     // MARK: - iOS/tvOS Views
