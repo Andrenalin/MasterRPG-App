@@ -196,8 +196,7 @@ private extension SpaceViewer {
             return
         }
 
-        yaw = transform.yaw
-        pitch = transform.pitch
+        objectEntity.transform.rotation = transform.orientation
         objectEntity.position = transform.position
         objectEntity.scale = transform.scale
         lastAcknowledgedTransform = transform
@@ -218,7 +217,11 @@ private extension SpaceViewer {
     @MainActor
     func sendTransformIfChanged() {
         guard let objectEntity else { return }
-        let current = SpaceTransformModel(position: objectEntity.position, scale: objectEntity.scale, yaw: yaw, pitch: pitch)
+        let current = SpaceTransformModel(
+            position: objectEntity.position,
+            scale: objectEntity.scale,
+            orientation: objectEntity.transform.rotation
+        )
         guard lastSentTransform != nil else {
             // Baseline after load — don't broadcast the initial pose.
             lastSentTransform = current
@@ -268,7 +271,7 @@ private extension SpaceViewer {
     @MainActor
     func moveToImmersiveSpace() {
         guard !isImmersiveSpace, let objectEntity else { return }
-        root.handoffModel.handOff(itemId: id, entity: objectEntity, yaw: yaw, pitch: pitch)
+        root.handoffModel.handOff(itemId: id, entity: objectEntity)
         self.objectEntity = nil
         self.rootEntity = nil
         self.loadedItemId = nil
@@ -294,8 +297,6 @@ private extension SpaceViewer {
     func adopt(_ handoff: SpaceHandoffModel.Pending, into content: some RealityViewContentProtocol) {
         let entity = handoff.entity
         self.objectEntity = entity
-        yaw = handoff.yaw
-        pitch = handoff.pitch
 
         // The entity already went through `loadEntity`'s centering once; this
         // re-centers relative to its now-parentless bounds, which is close
@@ -401,8 +402,10 @@ private extension SpaceViewer {
             // Only update if entity is loaded and valid
             guard let objectEntity, loadedItemId == id else { return }
 
-            objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
-                .init(angle: yaw, axis: .upward)
+            // No manual rotation here: `ManipulationComponent` owns and drives
+            // `objectEntity.transform` directly during a gesture (translate,
+            // rotate, and scale together) — reapplying a yaw/pitch-derived
+            // rotation every frame from here would fight it.
 
             // Belt-and-suspenders: `loadEntity` can finish (and set `rootEntity`)
             // after `make` already ran when loading is slow, so retry here too.
@@ -421,8 +424,11 @@ private extension SpaceViewer {
                 }
             }
         }
-        .installGestures(true)
-        .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: false)
+        // No `.gesture()`/`.simultaneousGesture()` for drag, rotate, or zoom
+        // here: `ManipulationComponent` (set on the entity in `loadEntity`)
+        // handles all three natively — it's a self-contained RealityKit
+        // component, not something wired up from the SwiftUI view side. See
+        // Apple's "ManipulationComponent" documentation.
         .applyIf(isImmersiveSpace) {
             // Tap directly on the object to reveal the close button; tap again
             // to hide it. `.targetedToAnyEntity()` only fires when the tap
@@ -546,7 +552,7 @@ private extension SpaceViewer {
             self.objectEntity = loadedEntity
 
             // Configure interaction on the root entity, not one arbitrarily-found
-            // sub-mesh: `firstModelEntity` used to walk only the first-child chain
+            // sub-mesh: a prior approach walked only the first-child chain
             // looking for a single ModelEntity, so a multi-part USDZ (siblings, not
             // nested under a single "first child" path) only got interactivity —
             // and only moved — on whichever one part it happened to find, and a
@@ -555,12 +561,34 @@ private extension SpaceViewer {
             // got none. Putting these on the root and generating collision shapes
             // recursively covers the whole hierarchy as one hit-testable, draggable
             // unit regardless of how the file's internal structure is organized.
+#if os(visionOS)
+            // `ManipulationComponent` (visionOS 26+) is Apple's own built-in
+            // drag/rotate/scale component — it replaces the hand-rolled
+            // `GestureComponent` + `installGestures`/`dragRotation` gesture
+            // plumbing entirely for this platform: no SwiftUI `.gesture()` is
+            // wired up anywhere for it (see `platformRealityView`). It sets
+            // its own InputTargetComponent/CollisionComponent/HoverEffectComponent,
+            // generating the collision shape from the entity's bounding box as
+            // a placeholder until the more accurate recursive shape below lands.
+            ManipulationComponent.configureEntity(
+                loadedEntity,
+                hoverEffect: .shader(.default),
+                allowedInputTypes: [.direct, .indirect]
+            )
+            // Default `releaseBehavior` is `.reset` — it animates the object
+            // back to its pose *at the moment `configureEntity` ran* the
+            // instant someone lets go, which is exactly the "snaps back"
+            // symptom. `.stay` leaves it wherever the gesture ended, matching
+            // Apple's own "Manipulate with solid collisions" sample.
+            loadedEntity.components[ManipulationComponent.self]?.releaseBehavior = .stay
+#else
             loadedEntity.components.set(InputTargetComponent())
 
             var gestureComponent = GestureComponent()
             gestureComponent.pivotOnDrag = false
             loadedEntity.components.set(gestureComponent)
             loadedEntity.components.set(HoverEffectComponent(.shader(.default)))
+#endif
             loadedEntity.components.set(GroundingShadowComponent(castsShadow: true))
 
             // Generate collision shapes asynchronously so this doesn't block the rest of
@@ -718,6 +746,16 @@ private extension SpaceViewer {
             yaw += yawDelta
             pitch += pitchDelta
         }
+#if os(visionOS)
+        // `ManipulationComponent` now owns rotation (see `loadEntity`), so
+        // this accessibility action — unlike gesture-driven rotation — has to
+        // set the transform directly instead of going through a per-frame
+        // yaw/pitch-derived `update:` closure (removed along with `dragRotation`).
+        // Same formula that closure used to apply every frame, just now
+        // computed on demand from the just-updated yaw/pitch state.
+        objectEntity?.transform.rotation = simd_quatf(angle: pitch, axis: .left)
+            * simd_quatf(angle: yaw, axis: .upward)
+#endif
     }
 
     func moveObject(x: Float = 0, y: Float = 0, z: Float = 0) {
@@ -726,172 +764,17 @@ private extension SpaceViewer {
     }
 }
 
-extension View {
-    /// Enables people to drag an entity to rotate it, with optional limitations
-    /// on the rotation in yaw and pitch.
-    func dragRotation(
-        yaw: Binding<Float>,
-        pitch: Binding<Float>,
-        yawLimit: Angle? = nil,
-        pitchLimit: Angle? = nil,
-        sensitivity: Float = 10,
-        disableRotation: Bool = false,
-        disableBackPosition: Bool = true,
-        axRotateClockwise: Bool = false,
-        axRotateCounterClockwise: Bool = false
-    ) -> some View {
-        modifier(
-            DragRotationModifier(
-                yaw: yaw,
-                pitch: pitch,
-                yawLimit: yawLimit,
-                pitchLimit: pitchLimit,
-                sensitivity: sensitivity,
-                axRotateClockwise: axRotateClockwise,
-                axRotateCounterClockwise: axRotateCounterClockwise,
-                disableRotation: disableRotation,
-                disableBackPosition: disableBackPosition
-            )
-        )
-    }
-}
-
-/// A modifier converts drag gestures into entity rotation.
-private struct DragRotationModifier: ViewModifier {
-    @Binding var yaw: Float
-    @Binding var pitch: Float
-
-    var yawLimit: Angle?
-    var pitchLimit: Angle?
-
-    var sensitivity: Float
-    var axRotateClockwise: Bool
-    var axRotateCounterClockwise: Bool
-    var disableRotation: Bool
-    var disableBackPosition: Bool
-
-    private struct RotationBase {
-        var yaw: Float
-        var pitch: Float
-    }
-
-    // Captured fresh from the live `yaw`/`pitch` bindings at the start of each
-    // drag gesture, then cleared once the gesture ends — rather than a base
-    // seeded once at modifier-construction time and manually kept in sync.
-    // A remote SharePlay participant can update `yaw`/`pitch` directly
-    // (`SpaceViewer.apply(remote:)`) at any point between gestures; reading the
-    // bindings fresh here means the next local drag always starts from the
-    // current rotation instead of spinning back toward a stale one.
-    @State private var dragBase: RotationBase?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func body(content: Content) -> some View {
-        content
-            .simultaneousGesture(DragGesture(minimumDistance: 0.0)
-                .targetedToAnyEntity()
-                .onChanged { value in
-                    guard disableRotation == false else { return }
-                    let base = dragBase ?? RotationBase(yaw: yaw, pitch: pitch)
-                    if dragBase == nil { dragBase = base }
-
-                    // Find the current linear displacement.
-                    let location3D = value.locationInScene()
-                    let startLocation3D = value.startLocationInScene()
-
-                    let delta = location3D - startLocation3D
-
-                    // Use an interactive spring animation that becomes
-                    // a spring animation when the gesture ends below.
-                    withAnimation(reduceMotion ? nil : .interactiveSpring) {
-                        yaw = spin(displacement: delta.x, base: base.yaw, limit: yawLimit)
-                        pitch = spin(displacement: -delta.y, base: base.pitch, limit: pitchLimit)
-                    }
-                }
-                .onEnded { value in
-                    guard disableRotation == false else { return }
-                    let base = dragBase ?? RotationBase(yaw: yaw, pitch: pitch)
-
-                    if !disableBackPosition {
-                        // Find the current and predicted final linear displacements.
-
-                        let location3D = value.locationInScene()
-                        let startLocation3D = value.startLocationInScene()
-                        let predictedEndLocation3D = value.predictedEndLocationInScene()
-                        let delta = location3D - startLocation3D
-                        let predictedDelta = predictedEndLocation3D - location3D
-
-                        // Set the final spin value using a spring animation.
-                        withAnimation(reduceMotion ? nil : .spring) {
-                            yaw = finalSpin(
-                                displacement: delta.x,
-                                predictedDisplacement: predictedDelta.x,
-                                base: base.yaw,
-                                limit: yawLimit)
-                            pitch = finalSpin(
-                                displacement: -delta.y,
-                                predictedDisplacement: -predictedDelta.y,
-                                base: base.pitch,
-                                limit: pitchLimit)
-                        }
-                    }
-                    // The next gesture re-derives its base from the (now current)
-                    // `yaw`/`pitch` bindings instead of a persisted value.
-                    dragBase = nil
-                }
-            )
-            .onChange(of: axRotateClockwise) {
-                withAnimation(reduceMotion ? nil : .spring) {
-                    yaw -= (.pi / 6)
-                }
-            }
-            .onChange(of: axRotateCounterClockwise) {
-                withAnimation(reduceMotion ? nil : .spring) {
-                    yaw += (.pi / 6)
-                }
-            }
-    }
-
-    /// Finds the spin for the specified linear displacement, subject to an
-    /// optional limit.
-    private func spin(
-        displacement: Float,
-        base: Float,
-        limit: Angle?
-    ) -> Float {
-        if let limit {
-            return atan(displacement * sensitivity) * Float(limit.degrees / 90)
-        } else {
-            return base + displacement * sensitivity
-        }
-    }
-
-    /// Finds the final spin given the current and predicted final linear
-    /// displacements, or zero when restricting the spin.
-    private func finalSpin(
-        displacement: Float,
-        predictedDisplacement: Float,
-        base: Float,
-        limit: Angle?
-    ) -> Float {
-        // If there is a spin limit, always return to zero spin at the end.
-        guard limit == nil else { return 0 }
-
-        // Find the projected final linear displacement, capped at 1 more revolution.
-        let cap = .pi * 2.0 / sensitivity
-        let delta = displacement + max(-cap, min(cap, predictedDisplacement))
-
-        // Find the final spin.
-        return base + delta * sensitivity
-    }
-
-}
-
 #if os(visionOS)
 // Note: SharePlay synchronization is handled at the GameRPG layer when opening
 // the immersive space, not here. SpaceViewer is a generic module and should not
 // depend on game-specific SharePlay logic.
 #endif
 
+// Used by `EntityGestureState.handleFixedDrag`'s non-visionOS branch (the
+// `GestureComponent`-driven drag, which nothing wires up via a SwiftUI
+// gesture on macOS/iOS/tvOS — see the `#else` branch of `platformRealityView`
+// — but the code still has to compile). Left in place rather than removed
+// along with `DragRotationModifier`, which was this extension's other user.
 extension EntityTargetValue<DragGesture.Value> {
     @MainActor
     func locationInScene() -> SIMD3<Float> {
@@ -911,18 +794,6 @@ extension EntityTargetValue<DragGesture.Value> {
         return convert(self.startLocation3D, from: .local, to: .scene)
 #else
         if let (origin, direction) = ray(through: self.startLocation, in: .local, to: .scene) {
-            return origin + length(entity.position - origin) * direction
-        }
-        return .zero
-#endif
-    }
-
-    @MainActor
-    func predictedEndLocationInScene() -> SIMD3<Float> {
-#if os(visionOS)
-        return convert(self.predictedEndLocation3D, from: .local, to: .scene)
-#else
-        if let (origin, direction) = ray(through: self.predictedEndLocation, in: .local, to: .scene) {
             return origin + length(entity.position - origin) * direction
         }
         return .zero

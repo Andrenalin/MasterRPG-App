@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import Testing
+import simd
 
 @testable import SpaceRPG
 
@@ -434,8 +435,7 @@ private extension GameControllerTests {
         SpaceTransformModel(
             position: SIMD3<Float>(seed, seed + 1, seed + 2),
             scale: SIMD3<Float>(repeating: seed + 1),
-            yaw: seed / 10,
-            pitch: seed / 20
+            orientation: simd_quatf(angle: seed / 10, axis: [0, 1, 0])
         )
     }
 

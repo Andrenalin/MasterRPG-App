@@ -26,21 +26,18 @@ final class SpaceHandoffModel {
     struct Pending {
         let itemId: UUID
         let entity: Entity
-        let yaw: Float
-        let pitch: Float
     }
 
     private(set) var pending: Pending?
 
     /// Detaches `entity` from its current parent and marks it ready for the
-    /// immersive space to adopt on its next load pass. `yaw`/`pitch` carry
-    /// over the window instance's current rotation state — the entity's own
-    /// `transform.rotation` isn't enough on its own, since the immersive
-    /// `SpaceViewer` drives rotation from its own fresh `yaw`/`pitch` state
-    /// every update tick and would otherwise snap it back to the default pose.
-    func handOff(itemId: UUID, entity: Entity, yaw: Float, pitch: Float) {
+    /// immersive space to adopt on its next load pass. The entity's own
+    /// `transform.rotation` carries over as-is — `ManipulationComponent`
+    /// (visionOS) sets that directly, so there's no separate yaw/pitch state
+    /// to hand off alongside it.
+    func handOff(itemId: UUID, entity: Entity) {
         entity.removeFromParent()
-        pending = Pending(itemId: itemId, entity: entity, yaw: yaw, pitch: pitch)
+        pending = Pending(itemId: itemId, entity: entity)
     }
 
     /// Returns and clears the pending handoff for `itemId`, if any.

@@ -6,6 +6,7 @@ import CoreRPG
 import Foundation
 import RPGResourcesDebug
 import Testing
+import simd
 
 @testable import GameRPG
 @testable import SpaceRPG
@@ -253,8 +254,7 @@ struct SpaceMessageFlowTests {
         let transform = SpaceTransformModel(
             position: SIMD3<Float>(3, 4, 5),
             scale: SIMD3<Float>(repeating: 2),
-            yaw: 0.4,
-            pitch: 0.2
+            orientation: simd_quatf(angle: 0.4, axis: [0, 1, 0])
         )
         let data = NetworkCodableDataType(
             id: spaceId,
@@ -266,8 +266,7 @@ struct SpaceMessageFlowTests {
         let retainedTransform = SpaceTransformModel(
             position: SIMD3<Float>(repeating: 0),
             scale: SIMD3<Float>(repeating: 1),
-            yaw: 0,
-            pitch: 0
+            orientation: simd_quatf(angle: 0, axis: [0, 1, 0])
         )
         #expect(env.player1Root.spaceRoot.gameController.spaceGameModel.applyTransform(
             itemId: spaceId,
@@ -359,8 +358,7 @@ struct SpaceMessageFlowTests {
         let transform = SpaceTransformModel(
             position: SIMD3<Float>(1, 2, 3),
             scale: SIMD3<Float>(2, 2, 2),
-            yaw: 0.5,
-            pitch: 0.25
+            orientation: simd_quatf(angle: 0.5, axis: [0, 1, 0])
         )
         let firstTimestamp: TimeInterval = 10_000
         let playerEvent = Self.playerTransform(
@@ -392,8 +390,7 @@ struct SpaceMessageFlowTests {
         let ignoredTransform = SpaceTransformModel(
             position: SIMD3<Float>(9, 9, 9),
             scale: SIMD3<Float>(1, 1, 1),
-            yaw: 1,
-            pitch: 1
+            orientation: simd_quatf(angle: 1, axis: [0, 1, 0])
         )
         _ = try await env.master.handleSpace(
             Self.playerTransform(
@@ -455,20 +452,17 @@ struct SpaceMessageFlowTests {
         let masterTransform = SpaceTransformModel(
             position: SIMD3<Float>(1, 2, 3),
             scale: SIMD3<Float>(repeating: 1),
-            yaw: 0.25,
-            pitch: 0.5
+            orientation: simd_quatf(angle: 0.25, axis: [0, 1, 0])
         )
         let peerTransform = SpaceTransformModel(
             position: SIMD3<Float>(9, 9, 9),
             scale: SIMD3<Float>(repeating: 2),
-            yaw: 1,
-            pitch: 1
+            orientation: simd_quatf(angle: 1, axis: [0, 1, 0])
         )
         let ignoredTransform = SpaceTransformModel(
             position: SIMD3<Float>(4, 5, 6),
             scale: SIMD3<Float>(repeating: 3),
-            yaw: 0.75,
-            pitch: 0.5
+            orientation: simd_quatf(angle: 0.75, axis: [0, 1, 0])
         )
         let masterTimestamp: TimeInterval = 20_000
         _ = try await env.player1.handleSpace(
@@ -578,14 +572,12 @@ struct SpaceMessageFlowTests {
         let olderTransform = SpaceTransformModel(
             position: SIMD3<Float>(1, 2, 3),
             scale: SIMD3<Float>(repeating: 1),
-            yaw: 0.25,
-            pitch: 0.5
+            orientation: simd_quatf(angle: 0.25, axis: [0, 1, 0])
         )
         let newestTransform = SpaceTransformModel(
             position: SIMD3<Float>(7, 8, 9),
             scale: SIMD3<Float>(repeating: 2),
-            yaw: 1,
-            pitch: 0.75
+            orientation: simd_quatf(angle: 1, axis: [0, 1, 0])
         )
         let baseTimestamp = Date.now.timeIntervalSince1970 - 10
         var newestEvent = Self.transformMessage(
