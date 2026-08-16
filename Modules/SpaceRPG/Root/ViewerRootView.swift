@@ -65,9 +65,9 @@ private extension ViewerRootView {
             .labelStyle(.iconOnly)
         }
 #if os(macOS)
-                .moduleForegroundStyle(root.config.module)
+        .moduleForegroundStyle(root.config.module)
 #else
-                .moduleTint(root.config.module)
+        .moduleTint(root.config.module)
 #endif
     }
 }

@@ -28,7 +28,7 @@ struct DetailFolderListView: View {
             root.viewController.viewer(
                 root: root,
                 itemId: itemId,
-                configuration: ViewerConfiguration(closeButton: true),
+                configuration: ViewerConfiguration(closeButton: true, addToolbar: true),
                 dismissAction: dismiss
             )
         }

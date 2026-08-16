@@ -38,15 +38,7 @@ public extension Gesture where Value == EntityTargetValue<RotateGesture3D.Value>
 public extension Gesture where Value == EntityTargetValue<DragGesture.Value> {
     
     /// Connects the gesture input to the `GestureComponent` code.
-    ///
-    /// Parameterized (`some Gesture<Value>`, not a bare `some Gesture`) so
-    /// callers outside this extension — e.g. `dragGesture(onDragEnded:)` —
-    /// can still chain their own `.onEnded` onto the result with a concretely
-    /// typed closure. A bare `some Gesture` erases `Value` at this function's
-    /// boundary, and SwiftUI's generic `.onEnded<T>(_: (Self.Value) -> Void)`
-    /// can't unify an erased opaque `Value` with a caller-supplied concrete
-    /// closure type.
-    func useGestureComponent(_ canDrag: Bool = true) -> some Gesture<EntityTargetValue<DragGesture.Value>> {
+    func useGestureComponent(_ canDrag: Bool = true) -> some Gesture {
         onChanged { value in
             guard canDrag else { return }
             guard var gestureComponent = value.entity.gestureComponent else { return }

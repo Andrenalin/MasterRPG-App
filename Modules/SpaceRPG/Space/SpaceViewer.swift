@@ -36,7 +36,6 @@ struct SpaceViewer: View {
     /// longer be on screen. See CODE_AUDIT §3.8.
     @State private var collisionShapeTask: Task<Void, Never>?
 
-    @State private var canDrag: Bool = false
     @State private var yaw: Float = .pi / 2
     @State private var pitch: Float = 0
     @State private var hasLoaded: Bool = false
@@ -50,11 +49,6 @@ struct SpaceViewer: View {
     /// True once this (window-embedded, non-immersive) instance has handed
     /// its entity off to the immersive space — see `SpaceHandoffModel`.
     @State private var handedOffToImmersive = false
-
-    /// This view's own size, captured for the drag-to-edge handoff gesture —
-    /// how far a drag has to travel before it counts as "dragged out of the
-    /// window" is relative to how big the window actually is.
-    @State private var windowViewSize: CGSize = .zero
 #endif
 
 #if os(visionOS)
@@ -96,24 +90,6 @@ struct SpaceViewer: View {
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .applyIf(isModal) {
-            $0.toolbar {
-#if os(visionOS)
-                ToolbarItem(placement: .automatic) {
-                    Toggle(isOn: $canDrag) {
-                        Label {
-                            Text("Move", bundle: .module)
-                        } icon: {
-                            Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
-                        }
-                    }
-                    .moduleTint(root.config.module)
-                }
-
-//                ToolbarSpacer()
-#endif
-            }
-        }
 #if os(visionOS)
         .applyIf(isImmersiveSpace) {
             // ✅ Track immersive space lifecycle for ScenesManager. Only the real
@@ -127,14 +103,13 @@ struct SpaceViewer: View {
             $0.immersiveSpaceTracker()
         }
         .applyIf(!isImmersiveSpace) {
-            // A double-tap on the object moves it into the immersive space
-            // instantly. Dragging it there instead is handled by chaining
-            // onto `installGestures`' own drag in `platformRealityView` (see
-            // `handleWindowDragEnded`) rather than adding a second
-            // `DragGesture().targetedToAnyEntity()` here: two entity-targeted
-            // drag recognizers on the same RealityView content fight over
-            // which one owns the gesture, which is what broke normal
-            // dragging entirely — not just the handoff.
+            // A double-tap on the object moves it into the immersive space.
+            // Deliberately not drag-based: any attempt to layer a second
+            // `DragGesture().targetedToAnyEntity()` alongside `installGestures`'
+            // own (even just chaining an extra `.onEnded` onto its existing
+            // gesture) broke ordinary dragging and zooming outright. Until
+            // that's understood well enough to risk touching again, this
+            // stays the only trigger.
             $0.simultaneousGesture(
                 SpatialTapGesture(count: 2)
                     .targetedToAnyEntity()
@@ -142,7 +117,6 @@ struct SpaceViewer: View {
                         moveToImmersiveSpace()
                     }
             )
-            .onGeometryChange(for: CGSize.self, of: \.size) { windowViewSize = $0 }
         }
         .onChange(of: immersiveSpaceDisplacement) {
             // A defensive re-check for SharePlay starting (or realigning) after
@@ -286,39 +260,6 @@ private extension SpaceViewer {
 // MARK: - Window → immersive space handoff
 
 private extension SpaceViewer {
-    /// Extracted out of the `.installGestures(...)` call site: an inline
-    /// `isImmersiveSpace ? nil : handleWindowDragEnded` ternary there was
-    /// enough to make the type checker choke on the already-large
-    /// `platformRealityView` modifier chain ("failed to produce diagnostic
-    /// for expression") — see the comment on `platformRealityView` for the
-    /// same pattern with the `RealityView` initializer itself.
-    var windowDragEndedHandler: ((EntityTargetValue<DragGesture.Value>) -> Void)? {
-        // Not a `cond ? nil : handleWindowDragEnded` ternary: the type
-        // checker can't unify a bare method reference against `nil` in that
-        // form ("failed to produce diagnostic for expression"). Each `return`
-        // here is checked against the declared type independently instead.
-        if isImmersiveSpace {
-            return nil
-        }
-        return handleWindowDragEnded
-    }
-
-    /// Chained onto `installGestures`' own drag (see its `onDragEnded`
-    /// parameter) rather than a second gesture: if the drag that just ended
-    /// traveled far enough — relative to how big this window actually is —
-    /// treat it as "dragged out of the window" and hand the (already-dragged)
-    /// entity off. A live drag can't continue past the window into the
-    /// surrounding space — there's no gesture-continuation API for that — so
-    /// "released past the threshold" stands in for "let go outside the
-    /// window." A double-tap on the object does the same thing instantly.
-    @MainActor
-    func handleWindowDragEnded(_ value: EntityTargetValue<DragGesture.Value>) {
-        let translation = value.gestureValue.translation
-        let threshold = min(windowViewSize.width, windowViewSize.height) * 0.6
-        guard threshold > 0, hypot(translation.width, translation.height) > threshold else { return }
-        moveToImmersiveSpace()
-    }
-
     /// "Grabs" the object out of this (window-embedded) instance and moves it
     /// into the immersive space: hands the live entity off via
     /// `SpaceHandoffModel` — so the immersive instance re-parents it instead
@@ -460,9 +401,6 @@ private extension SpaceViewer {
             // Only update if entity is loaded and valid
             guard let objectEntity, loadedItemId == id else { return }
 
-            // TODO(visionOS): auto-fit the loaded model to the volumetric window's bounds
-            // (scale + reposition so it fills the volume) — not yet implemented.
-
             objectEntity.transform.rotation = .init(angle: pitch, axis: .left) *
                 .init(angle: yaw, axis: .upward)
 
@@ -483,8 +421,8 @@ private extension SpaceViewer {
                 }
             }
         }
-        .installGestures(canDrag, onDragEnded: windowDragEndedHandler)
-        .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: canDrag)
+        .installGestures(true)
+        .dragRotation(yaw: $yaw, pitch: $pitch, sensitivity: 3, disableRotation: false)
         .applyIf(isImmersiveSpace) {
             // Tap directly on the object to reveal the close button; tap again
             // to hide it. `.targetedToAnyEntity()` only fires when the tap
@@ -776,7 +714,6 @@ private extension SpaceViewer {
     }
 
     func rotate(yawDelta: Float = 0, pitchDelta: Float = 0) {
-        guard !canDrag else { return }
         withAnimation(reduceMotion ? nil : .spring) {
             yaw += yawDelta
             pitch += pitchDelta
@@ -784,7 +721,7 @@ private extension SpaceViewer {
     }
 
     func moveObject(x: Float = 0, y: Float = 0, z: Float = 0) {
-        guard canDrag, let objectEntity else { return }
+        guard let objectEntity else { return }
         objectEntity.position += SIMD3(x, y, z)
     }
 }
