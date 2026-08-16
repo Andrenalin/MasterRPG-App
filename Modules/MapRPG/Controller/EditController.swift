@@ -241,6 +241,16 @@ extension EditController {
         maxRatio(in: model, dimension: model.height) { $0.y }
     }
 
+    /// True when a room coordinate falls outside the map's stored width or height — the
+    /// persisted map size is out of sync with its overlay content (rooms/pins render
+    /// beyond the map image). `maxWidthRatio`/`maxHeightRatio` clamp at 1.0 and so can't
+    /// surface this by themselves; this is the dedicated detection the boundary-fix
+    /// sliders key their visibility off of.
+    @MainActor func isMapSizeOutOfSync(for model: MapModel) -> Bool {
+        exceedsDimension(in: model, dimension: model.width) { $0.x }
+            || exceedsDimension(in: model, dimension: model.height) { $0.y }
+    }
+
     @MainActor func rescale(maxWidthRatio: Double, in model: MapModel) {
         rescaleCoordinates(in: model, ratio: maxWidthRatio, dimension: model.width, axis: \.x)
     }
@@ -257,6 +267,15 @@ extension EditController {
             .max() ?? 0
         guard maxValue > 0 else { return 1.0 }
         return min(1.0, maxValue / dimension)
+    }
+
+    @MainActor private func exceedsDimension(in model: MapModel, dimension: CGFloat, value: (CGPoint) -> CGFloat) -> Bool {
+        guard dimension > 0 else { return false }
+        let maxValue = editEntries(for: model)
+            .flatMap { $0.coordinates }
+            .map(value)
+            .max() ?? 0
+        return maxValue > dimension
     }
 
     @MainActor private func rescaleCoordinates(in model: MapModel, ratio: Double, dimension: CGFloat, axis: WritableKeyPath<CGPoint, CGFloat>) {

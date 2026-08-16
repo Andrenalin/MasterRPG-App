@@ -24,6 +24,7 @@ extension MapEditController {
             editorModel.pins.mapPins = copy.mapPins
             editorModel.maxWidthRatio = editController.maxWidthRatio(for: copy)
             editorModel.maxHeightRatio = editController.maxHeightRatio(for: copy)
+            editorModel.isMapSizeOutOfSync = editController.isMapSizeOutOfSync(for: copy)
             editorModel.history.reset(
                 to: MapEditorSnapshot(
                     map: copy,
@@ -130,6 +131,7 @@ extension MapEditController {
         editorModel.isHexMap = copy.entries.contains(where: { $0.isHexGrid })
         editorModel.maxWidthRatio = editController.maxWidthRatio(for: copy)
         editorModel.maxHeightRatio = editController.maxHeightRatio(for: copy)
+        editorModel.isMapSizeOutOfSync = editController.isMapSizeOutOfSync(for: copy)
         editorModel.pins.mapPins = copy.mapPins
         editorModel.clearSelections()
 
