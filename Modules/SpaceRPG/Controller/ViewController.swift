@@ -66,6 +66,19 @@ public extension ViewController {
     @MainActor @ViewBuilder func spaceImmersionWindow(root: SpaceRootModel, id: UUID, defaultSize: Size3D) -> some View {
         SpaceViewer(root: root, id: id, isModal: false, isImmersiveSpace: true)
             .id(id)
+            // Outside `.id(id)` deliberately: `openSpaceViewer` can replace
+            // which item this shows (see `ScenesManager.currentSpaceViewerItemId`)
+            // by changing `id`, which tears down and recreates `SpaceViewer`
+            // entirely. Tracking the immersive space's lifecycle *inside*
+            // `SpaceViewer` (as it used to be) meant every replace fired a
+            // spurious onDisappear→onAppear — briefly reporting the space
+            // closed and reopened on every item swap, corrupting
+            // `ScenesManager`'s state machine (e.g. leaving the close button
+            // unable to dismiss after a second object replaced the first).
+            // Applied here, on the stable call site that only ever
+            // constructs the one true immersive instance, it fires once for
+            // the space's actual open/close — not per item.
+            .immersiveSpaceTracker()
     }
 #endif
 }

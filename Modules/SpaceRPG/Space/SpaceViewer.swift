@@ -99,17 +99,11 @@ struct SpaceViewer: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
 #if os(visionOS)
-        .applyIf(isImmersiveSpace) {
-            // ✅ Track immersive space lifecycle for ScenesManager. Only the real
-            // ImmersiveSpace instance (spaceImmersionWindow) may do this — every
-            // other SpaceViewer on screen is a plain 2D-embedded preview (detail
-            // view, inline row, etc.), and its onAppear/onDisappear firing this
-            // would falsely flip ScenesManager.immersiveSpaceState to .open/.closed
-            // whenever that preview appears/disappears, desyncing it from whether
-            // an immersive space is actually open (openSpaceViewer silently no-ops,
-            // toggleSpaceViewer tries to dismiss a space that was never opened).
-            $0.immersiveSpaceTracker()
-        }
+        // Immersive-space lifecycle tracking (`.immersiveSpaceTracker()`) is
+        // applied at the `spaceImmersionWindow` call site instead of here —
+        // see its comment. Doing it inside this view meant every item
+        // replace (a `.id(id)` change tearing this whole view down and
+        // rebuilding it) fired a spurious close/reopen of the tracked state.
         .applyIf(!isImmersiveSpace) {
             // A double-tap on the object moves it into the immersive space.
             // Deliberately not drag-based: any attempt to layer a second
