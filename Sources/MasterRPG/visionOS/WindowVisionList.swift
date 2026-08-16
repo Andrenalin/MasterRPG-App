@@ -23,6 +23,14 @@ struct WindowVisionList: Scene {
                 .sceneTracker(for: SceneId.gameTable)
                 .environment(appModel.scenesManager)
                 .gameTableActivityAssociation(root: appModel.gameRoot, sceneId: SceneId.gameTable.rawValue)
+                // GameTableToolbar's ornament reaches for GameToolBar (needs
+                // AppWindowSizeModel + networkActions) and GameTableWindowButton
+                // (needs AppSettingsModel) — the volumetric scene otherwise never
+                // picks these up the way the app's other (navigation-hosted)
+                // windows do via AppEnvironmentSetUpViewModifier/GameRootView.
+                .setAppSizeMode()
+                .environment(\.networkActions, appModel.gameRoot.networkActions)
+                .environment(appModel.settingsModel)
         }
         .windowStyle(.volumetric)
         // Keep the system grab handle just outside the 70 cm tabletop instead

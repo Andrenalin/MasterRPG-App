@@ -170,6 +170,30 @@ public struct GameTableView: View {
                 )
             }
         }
+        // Mirrors the iOS/macOS table's embedded `GameTableToolbar` overlay
+        // (this file's `#if os(iOS) || os(macOS)` half) — same controls,
+        // ornament instead of a view overlay since this window is volumetric.
+        // Anchored to `GeometryReader3D` (the whole scene), not the nested
+        // `RealityView` — attaching it inside the `if let loadedGame` branch
+        // anchored to the RealityView's own subtree instead of the volume's
+        // bounds.
+        // `.parent(.bottomLeadingFront)`, not `.scene(.bottomLeading)`: the
+        // 2D `UnitPoint` anchor has no Z, so SwiftUI picked a depth for us
+        // that landed mid-volume (inside/behind the table) instead of at the
+        // front face, level with the window's grab handle. `.parent(_:)`
+        // takes a `UnitPoint3D` — since this ornament isn't nested inside
+        // another one, its "parent" is the Scene, same anchor space as
+        // `.scene(_:)`, just with the front (+z, toward the viewer) pinned
+        // explicitly. Requires visionOS 26+ (this app's floor).
+        // Requires `AppWindowSizeModel` and `\.networkActions` on the scene,
+        // neither of which a bare `RealityView` gets for free — see
+        // `WindowVisionList`.
+        .ornament(attachmentAnchor: .parent(.bottomLeadingFront), contentAlignment: .topLeading) {
+            if let game {
+                GameTableToolbar(game: game)
+                    .padding(.top, 12)
+            }
+        }
         .task {
             await initializeGameIfNeeded()
         }
