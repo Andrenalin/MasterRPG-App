@@ -98,7 +98,7 @@ struct EditToolBarViewModifier: ViewModifier {
                                 mapEditController.commitHexScale(editorModel: editorModel)
                             }
 
-                            if editorModel.maxWidthRatio != 1 || editorModel.maxHeightRatio != 1 {
+                            if editorModel.maxWidthRatio != 1 || editorModel.maxHeightRatio != 1 || editorModel.isMapSizeOutOfSync {
                                 MaxSizeScaleView(model: editorModel) { ratio in
                                     mapEditController.updateMaxWidth(ratio, editorModel: editorModel)
                                 } onMaxHeightChanged: { ratio in

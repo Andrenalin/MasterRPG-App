@@ -31,6 +31,10 @@ final class MapEditorSession {
     // Max room coordinate extent relative to the map image; 1.0 is the image boundary.
     var maxWidthRatio: Double = 1.0
     var maxHeightRatio: Double = 1.0
+    // Set alongside maxWidthRatio/maxHeightRatio (which clamp at 1.0 and so can't
+    // represent overflow by themselves) whenever a room coordinate actually falls
+    // outside the map's stored width/height — see EditController.isMapSizeOutOfSync.
+    var isMapSizeOutOfSync: Bool = false
     var lastPinScale: CGFloat = 1
     var lastHexScale: Double = 1
     var lastIsHexMap: Bool = false
