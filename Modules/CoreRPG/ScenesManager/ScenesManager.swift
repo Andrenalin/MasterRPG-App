@@ -69,7 +69,7 @@ import OSLog
     private var openImmersiveSpace: OpenImmersiveSpaceAction?
     private var dismissImmersiveSpace: DismissImmersiveSpaceAction?
     private var pendingSpaceViewerSelection: ItemSelection?
-    
+
     /// Represents the current state of the immersive space.
     public enum ImmersiveSpaceState {
         /// The immersive space is not visible

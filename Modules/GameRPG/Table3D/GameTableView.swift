@@ -179,13 +179,6 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
-        .task(id: root.spaceRoot.gameControllable.gameModel.currentItemId) {
-            guard let game else { return }
-            await game.loadSpaceObject(
-                itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
-                spaceRoot: root.spaceRoot
-            )
-        }
         // Mirrors a character-sheet roll onto this player's own seat dice.
         // Watches the *result values*, not `focusItemIds` — re-rolling the
         // already-focused dice mutates `DiceModel.dice[].result` in place
@@ -219,10 +212,6 @@ public struct GameTableView: View {
             root.networkStore.sharePlayStore.applyShareState()
             configureSessionState(for: game)
             await game.handleMapChange(isGameMaster: game.isGameMaster)
-            await game.loadSpaceObject(
-                itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
-                spaceRoot: root.spaceRoot
-            )
             applyCurrentFocusedDiceRoll(to: game)
             return
         }
@@ -257,14 +246,7 @@ public struct GameTableView: View {
         guard !Task.isCancelled else { return }
         initializedGame.syncPawnsWithMapPins()
 
-        // Same reasoning: the volume can open after a Space item is already
-        // revealed — don't wait for the next reveal to show it.
-        await initializedGame.loadSpaceObject(
-            itemId: root.spaceRoot.gameControllable.gameModel.currentItemId,
-            spaceRoot: root.spaceRoot
-        )
-
-        // Same reasoning again: the volume can open after the character
+        // Same reasoning: the volume can open after the character
         // sheet's dice are already focused and rolled — the `.onChange`
         // above only fires on the *next* roll, so without this a die that
         // was already showing a result on the 2D screen would sit at its

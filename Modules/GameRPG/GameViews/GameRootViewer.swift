@@ -101,11 +101,9 @@ struct GameRootViewer: View {
         // near-invisible trigger button, which briefly blanked the game
         // window while the real `ImmersiveSpace` opened in the background.
         //
-        // Skipped while the volumetric game-table window is open: its own
-        // `GameTableView`/`GameTableModel.loadSpaceObject(itemId:spaceRoot:)`
-        // renders the shared object directly above the table (same TabletopKit
-        // scene/seating), so opening a second, separate immersive space here
-        // would just duplicate it.
+        // Always opens, even while the volumetric game-table window is open —
+        // the table no longer renders the shared object into its own
+        // TabletopKit scene, so this is never a duplicate.
         .onChange(of: root.spaceRoot.gameControllable.gameModel.currentItemId) {
             guard let spaceId = root.spaceRoot.gameControllable.gameModel.currentItemId else {
                 // The GM un-revealed the space entirely — clear any earlier
@@ -114,7 +112,6 @@ struct GameRootViewer: View {
                 scenesManager.clearExplicitlyDismissedSpaceItem()
                 return
             }
-            guard scenesManager.getSceneState(for: .gameTable) != .opened else { return }
             // A player who explicitly closed this exact reveal (the space
             // viewer's own close button) shouldn't have it popped back open
             // by a resync that re-broadcasts the same still-revealed item —

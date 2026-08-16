@@ -11,7 +11,6 @@ import os.log
 
 #if os(visionOS)
 import DiceRPG
-import SpaceRPG
 import TabletopKit
 #endif
 
@@ -141,23 +140,6 @@ final class GameTableModel: Sendable {
             Logger.sharePlay.debug("Setting up seating for single-player")
             tabletopGame.claimAnySeat()
         }
-    }
-
-    /// Loads (or clears) the game master's shared 3D object above the board.
-    /// Every participant with this volumetric window open calls this the same
-    /// way, from `currentItemId` — there's no role check because the reveal
-    /// itself is already the shared/broadcast state, same as a revealed photo
-    /// or pdf.
-    func loadSpaceObject(itemId: UUID?, spaceRoot: SpaceRootModel) async {
-        guard let itemId else {
-            renderer.clearSpaceObject()
-            return
-        }
-        guard let url = await spaceRoot.itemControllable.loadableUrl(itemId: itemId) else {
-            Logger.gameTable.error("Could not access the shared 3D object file for item \(itemId.uuidString, privacy: .public)")
-            return
-        }
-        await renderer.loadSpaceObject(itemId: itemId, from: url)
     }
 
     /// This device's own seat, however it was claimed (SharePlay assignment

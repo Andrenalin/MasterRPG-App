@@ -5,13 +5,15 @@ import CoreRPG
 import SpaceRPG
 import SwiftUI
 
-/// Keeps the share state in sync with the space viewer immersive space.
+/// Keeps the space viewer immersive space in sync with SharePlay group
+/// immersion. Follows the SharePlay group in and out of the shared immersive
+/// space (`groupImmersionStyle` drives `shareState.groupImmersionActive`).
 ///
-/// - Follows the SharePlay group in and out of the shared immersive space
-///   (`groupImmersionStyle` drives `shareState.groupImmersionActive`).
-/// - Switches the presentation mode when the space opens or closes; the
-///   `modeChanged` observer in RPGSharePlayController then reconfigures the
-///   spatial template, so this works on master and player screens alike.
+/// Deliberately never touches `shareState.mode`/the spatial-template seating:
+/// opening or closing the space viewer used to force `.immersive` (sideBySide)
+/// here, which would silently drop a game table's `.tabletop` (surround)
+/// seating whenever a Space item was revealed. The space viewer now opens
+/// without changing the current seating.
 struct GameImmersiveSpaceSyncModifier: ViewModifier {
     let root: GameRoot
 
@@ -25,18 +27,6 @@ struct GameImmersiveSpaceSyncModifier: ViewModifier {
                     await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
                 } else {
                     await scenesManager.dismissSpaceViewer()
-                }
-            }
-            .task(id: scenesManager.getSceneState(for: SceneId.spaceViewer)) {
-                switch scenesManager.getSceneState(for: SceneId.spaceViewer) {
-                case .opened:
-                    root.gameModel.shareState.mode <=> .immersive
-                case .closed:
-                    if root.gameModel.shareState.mode == .immersive {
-                        root.gameModel.shareState.mode = .window
-                    }
-                case .opening, .closing:
-                    break
                 }
             }
     }

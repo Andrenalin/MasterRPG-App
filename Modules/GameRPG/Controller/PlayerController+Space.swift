@@ -77,9 +77,9 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.spaceRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                // Switching the presentation mode: the modeChanged observer
-                // reconfigures the spatial template, and the game screen opens
-                // the immersive space when it shows the space module.
+                // The game screen opens the immersive space itself when it
+                // shows the space module — see GameRootViewer's reveal
+                // handler.
                 completeSpaceReveal(itemId: model.data.id)
                 let localPlayerId = root.gameModel.gameConfig.id
                 root.spaceRoot.spaceGameControllable.markSpaceAvailable(

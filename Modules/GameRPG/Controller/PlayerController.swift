@@ -127,19 +127,20 @@ extension PlayerController {
         #endif
     }
 
-    /// Clears the space repair-pending flag, marks the space update, and (on
-    /// visionOS) switches to immersive presentation. Spans two @MainActor
-    /// models (`gameModel` and `root.gameModel`), so it lives on the
-    /// controller — one @MainActor call keeps all three updates atomic.
-    /// See CODE_AUDIT §3.1.
+    /// Clears the space repair-pending flag and marks the space update.
+    /// Spans two @MainActor models (`gameModel` and `root.gameModel`), so it
+    /// lives on the controller — one @MainActor call keeps both updates
+    /// atomic. See CODE_AUDIT §3.1.
+    ///
+    /// Used to also force the presentation mode to `.immersive` on visionOS;
+    /// removed so revealing a Space item never disturbs the current
+    /// SharePlay seating (`.window`'s sideBySide or `.tabletop`'s surround
+    /// stays as is) — `GameRootViewer`'s reveal handler opens the space
+    /// viewer directly, and `SpaceViewer` places the object above the table
+    /// itself when it's open, instead of the mode switch doing it.
     func completeSpaceReveal(itemId: UUID) {
         gameModel.requestedSpaceRepairIds.remove(itemId)
         gameModel.setGameUpdateType(.space)
-        #if os(visionOS)
-        if root.networkStore.sharePlayStore.isActive {
-            root.gameModel.shareState.mode = .immersive
-        }
-        #endif
     }
 
     func resetPlayers() {
