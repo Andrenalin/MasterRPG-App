@@ -49,6 +49,14 @@ struct SpaceViewer: View {
     /// True once this (window-embedded, non-immersive) instance has handed
     /// its entity off to the immersive space — see `SpaceHandoffModel`.
     @State private var handedOffToImmersive = false
+
+    /// The object's position when the current `ManipulationComponent` gesture
+    /// began — compared against where it settled at `WillEnd` to detect
+    /// "dragged far enough to count as pulled toward the immersive space."
+    /// Window-embedded instances only; see `handleManipulationEnded`.
+    @State private var manipulationStartPosition: SIMD3<Float>?
+    @State private var manipulationBeganSubscription: EventSubscription?
+    @State private var manipulationEndedSubscription: EventSubscription?
 #endif
 
 #if os(visionOS)
@@ -263,6 +271,23 @@ private extension SpaceViewer {
 // MARK: - Window → immersive space handoff
 
 private extension SpaceViewer {
+    /// Fires on `ManipulationEvents.WillEnd` — the object has settled at its
+    /// final position for this gesture. Compares that against where it stood
+    /// when the gesture began (`ManipulationEvents.WillBegin`) and, if it
+    /// moved far enough, hands it off to the immersive space. Purely
+    /// observational — it doesn't touch the gesture itself, so it can't
+    /// reintroduce the drag/zoom conflict a competing gesture caused before.
+    @MainActor
+    func handleManipulationEnded(_ entity: Entity) {
+        defer { manipulationStartPosition = nil }
+        guard !isImmersiveSpace, let start = manipulationStartPosition else { return }
+        // The object is normalized to ~0.5 m in the window (see `loadEntity`);
+        // moving it about a third of its own size reads as "grabbed and
+        // pulled," not an idle nudge while orienting it.
+        guard simd_distance(entity.position, start) > 0.15 else { return }
+        moveToImmersiveSpace()
+    }
+
     /// "Grabs" the object out of this (window-embedded) instance and moves it
     /// into the immersive space: hands the live entity off via
     /// `SpaceHandoffModel` — so the immersive instance re-parents it instead
@@ -581,6 +606,29 @@ private extension SpaceViewer {
             // symptom. `.stay` leaves it wherever the gesture ended, matching
             // Apple's own "Manipulate with solid collisions" sample.
             loadedEntity.components[ManipulationComponent.self]?.releaseBehavior = .stay
+
+            // Window-embedded instance only: watch `ManipulationComponent`'s
+            // own event stream (not a second gesture — see the "drag is gone"
+            // history on `moveToImmersiveSpace`) to detect "dragged far
+            // enough" and hand the object off to the immersive space.
+            if !isImmersiveSpace {
+                manipulationBeganSubscription = content.subscribe(
+                    to: ManipulationEvents.WillBegin.self
+                ) { [weak loadedEntity] event in
+                    guard event.entity == loadedEntity else { return }
+                    Task { @MainActor in
+                        self.manipulationStartPosition = event.entity.position
+                    }
+                }
+                manipulationEndedSubscription = content.subscribe(
+                    to: ManipulationEvents.WillEnd.self
+                ) { [weak loadedEntity] event in
+                    guard event.entity == loadedEntity else { return }
+                    Task { @MainActor in
+                        self.handleManipulationEnded(event.entity)
+                    }
+                }
+            }
 #else
             loadedEntity.components.set(InputTargetComponent())
 

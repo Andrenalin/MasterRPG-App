@@ -425,6 +425,7 @@ import OSLog
         switch immersiveSpaceState {
         case .open:
             pendingSpaceViewerSelection = nil
+            currentSpaceViewerItemId = nil
             sceneStates[SceneId.spaceViewer] = .closing
             immersiveSpaceState = .inTransition
             await dismissImmersiveSpace()
@@ -433,26 +434,54 @@ import OSLog
             immersiveSpaceState = .inTransition
             switch await openImmersiveSpace(id: SceneId.spaceViewer.rawValue, value: selection ?? ItemSelection(itemId: UUID(), entryId: nil)) {
             case .opened:
-                break
+                currentSpaceViewerItemId = selection?.itemId
             case .userCancelled, .error:
                 Logger.scenesManager.error("Failed to open immersive space. Did you you setup the immersive space correctly with SceneId.immersiveSpace?")
                 immersiveSpaceState = .closed
                 sceneStates[SceneId.spaceViewer] = .closed
+                currentSpaceViewerItemId = nil
             @unknown default:
                 immersiveSpaceState = .closed
                 sceneStates[SceneId.spaceViewer] = .closed
+                currentSpaceViewerItemId = nil
             }
         case .inTransition:
             break
         }
     }
-    
+
+    /// The item currently displayed in the space-viewer immersive space, if
+    /// any. Tracked separately from the `ImmersiveSpace`'s own `selection`
+    /// value: SwiftUI hands that to the scene's content closure only on the
+    /// *first* `openImmersiveSpace` call for a given scene id — a later call
+    /// while it's already open doesn't redeliver a new value, so it can't be
+    /// used to swap the displayed item. `WindowVisionList` reads this
+    /// property instead (ahead of that frozen `selection`) to pick which item
+    /// `SpaceViewer` shows, so updating it while already open — as
+    /// `openSpaceViewer` does below — replaces the displayed object by
+    /// changing the view identity SwiftUI recreates on.
+    public private(set) var currentSpaceViewerItemId: UUID?
+
     /// Opens the spaceViewer immersive space with the given item selection.
+    ///
+    /// If the space is already open showing a *different* item, replaces it
+    /// (see `currentSpaceViewerItemId`) rather than no-oping. If it's already
+    /// open showing the *same* item, treats the call as a toggle and closes
+    /// it — matches pressing an item's "view in space" control a second time.
     @MainActor
     public func openSpaceViewer(selection: ItemSelection) async {
         let state = getSceneState(for: .spaceViewer)
-        if state == .opening || state == .opened {
-            pendingSpaceViewerSelection = nil
+        if state == .opened {
+            if currentSpaceViewerItemId == selection.itemId {
+                await userDismissedSpaceViewer(itemId: selection.itemId)
+            } else {
+                explicitlyDismissedSpaceItemId = nil
+                currentSpaceViewerItemId = selection.itemId
+            }
+            return
+        }
+        if state == .opening {
+            pendingSpaceViewerSelection = selection
             return
         }
         guard state == .closed, immersiveSpaceState == .closed else {

@@ -51,7 +51,15 @@ struct WindowVisionList: Scene {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(
                     root: appModel.spaceRoot,
-                    id: appModel.spaceRoot.gameControllable.gameModel.currentItemId ?? selection?.itemId ?? UUID(),
+                    // `currentSpaceViewerItemId` first: it's what `openSpaceViewer`
+                    // updates to *replace* the shown item while already open — see
+                    // its doc comment for why `selection` alone can't do that.
+                    // `gameControllable.gameModel.currentItemId`/`selection` stay
+                    // as fallbacks for paths that haven't gone through it yet.
+                    id: appModel.scenesManager.currentSpaceViewerItemId
+                        ?? appModel.spaceRoot.gameControllable.gameModel.currentItemId
+                        ?? selection?.itemId
+                        ?? UUID(),
                     defaultSize: defaultSize
                 )
                     .sceneTracker(for: SceneId.spaceViewer)
