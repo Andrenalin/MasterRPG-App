@@ -24,6 +24,11 @@ public struct GameTableView: View {
     /// on `.onEnded` — mirrors the iOS/macOS `viewportPanGesture`'s
     /// `viewportPanStart`. See CODE_AUDIT §8.1.
     @State private var viewportPanStart: SIMD3<Float>?
+    /// Screen-local dice UI state (editing/player-dice toggles) for the
+    /// ornament's dice action bar — mirrors `MasterGameScreen`'s own
+    /// `diceShowOptionModel`, which is likewise owned per-screen rather than
+    /// shared through `GameRoot`.
+    @State private var diceDisplayModel = DiceDisplayModel()
 
     public init(root: GameRoot) {
         self.root = root
@@ -185,13 +190,26 @@ public struct GameTableView: View {
         // another one, its "parent" is the Scene, same anchor space as
         // `.scene(_:)`, just with the front (+z, toward the viewer) pinned
         // explicitly. Requires visionOS 26+ (this app's floor).
-        // Requires `AppWindowSizeModel` and `\.networkActions` on the scene,
-        // neither of which a bare `RealityView` gets for free — see
-        // `WindowVisionList`.
+        // Requires `AppWindowSizeModel`, `\.networkActions`, and
+        // `AppGameStateModel` on the scene, none of which a bare
+        // `RealityView` gets for free — see `WindowVisionList`.
+        //
+        // The dice action bar (same view `MasterGameScreen` ornaments at
+        // `.bottomLeading` on the flat Game screen) sits under the map
+        // toolbar in this one stacked ornament rather than as its own
+        // separate ornament at the same corner — that would leave two
+        // ornaments contending for the identical anchor point instead of
+        // the map toolbar simply sitting higher to make room, which a
+        // shared VStack gives for free.
         .ornament(attachmentAnchor: .parent(.bottomLeadingFront), contentAlignment: .topLeading) {
             if let game {
-                GameTableToolbar(game: game)
-                    .padding(.top, 12)
+                VStack(alignment: .leading, spacing: 12) {
+                    GameTableToolbar(game: game)
+
+                    root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
+                        .environment(diceDisplayModel)
+                }
+                .padding(.top, 12)
             }
         }
         .task {

@@ -24,13 +24,16 @@ struct WindowVisionList: Scene {
                 .environment(appModel.scenesManager)
                 .gameTableActivityAssociation(root: appModel.gameRoot, sceneId: SceneId.gameTable.rawValue)
                 // GameTableToolbar's ornament reaches for GameToolBar (needs
-                // AppWindowSizeModel + networkActions) and GameTableWindowButton
-                // (needs AppSettingsModel) — the volumetric scene otherwise never
-                // picks these up the way the app's other (navigation-hosted)
-                // windows do via AppEnvironmentSetUpViewModifier/GameRootView.
+                // AppWindowSizeModel + networkActions), GameTableWindowButton
+                // (needs AppSettingsModel), and now the dice action bar's
+                // DiceGameActionBar (needs AppGameStateModel) — the volumetric
+                // scene otherwise never picks these up the way the app's other
+                // (navigation-hosted) windows do via
+                // AppEnvironmentSetUpViewModifier/GameRootView.
                 .setAppSizeMode()
                 .environment(\.networkActions, appModel.gameRoot.networkActions)
                 .environment(appModel.settingsModel)
+                .environment(appModel.appGameStateModel)
         }
         .windowStyle(.volumetric)
         // Keep the system grab handle just outside the 70 cm tabletop instead
