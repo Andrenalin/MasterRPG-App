@@ -12,12 +12,10 @@ public struct LocationFileManager: Sendable {
     public init(moduleFolder: String) {
         self.moduleFolder = moduleFolder
         let cloud = FileManager.cloudURL
-        self.rootAppCloud = cloud?.appendingPathComponent(CloudDocumentController.documentDirName)
-        self.rootICloud = cloud?.deletingLastPathComponent().appendingPathComponent("com~apple~CloudDocs/")
+        self.rootAppCloud = cloud?.appending(path: CloudDocumentController.documentDirName)
+        self.rootICloud = cloud?.deletingLastPathComponent().appending(path: "com~apple~CloudDocs/")
         self.rootLocal = URL.documentsDirectory
-        // Falls back to `URL.documentsDirectory` when neither iCloud nor the App Group
-        // container is available, rather than crashing — see CODE_AUDIT §5.1.
-        self.rootNewCloud = (FileManager.cloudURL ?? FileManager.groupURL ?? URL.documentsDirectory).appending(path: CloudDocumentController.documentDirName)
+        self.rootNewCloud = FileManager.preferredRootUrl.appending(path: CloudDocumentController.documentDirName)
     }
 }
 

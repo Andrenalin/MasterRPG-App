@@ -38,4 +38,15 @@ public extension FileManager {
     static let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: UserDefaults.appGroupString)
 
     static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: cloudContainerIdentifier)
+
+    /// The preferred storage root, in order: the iCloud ubiquity container,
+    /// then the App Group container, then `URL.documentsDirectory` — falls
+    /// back rather than crashing when neither iCloud nor the App Group is
+    /// available (an entitlement/signing mismatch, not just a theoretical
+    /// case; see `groupURL`/`cloudURL`'s own doc comments). Centralizes what
+    /// was previously the same fallback chain hand-copied into 4 separate
+    /// files. See CODE_AUDIT §9.3.
+    static var preferredRootUrl: URL {
+        cloudURL ?? groupURL ?? URL.documentsDirectory
+    }
 }

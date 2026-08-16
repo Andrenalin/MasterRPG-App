@@ -21,7 +21,7 @@ import Foundation
 
         // Snapshot on the MainActor; only the Sendable value crosses into the context.
         let snapshot = dataController.makeSnapshot(from: model)
-        context.performAndWait {
+        await context.perform {
             let dbmodel = RPGAdventure(context: context)
             dataController.applySnapshot(snapshot, into: dbmodel)
         }

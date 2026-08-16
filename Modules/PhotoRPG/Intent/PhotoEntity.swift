@@ -55,28 +55,20 @@ struct PhotoEntity: IndexedEntity {
     }
 }
 
+/// Thrown when a `PhotoEntity`'s underlying stored photo can't be resolved
+/// to a local file (e.g. the item has no attached file, or the file hasn't
+/// finished downloading from iCloud yet).
+struct PhotoEntityAssetUnavailableError: Error {}
+
 extension PhotoEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
-
-            let renderer = ImageRenderer(content: VStack {
-                Text(verbatim: item.name)
-                Text(verbatim: item.description)
-            }.frame(width: 600))
-
-            renderer.render { size, renderer in
-                var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-
-                guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else {
-                    return
-                }
-                pdf.beginPDFPage(nil)
-                renderer(pdf)
-                pdf.endPDFPage()
-                pdf.closePDF()
+        // Exports the actual stored photo file — not a rendered Name/
+        // Description placeholder — so Shortcuts/Share Sheet/drag-out hand
+        // the real image to whatever consumes it.
+        FileRepresentation(exportedContentType: .jpeg) { @MainActor item in
+            guard let url = await item.root.itemController.loadableUrl(itemId: item.id) else {
+                throw PhotoEntityAssetUnavailableError()
             }
-
             return .init(url)
         }
 

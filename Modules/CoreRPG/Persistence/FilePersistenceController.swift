@@ -104,7 +104,7 @@ private extension FilePersistenceController {
     }
 
     func dataURL(for uuid: String) throws -> URL? {
-        var documentsURL = URL.documentsDirectory.appendingPathComponent(name)
+        var documentsURL = URL.documentsDirectory.appending(path: name)
         try FileManager.default.createDirectory(at: documentsURL, withIntermediateDirectories: true)
         documentsURL.appendPathComponent("\(uuid)\(dataExtension ?? "")")
         return documentsURL
@@ -115,11 +115,11 @@ private extension FilePersistenceController {
     // than crashing — see CODE_AUDIT §5.1. Widgets sharing this data won't see it in
     // that edge case, but the app keeps functioning locally instead of crashing at launch.
     var fileURL: URL {
-        (FileManager.groupURL ?? URL.documentsDirectory).appendingPathComponent("\(name).json")
+        (FileManager.groupURL ?? URL.documentsDirectory).appending(path: "\(name).json")
     }
 
     var oldFileURL: URL {
-        URL.documentsDirectory.appendingPathComponent("\(name).json")
+        URL.documentsDirectory.appending(path: "\(name).json")
     }
 
     func migrateOldFile(oldUrl: URL, newUrl: URL) async throws {

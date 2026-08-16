@@ -88,8 +88,8 @@ public struct CoreDataPersistenceController {
             model.error = .loadModel
             return
         }
-        let storeFolderURL = groupURL.appendingPathComponent("Stores")
-        let localFolderURL = storeFolderURL.appendingPathComponent("Local")
+        let storeFolderURL = groupURL.appending(path: "Stores")
+        let localFolderURL = storeFolderURL.appending(path: "Local")
         
         let fileManager = FileManager.default
         for folderURL in [localFolderURL] where !fileManager.fileExists(atPath: folderURL.path) {
@@ -115,7 +115,7 @@ public struct CoreDataPersistenceController {
             return
         }
 #if !os(tvOS)
-        localDescription.url = localFolderURL.appendingPathComponent("local.sqlite")
+        localDescription.url = localFolderURL.appending(path: "local.sqlite")
 #endif
         localDescription.shouldMigrateStoreAutomatically = true
         localDescription.shouldInferMappingModelAutomatically = true
@@ -124,7 +124,7 @@ public struct CoreDataPersistenceController {
         
         model.container = container
         if model.inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
+            container.persistentStoreDescriptions.first!.url = URL(filePath: "/dev/null")
         }
 
 #if !os(tvOS)
@@ -211,6 +211,10 @@ public struct CoreDataPersistenceController {
     }
 }
 
+// @unchecked Sendable: a bare, stateless subclass of Apple's
+// `NSPersistentContainer` — it adds no stored properties of its own, so there
+// is nothing here for the compiler to actually race on; the annotation only
+// bypasses `NSPersistentContainer` itself predating `Sendable`.
 final class RPGPersistentContainer: NSPersistentContainer, @unchecked Sendable {}
 
 /// Runs `work` on the main actor. `loadPersistentStores`'s completion handler is

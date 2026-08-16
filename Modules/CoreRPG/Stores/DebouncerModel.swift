@@ -31,3 +31,28 @@ public final class DebouncerModel<T: Sendable>: Sendable {
         }
     }
 }
+
+/// Starts a cancellable, delayed action on the main actor — the
+/// sleep-then-check-cancellation-then-act pattern used for the app's short
+/// settle/debounce delays (haptics, focus, link recalculation), previously
+/// hand-rolled near-identically at 6+ call sites. Callers still own
+/// cancelling any previous pending call themselves before starting a new
+/// one, same as any other stored `Task`:
+/// ```swift
+/// myTask?.cancel()
+/// myTask = delayedTask(.milliseconds(100)) { doSomething() }
+/// ```
+/// A free function rather than a `Task` extension: inside `extension Task
+/// where Success == Void, Failure == Never`, an unqualified `Task` inside
+/// the method body resolves to `Self` — colliding with `sleep(for:)`,
+/// which requires `Success == Never` — so this sidesteps that entirely.
+/// See CODE_AUDIT §9.4.
+@discardableResult
+@MainActor
+public func delayedTask(_ delay: Duration, operation: @escaping @MainActor () -> Void) -> Task<Void, Never> {
+    Task {
+        try? await Task.sleep(for: delay)
+        guard !Task.isCancelled else { return }
+        operation()
+    }
+}

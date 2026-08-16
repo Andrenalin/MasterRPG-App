@@ -211,9 +211,9 @@ extension PlayerController {
     }
 
     private func sharePhoto(_ fullData: NetworkCodableDataType) async {
-        let (playerId, masterId) = await MainActor.run {
-            (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
-        }
+        // `PlayerController` is itself `@MainActor`, so this is already a
+        // same-actor synchronous read — no actor hop needed.
+        let (playerId, masterId) = (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
         let baseline = root.photoRoot.photoGameControllable.masterVersion(
             for: fullData.id,
             masterId: masterId
@@ -270,9 +270,9 @@ extension PlayerController {
     }
 
     private func sharePdf(_ fullData: NetworkCodableDataType) async {
-        let (playerId, masterId) = await MainActor.run {
-            (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
-        }
+        // `PlayerController` is itself `@MainActor`, so this is already a
+        // same-actor synchronous read — no actor hop needed.
+        let (playerId, masterId) = (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
         let baseline = root.pdfRoot.pdfGameControllable.masterVersion(
             for: fullData.id,
             masterId: masterId
@@ -329,9 +329,9 @@ extension PlayerController {
 
     private func shareSpace(_ fullData: NetworkCodableDataType) async {
         guard root.gameModel.gameControl.features.spaceSharing else { return }
-        let (playerId, masterId) = await MainActor.run {
-            (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
-        }
+        // `PlayerController` is itself `@MainActor`, so this is already a
+        // same-actor synchronous read — no actor hop needed.
+        let (playerId, masterId) = (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
         let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
             for: fullData.id,
             masterId: masterId

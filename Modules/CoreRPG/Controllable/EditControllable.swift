@@ -187,7 +187,7 @@ public extension EditControllable {
     }
 }
 
-// MARK: - Group Items / Carousell Items
+// MARK: - Group Items / Carousel Items
 
 public extension EditControllable {
     @MainActor func addGroup(itemId: UUID, childId: UUID, forceSave: Bool = false) {
@@ -217,7 +217,7 @@ public extension EditControllable {
     }
 }
 
-// MARK: - Folder / Colllection
+// MARK: - Folder / Collection
 
 public extension EditControllable {
     @MainActor func addItem(itemId: UUID, parentId: UUID?) {

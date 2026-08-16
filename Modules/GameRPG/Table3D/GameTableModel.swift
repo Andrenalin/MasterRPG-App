@@ -48,7 +48,8 @@ final class GameTableModel: Sendable {
     var displayMode: MapDisplayMode = .master {
         didSet {
             guard oldValue != displayMode else { return }
-            Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+            fogOfWarTask?.cancel()
+            fogOfWarTask = Task { await updateFogOfWar(isGameMaster: isGameMaster) }
         }
     }
     private var lastPinScale: CGFloat = 1
@@ -82,6 +83,12 @@ final class GameTableModel: Sendable {
     /// have its in-flight load cancelled instead of running to completion
     /// with no one left to apply the result. See CODE_AUDIT §3.5.
     private var pendingThumbnailTasks: [UUID: Task<Void?, Never>] = [:]
+    /// Tracks the in-flight `updateFogOfWar` `Task` spawned by `panViewport(by:)`
+    /// and `displayMode`'s `didSet` so a fast, continuous drag gesture (which
+    /// calls `panViewport` on every delta) can't queue up many overlapping
+    /// recomposites — each new pan cancels the previous one instead of piling
+    /// on. See CODE_AUDIT §3.3.
+    private var fogOfWarTask: Task<Void, Never>?
     /// Signature of every value that affects the rendered board texture.
     /// Pin-only mapState messages can then skip a full fog recomposite.
     private var fogSignature: Int?
@@ -517,7 +524,8 @@ final class GameTableModel: Sendable {
         // crop moves opposite the finger.
         manualViewportOffset.x -= delta.x
         manualViewportOffset.y -= delta.y
-        Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+        fogOfWarTask?.cancel()
+        fogOfWarTask = Task { await updateFogOfWar(isGameMaster: isGameMaster) }
         syncPawnsWithMapPins()
     }
 
@@ -1017,6 +1025,7 @@ final class GameTableModel: Sendable {
 
     isolated deinit {
         pendingThumbnailTasks.values.forEach { $0.cancel() }
+        fogOfWarTask?.cancel()
 #if os(visionOS)
         tabletopGame.removeObserver(observer)
         tabletopGame.removeRenderDelegate(renderer)

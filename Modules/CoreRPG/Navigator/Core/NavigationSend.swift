@@ -109,8 +109,11 @@ extension Navigator: NavigationSending {
         switch action {
         case .auto:
             let delay: TimeInterval = delay ?? executionDelay
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.send(values: values)
+            resumeTask?.cancel()
+            resumeTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(delay))
+                guard !Task.isCancelled else { return }
+                self?.send(values: values)
             }
         case .immediately:
             send(values: values)

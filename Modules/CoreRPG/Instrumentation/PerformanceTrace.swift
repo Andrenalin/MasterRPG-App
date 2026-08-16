@@ -16,6 +16,10 @@ public enum PerformanceTrace {
         category: .pointsOfInterest
     )
 
+    // @unchecked Sendable: `OSSignpostIntervalState` is an opaque, immutable
+    // token from `os.signpost` that predates `Sendable` and carries no shared
+    // mutable state of its own; both stored properties here are `let`, so an
+    // `Interval` can be safely handed across actors to be closed later.
     public struct Interval: @unchecked Sendable {
         fileprivate let name: StaticString
         fileprivate let state: OSSignpostIntervalState

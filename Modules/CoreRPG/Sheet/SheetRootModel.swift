@@ -918,8 +918,7 @@ public final class SheetRootModel: Sendable {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }
         editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder, forceSave: persistsEdits)
-        Task {
-            try? await Task.sleep(for: .milliseconds(100))
+        delayedTask(.milliseconds(100)) { [self] in
             updateParent(parentModel)
         }
     }
@@ -938,8 +937,7 @@ public final class SheetRootModel: Sendable {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }
         editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent, forceSave: persistsEdits)
-        Task {
-            try? await Task.sleep(for: .milliseconds(100))
+        delayedTask(.milliseconds(100)) { [self] in
             updateParent(parentModel)
         }
     }

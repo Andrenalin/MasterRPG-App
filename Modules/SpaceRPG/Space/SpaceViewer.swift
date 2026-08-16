@@ -20,16 +20,6 @@ struct SpaceViewer: View {
     let isModal: Bool
     var isImmersiveSpace: Bool = false
 
-    var animatableData: AnimatablePair<Float, Float> {
-        get {
-            .init(yaw, pitch)
-        }
-        set {
-            yaw = newValue.first
-            pitch = newValue.second
-        }
-    }
-
     @Environment(ScenesManager.self) private var scenesManager
 
     @Environment(\.dismiss) private var dismiss
@@ -39,6 +29,12 @@ struct SpaceViewer: View {
     @State private var objectEntity: Entity?
     @State private var nameEntity: Entity?
     @State private var loadedItemId: UUID?
+
+    /// Tracks the in-flight collision-shape-generation `Task` started by
+    /// `loadEntity` so a rapid item switch cancels the stale generation
+    /// instead of letting it keep running against an entity that may no
+    /// longer be on screen. See CODE_AUDIT §3.8.
+    @State private var collisionShapeTask: Task<Void, Never>?
 
     @State private var canDrag: Bool = false
     @State private var yaw: Float = .pi / 2
@@ -338,6 +334,15 @@ private extension SpaceViewer {
         self.hasLoaded = false
         handedOffToImmersive = true
         Task {
+            // `openSpaceViewer` silently no-ops if the immersive space is
+            // already open or opening — including when it's showing a
+            // *different* item, which would otherwise strand this handoff:
+            // the entity above is already detached and `pending` in
+            // `SpaceHandoffModel`, but nothing would ever open to adopt it.
+            // Dismissing first (a no-op if already closed) guarantees the
+            // subsequent open always starts from `.closed`, so it reliably
+            // succeeds and shows this item instead of silently dropping it.
+            await scenesManager.dismissSpaceViewer()
             await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: id, entryId: nil))
         }
     }
@@ -355,14 +360,7 @@ private extension SpaceViewer {
         // re-centers relative to its now-parentless bounds, which is close
         // enough to a no-op that it's safe to apply again rather than special-
         // cased away.
-        let headAnchor = AnchorEntity(.head)
-        headAnchor.anchoring.trackingMode = .once
-        let visualCenter = entity.visualBounds(relativeTo: nil).center
-        entity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 1.5)
-        headAnchor.addChild(entity)
-        content.add(headAnchor)
-        self.rootEntity = headAnchor
-        applySharedPlacementIfNeeded()
+        placeUnderHeadAnchor(entity, into: content)
 
         self.loadedItemId = id
         apply(
@@ -372,6 +370,32 @@ private extension SpaceViewer {
             )
         )
         hasLoaded = true
+    }
+
+    /// Anchors `entity` to the wearer's head — world-locking it at the
+    /// current head position via `trackingMode = .once` so it doesn't end
+    /// up far away and invisible if the person has moved since the ARKit
+    /// session started (Apple's HeadTracking sample pattern) — 1.5m in
+    /// front, roughly where a window sits by default, offset by `entity`'s
+    /// own visual center so its pivot (often at the base/feet for USDZ
+    /// files) doesn't throw off the placement. Adds the resulting anchor to
+    /// `content`, sets `rootEntity`, and applies any pending SharePlay-
+    /// shared placement. Shared by `loadEntity` and `adopt(_:into:)` — see
+    /// CODE_AUDIT §9.2.
+    @MainActor
+    func placeUnderHeadAnchor(_ entity: Entity, into content: some RealityViewContentProtocol) {
+        let visualCenter = entity.visualBounds(relativeTo: nil).center
+        let headAnchor = AnchorEntity(.head)
+        headAnchor.anchoring.trackingMode = .once
+        // Combine centering offset with 1.5 m in front of the head anchor —
+        // roughly where a window sits by default, straight ahead.
+        entity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 1.5)
+        headAnchor.addChild(entity)
+        content.add(headAnchor)
+        self.rootEntity = headAnchor
+        // If the system already aligned the space for SharePlay (joining an
+        // active group immersion), move straight to the shared origin.
+        applySharedPlacementIfNeeded()
     }
 }
 #endif
@@ -607,7 +631,9 @@ private extension SpaceViewer {
             // `MainActor.run` anyway — this is already running on the Main Actor (`loadEntity`
             // is `@MainActor`), so a plain structured Task keeps the same "don't block, run
             // shortly after" behavior without the detach/re-attach indirection.
-            Task(name: "RealityKit Collision Shapes", priority: .utility) { @MainActor in
+            collisionShapeTask?.cancel()
+            collisionShapeTask = Task(name: "RealityKit Collision Shapes", priority: .utility) { @MainActor in
+                guard !Task.isCancelled else { return }
                 let trace = PerformanceTrace.begin(
                     "CollisionShapeGeneration",
                     source: "SpaceViewer",
@@ -632,35 +658,26 @@ private extension SpaceViewer {
                 loadedEntity.scale = SIMD3<Float>(repeating: targetSize / maxBase)
             }
 
-            // Shift the entity so its visual centre sits at the world origin.
-            // Most USDZ files have their pivot at the base/feet; without this the orbit
-            // camera targets the feet and zooming in shows only the bottom of the model.
-            let visualCenter = loadedEntity.visualBounds(relativeTo: nil).center
-
 #if os(visionOS)
             if isImmersiveSpace {
                 // Hard-coded world coords fail when the user has moved since the ARKit
                 // session started — the entity ends up far away and invisible.
                 // Apple pattern (HeadTracking sample): anchor to head with trackingMode=.once
                 // which world-locks the entity at the current head position.
-                let headAnchor = AnchorEntity(.head)
-                headAnchor.anchoring.trackingMode = .once
-                // Combine centering offset with 1.5 m in front of the head anchor —
-                // roughly where a window sits by default, straight ahead.
-                loadedEntity.position = SIMD3(-visualCenter.x, -visualCenter.y, -visualCenter.z - 1.5)
-                headAnchor.addChild(loadedEntity)
-                content.add(headAnchor)
-                self.rootEntity = headAnchor
-                // If the system already aligned the space for SharePlay (joining an
-                // active group immersion), move straight to the shared origin.
-                applySharedPlacementIfNeeded()
+                placeUnderHeadAnchor(loadedEntity, into: content)
             } else {
-                loadedEntity.position = -visualCenter
+                // Shift the entity so its visual centre sits at the world origin.
+                // Most USDZ files have their pivot at the base/feet; without this the orbit
+                // camera targets the feet and zooming in shows only the bottom of the model.
+                loadedEntity.position = -loadedEntity.visualBounds(relativeTo: nil).center
                 content.add(newRootEntity)
                 self.rootEntity = newRootEntity
             }
 #else
-            loadedEntity.position = -visualCenter
+            // Shift the entity so its visual centre sits at the world origin.
+            // Most USDZ files have their pivot at the base/feet; without this the orbit
+            // camera targets the feet and zooming in shows only the bottom of the model.
+            loadedEntity.position = -loadedEntity.visualBounds(relativeTo: nil).center
             content.add(newRootEntity)
             self.rootEntity = newRootEntity
 #endif
@@ -931,20 +948,6 @@ private struct DragRotationModifier: ViewModifier {
     }
 
 }
-
-extension ModelEntity {
-    func size() -> SIMD3<Float> {
-        guard let mesh = self.model?.mesh else {
-            return .zero
-        }
-
-        let width = mesh.bounds.max.x - mesh.bounds.min.x
-        let height = mesh.bounds.max.y - mesh.bounds.min.y
-        let depth = mesh.bounds.max.z - mesh.bounds.min.z
-        return [width, height, depth]
-    }
-}
-
 
 #if os(visionOS)
 // Note: SharePlay synchronization is handled at the GameRPG layer when opening

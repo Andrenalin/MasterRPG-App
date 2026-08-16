@@ -154,7 +154,7 @@ private extension FoundrySystemPackageReader {
             let logPaths = source.paths
                 .filter { path in
                     guard path.hasPrefix(packPrefix), path.lowercased().hasSuffix(".log") else { return false }
-                    return URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent.allSatisfy(\.isNumber)
+                    return URL(filePath: path).deletingPathExtension().lastPathComponent.allSatisfy(\.isNumber)
                 }
                 .sorted()
             for logPath in logPaths {
@@ -1029,7 +1029,7 @@ private enum FoundryAssetCollector {
                 maxSplits: 1,
                 omittingEmptySubsequences: false
             )[0]
-            let pathExtension = URL(fileURLWithPath: String(pathWithoutQuery)).pathExtension.lowercased()
+            let pathExtension = URL(filePath: String(pathWithoutQuery)).pathExtension.lowercased()
             if extensions.contains(pathExtension) { result.insert(string) }
         default:
             break

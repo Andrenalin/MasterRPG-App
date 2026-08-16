@@ -206,10 +206,7 @@ public actor FoundryImportArchiveStore {
 
 private extension FoundryImportArchiveStore {
     static var defaultDirectoryURL: URL {
-        // Falls back to `URL.documentsDirectory` when neither iCloud nor the App Group
-        // container is available, rather than crashing — see CODE_AUDIT §5.1.
-        let root = FileManager.cloudURL ?? FileManager.groupURL ?? URL.documentsDirectory
-        return root
+        return FileManager.preferredRootUrl
             .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")
             .appending(path: "archives")

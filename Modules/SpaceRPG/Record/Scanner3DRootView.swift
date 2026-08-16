@@ -51,7 +51,7 @@ struct Scanner3DRootView: View {
         .sheet(isPresented: $showReconstructionView) {
             ManagedPresentationView {
                 if let folderManager = appModel.scanFolderManager {
-                    ReconstructionPrimaryView(outputFile: folderManager.modelsFolder.appendingPathComponent("model-mobile.usdz"))
+                    ReconstructionPrimaryView(outputFile: folderManager.modelsFolder.appending(path: "model-mobile.usdz"))
                 }
             }
         }

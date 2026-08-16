@@ -78,17 +78,17 @@ public actor ObjectCache<Object: AnyObject> {
     // MARK: - Disk cache helpers
     
     private var cacheDirectoryURL: URL {
-        URL.cachesDirectory.appendingPathComponent("ImageCache", isDirectory: true)
+        URL.cachesDirectory.appending(path: "ImageCache", directoryHint: .isDirectory)
     }
 
     private func subDirURL(for itemId: UUID) -> URL {
         cacheDirectoryURL
-            .appendingPathComponent(String(itemId.uuidString.suffix(2)))
+            .appending(path: String(itemId.uuidString.suffix(2)))
     }
 
     private func fileURL(for itemId: UUID) -> URL {
         subDirURL(for: itemId)
-            .appendingPathComponent(itemId.uuidString)
+            .appending(path: itemId.uuidString)
             .appendingPathExtension("jpg")
     }
     

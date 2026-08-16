@@ -38,17 +38,17 @@ final class CaptureFolderManager {
         rootScanFolder = newFolder
 
         // Creates the subdirectories.
-        imagesFolder = newFolder.appendingPathComponent("Images/")
+        imagesFolder = newFolder.appending(path: "Images/")
         guard CaptureFolderManager.createDirectoryRecursively(imagesFolder) else {
             return nil
         }
 
-        snapshotsFolder = newFolder.appendingPathComponent("Snapshots/")
+        snapshotsFolder = newFolder.appending(path: "Snapshots/")
         guard CaptureFolderManager.createDirectoryRecursively(snapshotsFolder) else {
             return nil
         }
 
-        modelsFolder = newFolder.appendingPathComponent("Models/")
+        modelsFolder = newFolder.appending(path: "Models/")
         guard CaptureFolderManager.createDirectoryRecursively(modelsFolder) else {
             return nil
         }
@@ -124,7 +124,7 @@ final class CaptureFolderManager {
     /// - Returns: `outputDir` URL if the image exists
     static func heicImageUrl(in outputDir: URL, id: UInt32) -> URL {
         return outputDir
-            .appendingPathComponent(imageIdString(for: id))
+            .appending(path: imageIdString(for: id))
             .appendingPathExtension(heicImageExtension)
     }
 
@@ -139,7 +139,7 @@ final class CaptureFolderManager {
 
         let timestamp = Date().formatted(.iso8601)
         let newCaptureDir = capturesFolder
-            .appendingPathComponent(timestamp, isDirectory: true)
+            .appending(path: timestamp, directoryHint: .isDirectory)
 
         Logger.scanner3D.log("Creating capture path: \"\(String(describing: newCaptureDir))\"")
         let capturePath = newCaptureDir.path
@@ -209,7 +209,7 @@ final class CaptureFolderManager {
                                              appropriateFor: nil, create: false) else {
             return nil
         }
-        return documentsFolder.appendingPathComponent("Scans/", isDirectory: true)
+        return documentsFolder.appending(path: "Scans/", directoryHint: .isDirectory)
     }
 }
 

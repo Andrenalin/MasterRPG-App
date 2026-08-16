@@ -4,7 +4,8 @@
 import RealityKit
 import SwiftUI
 
-public class EntityGestureState {
+@MainActor
+public final class EntityGestureState {
     
     /// The entity currently being dragged if a gesture is in progress.
     var targetedEntity: Entity?
@@ -43,9 +44,9 @@ public class EntityGestureState {
     var isRotating = false
     
     // MARK: - Singleton Accessor
-    
+
     /// Retrieves the shared instance.
-    @MainActor static let shared = EntityGestureState()
+    static let shared = EntityGestureState()
 }
 
 // MARK: -

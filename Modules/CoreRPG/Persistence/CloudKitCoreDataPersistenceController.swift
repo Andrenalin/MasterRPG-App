@@ -35,8 +35,8 @@ public struct CloudKitCoreDataPersistenceController {
             model.error = .loadModel
             return
         }
-        let storeFolderURL = groupURL.appendingPathComponent("Stores")
-        let privateStoreFolderURL = storeFolderURL.appendingPathComponent("Private")
+        let storeFolderURL = groupURL.appending(path: "Stores")
+        let privateStoreFolderURL = storeFolderURL.appending(path: "Private")
 
         let fileManager = FileManager.default
         if !fileManager.fileExists(atPath: privateStoreFolderURL.path) {
@@ -61,7 +61,7 @@ public struct CloudKitCoreDataPersistenceController {
             model.error = .loadModel
             return
         }
-        privateDescription.url = privateStoreFolderURL.appendingPathComponent("private.sqlite")
+        privateDescription.url = privateStoreFolderURL.appending(path: "private.sqlite")
         privateDescription.shouldMigrateStoreAutomatically = true
         privateDescription.shouldInferMappingModelAutomatically = true
 
@@ -76,7 +76,7 @@ public struct CloudKitCoreDataPersistenceController {
         
         model.container = container
         if model.inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
+            container.persistentStoreDescriptions.first!.url = URL(filePath: "/dev/null")
         }
         
 #if !os(tvOS)
@@ -279,4 +279,9 @@ public struct CloudKitCoreDataPersistenceController {
     }()
 }
 
+// @unchecked Sendable: a bare, stateless subclass of Apple's
+// `NSPersistentCloudKitContainer` — it adds no stored properties of its own,
+// so there is nothing here for the compiler to actually race on; the
+// annotation only bypasses `NSPersistentCloudKitContainer` itself predating
+// `Sendable`.
 final class RPGPersistentCloudKitContainer: NSPersistentCloudKitContainer, @unchecked Sendable {}

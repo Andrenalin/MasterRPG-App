@@ -467,7 +467,10 @@ private extension GeneratorController {
     
     // focusedContent is reserved for the focused-entry feature (not yet wired).
     @MainActor func prompt(for message: String, module: NetworkModules, rootSheetModel: SheetModel, focusedContent: SheetModel?, maxCharacters: Int = 2_800) -> String {
-        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Bound the GM's free-text request itself, not just the sheetIndex
+        // context below — `maxCharacters` previously went unused here. See
+        // CODE_AUDIT §5.3.
+        let trimmed = String(message.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maxCharacters))
         let userRequest = trimmed.isEmpty ? "Generate useful new content for this sheet." : trimmed
         var result = "Generate new fictional RPG content for the \(module.title) sheet.\nGame master's request: \(userRequest)"
 

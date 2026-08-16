@@ -15,7 +15,7 @@ public final class SimpleLinkController: LinkControllable, @unchecked Sendable {
         self.itemControllable = itemControllable
     }
 
-    public var itemControllable: any ItemControllable
+    public let itemControllable: any ItemControllable
 
     public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         text

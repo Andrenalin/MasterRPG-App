@@ -173,8 +173,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         
         // Enhancement 3: Success haptic after drop
 #if os(iOS)
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(100))
+        delayedTask(.milliseconds(100)) {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
 #endif

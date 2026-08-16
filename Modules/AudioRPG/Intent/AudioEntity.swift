@@ -54,8 +54,24 @@ struct AudioEntity: IndexedEntity {
     }
 }
 
+/// Thrown when an `AudioEntity`'s underlying stored audio file can't be
+/// resolved to a local file (e.g. the item has no attached file, or the
+/// file hasn't finished downloading from iCloud yet).
+struct AudioEntityAssetUnavailableError: Error {}
+
 extension AudioEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
+        // Exports the actual stored audio file — matching the fix applied
+        // to PdfEntity/PhotoEntity/SpaceEntity (see CODE_AUDIT §5.2); this
+        // type previously only offered a plain-text Name/Description export
+        // and never attempted a real-file representation at all.
+        FileRepresentation(exportedContentType: .mpeg4Audio) { @MainActor item in
+            guard let url = await item.root.itemController.loadableUrl(itemId: item.id) else {
+                throw AudioEntityAssetUnavailableError()
+            }
+            return .init(url)
+        }
+
         DataRepresentation(exportedContentType: .plainText) {
             """
             Name: \($0.name)

@@ -438,8 +438,8 @@ private extension FoundryVTTDecoder {
            selected.lowercased().hasSuffix(".mrpgfoundry") {
             return [FoundryVTTCollectionSpec(
                 id: selected,
-                name: URL(fileURLWithPath: selected).deletingPathExtension().lastPathComponent,
-                label: URL(fileURLWithPath: selected).deletingPathExtension().lastPathComponent,
+                name: URL(filePath: selected).deletingPathExtension().lastPathComponent,
+                label: URL(filePath: selected).deletingPathExtension().lastPathComponent,
                 path: selected,
                 declaredType: .unknown,
                 rawData: nil
@@ -491,7 +491,7 @@ private extension FoundryVTTDecoder {
             guard manifestPath == nil else { return nil }
             let lowercased = selected.lowercased()
             guard lowercased.hasSuffix(".json") || lowercased.hasSuffix(".db") else { return nil }
-            let name = URL(fileURLWithPath: selected).deletingPathExtension().lastPathComponent
+            let name = URL(filePath: selected).deletingPathExtension().lastPathComponent
             return FoundryVTTCollectionSpec(
                 // A selected JSON/NeDB file is the source's sole collection. Keep its display name,
                 // but do not let a Finder rename change every projected item UUID.
@@ -508,7 +508,7 @@ private extension FoundryVTTDecoder {
         let declaredPaths = Set(specs.map(\.path))
         for path in source.paths where path.lowercased().hasSuffix(".db") {
             guard !declaredPaths.contains(path), !FoundryVTTPath.isManifest(path) else { continue }
-            let name = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+            let name = URL(filePath: path).deletingPathExtension().lastPathComponent
             specs.append(FoundryVTTCollectionSpec(
                 id: path,
                 name: name,
@@ -521,10 +521,10 @@ private extension FoundryVTTDecoder {
 
         let levelDBDirectories = Set(source.paths.compactMap { path -> String? in
             let lowercased = path.lowercased()
-            let stem = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+            let stem = URL(filePath: path).deletingPathExtension().lastPathComponent
             let isNumericLog = lowercased.hasSuffix(".log") && stem.allSatisfy(\.isNumber)
             guard lowercased.hasSuffix(".ldb") || lowercased.hasSuffix(".sst") || isNumericLog else { return nil }
-            // `path` is a normalized package-relative path. URL(fileURLWithPath:) resolves it
+            // `path` is a normalized package-relative path. URL(filePath:) resolves it
             // against the process working directory, which would turn the parent absolute and
             // make it impossible to match against `source.paths`.
             return path.split(separator: "/").dropLast().joined(separator: "/")
@@ -534,7 +534,7 @@ private extension FoundryVTTDecoder {
                 spec.path == path || path.hasPrefix(spec.path.hasSuffix("/") ? spec.path : spec.path + "/")
             }
             guard !isAlreadyDeclared else { continue }
-            let name = URL(fileURLWithPath: path).lastPathComponent
+            let name = URL(filePath: path).lastPathComponent
             specs.append(FoundryVTTCollectionSpec(
                 id: path.isEmpty && manifest == nil ? "standalone" : path,
                 name: name,
@@ -547,14 +547,14 @@ private extension FoundryVTTDecoder {
 
         if specs.isEmpty, manifest == nil {
             let likelyJSON = source.paths.filter { path in
-                let name = URL(fileURLWithPath: path).lastPathComponent.lowercased()
+                let name = URL(filePath: path).lastPathComponent.lowercased()
                 guard name.hasSuffix(".json") else { return false }
-                let stem = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent
+                let stem = URL(filePath: name).deletingPathExtension().lastPathComponent
                 return FoundryDocumentType.inferred(fromCollectionName: stem) != .unknown
                     || name.hasSuffix(".foundry.json")
             }
             for path in likelyJSON {
-                let name = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+                let name = URL(filePath: path).deletingPathExtension().lastPathComponent
                 specs.append(FoundryVTTCollectionSpec(
                     id: path,
                     name: name,
@@ -656,7 +656,7 @@ private extension FoundryVTTDecoder {
         }.sorted()
         let discoveredLogPaths = source.paths.filter { path in
             guard path.lowercased().hasSuffix(".log"), prefix.isEmpty || path.hasPrefix(prefix) else { return false }
-            return URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent.allSatisfy(\.isNumber)
+            return URL(filePath: path).deletingPathExtension().lastPathComponent.allSatisfy(\.isNumber)
         }.sorted()
         guard !discoveredTablePaths.isEmpty || !discoveredLogPaths.isEmpty else {
             throw FoundryImportError.missingPack(spec.name)
@@ -785,7 +785,7 @@ private extension FoundryVTTDecoder {
     func numberedLevelDBPaths(_ paths: [String], kind: String) throws -> [UInt64: String] {
         var result: [UInt64: String] = [:]
         for path in paths {
-            let stem = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+            let stem = URL(filePath: path).deletingPathExtension().lastPathComponent
             guard let number = UInt64(stem), result[number] == nil else {
                 throw FoundryImportError.corruptLevelDB("A \(kind) filename is invalid or duplicated.")
             }

@@ -231,7 +231,7 @@ public extension FileUrlDataController {
         var loadedFileUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
 
         if loadedFileUrl == nil, let data = fileUrl.data {
-            let tempUrl = URL.temporaryDirectory.appendingPathComponent(fileUrl.fileId.uuidString).appendingPathExtension(filenameExtension)
+            let tempUrl = URL.temporaryDirectory.appending(path: fileUrl.fileId.uuidString).appendingPathExtension(filenameExtension)
             // Only take the temp-file path when the write actually succeeded; otherwise fall
             // through and let `loadedFileUrl` stay `nil` so `processUrl` below still falls back
             // to `fullUrl` instead of pointing at a file that was never written. See CODE_AUDIT §5.4.

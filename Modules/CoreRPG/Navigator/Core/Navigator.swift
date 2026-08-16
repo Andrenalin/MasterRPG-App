@@ -28,6 +28,11 @@ import SwiftUI
 /// ```swift
 /// @Environmnt(\.navigator) var navigator
 /// ```
+// @unchecked Sendable: the type is `@MainActor`-isolated (all navigation
+// state is only ever read/written on the main actor), but the `@Observable`
+// macro's synthesized `ObservationRegistrar` storage isn't itself provably
+// `Sendable`, so automatic conformance can't be derived — the `@MainActor`
+// isolation is the actual safety guarantee here, not the annotation.
 @MainActor
 @Observable
 public final class Navigator: @unchecked Sendable {
@@ -157,6 +162,14 @@ public final class Navigator: @unchecked Sendable {
     @ObservationIgnored
     internal var presentationModifierInherits: Bool = false
 
+    /// In-flight cancellable delay backing the `.auto`/`.after` cases of
+    /// `resume(_:values:delay:)` — replaces GCD's `asyncAfter` so a
+    /// torn-down/deallocated navigator can't still deliver a stale `send`
+    /// after this instance is gone. Only one resume is ever pending at a
+    /// time, so starting a new one cancels the last.
+    @ObservationIgnored
+    internal var resumeTask: Task<Void, Never>?
+
     // MARK: - Static Properties
 
     /// The currently active navigator
@@ -221,6 +234,7 @@ public final class Navigator: @unchecked Sendable {
         let child = self
         MainActor.assumeIsolated {
             child.log(.lifecycle(.deinit))
+            child.resumeTask?.cancel()
             parent?.removeChild(child)
         }
     }

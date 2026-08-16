@@ -85,10 +85,7 @@ import SwiftUI
     public func updateNameLinks() {
         nameUpdateTask?.cancel()
 
-        nameUpdateTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(100))
-
-            guard !Task.isCancelled else { return }
+        nameUpdateTask = delayedTask(.milliseconds(100)) { [self] in
             guard linkRegisterController != nil else {
                 name = String(attributedName.characters)
                 return
@@ -98,19 +95,15 @@ import SwiftUI
             resetAttributedName()
         }
     }
-    
+
     public func updateLinks() {
         // Cancel previous update task to avoid redundant work
         updateTask?.cancel()
-        
+
         // Debounce updates to avoid excessive AttributedString recalculation
-        updateTask = Task { @MainActor in
-            // Small delay to batch rapid changes
-            try? await Task.sleep(for: .milliseconds(100))
-            
-            guard !Task.isCancelled else { return }
+        updateTask = delayedTask(.milliseconds(100)) { [self] in
             guard linkRegisterController != nil else { return }
-            
+
             resetText()
             resetAttributedText()
         }

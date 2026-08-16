@@ -45,8 +45,12 @@ extension NWParameters {
     private static func tlsOptions(passcode: String) -> NWProtocolTLS.Options {
         let tlsOptions = NWProtocolTLS.Options()
 
-        let authenticationKey = SymmetricKey(data: passcode.data(using: .utf8)!)
-        var authenticationCode = HMAC<SHA256>.authenticationCode(for: "GameMaster".data(using: .utf8)!, using: authenticationKey)
+        // `Data(someString.utf8)` builds directly from the always-present UTF-8
+        // view instead of the optional-returning, force-unwrapped
+        // `.data(using: .utf8)!` — a Swift `String`'s UTF-8 encoding can't
+        // actually fail, so this is the same bytes with no force-unwrap.
+        let authenticationKey = SymmetricKey(data: Data(passcode.utf8))
+        var authenticationCode = HMAC<SHA256>.authenticationCode(for: Data("GameMaster".utf8), using: authenticationKey)
 
         let authenticationDispatchData = withUnsafeBytes(of: &authenticationCode) { (ptr: UnsafeRawBufferPointer) in
             DispatchData(bytes: ptr)

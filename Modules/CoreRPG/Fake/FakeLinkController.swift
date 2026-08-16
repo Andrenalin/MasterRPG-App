@@ -7,7 +7,7 @@ final class FakeLinkController: LinkControllable, @unchecked Sendable {
         self.itemControllable = itemControllable
     }
 
-    var itemControllable: any ItemControllable
+    let itemControllable: any ItemControllable
 
     func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         text
