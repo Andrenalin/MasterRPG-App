@@ -437,14 +437,12 @@ struct MasterControllerDirectProxyTests {
         let retainedTransform = SpaceTransformModel(
             position: SIMD3<Float>(repeating: 0),
             scale: SIMD3<Float>(repeating: 1),
-            yaw: 0,
-            pitch: 0
+            rotation: SIMD4<Float>(0, 0, 0, 1)
         )
         let newTransform = SpaceTransformModel(
             position: SIMD3<Float>(1, 2, 3),
             scale: SIMD3<Float>(repeating: 2),
-            yaw: 0.5,
-            pitch: 0.25
+            rotation: SIMD4<Float>(0.5, 0.25, 0, 1)
         )
         #expect(env.root.spaceRoot.gameController.spaceGameModel.applyTransform(
             itemId: itemId,
