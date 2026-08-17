@@ -141,7 +141,9 @@ struct InlineImporterView: View, Equatable {
 #if os(iOS) && !targetEnvironment(simulator)
         .sheet(isPresented: $showScanner) {
             ManagedPresentationView {
-                Scanner3DRootView()
+                Scanner3DRootView(itemId: itemId) { url in
+                    await root.editController.resetFile(url: url, itemId: itemId)
+                }
             }
         }
 #endif

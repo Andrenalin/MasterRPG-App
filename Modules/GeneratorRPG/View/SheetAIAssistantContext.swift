@@ -17,7 +17,9 @@ public extension View {
                 .allowsHitTesting(false)
         }
         .overlay(alignment: .bottomTrailing) {
-            if let rootModel, let generatorController = generatorRoot?.generatorControllers[module], generatorController.availblity {
+            if let rootModel,
+               let generatorController = generatorRoot?.generatorController(forItem: rootModel.sheetModel.source.itemId),
+               generatorController.availability {
                 SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
                 .padding(.horizontal)
                 .padding(.bottom)

@@ -7,7 +7,7 @@ import Foundation
 
 final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked Sendable {
     @MainActor
-    init(networkModel: MasterNetworkNodel = MasterNetworkNodel(name: "MasterTestName"), calledStartStreaming: Int = 0, calledStopStreaming: Int = 0, calledToggleStreaming: Int = 0, calledStartProxyStreaming: Int = 0, calledSendResponseId: Int = 0, calledSendResponseAll: Int = 0, calledSendResponseExcept: Int = 0, sendResponseData: (any MessageMapper)? = nil) {
+    init(networkModel: MasterNetworkModel = MasterNetworkModel(name: "MasterTestName"), calledStartStreaming: Int = 0, calledStopStreaming: Int = 0, calledToggleStreaming: Int = 0, calledStartProxyStreaming: Int = 0, calledSendResponseId: Int = 0, calledSendResponseAll: Int = 0, calledSendResponseExcept: Int = 0, sendResponseData: (any MessageMapper)? = nil) {
         self.networkModel = networkModel
         self.calledStartStreaming = calledStartStreaming
         self.calledStopStreaming = calledStopStreaming
@@ -19,7 +19,7 @@ final class MasterNetworkControllableMock: MasterNetworkControllable, @unchecked
         self.sendResponseData = sendResponseData
     }
     
-    let networkModel: MasterNetworkNodel
+    let networkModel: MasterNetworkModel
 
     var calledStartStreaming = 0
     var calledStopStreaming = 0

@@ -261,16 +261,4 @@ private extension UniversalVTTDomainMapper {
         )
     }
 
-    func base64Hash(_ hexadecimal: String) -> String? {
-        guard hexadecimal.count.isMultiple(of: 2) else { return nil }
-        var data = Data()
-        var index = hexadecimal.startIndex
-        while index < hexadecimal.endIndex {
-            let end = hexadecimal.index(index, offsetBy: 2)
-            guard let byte = UInt8(hexadecimal[index..<end], radix: 16) else { return nil }
-            data.append(byte)
-            index = end
-        }
-        return data.base64EncodedString()
-    }
 }

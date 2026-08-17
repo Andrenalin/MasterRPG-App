@@ -56,7 +56,7 @@ struct SheetAIAssistantStandardControl: View {
 #if os(iOS)
                 .submitLabel(.send)
 #endif
-                .disabled(!generatorController.availblity || generatorController.model.isLoading)
+                .disabled(!generatorController.availability || generatorController.model.isLoading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(theme.background(for: .value), in: .capsule)

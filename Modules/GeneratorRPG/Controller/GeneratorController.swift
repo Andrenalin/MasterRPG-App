@@ -19,8 +19,8 @@ final class GeneratorSessionModel {
         conversationEngine.onStateChange = { [weak self] in
             self?.syncConversationState()
         }
-        Task(name: "Foundation Context Size") {
-            await fetchContextSize()
+        Task(name: "Foundation Context Size") { [weak self] in
+            await self?.fetchContextSize()
         }
     }
     
@@ -50,6 +50,11 @@ final class GeneratorSessionModel {
     func cancel() {
         currentTask?.cancel()
         currentTask = nil
+        // Cancelling the wrapper `Task` alone doesn't stop the underlying FoundationModels
+        // stream — without this, a superseded/abandoned generation keeps running in the
+        // background, burning CPU/battery and still writing into `rootModel` after the UI has
+        // moved on. See CODE_AUDIT §5.6.
+        conversationEngine.cancelActiveResponse()
     }
 
     // Task management for cancellation extraction
@@ -171,6 +176,10 @@ struct GeneratorController: Sendable {
     @MainActor func tearDown() {
         model.conversationEngine.cancelActiveResponse()
         model.currentTask?.cancel()
+        // Without this, an in-flight extraction (its own separate session/task from the
+        // conversational one above) keeps running and writing into `rootModel` after
+        // teardown. See CODE_AUDIT §5.18.
+        model.cancelExtraction()
     }
 
     let model: GeneratorSessionModel
@@ -185,7 +194,7 @@ struct GeneratorController: Sendable {
         Preserve the language used by the game master.
     """
 
-    @MainActor var availblity: Bool {
+    @MainActor var availability: Bool {
         foundationManager.isModelAvailable
     }
     
@@ -243,7 +252,12 @@ struct GeneratorController: Sendable {
                 count: message.count
             )
             defer { trace?.end() }
-            defer { model.isLoading = model.session.isResponding }
+            // Set deterministically rather than derived from `model.session`, which
+            // `ConversationEngine` can reassign mid-flight (e.g. after a sliding-window
+            // rebuild) — reading it here risked a spinner stuck `true` after an error, or
+            // clearing prematurely while another operation on the swapped-in session was
+            // still running. See CODE_AUDIT §5.16.
+            defer { model.isLoading = false }
             do {
                 let typeId = rootSheetModel.source.typeId
                 let response = try await model.conversationEngine.sendStreamingMessage(
@@ -290,10 +304,16 @@ struct GeneratorController: Sendable {
 
     // MARK: - Extraction
 
-    @MainActor func extract(message: String, rootModel: SheetRootModel) {
+    @MainActor func extract(message: String, rootModel: SheetRootModel, maxCharacters: Int = 6_000) {
         model.cancelExtraction()
         model.isExtracting = true
         let typeId = rootModel.sheetModel.source.typeId
+        // Bounds the text fed into the extraction prompt. Unlike `prompt(for:...)`'s
+        // `maxCharacters` cap on the GM's free-text request, the upstream conversational
+        // generation itself has no `maximumResponseTokens` limit — an unusually long reply,
+        // once wrapped in the extraction instructions and schema, could otherwise exceed the
+        // extraction session's own context window on the very next call. See CODE_AUDIT §5.17.
+        let message = String(message.prefix(maxCharacters))
         PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 
         model.currentExtractionTask = Task(name: "Foundation Extraction") {
@@ -361,34 +381,11 @@ struct GeneratorController: Sendable {
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
 
             } catch let error as LanguageModelSession.GenerationError {
+                // Reuse the shared handler `request()`'s catch block already uses, rather
+                // than a second, narrower, drifting vocabulary for the same error type. See
+                // CODE_AUDIT §5.15.
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
-                switch error {
-                case .guardrailViolation(let context):
-                    model.responseErrorContent = String(
-                        localized: "Guardrail Violation: \(context.debugDescription)",
-                        bundle: .module
-                    )
-                case .decodingFailure(let context):
-                    model.responseErrorContent = String(
-                        localized: "Decoding Failure: \(context.debugDescription)",
-                        bundle: .module
-                    )
-                case .rateLimited(let context):
-                    model.responseErrorContent = String(
-                        localized: "Rate Limit exceeded: \(context.debugDescription)",
-                        bundle: .module
-                    )
-                case .exceededContextWindowSize(let context):
-                    model.responseErrorContent = String(
-                        localized: "Memory exceeded: \(context.debugDescription)",
-                        bundle: .module
-                    )
-                default:
-                    model.responseErrorContent = String(
-                        localized: "Other error: \(error.localizedDescription)",
-                        bundle: .module
-                    )
-                }
+                model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
                 if let failureReason = error.failureReason {
                     model.responseErrorContent += "\n\(failureReason)"
                 }
@@ -431,26 +428,6 @@ private extension GeneratorController {
         return String(text.prefix(maxCharacters))
     }
     
-    @MainActor func drafts(from block: BlockGenModel) -> SheetModel? {
-        let entryDrafts = block.entries.compactMap { entry -> SheetModel? in
-            let title = cleaned(entry.title)
-            let content = cleaned(entry.content)
-            guard !title.isEmpty || !content.isEmpty else { return nil }
-            let sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: [])
-            sheetModel.isGeneratedAnswer = true
-            return sheetModel
-        }
-        
-        let title = cleaned(block.name)
-        let content = cleaned(block.information)
-        guard !title.isEmpty || !content.isEmpty else { return nil }
-        
-        let sheetModel = SheetModel(source: ItemRowModel(itemId: UUID(), typeId: .adventure), name: title, description: content, entries: entryDrafts)
-        sheetModel.isGeneratedAnswer = true
-        return sheetModel
-    }
-    
-    
     @MainActor func makeSheetEntry(name: String, content: String, typeId: NetworkModules) -> SheetModel? {
         let trimmedName = cleaned(name)
         let trimmedContent = cleaned(content)
@@ -488,574 +465,4 @@ private extension GeneratorController {
     }
 }
 
-
-/*
-public private(set) var pendingGenerationRequest: SheetGenerationRequest?
-public private(set) var generatedBatch: SheetGeneratedBatch?
-private var pendingGenerationParentModel: SheetModel?
-private var generatedBatchParentModel: SheetModel?
-private var generatedAcceptanceTransitions: [GeneratedAcceptanceKey: UUID] = [:]
-
- /// Whether the sheet contains non-root content that can give the assistant useful context.
- /// The root item's title alone does not make an otherwise empty sheet eligible.
- public var hasAIAssistantContent: Bool {
-     (sheetModel.entries + sheetModel.inlineEntries).contains(where: containsGenerationContent)
- }
-
- private func containsGenerationContent(_ model: SheetModel) -> Bool {
-     model.hasGenerationContent ||
-     (model.entries + model.inlineEntries).contains(where: containsGenerationContent)
- }
-
- // MARK: Generation Queue
-
- @discardableResult
- public func queueGeneration(prompt: String, module defaultModule: NetworkModules) -> SheetGenerationRequest? {
-     let parent = selectedParentModel ?? sheetModel
-     return queueGeneration(
-         prompt: prompt,
-         focusedEntry: selectedEntry,
-         parent: parent,
-         defaultModule: defaultModule
-     )
- }
-
- @discardableResult
- public func queueGeneration(
-     from entryModel: SheetModel,
-     parent parentModel: SheetModel,
-     module defaultModule: NetworkModules
- ) -> SheetGenerationRequest? {
-     guard entryModel.hasGenerationContent else { return nil }
-     setSelected(entryModel, parent: parentModel)
-     return queueGeneration(
-         prompt: "",
-         focusedEntry: entryModel,
-         parent: parentModel,
-         defaultModule: defaultModule
-     )
- }
-
- func canRefineGeneratedPreview(_ preview: SheetModel, in parentModel: SheetModel) -> Bool {
-     guard preview.isGeneratedAnswer,
-           let generatedBatch,
-           generatedBatch.entries.contains(where: { $0 === preview }),
-           let generatedParent = generatedParent(for: generatedBatch),
-           generatedParent === parentModel else {
-         return false
-     }
-
-     return !preview.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-         !preview.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
- }
-
- /// Uses one current generated preview as focused AI input. The existing batch stays
- /// visible while generation runs and is replaced atomically only after success.
- @discardableResult
- public func refineGeneratedPreview(
-     _ preview: SheetModel,
-     in parentModel: SheetModel,
-     instruction: String = ""
- ) -> SheetGenerationRequest? {
-     guard canRefineGeneratedPreview(preview, in: parentModel),
-           let generatedBatch else {
-         return nil
-     }
-
-     let name = preview.name.trimmingCharacters(in: .whitespacesAndNewlines)
-     let content = preview.description.trimmingCharacters(in: .whitespacesAndNewlines)
-     let focusedContent = SheetContentSnapshot(
-         id: preview.id,
-         source: preview.source,
-         name: name,
-         content: content
-     )
-     let sheetContext = contentSnapshot(for: parentModel, includeChildren: true) ?? SheetContentSnapshot(
-         id: parentModel.id,
-         source: parentModel.source,
-         name: parentModel.name,
-         content: parentModel.description
-     )
-     let trimmedInstruction = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
-     let prompt = trimmedInstruction.isEmpty
-         ? "Refine this generated content. Preserve its intent and language while improving clarity and usefulness during play."
-         : trimmedInstruction
-     let focus = SheetGenerationFocus(
-         rootItemID: sheetModel.source.itemId,
-         parentModelID: parentModel.id,
-         parentSource: parentModel.source,
-         selectedModelID: preview.id,
-         selectedSource: preview.source,
-         position: effectivePosition(for: generatedBatch, in: parentModel),
-         module: generatedBatch.focus.module
-     )
-     let request = SheetGenerationRequest(
-         prompt: prompt,
-         sheetContext: sheetContext,
-         focusedContent: focusedContent,
-         focus: focus
-     )
-
-     isAIModeActive = true
-     pendingGenerationRequest = request
-     pendingGenerationParentModel = parentModel
-     return request
- }
-
- /// Removes only a transient preview. No EditController or persisted model is touched.
- @discardableResult
- public func discardGeneratedPreview(_ preview: SheetModel, in parentModel: SheetModel) -> Bool {
-     guard preview.isGeneratedAnswer else { return false }
-
-     if var batch = generatedBatch,
-        batch.entries.contains(where: { $0 === preview }),
-        let generatedParent = generatedParent(for: batch),
-        generatedParent === parentModel {
-         finishPendingGeneration(focusedOn: preview)
-         evictLinkTextModels(for: [preview])
-         batch.entries.removeAll { $0 === preview }
-         if batch.entries.isEmpty {
-             generatedBatch = nil
-             generatedBatchParentModel = nil
-         } else {
-             generatedBatch = batch
-             generatedBatchParentModel = generatedParent
-         }
-         clearScrollTarget(for: preview)
-         return true
-     }
-
-     // Legacy previews were embedded directly in their parent model.
-     guard containsIdentity(parentModel, in: sheetModel),
-           parentModel.entries.contains(where: { $0 === preview }) else {
-         return false
-     }
-     finishPendingGeneration(focusedOn: preview)
-     evictLinkTextModels(for: [preview])
-     parentModel.entries.removeAll { $0 === preview }
-     clearScrollTarget(for: preview)
-     return true
- }
-
- public func finishGenerationRequest(_ requestID: UUID) {
-     guard pendingGenerationRequest?.id == requestID else { return }
-     pendingGenerationRequest = nil
-     pendingGenerationParentModel = nil
- }
-
- public func clearGeneratedPreviews() {
-     if let generatedBatch {
-         evictLinkTextModels(for: generatedBatch.entries)
-     }
-     generatedBatch = nil
-     generatedBatchParentModel = nil
- }
-
- @discardableResult
- public func installGeneratedDrafts(_ drafts: [GeneratedSheetDraft], for requestID: UUID) -> Bool {
-     guard let request = pendingGenerationRequest,
-           request.id == requestID,
-           request.focus.rootItemID == sheetModel.source.itemId else {
-         return false
-     }
-
-     let parent: SheetModel
-     if let pendingGenerationParentModel {
-         guard pendingGenerationParentModel.id == request.focus.parentModelID,
-               containsIdentity(pendingGenerationParentModel, in: sheetModel) else {
-             return false
-         }
-         parent = pendingGenerationParentModel
-     } else if let resolvedParent = findEntry(id: request.focus.parentModelID, in: sheetModel) {
-         parent = resolvedParent
-     } else {
-         return false
-     }
-
-     let cleanedDrafts = drafts.compactMap { draft -> GeneratedSheetDraft? in
-         let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
-         let content = draft.content.trimmingCharacters(in: .whitespacesAndNewlines)
-         guard !title.isEmpty || !content.isEmpty else { return nil }
-         return GeneratedSheetDraft(id: draft.id, title: title, content: content)
-     }
-
-     guard !cleanedDrafts.isEmpty else {
-         finishGenerationRequest(requestID)
-         return false
-     }
-
-     let batchID = requestID.uuidString
-     let entries = cleanedDrafts.map { draft in
-         let source = ItemRowModel(
-             itemId: parent.source.itemId,
-             entryId: draft.id,
-             typeId: request.focus.module
-         )
-         let entry = SheetModel(
-             source: source,
-             level: parent.level,
-             canAdd: false,
-             name: draft.title.isEmpty ? "Generated Entry" : draft.title,
-             description: draft.content,
-             entries: []
-         )
-         entry.isGeneratedAnswer = true
-         entry.generatedBatchID = batchID
-         return entry
-     }
-
-     if let generatedBatch {
-         evictLinkTextModels(for: generatedBatch.entries)
-     }
-     generatedBatch = SheetGeneratedBatch(id: batchID, focus: request.focus, entries: entries)
-     generatedBatchParentModel = parent
-     editorModel.scrollEntryId = entries.last?.source.entryId
-     finishGenerationRequest(requestID)
-     return true
- }
-
- // MARK: Preview Acceptance
-
- func generatedEntries(after entryModel: SheetModel, in parentModel: SheetModel) -> [SheetModel] {
-     guard let generatedBatch,
-           isParent(parentModel, for: generatedBatch),
-           case .after(let entryID) = effectivePosition(for: generatedBatch, in: parentModel),
-           entryModel.source.entryId == entryID else {
-         return []
-     }
-     return generatedBatch.entries
- }
-
- func trailingGeneratedEntries(in parentModel: SheetModel) -> [SheetModel] {
-     guard let generatedBatch, isParent(parentModel, for: generatedBatch) else { return [] }
-
-     switch effectivePosition(for: generatedBatch, in: parentModel) {
-     case .end:
-         return generatedBatch.entries
-     case .after(let entryID):
-         let anchorStillExists = parentModel.entries.contains { $0.source.entryId == entryID }
-         return anchorStillExists ? [] : generatedBatch.entries
-     }
- }
-
- @discardableResult
- public func acceptGeneratedPreview(_ preview: SheetModel) -> UUID? {
-     guard var batch = generatedBatch,
-           batch.entries.contains(where: { $0 === preview }),
-           let parent = generatedParent(for: batch),
-           let editable = entryDataEditable(for: parent.source) else {
-         return nil
-     }
-
-     let insertionPosition = effectivePosition(for: batch, in: parent)
-     let previewID = preview.source.entryId ?? preview.source.itemId
-     guard let entryID = editable.insertEntry(
-         itemId: parent.source.itemId,
-         name: preview.name,
-         content: preview.description,
-         position: insertionPosition
-     ) else {
-         return nil
-     }
-
-     finishPendingGeneration(focusedOn: preview)
-     generatedAcceptanceTransitions[
-         GeneratedAcceptanceKey(parentModelID: parent.id, persistedEntryID: entryID)
-     ] = previewID
-     evictLinkTextModels(for: [preview])
-     batch.entries.removeAll { $0 === preview }
-     batch.lastAcceptedEntryID = entryID
-     generatedBatch = batch.entries.isEmpty ? nil : batch
-     if batch.entries.isEmpty {
-         generatedBatchParentModel = nil
-     }
-
-     updateParent(parent)
-
-     let parentStillEmbedded = containsIdentity(parent, in: sheetModel)
-     if !batch.entries.isEmpty, parentStillEmbedded {
-         generatedBatchParentModel = parent
-     } else if !batch.entries.isEmpty {
-         evictLinkTextModels(for: batch.entries)
-         generatedBatch = nil
-         generatedBatchParentModel = nil
-     }
-     if parentStillEmbedded,
-        let acceptedEntry = parent.entries.first(where: { $0.source.entryId == entryID }) {
-         setSelected(acceptedEntry, parent: parent)
-     }
-     editorModel.scrollEntryId = entryID
-     MasterRPGTips.recordEntryCreated()
-     Task {
-         await MasterRPGTips.donateAIAccepted()
-     }
-     return entryID
- }
-
- /// Gives an outgoing generated preview and its incoming persisted row one temporary
- /// identity so SwiftUI can animate the handoff even though persistence creates a new UUID.
- func sheetRowGeometryMatch(
-     for entryModel: SheetModel,
-     parent parentModel: SheetModel
- ) -> SheetRowGeometryMatch {
-     if entryModel.isGeneratedAnswer {
-         return SheetRowGeometryMatch(
-             id: .generated(
-                 parent: parentModel.id,
-                 draft: entryModel.source.entryId ?? entryModel.source.itemId
-             ),
-             isSource: true
-         )
-     }
-
-     if let acceptedEntryID = entryModel.source.entryId,
-        let previewID = generatedAcceptanceTransitions[
-            GeneratedAcceptanceKey(
-                parentModelID: parentModel.id,
-                persistedEntryID: acceptedEntryID
-            )
-        ] {
-         return SheetRowGeometryMatch(
-             id: .generated(parent: parentModel.id, draft: previewID),
-             isSource: false
-         )
-     }
-
-     return SheetRowGeometryMatch(
-         id: .regular(parent: parentModel.id, row: entryModel.id),
-         isSource: true
-     )
- }
-
- func finishGeneratedAcceptanceTransition(previewID: UUID, parentModelID: UUID) {
-     let matchingKeys = generatedAcceptanceTransitions.compactMap { key, mappedPreviewID in
-         key.parentModelID == parentModelID && mappedPreviewID == previewID ? key : nil
-     }
-     for key in matchingKeys {
-         generatedAcceptanceTransitions[key] = nil
-     }
- }
-
- private func queueGeneration(
-     prompt: String,
-     focusedEntry: SheetModel?,
-     parent requestedParent: SheetModel,
-     defaultModule: NetworkModules
- ) -> SheetGenerationRequest? {
-     let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-     let focusedContent = focusedEntry.flatMap {
-         contentSnapshot(for: $0, includeChildren: false)
-     }
-     guard !trimmedPrompt.isEmpty || focusedContent != nil else { return nil }
-
-     guard let target = generationTarget(
-         requestedParent: requestedParent,
-         focusedEntry: focusedEntry
-     ) else { return nil }
-
-     let sheetContext = contentSnapshot(for: target.parent, includeChildren: true) ?? SheetContentSnapshot(
-         id: target.parent.id,
-         source: target.parent.source,
-         name: target.parent.name,
-         content: target.parent.description
-     )
-     let module = target.parent.source.typeId == .none ? defaultModule : target.parent.source.typeId
-     let focus = SheetGenerationFocus(
-         rootItemID: sheetModel.source.itemId,
-         parentModelID: target.parent.id,
-         parentSource: target.parent.source,
-         selectedModelID: focusedEntry?.id,
-         selectedSource: focusedEntry?.source,
-         position: target.position,
-         module: module
-     )
-     let request = SheetGenerationRequest(
-         prompt: trimmedPrompt,
-         sheetContext: sheetContext,
-         focusedContent: focusedContent,
-         focus: focus
-     )
-     isAIModeActive = true
-     pendingGenerationRequest = request
-     pendingGenerationParentModel = target.parent
-     return request
- }
-
- private struct GenerationTarget {
-     let parent: SheetModel
-     let position: SheetInsertionPosition
- }
-
- /// Resolves the requested sheet to a destination that can actually persist entries.
- /// For read-only linked sheets, generation still uses the originally focused row as
- /// input, but persists after the direct containing row in the nearest editable sheet.
- private func generationTarget(
-     requestedParent: SheetModel,
-     focusedEntry: SheetModel?
- ) -> GenerationTarget? {
-     guard let path = identityPath(to: requestedParent, in: sheetModel) else { return nil }
-
-     if requestedParent.source.entryId == nil,
-        entryDataEditable(for: requestedParent.source) != nil {
-         return GenerationTarget(
-             parent: requestedParent,
-             position: focusedEntry?.source.entryId.map(SheetInsertionPosition.after) ?? .end
-         )
-     }
-
-     for index in path.indices.dropLast().reversed() {
-         let candidate = path[index]
-         guard candidate.source.entryId == nil,
-               entryDataEditable(for: candidate.source) != nil else { continue }
-
-         let directChild = path[path.index(after: index)]
-         return GenerationTarget(
-             parent: candidate,
-             position: directChild.source.entryId.map(SheetInsertionPosition.after) ?? .end
-         )
-     }
-
-     return nil
- }
-
- private func contentSnapshot(for model: SheetModel, includeChildren: Bool) -> SheetContentSnapshot? {
-     guard !model.isGeneratedAnswer else { return nil }
-
-     let children: [SheetContentSnapshot]
-     if includeChildren {
-         children = (model.entries + model.inlineEntries).compactMap {
-             contentSnapshot(for: $0, includeChildren: true)
-         }
-     } else {
-         children = []
-     }
-
-     let name = model.name.trimmingCharacters(in: .whitespacesAndNewlines)
-     let content = model.description.trimmingCharacters(in: .whitespacesAndNewlines)
-     guard !name.isEmpty || !content.isEmpty || !children.isEmpty else { return nil }
-
-     return SheetContentSnapshot(
-         id: model.id,
-         source: model.source,
-         name: name,
-         content: content,
-         children: children
-     )
- }
-
- // MARK: Entry Commit
-
- /// Creates real, persisted entries via the module's EditController — not transient
- /// in-memory SheetModels — under `parent` (defaults to the root sheetModel), re-syncs
- /// the tree from the saved data (which drops any unpersisted preview entry with the
- /// same synthetic id — see SheetController.update), and scrolls to the last one.
- @discardableResult
- public func appendEntries(_ blocks: [(title: String, content: String)], into parent: SheetModel? = nil) -> [UUID] {
-     let targetParent = parent ?? sheetModel
-     guard !blocks.isEmpty, let editable = entryDataEditable(for: targetParent.source) else { return [] }
-     let newEntryIds = blocks.map { block in
-         let entryId = editable.addNewEntry(itemId: targetParent.source.itemId)
-         editable.update(itemId: targetParent.source.itemId, entryId: entryId, name: block.title, content: block.content)
-         return entryId
-     }
-     updateParent(targetParent)
-     if let lastEntryId = newEntryIds.last {
-         editorModel.scrollEntryId = lastEntryId
-     }
-     return newEntryIds
- }
-
- /// Commits a temporary, unpersisted `isGeneratedAnswer` preview entry (as created by
- /// SheetAIAssistantOverlayView) into a real, saved entry via the EditController, then
- /// clears the preview flag. Called by the generated entry's Take Over menu action.
- @discardableResult
- public func commitGeneratedEntry(_ entryModel: SheetModel, parent: SheetModel) -> Bool {
-     guard entryModel.isGeneratedAnswer else { return false }
-     if generatedBatch?.entries.contains(where: { $0 === entryModel }) == true {
-         return acceptGeneratedPreview(entryModel) != nil
-     }
-
-     // Only previews embedded by the legacy implementation may use this fallback.
-     // An external preview from an older/replaced batch is stale and must not persist.
-     guard containsIdentity(parent, in: sheetModel),
-           parent.entries.contains(where: { $0 === entryModel }),
-           let editable = entryDataEditable(for: parent.source),
-           let entryID = editable.insertEntry(
-             itemId: parent.source.itemId,
-             name: entryModel.name,
-             content: entryModel.description,
-             position: .end
-           ) else {
-         return false
-     }
-
-     let previewID = entryModel.source.entryId ?? entryModel.source.itemId
-     finishPendingGeneration(focusedOn: entryModel)
-     generatedAcceptanceTransitions[
-         GeneratedAcceptanceKey(parentModelID: parent.id, persistedEntryID: entryID)
-     ] = previewID
-     evictLinkTextModels(for: [entryModel])
-     entryModel.isGeneratedAnswer = false
-     entryModel.generatedBatchID = nil
-     updateParent(parent)
-     return true
- }
-
- private func finishPendingGeneration(focusedOn preview: SheetModel) {
-     guard let request = pendingGenerationRequest,
-           request.focusedContent?.id == preview.id else {
-         return
-     }
-     finishGenerationRequest(request.id)
- }
-
- private func clearScrollTarget(for preview: SheetModel) {
-     let previewID = preview.source.entryId ?? preview.source.itemId
-     if editorModel.scrollEntryId == previewID {
-         editorModel.scrollEntryId = nil
-     }
- }
-
- private func generatedParent(for batch: SheetGeneratedBatch) -> SheetModel? {
-     if let generatedBatchParentModel {
-         guard generatedBatchParentModel.id == batch.focus.parentModelID,
-               containsIdentity(generatedBatchParentModel, in: sheetModel) else {
-             return nil
-         }
-         return generatedBatchParentModel
-     }
-     return findEntry(id: batch.focus.parentModelID, in: sheetModel)
- }
-
- private func isParent(_ parent: SheetModel, for batch: SheetGeneratedBatch) -> Bool {
-     guard batch.focus.parentModelID == parent.id else { return false }
-     if let generatedBatchParentModel {
-         guard containsIdentity(generatedBatchParentModel, in: sheetModel) else { return false }
-         return generatedBatchParentModel === parent
-     }
-     return true
- }
-
- private func effectivePosition(
-     for batch: SheetGeneratedBatch,
-     in parent: SheetModel
- ) -> SheetInsertionPosition {
-     if let lastAcceptedEntryID = batch.lastAcceptedEntryID,
-        parent.entries.contains(where: { $0.source.entryId == lastAcceptedEntryID }) {
-         return .after(lastAcceptedEntryID)
-     }
-     return batch.focus.position
- }
-
- private func evictLinkTextModels(for models: [SheetModel]) {
-     for model in models {
-         let lookupID = model.source.entryId ?? model.source.itemId
-         linkTextModel[.entry(lookupID)] = nil
-         linkTextModel[.entryContent(lookupID)] = nil
-         evictLinkTextModels(for: model.inlineEntries)
-         evictLinkTextModels(for: model.entries)
-     }
- }
- 
- */
 #endif

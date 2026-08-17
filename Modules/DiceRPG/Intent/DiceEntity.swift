@@ -87,10 +87,12 @@ struct DiceEntity: IndexedEntity {
 extension DiceEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .plainText) {
-            """
-            Name: \($0.name)
-            Description: \($0.description)
-            """.data(using: .utf8)!
+            Data(
+                """
+                Name: \($0.name)
+                Description: \($0.description)
+                """.utf8
+            )
         }
     }
 }

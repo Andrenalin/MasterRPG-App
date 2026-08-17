@@ -31,7 +31,7 @@ final class PlayerNetworkController: Sendable {
     private let delegate: PlayerNetworkControllerDelegateBox
 
     let browserManager: BrowserManager
-    let networkModel: PlayerNetworkNodel
+    let networkModel: PlayerNetworkModel
     // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the
     // reconnect-fallback listener (`setUpListener`/`restart`). The outbound
     // `start(model:)` join path is never throttled — this device is the one
@@ -48,7 +48,7 @@ final class PlayerNetworkController: Sendable {
     }
 
     init(name: String, proxy: Bool = false, delegate: PlayerNetworkControllerDelegate? = nil) {
-        self.networkModel = PlayerNetworkNodel(name: name)
+        self.networkModel = PlayerNetworkModel(name: name)
         self.proxy = proxy
         self.delegate = PlayerNetworkControllerDelegateBox(delegate)
         self.browserManager = BrowserManager(serviceType: proxy ? .proxyServer : .player)
@@ -252,7 +252,7 @@ extension PlayerNetworkController {
 
     func removedConnection(endpoint: NWEndpoint) async {
         guard let model = networkModel.model else { return }
-        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription, privacy: .public)")
+        Logger.playerNetworkController.debug("PlayerNetworkController: RemovedConnection \(endpoint.debugDescription, privacy: .private)")
         if model.endpoint == endpoint {
             guard let id = networkModel.connectionController?.id else { return }
             await lostConnection(for: id)

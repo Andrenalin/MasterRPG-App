@@ -17,22 +17,25 @@ struct SheetAIAssistantOverlayView: View {
     @FocusState private var isTextFieldFocused: Bool
 
     @State private var messageText = ""
-    @State private var errorMessage: String?
 
     public var body: some View {
         standardAssistant
+        // Bound directly to the controller's own error state (rather than a separate local
+        // flag the request/extract failure paths never actually wrote to) so an on-device
+        // generation failure — model unavailable, guardrail violation, decoding failure,
+        // context overflow — is no longer silently swallowed. See CODE_AUDIT §5.7.
         .alert(
             Text("AI Generation Failed", bundle: .module),
             isPresented: isErrorPresented,
             actions: {
                 Button(role: .cancel) {
-                    errorMessage = nil
+                    generatorController.model.dismissError()
                 } label: {
                     Text("OK", bundle: .module)
                 }
             },
             message: {
-                Text(verbatim: errorMessage ?? "")
+                Text(verbatim: generatorController.model.responseErrorContent)
             }
         )
         .task(id: rootModel.isAIModeActive) {
@@ -40,7 +43,7 @@ struct SheetAIAssistantOverlayView: View {
                 isTextFieldFocused = false
                 return
             }
-            if generatorController.availblity {
+            if generatorController.availability {
                 generatorController.seedConversationContext(sheetModel: rootModel.sheetModel)
                 await generatorController.preparaEngine(module: rootModel.sheetModel.source.typeId)
             }
@@ -60,7 +63,14 @@ struct SheetAIAssistantOverlayView: View {
             resetForItemChange()
         }
         .task {
-            MasterRPGTips.setAIAvailable(generatorController.availblity)
+            MasterRPGTips.setAIAvailable(generatorController.availability)
+        }
+        .onDisappear {
+            // Leaving this AI surface reliably stops its session — without this, `tearDown()`
+            // (which cancels both the conversational and extraction tasks) had zero call
+            // sites anywhere, so a generation started here kept running in the background
+            // indefinitely after the user navigated away. See CODE_AUDIT §5.6.
+            generatorController.tearDown()
         }
     }
 
@@ -79,10 +89,10 @@ struct SheetAIAssistantOverlayView: View {
 
     private var isErrorPresented: Binding<Bool> {
         Binding(
-            get: { errorMessage != nil },
+            get: { generatorController.model.showError },
             set: { isPresented in
                 if !isPresented {
-                    errorMessage = nil
+                    generatorController.model.dismissError()
                 }
             }
         )
@@ -110,7 +120,7 @@ struct SheetAIAssistantOverlayView: View {
 
     private func resetForItemChange() {
         messageText = ""
-        errorMessage = nil
+        generatorController.model.dismissError()
         rootModel.setAIModeActive(false)
     }
 
@@ -126,7 +136,7 @@ struct SheetAIAssistantOverlayView: View {
         }
         generatorController.request(message: message, rootModel: rootModel)
         withAnimation(reduceMotion ? nil : .smooth) {
-            errorMessage = nil
+            generatorController.model.dismissError()
         }
     }
 
@@ -138,7 +148,7 @@ struct SheetAIAssistantOverlayView: View {
 
         withAnimation(reduceMotion ? nil : .smooth) {
             messageText = ""
-            errorMessage = nil
+            generatorController.model.dismissError()
         }
         isTextFieldFocused = true
     }

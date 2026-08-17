@@ -134,12 +134,33 @@ public final class GeneratorRootModel {
     @ObservationIgnored var syncDataController: SyncDataController?
     @ObservationIgnored var syncTask: Task<Void, Never>?
 
-    @MainActor @ObservationIgnored var generatorControllers: [NetworkModules: GeneratorController] = [
-        .adventure: GeneratorController(),
-        .value: GeneratorController(),
-        .map: GeneratorController(),
-        .table: GeneratorController()
-    ]
+    /// Scoped per item, not per module: a module-keyed dictionary meant two macOS/visionOS
+    /// windows showing different items of the same module type shared one
+    /// `GeneratorController` — activating "Ask AI" in one window silently rebuilt/cleared the
+    /// other's conversation history and cancelled its in-flight generation via the shared
+    /// `currentTask`. Bounded with FIFO eviction (mirroring `MasterController`'s
+    /// `playerJournalAdmissions` pattern) so visiting many sheets over a long session doesn't
+    /// grow this indefinitely. See CODE_AUDIT §5.8.
+    @MainActor @ObservationIgnored private var generatorControllers: [UUID: GeneratorController] = [:]
+    @MainActor @ObservationIgnored private var generatorControllerOrder: [UUID] = []
+    private static let maximumGeneratorControllers = 12
+
+    /// Returns this item's `GeneratorController`, creating one on first access. See the
+    /// `generatorControllers` doc comment for why this is keyed by item rather than module.
+    @MainActor func generatorController(forItem itemId: UUID) -> GeneratorController {
+        if let existing = generatorControllers[itemId] {
+            return existing
+        }
+        let controller = GeneratorController()
+        generatorControllers[itemId] = controller
+        generatorControllerOrder.append(itemId)
+        while generatorControllerOrder.count > Self.maximumGeneratorControllers {
+            let evictedId = generatorControllerOrder.removeFirst()
+            generatorControllers[evictedId]?.tearDown()
+            generatorControllers[evictedId] = nil
+        }
+        return controller
+    }
 
     @MainActor @ObservationIgnored let editorLinkModel: EditorLinkModel
     @MainActor @ObservationIgnored public let openFileWindowModel: OpenFileWindowModel

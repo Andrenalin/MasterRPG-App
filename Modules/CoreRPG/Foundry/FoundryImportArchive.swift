@@ -219,6 +219,12 @@ private extension FoundryImportArchiveStore {
     func decode(_ data: Data) throws -> FoundryImportArchive {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        // Without this, a deeply-nested `FoundryJSONValue` (e.g. from corrupted iCloud sync
+        // or a restored backup of this archive directory) triggers unbounded native-stack
+        // recursion — a stack-overflow trap, not a catchable Swift error — on essentially
+        // every import attempt, since this path re-reads the archive directory each time.
+        // Matches the other three `FoundryJSONValue`-decoding call sites. See CODE_AUDIT §6.2.
+        decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
         let archive = try decoder.decode(FoundryImportArchive.self, from: data)
         guard (1...FoundryImportArchive.currentFormatVersion).contains(archive.formatVersion) else {
             throw FoundryImportArchiveStoreError.unsupportedFormatVersion(archive.formatVersion)

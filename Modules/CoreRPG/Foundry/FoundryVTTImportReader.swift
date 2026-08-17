@@ -9,16 +9,19 @@ import Foundation
 public struct FoundryVTTImportReader: Sendable {
     public let limits: FoundryImportLimits
     private let bridgeResourceCache: FoundryBridgeResourceCache
+    private let zipDataSourceCache: FoundryZIPDataSourceCache
 
     public init(limits: FoundryImportLimits = .default) {
         self.limits = limits
         bridgeResourceCache = FoundryBridgeResourceCache(limits: limits)
+        zipDataSourceCache = FoundryZIPDataSourceCache(limits: limits)
     }
 
     public func read(from url: URL) async throws -> FoundryVTTImportPackage {
         if url.lastPathComponent.lowercased().hasSuffix(".mrpgfoundry") {
             await bridgeResourceCache.invalidate(sourceURL: url)
         }
+        await zipDataSourceCache.invalidate(sourceURL: url)
         let limits = limits
         let task = Task.detached(priority: .userInitiated) {
             let hasSecurityScope = url.startAccessingSecurityScopedResource()
@@ -65,12 +68,13 @@ public struct FoundryVTTImportReader: Sendable {
         }
         let limits = limits
         let bridgeResourceCache = bridgeResourceCache
+        let zipDataSourceCache = zipDataSourceCache
         let task = Task.detached(priority: .userInitiated) {
             let hasSecurityScope = url.startAccessingSecurityScopedResource()
             defer {
                 if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
             }
-            let source = try FoundryVTTDataSource(url: url, limits: limits)
+            let source = try await zipDataSourceCache.dataSource(for: url)
             if let expectedSHA256 = package.sourceSHA256,
                source.sourceSHA256 != expectedSHA256 {
                 throw FoundryImportError.sourceMismatch
@@ -168,6 +172,7 @@ public struct FoundryVTTImportReader: Sendable {
     ) async throws -> FoundryPackageResourceData {
         let limits = limits
         let bridgeResourceCache = bridgeResourceCache
+        let zipDataSourceCache = zipDataSourceCache
         let task = Task.detached(priority: .userInitiated) {
             let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
             defer {
@@ -194,7 +199,7 @@ public struct FoundryVTTImportReader: Sendable {
                         || lowercasedName.hasSuffix(".dd2vtt") {
                 data = try UniversalVTTReader.imageDataSynchronously(from: sourceURL, limits: limits)
             } else {
-                let source = try FoundryVTTDataSource(url: sourceURL, limits: limits)
+                let source = try await zipDataSourceCache.dataSource(for: sourceURL)
                 guard let path = resource.packagePath,
                       let reopened = try source.data(forPath: path) else {
                     throw FoundryImportError.resourceUnavailable(resource.logicalPath)
@@ -1903,6 +1908,40 @@ private enum FoundryVTTResourceResolver {
 
     static func isInstallationPath(_ path: String) -> Bool {
         ["icons/", "modules/", "systems/", "ui/", "worlds/"].contains { path.hasPrefix($0) }
+    }
+}
+
+/// A reader-scoped cache of the parsed `FoundryVTTDataSource` for a standard ZIP-backed source
+/// (system/module/world archives) — the ZIP-format counterpart to `FoundryBridgeResourceCache`
+/// below. Without this, `readResources(_:from:in:)`/`resourceData(for:from:)` each independently
+/// re-read the whole archive off disk, re-parsed its ZIP central directory, and re-hashed every
+/// byte just to extract one file — for a world/module with N packaged assets (images, audio),
+/// mapper attachment closures requesting resources one at a time turned into N full re-parses of
+/// an archive that can be up to 1GiB, instead of one. See CODE_AUDIT §7.1.
+private actor FoundryZIPDataSourceCache {
+    let limits: FoundryImportLimits
+    private var sourcePath: String?
+    private var dataSource: FoundryVTTDataSource?
+
+    init(limits: FoundryImportLimits) {
+        self.limits = limits
+    }
+
+    func invalidate(sourceURL _: URL) {
+        sourcePath = nil
+        dataSource = nil
+    }
+
+    func dataSource(for sourceURL: URL) throws -> FoundryVTTDataSource {
+        try Task.checkCancellation()
+        let path = sourceURL.standardizedFileURL.path
+        if sourcePath == path, let dataSource {
+            return dataSource
+        }
+        let created = try FoundryVTTDataSource(url: sourceURL, limits: limits)
+        sourcePath = path
+        dataSource = created
+        return created
     }
 }
 

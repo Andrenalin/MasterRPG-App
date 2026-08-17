@@ -12,7 +12,7 @@ protocol PlayerNetworkControllerDelegate: Sendable & AnyObject {
 }
 
 protocol PlayerNetworkControllable: Sendable & AnyObject {
-    var networkModel: PlayerNetworkNodel { get }
+    var networkModel: PlayerNetworkModel { get }
     var browserManager: BrowserManager { get }
 
     @MainActor func toggleConnection(to model: BrowserGameModel, passcode: String) async
@@ -22,8 +22,8 @@ protocol PlayerNetworkControllable: Sendable & AnyObject {
 }
 
 @MainActor @Observable
-final class PlayerNetworkNodel {
-    init(name: String = "Player Device", model: PlayerBrowserModel? = nil, playerConnectionId: UUID? = nil, isConnected: Bool = false, connectionState: PlayerNetworkNodel.ConnectionState = .notReady) {
+final class PlayerNetworkModel {
+    init(name: String = "Player Device", model: PlayerBrowserModel? = nil, playerConnectionId: UUID? = nil, isConnected: Bool = false, connectionState: PlayerNetworkModel.ConnectionState = .notReady) {
         self.name = name
         self.model = model
         self.playerConnectionId = playerConnectionId
@@ -96,7 +96,7 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
 
     let browserManager: BrowserManager
     @MainActor
-    let networkModel: PlayerNetworkNodel
+    let networkModel: PlayerNetworkModel
 
     // MARK: - Spy: Call Recording
 
@@ -121,7 +121,7 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
     @MainActor
     init(
         browserManager: BrowserManager = BrowserManager(),
-        networkModel: PlayerNetworkNodel = PlayerNetworkNodel()
+        networkModel: PlayerNetworkModel = PlayerNetworkModel()
     ) {
         self.browserManager = browserManager
         self.networkModel = networkModel

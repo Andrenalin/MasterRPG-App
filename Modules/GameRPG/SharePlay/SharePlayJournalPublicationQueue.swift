@@ -111,7 +111,6 @@ where Attachment.ID == UUID {
     private var activePublications: [NetworkModules: PublicationOperation] = [:]
     private var publicationWorkers: [NetworkModules: (id: UUID, task: Task<Void, Never>)] = [:]
     private var cleanupTasks: [UUID: Task<Void, Never>] = [:]
-    private var cleanupTaskOrder: [UUID] = []
     private var emergencyCleanupTasks: [NetworkModules: Task<Void, Never>] = [:]
     private var currentAttachments: [NetworkModules: Attachment] = [:]
     private var cleanupReservationCount = 0
@@ -485,12 +484,10 @@ where Attachment.ID == UUID {
             self?.finishCleanup(id: id)
         }
         cleanupTasks[id] = task
-        cleanupTaskOrder.append(id)
     }
 
     private func finishCleanup(id: UUID) {
         guard cleanupTasks.removeValue(forKey: id) != nil else { return }
-        cleanupTaskOrder.removeAll { $0 == id }
         releaseCleanupReservation()
     }
 

@@ -1380,9 +1380,9 @@ private struct MasterControllerHarness {
         try await MockRoot.resetTestData(for: root.adventureRoot)
         try await MockRoot.resetGameController(for: root)
 
-        let directMasterModel = MasterNetworkNodel(name: "DirectMaster")
+        let directMasterModel = MasterNetworkModel(name: "DirectMaster")
         directMasterModel.isStreaming = directStreaming
-        let proxyMasterModel = MasterNetworkNodel(name: "ProxyMaster")
+        let proxyMasterModel = MasterNetworkModel(name: "ProxyMaster")
         let directMasterSpy = MasterNetworkControllableMock(networkModel: directMasterModel)
         let proxyMasterSpy = MasterNetworkControllableMock(networkModel: proxyMasterModel)
         let directPlayerSpy = PlayerStoreAbstractionMock()

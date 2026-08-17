@@ -65,12 +65,6 @@
 		<string>_gamemasterproxyserver._tcp</string>
 		<string>_gamemasterproxyclient._tcp</string>
 	</array>
-	<key>NSHandsTrackingUsageDescription</key>
-	<string>MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>MasterRPG needs microphone access to enable voice commands and speech recognition features.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature.</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
 		<key>iCloud.de.andretrettin.gamemaster</key>
@@ -440,10 +434,6 @@
 	<key>com.apple.security.files.bookmarks.document-scope</key>
 	<true/>
 	<key>com.apple.security.files.user-selected.read-only</key>
-	<true/>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>
 </plist>

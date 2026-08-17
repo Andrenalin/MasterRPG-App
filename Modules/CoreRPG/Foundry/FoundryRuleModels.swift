@@ -164,6 +164,9 @@ extension CodingUserInfoKey {
 /// plain local variable can't observe depth across those calls — `userInfo` is
 /// the only channel threaded through the whole recursive decode, and it needs a
 /// reference type since `Decoder` only exposes it for reading.
+// @unchecked Sendable: confined to a single, single-threaded `JSONDecoder.decode(_:from:)`
+// call — a fresh instance is created per decode and never shared across threads or retained
+// beyond it, so its unsynchronized mutable `depth` never actually races. See CODE_AUDIT §3.5.
 final class FoundryJSONDepthCounter: @unchecked Sendable {
     var depth = 0
 }

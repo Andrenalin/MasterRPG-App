@@ -47,8 +47,7 @@ final class GameTableModel: Sendable {
     var displayMode: MapDisplayMode = .master {
         didSet {
             guard oldValue != displayMode else { return }
-            fogOfWarTask?.cancel()
-            fogOfWarTask = Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+            replaceFogOfWarTask(isGameMaster: isGameMaster)
         }
     }
     private var lastPinScale: CGFloat = 1
@@ -74,6 +73,10 @@ final class GameTableModel: Sendable {
     private(set) var selectedPinId: UUID?
     private(set) var selectedPin: MapPinModel?
     private var pinMenuAttachment: Entity?
+    /// Resolved once per drag gesture by `pinDragChanged(pinId:position:)` and cleared by
+    /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns` on
+    /// every delta. See CODE_AUDIT §7.3.
+    private var cachedDragPawn: (pinId: UUID, pawn: PinPawn)?
     private var currentPhotoId: UUID?
     private var currentPhotoVersion: Int?
     private var pendingPinPhotoIds: [UUID: UUID] = [:]
@@ -82,11 +85,11 @@ final class GameTableModel: Sendable {
     /// have its in-flight load cancelled instead of running to completion
     /// with no one left to apply the result. See CODE_AUDIT §3.5.
     private var pendingThumbnailTasks: [UUID: Task<Void?, Never>] = [:]
-    /// Tracks the in-flight `updateFogOfWar` `Task` spawned by `panViewport(by:)`
-    /// and `displayMode`'s `didSet` so a fast, continuous drag gesture (which
-    /// calls `panViewport` on every delta) can't queue up many overlapping
-    /// recomposites — each new pan cancels the previous one instead of piling
-    /// on. See CODE_AUDIT §3.3.
+    /// Tracks the in-flight `updateFogOfWar` `Task`, created and replaced only through
+    /// `replaceFogOfWarTask(isGameMaster:)` so every fog-affecting entry point — a
+    /// continuous drag (`panViewport(by:)`), `displayMode`'s `didSet`, room toggle/focus,
+    /// "show/hide all", and a map change — shares one cancel-then-replace point instead of
+    /// racing each other with independently-awaited direct calls. See CODE_AUDIT §5.5/§3.3.
     private var fogOfWarTask: Task<Void, Never>?
     /// Signature of every value that affects the rendered board texture.
     /// Pin-only mapState messages can then skip a full fog recomposite.
@@ -280,7 +283,7 @@ final class GameTableModel: Sendable {
         if mapChanged || photoChanged || currentMapImage == nil {
             await loadMapPhoto(mapModel: mapModel, isGameMaster: isGameMaster)
         } else {
-            await updateFogOfWar(isGameMaster: isGameMaster)
+            await replaceFogOfWarTask(isGameMaster: isGameMaster).value
         }
         syncPawnsWithMapPins()
     }
@@ -304,6 +307,7 @@ final class GameTableModel: Sendable {
 
         let metadata = photoMetadata(for: photoId)
         let (image, degrees) = await photoRoot.fetchPhotoImage(for: photoId, useGame: true) ?? (nil, 0)
+        guard !Task.isCancelled else { return }
         guard let image else {
             currentMapImage = nil
             currentMapDegrees = 0
@@ -334,7 +338,25 @@ final class GameTableModel: Sendable {
         Logger.gameTable.debug("Map updated (rotation: \(degrees, privacy: .public)°, GM: \(isGameMaster, privacy: .public))")
     }
 
-    /// Rebuilds fog only when a value that affects the rendered board changed.
+    /// Cancels any in-flight fog recomposite, starts a new one, and stores it as the current
+    /// `fogOfWarTask` — the single choke point every fog-affecting entry point routes through
+    /// so overlapping requests (rapid room toggling, a toolbar action mid-drag) supersede
+    /// rather than race each other. Callers that need to wait for the result (room
+    /// toggle/focus, "show/hide all", a map change) await the returned task directly instead
+    /// of re-reading `fogOfWarTask`, which a nested call could have already replaced by the
+    /// time they'd read it back. See CODE_AUDIT §5.5.
+    @discardableResult
+    private func replaceFogOfWarTask(isGameMaster: Bool) -> Task<Void, Never> {
+        fogOfWarTask?.cancel()
+        let task = Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+        fogOfWarTask = task
+        return task
+    }
+
+    /// Rebuilds fog only when a value that affects the rendered board changed. Checks
+    /// cancellation after every suspension point so a recomposite superseded by a newer one
+    /// (via `replaceFogOfWarTask`) can't still apply its now-stale result on top. See
+    /// CODE_AUDIT §5.5.
     func updateFogOfWar(isGameMaster: Bool) async {
         self.isGameMaster = isGameMaster
         guard let currentItemId = currentMapId else {
@@ -346,6 +368,7 @@ final class GameTableModel: Sendable {
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
+        guard !Task.isCancelled else { return }
         resetViewportPanIfFocusedRoomChanged(entries: mapModel.entries)
         let metadata = mapModel.photoId.flatMap(photoMetadata(for:))
         if metadata?.version != currentPhotoVersion
@@ -366,6 +389,7 @@ final class GameTableModel: Sendable {
             viewportPan: manualViewportOffset
         )
         guard signature != fogSignature else { return }
+        guard !Task.isCancelled else { return }
         fogSignature = signature
 
         setup.board.updateMap(
@@ -506,8 +530,7 @@ final class GameTableModel: Sendable {
         // crop moves opposite the finger.
         manualViewportOffset.x -= delta.x
         manualViewportOffset.y -= delta.y
-        fogOfWarTask?.cancel()
-        fogOfWarTask = Task { await updateFogOfWar(isGameMaster: isGameMaster) }
+        replaceFogOfWarTask(isGameMaster: isGameMaster)
         syncPawnsWithMapPins()
     }
 
@@ -516,11 +539,28 @@ final class GameTableModel: Sendable {
     /// projection is currently on screen (so the pan tracks the finger
     /// exactly, at any zoom level), then pans by it. No-ops without a
     /// focused room — there's no crop to pan within otherwise.
-    func panViewport(fromTableStart start: SIMD3<Float>, toTableEnd end: SIMD3<Float>) {
-        guard focusedRoomId != nil,
-              let mapModel = currentMapModel(),
-              mapModel.width > 0, mapModel.height > 0 else { return }
-        let coordinateSize = CGSize(width: mapModel.width, height: mapModel.height)
+    func panViewport(fromTableStart start: SIMD3<Float>, toTableEnd end: SIMD3<Float>, expectedRoomId: UUID?) {
+        // Discards the commit if the focused room changed mid-gesture — e.g. a network-driven
+        // focus change from the GM's own device while this player was mid-drag. Applying the
+        // delta against a since-changed crop/baseline would otherwise produce a visible,
+        // nonsensical jump instead of just dropping the now-meaningless drag. See CODE_AUDIT §5.12.
+        guard let expectedRoomId, focusedRoomId == expectedRoomId,
+              let mapModel = currentMapModel() else { return }
+        // Falls back to the rendered image's own size when the map has no explicit
+        // width/height, matching `pinDragEnded`'s fallback — without it, panning was a silent
+        // no-op on such maps (pin-dropping still worked) while every other coordinate path
+        // already handled this case. See CODE_AUDIT §5.11.
+        let coordinateSize: CGSize
+        if mapModel.width > 0, mapModel.height > 0 {
+            coordinateSize = CGSize(width: mapModel.width, height: mapModel.height)
+        } else if let mapImage = currentMapImage {
+            coordinateSize = MapTableProjection.orientedImageSize(
+                mapImage.fixedSize,
+                degrees: currentMapDegrees
+            )
+        } else {
+            return
+        }
         let projection = MapTableProjection(
             imageSize: coordinateSize,
             degrees: 0,
@@ -609,7 +649,7 @@ final class GameTableModel: Sendable {
     func toggleRoomVisibility(_ roomId: UUID) async {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoom(itemId: mapId, roomId: roomId) else { return }
-        await updateFogOfWar(isGameMaster: true)
+        await replaceFogOfWarTask(isGameMaster: true).value
         syncPawnsWithMapPins()
         broadcastMapState(for: mapId)
     }
@@ -622,7 +662,7 @@ final class GameTableModel: Sendable {
     func toggleRoomFocus(_ roomId: UUID) async {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
-        await updateFogOfWar(isGameMaster: true)
+        await replaceFogOfWarTask(isGameMaster: true).value
         syncPawnsWithMapPins()
         broadcastMapState(for: mapId)
     }
@@ -636,7 +676,7 @@ final class GameTableModel: Sendable {
             roomIds: roomIds,
             isShown: isShown
         ) else { return }
-        await updateFogOfWar(isGameMaster: true)
+        await replaceFogOfWarTask(isGameMaster: true).value
         syncPawnsWithMapPins()
         broadcastMapState(for: mapId)
     }
@@ -760,12 +800,12 @@ final class GameTableModel: Sendable {
         pinMenuAttachment?.isEnabled = false
     }
 
-    func updatePinMenuAttachmentPosition() {
+    func updatePinMenuAttachmentPosition(cachedPawn: PinPawn? = nil) {
         guard isGameMaster,
               selectedPin != nil,
               let selectedPinId,
               let attachment = pinMenuAttachment,
-              let pawn = setup.pinPawns.first(where: { $0.pinId == selectedPinId }) else {
+              let pawn = cachedPawn ?? setup.pinPawns.first(where: { $0.pinId == selectedPinId }) else {
             pinMenuAttachment?.isEnabled = false
             return
         }
@@ -774,17 +814,30 @@ final class GameTableModel: Sendable {
         attachment.isEnabled = true
     }
 
-    /// Pin drag: follow the finger on the board plane.
+    /// Pin drag: follow the finger on the board plane. Runs on every `.onChanged` delta —
+    /// potentially dozens of times per second during one drag — so the resolved pawn is
+    /// cached across calls instead of re-scanning `pinPawns` (and, when the dragged pin is
+    /// also the selected one, a second scan inside `updatePinMenuAttachmentPosition`) on every
+    /// tick. See CODE_AUDIT §7.3.
     func pinDragChanged(pinId: UUID, position: SIMD3<Float>) {
-        guard canMovePin(pinId), let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
+        guard canMovePin(pinId) else { return }
+        let pawn: PinPawn
+        if let cachedDragPawn, cachedDragPawn.pinId == pinId {
+            pawn = cachedDragPawn.pawn
+        } else {
+            guard let found = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
+            pawn = found
+            cachedDragPawn = (pinId, found)
+        }
         pawn.entity.position = SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
         if selectedPinId == pinId {
-            updatePinMenuAttachmentPosition()
+            updatePinMenuAttachmentPosition(cachedPawn: pawn)
         }
     }
 
     /// Pin drop: write the move back into the map model, then network it.
     func pinDragEnded(pinId: UUID, position: SIMD3<Float>) {
+        cachedDragPawn = nil
         guard canMovePin(pinId), let mapId = currentMapId,
               let mapImage = currentMapImage,
               let mapModel = currentMapModel() else { return }

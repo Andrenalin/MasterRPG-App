@@ -457,19 +457,19 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "MasterRPG verwendet Handerkennung, damit du den 3D-Spieltisch durch Zusammenkneifen beider Hände in der Größe verändern kannst."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands."
+            "value" : "MasterRPG uses handtracking for rolling the dice during the game."
           }
         },
         "th" : {
           "stringUnit" : {
-            "state" : "machine_translated",
+            "state" : "needs_review",
             "value" : "MasterRPG ใช้การติดตามมือเพื่อให้คุณปรับขนาดโต๊ะเกม 3D ได้โดยการหยิกด้วยมือทั้งสองข้าง"
           }
         }
@@ -529,19 +529,19 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "MasterRPG benötigt Mikrofonzugriff für Sprachbefehle und Spracherkennungsfunktionen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG needs microphone access to enable voice commands and speech recognition features."
+            "value" : "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant."
           }
         },
         "th" : {
           "stringUnit" : {
-            "state" : "machine_translated",
+            "state" : "needs_review",
             "value" : "MasterRPG ต้องการการเข้าถึงไมโครโฟนเพื่อเปิดใช้งานคำสั่งเสียงและฟีเจอร์การจดจำเสียงพูด"
           }
         }
@@ -577,19 +577,19 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "MasterRPG verwendet Spracherkennung, um deine Sprachbefehle für den Sprachassistenten in Text umzuwandeln."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature."
+            "value" : "MasterRPG uses speech recognition to convert your voice into text for AI chat."
           }
         },
         "th" : {
           "stringUnit" : {
-            "state" : "machine_translated",
+            "state" : "needs_review",
             "value" : "MasterRPG ใช้การจดจำเสียงพูดเพื่อแปลงคำสั่งเสียงของคุณเป็นข้อความสำหรับฟีเจอร์ผู้ช่วยเสียง"
           }
         }

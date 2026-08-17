@@ -241,6 +241,19 @@ final class AppDataModel: Identifiable {
         Logger.scanner3D.info("reset() called...")
         cleanupTask?.cancel()
         cleanupTask = nil
+
+        // Removes the entire capture folder tree (Images/Snapshots/Models). By the time this
+        // runs, any produced model has already been attached to its item — `onCaptureFinished`
+        // (in `ReconstructionPrimaryView`) copies it into managed storage before `endCapture()`
+        // moves state to `.completed`. For a cancelled/failed scan this simply discards the
+        // leftover capture photos instead of letting them accumulate in Documents indefinitely.
+        if let rootScanFolder = scanFolderManager?.rootScanFolder {
+            cleanupTask = Task.detached(priority: .background) {
+                guard !Task.isCancelled else { return }
+                try? FileManager.default.removeItem(at: rootScanFolder)
+            }
+        }
+
         photogrammetrySession = nil
         objectCaptureSession = nil
         scanFolderManager = nil

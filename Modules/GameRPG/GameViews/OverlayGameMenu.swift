@@ -115,11 +115,10 @@ private extension OverlayGameMenu {
         
     var closeView: some View {
         Button {
-            gameScreenModel.showQuitGameAlert.toggle()
+            gameScreenModel.showQuitGameAlert = true
         } label: {
             Image(systemName: "xmark.circle")
                 .imageScale(valueFor(iOS: .large, macOS: .medium, tvOS: .small, visionOS: .large))
-                .frame(height: 24)
         }
         .borderLessTVBottonStyle()
         .frame(minWidth: 44, minHeight: 44)
@@ -134,7 +133,6 @@ private extension OverlayGameMenu {
             Image(systemName: gameScreenModel.isLargeSideBar ? "square.resize.down" : "square.resize.up")
                 .imageScale(.large)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .frame(height: 24)
         }
         .frame(minWidth: 44, minHeight: 44)
         .accessibilityLabel(
@@ -153,9 +151,6 @@ private extension OverlayGameMenu {
 #endif
         } label: {
             Image(systemName: NetworkModules.setting.icon)
-#if os(iOS)
-                .frame(height: 24)
-#endif
         }
         .selectedBorderedStype(isSelected: gameScreenModel.showSettingTab != .none)
 #if os(macOS) || os(visionOS)

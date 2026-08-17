@@ -147,10 +147,19 @@ public final class AppSettingsModel: Sendable {
     }
     
     // MARK: - Reset function
-    
+
     public func resetCloudKit(to newValue: Bool) {
         guard useCloudKit != newValue else { return }
         useCloudKit = newValue
+    }
+
+    /// Reads the persisted `useCloudKit` value directly from `UserDefaults.standard` without
+    /// constructing an `AppSettingsModel` (or anything that owns one, such as `AppModel`).
+    ///
+    /// Intended for lightweight call sites — like the Share Extension — that need this single
+    /// value but must not pay the cost of building the full app object graph to get it.
+    public static func readUseCloudKitFromDefaults() -> Bool {
+        UserDefaults.standard.bool(forKey: useCloudKitKey)
     }
     
     // MARK: - Init Settings

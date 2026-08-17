@@ -539,3 +539,17 @@ import OSLog
     }
 #endif
 }
+
+public extension ScenesManager.SceneState {
+    /// Whether this state should read as "presented" to menu items that offer to open/close
+    /// the scene — `.opening` counts as presented so the menu doesn't flicker to "open" and
+    /// back while a window is still animating in.
+    var isPresentedInGameMenu: Bool {
+        switch self {
+        case .opening, .opened:
+            true
+        case .closing, .closed:
+            false
+        }
+    }
+}

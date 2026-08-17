@@ -110,9 +110,7 @@ extension Navigator: NavigationSending {
         case .auto:
             let delay: TimeInterval = delay ?? executionDelay
             resumeTask?.cancel()
-            resumeTask = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(delay))
-                guard !Task.isCancelled else { return }
+            resumeTask = delayedTask(.seconds(delay)) { [weak self] in
                 self?.send(values: values)
             }
         case .immediately:

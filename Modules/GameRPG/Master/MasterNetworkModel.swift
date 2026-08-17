@@ -12,7 +12,7 @@ protocol MasterNetworkControllerDelegate: Sendable & AnyObject {
 }
 
 protocol MasterNetworkControllable: Sendable & AnyObject {
-    var networkModel: MasterNetworkNodel { get }
+    var networkModel: MasterNetworkModel { get }
 
     @MainActor func startStreaming(passcode: String)
     @MainActor func stopStreaming()
@@ -29,7 +29,7 @@ protocol MasterNetworkControllable: Sendable & AnyObject {
 }
 
 @MainActor @Observable
-final class MasterNetworkNodel {
+final class MasterNetworkModel {
     init(name: String = "Master Device") {
         self.name = name
     }
@@ -84,7 +84,7 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
     // MARK: - Required Protocol Properties
 
     @MainActor
-    let networkModel: MasterNetworkNodel
+    let networkModel: MasterNetworkModel
 
     // MARK: - Spy: Call Recording
 
@@ -119,7 +119,7 @@ final class MasterNetworkControllableSpyingStub: MasterNetworkControllable, @unc
     // MARK: - Initialization
 
     @MainActor
-    init(networkModel: MasterNetworkNodel = MasterNetworkNodel()) {
+    init(networkModel: MasterNetworkModel = MasterNetworkModel()) {
         self.networkModel = networkModel
     }
 

@@ -58,6 +58,13 @@ struct PlayerGameScreen: View {
         }
         .onDisappear {
             root.mapRoot.rootModel.clearGameEditorSession()
+            // Covers dismissal via system window chrome (visionOS's own close affordance, or
+            // any other path that tears down this view without going through the in-app Quit
+            // alert): the game/network session must not stay dangling with no way to end it.
+            // No-ops harmlessly if a stop is already in flight or the game already stopped —
+            // `stopGame()` coalesces concurrent callers (see GameRoot.stopGameTask).
+            guard root.gameModel.gameConfig.state != .stopped else { return }
+            endGame()
         }
         .persistGameDiceVisibility(
             gameScreenModel: gameScreenModel,

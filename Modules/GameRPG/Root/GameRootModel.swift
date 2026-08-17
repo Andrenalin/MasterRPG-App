@@ -305,6 +305,13 @@ public final class GameRoot {
     private var networkActionTailID: UUID?
     private var demoTask: Task<Void, Never>?
 
+    /// Tracks an in-flight `stopGame()` so a `startGame`/`startMaster` call racing an
+    /// unstructured `Task { await root.stopGame() }` (fired from `endGame()`) can't have its
+    /// freshly-assigned controllers nulled out by the older, still-running teardown. Every
+    /// entry point awaits this before proceeding, and `stopGame()` itself coalesces concurrent
+    /// callers onto the same in-flight task rather than tearing down twice.
+    private var stopGameTask: Task<Void, Never>?
+
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
@@ -503,6 +510,7 @@ extension GameRoot {
 
 extension GameRoot {
     func startMaster(supporterTier: SupporterTier = .none) async {
+        await awaitInFlightStop()
         guard gameModel.gameConfig.state == .stopped else {
             await stopGame()
             return
@@ -575,6 +583,7 @@ extension GameRoot {
         supporterTier: SupporterTier = .none,
         joinCode: String = ""
     ) async {
+        await awaitInFlightStop()
         // Observer is intentionally Bonjour/LAN-only. Enforce this at the domain
         // boundary as well as in the setup UI so programmatic callers cannot join
         // SharePlay by passing a nil target.
@@ -663,6 +672,26 @@ extension GameRoot {
 
     // both
     func stopGame() async {
+        // Coalesce concurrent callers onto the single in-flight teardown instead of running
+        // it twice (or racing a fresh `startGame` — see `awaitInFlightStop()`).
+        if let stopGameTask {
+            await stopGameTask.value
+            return
+        }
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await performStopGame()
+        }
+        stopGameTask = task
+        await task.value
+        stopGameTask = nil
+    }
+
+    private func awaitInFlightStop() async {
+        await stopGameTask?.value
+    }
+
+    private func performStopGame() async {
         cancelOwnedTasks()
         mapRoot.mapGameControllable.resetBattleRound()
         await statisticsModel.checkpoint(participants: currentStatisticParticipants())

@@ -39,9 +39,9 @@ struct WindowVisionList: Scene {
         // Keep the system grab handle just outside the 70 cm tabletop instead
         // of at the front of the former 2.5 m-deep volume.
         .defaultSize(width: 0.85, height: 0.3, depth: 0.85, in: .meters)
-        .defaultWindowPlacement { content, context in
+        .defaultWindowPlacement { _, _ in
             // Place the game table in front of the user when opened
-            return WindowPlacement(.utilityPanel)
+            WindowPlacement(.utilityPanel)
         }
         .restorationBehavior(.disabled)
 
@@ -70,7 +70,7 @@ struct WindowVisionList: Scene {
                     id: appModel.scenesManager.currentSpaceViewerItemId
                         ?? appModel.spaceRoot.gameControllable.gameModel.currentItemId
                         ?? selection?.itemId
-                        ?? UUID(),
+                        ?? Self.noSpaceSelectionId,
                     defaultSize: defaultSize
                 )
                     .sceneTracker(for: SceneId.spaceViewer)
@@ -82,5 +82,10 @@ struct WindowVisionList: Scene {
         .immersionStyle(selection: $immersionState, in: .mixed)
         .upperLimbVisibility(.hidden)
     }
+
+    /// A stable "no selection" sentinel for the space viewer's `id:` — a freshly-minted random
+    /// `UUID()` here churned view identity on every body re-evaluation that hit this fallback.
+    /// See CODE_AUDIT §8.6.
+    private static let noSpaceSelectionId = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 }
 #endif

@@ -123,6 +123,17 @@ private extension FoundryMediaNormalizer {
     /// the reference comes from an explicitly audio-scoped document such as a PlaylistSound.
     static let contextDependentAudioFilenameExtensions: Set<String> = ["mp4", "webm"]
 
+    /// Per-axis bound on a decoded image's declared pixel dimensions, mirroring
+    /// `FoundryImportLimits.maximumUniversalVTTPixelDimension`'s per-axis shape.
+    static let maximumDecodedImageDimension = 20_000
+    /// A JPEG-quality battle map or portrait tops out in the tens of megapixels; this generously
+    /// allows well past that (400 MP, e.g. ~20,000×20,000) while still rejecting a maliciously
+    /// small, highly-compressible file that declares an enormous width×height — a
+    /// decompression-bomb vector, since `makeJPEG` otherwise allocates a `CGContext` sized
+    /// exactly to whatever the (untrusted) header claims, 4 bytes per pixel, before any actual
+    /// image data has been validated. See CODE_AUDIT §6.1.
+    static let maximumDecodedImagePixelCount = 400_000_000
+
     static func canonicalPath(_ path: String) -> String {
         let decoded = path.removingPercentEncoding ?? path
         let withoutQuery = decoded.split(separator: "?", maxSplits: 1).first.map(String.init) ?? decoded
@@ -156,12 +167,31 @@ private extension FoundryMediaNormalizer {
            uniformType.conforms(to: .svg) {
             throw FoundryMediaNormalizationError.vectorImage
         }
-        guard CGImageSourceGetCount(source) > 0,
-              let sourceImage = CGImageSourceCreateImageAtIndex(source, 0, [
+        guard CGImageSourceGetCount(source) > 0 else {
+            throw FoundryMediaNormalizationError.invalidImage
+        }
+
+        // Read the declared dimensions from the header before decoding — the actual
+        // decompression bomb this guards against never gets the chance to allocate.
+        if let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+           let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+           let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue {
+            guard width > 0, height > 0,
+                  width <= maximumDecodedImageDimension,
+                  height <= maximumDecodedImageDimension,
+                  width * height <= maximumDecodedImagePixelCount else {
+                throw FoundryMediaNormalizationError.invalidImage
+            }
+        }
+
+        guard let sourceImage = CGImageSourceCreateImageAtIndex(source, 0, [
                 kCGImageSourceShouldCacheImmediately: true,
             ] as CFDictionary),
               sourceImage.width > 0,
-              sourceImage.height > 0 else {
+              sourceImage.height > 0,
+              sourceImage.width <= maximumDecodedImageDimension,
+              sourceImage.height <= maximumDecodedImageDimension,
+              sourceImage.width * sourceImage.height <= maximumDecodedImagePixelCount else {
             throw FoundryMediaNormalizationError.invalidImage
         }
 

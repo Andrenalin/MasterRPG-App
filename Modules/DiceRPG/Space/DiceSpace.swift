@@ -7,6 +7,7 @@ import Combine
 import os.log
 import RealityKit
 import SwiftUI
+import UIKit
 //import Dice3dAssets
 
 let dice3dAssetsBundle: Bundle? = nil
@@ -103,6 +104,30 @@ public struct DiceSpace: View {
         }
         .task {
             await gestureModel.monitorSessionEvents()
+        }
+        .alert(
+            Text("Hand Tracking Unavailable", bundle: .module),
+            isPresented: Binding(
+                get: { gestureModel.handTrackingAuthorizationRevoked },
+                set: { gestureModel.handTrackingAuthorizationRevoked = $0 }
+            )
+        ) {
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Open Settings", bundle: .module)
+            }
+            Button(role: .cancel) {
+            } label: {
+                Text("Cancel", bundle: .module)
+            }
+        } message: {
+            Text(
+                "Hand Tracking permission was turned off. Grant it again in Settings to keep rolling dice by hand.",
+                bundle: .module
+            )
         }
     }
 }

@@ -47,7 +47,7 @@ struct SharingView: View {
     init(
         itemProviders: [NSItemProvider],
         extensionContext: NSExtensionContext? = nil,
-        useCloudKit: Bool = AppModel.shared.settingsModel.useCloudKit,
+        useCloudKit: Bool = AppSettingsModel.readUseCloudKitFromDefaults(),
         previewContent: (name: String, text: String, module: NetworkModules)? = nil
     ) {
         self.itemProviders = itemProviders

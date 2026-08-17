@@ -62,7 +62,7 @@ struct MasterGameScreen: View {
         .alert(Text("Save Game?", bundle: .module), isPresented: $gameScreenModel.showQuitGameAlert) {
             Button {
                 withAnimation(accessibilityReduceMotion ? nil : .default) {
-                    gameScreenModel.showExport.toggle()
+                    gameScreenModel.showExport = true
                 }
             } label: {
                 Text("Save and Quit", bundle: .module)
@@ -84,6 +84,13 @@ struct MasterGameScreen: View {
         }
         .onDisappear {
             root.mapRoot.rootModel.clearGameEditorSession()
+            // Covers dismissal via system window chrome (visionOS's own close affordance, or
+            // any other path that tears down this view without going through the in-app Quit
+            // alert): the game/network session must not stay dangling with no way to end it.
+            // No-ops harmlessly if a stop is already in flight or the game already stopped —
+            // `stopGame()` coalesces concurrent callers (see GameRoot.stopGameTask).
+            guard root.gameModel.gameConfig.state != .stopped else { return }
+            endGame()
         }
         .onChange(of: gameScreenModel.showExport, initial: false) { old, new in
             if old == true && new == false {
@@ -187,17 +194,6 @@ private extension MasterGameScreen {
         appGameStateModel.isGameRunning = false
         Task {
             await root.stopGame()
-        }
-    }
-}
-
-extension ScenesManager.SceneState {
-    var isPresentedInGameMenu: Bool {
-        switch self {
-        case .opening, .opened:
-            true
-        case .closing, .closed:
-            false
         }
     }
 }

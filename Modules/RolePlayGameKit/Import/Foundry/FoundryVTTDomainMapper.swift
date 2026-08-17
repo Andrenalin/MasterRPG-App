@@ -291,7 +291,7 @@ private final class FoundryMappingState {
             }
             for document in collection.documents where document.documentType != .chatMessage {
                 try await cooperativeCheckpoint()
-                mapDocument(document)
+                try await mapDocument(document)
             }
         }
 
@@ -527,6 +527,7 @@ private extension FoundryMappingState {
                 ].insert(id)
             }
         }
+        let declarationsByID = Dictionary(declarations.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for folder in declarations {
             try await cooperativeCheckpoint()
             for module in modules(for: folder.documentType) {
@@ -536,7 +537,7 @@ private extension FoundryMappingState {
                     scope: folder.scope,
                     foundryID: folder.documentID
                 ) else { continue }
-                let parentID = folder.parentID.flatMap {
+                let parentID = cycleSafeParentID(for: folder, declarationsByID: declarationsByID).flatMap {
                     resolveFolder(
                         module: module,
                         documentType: folder.documentType,
@@ -608,6 +609,30 @@ private extension FoundryMappingState {
             FolderAliasKey(module: module, documentType: documentType, foundryID: foundryID)
         ] ?? []
         return aliases.count == 1 ? aliases.first : nil
+    }
+
+    /// Returns `folder.parentID` unless assigning it would create (or continue) a cycle in the
+    /// projected `parentId` chain — mirroring `safeRuleFolderParent`'s cycle guard for the
+    /// RuleRPG folder path, which this general module folder projection previously lacked.
+    /// Without it, a Foundry folder cycle in the source data was silently projected as a
+    /// genuine circular `parentId` chain, which any downstream code walking that chain upward
+    /// (breadcrumbs, move/drag validation, folder deletion cascades) isn't guaranteed to be
+    /// safe against. See CODE_AUDIT §5.13.
+    func cycleSafeParentID(
+        for folder: FolderDeclaration,
+        declarationsByID: [String: FolderDeclaration]
+    ) -> String? {
+        guard let parentFoundryID = folder.parentID, !parentFoundryID.isEmpty else { return nil }
+        var visited = Set([folder.id])
+        var candidate: String? = parentFoundryID
+        while let current = candidate {
+            guard visited.insert(current).inserted else {
+                warnings.append("Foundry folder hierarchy contains a cycle at \(folder.name); it was placed at the root.")
+                return nil
+            }
+            candidate = declarationsByID[current]?.parentID
+        }
+        return parentFoundryID
     }
 
     func canonicalScope(of canonicalID: String, fallback: String) -> String {
@@ -1149,7 +1174,7 @@ private extension FoundryMappingState {
 // MARK: - Document dispatch
 
 private extension FoundryMappingState {
-    func mapDocument(_ document: FoundryDocument) {
+    func mapDocument(_ document: FoundryDocument) async throws {
         switch document.documentType {
         case .actor where selectedCategories.contains(.actors):
             mapActor(document)
@@ -1157,7 +1182,7 @@ private extension FoundryMappingState {
             || (selectedCategories.contains(.rules) && package.rulePackage == nil):
             mapItem(document)
         case .scene where selectedCategories.contains(.scenes):
-            mapScene(document)
+            try await mapScene(document)
         case .journalEntry where selectedCategories.contains(.journals):
             mapJournal(document)
         case .rollTable where selectedCategories.contains(.tables):
@@ -1171,7 +1196,7 @@ private extension FoundryMappingState {
         case .cards where selectedCategories.contains(.cards):
             mapCards(document)
         case .adventure where selectedCategories.contains(.adventures):
-            mapAdventure(document)
+            try await mapAdventure(document)
         case .combat where selectedCategories.contains(.combats):
             mapCombat(document)
         case .macro where selectedCategories.contains(.macros):
@@ -1283,7 +1308,7 @@ private extension FoundryMappingState {
         }
     }
 
-    func mapScene(_ document: FoundryDocument) {
+    func mapScene(_ document: FoundryDocument) async throws {
         guard let geometry = FoundryProjectionGeometry.sceneGeometry(in: document.rawData) else {
             emitGeometryWarning(.scene)
             rawOnlyDocumentIDs.insert(document.id)
@@ -1291,7 +1316,7 @@ private extension FoundryMappingState {
         }
         let levels = document.embeddedDocuments.filter { $0.documentType == .level }
         if !levels.isEmpty {
-            mapLeveledScene(document, levels: levels, geometry: geometry)
+            try await mapLeveledScene(document, levels: levels, geometry: geometry)
             return
         }
 
@@ -1348,7 +1373,7 @@ private extension FoundryMappingState {
         _ document: FoundryDocument,
         levels: [FoundryDocument],
         geometry: FoundrySceneProjectionGeometry
-    ) {
+    ) async throws {
         let groupID = stableID("\(document.id)#level-group")
         let group = MapModel(
             id: groupID,
@@ -1386,19 +1411,19 @@ private extension FoundryMappingState {
                 .filter { $0.documentType == .ambientSound }
                 .map { LeveledChild(document: $0, containingLevel: level) }
         }
-        let tokensByLevel = assignLevelMembership(
+        let tokensByLevel = try await assignLevelMembership(
             directTokens + nestedTokens,
             levels: levels,
             initialLevel: initialLevel,
             kind: "Token"
         )
-        let wallsByLevel = assignLevelMembership(
+        let wallsByLevel = try await assignLevelMembership(
             directWalls + nestedWalls,
             levels: levels,
             initialLevel: initialLevel,
             kind: "Wall"
         )
-        let ambientSoundsByLevel = assignLevelMembership(
+        let ambientSoundsByLevel = try await assignLevelMembership(
             directAmbientSounds + nestedAmbientSounds,
             levels: levels,
             initialLevel: initialLevel,
@@ -1406,6 +1431,7 @@ private extension FoundryMappingState {
         )
 
         for level in levels {
+            try await cooperativeCheckpoint()
             let isInitial = level.documentID == initialDocumentID
             let id = levelMapIDs[level.id] ?? stableID("\(level.id)#level-map")
             let backgroundPath = level.rawData.value(at: "background.src")?.stringValue
@@ -1615,9 +1641,10 @@ private extension FoundryMappingState {
         add(model, module: .table, sourceID: document.id)
     }
 
-    func mapAdventure(_ document: FoundryDocument) {
+    func mapAdventure(_ document: FoundryDocument) async throws {
         for child in document.embeddedDocuments {
-            mapDocument(child)
+            try await cooperativeCheckpoint()
+            try await mapDocument(child)
         }
         let id = stableID("\(document.id)#adventure")
         let model = AdventureModel.empty(id)
@@ -1778,9 +1805,12 @@ private extension FoundryMappingState {
         levels: [FoundryDocument],
         initialLevel: FoundryDocument,
         kind: String
-    ) -> [String: [FoundryDocument]] {
+    ) async throws -> [String: [FoundryDocument]] {
         var result: [String: [FoundryDocument]] = [:]
         for child in children {
+            // This is the O(children × levels) hot spot the checkpoint guards: each
+            // `matchingLevel` call below does a linear scan of `levels`. See CODE_AUDIT §5.14.
+            try await cooperativeCheckpoint()
             let explicitIdentifier = explicitLevelIdentifier(in: child.document)
             let target: FoundryDocument?
             if let explicitIdentifier {

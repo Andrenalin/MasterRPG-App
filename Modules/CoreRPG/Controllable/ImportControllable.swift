@@ -439,7 +439,7 @@ private extension ImportControllable {
         itemModel: SingleItemImportModel
     ) {
         guard let existing else {
-            Logger.importController.info("Manual import review added \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)'")
+            Logger.importController.info("Manual import review added \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .private)'")
             return
         }
 
@@ -449,15 +449,21 @@ private extension ImportControllable {
         let commonSummary = commonDifferences.importLogSummary
 
         if reviewDifferences.isEmpty && commonDifferences.isEmpty {
-            Logger.importController.warning("Manual import review different \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)' but review/common fields match. model.isSame returned false; likely CRDT update metadata or module-specific fields not exposed in reviewProperties.")
+            Logger.importController.warning("Manual import review different \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .private)' but review/common fields match. model.isSame returned false; likely CRDT update metadata or module-specific fields not exposed in reviewProperties.")
         } else {
-            Logger.importController.info("Manual import review different \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)' reviewRows=\(reviewSummary, privacy: .public) commonFields=\(commonSummary, privacy: .public)")
+            // User-authored sheet content — imported item/entry field values — defaults to
+            // `.private` here (unlike the enum/identifier fields alongside it), matching the
+            // project's logging privacy convention. This is the highest-content-volume site of
+            // that gap: unredacted excerpts of imported character sheets, adventure notes, or
+            // campaign content previously persisted in plaintext system logs during ordinary
+            // (non-DEBUG-gated) import review. See CODE_AUDIT §6.4.
+            Logger.importController.info("Manual import review different \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .private)' reviewRows=\(reviewSummary, privacy: .private) commonFields=\(commonSummary, privacy: .private)")
         }
     }
 
     @MainActor
     func logManualReviewUnchangedSkipped(module: NetworkModules, id: UUID, imported: any ItemDataAccessable) {
-        Logger.importController.info("Manual import review unchanged skipped \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .public)' because merge returned nil (model.isSame == true).")
+        Logger.importController.info("Manual import review unchanged skipped \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .private)' because merge returned nil (model.isSame == true).")
     }
 
     @MainActor

@@ -297,15 +297,14 @@ private extension SpaceViewer {
         self.hasLoaded = false
         handedOffToImmersive = true
         Task {
-            // `openSpaceViewer` silently no-ops if the immersive space is
-            // already open or opening — including when it's showing a
-            // *different* item, which would otherwise strand this handoff:
-            // the entity above is already detached and `pending` in
-            // `SpaceHandoffModel`, but nothing would ever open to adopt it.
-            // Dismissing first (a no-op if already closed) guarantees the
-            // subsequent open always starts from `.closed`, so it reliably
-            // succeeds and shows this item instead of silently dropping it.
-            await scenesManager.dismissSpaceViewer()
+            // `openSpaceViewer` already replaces the displayed item in place when the space is
+            // open on a *different* item (see its own doc comment / `ScenesManager`), so this
+            // handoff — whose entity is already detached and `pending` in `SpaceHandoffModel` —
+            // reliably gets adopted without a dismiss/reopen round trip. Forcing a
+            // dismiss-then-reopen here (as this used to) meant a visible flicker/full teardown
+            // for what should be a smooth in-place swap, and could lose unbroadcast local pose
+            // changes to the previously-displayed entity since it was torn down immediately.
+            // See CODE_AUDIT §5.19.
             await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: id, entryId: nil))
         }
     }
@@ -582,9 +581,7 @@ private extension SpaceViewer {
             // unit regardless of how the file's internal structure is organized.
 #if os(visionOS)
             // `ManipulationComponent` (visionOS 26+) is Apple's own built-in
-            // drag/rotate/scale component — it replaces the hand-rolled
-            // `GestureComponent` + `installGestures`/`dragRotation` gesture
-            // plumbing entirely for this platform: no SwiftUI `.gesture()` is
+            // drag/rotate/scale component: no SwiftUI `.gesture()` is
             // wired up anywhere for it (see `platformRealityView`). It sets
             // its own InputTargetComponent/CollisionComponent/HoverEffectComponent,
             // generating the collision shape from the entity's bounding box as
@@ -624,11 +621,13 @@ private extension SpaceViewer {
                 }
             }
 #else
+            // No SwiftUI `.gesture()` is wired up for this platform either — see the `#else`
+            // branch of `platformRealityView`, which drives whole-scene orbit/zoom via
+            // `.realityViewCameraControls(.orbit)` instead of per-entity drag. These two
+            // components are still worth setting on their own: `HoverEffectComponent` alone
+            // drives RealityKit's built-in trackpad/pointer hover highlight, independent of any
+            // custom gesture pipeline. See CODE_AUDIT §9.1.
             loadedEntity.components.set(InputTargetComponent())
-
-            var gestureComponent = GestureComponent()
-            gestureComponent.pivotOnDrag = false
-            loadedEntity.components.set(gestureComponent)
             loadedEntity.components.set(HoverEffectComponent(.shader(.default)))
 #endif
             loadedEntity.components.set(GroundingShadowComponent(castsShadow: true))
@@ -811,37 +810,6 @@ private extension SpaceViewer {
 // the immersive space, not here. SpaceViewer is a generic module and should not
 // depend on game-specific SharePlay logic.
 #endif
-
-// Used by `EntityGestureState.handleFixedDrag`'s non-visionOS branch (the
-// `GestureComponent`-driven drag, which nothing wires up via a SwiftUI
-// gesture on macOS/iOS/tvOS — see the `#else` branch of `platformRealityView`
-// — but the code still has to compile). Left in place rather than removed
-// along with `DragRotationModifier`, which was this extension's other user.
-extension EntityTargetValue<DragGesture.Value> {
-    @MainActor
-    func locationInScene() -> SIMD3<Float> {
-#if os(visionOS)
-        return convert(self.location3D, from: .local, to: .scene)
-#else
-        if let (origin, direction) = ray(through: self.location, in: .local, to: .scene) {
-            return origin + length(entity.position - origin) * direction
-        }
-        return .zero
-#endif
-    }
-
-    @MainActor
-    func startLocationInScene() -> SIMD3<Float> {
-#if os(visionOS)
-        return convert(self.startLocation3D, from: .local, to: .scene)
-#else
-        if let (origin, direction) = ray(through: self.startLocation, in: .local, to: .scene) {
-            return origin + length(entity.position - origin) * direction
-        }
-        return .zero
-#endif
-    }
-}
 
 #Preview("Space Viewer") {
     SpaceViewer(root: .preview, id: SpaceModel.previewId, isModal: false)

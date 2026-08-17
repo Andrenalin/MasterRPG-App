@@ -7,7 +7,7 @@ import Foundation
 
 final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Sendable {
     @MainActor
-    init(browserManager: BrowserManager = BrowserManager(), networkModel: PlayerNetworkNodel = PlayerNetworkNodel(), calledStop: Int = 0, calledToggleConnection: Int = 0, calledRequest: Int = 0, requestData: (any MessageMapper)? = nil) {
+    init(browserManager: BrowserManager = BrowserManager(), networkModel: PlayerNetworkModel = PlayerNetworkModel(), calledStop: Int = 0, calledToggleConnection: Int = 0, calledRequest: Int = 0, requestData: (any MessageMapper)? = nil) {
         self.browserManager = browserManager
         self.networkModel = networkModel
         self.calledStop = calledStop
@@ -17,7 +17,7 @@ final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Se
     }
 
     let browserManager: BrowserManager
-    let networkModel: PlayerNetworkNodel
+    let networkModel: PlayerNetworkModel
 
     var calledStop = 0
     var calledToggleConnection = 0

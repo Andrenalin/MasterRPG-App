@@ -30,7 +30,7 @@ final class MasterNetworkController: Sendable {
     private let delegate: MasterNetworkControllerDelegateBox
     let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
-    let networkModel: MasterNetworkNodel
+    let networkModel: MasterNetworkModel
     private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
     // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the inbound
     // listener. connectToPlayer's outbound reconnect dial-outs are never throttled —
@@ -58,7 +58,7 @@ final class MasterNetworkController: Sendable {
         listnerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging,
         browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
     ) {
-        self.networkModel = MasterNetworkNodel(name: name)
+        self.networkModel = MasterNetworkModel(name: name)
         self.delegate = MasterNetworkControllerDelegateBox(delegate)
         self.listnerBuilder = listnerBuilder
         self.browserConnectionBuilder = browserConnectionBuilder

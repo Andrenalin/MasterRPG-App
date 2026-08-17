@@ -24,15 +24,46 @@ public struct GameTableView: View {
     /// on `.onEnded` — mirrors the iOS/macOS `viewportPanGesture`'s
     /// `viewportPanStart`. See CODE_AUDIT §8.1.
     @State private var viewportPanStart: SIMD3<Float>?
+    /// Timestamp of the most recent `.onChanged` for the in-flight pan. If `.onEnded` is never
+    /// delivered (system interruption, window backgrounding mid-drag), `viewportPanStart` would
+    /// otherwise stay stuck non-nil forever, wedging every future pan against a stale start
+    /// position. A later `.onChanged` that arrives after a long gap — meaning the previous
+    /// gesture silently died — re-arms from a fresh start instead. See CODE_AUDIT §5.10.
+    @State private var viewportPanLastUpdate: Date?
+    /// The focused room captured when the in-flight pan started — `panViewport` discards the
+    /// commit if this no longer matches the current focus by the time `.onEnded` fires. See
+    /// CODE_AUDIT §5.12.
+    @State private var viewportPanRoomId: UUID?
     /// Screen-local dice UI state (editing/player-dice toggles) for the
     /// ornament's dice action bar — mirrors `MasterGameScreen`'s own
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
+    /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
+    /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
+    @State private var roomActionTask: Task<Void, Never>?
 
     public init(root: GameRoot) {
         self.root = root
     }
+
+    /// Cancels any in-flight room toggle/focus request before starting a new one — mirrors
+    /// `GameTableModel.fogOfWarTask`'s own cancel-then-replace pattern instead of firing
+    /// detached, untracked `Task`s per tap. See CODE_AUDIT §5.5.
+    private func performRoomAction(_ action: @escaping @MainActor @Sendable () async -> Void) {
+        roomActionTask?.cancel()
+        roomActionTask = Task { await action() }
+    }
+
+    /// True once a stuck `viewportPanStart` has gone long enough without a follow-up
+    /// `.onChanged` that its originating gesture almost certainly never delivered `.onEnded`.
+    /// See CODE_AUDIT §5.10.
+    private func isViewportPanStale() -> Bool {
+        guard let viewportPanLastUpdate else { return false }
+        return Date.now.timeIntervalSince(viewportPanLastUpdate) > Self.staleGestureTimeout
+    }
+
+    private static let staleGestureTimeout: TimeInterval = 3
 
     public var body: some View {
         GeometryReader3D { proxy in
@@ -46,7 +77,7 @@ public struct GameTableView: View {
                             if let pinId = event.entity.components[PinComponent.self]?.pinId {
                                 loadedGame.pinTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                                Task { await loadedGame.toggleRoomVisibility(roomId) }
+                                performRoomAction { await loadedGame.toggleRoomVisibility(roomId) }
                             } else if let dice = event.entity.components[DiceComponent.self] {
                                 loadedGame.tossDieForAccessibility(dieId: dice.dieId, sides: dice.sides)
                             }
@@ -56,7 +87,7 @@ public struct GameTableView: View {
                             if let pinId = event.entity.components[PinComponent.self]?.pinId {
                                 loadedGame.pinDoubleTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                                Task { await loadedGame.toggleRoomFocus(roomId) }
+                                performRoomAction { await loadedGame.toggleRoomFocus(roomId) }
                             }
                         }
                         accessibilitySubscriptions.append(zoomSubscription)
@@ -117,14 +148,18 @@ public struct GameTableView: View {
                     DragGesture(minimumDistance: 5)
                         .targetedToEntity(where: .has(BoardSurfaceComponent.self))
                         .onChanged { value in
-                            guard viewportPanStart == nil, let parent = value.entity.parent else { return }
-                            viewportPanStart = value.convert(value.location3D, from: .local, to: parent)
+                            guard let parent = value.entity.parent else { return }
+                            if viewportPanStart == nil || isViewportPanStale() {
+                                viewportPanStart = value.convert(value.location3D, from: .local, to: parent)
+                                viewportPanRoomId = loadedGame.focusedRoomId
+                            }
+                            viewportPanLastUpdate = .now
                         }
                         .onEnded { value in
-                            defer { viewportPanStart = nil }
+                            defer { viewportPanStart = nil; viewportPanLastUpdate = nil; viewportPanRoomId = nil }
                             guard let start = viewportPanStart, let parent = value.entity.parent else { return }
                             let end = value.convert(value.location3D, from: .local, to: parent)
-                            loadedGame.panViewport(fromTableStart: start, toTableEnd: end)
+                            loadedGame.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
                         }
                 )
                 // Double tap toggles zoom, single tap toggles highlight, and a
@@ -166,10 +201,10 @@ public struct GameTableView: View {
                                 loadedGame.pinTapped(pinId: pinId)
                             case .second(.first(let roomLongPress)):
                                 guard let roomId = roomLongPress.entity.components[RoomComponent.self]?.roomId else { return }
-                                Task { await loadedGame.toggleRoomFocus(roomId) }
+                                performRoomAction { await loadedGame.toggleRoomFocus(roomId) }
                             case .second(.second(let roomDoubleTap)):
                                 guard let roomId = roomDoubleTap.entity.components[RoomComponent.self]?.roomId else { return }
-                                Task { await loadedGame.toggleRoomVisibility(roomId) }
+                                performRoomAction { await loadedGame.toggleRoomVisibility(roomId) }
                             }
                         }
                 )
@@ -234,6 +269,7 @@ public struct GameTableView: View {
             await scaleController.start()
         }
         .onDisappear {
+            roomActionTask?.cancel()
             accessibilitySubscriptions.removeAll()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()
@@ -452,6 +488,37 @@ private struct GameTableRealityContent: View {
     /// `.onEnded` — the pan commits once, in a single step, rather than
     /// re-rendering the board texture on every touch-move event.
     @State private var viewportPanStart: SIMD3<Float>?
+    /// Timestamp of the most recent `.onChanged` for the in-flight pan. If `.onEnded` is never
+    /// delivered (system interruption, window backgrounding mid-drag), `viewportPanStart` would
+    /// otherwise stay stuck non-nil forever, wedging every future pan against a stale start
+    /// position. A later `.onChanged` that arrives after a long gap — meaning the previous
+    /// gesture silently died — re-arms from a fresh start instead. See CODE_AUDIT §5.10.
+    @State private var viewportPanLastUpdate: Date?
+    /// The focused room captured when the in-flight pan started — `panViewport` discards the
+    /// commit if this no longer matches the current focus by the time `.onEnded` fires. See
+    /// CODE_AUDIT §5.12.
+    @State private var viewportPanRoomId: UUID?
+    /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
+    /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
+    @State private var roomActionTask: Task<Void, Never>?
+
+    /// Cancels any in-flight room toggle/focus request before starting a new one — mirrors
+    /// `GameTableModel.fogOfWarTask`'s own cancel-then-replace pattern instead of firing
+    /// detached, untracked `Task`s per tap. See CODE_AUDIT §5.5.
+    private func performRoomAction(_ action: @escaping @MainActor @Sendable () async -> Void) {
+        roomActionTask?.cancel()
+        roomActionTask = Task { await action() }
+    }
+
+    /// True once a stuck `viewportPanStart` has gone long enough without a follow-up
+    /// `.onChanged` that its originating gesture almost certainly never delivered `.onEnded`.
+    /// See CODE_AUDIT §5.10.
+    private func isViewportPanStale() -> Bool {
+        guard let viewportPanLastUpdate else { return false }
+        return Date.now.timeIntervalSince(viewportPanLastUpdate) > Self.staleGestureTimeout
+    }
+
+    private static let staleGestureTimeout: TimeInterval = 3
 
     var body: some View {
         RealityView { content in
@@ -501,6 +568,9 @@ private struct GameTableRealityContent: View {
             GamePinActionMenu(game: game)
                 .padding()
         }
+        .onDisappear {
+            roomActionTask?.cancel()
+        }
     }
 
     private var pinDragGesture: some Gesture {
@@ -528,15 +598,18 @@ private struct GameTableRealityContent: View {
         DragGesture(minimumDistance: 5)
             .targetedToEntity(where: .has(BoardSurfaceComponent.self))
             .onChanged { value in
-                guard viewportPanStart == nil,
-                      let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
-                viewportPanStart = position
+                guard let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
+                if viewportPanStart == nil || isViewportPanStale() {
+                    viewportPanStart = position
+                    viewportPanRoomId = game.focusedRoomId
+                }
+                viewportPanLastUpdate = .now
             }
             .onEnded { value in
-                defer { viewportPanStart = nil }
+                defer { viewportPanStart = nil; viewportPanLastUpdate = nil; viewportPanRoomId = nil }
                 guard let start = viewportPanStart,
                       let end = value.tablePosition(relativeTo: game.renderer.root) else { return }
-                game.panViewport(fromTableStart: start, toTableEnd: end)
+                game.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
             }
     }
 
@@ -580,10 +653,10 @@ private struct GameTableRealityContent: View {
                 switch value {
                 case .first(let longPress):
                     guard let roomId = longPress.entity.components[RoomComponent.self]?.roomId else { return }
-                    Task { await game.toggleRoomFocus(roomId) }
+                    performRoomAction { await game.toggleRoomFocus(roomId) }
                 case .second(let doubleTap):
                     guard let roomId = doubleTap.entity.components[RoomComponent.self]?.roomId else { return }
-                    Task { await game.toggleRoomVisibility(roomId) }
+                    performRoomAction { await game.toggleRoomVisibility(roomId) }
                 }
             }
     }
@@ -597,7 +670,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    await game.toggleRoomVisibility(roomId)
+                    performRoomAction { await game.toggleRoomVisibility(roomId) }
                 }
             }
         }
@@ -606,7 +679,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinDoubleTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    await game.toggleRoomFocus(roomId)
+                    performRoomAction { await game.toggleRoomFocus(roomId) }
                 }
             }
         }

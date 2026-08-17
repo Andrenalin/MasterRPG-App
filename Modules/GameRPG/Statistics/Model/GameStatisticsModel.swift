@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import CoreData
+import CoreRPG
 import Foundation
 import Observation
 
@@ -41,7 +42,7 @@ final class GameStatisticsModel: Sendable {
         }
 
         if let data = defaults.data(forKey: DefaultsKey.dashboardConfiguration),
-           let saved = try? JSONDecoder().decode(GameStatisticsDashboardConfiguration.self, from: data) {
+           let saved = try? JSONCoding.decoder.decode(GameStatisticsDashboardConfiguration.self, from: data) {
             configuration = saved
         } else {
             configuration = .default
@@ -273,7 +274,7 @@ final class GameStatisticsModel: Sendable {
     }
 
     private func persistConfiguration() {
-        guard let data = try? JSONEncoder().encode(configuration) else { return }
+        guard let data = try? JSONCoding.encoder.encode(configuration) else { return }
         defaults.set(data, forKey: DefaultsKey.dashboardConfiguration)
     }
 

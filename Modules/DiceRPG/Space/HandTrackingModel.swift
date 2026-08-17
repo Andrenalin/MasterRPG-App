@@ -18,6 +18,10 @@ public final class DiceHandTrackingGestureModel {
     let session = ARKitSession()
     var handTracking = HandTrackingProvider()
     var latestHandTracking: HandsUpdates = .init(left: nil, right: nil)
+    /// Set when the user revokes Hand Tracking permission mid-session (e.g. via Control
+    /// Center or Settings). `DiceSpace` observes this to pause the hand-gesture flow and
+    /// prompt the user to re-grant access. See CODE_AUDIT §5.21.
+    var handTrackingAuthorizationRevoked = false
 
     struct HandsUpdates {
         var left: HandAnchor?
@@ -79,7 +83,12 @@ public final class DiceHandTrackingGestureModel {
             switch event {
             case .authorizationChanged(let type, let status):
                 if type == .handTracking && status != .allowed {
-                    // Stop the game, ask the user to grant hand tracking authorization again in Settings.
+                    // Actually stop tracking work rather than let the session keep running
+                    // against now-revoked permission; `DiceSpace` observes the flag below to
+                    // pause the hand-gesture flow and prompt the user to re-grant access in
+                    // Settings. See CODE_AUDIT §5.21.
+                    session.stop()
+                    handTrackingAuthorizationRevoked = true
                 }
             default:
                 #if DEBUG

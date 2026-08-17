@@ -17,10 +17,15 @@ extension Logger {
 }
 
 #Preview {
-    Scanner3DRootView()
+    Scanner3DRootView(itemId: UUID()) { _ in }
 }
 
 struct Scanner3DRootView: View {
+    let itemId: UUID
+    /// Called once the user finishes reviewing the reconstructed model, with the produced
+    /// USDZ file's URL, so the caller can attach it to the item the scanner was opened from.
+    let onCaptureFinished: @MainActor @Sendable (URL) async -> Void
+
     @State private var appModel: AppDataModel = AppDataModel.instance
 
     @State private var showReconstructionView: Bool = false
@@ -51,7 +56,10 @@ struct Scanner3DRootView: View {
         .sheet(isPresented: $showReconstructionView) {
             ManagedPresentationView {
                 if let folderManager = appModel.scanFolderManager {
-                    ReconstructionPrimaryView(outputFile: folderManager.modelsFolder.appending(path: "model-mobile.usdz"))
+                    ReconstructionPrimaryView(
+                        outputFile: folderManager.modelsFolder.appending(path: "model-mobile.usdz"),
+                        onCaptureFinished: onCaptureFinished
+                    )
                 }
             }
         }

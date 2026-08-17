@@ -19,10 +19,8 @@ public enum AppIntentContentInvalidator {
     public static func invalidate() {
         refreshShortcutParameters?()
         reindexTask?.cancel()
-        reindexTask = Task {
-            try? await Task.sleep(for: .seconds(1))
-            guard !Task.isCancelled else { return }
-            await reindexContent?()
+        reindexTask = delayedTask(.seconds(1)) {
+            Task { await reindexContent?() }
         }
     }
 }

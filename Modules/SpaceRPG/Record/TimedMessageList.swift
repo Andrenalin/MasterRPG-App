@@ -8,6 +8,7 @@ A timed queue of messages that modifies published properties.
 #if os(iOS) && !targetEnvironment(simulator)
 
 import Combine
+import CoreRPG
 import Foundation
 import SwiftUI
 
@@ -113,9 +114,7 @@ final class TimedMessageList {
         guard let nearestEndTime = (messages.compactMap { $0.endTime }).min() else { return }
 
         let duration = nearestEndTime.timeIntervalSinceNow
-        expirationTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(max(duration, 0)))
-            guard !Task.isCancelled else { return }
+        expirationTask = delayedTask(.seconds(max(duration, 0))) { [weak self] in
             self?.handleExpiration()
         }
     }

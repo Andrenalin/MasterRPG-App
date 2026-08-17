@@ -146,6 +146,8 @@ final class MasterControllerModel: Sendable {
     private var retiredConnectionIDs: Set<ConnectionController.ID> = []
     let deliverySessionID = UUID()
     private var deliveryMessagesByWireID: [UUID: GameDeliveryMessageID] = [:]
+    private var deliveryMessagesByWireIDOrder: [UUID] = []
+    private static let maximumDeliveryMessagesByWireID = 256
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
@@ -307,6 +309,13 @@ final class MasterControllerModel: Sendable {
             counter: counter
         )
         deliveryMessagesByWireID[wireID] = messageID
+        // Bounded FIFO, mirroring `playerJournalAdmissions`/`peerAvailabilitySources`: this
+        // gets a new entry for nearly every outgoing master message, so over a long-running
+        // session it would otherwise grow indefinitely. See CODE_AUDIT §5.20.
+        deliveryMessagesByWireIDOrder.append(wireID)
+        while deliveryMessagesByWireIDOrder.count > Self.maximumDeliveryMessagesByWireID {
+            deliveryMessagesByWireID[deliveryMessagesByWireIDOrder.removeFirst()] = nil
+        }
         return messageID
     }
 
@@ -316,6 +325,7 @@ final class MasterControllerModel: Sendable {
 
     func resetDeliveryMessages() {
         deliveryMessagesByWireID.removeAll()
+        deliveryMessagesByWireIDOrder.removeAll()
     }
 
     func trackPeerAvailabilitySource(
@@ -2278,7 +2288,7 @@ extension MasterController {
     }
 }
 
-// MARK: - MasterNetworkProxyStoreDelegate
+// MARK: - MasterNetworkProxyControllerDelegate
 
 extension MasterController: MasterNetworkProxyControllerDelegate {
     func lostProxy(for connectionId: ConnectionController.ID) async {

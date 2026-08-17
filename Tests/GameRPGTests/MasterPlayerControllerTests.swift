@@ -2180,11 +2180,11 @@ private final class InMemoryLocalNetworkLink: @unchecked Sendable {
 }
 
 private final class InMemoryMasterNetworkStore: MasterNetworkControllable, @unchecked Sendable {
-    @MainActor let networkModel: MasterNetworkNodel
+    @MainActor let networkModel: MasterNetworkModel
     weak var link: InMemoryLocalNetworkLink?
 
     @MainActor
-    init(networkModel: MasterNetworkNodel = MasterNetworkNodel(name: "Linked Master")) {
+    init(networkModel: MasterNetworkModel = MasterNetworkModel(name: "Linked Master")) {
         self.networkModel = networkModel
     }
 
@@ -2211,7 +2211,7 @@ private final class InMemoryMasterNetworkStore: MasterNetworkControllable, @unch
 }
 
 private final class InMemoryPlayerNetworkStore: PlayerNetworkControllable, @unchecked Sendable {
-    @MainActor let networkModel = PlayerNetworkNodel(name: "Linked Player")
+    @MainActor let networkModel = PlayerNetworkModel(name: "Linked Player")
     let browserManager: BrowserManager
     weak var link: InMemoryLocalNetworkLink?
 
