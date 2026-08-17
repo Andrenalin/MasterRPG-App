@@ -54,7 +54,7 @@ struct SplitEditorNavigation: View {
                         Image(systemName: NetworkModules.game.icon)
                     }
                 }
-                //.popoverTip(MasterRPGTips.openAnotherWindow)
+                .popoverTip(MasterRPGTips.openAnotherWindow)
             }
         }
 #endif
