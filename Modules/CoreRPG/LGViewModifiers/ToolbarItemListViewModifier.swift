@@ -102,7 +102,7 @@ private extension ToolbarItemListViewModifier {
         } label: {
             Image(systemName: "ellipsis.circle")
         }
-        //.popoverTip(MasterRPGTips.organizeContent)
+        .popoverTip(MasterRPGTips.organizeContent)
     }
 
     @ViewBuilder
@@ -121,11 +121,11 @@ private extension ToolbarItemListViewModifier {
                 // anchor views simultaneously confuses TipKit's presentation and crashes with
                 // "should have a non-nil sourceView" — only one copy may own the tip.
                 addItemButton(for: .item, showTip: false)
-                addItemButton(for: .folder)
+                addItemButton(for: .folder, showTip: false)
                     .disabled(parentModel?.category == root.itemControllable.collectionCategory)
-                addItemButton(for: .collection)
+                addItemButton(for: .collection, showTip: false)
+                    //.popoverTip(MasterRPGTips.organizeContent)
             }
-            //.popoverTip(MasterRPGTips.organizeContent)
         }
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
