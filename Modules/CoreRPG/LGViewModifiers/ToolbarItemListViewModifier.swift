@@ -176,7 +176,7 @@ private extension ToolbarItemListViewModifier {
         }
         if type == .item && showTip {
             button
-                //.popoverTip(MasterRPGTips.firstItem)
+                .popoverTip(MasterRPGTips.firstItem)
         } else {
             button
         }

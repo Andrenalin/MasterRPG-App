@@ -38,11 +38,11 @@ struct SheetEntryAddButton: View {
                     .padding(4)
                     .contentShape(.circle)
             }
-//            .popoverTip(
-//                parentModel.level == 0 && parentModel.entries.isEmpty
-//                    ? MasterRPGTips.firstEntry
-//                    : nil
-//            )
+            .popoverTip(
+                parentModel.level == 0 && parentModel.entries.isEmpty
+                    ? MasterRPGTips.firstEntry
+                    : nil
+            )
         }
     }
 

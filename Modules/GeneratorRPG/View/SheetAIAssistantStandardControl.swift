@@ -42,7 +42,7 @@ struct SheetAIAssistantStandardControl: View {
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
-            //.popoverTip(MasterRPGTips.askAI)
+            .popoverTip(MasterRPGTips.askAI)
 
             if isExpanded {
                 TextField(
