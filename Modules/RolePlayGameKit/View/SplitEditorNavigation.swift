@@ -54,7 +54,7 @@ struct SplitEditorNavigation: View {
                         Image(systemName: NetworkModules.game.icon)
                     }
                 }
-                .popoverTip(MasterRPGTips.openAnotherWindow)
+                //.popoverTip(MasterRPGTips.openAnotherWindow)
             }
         }
 #endif
@@ -67,18 +67,26 @@ struct SplitEditorNavigation: View {
             .environment(scenesManager)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
-            Button {
-                openGameWindow()
-            } label: {
-                Label {
-                    Text("Game", bundle: .module)
-                } icon: {
-                    Image(systemName: NetworkModules.game.icon)
+            VStack(alignment: .leading, spacing: 8) {
+                // `.popoverTip` presents via `UIPopoverPresentationController`, which needs
+                // the anchor view attached to a window's regular view hierarchy. Ornament
+                // content is composited as a separate scene attachment, so the popover can't
+                // resolve a `sourceView`, crashing on first presentation. An inline `TipView`
+                // avoids the popover presentation path entirely.
+                TipView(MasterRPGTips.openAnotherWindow, arrowEdge: .bottom)
+
+                Button {
+                    openGameWindow()
+                } label: {
+                    Label {
+                        Text("Game", bundle: .module)
+                    } icon: {
+                        Image(systemName: NetworkModules.game.icon)
+                    }
                 }
             }
             .padding([.top, .leading], 12)
             .environment(scenesManager)
-            .popoverTip(MasterRPGTips.openAnotherWindow)
         }
 #endif
     }

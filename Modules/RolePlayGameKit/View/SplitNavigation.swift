@@ -42,7 +42,7 @@ struct SplitNavigation: View {
                             Image(systemName: NetworkModules.editor.icon)
                         }
                     }
-                    .popoverTip(MasterRPGTips.openAnotherWindow)
+                    //.popoverTip(MasterRPGTips.openAnotherWindow)
                 }
             }
 #endif

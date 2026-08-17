@@ -102,7 +102,7 @@ private extension ToolbarItemListViewModifier {
         } label: {
             Image(systemName: "ellipsis.circle")
         }
-        .popoverTip(MasterRPGTips.organizeContent)
+        //.popoverTip(MasterRPGTips.organizeContent)
     }
 
     @ViewBuilder
@@ -115,12 +115,17 @@ private extension ToolbarItemListViewModifier {
             .accessibilityHidden(listDisplayModel.isSelectionMode || modal)
         if parentModel == nil && modal == false {
             ControlGroup {
-                addItemButton(for: .item)
+                // `showTip: false` — the `.primaryAction` toolbar item above already carries
+                // this same `addItemButton(for: .item)` (and its `.popoverTip`) whenever both
+                // are visible at once. Attaching the same Tip's `.popoverTip` to two live
+                // anchor views simultaneously confuses TipKit's presentation and crashes with
+                // "should have a non-nil sourceView" — only one copy may own the tip.
+                addItemButton(for: .item, showTip: false)
                 addItemButton(for: .folder)
                     .disabled(parentModel?.category == root.itemControllable.collectionCategory)
                 addItemButton(for: .collection)
             }
-            .popoverTip(MasterRPGTips.organizeContent)
+            //.popoverTip(MasterRPGTips.organizeContent)
         }
         ControlGroup {
             CompactDisplayModeToggle(listDisplayModel: listDisplayModel)
@@ -157,7 +162,7 @@ private extension ToolbarItemListViewModifier {
     }
 
     @ViewBuilder
-    func addItemButton(for type: EditControllerAddType) -> some View {
+    func addItemButton(for type: EditControllerAddType, showTip: Bool = true) -> some View {
         let button = Button {
             Task {
                 await addItem(for: type)
@@ -169,8 +174,9 @@ private extension ToolbarItemListViewModifier {
                 Image(systemName: type.icon(collection: root.itemControllable.collectionCategory.icon))
             }
         }
-        if type == .item {
-            button.popoverTip(MasterRPGTips.firstItem)
+        if type == .item && showTip {
+            button
+                //.popoverTip(MasterRPGTips.firstItem)
         } else {
             button
         }

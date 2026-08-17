@@ -50,18 +50,26 @@ struct SplitVisionNavigation: View {
             .environment(scenesManager)
         }
         .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
-            Button {
-                openEditorWindow()
-            } label: {
-                Label {
-                    Text("Editor", bundle: .module)
-                } icon: {
-                    Image(systemName: NetworkModules.editor.icon)
+            VStack(alignment: .leading, spacing: 8) {
+                // `.popoverTip` presents via `UIPopoverPresentationController`, which needs
+                // the anchor view attached to a window's regular view hierarchy. Ornament
+                // content is composited as a separate scene attachment, so the popover can't
+                // resolve a `sourceView`, crashing on first presentation. An inline `TipView`
+                // avoids the popover presentation path entirely.
+                TipView(MasterRPGTips.openAnotherWindow, arrowEdge: .bottom)
+
+                Button {
+                    openEditorWindow()
+                } label: {
+                    Label {
+                        Text("Editor", bundle: .module)
+                    } icon: {
+                        Image(systemName: NetworkModules.editor.icon)
+                    }
                 }
             }
             .padding([.top, .leading], 12)
             .environment(scenesManager)
-            .popoverTip(MasterRPGTips.openAnotherWindow)
         }
 #endif
     }

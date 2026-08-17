@@ -37,9 +37,9 @@ public struct EditorLinkView: View {
             .frame(maxWidth: .infinity, alignment: .top)
             .transition(.opacity)
         }
-#if !os(tvOS)
-        .popoverTip(selectionMode ? MasterRPGTips.linkContent : nil)
-#endif
+//#if !os(tvOS)
+//        //.popoverTip(selectionMode ? MasterRPGTips.linkContent : nil)
+//#endif
         .applyIf(selectionMode) {
             $0
                 .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
