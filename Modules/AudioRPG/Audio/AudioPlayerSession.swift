@@ -55,11 +55,22 @@ private extension AudioPlayerSession {
 #if !os(macOS)
     func setCategory() {
         do {
-#if os(tvOS)
-            try audioSession.setCategory(.playback, mode: .default, policy: .default, options: [.allowAirPlay, .mixWithOthers])
-#else
-            try audioSession.setCategory(.playback, mode: .default, policy: .default, options: [.allowAirPlay, .mixWithOthers, .allowBluetoothHFP, .allowBluetoothA2DP])
-#endif
+            // `.longFormAudio` route sharing (instead of `.default` policy +
+            // `.mixWithOthers`) is what tells the system this is background game
+            // music, not incidental app noise. With `.mixWithOthers`, the system
+            // aggressively ducks our audio the moment a FaceTime/SharePlay call
+            // becomes the "primary" audio — that's the reported "quieter music
+            // during SharePlay". `.longFormAudio` is Apple's documented policy for
+            // exactly this kind of long-form/background audio (Music, Podcasts use
+            // it too), and it's what lets `AVPlayerPlaybackCoordinator.coordinate(
+            // with:)` (see `AudioListenerCoordinator`) be recognized as the
+            // SharePlay activity's own shared audio instead of a ducked bystander.
+            //
+            // `CategoryOptions` can only be combined with the `.default` policy, so
+            // `.allowAirPlay`/`.allowBluetoothHFP`/`.allowBluetoothA2DP` are dropped
+            // here — AirPlay (including AirPlay 2) and Bluetooth output routing are
+            // already implicit for `.playback` + `.longFormAudio`.
+            try audioSession.setCategory(.playback, mode: .default, policy: .longFormAudio)
         } catch {
             Logger.audioController.error("An error occurred setting the audio session category: \(error.localizedDescription, privacy: .public)")
         }
