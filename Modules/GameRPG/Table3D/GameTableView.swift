@@ -39,6 +39,11 @@ public struct GameTableView: View {
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
+    /// Backs the trailing-side window menu ornament's `MasterGameWindowButtonView`/
+    /// `PlayerGameWindowButtonView` — mirrors `MasterGameScreen`/`PlayerGameScreen`'s
+    /// own `gameScreenModel`, likewise owned per-screen rather than shared
+    /// through `GameRoot`.
+    @State private var gameScreenModel = GameScreenModel()
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
     @State private var roomActionTask: Task<Void, Never>?
@@ -249,6 +254,24 @@ public struct GameTableView: View {
                 }
                 .padding(.top, 12)
             }
+        }
+        // Companion to the leading map-toolbar/dice-bar ornament above: the
+        // window menu (`GameTableSideMenu`) letting the master/player open
+        // other module windows without leaving the table volume — same
+        // buttons as the flat 2D game screens' own trailing ornament
+        // (`MasterSideMenu`/`PlayerSideMenu`), just laid out as a row
+        // instead of a column. `.parent(.bottomTrailingFront)` for the same
+        // reason `.bottomLeadingFront` is used above rather than
+        // `.scene(.trailing)` (what the flat screens use): the 2D
+        // `UnitPoint` anchor has no Z, so SwiftUI would pick a depth that
+        // lands mid-volume instead of the front face.
+        .ornament(attachmentAnchor: .parent(.bottomTrailingFront), contentAlignment: .topTrailing) {
+            GameTableSideMenu(
+                root: root,
+                isMaster: root.gameModel.gameConfig.isMaster,
+                adventureId: root.gameModel.gameConfig.master.adventureId
+            )
+            .environment(gameScreenModel)
         }
         .task {
             await initializeGameIfNeeded()
