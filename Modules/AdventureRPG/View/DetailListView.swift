@@ -38,6 +38,9 @@ struct DetailListView: View {
             .task(id: model.id) {
                 await root.donateSiriViewingIntent(for: model.id)
             }
+            .onChange(of: model.photoId) {
+                withAnimation { root.editController.editorModel.sheetRootModel?.updateFromRoot() }
+            }
             .sheetAIAssistant(
                 generatorRoot: root.generatorRoot,
                 rootModel: root.editController.editorModel.sheetRootModel,

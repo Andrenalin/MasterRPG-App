@@ -90,11 +90,21 @@ private extension SheetView {
         .buttonStyle(.plain)
         .focused(focusedEntryId, equals: sheetModel.id)
         // Covers focus reaching this row without going through the tap action (e.g. Tab-key
-        // navigation onto it) — keeps focusId and selectedId the same regardless of how focus
-        // got here.
+        // navigation onto it, or the keyboard-arrow sync in SheetRootView) — keeps focusId and
+        // selectedId the same regardless of how focus got here. This is also the sole place
+        // that requests a scroll: only genuine focus activation should move the scroll view —
+        // see `SheetRootModel.setSelected`. The scroll request is unconditional on focus
+        // arriving here (not folded into the `setSelected` guard below), since arrow-key
+        // navigation already updates `selectedEntryId` before this focus sync runs.
         .onChange(of: focusedEntryId.wrappedValue) {
-            guard focusedEntryId.wrappedValue == sheetModel.id, rootModel.selectedEntryId != sheetModel.id else { return }
-            rootModel.setSelected(sheetModel, parent: sheetModel)
+            guard focusedEntryId.wrappedValue == sheetModel.id else { return }
+            if rootModel.selectedEntryId != sheetModel.id {
+                rootModel.setSelected(sheetModel, parent: sheetModel)
+            }
+            // The root/name-row case (sheetModel is the root) has no entryId — nothing to scroll to.
+            if let entryId = sheetModel.source.entryId {
+                rootModel.setScrollEntryId(source: sheetModel.source, entryId: entryId)
+            }
         }
         .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
         .overlay {
@@ -196,7 +206,11 @@ private extension SheetView {
         SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
             .frame(maxWidth: .infinity, alignment: .leading)
 #if !os(tvOS)
-            .applyIf(isEditor) {
+            // Also gated off while the entry editor's own drop-link header overlay is showing —
+            // see `SheetEditorModel.isEntryEditorPresented`. Disabling the row's `.dropDestination`
+            // at the source (rather than leaning on `.allowsHitTesting(false)` upstream) keeps this
+            // correct on macOS 26.6 and iOS 26/27, where a covered row still steals the drop.
+            .applyIf(isEditor && !rootModel.editorModel.isEntryEditorPresented) {
                 $0
                     .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
                     .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)

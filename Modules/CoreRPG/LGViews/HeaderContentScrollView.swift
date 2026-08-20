@@ -57,9 +57,7 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
     @inline(__always)
     private func handleScrollChange(oldValue: CGFloat, newValue: CGFloat) {
         // If disableHideHeader is enabled, don't process scroll changes
-        guard !disableHideHeader else {
-            return
-        }
+        guard !disableHideHeader else { return }
         
         let scrollDelta = newValue - oldValue
         

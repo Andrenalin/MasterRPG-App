@@ -68,7 +68,7 @@ struct ItemEditorForegroundView<Editor: View>: View {
 
                 editor
             }
-            .scrollTargetLayout()
+            //.scrollTargetLayout()
             .padding()
         }
         .scrollPosition($scrollPosition, anchor: .center)
@@ -76,8 +76,16 @@ struct ItemEditorForegroundView<Editor: View>: View {
         .scrollBounceBehavior(.basedOnSize)
         .onChange(of: root.editControllable.editorModel.sheetEditorModel.scrollEntryId) { _, entryID in
             guard let entryID else { return }
-            withAnimation(accessibilityReduceMotion ? nil : .smooth) {
+            withAnimation(accessibilityReduceMotion ? nil : .smooth, completionCriteria: .logicallyComplete) {
                 scrollPosition.scrollTo(id: entryID, anchor: .center)
+            } completion: {
+                // `.scrollPosition(_:anchor:)` doesn't treat `scrollTo` as one-shot — it keeps
+                // re-centering on this id as later, unrelated layout changes occur (e.g.
+                // expanding a link elsewhere inserts rows), which reads as the scroll view
+                // randomly jumping back. Releasing the tracked anchor once the requested
+                // scroll actually finishes stops that; scrolling to `entryID` again just
+                // sets a fresh target and works the same as before.
+                scrollPosition = ScrollPosition(idType: UUID.self)
             }
             root.editControllable.editorModel.sheetEditorModel.scrollEntryId = nil
         }

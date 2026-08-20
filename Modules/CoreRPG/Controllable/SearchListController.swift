@@ -172,7 +172,9 @@ extension SearchLinkController: SearchRootControllable {
             }
             return results
         } else {
-            // Regular item: flat entry list (inspector entry expansion)
+            // Regular item: flat entry list (inspector entry expansion).
+            // No search active here (empty-search rebuild) — preserve the item's own
+            // entry order (e.g. table rows), same as the collection branch above.
             return item.entries.map { entry in
                 SearchResult(
                     itemId: item.id, itemName: item.name,
@@ -182,7 +184,7 @@ extension SearchLinkController: SearchRootControllable {
                     matchedContent: entry.content.isEmpty ? nil : entry.content,
                     relevanceScore: 0
                 )
-            }.sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
+            }
         }
     }
 
