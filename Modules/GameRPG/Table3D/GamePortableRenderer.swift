@@ -67,13 +67,19 @@ final class GameRenderer {
             tan(verticalHalfFieldOfView) * aspectRatio
         )
         let elevation = (.pi / 2) - Self.angleFromTop
-        let halfTableEdge = GameMetrics.tableEdge / 2
-        let forwardDepth = halfTableEdge * cos(elevation)
+        // The camera looks along Z at an elevated angle, so the table's
+        // X-extent (`tableLength`) frames the horizontal FOV, while its
+        // Z-extent (`tableWidth`) is what the elevation angle foreshortens
+        // for the vertical FOV — no longer the same value now the table
+        // isn't square.
+        let halfTableLength = GameMetrics.tableLength / 2
+        let halfTableWidth = GameMetrics.tableWidth / 2
+        let forwardDepth = halfTableWidth * cos(elevation)
         let framingMargin: Float = 1.12
 
         let distanceForWidth = forwardDepth
-            + (halfTableEdge * framingMargin) / tan(horizontalHalfFieldOfView)
-        let projectedTableDepth = halfTableEdge * sin(elevation)
+            + (halfTableLength * framingMargin) / tan(horizontalHalfFieldOfView)
+        let projectedTableDepth = halfTableWidth * sin(elevation)
         let distanceForHeight = forwardDepth
             + (projectedTableDepth * framingMargin) / tan(verticalHalfFieldOfView)
         let distance = max(distanceForWidth, distanceForHeight)

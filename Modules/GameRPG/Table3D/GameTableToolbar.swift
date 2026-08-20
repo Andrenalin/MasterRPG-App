@@ -20,13 +20,20 @@ struct GameTableToolbar: View {
 
     var body: some View {
         HStack {
+            // Always visible: this is the switch between the 2D map window
+            // and this 3D game table, so it must stay reachable even before
+            // a map is loaded onto the table.
             GameTableWindowButton()
 
-            game.mapRoot.viewController.gameToolBarView(
-                root: game.mapRoot,
-                isMaster: game.isGameMaster,
-                session: game
-            )
+            // The shared map toolbar's actions (fog, pointer, room
+            // visibility) are meaningless before a map is on the table.
+            if game.currentMapId != nil {
+                game.mapRoot.viewController.gameToolBarView(
+                    root: game.mapRoot,
+                    isMaster: game.isGameMaster,
+                    session: game
+                )
+            }
         }
     }
 }

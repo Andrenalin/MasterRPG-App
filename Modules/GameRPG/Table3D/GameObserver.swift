@@ -28,6 +28,14 @@ class GameObserver: TabletopGame.Observer {
     }
 
     func actionWasConfirmed(_ action: some TabletopAction, oldSnapshot: TableSnapshot, newSnapshot: TableSnapshot) {
+        // A die's value (which slot is active/inactive, and what it shows)
+        // just changed — either a manual toss or `GameTableModel.applyDiceRoll`
+        // reshaping a seat's dice to match its locally focused set. Re-derive
+        // visibility from the fresh snapshot on every participant, the same
+        // way `playerChangedSeats` does for seat occupancy. See
+        // `GameTableModel.updateDiceVisibility(using:)`.
+        guard action is UpdateEquipmentAction<DieState> else { return }
+        renderer.game?.updateDiceVisibility(using: newSnapshot)
     }
 
     func playerChangedSeats(_ player: Player, oldSeat: (any TableSeat)?, newSeat: (any TableSeat)?, snapshot: TableSnapshot) {
@@ -38,6 +46,11 @@ class GameObserver: TabletopGame.Observer {
                 tabletop.claimAnySeat()
             }
         }
+        // Any seat's occupancy just changed (this player's, or another
+        // participant's over SharePlay) — re-derive which seats' dice
+        // should be visible from the fresh snapshot this callback already
+        // received.
+        renderer.game?.updateDiceVisibility(using: snapshot)
     }
 }
 

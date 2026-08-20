@@ -143,6 +143,45 @@ final class GameTableModel: Sendable {
             Logger.sharePlay.debug("Setting up seating for single-player")
             tabletopGame.claimAnySeat()
         }
+        // `GameObserver.playerChangedSeats` keeps this current for every
+        // later seat change (players joining/leaving SharePlay); this call
+        // covers the gap between the claim(s) above and that callback's
+        // first firing, so no seat's dice flash visible before its claim
+        // is reflected.
+        tabletopGame.withCurrentSnapshot { snapshot in
+            updateDiceVisibility(using: snapshot)
+        }
+    }
+
+    /// Shows a die only once two conditions both hold: its seat is actually
+    /// claimed (a player, or the master for seat 0), and the die itself is
+    /// currently part of that seat's focused dice set — tracked via the
+    /// die's own synced `value`, using `0` as this table's own sentinel for
+    /// "not part of the current set" (see `GameSetup.maxDicePerType`, and
+    /// the matching guard in `Die20`/`Die.restingOrientation`). Every seat
+    /// pre-allocates a full pool of both types up front (TabletopKit
+    /// equipment can't be added once `TableSetup` is frozen) —
+    /// `applyDiceRoll` claims exactly as many of each type as the locally
+    /// focused dice model needs by giving them a real value, and this
+    /// method is what turns that synced value into actual visibility for
+    /// every participant. Driven by `GameObserver.playerChangedSeats` (seat
+    /// occupancy changed) and `GameObserver.actionWasConfirmed` (a die's
+    /// value changed), both of which already receive a fresh `TableSnapshot`.
+    func updateDiceVisibility(using snapshot: TableSnapshot) {
+        for (seatId, dieIds) in setup.playerD20Ids {
+            let isOccupied = (snapshot.state(matching: seatId) as? TableSeatState)?.playerID != nil
+            for dieId in dieIds {
+                guard let (die20, state) = snapshot.equipment(of: Die20.self, matching: dieId) else { continue }
+                die20.entity.isEnabled = isOccupied && state.value != 0
+            }
+        }
+        for (seatId, dieIds) in setup.playerD6Ids {
+            let isOccupied = (snapshot.state(matching: seatId) as? TableSeatState)?.playerID != nil
+            for dieId in dieIds {
+                guard let (die, state) = snapshot.equipment(of: Die.self, matching: dieId) else { continue }
+                die.entity.isEnabled = isOccupied && state.value != 0
+            }
+        }
     }
 
     /// This device's own seat, however it was claimed (SharePlay assignment
@@ -157,57 +196,89 @@ final class GameTableModel: Sendable {
         return result
     }
 
-    /// Set by `applyDiceRoll` whenever a roll contains more d20s than this
-    /// seat has physical table slots for (currently 2 — see
-    /// `GameSetup.playerDiceIds`); `nil` when the last roll fit entirely. The
-    /// count of results that could not be mirrored onto the table, so
-    /// `GameTableView` can surface a "N results not shown on table" notice
-    /// instead of the drop being silent. See CODE_AUDIT §5.1.
+    /// Set by `applyDiceRoll` whenever the locally focused dice set has more
+    /// dice of a type than this seat has table slots for (currently
+    /// `GameSetup.maxDicePerType`, 6, per type — see `playerD20Ids`/
+    /// `playerD6Ids`), or dice of a type the table has no mesh for at all
+    /// (only d20 and d6 are supported); `nil` when the last set mirrored
+    /// entirely. The count of dice that could not be mirrored onto the
+    /// table, so `GameTableView` can surface a "N results not shown on
+    /// table" notice instead of the drop being silent. See CODE_AUDIT §5.1.
     private(set) var diceOverflowCount: Int?
 
     // MARK: - Dice
 
-    /// Mirrors a character-sheet roll onto the local player's own seat dice
-    /// (see `GameSetup.playerDiceIds`) — only d20 is supported right now, the
-    /// only die the pool has. Reuses DiceRPG's existing focus-dice mechanism
-    /// as the trigger (see `GameTableView`'s observer) rather than building a
-    /// new, separate notion of "selected dice" for the table.
-    /// `TabletopGame.addAction` syncs the result to every other participant
-    /// automatically, the same way a physical toss already does.
+    /// Mirrors the locally focused character-sheet dice set onto the local
+    /// player's own seat — showing exactly as many `Die20`/`Die` (d6) slots
+    /// as the set needs of each type, typed and positioned to match (a mix
+    /// of both is fine), and parking every other slot in this seat's pool
+    /// back at the hidden `0` sentinel (see `updateDiceVisibility(using:)`).
+    /// Reuses DiceRPG's existing focus-dice mechanism as the trigger (see
+    /// `GameTableView`'s observer) rather than building a new, separate
+    /// notion of "selected dice" for the table. `TabletopGame.addAction`
+    /// syncs every change — including which slots are active — to every
+    /// other participant automatically, the same way a physical toss
+    /// already does, so every device ends up showing the same shape for
+    /// this seat.
     ///
-    /// Each seat only has `d20Ids.count` (currently 2) physical dice slots;
-    /// a roll of 3+ d20 (a homebrew "roll 3d20", or a GM batch-rolling for
-    /// multiple NPCs at once) has its extra results dropped rather than
-    /// mirrored. See CODE_AUDIT §5.1 — this is surfaced via `diceOverflowCount`
-    /// and a log, rather than silently discarded as before.
+    /// Only d20 and d6 are backed by a table mesh, and each seat only has
+    /// `GameSetup.maxDicePerType` slots per type; a set with dice of any
+    /// other side count, or more than that many of one type (a homebrew
+    /// "roll 8d6", or a GM batch-rolling for multiple NPCs at once), has the
+    /// extras dropped rather than mirrored. See CODE_AUDIT §5.1 — this is
+    /// surfaced via `diceOverflowCount` and a log, rather than silently
+    /// discarded as before.
     func applyDiceRoll(_ diceModel: DiceModel) {
-        guard let seat = localSeat, let d20Ids = setup.playerDiceIds[seat] else { return }
+        guard let seat = localSeat,
+              let d20Ids = setup.playerD20Ids[seat],
+              let d6Ids = setup.playerD6Ids[seat],
+              let seatPose = setup.seats.first(where: { $0.id == seat })?.initialState.pose
+        else { return }
 
-        var nextD20Index = 0
-        var overflowCount = 0
-        for die in diceModel.dice {
-            guard let result = die.result.last else { continue }
-            // Compare the *resolved* side count (`RawDie.max`, public), not
-            // the `Sides` enum case directly — a die authored through the
-            // sheet's own UI can end up as `.number(20)` instead of the
-            // dedicated `.twenty` case, and those don't compare equal to
-            // each other despite meaning the same die.
-            guard die.die.max == 20 else { continue }
-            guard nextD20Index < d20Ids.count else {
-                overflowCount += 1
-                continue
+        // Compare the *resolved* side count (`RawDie.max`, public), not the
+        // `Sides` enum case directly — a die authored through the sheet's
+        // own UI can end up as `.number(20)` instead of the dedicated
+        // `.twenty` case, and those don't compare equal to each other
+        // despite meaning the same die.
+        let d20Dice = diceModel.dice.filter { $0.die.max == 20 }
+        let d6Dice = diceModel.dice.filter { $0.die.max == 6 }
+        let usedD20Count = min(d20Dice.count, d20Ids.count)
+        let usedD6Count = min(d6Dice.count, d6Ids.count)
+        let layout = PlayerSeat.diceLayout(inFrontOf: seatPose, count: usedD20Count + usedD6Count)
+
+        for (index, dieId) in d20Ids.enumerated() {
+            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
+            if index < usedD20Count {
+                let result = d20Dice[index].result.last ?? 1
+                tabletopGame.addAction(
+                    .updateEquipment(equipment, value: result, seatControl: nil, pose: layout[index], boundingBox: nil, context: 0)
+                )
+            } else {
+                tabletopGame.addAction(
+                    .updateEquipment(equipment, value: 0, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+                )
             }
-            guard let equipment = tabletopGame.equipment(of: Die20.self, matching: d20Ids[nextD20Index]) else { continue }
-            nextD20Index += 1
-            tabletopGame.addAction(
-                .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
-            )
         }
 
+        for (index, dieId) in d6Ids.enumerated() {
+            guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
+            if index < usedD6Count {
+                let result = d6Dice[index].result.last ?? 1
+                tabletopGame.addAction(
+                    .updateEquipment(equipment, value: result, seatControl: nil, pose: layout[usedD20Count + index], boundingBox: nil, context: 0)
+                )
+            } else {
+                tabletopGame.addAction(
+                    .updateEquipment(equipment, value: 0, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+                )
+            }
+        }
+
+        let overflowCount = diceModel.dice.count - usedD20Count - usedD6Count
         diceOverflowCount = overflowCount > 0 ? overflowCount : nil
         if overflowCount > 0 {
             Logger.gameTable.warning(
-                "Roll had \(overflowCount, privacy: .public) more d20(s) than this seat's \(d20Ids.count, privacy: .public) table dice slots; those results were not mirrored onto the table"
+                "Focused dice set had \(overflowCount, privacy: .public) dice this table couldn't represent (unsupported sides, or more than \(GameSetup.maxDicePerType, privacy: .public) of one type at this seat); those results were not mirrored onto the table"
             )
         }
     }

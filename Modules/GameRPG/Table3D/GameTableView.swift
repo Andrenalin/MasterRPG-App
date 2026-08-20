@@ -239,6 +239,9 @@ public struct GameTableView: View {
         .ornament(attachmentAnchor: .parent(.bottomLeadingFront), contentAlignment: .topLeading) {
             if let game {
                 VStack(alignment: .leading, spacing: 12) {
+                    // GameTableToolbar itself keeps the table/map window
+                    // toggle always visible and only hides the shared
+                    // map-specific controls until a map is loaded.
                     GameTableToolbar(game: game)
 
                     root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
@@ -256,12 +259,14 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
-        // Mirrors a character-sheet roll onto this player's own seat dice.
-        // Watches the *result values*, not `focusItemIds` — re-rolling the
-        // already-focused dice mutates `DiceModel.dice[].result` in place
-        // without the focus id array itself changing, so that alone
-        // wouldn't fire this.
-        .onChange(of: focusedDiceRollSignature, initial: false) { _, _ in
+        // Mirrors the currently focused character-sheet dice set onto this
+        // player's own seat dice — both its shape (count and type per die,
+        // so switching focus without rolling still updates the table) and
+        // every rolled result. Watches `focusedDiceSignature`, not
+        // `focusItemIds` alone — re-rolling the already-focused dice
+        // mutates `DiceModel.dice[].result` in place without the focus id
+        // array itself changing, so that alone wouldn't fire this.
+        .onChange(of: focusedDiceSignature, initial: false) { _, _ in
             guard let game else { return }
             applyCurrentFocusedDiceRoll(to: game)
         }
@@ -332,21 +337,32 @@ public struct GameTableView: View {
         applyCurrentFocusedDiceRoll(to: initializedGame)
     }
 
+    /// Applies the locally focused dice set to `game`'s own seat, or clears
+    /// that seat's table dice entirely when nothing is focused — so
+    /// deselecting a dice sheet doesn't leave stale dice sitting on the
+    /// table (see `GameTableModel.applyDiceRoll`'s "0 needed" case).
     private func applyCurrentFocusedDiceRoll(to game: GameTableModel) {
         guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
-              let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else { return }
+              let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
+            game.applyDiceRoll(.empty)
+            return
+        }
         game.applyDiceRoll(diceModel)
     }
 
-    /// Every result value on the currently-focused character-sheet dice —
-    /// changes on every roll, including a re-roll of the same dice, unlike
-    /// `focusItemIds` (which only changes when the *selection* changes).
-    private var focusedDiceRollSignature: [Int] {
+    /// Everything about the currently-focused character-sheet dice set that
+    /// should re-mirror it onto the 3D table: which set is focused at all
+    /// (`focusId`, so deselecting is also a change), its shape — side count
+    /// per die, so switching from e.g. "2d20" to "4d6" without rolling still
+    /// updates the table — and every rolled result. Changes on every roll,
+    /// including a re-roll of the same dice, unlike `focusItemIds` alone
+    /// (which only changes when the *selection* changes).
+    private var focusedDiceSignature: [Int] {
         guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
               let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
             return []
         }
-        return diceModel.dice.flatMap(\.result)
+        return diceModel.dice.flatMap { [$0.die.max] + $0.result }
     }
 
     private func configureSessionState(for game: GameTableModel) {

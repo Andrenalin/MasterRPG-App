@@ -36,9 +36,14 @@ struct WindowVisionList: Scene {
                 .environment(appModel.appGameStateModel)
         }
         .windowStyle(.volumetric)
-        // Keep the system grab handle just outside the 70 cm tabletop instead
-        // of at the front of the former 2.5 m-deep volume.
-        .defaultSize(width: 0.85, height: 0.3, depth: 0.85, in: .meters)
+        // Keep the system grab handle just outside the tabletop instead of
+        // at the front of the former 2.5 m-deep volume. Sized to
+        // `GameMetrics.tableLength`/`tableWidth` (2.0 m × 1.5 m) plus the
+        // same ~0.15 m clearance the original square 0.7 m table used —
+        // RealityView clips content outside the volume's actual bounds
+        // (see `GameTableView`), so this has to grow in lockstep with the
+        // table itself, not just the table's own mesh/seat math.
+        .defaultSize(width: 2.15, height: 0.3, depth: 1.65, in: .meters)
         .defaultWindowPlacement { _, _ in
             // Place the game table in front of the user when opened
             WindowPlacement(.utilityPanel)
