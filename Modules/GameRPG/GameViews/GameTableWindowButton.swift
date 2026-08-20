@@ -8,8 +8,14 @@ import SwiftUI
 /// TabletopKit volume; iOS and macOS replace the 2D map canvas in place.
 @MainActor
 struct GameTableWindowButton: View {
+    let root: GameRoot
+    let isMaster: Bool
+
 #if os(visionOS)
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.pushWindow) private var pushWindow
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 #endif
     @Environment(AppSettingsModel.self) private var appSettingsModel
 
@@ -59,15 +65,52 @@ struct GameTableWindowButton: View {
         appSettingsModel.showGameTableVolume = shouldShow
 #if os(visionOS)
         if shouldShow {
+            
             scenesManager.openWindow(SceneId.gameTable)
+            // Keep the table and the main "Game" window (`SceneId.game` —
+            // the app's primary navigation window, distinct from both the
+            // table and the floating adventure/character window below)
+            // mutually exclusive on visionOS: unlike iOS/macOS (which swap
+            // the map/table in place within one window), these are separate
+            // windows there, so leaving the game window open behind the
+            // table would just be redundant clutter.
+            pushWindow(id: SceneId.gameRecover.rawValue)
+            //scenesManager.dismissWindow(SceneId.game)
+            // Also close the floating adventure/character window
+            // (`MasterGameWindowButtonView`/`PlayerGameWindowButtonView`'s
+            // own window) the same way opening the table already implies
+            // closing the game window it lives in.
+            GameWindowToggle.close(
+                isMaster: isMaster,
+                scenesManager: scenesManager,
+                gameScreenModel: gameScreenModel,
+                appSettingsModel: appSettingsModel
+            )
         } else {
             scenesManager.dismissWindow(SceneId.gameTable)
+            // Mirrors the open half of the exclusivity above: closing the
+            // table (whether from the game window's own toolbar or the
+            // table's own ornament) brings the main game window back.
+            scenesManager.dismissWindow(SceneId.gameRecover)
+            //scenesManager.openWindow(SceneId.game)
+            // ...and the floating adventure/character window, the same way
+            // `MasterGameWindowButtonView`/`PlayerGameWindowButtonView`
+            // would open it directly.
+            GameWindowToggle.open(
+                isMaster: isMaster,
+                itemId: isMaster ? root.gameModel.gameConfig.master.adventureId : root.gameModel.selectedCharacter,
+                scenesManager: scenesManager,
+                gameScreenModel: gameScreenModel,
+                appSettingsModel: appSettingsModel,
+                animated: !accessibilityReduceMotion
+            )
         }
 #endif
     }
 }
 
 #Preview(traits: .mockData) {
-    GameTableWindowButton()
+    GameTableWindowButton(root: .preview, isMaster: true)
+        .environment(GameScreenModel())
 }
 #endif

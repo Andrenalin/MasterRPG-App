@@ -50,6 +50,15 @@ struct WindowVisionList: Scene {
         }
         .restorationBehavior(.disabled)
 
+        WindowGroup(id: SceneId.gameRecover.rawValue) {
+            Text("Recover")
+                .environment(appModel.scenesManager)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.plain)
+        .restorationBehavior(.disabled)
+
+        
         WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()

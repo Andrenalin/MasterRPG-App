@@ -42,23 +42,25 @@ struct MasterGameWindowButtonView: View {
     }
 
     private var gameWindowScene: SceneId {
-        SceneId.viewerId(for: .adventure)
+        GameWindowToggle.sceneId(isMaster: true)
     }
 
     private func toggleGameWindow(isPresented: Bool) {
         if isPresented {
-            scenesManager.dismissWindow(gameWindowScene)
-            gameScreenModel.gameMainTabDisplayMode = .hidden
-            appSettingsModel.masterMainTabDisplayMode = GameMainTabDisplayMode.hidden.rawValue
+            GameWindowToggle.close(
+                isMaster: true,
+                scenesManager: scenesManager,
+                gameScreenModel: gameScreenModel,
+                appSettingsModel: appSettingsModel
+            )
         } else {
-            withAnimation(accessibilityReduceMotion ? nil : .default) {
-                gameScreenModel.showMainTab = .none
-                gameScreenModel.gameMainTabDisplayMode = .window
-            }
-            appSettingsModel.masterMainTabDisplayMode = GameMainTabDisplayMode.window.rawValue
-            scenesManager.openWindow(
-                gameWindowScene,
-                selection: WindowItemSelection(itemId: adventureId)
+            GameWindowToggle.open(
+                isMaster: true,
+                itemId: adventureId,
+                scenesManager: scenesManager,
+                gameScreenModel: gameScreenModel,
+                appSettingsModel: appSettingsModel,
+                animated: !accessibilityReduceMotion
             )
         }
     }

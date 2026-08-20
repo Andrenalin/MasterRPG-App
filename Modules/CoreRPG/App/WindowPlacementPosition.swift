@@ -29,8 +29,7 @@ extension SwiftUI.Scene {
                     return windowProxy
                 } else if let fallback, let windowProxy = context.windows.first(where: { $0.id == fallback }) {
                     return windowProxy
-                } else {
-                    assertionFailure("windowProxy is undefined")
+                } else {                    
                     return nil
                 }
             }

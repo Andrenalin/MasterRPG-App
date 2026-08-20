@@ -43,23 +43,25 @@ struct PlayerGameWindowButtonView: View {
     }
 
     private var gameWindowScene: SceneId {
-        SceneId.viewerId(for: .value)
+        GameWindowToggle.sceneId(isMaster: false)
     }
 
     private func toggleGameWindow(isPresented: Bool) {
         if isPresented {
-            scenesManager.dismissWindow(gameWindowScene)
-            gameScreenModel.gameMainTabDisplayMode = .hidden
-            appSettingsModel.playerMainTabDisplayMode = GameMainTabDisplayMode.hidden.rawValue
-        } else if let characterId = root.gameModel.selectedCharacter {
-            withAnimation(accessibilityReduceMotion ? nil : .default) {
-                gameScreenModel.showMainTab = .none
-                gameScreenModel.gameMainTabDisplayMode = .window
-            }
-            appSettingsModel.playerMainTabDisplayMode = GameMainTabDisplayMode.window.rawValue
-            scenesManager.openWindow(
-                gameWindowScene,
-                selection: WindowItemSelection(itemId: characterId)
+            GameWindowToggle.close(
+                isMaster: false,
+                scenesManager: scenesManager,
+                gameScreenModel: gameScreenModel,
+                appSettingsModel: appSettingsModel
+            )
+        } else {
+            GameWindowToggle.open(
+                isMaster: false,
+                itemId: root.gameModel.selectedCharacter,
+                scenesManager: scenesManager,
+                gameScreenModel: gameScreenModel,
+                appSettingsModel: appSettingsModel,
+                animated: !accessibilityReduceMotion
             )
         }
     }

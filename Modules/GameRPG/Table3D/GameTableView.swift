@@ -247,7 +247,8 @@ public struct GameTableView: View {
                     // GameTableToolbar itself keeps the table/map window
                     // toggle always visible and only hides the shared
                     // map-specific controls until a map is loaded.
-                    GameTableToolbar(game: game)
+                    GameTableToolbar(root: root, game: game)
+                        .environment(gameScreenModel)
 
                     root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
                         .environment(diceDisplayModel)
@@ -436,6 +437,7 @@ public struct GameTableView: View {
         Group {
             if let game {
                 GameTableRealityContent(
+                    root: root,
                     game: game,
                     accessibilitySubscriptions: $accessibilitySubscriptions,
                     showsEmbeddedToolbar: showsEmbeddedToolbar
@@ -519,6 +521,7 @@ public typealias GameTableRealityView = GameTableView
 
 @MainActor
 private struct GameTableRealityContent: View {
+    let root: GameRoot
     let game: GameTableModel
     @Binding var accessibilitySubscriptions: [any Cancellable]
     let showsEmbeddedToolbar: Bool
@@ -599,7 +602,7 @@ private struct GameTableRealityContent: View {
         .simultaneousGesture(pinTapGesture.exclusively(before: roomTapGesture))
         .overlay(alignment: .topTrailing) {
             if showsEmbeddedToolbar {
-                GameTableToolbar(game: game)
+                GameTableToolbar(root: root, game: game)
                     .padding()
             }
         }
