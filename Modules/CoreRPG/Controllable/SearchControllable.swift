@@ -512,20 +512,22 @@ public extension SearchControllable {
                 $0.name.localizedStandardContains(searchText) ||
                 $0.content.localizedStandardContains(searchText)
             }
-        return entries
-            .map { entry in
-                SearchResult(
-                    itemId: item.id,
-                    itemName: item.name,
-                    module: itemControllable.config.module,
-                    category: item.category,
-                    entryId: entry.id,
-                    entryName: entry.name,
-                    matchedContent: entry.content.isEmpty ? nil : entry.content,
-                    relevanceScore: 0
-                )
-            }
-            .sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
+        let results = entries.map { entry in
+            SearchResult(
+                itemId: item.id,
+                itemName: item.name,
+                module: itemControllable.config.module,
+                category: item.category,
+                entryId: entry.id,
+                entryName: entry.name,
+                matchedContent: entry.content.isEmpty ? nil : entry.content,
+                relevanceScore: 0
+            )
+        }
+        // Empty search: preserve the item's own entry order (e.g. table rows).
+        // Only alphabetize when there's an active filter narrowing the results.
+        guard !searchText.isEmpty else { return results }
+        return results.sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
     }
 }
 

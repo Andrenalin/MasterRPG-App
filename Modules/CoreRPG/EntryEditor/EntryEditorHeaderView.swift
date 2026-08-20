@@ -111,7 +111,6 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         }
         .contentShape(.rect(cornerRadius: 16, style: .continuous))
         .scaleEffect(isDropTargeted ? 1.03 : 1)
-        .entryDropGlass()
         .dropDestination(for: linkTypes) { items, _ in
             handleDrop(items: items)
             return true

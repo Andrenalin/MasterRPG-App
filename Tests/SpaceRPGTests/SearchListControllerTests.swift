@@ -262,35 +262,32 @@ struct SearchListControllerTests {
     }
     
     // MARK: - SearchLinkController.syncExpandResults - Entry Expansion
-    
-    @Test("SearchLinkController: syncExpandResults regular item returns entries alphabetically")
-    func linkControllerSyncExpandItemReturnsEntriesAlphabetically() async {
+
+    @Test("SearchLinkController: syncExpandResults regular item preserves entry order (not alphabetized)")
+    func linkControllerSyncExpandItemPreservesEntryOrder() async {
         let root = await makeRoot()
         let controller = makeSearchLinkController(root: root)
-        
+
         let itemId = await root.itemController.addNew(type: .item)
-        
-        // Add entries in reverse alphabetical order
+
+        // Authoring order — must survive expansion unchanged (e.g. table rows).
         let entryZ = SpaceEntryModel(id: UUID(), spaceId: UUID())
         let entryA = SpaceEntryModel(id: UUID(), spaceId: UUID())
         let entryM = SpaceEntryModel(id: UUID(), spaceId: UUID())
-        
-        // SpaceEntryModel.name returns "Space Model" by default
-        // We need entries with different names; let's use a workaround
+
         root.itemController.itemOrEmpty(for: itemId).entries = [entryZ, entryA, entryM]
-        
+
         let results = controller.syncExpandResults(focusId: itemId)
-        
+
         #expect(results.count == 3, "All three entries must be returned")
         #expect(results.allSatisfy { $0.entryId != nil },
                 "All results must be entry-level (entryId != nil)")
         #expect(results.allSatisfy { $0.itemId == itemId },
                 "All entries must reference the parent item")
-        
-        // Entries are sorted alphabetically by entryName
-        let entryNames = results.compactMap(\.entryName)
-        let sorted = entryNames.sorted { $0.localizedCompare($1) == .orderedAscending }
-        #expect(entryNames == sorted, "Entries must be sorted alphabetically by name")
+
+        // No active search — expansion must preserve the item's own entry order, not alphabetize.
+        #expect(results.map(\.entryId) == [entryZ.id, entryA.id, entryM.id],
+                "Entries must keep their original order (Z, A, M), not be re-sorted")
     }
     
     @Test("SearchLinkController: syncExpandResults regular item with no entries returns empty")
