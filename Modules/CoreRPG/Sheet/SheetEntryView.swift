@@ -55,12 +55,23 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 .buttonStyle(.plain)
                 .focused(focusedEntryId, equals: entryModel.id)
                 // Covers focus reaching this row without going through `performPrimaryAction()`
-                // (e.g. Tab-key navigation onto it) — keeps focusId and selectedId the same
-                // regardless of how focus got here, using this row's own already-known
-                // `parentModel` for `setSelected`.
+                // (e.g. Tab-key navigation onto it, or the keyboard-arrow sync in
+                // SheetRootView) — keeps focusId and selectedId the same regardless of how
+                // focus got here, using this row's own already-known `parentModel` for
+                // `setSelected`. This is also the sole place that requests a scroll: only
+                // genuine focus activation should move the scroll view — see
+                // `SheetRootModel.setSelected`. The scroll request is unconditional on focus
+                // arriving here (not folded into the `setSelected` guard below), since
+                // arrow-key navigation already updates `selectedEntryId` before this focus
+                // sync runs.
                 .onChange(of: focusedEntryId.wrappedValue) {
-                    guard focusedEntryId.wrappedValue == entryModel.id, rootModel.selectedEntryId != entryModel.id else { return }
-                    rootModel.setSelected(entryModel, parent: parentModel)
+                    guard focusedEntryId.wrappedValue == entryModel.id else { return }
+                    if rootModel.selectedEntryId != entryModel.id {
+                        rootModel.setSelected(entryModel, parent: parentModel)
+                    }
+                    if let entryId = entryModel.source.entryId {
+                        rootModel.setScrollEntryId(source: entryModel.source, entryId: entryId)
+                    }
                 }
                 .accessibilityLabel(primaryActionAccessibilityLabel)
                 .accessibilityValue(generatedSelectionAccessibilityValue)

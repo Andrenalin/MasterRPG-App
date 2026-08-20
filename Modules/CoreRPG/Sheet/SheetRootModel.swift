@@ -455,9 +455,17 @@ public final class SheetRootModel: Sendable {
     // MARK: - Selection
 
     /// Exclusively selects `entryModel`, clearing whichever entry was previously selected
-    /// (anywhere in the tree, including the root sheetModel itself), and scrolls it into view.
-    /// `parent` is threaded explicitly by the caller (who already has it in scope) rather than
-    /// looked up, since SheetContextMenuView's move-up/down/into-group actions need it too.
+    /// (anywhere in the tree, including the root sheetModel itself). `parent` is threaded
+    /// explicitly by the caller (who already has it in scope) rather than looked up, since
+    /// SheetContextMenuView's move-up/down/into-group actions need it too.
+    ///
+    /// Deliberately never scrolls. Scrolling belongs solely to genuine focus activation — see
+    /// each row's `onChange(of: focusedEntryId.wrappedValue)` — because `setSelected` also
+    /// runs for tap-driven selection, where the tapped row is by definition already on
+    /// screen. Scrolling there anyway leaves `.scrollPosition(_:anchor:)` pinned to that
+    /// row's id, and that pin isn't one-shot: SwiftUI keeps re-centering on it as later,
+    /// unrelated layout changes occur (e.g. expanding a link elsewhere inserts rows), which
+    /// is what produced the "jumps to top and back" glitch.
     func setSelected(_ entryModel: SheetModel, parent: SheetModel) {
         if selectedEntryId == entryModel.id,
            selectedEntryModel === entryModel,
@@ -477,10 +485,6 @@ public final class SheetRootModel: Sendable {
         selectedEntryId = entryModel.id
         selectedEntryModel = entryModel
         selectedParentModel = parent
-        if let entryId = entryModel.source.entryId {
-            // The root/name-row case (entryModel == sheetModel) has no entryId — nothing to scroll to.
-            setScrollEntryId(source: entryModel.source, entryId: entryId)
-        }
     }
 
     func clearSelection() {
@@ -547,7 +551,9 @@ public final class SheetRootModel: Sendable {
     }
 
     /// Selects the next visible top-level entry after the current selection.
-    /// Selects the first entry when nothing is currently selected.
+    /// Selects the first entry when nothing is currently selected. Doesn't scroll itself —
+    /// `SheetRootView` syncs `focusedEntryId` to the new selection, and that focus activation
+    /// is what triggers the scroll, in the row's own `onChange`.
     func selectNextEntry() {
         let entries = sheetModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
         guard !entries.isEmpty else { return }
@@ -561,7 +567,8 @@ public final class SheetRootModel: Sendable {
         setSelected(entries[nextIndex], parent: sheetModel)
     }
 
-    /// Selects the previous visible top-level entry before the current selection.
+    /// Selects the previous visible top-level entry before the current selection. Doesn't
+    /// scroll itself — see `selectNextEntry`.
     func selectPreviousEntry() {
         let entries = sheetModel.entries.filter { !$0.isHidden && !$0.isGeneratedHidden }
         guard !entries.isEmpty,
