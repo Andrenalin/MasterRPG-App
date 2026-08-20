@@ -206,7 +206,11 @@ private extension SheetView {
         SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
             .frame(maxWidth: .infinity, alignment: .leading)
 #if !os(tvOS)
-            .applyIf(isEditor) {
+            // Also gated off while the entry editor's own drop-link header overlay is showing —
+            // see `SheetEditorModel.isEntryEditorPresented`. Disabling the row's `.dropDestination`
+            // at the source (rather than leaning on `.allowsHitTesting(false)` upstream) keeps this
+            // correct on macOS 26.6 and iOS 26/27, where a covered row still steals the drop.
+            .applyIf(isEditor && !rootModel.editorModel.isEntryEditorPresented) {
                 $0
                     .background(dropTargetEntryId == entry.id ? Color.accentColor.opacity(0.2) : Color.clear)
                     .draggable(for: entry.source.typeId, itemId: entry.source.itemId, entryId: entry.source.entryId, name: entry.name.withoutLink(), isMove: true)
