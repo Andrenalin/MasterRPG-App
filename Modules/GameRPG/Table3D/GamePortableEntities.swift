@@ -14,16 +14,17 @@ final class Board {
     let entity: Entity
 
     private let imagePlane: ModelEntity
-    private let mapSize = MapTableProjection.mapSize
 
     init() {
+        let maxPlaneWidth = MapTableProjection.maxPlaneWidth
+        let maxPlaneDepth = MapTableProjection.maxPlaneDepth
         let boardEntity = Entity()
         boardEntity.name = "MapSurface"
 
         var mapMaterial = UnlitMaterial()
         mapMaterial.color = .init(tint: .white)
         let plane = ModelEntity(
-            mesh: .generatePlane(width: mapSize, depth: mapSize),
+            mesh: .generatePlane(width: maxPlaneWidth, depth: maxPlaneDepth),
             materials: [mapMaterial]
         )
         plane.name = "MapImagePlane"
@@ -42,7 +43,7 @@ final class Board {
         plane.components.set(
             CollisionComponent(shapes: [
                 ShapeResource
-                    .generateBox(width: mapSize, height: Self.hitTestBoxHeight, depth: mapSize)
+                    .generateBox(width: maxPlaneWidth, height: Self.hitTestBoxHeight, depth: maxPlaneDepth)
                     .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
             ])
         )
@@ -81,12 +82,18 @@ final class Board {
         let aspectRatio = orientedSize.width / orientedSize.height
         let planeWidth: Float
         let planeDepth: Float
-        if aspectRatio > 1 {
-            planeWidth = mapSize
-            planeDepth = mapSize / Float(aspectRatio)
+        // Fit inside the (possibly non-square) `maxPlaneWidth` ×
+        // `maxPlaneDepth` box preserving aspect ratio — mirrors
+        // `MapTableProjection.init`'s identical fit-box math, which this
+        // plane's dimensions must stay in lockstep with so pins/rooms line
+        // up with the rendered texture.
+        let boxAspectRatio = MapTableProjection.maxPlaneWidth / MapTableProjection.maxPlaneDepth
+        if aspectRatio > Double(boxAspectRatio) {
+            planeWidth = MapTableProjection.maxPlaneWidth
+            planeDepth = MapTableProjection.maxPlaneWidth / Float(aspectRatio)
         } else {
-            planeDepth = mapSize
-            planeWidth = mapSize * Float(aspectRatio)
+            planeDepth = MapTableProjection.maxPlaneDepth
+            planeWidth = MapTableProjection.maxPlaneDepth * Float(aspectRatio)
         }
         imagePlane.model?.mesh = .generatePlane(width: planeWidth, depth: planeDepth)
         imagePlane.components.set(

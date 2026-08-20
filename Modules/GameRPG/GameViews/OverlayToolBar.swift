@@ -22,7 +22,7 @@ struct OverlayToolBar: View {
                 if root.mapRoot.gameControllable.gameModel.currentItemId == nil {
                     EmptyView()
                 } else if let game = root.gameModel.gameTableModel {
-                    GameTableToolbar(game: game)
+                    GameTableToolbar(root: root, game: game)
                 } else {
                     ProgressView()
                         .controlSize(.small)
@@ -30,7 +30,7 @@ struct OverlayToolBar: View {
                 }
             } else {
                 HStack {
-                    GameTableWindowButton()
+                    GameTableWindowButton(root: root, isMaster: isMaster)
                     root.mapRoot.viewController.gameToolBarView(root: root.mapRoot, isMaster: isMaster)
                 }
             }

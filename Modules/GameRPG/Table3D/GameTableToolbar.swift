@@ -16,17 +16,25 @@ import SwiftUI
 /// interacting with it directly (`GameTableModel.toggleRoomVisibility`).
 @MainActor
 struct GameTableToolbar: View {
+    let root: GameRoot
     let game: GameTableModel
 
     var body: some View {
         HStack {
-            GameTableWindowButton()
+            // Always visible: this is the switch between the 2D map window
+            // and this 3D game table, so it must stay reachable even before
+            // a map is loaded onto the table.
+            GameTableWindowButton(root: root, isMaster: game.isGameMaster)
 
-            game.mapRoot.viewController.gameToolBarView(
-                root: game.mapRoot,
-                isMaster: game.isGameMaster,
-                session: game
-            )
+            // The shared map toolbar's actions (fog, pointer, room
+            // visibility) are meaningless before a map is on the table.
+            if game.currentMapId != nil {
+                game.mapRoot.viewController.gameToolBarView(
+                    root: game.mapRoot,
+                    isMaster: game.isGameMaster,
+                    session: game
+                )
+            }
         }
     }
 }
@@ -36,7 +44,7 @@ struct GameTableToolbar: View {
 
     Group {
         if let game {
-            GameTableToolbar(game: game)
+            GameTableToolbar(root: .preview, game: game)
         } else {
             ProgressView()
         }

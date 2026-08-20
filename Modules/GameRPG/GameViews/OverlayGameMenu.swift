@@ -48,7 +48,7 @@ private extension OverlayGameMenu {
 
                 wifiView
 
-                GameTableWindowButton()
+                GameTableWindowButton(root: root, isMaster: isMaster)
                     .padding(.leading, 32)
             }
         }

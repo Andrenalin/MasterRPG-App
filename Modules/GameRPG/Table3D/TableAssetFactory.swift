@@ -26,9 +26,9 @@ enum TableAssetFactory {
         )
         let table = ModelEntity(
             mesh: .generateBox(
-                width: GameMetrics.tableEdge,
+                width: GameMetrics.tableLength,
                 height: GameMetrics.tableThickness,
-                depth: GameMetrics.tableEdge
+                depth: GameMetrics.tableWidth
             )
         )
         if let sourceModel = firstModelComponent(in: materialSource) {

@@ -66,7 +66,7 @@ extension GameSetup {
             } else {
                 // No map on the table: line the tokens up outside the map area
                 // on the near edge so joining players are visible immediately.
-                position = SIMD3<Float>(-0.15 + 0.06 * Float(lineupIndex), MapTableProjection.pinHeight, MapTableProjection.mapSize / 2 + 0.05)
+                position = SIMD3<Float>(-0.15 + 0.06 * Float(lineupIndex), MapTableProjection.pinHeight, MapTableProjection.maxPlaneDepth / 2 + 0.05)
                 lineupIndex += 1
             }
             let hiddenForMaster = isGameMaster && !pin.isShown
@@ -211,8 +211,15 @@ extension GameTableModel {
 /// projection swaps dimensions for 90°/270° but must not rotate coordinates a
 /// second time. Shared by every platform's `GameSetup` — see CODE_AUDIT §9.1.
 struct MapTableProjection {
-    /// Rendered map size on the board (5 cm border on all sides).
-    static let mapSize: Float = GameMetrics.tableEdge - (0.05 * 2)
+    /// The bounding box the map fits into on the board — the table's own
+    /// extents inset by `GameMetrics.mapMargin` on every side, leaving that
+    /// margin free for each seat's dice (see `PlayerSeat.diceLayout`). The
+    /// map's actual rendered size (`planeWidth`/`planeDepth` below) fits
+    /// inside this box preserving the source image's aspect ratio, so it
+    /// only fills both dimensions when the image's aspect ratio happens to
+    /// match the box's.
+    static let maxPlaneWidth: Float = GameMetrics.tableLength - (GameMetrics.mapMargin * 2)
+    static let maxPlaneDepth: Float = GameMetrics.tableWidth - (GameMetrics.mapMargin * 2)
     /// Token height above the board surface.
     static let pinHeight: Float = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
     /// Pin diameter (meters) used when no map is on the table and there's no
@@ -259,12 +266,17 @@ struct MapTableProjection {
         self.degrees = normalizedDegrees
         self.focusRect = focusRect ?? CGRect(origin: .zero, size: safeSize)
         let aspectRatio = safeSize.width / safeSize.height
-        if aspectRatio > 1.0 {
-            planeWidth = Self.mapSize
-            planeDepth = Self.mapSize / Float(aspectRatio)
+        // Fit inside the (possibly non-square) `maxPlaneWidth` ×
+        // `maxPlaneDepth` box preserving aspect ratio: compare the image's
+        // aspect ratio against the box's own to find which dimension is the
+        // constraining one, rather than assuming width always is.
+        let boxAspectRatio = CGFloat(Self.maxPlaneWidth / Self.maxPlaneDepth)
+        if aspectRatio > boxAspectRatio {
+            planeWidth = Self.maxPlaneWidth
+            planeDepth = Self.maxPlaneWidth / Float(aspectRatio)
         } else {
-            planeDepth = Self.mapSize
-            planeWidth = Self.mapSize * Float(aspectRatio)
+            planeDepth = Self.maxPlaneDepth
+            planeWidth = Self.maxPlaneDepth * Float(aspectRatio)
         }
     }
 

@@ -39,6 +39,11 @@ public struct GameTableView: View {
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
+    /// Backs the trailing-side window menu ornament's `MasterGameWindowButtonView`/
+    /// `PlayerGameWindowButtonView` — mirrors `MasterGameScreen`/`PlayerGameScreen`'s
+    /// own `gameScreenModel`, likewise owned per-screen rather than shared
+    /// through `GameRoot`.
+    @State private var gameScreenModel = GameScreenModel()
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
     @State private var roomActionTask: Task<Void, Never>?
@@ -239,13 +244,35 @@ public struct GameTableView: View {
         .ornament(attachmentAnchor: .parent(.bottomLeadingFront), contentAlignment: .topLeading) {
             if let game {
                 VStack(alignment: .leading, spacing: 12) {
-                    GameTableToolbar(game: game)
+                    // GameTableToolbar itself keeps the table/map window
+                    // toggle always visible and only hides the shared
+                    // map-specific controls until a map is loaded.
+                    GameTableToolbar(root: root, game: game)
+                        .environment(gameScreenModel)
 
                     root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
                         .environment(diceDisplayModel)
                 }
                 .padding(.top, 12)
             }
+        }
+        // Companion to the leading map-toolbar/dice-bar ornament above: the
+        // window menu (`GameTableSideMenu`) letting the master/player open
+        // other module windows without leaving the table volume — same
+        // buttons as the flat 2D game screens' own trailing ornament
+        // (`MasterSideMenu`/`PlayerSideMenu`), just laid out as a row
+        // instead of a column. `.parent(.bottomTrailingFront)` for the same
+        // reason `.bottomLeadingFront` is used above rather than
+        // `.scene(.trailing)` (what the flat screens use): the 2D
+        // `UnitPoint` anchor has no Z, so SwiftUI would pick a depth that
+        // lands mid-volume instead of the front face.
+        .ornament(attachmentAnchor: .parent(.bottomTrailingFront), contentAlignment: .topTrailing) {
+            GameTableSideMenu(
+                root: root,
+                isMaster: root.gameModel.gameConfig.isMaster,
+                adventureId: root.gameModel.gameConfig.master.adventureId
+            )
+            .environment(gameScreenModel)
         }
         .task {
             await initializeGameIfNeeded()
@@ -256,12 +283,14 @@ public struct GameTableView: View {
                 isGameMaster: root.gameModel.gameConfig.isMaster
             )
         }
-        // Mirrors a character-sheet roll onto this player's own seat dice.
-        // Watches the *result values*, not `focusItemIds` — re-rolling the
-        // already-focused dice mutates `DiceModel.dice[].result` in place
-        // without the focus id array itself changing, so that alone
-        // wouldn't fire this.
-        .onChange(of: focusedDiceRollSignature, initial: false) { _, _ in
+        // Mirrors the currently focused character-sheet dice set onto this
+        // player's own seat dice — both its shape (count and type per die,
+        // so switching focus without rolling still updates the table) and
+        // every rolled result. Watches `focusedDiceSignature`, not
+        // `focusItemIds` alone — re-rolling the already-focused dice
+        // mutates `DiceModel.dice[].result` in place without the focus id
+        // array itself changing, so that alone wouldn't fire this.
+        .onChange(of: focusedDiceSignature, initial: false) { _, _ in
             guard let game else { return }
             applyCurrentFocusedDiceRoll(to: game)
         }
@@ -332,21 +361,32 @@ public struct GameTableView: View {
         applyCurrentFocusedDiceRoll(to: initializedGame)
     }
 
+    /// Applies the locally focused dice set to `game`'s own seat, or clears
+    /// that seat's table dice entirely when nothing is focused — so
+    /// deselecting a dice sheet doesn't leave stale dice sitting on the
+    /// table (see `GameTableModel.applyDiceRoll`'s "0 needed" case).
     private func applyCurrentFocusedDiceRoll(to game: GameTableModel) {
         guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
-              let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else { return }
+              let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
+            game.applyDiceRoll(.empty)
+            return
+        }
         game.applyDiceRoll(diceModel)
     }
 
-    /// Every result value on the currently-focused character-sheet dice —
-    /// changes on every roll, including a re-roll of the same dice, unlike
-    /// `focusItemIds` (which only changes when the *selection* changes).
-    private var focusedDiceRollSignature: [Int] {
+    /// Everything about the currently-focused character-sheet dice set that
+    /// should re-mirror it onto the 3D table: which set is focused at all
+    /// (`focusId`, so deselecting is also a change), its shape — side count
+    /// per die, so switching from e.g. "2d20" to "4d6" without rolling still
+    /// updates the table — and every rolled result. Changes on every roll,
+    /// including a re-roll of the same dice, unlike `focusItemIds` alone
+    /// (which only changes when the *selection* changes).
+    private var focusedDiceSignature: [Int] {
         guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
               let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {
             return []
         }
-        return diceModel.dice.flatMap(\.result)
+        return diceModel.dice.flatMap { [$0.die.max] + $0.result }
     }
 
     private func configureSessionState(for game: GameTableModel) {
@@ -397,6 +437,7 @@ public struct GameTableView: View {
         Group {
             if let game {
                 GameTableRealityContent(
+                    root: root,
                     game: game,
                     accessibilitySubscriptions: $accessibilitySubscriptions,
                     showsEmbeddedToolbar: showsEmbeddedToolbar
@@ -480,6 +521,7 @@ public typealias GameTableRealityView = GameTableView
 
 @MainActor
 private struct GameTableRealityContent: View {
+    let root: GameRoot
     let game: GameTableModel
     @Binding var accessibilitySubscriptions: [any Cancellable]
     let showsEmbeddedToolbar: Bool
@@ -498,6 +540,10 @@ private struct GameTableRealityContent: View {
     /// commit if this no longer matches the current focus by the time `.onEnded` fires. See
     /// CODE_AUDIT §5.12.
     @State private var viewportPanRoomId: UUID?
+    /// The running total of `tableMoveGesture`'s translation applied so far — `DragGesture.Value.translation`
+    /// is cumulative from the gesture's start, not per-frame, so this is what lets `.onChanged`
+    /// apply only the *new* delta each call. Reset on `.onEnded`.
+    @State private var tableMoveLastTranslation: CGSize = .zero
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
     @State private var roomActionTask: Task<Void, Never>?
@@ -534,25 +580,39 @@ private struct GameTableRealityContent: View {
         // an option set, so there's no way to keep .orbit's bundled pinch-zoom
         // and rotate while dropping only its one-finger-drag component — and
         // reassigning this value resets the camera's current framing back to
-        // default. Instead, pinDragGesture below wins priority over the drag
-        // component only for touches that start on a pin, leaving zoom/rotate
-        // untouched and every other drag orbiting the table as usual.
+        // default. Instead, the chained gesture below wins priority over the
+        // drag component for every touch, leaving only pinch-zoom/rotate to
+        // `.orbit` itself.
         .realityViewCameraControls(.orbit)
         .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
         } action: { size in
             game.renderer.updateCamera(for: size)
         }
-        .highPriorityGesture(pinDragGesture)
-        // Wins over `.orbit`'s bundled one-finger drag (see the comment
-        // above) only for touches starting on the map surface itself, so a
-        // room, once focused/zoomed, can be panned within its own crop by
-        // dragging it — like the 2D map's viewport, not by moving anything
-        // in 3D space (see `GameTableModel.manualViewportOffset`). Distinct
-        // from `BoardSurfaceComponent`'s hit-test volume: pins and room fog
-        // sit closer to the camera and keep winning ties, so this never
-        // steals from `pinDragGesture` or `roomTapGesture` below.
-        .highPriorityGesture(viewportPanGesture)
+        // One physical one-finger drag, three possible meanings, tried in
+        // this exact order via `.exclusively(before:)` — mirrors
+        // `pinTapGesture.exclusively(before: roomTapGesture)` below, just
+        // for drags instead of taps:
+        //  1. `pinDragGesture` — a touch starting on a pin moves that pin.
+        //     Entity-targeted, so its predicate simply never matches a
+        //     touch that lands elsewhere, letting the chain fall through.
+        //  2. `viewportPanGesture` — a touch starting on the map surface
+        //     pans its zoomed viewport crop instead (see
+        //     `GameTableModel.manualViewportOffset`), same as before. Also
+        //     entity-targeted, so it's naturally disjoint from #1: pins and
+        //     room fog sit closer to the camera and win hit-testing first,
+        //     as `RoomHitArea`'s only other caller already relies on.
+        //  3. `tableMoveGesture` — anything else (the bare wood table, or
+        //     empty space) moves the whole table instead of orbiting the
+        //     camera around it. Unlike #1/#2 this one is *not*
+        //     entity-targeted (a plain `DragGesture` matches any touch), so
+        //     without this ordering it would race #1/#2 for the exact same
+        //     touch instead of only catching what they don't.
+        .highPriorityGesture(
+            pinDragGesture
+                .exclusively(before: viewportPanGesture)
+                .exclusively(before: tableMoveGesture)
+        )
         // A pin sitting over a room's fog always wins the tap — pinTapGesture
         // is listed first, and exclusively(before:) gives it precedence; its
         // targetedToEntity predicate simply never matches when the touch
@@ -560,7 +620,7 @@ private struct GameTableRealityContent: View {
         .simultaneousGesture(pinTapGesture.exclusively(before: roomTapGesture))
         .overlay(alignment: .topTrailing) {
             if showsEmbeddedToolbar {
-                GameTableToolbar(game: game)
+                GameTableToolbar(root: root, game: game)
                     .padding()
             }
         }
@@ -612,6 +672,43 @@ private struct GameTableRealityContent: View {
                 game.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
             }
     }
+
+    /// Repositions the whole table — translating `game.renderer.root`, not
+    /// `.orbit`'s bundled camera rotate — for a touch that starts on
+    /// neither a pin nor the map surface; see the priority chain's own
+    /// comment at this gesture's `.highPriorityGesture` call site for why
+    /// `pinDragGesture`/`viewportPanGesture` have to come first.
+    ///
+    /// Unlike those two, this isn't `.targetedToEntity` — a plain
+    /// `DragGesture` has no RealityKit ray-casting context, so this uses a
+    /// scaled screen-space delta (`Self.tableMoveScale`) instead of the
+    /// exact table-plane ray-cast `EntityTargetValue.tablePosition(relativeTo:)`
+    /// gives the other two; it's a freeform "nudge the table into view"
+    /// convenience, not a precise placement tool. `content.cameraTarget`
+    /// (set to `game.setup.board.entity`, itself parented under
+    /// `game.renderer.root`) keeps the camera aimed at the table as it
+    /// moves, for free.
+    private var tableMoveGesture: some Gesture {
+        DragGesture(minimumDistance: 5)
+            .onChanged { value in
+                let delta = CGSize(
+                    width: value.translation.width - tableMoveLastTranslation.width,
+                    height: value.translation.height - tableMoveLastTranslation.height
+                )
+                tableMoveLastTranslation = value.translation
+                game.renderer.root.position.x += Float(delta.width) * Self.tableMoveScale
+                game.renderer.root.position.z += Float(delta.height) * Self.tableMoveScale
+            }
+            .onEnded { _ in
+                tableMoveLastTranslation = .zero
+            }
+    }
+
+    /// Meters the table moves per screen point dragged — a hand-tuned feel
+    /// (a comfortable drag across a typical viewport repositions the table
+    /// by roughly its own size), not a precise 1:1 mapping; see
+    /// `tableMoveGesture`'s own doc for why it can't derive an exact one.
+    private static let tableMoveScale: Float = 0.001
 
     private var pinTapGesture: some Gesture {
         LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)

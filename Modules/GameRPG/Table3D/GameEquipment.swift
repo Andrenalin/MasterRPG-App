@@ -21,11 +21,11 @@ extension EquipmentIdentifier {
 
 struct Table: Tabletop {
     var shape: TabletopShape = .rectangular(
-        width: GameMetrics.tableEdge,
-        height: GameMetrics.tableEdge,
+        width: GameMetrics.tableLength,
+        height: GameMetrics.tableWidth,
         thickness: GameMetrics.tableThickness
     )
-    
+
     var id: EquipmentIdentifier = .tableID
 }
 
@@ -39,15 +39,15 @@ final class Board {
     
     // The map is a thin image plane directly on the tabletop.
     private let imagePlane: ModelEntity
-    private let mapSize: Float
-    
+
     init() {
-        self.mapSize = MapTableProjection.mapSize
+        let maxPlaneWidth = MapTableProjection.maxPlaneWidth
+        let maxPlaneDepth = MapTableProjection.maxPlaneDepth
         let boardEntity = Entity()
         boardEntity.name = "MapSurface"
 
         let plane = ModelEntity(
-            mesh: .generatePlane(width: mapSize, depth: mapSize),
+            mesh: .generatePlane(width: maxPlaneWidth, depth: maxPlaneDepth),
             materials: [SimpleMaterial(color: .white, isMetallic: false)]
         )
         // The map surface shares the bottom-origin coordinate space used by
@@ -66,7 +66,7 @@ final class Board {
         plane.components.set(
             CollisionComponent(shapes: [
                 ShapeResource
-                    .generateBox(width: mapSize, height: Self.hitTestBoxHeight, depth: mapSize)
+                    .generateBox(width: maxPlaneWidth, height: Self.hitTestBoxHeight, depth: maxPlaneDepth)
                     .offsetBy(translation: SIMD3<Float>(0, Self.hitTestYOffset, 0))
             ])
         )
@@ -101,15 +101,21 @@ final class Board {
         
         var planeWidth: Float
         var planeDepth: Float
-        
-        if aspectRatio > 1.0 {
-            // Landscape - width constrained
-            planeWidth = mapSize
-            planeDepth = mapSize / Float(aspectRatio)
+
+        // Fit inside the (possibly non-square) `maxPlaneWidth` ×
+        // `maxPlaneDepth` box preserving aspect ratio — mirrors
+        // `MapTableProjection.init`'s identical fit-box math, which this
+        // plane's dimensions must stay in lockstep with so pins/rooms line
+        // up with the rendered texture.
+        let boxAspectRatio = MapTableProjection.maxPlaneWidth / MapTableProjection.maxPlaneDepth
+        if aspectRatio > Double(boxAspectRatio) {
+            // Width constrained
+            planeWidth = MapTableProjection.maxPlaneWidth
+            planeDepth = MapTableProjection.maxPlaneWidth / Float(aspectRatio)
         } else {
-            // Portrait or square - height constrained
-            planeDepth = mapSize
-            planeWidth = mapSize * Float(aspectRatio)
+            // Depth constrained
+            planeDepth = MapTableProjection.maxPlaneDepth
+            planeWidth = MapTableProjection.maxPlaneDepth * Float(aspectRatio)
         }
         
         // Update image plane mesh with correct aspect ratio
@@ -296,14 +302,27 @@ struct PlayerSeat: TableSeat {
     let id: ID
     var initialState: TableSeatState
 
-    /* There are three seats around the edges of the table.
-    Each seat faces the center of the table. */
+    /* Six seats around the rectangular table: a single seat at each short
+    end (index 0, the master's "head of the table" seat, and index 5), and
+    two along each long side (indices 1–4). Each seat faces the center of
+    the table. Every seat sits a full table-length/-width beyond the table
+    center along its own axis — same "well beyond the physical edge, the
+    way a chair sits beyond a real table's edge" ratio the original 3-seat
+    square layout used (see `diceLayout`'s doc for the matching dice-side
+    reasoning). */
     @MainActor static let seatPoses: [TableVisualState.Pose2D] = [
-        .init(position: .init(x: 0, z: Double(GameMetrics.tableEdge)), rotation: .degrees(0)),
-        .init(position: .init(x: -Double(GameMetrics.tableEdge), z: 0), rotation: .degrees(-90)),
-        .init(position: .init(x: Double(GameMetrics.tableEdge), z: 0), rotation: .degrees(90))
+        // Master — west end.
+        .init(position: .init(x: -Double(GameMetrics.tableLength), z: 0), rotation: .degrees(-90)),
+        // North long side, two seats.
+        .init(position: .init(x: -0.5, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
+        .init(position: .init(x: 0.5, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
+        // South long side, two seats.
+        .init(position: .init(x: -0.5, z: -Double(GameMetrics.tableWidth)), rotation: .degrees(180)),
+        .init(position: .init(x: 0.5, z: -Double(GameMetrics.tableWidth)), rotation: .degrees(180)),
+        // East end.
+        .init(position: .init(x: Double(GameMetrics.tableLength), z: 0), rotation: .degrees(90))
     ]
-    
+
     init(id: TableSeatIdentifier, pose: TableVisualState.Pose2D) {
         self.id = id
         let spatialSeatPose: TableVisualState.Pose2D = .init(position: pose.position,
@@ -311,31 +330,61 @@ struct PlayerSeat: TableSeat {
         initialState = .init(pose: spatialSeatPose)
     }
 
-    /// Two table-plane positions in the given seat's own player area, side by
-    /// side — for that seat's own dice. Placed at `playerAreaDistanceFromCenter`
-    /// (an existing, already-correct constant for this exact purpose — see
-    /// `GameMetrics`, previously declared but unused) *from the table center*,
-    /// along the same angular direction as the seat, rather than inset from
-    /// the seat's own position: the table (`GameMetrics.tableEdge`, a full
-    /// width/depth, not a radius) is only 0.7 m across, so seats — placed at
-    /// a full `tableEdge` from center — already sit well *beyond* its physical
-    /// edge, the way a chair sits beyond a real table's edge. Insetting from
-    /// the seat by a small amount (the previous approach) still landed
-    /// outside the table surface, off in empty space.
+    /// `count` table-plane positions in the given seat's own player area,
+    /// laid out side by side and centered on the seat itself — for that
+    /// seat's own dice, sized to however many `GameTableModel.applyDiceRoll`
+    /// currently needs visible (see `GameSetup.maxDicePerType`), not the
+    /// full pre-allocated pool.
+    ///
+    /// Derived from the seat's own facing `rotation`, not a radius along its
+    /// raw `position` (the original single-seat-per-side approach): with two
+    /// seats sharing a long side (see `seatPoses`), both share the same
+    /// facing direction but sit at different lateral offsets, so the row
+    /// needs to be centered under *this* seat's own position, not the
+    /// table's. `direction` (the seat's own outward-facing axis) locates
+    /// that near table edge — inset by `GameMetrics.diceEdgeInset` so the
+    /// dice land just inside the table's physical edge rather than off the
+    /// surface, the way a chair sits beyond that edge. `lateralOffset`
+    /// re-centers the row under the seat's actual lateral position along
+    /// that edge.
     @MainActor
-    static func diceLayout(inFrontOf seatPose: TableVisualState.Pose2D) -> [TableVisualState.Pose2D] {
-        let seatPosition = seatPose.position
-        let distance = (seatPosition.x * seatPosition.x + seatPosition.z * seatPosition.z).squareRoot()
-        let direction: (x: Double, z: Double) = distance > 0.0001
-            ? (x: seatPosition.x / distance, z: seatPosition.z / distance)
-            : (x: 0, z: 1)
-        // Perpendicular to `direction`, to spread the two dice apart.
-        let lateral: (x: Double, z: Double) = (x: -direction.z, z: direction.x)
-        let radius = Double(GameMetrics.playerAreaDistanceFromCenter)
-        let lateralSpacing = 0.07
+    static func diceLayout(inFrontOf seatPose: TableVisualState.Pose2D, count: Int) -> [TableVisualState.Pose2D] {
+        guard count > 0 else { return [] }
+        let radians = seatPose.rotation.radians
+        // The direction a seat at this rotation faces *away* from the table
+        // center — e.g. a north-side seat (rotation 0°, facing into the
+        // table) points further north. Dice sit between the seat and the
+        // center, along this same axis. See `PlayerSeat.seatPoses`'s doc for
+        // why rotation 0° maps to +Z here.
+        let direction: (x: Double, z: Double) = (sin(radians), cos(radians))
+        // Perpendicular to `direction`, to spread the dice apart and to
+        // locate the seat's own lateral position along its edge.
+        let lateral: (x: Double, z: Double) = (-direction.z, direction.x)
 
-        return [-lateralSpacing, lateralSpacing].map { offset in
-            TableVisualState.Pose2D(
+        // The seat's near table edge along its own facing axis. `direction`
+        // is always axis-aligned (a multiple of 90°), so exactly one term is
+        // non-zero — this picks `tableLength` for the end seats and
+        // `tableWidth` for the long-side seats automatically.
+        let halfExtent = abs(direction.x) * Double(GameMetrics.tableLength / 2)
+            + abs(direction.z) * Double(GameMetrics.tableWidth / 2)
+        let radius = halfExtent - Double(GameMetrics.diceEdgeInset)
+
+        // This seat's own position along the lateral axis — 0 for the
+        // single end seats (which sit exactly on `direction`'s own axis),
+        // non-zero for a long-side seat sharing that side with another.
+        let seatPosition = seatPose.position
+        let lateralOffset = seatPosition.x * lateral.x + seatPosition.z * lateral.z
+
+        // Distance between neighboring dice. Kept tighter than the original
+        // 2-die-only layout's 0.14 m spacing (still centered the same way)
+        // so a seat's row stays compact even at `maxDicePerType`'s largest
+        // realistic mixes.
+        let spacing = 0.05
+        let totalWidth = spacing * Double(count - 1)
+
+        return (0 ..< count).map { index in
+            let offset = lateralOffset + Double(index) * spacing - totalWidth / 2
+            return TableVisualState.Pose2D(
                 position: .init(
                     x: direction.x * radius + lateral.x * offset,
                     z: direction.z * radius + lateral.z * offset
@@ -366,6 +415,12 @@ struct Die20: EntityEquipment {
     
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
+        // `0` is this table's own sentinel for a currently-unused pool slot
+        // (see `GameSetup.maxDicePerType` and `GameTableModel.updateDiceVisibility(using:)`)
+        // — the die is hidden whenever this holds, so its orientation is
+        // irrelevant. Handled before the face lookup so it doesn't trip the
+        // "invalid value" fallback below, which is for genuine sync issues.
+        guard state.value != 0 else { return .init() }
         guard let normal = Self.faceNormals[state.value] else {
             // `state.value` arrives via TabletopKit's synchronized `UpdateEquipmentAction<DieState>`,
             // so a version skew or corrupted/delayed sync payload could plausibly deliver an
@@ -459,7 +514,11 @@ struct Die20: EntityEquipment {
         }
         representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
             //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
-        initialState = .init(value: 1, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
+        // `value: 0` — this table's own sentinel meaning "not part of the
+        // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`
+        // and `updateDiceVisibility(using:)`); `restingOrientation` above
+        // treats it specially rather than as a corrupt/out-of-range value.
+        initialState = .init(value: 0, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
 
         // The direct on-table toss gesture otherwise has no accessible
         // equivalent — see CODE_AUDIT §8.2. `GameTableModel.tossDieForAccessibility`
@@ -471,6 +530,15 @@ struct Die20: EntityEquipment {
         accessibility.label = Self.accessibilityLabel(seatIndex: seatIndex, dieNumber: dieNumber)
         accessibility.systemActions = .activate
         self.entity.components.set(accessibility)
+
+        // Hidden until `GameTableModel.updateDiceVisibility(using:)` confirms
+        // both that this seat is actually claimed *and* that this slot is
+        // part of the seat's currently focused dice set — every seat's pool
+        // is pre-allocated here (TabletopKit equipment can't be added once
+        // `TableSetup` is frozen), so without this every seat's dice would
+        // sit visible on an empty side of the table before anyone sits down
+        // or rolls anything.
+        self.entity.isEnabled = false
     }
 
     /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
@@ -512,6 +580,13 @@ struct Die: EntityEquipment {
     func restingOrientation(state: DieState) -> Rotation3D {
         // The die asset's default orientation shows 6 on top (+y), 2 on the right (+x), and 3 on the front (+z).
         switch state.value {
+            case 0:
+                // This table's own sentinel for a currently-unused pool slot
+                // (see `GameSetup.maxDicePerType`) — the die is hidden
+                // whenever this holds, so its orientation is irrelevant.
+                // Handled explicitly so it doesn't fall into (and log from)
+                // the genuine-sync-issue `default` case below.
+                return .init()
             case 1: // Flip upside down.
                 return .init(angle: .init(degrees: +180), axis: .init(x: 0, y: 0, z: 1))
             case 2: // Flip to the left once.
@@ -564,7 +639,10 @@ struct Die: EntityEquipment {
             self.audioPlaybackController = nil
         }
         representation = .cube(height: entity.visualBounds(relativeTo: nil).extents.x)
-        initialState = .init(value: 1, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
+        // `value: 0` — see the matching comment on `Die20.init`: this
+        // table's own sentinel for "not part of the seat's currently
+        // focused dice set".
+        initialState = .init(value: 0, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
 
         // See the matching accessibility setup on `Die20.init` (CODE_AUDIT §8.2).
         self.entity.components.set(DiceComponent(dieId: id, sides: 6))
@@ -573,6 +651,9 @@ struct Die: EntityEquipment {
         accessibility.label = Self.accessibilityLabel(seatIndex: seatIndex, dieNumber: dieNumber)
         accessibility.systemActions = .activate
         self.entity.components.set(accessibility)
+
+        // See the matching comment on `Die20.init`.
+        self.entity.isEnabled = false
     }
 
     /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
@@ -609,17 +690,16 @@ extension GameTableModel {
     /// Assigns seats to SharePlay participants. Master always gets seat 0; players fill seats 1+.
     ///
     /// The table only has `PlayerSeat.seatPoses.count - 1` physical player
-    /// seats (currently 2 — see the diagram atop `GameSetup`: the table's
-    /// 4th side is reserved for the shared die/deck, not a seat). A party of
-    /// 3+ players therefore always has multiple players share a seat — and
-    /// with it, the seat's 2 `Die20` equipment ids from
-    /// `GameSetup.playerDiceIds`, so a character-sheet roll from one of
-    /// those players moves the dice the other(s) also treat as their own.
-    /// This can't be eliminated purely by reindexing (there are only 2
-    /// buckets for 3+ players), but it's now deterministic — every device
-    /// computes the same sorted `activeParticipants` list — and surfaced via
-    /// `sharedSeatPlayerCount` and a log instead of being silent. See
-    /// CODE_AUDIT §5.2.
+    /// seats (currently 5 — see `PlayerSeat.seatPoses`). A party larger than
+    /// that therefore always has multiple players share a seat — and with
+    /// it, the seat's dice pools from `GameSetup.playerD20Ids`/
+    /// `playerD6Ids`, so a character-sheet roll from one of those players
+    /// moves the dice the other(s) also treat as their own.
+    /// This can't be eliminated purely by reindexing (there are only 5
+    /// buckets for larger parties), but it's now deterministic — every
+    /// device computes the same sorted `activeParticipants` list — and
+    /// surfaced via `sharedSeatPlayerCount` and a log instead of being
+    /// silent. See CODE_AUDIT §5.2.
     @MainActor
     func assignSeatsForSharePlay(groupSession: GroupSession<RPGActivity>?, isMaster: Bool) {
         guard let groupSession else {
