@@ -732,8 +732,20 @@ final class RPGSharePlayController {
     #if os(visionOS)
     func setup(tabletopGame: TabletopGame, gameTableModel: GameTableModel? = nil) {
         self.tabletopGame = tabletopGame
-        guard let groupSession else { return }
-        tabletopGame.coordinateWithSession(groupSession)
+        if let groupSession {
+            // `coordinateWithSession` is a synchronous, @MainActor-required TabletopKit call
+            // that can block the main thread while the audio session is active (its internal
+            // AVAudioSession route/category reconfiguration — SessionCore::setCategory).
+            // Apple's own TabletopKit sample defers this exact call inside `Task { @MainActor
+            // in }` for the same reason. Do the same so it runs as its own main-actor turn
+            // instead of serializing in front of the seating/map/pawn sync work that follows
+            // it in `GameTableView.initializeGameIfNeeded()`.
+            let task = Task { @MainActor [weak self, weak tabletopGame] in
+                guard let self, let tabletopGame, self.tabletopGame === tabletopGame else { return }
+                tabletopGame.coordinateWithSession(groupSession)
+            }
+            trackSessionTask(task, key: Self.coordinateSessionTaskKey)
+        }
 
         if let gameTableModel = gameTableModel {
             setupSeatAssignment(gameTableModel: gameTableModel)
@@ -741,6 +753,12 @@ final class RPGSharePlayController {
     }
     #endif
 }
+
+#if os(visionOS)
+private extension RPGSharePlayController {
+    static let coordinateSessionTaskKey = UUID()
+}
+#endif
 
 extension RPGSharePlayController {
     /// Sends to the whole SharePlay session by default. Supplying a participant
