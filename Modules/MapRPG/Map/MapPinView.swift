@@ -207,12 +207,20 @@ final class MapPinViewModel {
     fileprivate func handleTap(on node: MapPinNode, context: MapPinActionContext) {
         if context == .editor {
             setExpanded(id: node.isExpanded ? nil : node.id)
-        } else if context == .gameMaster {
-            setExpanded(id: nil)
         }
+        // A master's tap either joins battle prep or opens the pin action
+        // menu — decided by `MapEditorActionRouter.handlePinSingleTap`,
+        // which toggles `isExpandedId` itself (via `handleLongPress`) once
+        // it knows battle prep didn't consume the tap. Nothing to do here
+        // for `.gameMaster` up front.
         interactionHandler?(.tap(pin: node.pin, isPointer: node.isPointer))
     }
 
+    /// Toggles the pin action menu. Despite the name, this is no longer tied
+    /// to a physical long-press gesture — it's invoked from a master's
+    /// single tap (via `MapEditorActionRouter`) once battle prep doesn't
+    /// consume the tap, and directly from VoiceOver's "Open Pin Actions"
+    /// custom action.
     fileprivate func handleLongPress(
         on node: MapPinNode,
         context: MapPinActionContext
@@ -566,20 +574,12 @@ private struct MapPinTapGestureModifier: ViewModifier {
                 .highPriorityGesture(singleTapGesture)
                 .simultaneousGesture(doubleTapGesture)
         case .gameMaster:
-            // A master uses the same single-tap highlight behavior as a player.
-            // The action fan is deliberately behind a stationary long press so
-            // tapping and dragging never accidentally expose its hit targets.
-#if os(tvOS)
+            // A master's tap either joins battle prep or opens the pin
+            // action menu — see `MapEditorActionRouter.handlePinSingleTap`.
+            // Long press is no longer used for pins.
             content.highPriorityGesture(
                 doubleTapGesture.exclusively(before: singleTapGesture)
             )
-#else
-            content.highPriorityGesture(
-                longPressGesture.exclusively(
-                    before: doubleTapGesture.exclusively(before: singleTapGesture)
-                )
-            )
-#endif
         }
     }
 
@@ -598,18 +598,6 @@ private struct MapPinTapGestureModifier: ViewModifier {
             }
         }
     }
-
-#if !os(tvOS)
-    private var longPressGesture: some Gesture {
-        LongPressGesture(minimumDuration: 0.45, maximumDistance: 3)
-            .onEnded { succeeded in
-                guard succeeded else { return }
-                withAnimation(reduceMotion ? nil : .default) {
-                    model.handleLongPress(context: actionContext)
-                }
-            }
-    }
-#endif
 }
 
 #Preview {

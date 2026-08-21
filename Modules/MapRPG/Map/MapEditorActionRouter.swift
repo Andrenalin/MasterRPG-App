@@ -195,18 +195,20 @@ final class MapEditorActionRouter {
         guard !isPointer else { return }
         switch session.mapMode {
         case .gameMaster:
-            performGameMasterMutation(pinId: pinId) {
-                if root.gameController.addBattleCombatant(
-                    itemId: session.mapId,
-                    pinId: pinId
-                ) {
-                    return true
-                }
-                return root.gameController.toggleHighlightPin(
+            let addedCombatant = performGameMasterMutation(pinId: pinId) {
+                root.gameController.addBattleCombatant(
                     itemId: session.mapId,
                     pinId: pinId
                 )
             }
+            guard !addedCombatant else { return }
+            // Battle prep didn't consume the tap — a master's tap opens/closes
+            // the local pin action menu instead of highlighting (that stays
+            // player-only, below). Reuses the existing menu-toggle logic
+            // (`MapPinViewModel.handleLongPress`, still driven by VoiceOver's
+            // "Open Pin Actions" custom action too) now that long press is no
+            // longer wired to a gesture.
+            session.pins.pinNode(for: pinId)?.handleLongPress(context: .gameMaster)
         case .player:
             performPlayerMutation(pinId: pinId) {
                 root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
@@ -320,12 +322,14 @@ final class MapEditorActionRouter {
         session.actions.sendPinUpdate?(pinId)
     }
 
-    private func performGameMasterMutation(pinId: UUID, mutation: () -> Bool) {
-        guard session.mapMode == .gameMaster, mutation() else { return }
+    @discardableResult
+    private func performGameMasterMutation(pinId: UUID, mutation: () -> Bool) -> Bool {
+        guard session.mapMode == .gameMaster, mutation() else { return false }
         synchronizePinFromMap(pinId: pinId)
         if session.isStreaming {
             session.actions.sendMapUpdates?()
         }
+        return true
     }
 
     private func synchronizePinFromMap(pinId: UUID) {

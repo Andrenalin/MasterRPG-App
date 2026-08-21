@@ -16,7 +16,19 @@ class GameRenderer: TabletopGame.RenderDelegate {
     // -0.7 assumes Apple's 1.5 m-tall sample volume (origin at volume center);
     // our volume is flatter, so the view corrects it via placeTable(bottomY:)
     // once RealityView reports the actual volume bounds.
-    let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: 0)
+    //
+    // `z: -0.5` pushes the table half a meter further from the viewer within
+    // the volume — the table used to sit centered on the volume's own depth
+    // axis, right up against the near clipping bound (only the ~0.075 m
+    // `mapMargin`-derived clearance `WindowVisionList`'s `.defaultSize`
+    // leaves around the table's own `tableWidth`), which read as the table
+    // being uncomfortably close when the volumetric window opened. Unlike
+    // the Y offset, this one is never overwritten after init — only
+    // `placeTable(bottomY:)` re-targets Y once the real volume bounds are
+    // known. `WindowVisionList`'s `.defaultSize(depth:)` grows in lockstep
+    // (see its own comment) so the extra room opens in front of the table
+    // instead of clipping its far edge.
+    let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: -0.5)
     weak var game: GameTableModel?
     private var didLoadAssets = false
 

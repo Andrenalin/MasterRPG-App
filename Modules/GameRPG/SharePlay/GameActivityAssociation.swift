@@ -16,8 +16,11 @@ public extension View {
     }
 
     /// Marks this view's scene as the primary SharePlay scene while the game is
-    /// presented on the TabletopKit volume, so the surround spatial template
-    /// seats participants around the table.
+    /// presented on the TabletopKit volume, so `TabletopGame
+    /// .coordinateWithSession(_:)` seats participants around the table
+    /// itself (see `RPGSharePlayController.applyShareState()`'s own doc for
+    /// why that's left to TabletopKit rather than a manual
+    /// `spatialTemplatePreference` override).
     func gameTableActivityAssociation(root: GameRoot, sceneId: String) -> some View {
         modifier(GameActivityAssociationModifier(root: root, sceneId: sceneId, modes: [.tabletop]))
     }

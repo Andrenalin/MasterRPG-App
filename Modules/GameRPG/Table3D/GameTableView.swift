@@ -168,23 +168,21 @@ public struct GameTableView: View {
                             loadedGame.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
                         }
                 )
-                // Double tap toggles zoom, single tap toggles highlight, and a
-                // stationary long press opens the master's local action menu.
-                // Exclusivity prevents one physical interaction firing two
-                // domain actions. The room cluster below is exclusively
-                // *after* this one so a pin sitting over a room's fog always
-                // wins the tap — its predicate simply never matches when the
-                // touch lands only on the fog, letting the room cluster win.
+                // Double tap toggles zoom for both roles. Single tap toggles
+                // highlight for a player, but opens/closes the master's
+                // local action menu instead — long press is no longer used
+                // for pins. Exclusivity prevents one physical interaction
+                // firing two domain actions. The room cluster below is
+                // exclusively *after* this one so a pin sitting over a
+                // room's fog always wins the tap — its predicate simply
+                // never matches when the touch lands only on the fog,
+                // letting the room cluster win.
                 .simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)
+                    TapGesture(count: 2)
                         .targetedToEntity(where: .has(PinComponent.self))
                         .exclusively(
-                            before: TapGesture(count: 2)
+                            before: TapGesture()
                                 .targetedToEntity(where: .has(PinComponent.self))
-                                .exclusively(
-                                    before: TapGesture()
-                                        .targetedToEntity(where: .has(PinComponent.self))
-                                )
                         )
                         .exclusively(
                             before: LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)
@@ -196,13 +194,10 @@ public struct GameTableView: View {
                         )
                         .onEnded { value in
                             switch value {
-                            case .first(.first(let longPress)):
-                                guard let pinId = longPress.entity.components[PinComponent.self]?.pinId else { return }
-                                loadedGame.pinLongPressed(pinId: pinId)
-                            case .first(.second(.first(let doubleTap))):
+                            case .first(.first(let doubleTap)):
                                 guard let pinId = doubleTap.entity.components[PinComponent.self]?.pinId else { return }
                                 loadedGame.pinDoubleTapped(pinId: pinId)
-                            case .first(.second(.second(let tap))):
+                            case .first(.second(let tap)):
                                 guard let pinId = tap.entity.components[PinComponent.self]?.pinId else { return }
                                 loadedGame.pinTapped(pinId: pinId)
                             case .second(.first(let roomLongPress)):
@@ -776,26 +771,22 @@ private struct GameTableRealityContent: View {
     /// `tableMoveGesture`'s own doc for why it can't derive an exact one.
     private static let tableMoveScale: Float = 0.001
 
+    /// Double tap toggles zoom for both roles. Single tap toggles highlight
+    /// for a player, but opens/closes the master's local action menu
+    /// instead — long press is no longer used for pins.
     private var pinTapGesture: some Gesture {
-        LongPressGesture(minimumDuration: 0.45, maximumDistance: 5)
+        TapGesture(count: 2)
             .targetedToEntity(where: .has(PinComponent.self))
             .exclusively(
-                before: TapGesture(count: 2)
+                before: TapGesture()
                     .targetedToEntity(where: .has(PinComponent.self))
-                    .exclusively(
-                        before: TapGesture()
-                            .targetedToEntity(where: .has(PinComponent.self))
-                    )
             )
             .onEnded { value in
                 switch value {
-                case .first(let longPress):
-                    guard let pinId = longPress.entity.components[PinComponent.self]?.pinId else { return }
-                    game.pinLongPressed(pinId: pinId)
-                case .second(.first(let doubleTap)):
+                case .first(let doubleTap):
                     guard let pinId = doubleTap.entity.components[PinComponent.self]?.pinId else { return }
                     game.pinDoubleTapped(pinId: pinId)
-                case .second(.second(let tap)):
+                case .second(let tap):
                     guard let pinId = tap.entity.components[PinComponent.self]?.pinId else { return }
                     game.pinTapped(pinId: pinId)
                 }

@@ -43,7 +43,12 @@ struct WindowVisionList: Scene {
         // RealityView clips content outside the volume's actual bounds
         // (see `GameTableView`), so this has to grow in lockstep with the
         // table itself, not just the table's own mesh/seat math.
-        .defaultSize(width: 2.15, height: 0.3, depth: 1.65, in: .meters)
+        // Depth carries an extra 0.5 m of empty space in front of the table
+        // beyond that clearance — `GameRenderer.rootOffset.z` pushes the
+        // table back into it so the table doesn't sit right at the volume's
+        // near bound, uncomfortably close to the viewer, when this window
+        // opens.
+        .defaultSize(width: 2.15, height: 0.3, depth: 2.15, in: .meters)
         .defaultWindowPlacement { _, _ in
             // Place the game table in front of the user when opened
             WindowPlacement(.utilityPanel)

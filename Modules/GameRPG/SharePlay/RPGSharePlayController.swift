@@ -2481,7 +2481,24 @@ extension RPGSharePlayController {
         configuration.supportsGroupImmersiveSpace = true
         switch gameModel?.shareState.mode ?? .window {
         case .tabletop:
-            configuration.spatialTemplatePreference = .surround.contentExtent(1)
+            // Deliberately no `spatialTemplatePreference` override here (was
+            // `.surround.contentExtent(1)`, then `.contentExtent(100)` before
+            // that — see git history). `spatialTemplatePreference` only
+            // controls where the system arranges participants' spatial
+            // Personas, but forcing `.surround` for the volumetric table
+            // window made the *table itself* appear ~1.5 m above the floor
+            // for every participant instead of at the same table height it
+            // renders at without SharePlay — `GameTableView`'s own
+            // `placeTable(bottomY:)` never changes between the two, so the
+            // difference was this override fighting `TabletopGame
+            // .coordinateWithSession(_:)` (`setup(tabletopGame:)` below),
+            // which is TabletopKit's own documented hook for coordinating a
+            // table with a group session. Apple's TabletopKit SharePlay
+            // sample sets no `spatialTemplatePreference` at all and relies
+            // on `coordinateWithSession` alone — leaving this unset here
+            // does the same, and still lets TabletopKit seat participants
+            // around the table on its own.
+            break
         case .window, .immersive:
             configuration.spatialTemplatePreference = .sideBySide
         }

@@ -960,9 +960,11 @@ final class GameTableModel: Sendable {
         }
     }
 
-    /// A tap toggles the shared highlight for both roles. On the master this
-    /// first adds a missing combatant while Surprise is being prepared. Once
-    /// the row exists, taps feed the active battle row's defender set.
+    /// A tap first adds a missing combatant while Surprise is being
+    /// prepared. Otherwise a player's tap toggles the shared highlight,
+    /// while a master's tap instead opens/closes the local pin action
+    /// menu — presentation-only state, so it neither highlights nor
+    /// broadcasts. Long press is no longer used for pins.
     func pinTapped(pinId: UUID) {
         guard let mapId = currentMapId,
               let mapModel = currentMapModel(),
@@ -971,22 +973,18 @@ final class GameTableModel: Sendable {
         if addPinToBattleRound(pinId: pinId) {
             return
         }
+        if isGameMaster {
+            toggleSelectedPin(pinId: pinId, mapModel: mapModel)
+            return
+        }
         guard mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
-        if isGameMaster {
-            broadcastMapState(for: mapId)
-        } else {
-            sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
-        }
+        sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
     }
 
-    /// The game-master action menu is local presentation state and therefore
-    /// belongs to a long press rather than competing with battle highlighting.
-    func pinLongPressed(pinId: UUID) {
-        guard isGameMaster,
-              let mapModel = currentMapModel(),
-              pinId != mapModel.pointer.id,
-              setup.pinPawns.contains(where: { $0.pinId == pinId }) else { return }
+    /// Opens or closes the master's local pin action menu — presentation-only
+    /// state, so it bypasses map mutation/broadcast entirely.
+    private func toggleSelectedPin(pinId: UUID, mapModel: MapModel) {
         if selectedPinId == pinId {
             clearPinSelection()
         } else {
