@@ -77,7 +77,22 @@ struct InlineEditorView: View {
         // (TextEditModel.updateNameLinks(), ~100ms) — this piggybacks on that
         // existing signal to commit the value rather than adding a second,
         // separate debounce.
+        //
+        // Restricted to `.text` — for `.number`/`.decimal` the text field is
+        // shown alongside the stepper only so a formula/link value stays
+        // inspectable (e.g. a hit-points entry set up as a pure markdown
+        // link), never as a second way to edit it. Committing raw text here
+        // for those types would overwrite the "base|modifier" convention
+        // wholesale with plain text — destroying the link and permanently
+        // freezing any dependent calculation (e.g. `pin.healthPercent`) at
+        // 100%. It's also one unintended trigger away: `EntryNameEditor`'s
+        // attributed-link rendering can normalize the stored markdown
+        // differently than what's on disk, and the sync in the `onChange`
+        // above (whenever the stored value legitimately changes, e.g. from
+        // the stepper) re-syncs `editModel.name` right back through this
+        // same debounce.
         .onChange(of: editModel.name) {
+            guard entry.editType == .text else { return }
             commitValue(editModel.name.trimmingCharacters(in: .whitespacesAndNewlines))
         }
     }
