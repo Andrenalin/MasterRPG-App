@@ -8,7 +8,7 @@ import SwiftUI
 /// Unlike the old hardcoded `GameSecurity.passcode` — a single secret shared
 /// by every install of the app, letting any nearby device join or inject
 /// state into someone else's game — these codes are generated randomly per
-/// installation, persisted in `UserDefaults`, and can be changed by the user
+/// installation, persisted in the Keychain, and can be changed by the user
 /// at any time from the game setup screen.
 ///
 /// Two independent codes exist because two independent listeners exist:
@@ -27,31 +27,38 @@ import SwiftUI
 public final class GameJoinCodeModel: Sendable {
     public init() {
         self.defaults = .standard
-        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, defaults: .standard)
-        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, defaults: .standard)
+        self.codeStorage = KeychainJoinCodeStorage()
+        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults)
+        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults)
         lastUsedMasterJoinCode = UserDefaults.standard.string(forKey: Self.lastUsedMasterJoinCodeKey)
     }
 
-    init(defaults: UserDefaults) {
+    init(defaults: UserDefaults, codeStorage: any JoinCodeStorage = KeychainJoinCodeStorage()) {
         self.defaults = defaults
-        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, defaults: defaults)
-        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, defaults: defaults)
+        self.codeStorage = codeStorage
+        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults)
+        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults)
         lastUsedMasterJoinCode = defaults.string(forKey: Self.lastUsedMasterJoinCodeKey)
     }
 
     private let defaults: UserDefaults?
+    /// Backs `masterCode`/`playerCode` — the codes that gate network trust between devices.
+    /// `lastUsedMasterJoinCode` below stays in `defaults`: it's a remembered convenience value
+    /// (a code entered for joining a *different* device), not a secret this device presents.
+    /// See CODE_AUDIT §6.2.
+    private let codeStorage: any JoinCodeStorage
 
     public var masterCode: String {
         didSet {
             guard oldValue != masterCode else { return }
-            defaults?.set(masterCode, forKey: Self.masterCodeKey)
+            codeStorage.set(masterCode, forKey: Self.masterCodeKey)
         }
     }
 
     public var playerCode: String {
         didSet {
             guard oldValue != playerCode else { return }
-            defaults?.set(playerCode, forKey: Self.playerCodeKey)
+            codeStorage.set(playerCode, forKey: Self.playerCodeKey)
         }
     }
 
@@ -75,12 +82,20 @@ public final class GameJoinCodeModel: Sendable {
         return String(repeating: "0", count: 4 - digits.count) + digits
     }
 
-    private static func loadOrGenerate(key: String, defaults: UserDefaults) -> String {
-        if let stored = defaults.string(forKey: key), isValidCode(stored) {
+    private static func loadOrGenerate(key: String, storage: any JoinCodeStorage, legacyDefaults: UserDefaults?) -> String {
+        if let stored = storage.string(forKey: key), isValidCode(stored) {
             return stored
         }
+        // Migrate a pre-existing `UserDefaults`-stored code (this model's storage before
+        // CODE_AUDIT §6.2) into the Keychain instead of silently generating a new one, which
+        // would invalidate any code the user already shared out-of-band.
+        if let legacy = legacyDefaults?.string(forKey: key), isValidCode(legacy) {
+            storage.set(legacy, forKey: key)
+            legacyDefaults?.removeObject(forKey: key)
+            return legacy
+        }
         let generated = randomCode()
-        defaults.set(generated, forKey: key)
+        storage.set(generated, forKey: key)
         return generated
     }
 
