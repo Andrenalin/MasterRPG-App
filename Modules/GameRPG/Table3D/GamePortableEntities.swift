@@ -221,9 +221,9 @@ private struct GameTableTextureView: View {
     let sourceRenderSize: CGSize
     let outputSize: CGSize
     let coordinateSize: CGSize
-    /// The `coordinateSize`-space rect to zoom the composited image+fog to —
-    /// the full map by default, or a room-centered crop when a room is
-    /// focused. See `GameTableModel.boardFocusRect`.
+    /// The `coordinateSize`-space rect the composited image+fog is framed
+    /// to — always the full map, since the 3D board never crops/zooms into
+    /// a focused room. See `GameTableModel.boardFocusRect`.
     let focusRect: CGRect
     let degrees: Double
     let entries: [MapEntryModel]
@@ -301,6 +301,17 @@ private struct GameTableTextureView: View {
                         lineWidth: max(1, displayConfig.borderThickness * lineScale)
                     )
                 }
+            }
+
+            // The 3D board never crops/zooms into a focused room (see
+            // `GameTableModel.boardFocusRect`) — a red border marks where
+            // the 2D map's own zoom is centered instead.
+            if entry.focused {
+                context.stroke(
+                    path,
+                    with: .color(.red),
+                    style: StrokeStyle(lineWidth: max(1, 10 * lineScale), lineCap: .round, lineJoin: .round)
+                )
             }
         }
     }

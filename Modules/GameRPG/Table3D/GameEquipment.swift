@@ -178,11 +178,11 @@ final class Board {
             mapModel?.entries.filter { !$0.isShown } ?? []
         }
 
-        // The crop to zoom the composited image+fog to — the full map by
-        // default, or a room-centered crop when a room is focused. `canvasSize`
-        // doubles as both the entries' coordinate space and the output frame
-        // here (unlike the iOS/macOS renderer, which keeps them separate), so
-        // the crop needs no unit conversion before use below.
+        // Always the full map — the 3D board never crops/zooms into a
+        // focused room (only the 2D map does; see `GameTableModel.boardFocusRect`).
+        // `canvasSize` doubles as both the entries' coordinate space and the
+        // output frame here (unlike the iOS/macOS renderer, which keeps them
+        // separate), so this needs no unit conversion before use below.
         let focusRect = GameTableModel.boardFocusRect(
             entries: mapModel?.entries ?? [],
             imageSize: canvasSize,
@@ -243,7 +243,7 @@ final class Board {
                         if !entry.isShown {
                             // Fill with the configured fog color
                             context.fill(path, with: .color(displayConfig?.color ?? .black))
-                            
+
                             // Draw border if configured
                             if displayConfig?.hasBorder == true, let displayConfig {
                                 context.stroke(
@@ -253,6 +253,17 @@ final class Board {
                                 )
                             }
                         }
+                    }
+
+                    // The 3D board never crops/zooms into a focused room (see
+                    // `GameTableModel.boardFocusRect`) — a red border marks
+                    // where the 2D map's own zoom is centered instead.
+                    if entry.focused {
+                        context.stroke(
+                            path,
+                            with: .color(.red),
+                            style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round)
+                        )
                     }
                 }
             }

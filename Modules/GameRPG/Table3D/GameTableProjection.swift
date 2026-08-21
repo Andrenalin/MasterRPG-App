@@ -231,10 +231,11 @@ struct MapTableProjection {
     let degrees: Double
     let planeWidth: Float
     let planeDepth: Float
-    /// The portion of `imageSize` currently mapped onto the full board plane —
-    /// the whole image by default, or a room-centered crop when a room is
-    /// focused (see `GameTableModel.boardFocusRect`). A pin located outside
-    /// this rect projects beyond the physical table edges.
+    /// The portion of `imageSize` mapped onto the full board plane — always
+    /// the whole image today, since the 3D board never crops/zooms into a
+    /// focused room (see `GameTableModel.boardFocusRect`; only the 2D map
+    /// still does). A pin located outside this rect projects beyond the
+    /// physical table edges.
     let focusRect: CGRect
 
     /// Table meters per source-image point, at this projection's scale.
@@ -242,14 +243,12 @@ struct MapTableProjection {
     /// gives the 3D token the same size relative to the table that the pin
     /// has relative to the map image.
     ///
-    /// Uses `focusRect`, not the full `imageSize` — when a room is focused,
-    /// the board shows that (smaller) crop magnified to fill the same plane,
-    /// so a pin needs to grow by the same magnification to keep its size
-    /// relative to the now-larger map features around it, matching how the
-    /// 2D map's room-focus zoom scales its pins right along with the map
-    /// image (`MapEditorCanvas`'s `scaleEffect` covers both together).
-    /// Otherwise a pin stays a constant physical size while the map zooms in
-    /// around it, and visibly shrinks in comparison.
+    /// Uses `focusRect` rather than assuming it always equals `imageSize` —
+    /// `boardFocusRect` returns the full image today, but any future crop
+    /// would need pins to grow by the same magnification to stay correctly
+    /// sized relative to the map around them, matching how the 2D map's own
+    /// room-focus zoom already scales its pins along with the map image
+    /// (`MapEditorCanvas`'s `scaleEffect` covers both together).
     var metersPerPoint: Float {
         guard focusRect.width > 0 else { return 0 }
         return planeWidth / Float(focusRect.width)
@@ -290,7 +289,7 @@ struct MapTableProjection {
 
     /// Exact inverse of `tablePosition(for:)`, clamped to the full image
     /// bounds (not just `focusRect`) since a pin may be dropped anywhere on
-    /// the table even while a room crop is showing.
+    /// the table.
     func mapLocation(for position: SIMD3<Float>) -> CGPoint {
         let x = (CGFloat(position.x / planeWidth) + 0.5) * focusRect.width + focusRect.minX
         let y = (CGFloat(position.z / planeDepth) + 0.5) * focusRect.height + focusRect.minY

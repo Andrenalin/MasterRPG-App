@@ -95,18 +95,15 @@ final class GameTableModel: Sendable {
     /// Pin-only mapState messages can then skip a full fog recomposite.
     private var fogSignature: Int?
 
-    /// A local, per-client pan applied on top of `boardFocusRect`'s
-    /// room-centered crop — dragging the map surface while a room is
-    /// focused/zoomed adjusts this instead of moving anything in 3D space
-    /// (see `GameTableView.viewportPanGesture`) or touching map data. Not
-    /// networked: each client frames their own zoomed view independently,
-    /// same as the 2D map's viewport is per-client.
+    /// A local, per-client pan gesture value (dragging the map surface while
+    /// a room is focused — see `GameTableView.viewportPanGesture`) that
+    /// `boardFocusRect` no longer applies to anything: the 3D board never
+    /// crops/zooms into a focused room (only the 2D map does), so this stays
+    /// at whatever the gesture last wrote but has no rendering effect. Kept
+    /// so the gesture itself doesn't need touching. Not networked.
     var manualViewportOffset: CGPoint = .zero
-    /// The room id `manualViewportOffset` was last computed against. A stale
-    /// pan (from before a *different* room was focused, or before focus
-    /// cleared) could point outside the new crop entirely, so it resets
-    /// whenever this changes — including a focus change that arrived over
-    /// the network, not just ones this client made.
+    /// The room id `manualViewportOffset` was last computed against, used
+    /// only to detect a focus change mid-drag (see `panViewport(fromTableStart:toTableEnd:expectedRoomId:)`).
     private var lastFocusedRoomId: UUID?
 
     @MainActor
@@ -513,69 +510,28 @@ final class GameTableModel: Sendable {
 
     // MARK: - Viewport & Board Projection
 
-    /// The crop rect (in the given map's oriented coordinate space, same
-    /// units as `MapEntryModel.coordinates`) the 3D board should show: the
-    /// full map by default, or — when a room is focused — a room-centered,
-    /// aspect-matched crop that fills the board with that room. Mirrors the
-    /// 2D map's own room-focus zoom (`MapEditorSession.focus(on:)`), but as a
-    /// fill-and-clip crop rather than a scroll, since the 3D board is a
-    /// fixed-size surface, not a scrollable canvas. Shared here because both
-    /// `GameSetup` implementations (visionOS and iOS/macOS) duplicate
-    /// `MapTableProjection` and its board texture rendering — this keeps the
-    /// geometry itself in one place.
-    /// `panOffset` shifts the crop's center before clamping — the local,
-    /// per-client adjustment from dragging the map surface while zoomed (see
-    /// `manualViewportOffset`). Zero by default: the auto-fit crop centered
-    /// on the focused room, unchanged from before panning existed.
-    static func boardFocusRect(entries: [MapEntryModel], imageSize: CGSize, panOffset: CGPoint = .zero) -> CGRect {
-        let fullRect = CGRect(origin: .zero, size: imageSize)
-        guard imageSize.width > 0, imageSize.height > 0,
-              let focused = entries.first(where: \.focused),
-              let bounds = boundingBox(of: focused.coordinates),
-              bounds.width > 0, bounds.height > 0 else {
-            return fullRect
-        }
-
-        // Same fit computation the 2D map's `focus(on:)` uses (padding + the
-        // smaller of the two axis scales), just used to size a crop rect
-        // instead of a viewport scale — `scale` is floored at 1 so a room
-        // that's already as big as (or bigger than) the full map falls back
-        // to showing the whole map rather than "zooming out" past it.
-        let padding: CGFloat = 50
-        let paddedSize = CGSize(width: bounds.width + padding * 2, height: bounds.height + padding * 2)
-        let widthScale = imageSize.width / paddedSize.width
-        let heightScale = imageSize.height / paddedSize.height
-        let scale = max(min(widthScale, heightScale), 1)
-        guard scale.isFinite, scale > 0 else { return fullRect }
-
-        let cropSize = CGSize(width: imageSize.width / scale, height: imageSize.height / scale)
-        var origin = CGPoint(
-            x: bounds.midX - cropSize.width / 2 + panOffset.x,
-            y: bounds.midY - cropSize.height / 2 + panOffset.y
-        )
-        origin.x = min(max(origin.x, 0), imageSize.width - cropSize.width)
-        origin.y = min(max(origin.y, 0), imageSize.height - cropSize.height)
-        return CGRect(origin: origin, size: cropSize)
-    }
-
-    private static func boundingBox(of coordinates: [CGPoint]) -> CGRect? {
-        guard let first = coordinates.first else { return nil }
-        var minX = first.x, maxX = first.x, minY = first.y, maxY = first.y
-        for point in coordinates.dropFirst() {
-            minX = min(minX, point.x)
-            maxX = max(maxX, point.x)
-            minY = min(minY, point.y)
-            maxY = max(maxY, point.y)
-        }
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    /// The rect (in the given map's oriented coordinate space, same units as
+    /// `MapEntryModel.coordinates`) the 3D board shows — always the full map.
+    /// Unlike the 2D map's own room-focus zoom (`MapEditorSession.focus(on:)`),
+    /// the 3D board deliberately never crops/zooms into a focused room: its
+    /// fixed-size surface makes a fill-and-clip crop feel disorienting in a
+    /// way the 2D map's scrollable canvas doesn't. A focused room instead gets
+    /// a red highlight border at full scale (see `Board.generateCompositeTexture`
+    /// / `GameTableTextureRenderer.render`'s `drawFog`). Kept as the shared
+    /// choke point both `GameSetup` implementations (visionOS and iOS/macOS)
+    /// route pin positions, room hit-testing, and board-texture framing
+    /// through, so "never crop" only has to be decided in one place.
+    static func boardFocusRect(entries _: [MapEntryModel], imageSize: CGSize, panOffset _: CGPoint = .zero) -> CGRect {
+        CGRect(origin: .zero, size: imageSize)
     }
 
     var rooms: [MapEntryModel] {
         currentMapModel()?.entries ?? []
     }
 
-    /// The room the game master currently has zoomed/focused, mirroring the
-    /// 2D map's own notion of a focus room. Used by the shared
+    /// The room the game master currently has focused, mirroring the 2D
+    /// map's own notion of a focus room (which is the only one that actually
+    /// zooms into it — see `boardFocusRect`). Used by the shared
     /// `ChooseMapPinsButton` toolbar control to know where a newly added
     /// monster pin should land.
     var focusedRoomId: UUID? {
@@ -589,11 +545,11 @@ final class GameTableModel: Sendable {
         manualViewportOffset = .zero
     }
 
-    /// Pans the zoomed viewport by a map-coordinate delta — dragging the map
-    /// surface while a room is focused. Purely a local render adjustment
-    /// (`manualViewportOffset`, folded into `boardFocusRect`); never touches
-    /// map data, so it works the same for the game master and every player,
-    /// each framing their own view independently.
+    /// Updates `manualViewportOffset` by a map-coordinate delta — dragging
+    /// the map surface while a room is focused. No longer has any rendering
+    /// effect (`boardFocusRect` never crops), since only the 2D map still
+    /// zooms into a focused room; kept, along with the gesture that drives
+    /// it, rather than ripping the pan gesture out entirely.
     private func panViewport(by delta: CGPoint) {
         guard focusedRoomId != nil else { return }
         // Dragging right should bring content on the left into view (like
@@ -607,13 +563,13 @@ final class GameTableModel: Sendable {
 
     /// Entry point for `GameTableView.viewportPanGesture`: converts a drag's
     /// start/end table positions into a map-coordinate delta using whatever
-    /// projection is currently on screen (so the pan tracks the finger
-    /// exactly, at any zoom level), then pans by it. No-ops without a
-    /// focused room — there's no crop to pan within otherwise.
+    /// projection is currently on screen, then pans by it. No-ops without a
+    /// focused room. See `panViewport(by:)` — this has no visible effect on
+    /// the 3D board any more, since it never crops into a focused room.
     func panViewport(fromTableStart start: SIMD3<Float>, toTableEnd end: SIMD3<Float>, expectedRoomId: UUID?) {
         // Discards the commit if the focused room changed mid-gesture — e.g. a network-driven
         // focus change from the GM's own device while this player was mid-drag. Applying the
-        // delta against a since-changed crop/baseline would otherwise produce a visible,
+        // delta against a since-changed baseline would otherwise produce a visible,
         // nonsensical jump instead of just dropping the now-meaningless drag. See CODE_AUDIT §5.12.
         guard let expectedRoomId, focusedRoomId == expectedRoomId,
               let mapModel = currentMapModel() else { return }
@@ -726,10 +682,11 @@ final class GameTableModel: Sendable {
     }
 
     /// Toggles the same "focused" flag the 2D map's room long-press uses to
-    /// zoom its viewport to a room — keeping a concurrently open 2D map view
-    /// in sync, and, unlike the 2D map's scrollable viewport, re-rendering
-    /// the 3D board's own fixed-size texture as a fill-and-clip crop onto the
-    /// focused room (see `boardFocusRect`).
+    /// zoom its own viewport to a room — keeping a concurrently open 2D map
+    /// view in sync. Unlike the 2D map, the 3D board never crops/zooms into
+    /// the focused room itself; it re-renders its fixed-size texture with
+    /// just a red highlight border marking that room instead (see
+    /// `boardFocusRect`).
     func toggleRoomFocus(_ roomId: UUID) async {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
@@ -919,10 +876,9 @@ final class GameTableModel: Sendable {
                 degrees: currentMapDegrees
             )
         // Must match whatever projection actually rendered the board (and
-        // thus whatever the user saw under their finger) — otherwise a pin
-        // dropped while a room is focused/zoomed converts back to the wrong
-        // map location, since the un-cropped projection denormalizes against
-        // the whole map instead of the visible crop.
+        // thus whatever the user saw under their finger) — `boardFocusRect`
+        // always returns the full map now, but this keeps the two in
+        // lockstep regardless.
         let projection = MapTableProjection(
             imageSize: coordinateSize,
             degrees: 0,
