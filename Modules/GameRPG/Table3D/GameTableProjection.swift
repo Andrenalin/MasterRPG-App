@@ -18,7 +18,8 @@ extension GameSetup {
         degrees: Double,
         isGameMaster: Bool,
         activeAttackerPinId: UUID?,
-        viewportPan: CGPoint
+        viewportPan: CGPoint,
+        healthPercent: (MapPinModel) -> Double?
     ) -> [UUID: UUID] {
         let allPins: [MapPinModel]
         if let mapModel {
@@ -76,6 +77,7 @@ extension GameSetup {
                     position: position,
                     hiddenForMaster: hiddenForMaster,
                     activeAttackerPinId: activeAttackerPinId,
+                    healthPercent: healthPercent(pin),
                     pointsToMeters: pointsToMeters
                 )
                 if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
@@ -88,6 +90,7 @@ extension GameSetup {
                     position: position,
                     hiddenForMaster: hiddenForMaster,
                     activeAttackerPinId: activeAttackerPinId,
+                    healthPercent: healthPercent(pin),
                     pointsToMeters: pointsToMeters
                 )
                 pinPawns.append(pawn)
@@ -187,7 +190,8 @@ extension GameTableModel {
             degrees: currentMapDegrees,
             isGameMaster: isGameMaster,
             activeAttackerPinId: activeAttackerPinId,
-            viewportPan: manualViewportOffset
+            viewportPan: manualViewportOffset,
+            healthPercent: healthPercent(for:)
         )
         setup.syncRooms(
             mapModel: mapModel,
@@ -203,6 +207,19 @@ extension GameTableModel {
             }
             trackThumbnailTask(for: pinId, task)
         }
+    }
+
+    /// Mirrors `MapPinView`'s own `healthPercent`: prefers a live-computed
+    /// percent from the pin's linked hit-points entry whenever it's a
+    /// tracked battle combatant (only true on the game master's own screen
+    /// — a player has no local Character to read one from), falling back to
+    /// the pin's last *broadcast* `healthPercent` otherwise. Both paths
+    /// render through `MapPinModel.healthBorderColor(for:)`.
+    private func healthPercent(for pin: MapPinModel) -> Double? {
+        guard let combatant = mapRoot.mapGameControllable.battleRoundModel.combatant(pinId: pin.id) else {
+            return pin.healthPercent
+        }
+        return mapRoot.mapGameControllable.healthPercent(for: combatant)
     }
 }
 

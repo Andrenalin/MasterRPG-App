@@ -176,7 +176,10 @@ extension MapPinModel {
     /// the next push. Both paths render through `healthBorderColor(for:)`.
     var healthBorderColor: Color { Self.healthBorderColor(for: healthPercent) }
 
-    static func healthBorderColor(for healthPercent: Double?) -> Color {
+    /// `public` so the 3D table (`GameRPG`) can render the identical
+    /// gray/green/orange/red rule on its pin tokens instead of duplicating
+    /// the thresholds.
+    public static func healthBorderColor(for healthPercent: Double?) -> Color {
         guard let healthPercent else { return .gray }
         return switch healthPercent {
         case ..<50: .red
