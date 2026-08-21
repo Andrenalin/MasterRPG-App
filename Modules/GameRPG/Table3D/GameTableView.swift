@@ -97,20 +97,23 @@ public struct GameTableView: View {
                         accessibilitySubscriptions.append(zoomSubscription)
                     }
 
-                    // Place the table on the actual floor of the volume. The volume is
-                    // flatter than Apple's 1.5 m sample (and the system may clamp the
-                    // requested size), so the fixed rootOffset would clip the scene.
+                    // Place the table on the actual floor of the volume, and back from
+                    // its actual front face — the volume is flatter than Apple's 1.5 m
+                    // sample, and the system may clamp the requested size on either
+                    // axis, so the fixed rootOffset alone would clip the scene or drift
+                    // out of step with the ornaments/system grab handle, which already
+                    // track these same real bounds.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
-                    loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
+                    loadedGame.renderer.placeTable(volumeBounds: volumeBounds)
 
                     if let pinMenu = attachments.entity(for: "pin-menu") {
                         loadedGame.registerPinMenuAttachment(pinMenu)
                     }
 
                 } update: { content, _ in
-                    // Re-anchor to the volume floor when the user resizes the volume.
+                    // Re-anchor to the volume's actual bounds when the user resizes it.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
-                    loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
+                    loadedGame.renderer.placeTable(volumeBounds: volumeBounds)
                     loadedGame.updatePinMenuAttachmentPosition()
                 } attachments: {
                     Attachment(id: "pin-menu") {
@@ -314,6 +317,10 @@ public struct GameTableView: View {
             root.gameModel.shareState.mode = .tabletop
             root.networkStore.sharePlayStore.applyShareState()
             configureSessionState(for: game)
+            game.applyFocusedDiceRollForLocalSeat = { [weak game] in
+                guard let game else { return }
+                applyCurrentFocusedDiceRoll(to: game)
+            }
             await game.handleMapChange(isGameMaster: game.isGameMaster)
             applyCurrentFocusedDiceRoll(to: game)
             return
@@ -336,6 +343,14 @@ public struct GameTableView: View {
             tabletopGame: initializedGame.tabletopGame,
             sharePlayController: root.networkStore.sharePlayStore
         )
+        // Set before `setupSeating` claims a seat — `GameObserver.playerChangedSeats`
+        // can fire as part of that claim landing, and needs this hook already in
+        // place to retry a dice-focus mirror that raced the not-yet-existing seat.
+        // See `GameTableModel.applyFocusedDiceRollForLocalSeat`.
+        initializedGame.applyFocusedDiceRollForLocalSeat = { [weak initializedGame] in
+            guard let initializedGame else { return }
+            applyCurrentFocusedDiceRoll(to: initializedGame)
+        }
         initializedGame.setupSeating(
             sharePlayController: root.networkStore.sharePlayStore
         )

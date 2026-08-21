@@ -2488,9 +2488,9 @@ extension RPGSharePlayController {
             // Personas, but forcing `.surround` for the volumetric table
             // window made the *table itself* appear ~1.5 m above the floor
             // for every participant instead of at the same table height it
-            // renders at without SharePlay — `GameTableView`'s own
-            // `placeTable(bottomY:)` never changes between the two, so the
-            // difference was this override fighting `TabletopGame
+            // renders at without SharePlay — `GameRenderer`'s own
+            // `placeTable(volumeBounds:)` never changes between the two, so
+            // the difference was this override fighting `TabletopGame
             // .coordinateWithSession(_:)` (`setup(tabletopGame:)` below),
             // which is TabletopKit's own documented hook for coordinating a
             // table with a group session. Apple's TabletopKit SharePlay

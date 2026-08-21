@@ -203,6 +203,17 @@ final class GameTableModel: Sendable {
     /// table" notice instead of the drop being silent. See CODE_AUDIT §5.1.
     private(set) var diceOverflowCount: Int?
 
+    /// Set by `GameTableView` to its own `applyCurrentFocusedDiceRoll(to:)`, so
+    /// `GameObserver.playerChangedSeats` can re-run it once the local player's own
+    /// seat claim actually lands. A player's seat claim (`claimSeat`/`claimAnySeat`)
+    /// is itself a synced TabletopKit action — in a SharePlay session it's only
+    /// confirmed into the snapshot asynchronously, same as any other equipment
+    /// update — so `applyDiceRoll`'s `localSeat` lookup can still read `nil` at the
+    /// moment `GameTableView` first calls it (right after `setupSeating`). Without a
+    /// later retry, that seat's dice would then never get placed or shown at all
+    /// until the next roll or focus change happened to call `applyDiceRoll` again.
+    var applyFocusedDiceRollForLocalSeat: (() -> Void)?
+
     // MARK: - Dice
 
     /// Mirrors the locally focused character-sheet dice set onto the local
