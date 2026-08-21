@@ -3,6 +3,14 @@
 import CoreRPG
 import SwiftUI
 
+/// Purely a safety margin for edge cases where macOS restores both windows at the same
+/// instant and the Game window's `SceneTrackerModifier` hasn't fired yet —
+/// `checkIfEditorShouldHandleDatabaseInit()`'s own doc explains why it's needed at all.
+/// Imperceptible to the user. See CODE_AUDIT §9.14.
+/// (A plain file-private constant rather than a `static let` member: Swift doesn't support
+/// stored `static` properties on a generic type like `DataBaseAppStoreAvailable<Content>`.)
+private let gameWindowRegistrationSafetyMargin: Duration = .milliseconds(150)
+
 public struct DataBaseAppStoreAvailable<Content: View>: View {
     public init(appModel: AppModel, contentView: @escaping (AppModel) -> Content) {
         self.appModel = appModel
@@ -55,12 +63,10 @@ public struct DataBaseAppStoreAvailable<Content: View>: View {
     //
     // Why the sleep? SceneTrackerModifier's `onChange(of: scenePhase,
     // initial: true)` fires synchronously during the first update pass, before
-    // any `.task` closure runs. The 150 ms sleep is purely a safety margin for
-    // edge cases where macOS restores both windows at the same instant and the
-    // Game window's tracker hasn't fired yet. It is imperceptible to the user.
+    // any `.task` closure runs. See `gameWindowRegistrationSafetyMargin`'s own doc above.
     private func checkIfEditorShouldHandleDatabaseInit() async {
         guard appModel.appNavigationModel.initialRouteType != .ready else { return }
-        try? await Task.sleep(for: .milliseconds(150))
+        try? await Task.sleep(for: gameWindowRegistrationSafetyMargin)
         // Re-check: Game window might have finished init during the sleep.
         guard appModel.appNavigationModel.initialRouteType != .ready else { return }
         // appModel.scenesManager is @ObservationIgnored + let — accessing it

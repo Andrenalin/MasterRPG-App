@@ -294,6 +294,11 @@ extension GameController {
 }
 
 extension GameController {
+    /// Brief pause before an unsynced (`rollSynced == false`) roll actually fires, giving any
+    /// roll-triggering UI (e.g. a shake/tap animation) a moment to reset first.
+    /// See CODE_AUDIT §9.14.
+    private static let localRollStartDelay: Duration = .seconds(0.1)
+
     @MainActor
     func resetCompareValue(of itemId: UUID, value: Int) async {
         let source = gameItem(for: itemId)
@@ -331,7 +336,7 @@ extension GameController {
             rollFunction()
         } else {
             Task { @MainActor in
-                try? await Task.sleep(for: .seconds(0.1))
+                try? await Task.sleep(for: Self.localRollStartDelay)
                 rollFunction()
             }
         }

@@ -205,13 +205,16 @@ private extension SpaceViewer {
         unacknowledgedTransformTicks = 0
     }
 
+    /// Throttle for `sendTransformLoop`'s broadcast cadence. See CODE_AUDIT §9.14.
+    private static let transformBroadcastThrottle: Duration = .milliseconds(300)
+
     /// Broadcasts local manipulations (drag / magnify / rotate) on the game
     /// control channel, throttled so a gesture in progress streams updates.
     @MainActor
     func sendTransformLoop() async {
         guard isImmersiveSpace, hasLoaded, networkActions != nil else { return }
         while !Task.isCancelled {
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: Self.transformBroadcastThrottle)
             sendTransformIfChanged()
         }
     }

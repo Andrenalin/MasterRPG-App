@@ -8,6 +8,10 @@ struct DiceRollerView: View {
     @State private var selectedDie: DieModel = .die20(color: .G)
     @State private var currentRoll: DiceResultModel?
     @State private var isRolling: Bool = false
+
+    /// Simulated roll-animation duration before the result is computed and shown.
+    /// See CODE_AUDIT §9.14.
+    private static let rollAnimationDuration: Duration = .seconds(0.6)
     @State private var rollHistory: [DiceResultModel] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -274,7 +278,7 @@ struct DiceRollerView: View {
 
             // Simulate rolling animation with modern structured concurrency
             Task { @MainActor in
-                try? await Task.sleep(for: .seconds(0.6))
+                try? await Task.sleep(for: Self.rollAnimationDuration)
 
                 let rolledDie = selectedDie.roll(resetResults: true, rerollOptions: [])
                 let value = rolledDie.result.first ?? selectedDie.die.max

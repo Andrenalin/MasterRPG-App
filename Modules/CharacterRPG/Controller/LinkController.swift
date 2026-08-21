@@ -16,6 +16,10 @@ struct LinkController: Sendable {
     let itemController: ItemController
 
     public var itemControllable: any ItemControllable { itemController }
+
+    /// Brief delay before toggling a tapped value link's visibility, giving the tap's own
+    /// feedback animation a moment first. See CODE_AUDIT §9.14.
+    private static let linkToggleDelay: Duration = .milliseconds(100)
 }
 
 extension LinkController: LinkControllable {
@@ -35,7 +39,7 @@ extension LinkController: LinkControllable {
         } else {
             if let toggler, entryId == nil, editAction == nil {
                 Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(100))
+                    try? await Task.sleep(for: Self.linkToggleDelay)
                     await toggler(itemId, itemController.config.module)
                 }
             }

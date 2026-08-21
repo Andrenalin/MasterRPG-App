@@ -724,6 +724,14 @@ extension GameRoot {
 // MARK: - Demo
 
 extension GameRoot {
+    /// Pacing between each photo reveal, and between map-state update steps, in the
+    /// auto-playing demo sequence. See CODE_AUDIT §9.14.
+    private static let demoRevealPace: Duration = .seconds(3)
+    /// Pacing before revealing each weather or map in the demo sequence — longer than
+    /// `demoRevealPace` since these are bigger visual changes to let settle.
+    /// See CODE_AUDIT §9.14.
+    private static let demoBigRevealPace: Duration = .seconds(5)
+
     func startDemo(supporterTier: SupporterTier = .none) async {
         await startGame(to: nil, mode: .demo, supporterTier: supporterTier)
         demoTask?.cancel()
@@ -735,7 +743,7 @@ extension GameRoot {
                     let photos = photoRoot.itemControllable.itemDataModel.items
                     for photo in photos {
                         do {
-                            try await Task.sleep(for: .seconds(3))
+                            try await Task.sleep(for: Self.demoRevealPace)
                         } catch {
                             return
                         }
@@ -748,7 +756,7 @@ extension GameRoot {
                     let weathers = weatherRoot.itemControllable.itemDataModel.items
                     for weather in weathers {
                         do {
-                            try await Task.sleep(for: .seconds(5))
+                            try await Task.sleep(for: Self.demoBigRevealPace)
                         } catch {
                             return
                         }
@@ -761,7 +769,7 @@ extension GameRoot {
                     let maps = mapRoot.itemControllable.itemDataModel.items
                     for map in maps {
                         do {
-                            try await Task.sleep(for: .seconds(5))
+                            try await Task.sleep(for: Self.demoBigRevealPace)
                         } catch {
                             return
                         }
@@ -780,12 +788,12 @@ extension GameRoot {
                             }
                             guard let data else { break }
                             do {
-                                try await Task.sleep(for: .seconds(3))
+                                try await Task.sleep(for: Self.demoRevealPace)
                             } catch {
                                 return
                             }
                             guard !Task.isCancelled else { return }
-                            
+
                             let gameNetworkModel = gameModel.outgoingMessage(counter: 2, type: .update, subType: .mapState, asMaster: true, data: data)
                             await playerController.receivedProcess(gameNetworkModel)
                         }

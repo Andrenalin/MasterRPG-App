@@ -2,6 +2,7 @@
 
 #if os(iOS) || os(macOS) || os(visionOS)
 import RealityKit
+import SwiftUI
 
 /// Physical dimensions (in meters) of the game table, shared by every
 /// platform variant (visionOS TabletopKit table, iOS/macOS camera-based
@@ -30,4 +31,22 @@ enum GameMetrics {
 /// per platform's `Board`) so iOS/macOS and visionOS gesture code can target
 /// the exact same component type. See CODE_AUDIT §8.1.
 struct BoardSurfaceComponent: Component {}
+
+/// Guard+dispatch shared by `GameTableView`'s visionOS (inline `RealityView` gesture) and
+/// iOS/macOS (`pinDragGesture`) pin-drag handlers — both looked up the pin id and its
+/// parent entity, then called `game.pinDragChanged`/`pinDragEnded`, differing only in how
+/// `position` was derived: visionOS has a direct 3D touch location to convert, iOS/macOS
+/// ray-casts a 2D touch onto the table plane (`tablePosition(relativeTo:)`). Each platform
+/// supplies only that one difference as `resolvePosition`. See CODE_AUDIT §9.10.
+@MainActor
+func withPinDragTarget(
+    _ value: EntityTargetValue<DragGesture.Value>,
+    position resolvePosition: (Entity) -> SIMD3<Float>?,
+    perform action: (UUID, SIMD3<Float>) -> Void
+) {
+    guard let pinId = value.entity.components[PinComponent.self]?.pinId,
+          let parent = value.entity.parent,
+          let position = resolvePosition(parent) else { return }
+    action(pinId, position)
+}
 #endif

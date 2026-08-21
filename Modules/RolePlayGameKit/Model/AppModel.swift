@@ -423,10 +423,14 @@ extension AppModel {
         self.appNavigationModel.initialRouteType = .ready
         presentPendingExternalNavigationIfNeeded()
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: Self.tipEligibilityRefreshDelay)
             self?.refreshTipEligibility()
         }
     }
+
+    /// Gives the just-`.ready` route a moment to finish settling before the first tip
+    /// eligibility check, rather than racing it. See CODE_AUDIT §9.14.
+    static let tipEligibilityRefreshDelay: Duration = .milliseconds(500)
 }
 
 // MARK: - Routing

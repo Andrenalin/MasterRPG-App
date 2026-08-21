@@ -11,6 +11,11 @@ struct SelectedMasterView: View {
     private var gameMasterUUID: String = ""
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
+
+    /// Lets `CharacterRPG`'s item data finish loading before restoring the saved game master
+    /// selection by id. See CODE_AUDIT §9.14.
+    private static let restoreSelectionDelay: Duration = .seconds(2)
+
     var body: some View {
         GroupBoxTV(isCard: true) {
             VStack {
@@ -30,7 +35,7 @@ struct SelectedMasterView: View {
             }
         }
         .task {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: Self.restoreSelectionDelay)
             guard !Task.isCancelled else { return }
             root.resetSelectedGameMaster(uuidString: gameMasterUUID)
             selection.resetSelection(itemId: root.gameModel.selectedGameMaster, entryId: nil)

@@ -17,7 +17,11 @@ struct SharingInput: View {
         case text
     }
     @FocusState private var focusedField: Field?
-    
+
+    /// Lets this view's own presentation animation finish before grabbing keyboard focus.
+    /// See CODE_AUDIT §9.14.
+    private static let autoFocusDelay: Duration = .seconds(0.5)
+
     var body: some View {
         @Bindable var model = model
         TextField(text: $model.name, axis: .vertical) {
@@ -30,7 +34,7 @@ struct SharingInput: View {
             }
             .hideKeyboardView(enabled: focusedField != nil, focusedField: $focusedField)
             .task {
-                try? await Task.sleep(for: .seconds(0.5))
+                try? await Task.sleep(for: Self.autoFocusDelay)
                 guard !Task.isCancelled else { return }
                 focusedField = .name
             }

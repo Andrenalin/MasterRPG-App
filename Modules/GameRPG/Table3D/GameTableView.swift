@@ -128,16 +128,18 @@ public struct GameTableView: View {
                     DragGesture(minimumDistance: 5)
                         .targetedToEntity(where: .has(PinComponent.self))
                         .onChanged { value in
-                            guard let pinId = value.entity.components[PinComponent.self]?.pinId,
-                                  let parent = value.entity.parent else { return }
-                            let position = value.convert(value.location3D, from: .local, to: parent)
-                            loadedGame.pinDragChanged(pinId: pinId, position: position)
+                            withPinDragTarget(value) { parent in
+                                value.convert(value.location3D, from: .local, to: parent)
+                            } perform: { pinId, position in
+                                loadedGame.pinDragChanged(pinId: pinId, position: position)
+                            }
                         }
                         .onEnded { value in
-                            guard let pinId = value.entity.components[PinComponent.self]?.pinId,
-                                  let parent = value.entity.parent else { return }
-                            let position = value.convert(value.location3D, from: .local, to: parent)
-                            loadedGame.pinDragEnded(pinId: pinId, position: position)
+                            withPinDragTarget(value) { parent in
+                                value.convert(value.location3D, from: .local, to: parent)
+                            } perform: { pinId, position in
+                                loadedGame.pinDragEnded(pinId: pinId, position: position)
+                            }
                         }
                 )
                 // Pans the zoomed viewport instead of moving anything in 3D
@@ -661,16 +663,18 @@ private struct GameTableRealityContent: View {
         DragGesture(minimumDistance: 5)
             .targetedToEntity(where: .has(PinComponent.self))
             .onChanged { value in
-                guard let pinId = value.entity.components[PinComponent.self]?.pinId,
-                      let parent = value.entity.parent,
-                      let position = value.tablePosition(relativeTo: parent) else { return }
-                game.pinDragChanged(pinId: pinId, position: position)
+                withPinDragTarget(value) { parent in
+                    value.tablePosition(relativeTo: parent)
+                } perform: { pinId, position in
+                    game.pinDragChanged(pinId: pinId, position: position)
+                }
             }
             .onEnded { value in
-                guard let pinId = value.entity.components[PinComponent.self]?.pinId,
-                      let parent = value.entity.parent,
-                      let position = value.tablePosition(relativeTo: parent) else { return }
-                game.pinDragEnded(pinId: pinId, position: position)
+                withPinDragTarget(value) { parent in
+                    value.tablePosition(relativeTo: parent)
+                } perform: { pinId, position in
+                    game.pinDragEnded(pinId: pinId, position: position)
+                }
             }
     }
 

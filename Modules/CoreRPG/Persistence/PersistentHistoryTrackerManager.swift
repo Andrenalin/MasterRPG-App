@@ -154,11 +154,15 @@ private actor PersistentHistoryProcessor {
     private let backgroundContext: NSManagedObjectContext
     private var debounceTask: Task<Void, Never>?
 
+    /// Debounce before processing a burst of remote-change notifications into one history
+    /// fetch/merge pass, rather than one per notification. See CODE_AUDIT §9.14.
+    private static let remoteChangeDebounce: Duration = .seconds(1)
+
     func schedule() {
         debounceTask?.cancel()
         debounceTask = Task { [weak self] in
             do {
-                try await Task.sleep(for: .seconds(1))
+                try await Task.sleep(for: Self.remoteChangeDebounce)
                 await self?.process()
             } catch is CancellationError {
             } catch {

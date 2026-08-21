@@ -37,8 +37,9 @@ struct SearchGlobalController {
             model.isSearching = true
             defer { model.isSearching = false }
 
-            // Small delay to debounce rapid typing
-            try? await Task.sleep(for: .milliseconds(300))
+            // Small delay to debounce rapid typing — reuses CoreRPG's shared debounce constant
+            // rather than a second, drifting copy of the same value. See CODE_AUDIT §9.14.
+            try? await Task.sleep(for: ListSearchTiming.typingDebounce)
 
             guard !Task.isCancelled else { return }
 

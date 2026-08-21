@@ -18,6 +18,10 @@ struct AnimatorView: View {
     private let animates: Bool
     @State private var showOne: Bool
 
+    /// How long the "one" state holds before this demo/marketing view swaps to the next.
+    /// See CODE_AUDIT §9.14.
+    private static let holdDuration: Duration = .seconds(3)
+
     var body: some View {
         VStack {
             if showOne {
@@ -32,7 +36,7 @@ struct AnimatorView: View {
                 .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing)))
                 .task {
                     guard animates else { return }
-                    try? await Task.sleep(for: .seconds(3))
+                    try? await Task.sleep(for: Self.holdDuration)
                     withAnimation(accessibilityReduceMotion ? nil : .default) { showOne = false }
                 }
             }

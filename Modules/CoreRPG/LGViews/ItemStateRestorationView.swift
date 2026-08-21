@@ -2,6 +2,13 @@
 
 import SwiftUI
 
+/// Gives the list/navigation stack time to finish its own initial load before this restores
+/// `selectedItemId` from `SceneStorage` — restoring too early would navigate to an item the
+/// list hasn't populated yet. See CODE_AUDIT §9.14.
+/// (A plain file-private constant rather than a `static let` member: Swift doesn't support
+/// stored `static` properties on the generic `ItemStateRestorationModifier<Route, Root>` below.)
+private let stateRestorationDelay: Duration = .seconds(2)
+
 public struct ItemStateRestorationView<Route: ItemDetailRoute & Equatable, Root: ItemRootControllable>: View {
     public init(root: Root, keyPrefix: String, restoresState: Bool = true) {
         self.root = root
@@ -86,7 +93,7 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
             }
             .task {
                 do {
-                    try await Task.sleep(for: .seconds(2))
+                    try await Task.sleep(for: stateRestorationDelay)
                 } catch {
                     return
                 }

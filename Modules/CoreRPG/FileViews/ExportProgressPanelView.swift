@@ -3,6 +3,9 @@
 import SwiftUI
 
 public struct ExportProgressPanelView: View {
+    /// Lets this panel's own presentation animation settle before the export work begins,
+    /// rather than starting mid-transition. See CODE_AUDIT §9.14.
+    private static let exportStartPresentationDelay: Duration = .seconds(0.5)
     public init(exportController: any ExportControllable, showOptions: Bool = false, isSaveGame: Bool = false, saveGameName: String? = nil, exporter: @escaping () -> ItemModuleIds, finishedAction: @escaping () -> Void = {}) {
         self.exportController = exportController
         self.showOptions = showOptions
@@ -92,7 +95,7 @@ public struct ExportProgressPanelView: View {
 private extension ExportProgressPanelView {
     func startExport() async {
         do {
-            try await Task.sleep(for: .seconds(0.5))
+            try await Task.sleep(for: Self.exportStartPresentationDelay)
             if isSaveGame {
                 let url = exportController.exportUrl(isSaveGame: true, adventureTitle: saveGameName)
                 let task = exportController.createExport(itemIds: exporter(), into: url, exportModel: exportModel)

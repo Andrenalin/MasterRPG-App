@@ -12,6 +12,10 @@ struct DieViewerView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Gives the roll's rotation animation time to finish before resetting it back to 0 for
+    /// the next roll. See CODE_AUDIT §9.14.
+    private static let rotationResetDelay: Duration = .seconds(0.60)
+
     var body: some View {
         die.diceImage(for: die.result.last ?? die.die.max)
             .resizable()
@@ -50,7 +54,7 @@ struct DieViewerView: View {
             .onChange(of: die.rotation, initial: true) {
                 if die.rotation != 0 {
                     Task { @MainActor in
-                        try? await Task.sleep(for: .seconds(0.60))
+                        try? await Task.sleep(for: Self.rotationResetDelay)
                         var die = gameController.gameItem(for: diceId).die(for: die.id)
                         die.rotation = 0
                         withAnimation(reduceMotion ? nil : .default) {

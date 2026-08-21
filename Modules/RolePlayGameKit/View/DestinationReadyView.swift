@@ -18,6 +18,10 @@ struct DestinationReadyView: View {
         var id: Self { self }
     }
 
+    /// Delay before running the deferred database cleanup pass on first launch — gives the
+    /// view's own initial layout/alert-presentation work priority. See CODE_AUDIT §9.14.
+    private static let databaseCleanupDelay: Duration = .seconds(5)
+
     @State private var activeAlert: ActiveAlert?
 
     var body: some View {
@@ -41,7 +45,7 @@ struct DestinationReadyView: View {
                 if appModel.settingsModel.needsValidateDatabase {
                     activeAlert = .validateDatabase
                 }
-                try? await Task.sleep(for: .seconds(5))
+                try? await Task.sleep(for: Self.databaseCleanupDelay)
                 guard !Task.isCancelled else { return }
                 await appModel.cleanDatabase()
             }

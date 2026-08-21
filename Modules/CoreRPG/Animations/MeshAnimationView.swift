@@ -24,6 +24,9 @@ public struct MeshAnimationView: View {
         .init(0.00, 1.00), .init(0.25, 1.00), .init(0.50, 1.00), .init(0.75, 1.00), .init(1.00, 1.00)
     ]
 
+    /// Cadence between re-randomizing the mesh's colors. See CODE_AUDIT §9.14.
+    private static let colorCycleInterval: Duration = .seconds(15)
+
     private static func randomColors() -> [Color] {
         (0..<25).map { _ in meshColors.randomElement() ?? .blue }
     }
@@ -45,7 +48,7 @@ public struct MeshAnimationView: View {
             .task(id: shouldAnimate) {
                 guard shouldAnimate else { return }
                 while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(15))
+                    try? await Task.sleep(for: Self.colorCycleInterval)
                     guard !Task.isCancelled else { break }
                     withAnimation(.smooth(duration: 3)) {
                         colors = Self.randomColors()

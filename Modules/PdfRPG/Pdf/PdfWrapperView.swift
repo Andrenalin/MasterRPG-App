@@ -21,6 +21,10 @@ extension PDFDocument: @unchecked @retroactive Sendable {}
 extension PDFSelection: @unchecked @retroactive Sendable {}
 
 struct PdfWrapperView: CustomViewRepresentable {
+    /// Settle delay before navigating `PDFView` to a page or re-highlighting a search
+    /// match — gives PDFKit's own layout/scroll a moment before driving it further.
+    /// See CODE_AUDIT §9.14.
+    private static let pdfViewNavigationDelay: Duration = .seconds(0.25)
     let pdfDocument: PDFDocument?
     let horizontal: Bool
     let entry: PdfEntryModel?
@@ -68,7 +72,7 @@ struct PdfWrapperView: CustomViewRepresentable {
         if let entry, let pageNo = Int(entry.pageLabel) {
             if let page = pdfDocument?.page(at: pageNo - 1), let selection = page.selection(for: entry.bounds) {
                 Task { @MainActor in
-                    try? await Task.sleep(for: .seconds(0.25))
+                    try? await Task.sleep(for: Self.pdfViewNavigationDelay)
                     pdfView.go(to: page)
                 }
                 selection.color = AKColor.yellow
@@ -122,7 +126,7 @@ struct PdfWrapperView: CustomViewRepresentable {
                             updatedMatches[index] = selection
                             pdfView.highlightedSelections = updatedMatches
                             Task {
-                                try? await Task.sleep(for: .seconds(0.25))
+                                try? await Task.sleep(for: Self.pdfViewNavigationDelay)
                                 selection.color = AKColor.yellow
                                 updatedMatches[index] = selection
                                 pdfView.highlightedSelections = updatedMatches

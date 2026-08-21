@@ -97,6 +97,9 @@ final class BatteryMonitor {
     #endif
     #if os(macOS)
     private var pollTask: Task<Void, Never>?
+    /// macOS has no native battery-change notification (unlike `UIDevice`'s), so this polls
+    /// instead. See CODE_AUDIT §9.14.
+    private static let pollInterval: Duration = .seconds(30)
     #endif
 
     func startMonitoring() {
@@ -122,7 +125,7 @@ final class BatteryMonitor {
         guard pollTask == nil else { return }
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(30))
+                try? await Task.sleep(for: Self.pollInterval)
                 guard !Task.isCancelled else { return }
                 self?.refresh()
             }

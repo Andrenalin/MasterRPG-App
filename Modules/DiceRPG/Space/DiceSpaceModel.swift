@@ -31,6 +31,10 @@ final class DiceSpaceModel {
     var diceSixEntity: Entity? = nil
     var diceTwoEntity: Entity? = nil
 
+    /// How long the physics-thrown die tumbles before this snaps it to its final result
+    /// orientation. See CODE_AUDIT §9.14.
+    private static let physicsToSnapTransitionDelay: Duration = .seconds(2)
+
     init() {}
 
     func reset() {}
@@ -150,7 +154,7 @@ final class DiceSpaceModel {
 
         // After a delay, smoothly transition to the target orientation
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: Self.physicsToSnapTransitionDelay)
 
             // Remove physics and use animation to snap to final result
             diceEntity.components[PhysicsBodyComponent.self] = nil

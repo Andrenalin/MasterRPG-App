@@ -2,6 +2,12 @@
 
 import SwiftUI
 
+/// Lets the confirmation alert's own dismissal animation finish before the app quits —
+/// quitting mid-animation would just cut it off. See CODE_AUDIT §9.14.
+/// (A plain file-private constant rather than a `static let` member: Swift doesn't support
+/// stored `static` properties on a generic type like `StorageOptionEditor<Sync>`.)
+private let quitAfterAlertDismissDelay: Duration = .seconds(0.1)
+
 public struct StorageOptionEditor<Sync: View>: View {
     public init(@ViewBuilder sync: () -> Sync) {
         syncView = sync()
@@ -39,7 +45,7 @@ public struct StorageOptionEditor<Sync: View>: View {
                 Button {
                     appSettings.resetCloudKit(to: useCloudKit)
                     Task {
-                        try? await Task.sleep(for: .seconds(0.1))
+                        try? await Task.sleep(for: quitAfterAlertDismissDelay)
                         Darwin.exit(0)
                     }
                 } label: {

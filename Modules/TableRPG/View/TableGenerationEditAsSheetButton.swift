@@ -14,6 +14,10 @@ struct TableGenerationEditAsSheetButton: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Creating the session is fast/local — this pause is a deliberate transition beat, not
+    /// a wait on any real work. See CODE_AUDIT §9.14.
+    private static let transitionBeat: Duration = .seconds(0.5)
+
     var body: some View {
         HStack {
             Spacer()
@@ -44,7 +48,7 @@ struct TableGenerationEditAsSheetButton: View {
             // deliberate transition beat, not a wait on any real work.
             controller.beginEditingOutcomeSheet(model: model)
             Task {
-                try? await Task.sleep(for: .seconds(0.5))
+                try? await Task.sleep(for: Self.transitionBeat)
                 withAnimation(reduceMotion ? nil : .smooth) {
                     model.isEditingOutcomeSheet = true
                 }

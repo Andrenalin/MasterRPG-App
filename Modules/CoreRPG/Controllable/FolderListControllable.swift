@@ -93,12 +93,13 @@ extension FolderListControllable {
 
     /// Single coalescing entry point for every search trigger. Assigning `searchModel.currentTask`
     /// cancels any in-flight search (its `didSet`), so rapid triggers — keystrokes, mode toggles,
-    /// and the observation stream — collapse into one search instead of one-per-event. The 300ms
-    /// debounce applies only while typing a non-empty query; every other trigger uses a short
-    /// coalescing window so bursts still settle into a single call.
+    /// and the observation stream — collapse into one search instead of one-per-event.
+    /// `ListSearchTiming.typingDebounce` applies only while typing a non-empty query; every
+    /// other trigger uses `ListSearchTiming.coalesceWindow` so bursts still settle into a
+    /// single call.
     @MainActor func runSearch(source: String, kind: FolderSearchKind, debounceText: Bool) {
         searchModel.currentTask = Task(name: "List Search") {
-            let delay: Duration = debounceText && !searchModel.searchText.isEmpty ? .milliseconds(300) : .milliseconds(50)
+            let delay: Duration = debounceText && !searchModel.searchText.isEmpty ? ListSearchTiming.typingDebounce : ListSearchTiming.coalesceWindow
             do { try await Task.sleep(for: delay) } catch { return }
             guard !Task.isCancelled else { return }
             switch kind {
@@ -166,7 +167,7 @@ public extension FolderListControllable {
         searchModel.currentTask = Task(name: "List Data Refresh") {
             if debounce {
                 // Coalesce a burst of data changes into one search.
-                do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+                do { try await Task.sleep(for: ListSearchTiming.coalesceWindow) } catch { return }
             }
             guard !Task.isCancelled else { return }
             // Always refresh the root results: resetFilter rebuilds listModel.list from
@@ -197,7 +198,7 @@ public extension FolderListControllable {
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
             Task(name: "List Selection Restore") { @MainActor in
-                try? await Task.sleep(for: .milliseconds(50))
+                try? await Task.sleep(for: ListSearchTiming.selectionRestoreRenderDelay)
                 listModel.listSelection = Set(arrayLiteral: addedItem.id)
             }
             listModel.addedModelId = nil
@@ -285,7 +286,7 @@ extension FolderListControllable {
             if let url {
                 await root.editControllable.resetFile(url: url, itemId: model.id)
             }
-            try? await Task.sleep(for: .seconds(1.0))
+            try? await Task.sleep(for: ListSearchTiming.newItemSettleDelay)
             await root.itemControllable.save()
             if listModel.parentModel != nil {
                 root.editControllable.addItem(itemId: model.id, parentId: listModel.selectedParentId)
@@ -297,7 +298,7 @@ extension FolderListControllable {
             resetFilter()
             listModel.set(selectedItemId: updatedModel.id)
             listModel.scrollId = listModel.selected
-            try? await Task.sleep(for: .seconds(0.25))
+            try? await Task.sleep(for: ListSearchTiming.headerEditorPresentationDelay)
             // File-backed modules (Audio, Pdf, Photo, Space) derive the item's name from the
             // picked file, so let the user pick a file first instead of popping the header editor.
             // Folders/collections have no file to pick, so they still open the header editor.

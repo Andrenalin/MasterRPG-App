@@ -48,6 +48,10 @@ extension PlayerController {
 // MARK: - Proxy Focus
 
 extension PlayerController {
+    /// How long a proxy character focus request stays pending before this considers it
+    /// complete and clears the tracking task. See CODE_AUDIT §9.14.
+    private static let proxyFocusSettleDelay: Duration = .seconds(1)
+
     func scheduleProxyFocus(characterId: UUID) async {
         scheduleProxyFocusTask(characterId: characterId)
     }
@@ -63,7 +67,7 @@ extension PlayerController {
             _ = await root.characterRoot.gameControllable.setCurrent(itemId: characterId)
             await root.characterRoot.gameControllable.focus(on: characterId)
             do {
-                try await Task.sleep(for: .seconds(1))
+                try await Task.sleep(for: Self.proxyFocusSettleDelay)
             } catch {
                 clearProxyFocusTask(if: taskId)
                 return

@@ -2,6 +2,13 @@
 
 import SwiftUI
 
+/// Lets this view's own presentation animation finish before grabbing keyboard focus —
+/// focusing mid-transition reads as a glitch (same reasoning as `ItemHeaderEditorView`'s own
+/// `autoFocusDelay`). See CODE_AUDIT §9.14.
+/// (A plain file-private constant rather than a `static let` member: Swift doesn't support
+/// stored `static` properties on the generic `EntryEditorContent<LinkType>` below.)
+private let autoFocusDelay: Duration = .milliseconds(100)
+
 struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     init(editController: any EntryDataEditable, editorModel: SheetEditorModel, itemId: UUID, entry: any EntryDataAccessable, linkTypes: LinkType.Type) {
         self.editController = editController
@@ -68,7 +75,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
         .task {
 #if !os(tvOS)
             // Small delay to ensure smooth appearance
-            try? await Task.sleep(for: .milliseconds(100))
+            try? await Task.sleep(for: autoFocusDelay)
             currentFocus = .name
 #endif
         }

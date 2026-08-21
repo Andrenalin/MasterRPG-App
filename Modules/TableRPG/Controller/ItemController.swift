@@ -2,24 +2,7 @@
 
 import CoreRPG
 import Foundation
-import Observation
-import CoreData
 
-struct ItemController: Sendable {
-    @MainActor init(config: ModuleConfiguration) {
-        self.config = config
-
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
-        self.collectionCategory = config.collectionCategory
-    }
-
-    let config: ModuleConfigurable
-    let collectionCategory: ItemListCategory
-    let itemDataModel: ItemDataModel
-}
-
-extension ItemController: ItemControllable {
-    typealias Model = TableModel
-
-    @MainActor var dataControllable: (any DataPersistenceControllable)? { itemDataModel.dataController }
-}
+/// See CODE_AUDIT §9.3 — genericized in `GenericItemController` (CoreRPG); this module
+/// needs no state beyond `config`/`collectionCategory`/`itemDataModel`.
+typealias ItemController = GenericItemController<TableModel>

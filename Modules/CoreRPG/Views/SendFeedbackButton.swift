@@ -15,7 +15,13 @@ struct SendFeedbackButton: View {
     @State private var isSending: Bool = false
     @State private var isUpdating: Bool = false
     @State private var value: Double = 0
-    
+
+    /// Step interval for the "wifi" variable-value symbol animation — 4 steps of 0.25 per
+    /// full cycle. See CODE_AUDIT §9.14.
+    private static let wifiSymbolTickInterval: Duration = .seconds(0.25)
+    /// Resets the sending state if no response arrives in time. See CODE_AUDIT §9.14.
+    private static let sendingResponseTimeout: Duration = .seconds(1)
+
     var body: some View {
         if allReported {
             buttonView
@@ -75,13 +81,13 @@ struct SendFeedbackButton: View {
     func changeVariableValue() async {
         while isSending && !Task.isCancelled {
             if value >= 1 { value = 0 }
-            try? await Task.sleep(for: .seconds(0.25))
+            try? await Task.sleep(for: Self.wifiSymbolTickInterval)
             value += 0.25
         }
     }
     
     func responseTimeout() async {
-        try? await Task.sleep(for: .seconds(1))
+        try? await Task.sleep(for: Self.sendingResponseTimeout)
         isSending = false
         isUpdating = false
     }
