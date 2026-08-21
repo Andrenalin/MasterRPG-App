@@ -510,6 +510,11 @@ struct Die20: EntityEquipment {
             )
             self.entity = Self.makeFallbackEntity()
         }
+        // Read the mesh's own unscaled bounds *before* applying the display
+        // scale below, then multiply by that same known factor explicitly —
+        // see `representation`'s own doc for why relying on `visualBounds`
+        // to already reflect the just-set `.scale` isn't safe enough here.
+        let unscaledHeight = self.entity.visualBounds(relativeTo: nil).extents.y
         self.entity.scale.x = 0.00025
         self.entity.scale.y = 0.00025
         self.entity.scale.z = 0.00025
@@ -532,11 +537,17 @@ struct Die20: EntityEquipment {
         // `.icosahedron(height:)` wants the face-to-opposite-face measurement, i.e. the
         // vertical (+y) extent the die presents once resting on the table — not `.extents.x`,
         // which `Die` (a cube, symmetric on every axis) can get away with but a D20 can't.
-        // Passing the wrong axis under-/over-states the die's true height to TabletopKit's
-        // own rest-placement math, so it settles the die floating above (or sunk into) the
-        // table instead of flush on the surface — most visible on a mixed-value roll,
-        // where only some rolled faces expose the mismatch.
-        representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.y)
+        // Computed from `unscaledHeight * 0.00025`, not a fresh post-scale
+        // `entity.visualBounds(relativeTo: nil).extents.y` read: `Die` (a cube) never sets
+        // its own `.scale` at all, so it has no equivalent risk — but for `Die20`, if
+        // `visualBounds` doesn't immediately reflect the `.scale` set just above (unverifiable
+        // without live device testing), `representation` would describe a die roughly 4000×
+        // larger than what's actually rendered. TabletopKit's own toss physics uses
+        // `representation` for collision/rest — a mismatch that size would make it treat a
+        // few-centimeter die as several meters across, which is consistent with the die flying
+        // wildly off the table after a toss instead of settling on it. Multiplying the known
+        // pre-scale bounds by the same literal scale factor sidesteps the question entirely.
+        representation = .icosahedron(height: unscaledHeight * 0.00025)
         // `value: 0` — this table's own sentinel meaning "not part of the
         // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`
         // and `updateDiceVisibility(using:)`); `restingOrientation` above

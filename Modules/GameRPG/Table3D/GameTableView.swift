@@ -100,11 +100,10 @@ public struct GameTableView: View {
                     // Place the table on the actual floor of the volume. The volume is
                     // flatter than Apple's 1.5 m sample (and the system may clamp the
                     // requested size), so the fixed rootOffset would clip the scene.
+                    // Depth (Z) is not derived from live geometry here — see
+                    // `GameRenderer.rootOffset`'s own doc for why.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
-                    // Depth is positioned once, here only (never in `update:` below) —
-                    // see `GameRenderer.positionInitialDepth(volumeBounds:)`'s own doc.
-                    loadedGame.renderer.positionInitialDepth(volumeBounds: volumeBounds)
 
                     if let pinMenu = attachments.entity(for: "pin-menu") {
                         loadedGame.registerPinMenuAttachment(pinMenu)
@@ -112,8 +111,6 @@ public struct GameTableView: View {
 
                 } update: { content, _ in
                     // Re-anchor to the volume floor when the user resizes the volume.
-                    // Depth is intentionally not touched here — see this closure's
-                    // sibling above.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
                     loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                     loadedGame.updatePinMenuAttachmentPosition()
