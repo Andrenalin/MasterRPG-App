@@ -51,6 +51,25 @@ class GameObserver: TabletopGame.Observer {
         // should be visible from the fresh snapshot this callback already
         // received.
         renderer.game?.updateDiceVisibility(using: snapshot)
+
+        // The local player's own seat claim just landed — this can arrive after
+        // `GameTableView` already tried (and, finding no seat yet, no-opped) to mirror
+        // the locally focused dice set onto the table. Retry now that a seat actually
+        // exists, so this seat's dice don't stay unplaced/hidden until the next
+        // unrelated roll or focus change. See `GameTableModel.applyFocusedDiceRollForLocalSeat`.
+        //
+        // Deferred via `Task`, not called inline: `playerChangedSeats` fires synchronously
+        // from inside TabletopKit's own action-processing (this is reached from
+        // `setupSeating()`'s `claimSeat`/`claimAnySeat` call, on every first load). The retry
+        // fans out into up to a dozen more `tabletopGame.addAction` calls — mutating the same
+        // session reentrantly, from inside a callback that's already mid-dispatch, corrupted
+        // the tabletop session outright (dice, toolbar, and side menu all failing to render).
+        // A `Task` runs it on the next run-loop turn instead, off TabletopKit's own call stack.
+        if player.id == tabletop.localPlayer.id, newSeat != nil {
+            Task { @MainActor [renderer] in
+                renderer.game?.applyFocusedDiceRollForLocalSeat?()
+            }
+        }
     }
 }
 

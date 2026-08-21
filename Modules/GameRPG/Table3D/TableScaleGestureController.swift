@@ -23,7 +23,21 @@ final class TableScaleGestureController {
     // MARK: - Configuration
 
     let minScale: Float = 0.4
-    let maxScale: Float = 3.0
+    /// Ceiling on how far the pinch gesture can grow the table. The volumetric
+    /// window itself is a *fixed* size (`WindowVisionList`'s `.defaultSize(width: 2.15,
+    /// depth: 2.15, in: .meters)`, chosen to exactly fit `GameMetrics.tableLength`/
+    /// `tableWidth` at scale 1 plus a little clearance) — RealityKit clips anything
+    /// outside those bounds rather than growing the window to fit, so scaling the
+    /// table up doesn't "grow the volume," it just pushes the table's own edges (and
+    /// its seats' dice) past the window's fixed bounds and off-screen. The window's
+    /// system grab handle and this view's ornaments stay anchored to that fixed
+    /// volume regardless, so an oversized table reads as the handle/ornaments having
+    /// drifted away from it. `1.05` keeps the scaled table's footprint
+    /// (`GameMetrics.tableLength` × `tableWidth`) inside the tighter of the window's
+    /// two constraints — width (2.15 / 2.0 ≈ 1.075) and the depth actually available
+    /// to the table after `GameRenderer.rootOffset`'s 0.5 m viewer clearance
+    /// ((2.15 − 0.5) / 1.5 ≈ 1.10) — with a small margin for the table mesh's own rim.
+    let maxScale: Float = 1.05
 
     /// Distance (m) between middle-finger tip and thumb tip that counts as a pinch.
     private let pinchThreshold: Float = 0.025

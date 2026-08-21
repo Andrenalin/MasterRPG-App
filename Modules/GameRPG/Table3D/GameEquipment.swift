@@ -523,7 +523,14 @@ struct Die20: EntityEquipment {
             )
             self.audioPlaybackController = nil
         }
-        representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
+        // `.icosahedron(height:)` wants the face-to-opposite-face measurement, i.e. the
+        // vertical (+y) extent the die presents once resting on the table — not `.extents.x`,
+        // which `Die` (a cube, symmetric on every axis) can get away with but a D20 can't.
+        // Passing the wrong axis under-/over-states the die's true height to TabletopKit's
+        // own rest-placement math, so it settles the die floating above (or sunk into) the
+        // table instead of flush on the surface — most visible on a mixed-value roll,
+        // where only some rolled faces expose the mismatch.
+        representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.y)
         // `value: 0` — this table's own sentinel meaning "not part of the
         // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`
         // and `updateDiceVisibility(using:)`); `restingOrientation` above

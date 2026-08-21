@@ -12,23 +12,24 @@ import os.log
 class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
-    // Initial fallback for the table height inside the app volume. The value
-    // -0.7 assumes Apple's 1.5 m-tall sample volume (origin at volume center);
-    // our volume is flatter, so the view corrects it via placeTable(bottomY:)
-    // once RealityView reports the actual volume bounds.
-    //
-    // `z: -0.5` pushes the table half a meter further from the viewer within
-    // the volume — the table used to sit centered on the volume's own depth
-    // axis, right up against the near clipping bound (only the ~0.075 m
-    // `mapMargin`-derived clearance `WindowVisionList`'s `.defaultSize`
-    // leaves around the table's own `tableWidth`), which read as the table
-    // being uncomfortably close when the volumetric window opened. Unlike
-    // the Y offset, this one is never overwritten after init — only
-    // `placeTable(bottomY:)` re-targets Y once the real volume bounds are
-    // known. `WindowVisionList`'s `.defaultSize(depth:)` grows in lockstep
-    // (see its own comment) so the extra room opens in front of the table
-    // instead of clipping its far edge.
-    let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: -0.5)
+    // Initial fallback position inside the app volume, good only until the
+    // view reports the real volume bounds (see `placeTable(volumeBounds:)`,
+    // called from both `RealityView`'s content and update closures) — -0.7
+    // assumes Apple's 1.5 m-tall sample volume (origin at volume center);
+    // our volume is flatter. Z stays 0 (volume center) rather than guessing
+    // a push-back distance here: the system may grant a different depth
+    // than `WindowVisionList`'s `.defaultSize` requests, so — like Y —
+    // that has to be computed from the actual bounds every time, not baked
+    // into a one-time constant. See `placeTable(volumeBounds:)`.
+    let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: 0)
+    /// How far back from the volume's actual front (near-viewer, +Z) face
+    /// `placeTable(volumeBounds:)` sets the table, so it doesn't sit right
+    /// at the near clipping bound, uncomfortably close to the viewer, when
+    /// this window opens. `WindowVisionList`'s `.defaultSize(depth:)`
+    /// carries this much extra room beyond the table's own footprint,
+    /// specifically so it opens in front of the table instead of pushing
+    /// the table's far edge past the volume's back bound.
+    private static let frontStandoff: Float = 0.5
     weak var game: GameTableModel?
     private var didLoadAssets = false
 
@@ -87,12 +88,19 @@ class GameRenderer: TabletopGame.RenderDelegate {
         root.scale = SIMD3<Float>(repeating: scale)
     }
 
-    /// Positions the table scene at the actual bottom of the volumetric window.
-    /// RealityView's origin is the volume center and content outside the bounds
-    /// is clipped, so a fixed offset only works for one specific volume height —
-    /// the system may also clamp the requested window size.
-    func placeTable(bottomY: Float) {
-        root.transform.translation.y = bottomY
+    /// Positions the table scene at the actual bottom of the volumetric window, and
+    /// `Self.frontStandoff` back from its actual front (near-viewer, +Z) face.
+    /// RealityView's origin is the volume center and content outside the bounds is
+    /// clipped, so a fixed offset only works for one specific volume size — the
+    /// system may clamp the requested window size on either axis, and the ornaments/
+    /// system grab handle already track whatever the real bounds turn out to be
+    /// (SwiftUI's own `.parent(_:)` ornament anchoring), so the table has to track
+    /// the same real bounds rather than a value guessed at init. Called on every
+    /// `RealityView` content/update pass (`GameTableView`) so a live volume resize
+    /// keeps the table lined up with them.
+    func placeTable(volumeBounds: BoundingBox) {
+        root.transform.translation.y = volumeBounds.min.y
+        root.transform.translation.z = volumeBounds.max.z - Self.frontStandoff
     }
 
     nonisolated func updateCursor(_ proposedDestination: EquipmentIdentifier?, valid: Bool = false) {
