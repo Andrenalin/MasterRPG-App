@@ -11,7 +11,7 @@ import GroupActivities
 
 struct WindowVisionList: Scene {
     let appModel: AppModel
-    
+
     @State private var immersionState: any ImmersionStyle = .mixed
 
     var body: some Scene {
@@ -44,15 +44,20 @@ struct WindowVisionList: Scene {
         // (see `GameTableView`), so this has to grow in lockstep with the
         // table itself, not just the table's own mesh/seat math.
         // Depth carries an extra 0.5 m of empty space in front of the table
-        // beyond that clearance — `GameRenderer.rootOffset.z` pushes the
-        // table back into it so the table doesn't sit right at the volume's
-        // near bound, uncomfortably close to the viewer, when this window
-        // opens.
+        // beyond that clearance — `GameRenderer.positionInitialDepth(volumeBounds:)`
+        // pushes the table back into it once, at open, so the table doesn't sit
+        // right at the volume's near bound, uncomfortably close to the viewer.
         .defaultSize(width: 2.15, height: 0.3, depth: 2.15, in: .meters)
-        .defaultWindowPlacement { _, _ in
-            // Place the game table in front of the user when opened
-            WindowPlacement(.utilityPanel)
-        }
+        // No `.defaultWindowPlacement` override — this used to return
+        // `WindowPlacement(.utilityPanel)`, but `.utilityPanel` is a small,
+        // near-body tool-panel position (meant for a persistent toolbar
+        // that hovers by your hand), not a placement for a 2 m+ room-scale
+        // volume. Using it here put a volume sized for a whole tabletop
+        // where the system expects a small panel to sit — opening right at/
+        // inside the viewer. Omitting this modifier falls back to the
+        // scene's own default placement/sizing behavior — the normal
+        // "opens in front of you" behavior every other volumetric window in
+        // this app already gets.
         .restorationBehavior(.disabled)
 
         WindowGroup(id: SceneId.gameRecover.rawValue) {
@@ -63,7 +68,7 @@ struct WindowVisionList: Scene {
         .windowStyle(.plain)
         .restorationBehavior(.disabled)
 
-        
+
         WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()
@@ -76,7 +81,7 @@ struct WindowVisionList: Scene {
         .windowResizability(.contentSize)
         .windowStyle(.plain)
         .restorationBehavior(.disabled)
-        
+
         ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(

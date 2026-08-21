@@ -12,24 +12,28 @@ import os.log
 class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
-    // Initial fallback position inside the app volume, good only until the
-    // view reports the real volume bounds (see `placeTable(volumeBounds:)`,
-    // called from both `RealityView`'s content and update closures) — -0.7
-    // assumes Apple's 1.5 m-tall sample volume (origin at volume center);
-    // our volume is flatter. Z stays 0 (volume center) rather than guessing
-    // a push-back distance here: the system may grant a different depth
-    // than `WindowVisionList`'s `.defaultSize` requests, so — like Y —
-    // that has to be computed from the actual bounds every time, not baked
-    // into a one-time constant. See `placeTable(volumeBounds:)`.
+    // Initial fallback for the table height inside the app volume. The value
+    // -0.7 assumes Apple's 1.5 m-tall sample volume (origin at volume center);
+    // our volume is flatter, so the view corrects it via placeTable(bottomY:)
+    // once RealityView reports the actual volume bounds.
     let rootOffset: Vector3D = .init(x: 0, y: -0.7, z: 0)
     /// How far back from the volume's actual front (near-viewer, +Z) face
-    /// `placeTable(volumeBounds:)` sets the table, so it doesn't sit right
-    /// at the near clipping bound, uncomfortably close to the viewer, when
-    /// this window opens. `WindowVisionList`'s `.defaultSize(depth:)`
-    /// carries this much extra room beyond the table's own footprint,
-    /// specifically so it opens in front of the table instead of pushing
-    /// the table's far edge past the volume's back bound.
+    /// `positionInitialDepth(volumeBounds:)` sets the table, so it doesn't
+    /// sit right at the near clipping bound, uncomfortably close to the
+    /// viewer, when this window opens. `WindowVisionList`'s
+    /// `.defaultSize(depth:)` carries this much extra room beyond the
+    /// table's own footprint, specifically so it opens in front of the
+    /// table instead of pushing the table's far edge past the volume's
+    /// back bound.
     private static let frontStandoff: Float = 0.5
+    /// Set once `positionInitialDepth(volumeBounds:)` has placed the table's
+    /// Z — guards against re-deriving it on every `RealityView` update pass.
+    /// Y (`placeTable(bottomY:)`) is safe to recompute continuously (that's
+    /// the proven, original behavior); doing the same for Z made the table's
+    /// depth placement visibly shift on interaction instead of staying put,
+    /// since — unlike Y — it had never been live-recomputed before. See
+    /// `positionInitialDepth(volumeBounds:)`.
+    private var hasPositionedInitialDepth = false
     weak var game: GameTableModel?
     private var didLoadAssets = false
 
@@ -88,18 +92,27 @@ class GameRenderer: TabletopGame.RenderDelegate {
         root.scale = SIMD3<Float>(repeating: scale)
     }
 
-    /// Positions the table scene at the actual bottom of the volumetric window, and
-    /// `Self.frontStandoff` back from its actual front (near-viewer, +Z) face.
-    /// RealityView's origin is the volume center and content outside the bounds is
-    /// clipped, so a fixed offset only works for one specific volume size — the
-    /// system may clamp the requested window size on either axis, and the ornaments/
-    /// system grab handle already track whatever the real bounds turn out to be
-    /// (SwiftUI's own `.parent(_:)` ornament anchoring), so the table has to track
-    /// the same real bounds rather than a value guessed at init. Called on every
-    /// `RealityView` content/update pass (`GameTableView`) so a live volume resize
-    /// keeps the table lined up with them.
-    func placeTable(volumeBounds: BoundingBox) {
-        root.transform.translation.y = volumeBounds.min.y
+    /// Positions the table scene at the actual bottom of the volumetric window.
+    /// RealityView's origin is the volume center and content outside the bounds
+    /// is clipped, so a fixed offset only works for one specific volume height —
+    /// the system may also clamp the requested window size. Safe to call on every
+    /// `RealityView` content/update pass — this has always been recomputed live
+    /// (see `GameTableView`) without issue.
+    func placeTable(bottomY: Float) {
+        root.transform.translation.y = bottomY
+    }
+
+    /// Positions the table `Self.frontStandoff` back from the volume's actual
+    /// front (near-viewer, +Z) face — once, the first time this is called after
+    /// the table appears, then never again. Call this only from `RealityView`'s
+    /// `content:` (init) closure, not `update:`: unlike `placeTable(bottomY:)`,
+    /// re-deriving this on every update pass (including ones triggered by the
+    /// person interacting with/dragging the window) made the table's depth
+    /// placement visibly change instead of staying put — see
+    /// `hasPositionedInitialDepth`'s own doc.
+    func positionInitialDepth(volumeBounds: BoundingBox) {
+        guard !hasPositionedInitialDepth else { return }
+        hasPositionedInitialDepth = true
         root.transform.translation.z = volumeBounds.max.z - Self.frontStandoff
     }
 
