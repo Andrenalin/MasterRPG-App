@@ -180,6 +180,69 @@ struct EditControllerTests {
         #expect(root.itemController.itemOrEmpty(for: itemId).entries.contains { $0.id == numberEntry.id })
     }
 
+    /// Reproduces the reported "character update never arrives at the
+    /// gamemaster" scenario end-to-end through the real production write
+    /// path (`EditController.updateValue` → `EditControllable.save` →
+    /// `ItemControllable.replace`), not just the resolution math in
+    /// isolation. A hit-points entry set up the normal way — pure link, no
+    /// local "|" yet — used to read back a false "0" baseline (fixed by
+    /// `resolvedBaseAndCurrent`).
+    ///
+    /// Note this test does *not* assert the permanent/persisted item stays
+    /// untouched — `saveGameDataToPermanent` deliberately force-persists
+    /// every live in-game quick-edit into it too (see that function's own
+    /// doc comment); that's pre-existing, intentional behavior, not part of
+    /// this bug. What actually matters for "does the update reach the
+    /// gamemaster" is what `gameValueEntryUpdate` sends and what the
+    /// master's own `applyGameValueEntryUpdate`/`LinkController.calculate`
+    /// resolve it back to — checked below.
+    @Test func linkedHitPointsEntryStepperResolvesRealCurrentAndStaysInGameMemory() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+
+        let monsterId = await root.itemController.addNew(type: .character)
+        let hpEntry = ValueEntryModel(id: UUID(), name: "Lebenskraft", type: .number, value: "40")
+        sut.add(entry: hpEntry, itemId: monsterId)
+
+        let playerId = await root.itemController.addNew(type: .character)
+        let linkText = root.itemController.itemOrEmpty(for: monsterId).url(linkNumber: 0, entryId: hpEntry.id)
+        let aktuelleEntry = ValueEntryModel(id: UUID(), name: "Aktuelle", type: .number, value: linkText)
+        sut.add(entry: aktuelleEntry, itemId: playerId)
+
+        // Matches what a real joined player's device actually has set —
+        // `AdventureRootModel.startGame()` (called from both `startMaster()`
+        // and `GameRootModel.joinGame(for:)`) flips this true for every
+        // sibling module root, `CharacterRPG` included.
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        // Before any edit: the stepper must start from the real resolved
+        // current value (40), not the old naive-split "0".
+        #expect(sut.entryValueAsNumber(itemId: playerId, entryId: aktuelleEntry.id) == 40)
+
+        // The player takes 15 damage.
+        sut.updateValue(itemId: playerId, entryId: aktuelleEntry.id, number: 25)
+
+        #expect(sut.entryValueAsNumber(itemId: playerId, entryId: aktuelleEntry.id) == 25)
+
+        let gameEntry = try #require(
+            (root.itemController.itemDataModel.gameItemData[playerId] as? ValueModel)?[aktuelleEntry.id]
+        )
+        #expect(gameEntry.value != linkText)
+
+        // What actually gets sent to the master (`SheetEntryView`'s
+        // `updateHandler` calls this immediately after the write above) must
+        // carry the new value, and the master's own resolution engine must
+        // recompute the same 25 from it — proving the full round trip, not
+        // just this device's own read-back.
+        let update = try #require(sut.gameValueEntryUpdate(itemId: playerId, entryId: aktuelleEntry.id))
+        let decoded = try #require(GameValueEntryUpdate.decodeData(of: update.data))
+        #expect(decoded.value == gameEntry.value)
+        let resent = ValueEntryModel(id: aktuelleEntry.id, name: decoded.name, type: aktuelleEntry.type, value: decoded.value)
+        let resolved = try #require(root.linkController.calculate(entry: resent))
+        #expect(Double(resolved) == 25)
+    }
+
     /// The standalone entry editor (`EntryEditorHeaderView`) always persists,
     /// even while a game is running — unlike `updateValue`'s live in-game quick
     /// editor above, which stays memory-only except for its own explicit,
