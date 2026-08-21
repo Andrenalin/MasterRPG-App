@@ -7,6 +7,7 @@ import TableRPG
 import SwiftUI
 import CharacterRPG
 import PhotoRPG
+import os.log
 
 extension GameController {
     static let maximumFuturePinTimestampSkew: TimeInterval = 5 * 60
@@ -211,10 +212,14 @@ extension GameController {
     private func applyHealthPercent(for combatant: BattleCombatant) {
         guard let mapId = battleRoundModel.mapId else { return }
         let percent = healthPercent(for: combatant)
-        guard combatant.pin.healthPercent != percent else { return }
-        _ = updatePinState(itemId: mapId, pinId: combatant.pinId) { pin in
+        guard combatant.pin.healthPercent != percent else {
+            Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .public) unchanged at \(percent.map { "\($0)" } ?? "nil", privacy: .public), not persisting")
+            return
+        }
+        let persisted = updatePinState(itemId: mapId, pinId: combatant.pinId) { pin in
             pin.healthPercent = percent
         }
+        Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .public) → \(percent.map { "\($0)" } ?? "nil", privacy: .public), updatePinState persisted=\(persisted, privacy: .public)")
     }
 
     func battleInitiative(from value: String) -> Int? {

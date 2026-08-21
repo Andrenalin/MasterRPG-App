@@ -71,6 +71,13 @@ public protocol ValueGameStorable {
         characterId: UUID,
         entryId: UUID
     ) -> String?
+    /// Resolves an arbitrary value string through the same link-substitution
+    /// + arithmetic pipeline `gameEntryDisplayValue` runs a stored entry's own
+    /// `value` through — for evaluating just a *portion* of another entry's
+    /// value, such as `MapRPG`'s hit-points "base|modifier" convention, where
+    /// "base" may itself be a markdown link (e.g. `[Lebenskraft](RPG://...)`)
+    /// rather than a literal number, and possibly several link hops deep.
+    @MainActor func calculatedValue(_ text: String, type: ValueEntryModel.ValueType) -> String?
     /// Updates an existing game-memory entry while preserving its links.
     @MainActor @discardableResult func applyGameValueEntryUpdate(
         _ update: GameValueEntryUpdate
@@ -369,6 +376,15 @@ extension GameController: ValueGameStorable {
             return nil
         }
         return root.linkController.calculate(entry: entry) ?? entry.value
+    }
+
+    @MainActor
+    public func calculatedValue(_ text: String, type: ValueEntryModel.ValueType) -> String? {
+        // A synthetic, unstored entry: `LinkController.calculate(entry:)` only
+        // needs `type` (for `canCalculate`) and `value` (to scan for links and
+        // evaluate) — it doesn't require the entry to actually exist anywhere.
+        let entry = ValueEntryModel(id: UUID(), name: "", type: type, value: text)
+        return root.linkController.calculate(entry: entry) ?? text
     }
 
     @MainActor

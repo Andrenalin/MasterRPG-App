@@ -7,6 +7,7 @@ import TableRPG
 import SwiftUI
 import CharacterRPG
 import PhotoRPG
+import os.log
 
 extension GameController {
     @MainActor
@@ -416,6 +417,9 @@ extension GameController {
         var healthChanged = false
         for combatant in battleRoundModel.combatants {
             let percent = healthPercent(for: combatant)
+            Logger.gameController.debug(
+                "synchronizeBattleDefenders: pin \(combatant.pin.name, privacy: .public) (\(combatant.pinId, privacy: .public)) hitPointsEntryId=\(combatant.hitPointsEntryId?.uuidString ?? "nil", privacy: .public) computed=\(percent.map { "\($0)" } ?? "nil", privacy: .public) previouslyPersisted=\(combatant.pin.healthPercent.map { "\($0)" } ?? "nil", privacy: .public)"
+            )
             guard combatant.pin.healthPercent != percent else { continue }
             if updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { $0.healthPercent = percent }) {
                 healthChanged = true
@@ -440,29 +444,58 @@ extension GameController {
     /// `synchronizeBattleDefenders`/`resolveBattleConfiguredValues` push onto
     /// the pin for the network.
     ///
-    /// `entry.value` follows the same "base|modifier" convention as
-    /// `ValueEntryModel.valueCalculated`: the text before "|" is the maximum
-    /// (100%); `gameEntryDisplayValue` already resolves links and evaluates
-    /// "base|modifier" as "base+modifier" into the current amount.
+    /// `entry.value` follows the "base|modifier" convention: the text before
+    /// "|" is the maximum (100%), "base+modifier" (with the "|" replaced by
+    /// "+") is the current amount. Either side may itself be, or contain, a
+    /// markdown link (e.g. `[Lebenskraft](RPG://VALUES/0/<itemId>/<entryId>)`)
+    /// pointing at another entry — possibly one whose own value is a further-
+    /// linked formula ("KÖR+HÄ+10+LK Level+3"), several hops deep. Both sides
+    /// are resolved through `calculatedValue(_:type:)`, the same link-
+    /// substitution/recursion engine `gameEntryDisplayValue` runs a stored
+    /// entry's own value through (and what the Battle Round roster's own HP
+    /// display already relies on) — forcing `.decimal` regardless of the
+    /// entry's own type, since `ValueEntryModel.canCalculate` (and so link
+    /// resolution) only applies to `.number`/`.decimal` otherwise, and a
+    /// `.text` hit-points entry is an easy, reasonable choice for a game
+    /// master who just types a number with no reason to think the "type"
+    /// picker matters here.
     @MainActor
     func healthPercent(for combatant: BattleCombatant) -> Double? {
-        guard let gameCharacterId = combatant.gameCharacterId,
-              let entryId = combatant.hitPointsEntryId,
-              let entry = root.characterRoot.valueGameControllable.gameEntry(
-                  characterId: gameCharacterId,
-                  entryId: entryId
-              ),
-              let baseText = entry.value.split(separator: "|").first,
-              let base = Double(baseText),
-              base > 0,
-              let displayText = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
-                  characterId: gameCharacterId,
-                  entryId: entryId
-              ),
-              let current = Double(displayText) else {
+        guard let gameCharacterId = combatant.gameCharacterId else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) has no gameCharacterId — no Character linked yet")
             return nil
         }
-        return min(max(current / base * 100, 0), 100)
+        guard let entryId = combatant.hitPointsEntryId else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) (character \(gameCharacterId, privacy: .public)) has no hitPointsEntryId resolved")
+            return nil
+        }
+        guard let entry = root.characterRoot.valueGameControllable.gameEntry(
+            characterId: gameCharacterId,
+            entryId: entryId
+        ) else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — gameEntry(characterId:entryId:) found nothing for entryId \(entryId, privacy: .public) on character \(gameCharacterId, privacy: .public)")
+            return nil
+        }
+        guard let baseText = entry.value.split(separator: "|").first.map(String.init) else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) has an empty value")
+            return nil
+        }
+        let valueGameControllable = root.characterRoot.valueGameControllable
+        let resolvedBaseText = valueGameControllable.calculatedValue(baseText, type: .decimal)
+        guard let base = resolvedBaseText.flatMap(Double.init), base > 0 else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) base \(baseText, privacy: .public) resolved to \(resolvedBaseText ?? "nil", privacy: .public), not a positive number")
+            return nil
+        }
+        let resolvedCurrentText = valueGameControllable.calculatedValue(
+            entry.value.replacing("|", with: "+"),
+            type: .decimal
+        )
+        let current = resolvedCurrentText.flatMap(Double.init) ?? base
+        let percent = min(max(current / base * 100, 0), 100)
+        Logger.gameController.debug(
+            "healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) rawValue=\(entry.value, privacy: .public) resolvedBase=\(resolvedBaseText ?? "nil", privacy: .public) resolvedCurrent=\(resolvedCurrentText ?? "nil", privacy: .public) → base=\(base, privacy: .public) current=\(current, privacy: .public) percent=\(percent, privacy: .public)"
+        )
+        return percent
     }
 
     @MainActor
