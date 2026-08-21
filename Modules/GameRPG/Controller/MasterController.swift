@@ -530,9 +530,7 @@ extension MasterController {
     }
     
     func resetPlayers() async {
-        let (gameConfig, gameRoster, gameControl) = await MainActor.run {
-            (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
-        }
+        let (gameConfig, gameRoster, gameControl) = (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
 
         let previousAudioPlayers = Set(root.audioRoot.gameControllable.gameModel.currentPlayers)
         var players = gameControl.controls.compactMap { $0.show ? $0.id : nil }.sorted()
@@ -1147,19 +1145,19 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
 
         guard let deliveryID else { return false }
-        let deliveryMatch = await MainActor.run {
-            guard let log = root.gameModel.logData[deliveryID.counter] else {
-                return (matches: false, authorizesAvailability: false)
-            }
+        let deliveryMatch: (matches: Bool, authorizesAvailability: Bool)
+        if let log = root.gameModel.logData[deliveryID.counter] {
             let matches = log.messageID == deliveryID &&
                 log.type == model.type &&
                 log.module == model.data.type &&
                 log.itemId == model.data.id
-            return (
+            deliveryMatch = (
                 matches: matches,
                 authorizesAvailability: matches &&
                     (log.type == .reveal || log.type == .store)
             )
+        } else {
+            deliveryMatch = (matches: false, authorizesAvailability: false)
         }
         guard deliveryMatch.matches else { return false }
 

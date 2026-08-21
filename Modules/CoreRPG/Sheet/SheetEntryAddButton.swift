@@ -8,11 +8,13 @@ struct SheetEntryAddButton: View {
     let parentModel: SheetModel
     let onlyIcon: Bool
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
         if entryDataEditable != nil {
             Button {
                 var entryId: UUID?
-                withAnimation {
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
                     entryId = rootModel.addNewEntry(in: parentModel)
                     rootModel.updateParent(parentModel)
                 } completion: {

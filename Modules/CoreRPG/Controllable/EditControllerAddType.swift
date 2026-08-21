@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import Foundation
-import SwiftData
 
 public enum EditControllerAddType: Equatable, Hashable, Sendable {
     case item

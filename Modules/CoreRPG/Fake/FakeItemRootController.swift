@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import Foundation
-import SwiftData
 
 /// A fresh, internally consistent controller graph for one preview or test.
 ///

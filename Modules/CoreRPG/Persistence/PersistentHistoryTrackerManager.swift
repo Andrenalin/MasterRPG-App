@@ -172,7 +172,7 @@ private actor PersistentHistoryProcessor {
         debounceTask = nil
     }
 
-    private func process() {
+    private func process() async {
         let fromDate = loadDate()
         let currentActor = currentActor
         let userDefaults = userDefaults
@@ -180,7 +180,7 @@ private actor PersistentHistoryProcessor {
         let backgroundContext = backgroundContext
 
         do {
-            let transactions = try backgroundContext.performAndWait {
+            let transactions = try await backgroundContext.perform {
                 try Self.fetcher(date: fromDate, currentActor: currentActor, backgroundContext: backgroundContext)
             }
             if transactions.isEmpty {
@@ -191,7 +191,7 @@ private actor PersistentHistoryProcessor {
                 }
                 // Don't log when empty - reduces noise
             } else {
-                Self.merge(transactions: transactions, into: viewContext, userDefaults: userDefaults, currentActor: currentActor)
+                await Self.merge(transactions: transactions, into: viewContext, userDefaults: userDefaults, currentActor: currentActor)
                 Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions")
             }
         } catch {
@@ -243,9 +243,9 @@ private actor PersistentHistoryProcessor {
         into viewBackupContext: NSManagedObjectContext?,
         userDefaults: UserDefaults,
         currentActor: AppPersistentActor
-    ) {
+    ) async {
         guard let viewContext = viewBackupContext else { return }
-        viewContext.performAndWait {
+        await viewContext.perform {
             transactions.forEach { transaction in
                 let userInfo = transaction.objectIDNotification().userInfo ?? [:]
                 NSManagedObjectContext.mergeChanges(fromRemoteContextSave: userInfo, into: [viewContext])

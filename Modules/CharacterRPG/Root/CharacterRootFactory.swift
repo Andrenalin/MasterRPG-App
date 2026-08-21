@@ -8,7 +8,6 @@ import GeneratorRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
-import SwiftData
 import SwiftUI
 
 public enum CharacterRootFactory {

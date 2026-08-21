@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import AVFoundation
+import CoreRPG
 import Foundation
 import os.log
 
@@ -101,7 +102,7 @@ private extension AudioPlayerSession {
             let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt
             // queue: .main ⇒ delivered on the main thread; assumeIsolated is safe and
             // keeps the wasPlaying write/read strictly ordered (no Task-per-event races).
-            MainActor.assumeIsolated {
+            assumeMainActorIsolated {
                 self?.handleInterruption(typeRaw: typeRaw, optionsRaw: optionsRaw)
             }
         })

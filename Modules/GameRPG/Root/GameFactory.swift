@@ -12,7 +12,6 @@ import PdfRPG
 import PhotoRPG
 import SpaceRPG
 import TableRPG
-import SwiftData
 import SwiftUI
 import WeatherRPG
 

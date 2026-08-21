@@ -22,6 +22,22 @@ public enum NetworkModules: Int, Codable, Hashable, Sendable, CaseIterable {
     case generator = 16
     case rule = 17
 
+    /// The modules the master's "open another window" menus offer, in display order —
+    /// shared by `MasterModuleWindowMenu` (vertical column) and `GameTableSideMenu`
+    /// (horizontal row, which drops `.game` since that button needs `adventureId` and
+    /// is handled as its own leading button instead). Previously three hand-copied,
+    /// independently-drifting arrays. See CODE_AUDIT §9.7.
+    public static let gameWindowMasterModules: [NetworkModules] = [
+        .game, .adventure, .audio, .dice, .map, .pdf, .photo, .rule, .space, .table, .value, .weather
+    ]
+
+    /// The modules the player's "open another window" menus offer, in display order —
+    /// shared by `PlayerSideMenu` (vertical column) and `GameTableSideMenu` (horizontal
+    /// row). See CODE_AUDIT §9.7.
+    public static let gameWindowPlayerModules: [NetworkModules] = [
+        .value, .table, .audio, .photo, .pdf, .space, .dice
+    ]
+
     public var token: String {
         switch self {
         case .adventure: "ADVENTURES"

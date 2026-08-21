@@ -9,7 +9,6 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 import CoreData
-import SwiftData
 import SwiftUI
 
 @MainActor @Observable

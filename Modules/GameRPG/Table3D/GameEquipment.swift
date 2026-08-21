@@ -513,7 +513,6 @@ struct Die20: EntityEquipment {
             self.audioPlaybackController = nil
         }
         representation = .icosahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
-            //.dodecahedron(height: entity.visualBounds(relativeTo: nil).extents.x)
         // `value: 0` — this table's own sentinel meaning "not part of the
         // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`
         // and `updateDiceVisibility(using:)`); `restingOrientation` above

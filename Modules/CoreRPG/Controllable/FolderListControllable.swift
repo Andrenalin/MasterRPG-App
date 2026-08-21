@@ -17,8 +17,15 @@ public protocol FolderListControllable: Sendable {
     var cacheListItemModel: CacheItemListModel { get }
     var searchRootControllable: any SearchRootControllable { get }
 
+    /// Every module's `FolderListController` conformer shares this exact shape
+    /// (a plain memberwise init over these four stored properties, with
+    /// `cacheListItemModel` defaulted) — declared here purely so the
+    /// `copy(listModel:)` default below can construct a fresh `Self`. See
+    /// CODE_AUDIT §9.4.
+    init(listModel: FolderListModel, listDisplayModel: ListDisplayModel, itemControllable: any ItemControllable, searchRootControllable: any SearchRootControllable)
+
     func copy(listModel: FolderListModel) -> Self
-    
+
     func detailDestination(for itemId: UUID) -> any NavigationDestination
     func folderDestination(for itemId: UUID) -> any NavigationDestination
     func folderInlineDestination(for itemId: UUID) -> any NavigationDestination
@@ -27,6 +34,22 @@ public protocol FolderListControllable: Sendable {
 
 extension FolderListControllable {
     public var searchModel: SearchModel { searchRootControllable.searchModel }
+
+    /// Default `copy(listModel:)` — identical across every module: a fresh
+    /// `listDisplayModel`/`searchRootControllable` via `copiedListDependencies`,
+    /// this controller's own `itemControllable` reused, and only the passed
+    /// `listModel` new. Was hand-copied verbatim into 12 modules' own
+    /// `FolderListController`; only the `init` requirement above needed adding
+    /// to hoist it here. See CODE_AUDIT §9.4.
+    public func copy(listModel: FolderListModel) -> Self {
+        let dependencies = copiedListDependencies
+        return Self(
+            listModel: listModel,
+            listDisplayModel: dependencies.listDisplayModel,
+            itemControllable: itemControllable,
+            searchRootControllable: dependencies.searchRootControllable
+        )
+    }
 
     /// The `(listDisplayModel, searchRootControllable)` pair every module's
     /// `copy(listModel:)` derived identically — a fresh display model, and the

@@ -18,16 +18,28 @@ actor FileDataModel<Datatype: Codable & Storeable & Sendable> {
         data.append(update)
     }
 
-    func remove(at index: Int) {
-        data.remove(at: index)
-    }
-
     func moveData(from: IndexSet, to: Int) {
         data.move(fromOffsets: from, toOffset: to)
     }
 
-    func update(data: Datatype, at index: Int) {
-        self.data[index] = data
+    /// Atomic find-and-remove — unlike a separate `firstIndex(where:)` await
+    /// followed by a separate `remove(at:)` await, no other actor call can
+    /// interleave between the lookup and the mutation. See CODE_AUDIT §3.1.
+    @discardableResult
+    func removeIfPresent(id: UUID) -> Bool {
+        guard let index = data.firstIndex(where: { $0.id == id }) else { return false }
+        data.remove(at: index)
+        return true
+    }
+
+    /// Atomic find-and-replace counterpart to `removeIfPresent(id:)`. Returns
+    /// `false` when no existing entry matched, so the caller can fall back to
+    /// inserting a new one. See CODE_AUDIT §3.1.
+    @discardableResult
+    func replaceIfPresent(_ newData: Datatype) -> Bool {
+        guard let index = data.firstIndex(where: { $0.id == newData.id }) else { return false }
+        data[index] = newData
+        return true
     }
 }
 
@@ -104,8 +116,7 @@ public extension FileDataController {
     }
 
     func delete(id: UUID) async throws {
-        guard let index = await model.data.firstIndex(where: { $0.id == id }) else { return }
-        await model.remove(at: index)
+        guard await model.removeIfPresent(id: id) else { return }
         try await persistence.removeData(for: id.uuidString)
     }
 
@@ -114,10 +125,9 @@ public extension FileDataController {
     }
 
     func replace(data: Datatype) async {
-        guard let index = await model.data.firstIndex(where: { $0.id == data.id }) else {
+        guard await model.replaceIfPresent(data) else {
             await addNew(data: data)
             return
         }
-        await model.update(data: data, at: index)
     }
 }

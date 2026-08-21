@@ -75,11 +75,9 @@ struct GameTableWindowButton: View {
             // windows there, so leaving the game window open behind the
             // table would just be redundant clutter.
             pushWindow(id: SceneId.gameRecover.rawValue)
-            //scenesManager.dismissWindow(SceneId.game)
             // Also close the floating adventure/character window
-            // (`MasterGameWindowButtonView`/`PlayerGameWindowButtonView`'s
-            // own window) the same way opening the table already implies
-            // closing the game window it lives in.
+            // (`GameWindowMenuButtonView`'s own window) the same way opening
+            // the table already implies closing the game window it lives in.
             GameWindowToggle.close(
                 isMaster: isMaster,
                 scenesManager: scenesManager,
@@ -92,10 +90,8 @@ struct GameTableWindowButton: View {
             // table (whether from the game window's own toolbar or the
             // table's own ornament) brings the main game window back.
             scenesManager.dismissWindow(SceneId.gameRecover)
-            //scenesManager.openWindow(SceneId.game)
             // ...and the floating adventure/character window, the same way
-            // `MasterGameWindowButtonView`/`PlayerGameWindowButtonView`
-            // would open it directly.
+            // `GameWindowMenuButtonView` would open it directly.
             GameWindowToggle.open(
                 isMaster: isMaster,
                 itemId: isMaster ? root.gameModel.gameConfig.master.adventureId : root.gameModel.selectedCharacter,

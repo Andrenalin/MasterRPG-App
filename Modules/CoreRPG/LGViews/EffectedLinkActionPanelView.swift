@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import SwiftUI
-import SwiftData
 
 public struct EffectedLinkActionPanelView: View {
     public init(root: any ItemRootControllable, overwrite: Bool = false, action: (([ItemRowModel]) -> Void)? = nil) {

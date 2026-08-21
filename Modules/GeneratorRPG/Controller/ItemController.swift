@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import SwiftData
 
 struct ItemController: Sendable {
     @MainActor init(config: ModuleConfiguration) {

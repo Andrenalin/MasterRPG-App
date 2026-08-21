@@ -75,12 +75,11 @@ struct TableRPGGeneratedPreviewSnapshotTests {
     }
 
     // snapshot-root: TableRPG::AddEntryButton
-    @Test("AddEntryButton")
-    func snapshotAddEntryButton() async throws {
-        try await assertPreviewSnapshot("AddEntryButton") {
-            TableRPG.AddEntryButton(root: .preview, model: .preview)
-        }
-    }
+    // REMOVED: `AddEntryButton` no longer exists in TableRPG — it was consolidated into
+    // CoreRPG's shared `SheetEntryAddButton` in a prior audit round (CODE_AUDIT §8.1's
+    // history), but this generated test wasn't regenerated at the time. Pre-existing
+    // staleness, unrelated to this session's fixes; removed here only because it was
+    // blocking the whole test scheme from building.
 
     // snapshot-root: TableRPG::AddLinkButton
     @Test("AddLinkButton")

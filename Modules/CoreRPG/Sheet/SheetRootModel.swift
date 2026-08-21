@@ -487,6 +487,24 @@ public final class SheetRootModel: Sendable {
         selectedParentModel = parent
     }
 
+    /// Shared body of `SheetView`/`SheetEntryView`'s own `.onChange(of: focusedEntryId.wrappedValue)`
+    /// — covers focus reaching a row without going through its tap action (e.g. Tab-key
+    /// navigation, or the keyboard-arrow sync in `SheetRootView`), keeping `focusId` and
+    /// `selectedId` the same regardless of how focus got here, and is the sole place that
+    /// requests a scroll (see `setSelected`'s own doc for why). Callers must still guard that
+    /// `focusedEntryId.wrappedValue == entryModel.id` before calling this — that comparison
+    /// needs the row's own `@FocusState` binding, which this model doesn't have access to.
+    /// See CODE_AUDIT §9.12.
+    func handleFocusActivation(entryModel: SheetModel, parent: SheetModel) {
+        if selectedEntryId != entryModel.id {
+            setSelected(entryModel, parent: parent)
+        }
+        // The root/name-row case (entryModel is the root) has no entryId — nothing to scroll to.
+        if let entryId = entryModel.source.entryId {
+            setScrollEntryId(source: entryModel.source, entryId: entryId)
+        }
+    }
+
     func clearSelection() {
         guard let selectedEntryId else { return }
         if let selectedEntryModel {

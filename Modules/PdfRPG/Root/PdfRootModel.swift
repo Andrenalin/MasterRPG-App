@@ -2,7 +2,6 @@
 
 import CoreRPG
 import CoreData
-import SwiftData
 import SwiftUI
 
 #if os(macOS)

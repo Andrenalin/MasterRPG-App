@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import SwiftUI
-import SwiftData
 
 @MainActor @Observable
 public final class RemoveEntryListModel {

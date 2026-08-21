@@ -7,11 +7,13 @@ struct SheetEntryAddGroupButton: View {
     let parentModel: SheetModel
     let onlyIcon: Bool
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
     var body: some View {
         Button {
             Task {
                 let entryId = await rootModel.addNewGroup(in: parentModel)
-                withAnimation {
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
                     rootModel.updateParent(parentModel)
                 } completion: {
                     rootModel.setScrollEntryId(source: parentModel.source, entryId: entryId)

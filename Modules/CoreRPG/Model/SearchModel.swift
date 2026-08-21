@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import SwiftData
 import SwiftUI
 
 @MainActor @Observable

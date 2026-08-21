@@ -4,8 +4,18 @@ import CoreRPG
 import Foundation
 import SwiftUI
 
-struct MasterGameWindowButtonView: View {
-    let adventureId: UUID
+/// The master's floating adventure window toggle, or the player's floating character
+/// sheet window toggle — merged behind `isMaster` since the two views only differed in
+/// which item id backs the window and whether the button disables itself when no item
+/// is selected yet. Previously `MasterGameWindowButtonView`/`PlayerGameWindowButtonView`,
+/// two ~90%-identical files. See CODE_AUDIT §9.6.
+struct GameWindowMenuButtonView: View {
+    let isMaster: Bool
+    /// The adventure id for the master (always available by the time a caller shows
+    /// this button) or the player's currently selected character id (`nil` when no
+    /// character is selected yet, in which case the button disables rather than
+    /// no-opping the tap — matches `PlayerGameWindowButtonView`'s original guard).
+    let itemId: UUID?
 
     @Environment(AppSettingsModel.self) private var appSettingsModel
     @Environment(GameScreenModel.self) private var gameScreenModel
@@ -39,24 +49,25 @@ struct MasterGameWindowButtonView: View {
         .accessibilityValue(
             Text(isWindowPresented ? "Window open" : "Window closed", bundle: .module)
         )
+        .disabled(itemId == nil && !isWindowPresented)
     }
 
     private var gameWindowScene: SceneId {
-        GameWindowToggle.sceneId(isMaster: true)
+        GameWindowToggle.sceneId(isMaster: isMaster)
     }
 
     private func toggleGameWindow(isPresented: Bool) {
         if isPresented {
             GameWindowToggle.close(
-                isMaster: true,
+                isMaster: isMaster,
                 scenesManager: scenesManager,
                 gameScreenModel: gameScreenModel,
                 appSettingsModel: appSettingsModel
             )
         } else {
             GameWindowToggle.open(
-                isMaster: true,
-                itemId: adventureId,
+                isMaster: isMaster,
+                itemId: itemId,
                 scenesManager: scenesManager,
                 gameScreenModel: gameScreenModel,
                 appSettingsModel: appSettingsModel,
@@ -66,7 +77,12 @@ struct MasterGameWindowButtonView: View {
     }
 }
 
-#Preview(traits: .mockData) {
-    MasterGameWindowButtonView(adventureId: GamePreviewData.adventureID)
+#Preview("Master", traits: .mockData) {
+    GameWindowMenuButtonView(isMaster: true, itemId: GamePreviewData.adventureID)
+        .environment(GameScreenModel())
+}
+
+#Preview("Player", traits: .mockData) {
+    GameWindowMenuButtonView(isMaster: false, itemId: nil)
         .environment(GameScreenModel())
 }

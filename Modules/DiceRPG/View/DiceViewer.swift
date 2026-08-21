@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import SwiftData
 import SwiftUI
 
 struct DiceViewer: View {

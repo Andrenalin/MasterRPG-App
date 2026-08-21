@@ -98,13 +98,7 @@ private extension SheetView {
         // navigation already updates `selectedEntryId` before this focus sync runs.
         .onChange(of: focusedEntryId.wrappedValue) {
             guard focusedEntryId.wrappedValue == sheetModel.id else { return }
-            if rootModel.selectedEntryId != sheetModel.id {
-                rootModel.setSelected(sheetModel, parent: sheetModel)
-            }
-            // The root/name-row case (sheetModel is the root) has no entryId — nothing to scroll to.
-            if let entryId = sheetModel.source.entryId {
-                rootModel.setScrollEntryId(source: sheetModel.source, entryId: entryId)
-            }
+            rootModel.handleFocusActivation(entryModel: sheetModel, parent: sheetModel)
         }
         .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
         .overlay {

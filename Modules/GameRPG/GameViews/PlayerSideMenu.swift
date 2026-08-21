@@ -7,25 +7,15 @@ import SwiftUI
 struct PlayerSideMenu: View {
     let root: GameRoot
 
-    private static let modules: [NetworkModules] = [
-        .value,
-        .table,
-        .audio,
-        .photo,
-        .pdf,
-        .space,
-        .dice
-    ]
-
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
             VStack(spacing: 8) {
                 if root.gameModel.gameType != .observer {
-                    PlayerGameWindowButtonView(root: root)
+                    GameWindowMenuButtonView(isMaster: false, itemId: root.gameModel.selectedCharacter)
                 }
 
-                ForEach(Self.modules, id: \.self) { module in
+                ForEach(NetworkModules.gameWindowPlayerModules, id: \.self) { module in
                     GameWindowButtonView(
                         title: module.title,
                         systemImage: module.icon,

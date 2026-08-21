@@ -4,7 +4,6 @@
 import CoreRPG
 import CoreData
 import Observation
-import SwiftData
 import SwiftUI
 import os.log
 

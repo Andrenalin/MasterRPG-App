@@ -32,7 +32,6 @@ private extension TableSheetView {
                 SheetRootView(root: root, rootModel: model)
                     .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
-            //.scrollTargetLayout()
         }
         .scrollPosition($scrollPosition, anchor: .center)
         .onChange(of: model.editorModel.scrollEntryId) { _, entryID in

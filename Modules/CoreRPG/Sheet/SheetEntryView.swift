@@ -66,12 +66,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 // sync runs.
                 .onChange(of: focusedEntryId.wrappedValue) {
                     guard focusedEntryId.wrappedValue == entryModel.id else { return }
-                    if rootModel.selectedEntryId != entryModel.id {
-                        rootModel.setSelected(entryModel, parent: parentModel)
-                    }
-                    if let entryId = entryModel.source.entryId {
-                        rootModel.setScrollEntryId(source: entryModel.source, entryId: entryId)
-                    }
+                    rootModel.handleFocusActivation(entryModel: entryModel, parent: parentModel)
                 }
                 .accessibilityLabel(primaryActionAccessibilityLabel)
                 .accessibilityValue(generatedSelectionAccessibilityValue)

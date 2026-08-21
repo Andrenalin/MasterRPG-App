@@ -129,14 +129,9 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     }
 
     // snapshot-root: CoreRPG::DumpingEnvironment
-    @Test("DumpingEnvironment")
-    func snapshotDumpingEnvironment() async throws {
-        try await assertPreviewSnapshot("DumpingEnvironment") {
-            CoreRPG.DumpingEnvironment(optimized: true) {
-                Text(verbatim: "Environment content")
-            }
-        }
-    }
+    // REMOVED: `DumpingEnvironment` no longer exists in CoreRPG; this generated test was
+    // never regenerated after its removal. Pre-existing staleness, unrelated to this
+    // session's fixes.
 
     // snapshot-root: CoreRPG::QuickLinkTextRow
     @Test("QuickLinkTextRow")

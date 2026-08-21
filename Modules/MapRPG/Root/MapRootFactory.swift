@@ -10,7 +10,6 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG
-import SwiftData
 import SwiftUI
 
 public enum MapRootFactory {

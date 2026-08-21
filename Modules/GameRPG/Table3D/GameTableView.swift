@@ -39,10 +39,9 @@ public struct GameTableView: View {
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
-    /// Backs the trailing-side window menu ornament's `MasterGameWindowButtonView`/
-    /// `PlayerGameWindowButtonView` — mirrors `MasterGameScreen`/`PlayerGameScreen`'s
-    /// own `gameScreenModel`, likewise owned per-screen rather than shared
-    /// through `GameRoot`.
+    /// Backs the trailing-side window menu ornament's `GameWindowMenuButtonView` —
+    /// mirrors `MasterGameScreen`/`PlayerGameScreen`'s own `gameScreenModel`,
+    /// likewise owned per-screen rather than shared through `GameRoot`.
     @State private var gameScreenModel = GameScreenModel()
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
@@ -546,6 +545,11 @@ private struct GameTableRealityContent: View {
     /// is cumulative from the gesture's start, not per-frame, so this is what lets `.onChanged`
     /// apply only the *new* delta each call. Reset on `.onEnded`.
     @State private var tableMoveLastTranslation: CGSize = .zero
+    /// Timestamp of the most recent `.onChanged` for the in-flight table-move drag. Mirrors
+    /// `viewportPanLastUpdate`'s own doc: if `.onEnded` is never delivered, `tableMoveLastTranslation`
+    /// would otherwise stay stuck non-zero forever, applying one large, wrong jump to the table's
+    /// position on the next unrelated table-move gesture. See CODE_AUDIT §5.1.
+    @State private var tableMoveLastUpdate: Date?
     /// `nil` at rest; decided once per `boardDragGesture`, on its first
     /// `.onChanged` call, from whether a room was focused *then* — not
     /// re-checked on every subsequent call, so a focus change arriving
@@ -571,6 +575,14 @@ private struct GameTableRealityContent: View {
     private func isViewportPanStale() -> Bool {
         guard let viewportPanLastUpdate else { return false }
         return Date.now.timeIntervalSince(viewportPanLastUpdate) > Self.staleGestureTimeout
+    }
+
+    /// True once a stuck `tableMoveLastTranslation` has gone long enough without a follow-up
+    /// `.onChanged` that its originating gesture almost certainly never delivered `.onEnded`.
+    /// See CODE_AUDIT §5.1.
+    private func isTableMoveStale() -> Bool {
+        guard let tableMoveLastUpdate else { return false }
+        return Date.now.timeIntervalSince(tableMoveLastUpdate) > Self.staleGestureTimeout
     }
 
     private static let staleGestureTimeout: TimeInterval = 3
@@ -699,6 +711,7 @@ private struct GameTableRealityContent: View {
                     game.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
                 } else {
                     tableMoveLastTranslation = .zero
+                    tableMoveLastUpdate = nil
                 }
             }
     }
@@ -726,6 +739,7 @@ private struct GameTableRealityContent: View {
             }
             .onEnded { _ in
                 tableMoveLastTranslation = .zero
+                tableMoveLastUpdate = nil
             }
     }
 
@@ -735,11 +749,19 @@ private struct GameTableRealityContent: View {
     /// type (`DragGesture.Value` or `EntityTargetValue<DragGesture.Value>`
     /// both expose it as `CGSize`), so only the value itself needs passing.
     private func applyTableMoveDelta(translation: CGSize) {
+        if isTableMoveStale() {
+            // The previous drag's `.onEnded` was likely never delivered (system
+            // interruption, window backgrounding mid-drag) — re-arm from this call's
+            // value instead of computing a delta against the stale one, mirroring
+            // `viewportPanStart`/`isViewportPanStale()`. See CODE_AUDIT §5.1.
+            tableMoveLastTranslation = translation
+        }
         let delta = CGSize(
             width: translation.width - tableMoveLastTranslation.width,
             height: translation.height - tableMoveLastTranslation.height
         )
         tableMoveLastTranslation = translation
+        tableMoveLastUpdate = .now
         game.renderer.root.position.x += Float(delta.width) * Self.tableMoveScale
         game.renderer.root.position.z += Float(delta.height) * Self.tableMoveScale
     }

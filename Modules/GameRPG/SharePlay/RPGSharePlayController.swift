@@ -771,7 +771,7 @@ extension RPGSharePlayController {
         fileJournal: Bool,
         participantId: UUID? = nil
     ) -> Bool {
-        Logger.sharePlay.debug("sendData state: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .public)")
+        Logger.sharePlay.debug("sendData state: \(self.printState(), privacy: .public) model: \(gameNetworkModel.debugDescription, privacy: .private)")
         guard messenger != nil, let sessionId = groupSession?.id else { return false }
 
         guard let prepared = Self.prepareForTransport(
@@ -835,7 +835,7 @@ extension RPGSharePlayController {
                     byteCount: attachmentData.count,
                     for: prepared.model
                 )
-                Logger.sharePlay.debug("Journal: message \(prepared.model.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(prepared.model.debugDescription, privacy: .public)")
+                Logger.sharePlay.debug("Journal: message \(prepared.model.counter, privacy: .public) attachment \(attachmentSize, privacy: .public) model: \(prepared.model.debugDescription, privacy: .private)")
                 if !self.journalTracker.shouldPublish(model: prepared.model) {
                     // Reusing bytes is a storage optimization, not a screen
                     // intent optimization. Every reveal/show still needs a new

@@ -3,17 +3,6 @@
 import CoreRPG
 import Foundation
 
-struct ImportController: Sendable {
-    @MainActor init(itemController: ItemController, editController: EditController) {
-        self.itemController = itemController
-        self.editController = editController
-    }
-    
-    let itemController: ItemController
-    let editController: EditController
-}
-
-extension ImportController: ImportControllable {
-    var itemControllable: any ItemControllable { itemController }
-    var editControllable: any EditControllable { editController }
-}
+/// See CODE_AUDIT §9.2 — genericized in `GenericImportController` (CoreRPG); this module needs
+/// no behavior beyond the shared default.
+typealias ImportController = GenericImportController<ItemController, EditController>

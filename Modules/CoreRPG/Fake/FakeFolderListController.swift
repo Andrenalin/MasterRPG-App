@@ -19,7 +19,19 @@ struct FakeFolderListController: FolderListControllable {
         self.searchRootControllable = searchRootControllable
         self.cacheListItemModel = cacheListItemModel
     }
-    
+
+    /// Satisfies `FolderListControllable`'s `init` requirement (added for the shared
+    /// `copy(listModel:)` default — see CODE_AUDIT §9.4), which this fake doesn't otherwise
+    /// need since it overrides `copy(listModel:)` itself below.
+    init(listModel: FolderListModel, listDisplayModel: ListDisplayModel, itemControllable: any ItemControllable, searchRootControllable: any SearchRootControllable) {
+        self.init(
+            itemControllable: itemControllable,
+            listModel: listModel,
+            listDisplayModel: listDisplayModel,
+            searchRootControllable: searchRootControllable
+        )
+    }
+
     func copy(listModel: FolderListModel) -> FakeFolderListController {
         FakeFolderListController()
     }

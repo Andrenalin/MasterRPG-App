@@ -115,7 +115,7 @@ struct PlayerGameScreen: View {
 private extension PlayerGameScreen {
     func prepareWindows() async {
         do {
-            try await Task.sleep(for: .seconds(0.6))
+            try await Task.sleep(for: GameWindowToggle.windowPrepDelay)
         } catch {
             return
         }

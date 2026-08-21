@@ -63,7 +63,22 @@ final class GeneratorSessionModel {
         currentExtractionTask?.cancel()
         currentExtractionTask = nil
     }
-    
+
+    /// Monotonically increasing generation counter. `request(message:rootModel:)`
+    /// bumps it before starting a new streamed conversation, and `extract(message:rootModel:)`
+    /// inherits that same generation for its own stream. Every partial-stream write
+    /// compares against this before landing, so a stale generation's late partial
+    /// (racing a newer request/extraction) can't overwrite a newer one — cancellation
+    /// alone isn't a guarantee the underlying `LanguageModelSession` stream observes
+    /// `Task.isCancelled` before its next element. See CODE_AUDIT §3.5.
+    private(set) var currentGeneration: Int = 0
+
+    @discardableResult
+    func startNewGeneration() -> Int {
+        currentGeneration += 1
+        return currentGeneration
+    }
+
     // MARK: - Generation Options
     var SamplingStrategyConfiguration: SamplingStrategyConfiguration = .default
     var useFixedSeed: Bool = false
@@ -229,6 +244,7 @@ struct GeneratorController: Sendable {
             
     @MainActor func request(message: String, rootModel: SheetRootModel) {
         model.cancel()
+        let generation = model.startNewGeneration()
         model.isLoading = true
 
         let rootSheetModel = rootModel.sheetModel
@@ -264,6 +280,7 @@ struct GeneratorController: Sendable {
                     prompt,
                     generationOptions: model.generationOptions
                 ) { @MainActor partialText in
+                    guard model.currentGeneration == generation else { return }
                     let updated = SheetModel(
                         source: ItemRowModel(itemId: UUID(), typeId: typeId),
                         name: "",
@@ -274,10 +291,11 @@ struct GeneratorController: Sendable {
                     rootModel.updateAIPreview(updated)
                     model.streamingResponse = partialText
                 }
+                guard model.currentGeneration == generation else { return }
                 model.syncConversationState()
                 model.responseErrorContent = ""
                 model.chatResponse = response
-                extract(message: response, rootModel: rootModel)
+                extract(message: response, rootModel: rootModel, generation: generation)
             } catch is CancellationError {
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 return
@@ -304,8 +322,12 @@ struct GeneratorController: Sendable {
 
     // MARK: - Extraction
 
-    @MainActor func extract(message: String, rootModel: SheetRootModel, maxCharacters: Int = 6_000) {
+    @MainActor func extract(message: String, rootModel: SheetRootModel, generation: Int? = nil, maxCharacters: Int = 6_000) {
         model.cancelExtraction()
+        // Inherit the caller's generation (from `request(message:rootModel:)`) when
+        // given, so a newer request supersedes any in-flight extraction from an
+        // older one too; a standalone call starts its own generation. See CODE_AUDIT §3.5.
+        let generation = generation ?? model.startNewGeneration()
         model.isExtracting = true
         let typeId = rootModel.sheetModel.source.typeId
         // Bounds the text fed into the extraction prompt. Unlike `prompt(for:...)`'s
@@ -338,6 +360,7 @@ struct GeneratorController: Sendable {
                 )
 
                 for try await partialResponse in stream {
+                    guard model.currentGeneration == generation else { return }
                     let snapshot = partialResponse.content
                     self.model.blockResponse = snapshot
                     guard !snapshot.isEmpty else { continue }
@@ -373,6 +396,7 @@ struct GeneratorController: Sendable {
                     }
                 }
 
+                guard model.currentGeneration == generation else { return }
                 let finalEntries = self.model.blockResponse.compactMap { partial -> SheetModel? in
                     guard let name = partial.title, let content = partial.content else { return nil }
                     return makeSheetEntry(name: name, content: content, typeId: typeId)

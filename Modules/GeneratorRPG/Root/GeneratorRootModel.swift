@@ -3,7 +3,6 @@
 import CoreRPG
 import Foundation
 import CoreData
-import SwiftData
 
 @MainActor @Observable
 public final class GeneratorRootModel {

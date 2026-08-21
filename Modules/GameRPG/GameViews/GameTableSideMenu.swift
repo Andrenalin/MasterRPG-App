@@ -17,22 +17,19 @@ struct GameTableSideMenu: View {
     let root: GameRoot
     let isMaster: Bool
     /// Only needed for the master's own "open the adventure window" button
-    /// (see `MasterGameWindowButtonView`) — `nil` hides that one button
+    /// (see `GameWindowMenuButtonView`) — `nil` hides that one button
     /// rather than requiring an adventure to already be selected before the
     /// table volume can even show its ornament.
     let adventureId: UUID?
 
-    /// Mirrors `MasterModuleWindowMenu.modules`, minus `.game` — handled as
-    /// its own leading button below instead of inline, since this is the
-    /// only entry needing `adventureId`.
-    private static let masterModules: [NetworkModules] = [
-        .adventure, .audio, .dice, .map, .pdf, .photo, .rule, .space, .table, .value, .weather
-    ]
+    /// `NetworkModules.gameWindowMasterModules` minus `.game` — handled as its own
+    /// leading button below instead of inline, since this is the only entry needing
+    /// `adventureId`. Shared with `MasterModuleWindowMenu`, not a hand-copy — see
+    /// CODE_AUDIT §9.7.
+    private static let masterModules: [NetworkModules] = NetworkModules.gameWindowMasterModules.filter { $0 != .game }
 
-    /// Mirrors `PlayerSideMenu.modules`.
-    private static let playerModules: [NetworkModules] = [
-        .value, .table, .audio, .photo, .pdf, .space, .dice
-    ]
+    /// Shared with `PlayerSideMenu.modules`, not a hand-copy — see CODE_AUDIT §9.7.
+    private static let playerModules: [NetworkModules] = NetworkModules.gameWindowPlayerModules
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -40,7 +37,7 @@ struct GameTableSideMenu: View {
             HStack(spacing: 8) {
                 if isMaster {
                     if let adventureId {
-                        MasterGameWindowButtonView(adventureId: adventureId)
+                        GameWindowMenuButtonView(isMaster: true, itemId: adventureId)
                     }
                     ForEach(Self.masterModules, id: \.self) { module in
                         MasterModuleWindowButtonView(valueType: module)
@@ -53,7 +50,7 @@ struct GameTableSideMenu: View {
                     )
                 } else {
                     if root.gameModel.gameType != .observer {
-                        PlayerGameWindowButtonView(root: root)
+                        GameWindowMenuButtonView(isMaster: false, itemId: root.gameModel.selectedCharacter)
                     }
                     ForEach(Self.playerModules, id: \.self) { module in
                         GameWindowButtonView(

@@ -11,7 +11,6 @@ import PdfRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG
-import SwiftData
 import SwiftUI
 
 @MainActor @Observable

@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import Foundation
-import SwiftData
 
 @MainActor
 public protocol ItemRootControllable: Sendable {

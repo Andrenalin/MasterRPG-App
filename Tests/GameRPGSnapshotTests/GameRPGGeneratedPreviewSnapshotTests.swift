@@ -272,11 +272,13 @@ struct GameRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: GameRPG::MasterGameWindowButtonView
-    @Test("MasterGameWindowButtonView")
-    func snapshotMasterGameWindowButtonView() async throws {
-        try await assertPreviewSnapshot("MasterGameWindowButtonView") {
-            GameRPG.MasterGameWindowButtonView(adventureId: GamePreviewData.adventureID)
+    // snapshot-root: GameRPG::GameWindowMenuButtonView
+    // `MasterGameWindowButtonView`/`PlayerGameWindowButtonView` were merged into
+    // `GameWindowMenuButtonView(isMaster:itemId:)` — see CODE_AUDIT §9.6.
+    @Test("GameWindowMenuButtonView")
+    func snapshotGameWindowMenuButtonView() async throws {
+        try await assertPreviewSnapshot("GameWindowMenuButtonView") {
+            GameRPG.GameWindowMenuButtonView(isMaster: true, itemId: GamePreviewData.adventureID)
                 .environment(GameScreenModel())
         }
     }

@@ -3,7 +3,6 @@
 import CoreRPG
 import Foundation
 import RPGResources
-import SwiftData
 
 public extension GeneratorRootModel {
     @MainActor

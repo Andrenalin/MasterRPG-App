@@ -2,7 +2,6 @@
 
 import CoreRPG
 
-import SwiftData
 import SwiftUI
 
 public enum AudioFactory {

@@ -11,20 +11,20 @@ require "pathname"
 
 ROOT = Pathname(__dir__).parent.freeze
 MODULES = {
-  "AdventureRPG" => "AdventureRPGTests",
-  "AudioRPG" => "AudioRPGTests",
-  "CharacterRPG" => "CharacterRPGTests",
-  "CoreRPG" => "CoreRPGTests",
-  "DiceRPG" => "DiceRPGTests",
-  "GameRPG" => "GameRPGTests",
-  "GeneratorRPG" => "GeneratorRPGTests",
-  "MapRPG" => "MapRPGTests",
-  "PdfRPG" => "PdfRPGTests",
-  "PhotoRPG" => "PhotoRPGTests",
-  "RolePlayGameKit" => "GameRPGTests",
-  "SpaceRPG" => "SpaceRPGTests",
-  "TableRPG" => "TableRPGTests",
-  "WeatherRPG" => "WeatherRPGTests"
+  "AdventureRPG" => "AdventureRPGSnapshotTests",
+  "AudioRPG" => "AudioRPGSnapshotTests",
+  "CharacterRPG" => "CharacterRPGSnapshotTests",
+  "CoreRPG" => "CoreRPGSnapshotTests",
+  "DiceRPG" => "DiceRPGSnapshotTests",
+  "GameRPG" => "GameRPGSnapshotTests",
+  "GeneratorRPG" => "GeneratorRPGSnapshotTests",
+  "MapRPG" => "MapRPGSnapshotTests",
+  "PdfRPG" => "PdfRPGSnapshotTests",
+  "PhotoRPG" => "PhotoRPGSnapshotTests",
+  "RolePlayGameKit" => "GameRPGSnapshotTests",
+  "SpaceRPG" => "SpaceRPGSnapshotTests",
+  "TableRPG" => "TableRPGSnapshotTests",
+  "WeatherRPG" => "WeatherRPGSnapshotTests"
 }.freeze
 
 def view_declarations(source)

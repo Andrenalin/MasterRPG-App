@@ -7,28 +7,13 @@ import SwiftUI
 struct MasterModuleWindowMenu: View {
     let adventureId: UUID
 
-    private static let modules: [NetworkModules] = [
-        .game,
-        .adventure,
-        .audio,
-        .dice,
-        .map,
-        .pdf,
-        .photo,
-        .rule,
-        .space,
-        .table,
-        .value,
-        .weather
-    ]
-
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
             VStack(spacing: 8) {
-                ForEach(Self.modules, id: \.self) { module in
+                ForEach(NetworkModules.gameWindowMasterModules, id: \.self) { module in
                     if module == .game {
-                        MasterGameWindowButtonView(adventureId: adventureId)
+                        GameWindowMenuButtonView(isMaster: true, itemId: adventureId)
                     } else {
                         MasterModuleWindowButtonView(valueType: module)
                     }

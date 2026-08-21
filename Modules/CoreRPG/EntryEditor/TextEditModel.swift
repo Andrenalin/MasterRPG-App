@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import Foundation
-import SwiftData
 import SwiftUI
 
 @MainActor @Observable public final class TextEditModel {

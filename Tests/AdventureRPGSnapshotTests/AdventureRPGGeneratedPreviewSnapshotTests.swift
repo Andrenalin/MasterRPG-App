@@ -83,12 +83,9 @@ struct AdventureRPGGeneratedPreviewSnapshotTests {
     }
 
     // snapshot-root: AdventureRPG::AdventureAddEntryButton
-    @Test("AdventureAddEntryButton")
-    func snapshotAdventureAddEntryButton() async throws {
-        try await assertPreviewSnapshot("AdventureAddEntryButton") {
-            AdventureRPG.AdventureAddEntryButton(root: .preview, model: .preview)
-        }
-    }
+    // REMOVED: `AdventureAddEntryButton` no longer exists in AdventureRPG — consolidated
+    // into CoreRPG's shared `SheetEntryAddButton` in a prior audit round; this generated
+    // test was never regenerated. Pre-existing staleness, unrelated to this session's fixes.
 
     // snapshot-root: AdventureRPG::AdventureAddLinkButton
     @Test("AdventureAddLinkButton")

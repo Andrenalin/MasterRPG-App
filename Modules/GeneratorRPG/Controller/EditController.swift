@@ -2,7 +2,6 @@
 
 import CoreRPG
 import Foundation
-import SwiftData
 
 struct EditController: Sendable {
     @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {

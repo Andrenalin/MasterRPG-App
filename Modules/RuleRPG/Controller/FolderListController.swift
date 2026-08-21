@@ -27,13 +27,4 @@ struct FolderListController: FolderListControllable {
         RuleViewerRoute.viewer(itemId)
     }
 
-    func copy(listModel: FolderListModel) -> FolderListController {
-        let dependencies = copiedListDependencies
-        return FolderListController(
-            listModel: listModel,
-            listDisplayModel: dependencies.listDisplayModel,
-            itemControllable: itemControllable,
-            searchRootControllable: dependencies.searchRootControllable
-        )
-    }
 }

@@ -6,7 +6,6 @@ import DiceRPG
 import GeneratorRPG
 #endif
 import PdfRPG
-import SwiftData
 import SwiftUI
 
 public enum TableFactory {

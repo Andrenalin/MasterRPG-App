@@ -22,10 +22,6 @@ enum GameMetrics {
     /// Inset from a seat's own near table edge to where its dice rest — see
     /// `PlayerSeat.diceLayout`.
     static let diceEdgeInset: Float = 0.06
-    static let smallHeight: Float = 0.001
-    static let boardHeight: Float = 0.055
-    static let playerAreaSize = SIMD2<Float>(0.4, 0.1)
-    static let playerHandSize = SIMD2<Float>(0.2, 0.1)
 }
 
 /// Marks the map surface's hit-test volume for `viewportPanGesture`
