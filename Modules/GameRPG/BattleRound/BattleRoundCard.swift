@@ -25,6 +25,19 @@ extension EnvironmentValues {
     @Entry var battleRoundCardLayout: BattleRoundCardLayout = .wide
 }
 
+/// The properties `BattleRoundWideCardLayout` and `BattleRoundCompactCardLayout`
+/// both need, bundled into one struct so a future added field only needs
+/// declaring once instead of twice — the two layouts' own `body` arrangements
+/// remain genuinely different and stay separate types. See CODE_AUDIT §9.9.
+struct BattleRoundCardLayoutContext {
+    let state: BattleRoundCardState
+    let presentation: BattleRoundCardPresentation
+    let controller: BattleRoundController
+    let showCharacter: @MainActor (BattleCombatant) -> Void
+    let selectHitPoints: @MainActor (BattleCombatant) -> Void
+    let selectInitiative: @MainActor (BattleCombatant) -> Void
+}
+
 extension BattleCombatant {
     var hasCharacter: Bool { gameCharacterId != nil || sourceCharacterId != nil }
 }
@@ -48,27 +61,21 @@ struct BattleRoundCard: View {
         // children happen to exist at that moment instead of bounding one
         // stable row — visible as rows resizing/losing full width whenever
         // `cardState.characterSheet` is cleared (e.g. switching attacker).
+        let layoutContext = BattleRoundCardLayoutContext(
+            state: cardState,
+            presentation: presentation,
+            controller: controller,
+            showCharacter: showCharacter,
+            selectHitPoints: selectHitPoints,
+            selectInitiative: selectInitiative
+        )
         VStack(spacing: 0) {
             Group {
                 switch cardLayout {
                 case .wide:
-                    BattleRoundWideCardLayout(
-                        state: cardState,
-                        presentation: presentation,
-                        controller: controller,
-                        showCharacter: showCharacter,
-                        selectHitPoints: selectHitPoints,
-                        selectInitiative: selectInitiative
-                    )
+                    BattleRoundWideCardLayout(context: layoutContext)
                 case .compact:
-                    BattleRoundCompactCardLayout(
-                        state: cardState,
-                        presentation: presentation,
-                        controller: controller,
-                        showCharacter: showCharacter,
-                        selectHitPoints: selectHitPoints,
-                        selectInitiative: selectInitiative
-                    )
+                    BattleRoundCompactCardLayout(context: layoutContext)
                 }
             }
             .padding(10)

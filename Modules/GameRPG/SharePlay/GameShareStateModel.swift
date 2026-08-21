@@ -2,8 +2,12 @@
 
 #if os(visionOS)
 import Foundation
-import Combine
 
+/// `mode` is observed directly via `withObservationTracking` (see
+/// `RPGSharePlayController.observeShareStateMode()`) rather than through a
+/// separate Combine publisher — `@Observable` already notifies on every
+/// property change, so a hand-rolled `PassthroughSubject` here would just
+/// duplicate that. See CODE_AUDIT §4.2.
 @MainActor @Observable
 final class GameShareStateModel {
     enum PresentationMode: String, Sendable, CaseIterable, Codable {
@@ -12,22 +16,10 @@ final class GameShareStateModel {
         case immersive // Shared RealityKit immersive space
     }
 
-    var mode: PresentationMode = .window {
-        didSet {
-            if oldValue != mode {
-                modeChangedSubject.send(mode)
-            }
-        }
-    }
-    
+    var mode: PresentationMode = .window
+
     var isSharePlayActive: Bool = false
     var groupImmersionActive: Bool = false
     var isMaster: Bool = false
-
-    // ✅ Add publisher for mode changes so SharePlay can synchronize
-    private let modeChangedSubject = PassthroughSubject<PresentationMode, Never>()
-    var modeChanged: AnyPublisher<PresentationMode, Never> {
-        modeChangedSubject.eraseToAnyPublisher()
-    }
 }
 #endif

@@ -164,15 +164,9 @@ extension GameController {
         data: NetworkCodableDataType,
         playerId: UUID
     ) -> Bool {
-        let generation = networkGeneration(for: itemId)
-        guard data.id == itemId,
-              data.type == .map,
-              gameModel.currentItemId == itemId,
-              data.version == generation.version,
-              data.assetVersion == generation.assetVersion,
-              data.contentVersion == generation.contentVersion
-        else { return false }
-
+        // See CODE_AUDIT §9.3 — shared generation-match guard, kept in sync
+        // with `applyBattleRoundUpdate` in GameController+Battle.swift.
+        guard isCurrentGeneration(data, for: itemId) else { return false }
         return updatePin(itemId: itemId, data: data.data, playerId: playerId)
     }
 
@@ -275,7 +269,8 @@ extension GameController {
         let item = gameItem(for: itemId)
         guard item.pointer.location != location else { return false }
         item.pointer.location = location
-        item.pointer.timeInterval = max(Date.now.timeIntervalSince1970, item.pointer.timeInterval.nextUp)
+        // See CODE_AUDIT §9.4 — shared timestamp-bump idiom.
+        item.pointer.timeInterval = Self.bumpedTimeInterval(from: item.pointer.timeInterval)
         return true
     }
 
@@ -284,7 +279,8 @@ extension GameController {
     func togglePointer(itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
         item.pointer.isShown.toggle()
-        item.pointer.timeInterval = max(Date.now.timeIntervalSince1970, item.pointer.timeInterval.nextUp)
+        // See CODE_AUDIT §9.4 — shared timestamp-bump idiom.
+        item.pointer.timeInterval = Self.bumpedTimeInterval(from: item.pointer.timeInterval)
         return true
     }
 

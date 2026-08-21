@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import Foundation
 
 enum SharePlayPackageSenderError: Error, Equatable {

@@ -47,7 +47,7 @@ actor ConnectionController: Identifiable {
     }
 
     deinit {
-        // Owners may drop connections without an explicit cancel() (e.g. resetConntections).
+        // Owners may drop connections without an explicit cancel() (e.g. resetConnections).
         receiveTask?.cancel()
         connection.cancel()
     }

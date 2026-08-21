@@ -20,6 +20,14 @@ struct BattleRoundController: Sendable {
         root.mapRoot.mapGameControllable.battleRoundModel
     }
 
+    /// The running battle's map id, but only while this device is the game
+    /// master — every mutating method below collapses its own
+    /// `isMaster`/`mapId` guard to this single computed property so a future
+    /// method can't skip the authorization check by omission. See CODE_AUDIT §9.5.
+    private var authorizedMapId: UUID? {
+        root.gameModel.gameConfig.isMaster ? model.mapId : nil
+    }
+
     @discardableResult
     func start() -> Bool {
         guard root.gameModel.gameConfig.isMaster,
@@ -58,8 +66,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func end() -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.endBattle(itemId: mapId) else {
             return false
         }
@@ -69,8 +76,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func setInitiative(_ combatantId: UUID, _ value: Int?) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId else {
+        guard let mapId = authorizedMapId else {
             return false
         }
         return root.mapRoot.mapGameControllable.setBattleInitiative(
@@ -82,8 +88,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func adjustInitiative(_ combatantId: UUID, _ amount: Int) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId else {
+        guard let mapId = authorizedMapId else {
             return false
         }
         return root.mapRoot.mapGameControllable.adjustBattleInitiative(
@@ -95,8 +100,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func setInitiativeOrder(_ order: BattleInitiativeOrder) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId else {
+        guard let mapId = authorizedMapId else {
             return false
         }
         return root.mapRoot.mapGameControllable.setBattleInitiativeOrder(
@@ -112,8 +116,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func activateAttacker(_ combatantId: UUID) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.activateBattleAttacker(
                   itemId: mapId,
                   combatantId: combatantId
@@ -126,8 +129,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func nextAttacker() -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.nextBattleAttacker(itemId: mapId) else {
             return false
         }
@@ -137,8 +139,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func nextRound() -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.nextBattleRound(itemId: mapId) else {
             return false
         }
@@ -148,8 +149,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func addCombatant(pinId: UUID) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.addBattleCombatant(
                   itemId: mapId,
                   pinId: pinId
@@ -164,8 +164,7 @@ struct BattleRoundController: Sendable {
     /// alone, so highlighting it again re-adds it as a fresh combatant.
     @discardableResult
     func removeCombatant(_ combatantId: UUID) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.removeBattleCombatant(
                   itemId: mapId,
                   combatantId: combatantId
@@ -182,8 +181,7 @@ struct BattleRoundController: Sendable {
         total: Int,
         expression: String? = nil
     ) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId else {
+        guard let mapId = authorizedMapId else {
             return false
         }
         return root.mapRoot.mapGameControllable.addBattleRoll(
@@ -196,8 +194,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func selectRollRecipient(_ combatantId: UUID) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId else {
+        guard let mapId = authorizedMapId else {
             return false
         }
         return root.mapRoot.mapGameControllable.selectBattleRollRecipient(
@@ -208,8 +205,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func setDead(_ combatantId: UUID, _ isDead: Bool) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.setBattleCombatantDead(
                   itemId: mapId,
                   combatantId: combatantId,
@@ -223,8 +219,7 @@ struct BattleRoundController: Sendable {
 
     @discardableResult
     func assignCharacter(_ combatantId: UUID, _ characterId: UUID) -> Bool {
-        guard root.gameModel.gameConfig.isMaster,
-              let mapId = model.mapId,
+        guard let mapId = authorizedMapId,
               root.mapRoot.mapGameControllable.assignBattleCharacter(
                   itemId: mapId,
                   combatantId: combatantId,
@@ -259,7 +254,25 @@ struct BattleRoundController: Sendable {
                 && (combatant.pinId == senderId
                     || combatant.pin.players.contains(senderId))
         }
-        let combatantId = characterCombatant?.id
+        // `resultCategory` travels inside the network payload, set entirely
+        // client-side by whoever initiated the roll — the transport layer
+        // authenticates `senderId` itself, but never cross-checks this field
+        // against it. Without this guard, a player could claim any other
+        // combatant's `gameCharacterId`/`sourceCharacterId` (values every
+        // player already sees over the wire) and have the roll attributed to
+        // a combatant they don't own. The master's own local rolls are
+        // already an authenticated identity by the time `isMaster` is true
+        // here, so only a non-master sender needs the ownership check.
+        // See CODE_AUDIT §6.1.
+        let authorizedCharacterCombatant = characterCombatant.flatMap { combatant -> BattleCombatant? in
+            guard isMaster
+                    || (combatant.isPlayer
+                        && (combatant.pinId == senderId
+                            || combatant.pin.players.contains(senderId)))
+            else { return nil }
+            return combatant
+        }
+        let combatantId = authorizedCharacterCombatant?.id
             ?? (isMaster ? model.masterRollRecipientCombatantId : playerCombatant?.id)
         guard let combatantId else { return }
         _ = addRoll(

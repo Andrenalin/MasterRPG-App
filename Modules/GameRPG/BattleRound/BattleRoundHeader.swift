@@ -13,7 +13,7 @@ struct BattleRoundHeader: View {
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
+            HStack(spacing: BattleRoundSpacing.loose) {
                 BattleRoundHeading(
                     isRunning: isRunning,
                     round: round,
@@ -24,8 +24,8 @@ struct BattleRoundHeader: View {
                 BattleRoundHeaderActions(isRunning: isRunning, controller: controller)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
+                HStack(spacing: BattleRoundSpacing.standard) {
                     BattleRoundHeading(
                         isRunning: isRunning,
                         round: round,

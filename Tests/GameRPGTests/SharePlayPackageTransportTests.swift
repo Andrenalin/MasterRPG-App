@@ -687,8 +687,8 @@ struct SharePlayPackageTransportTests {
         // Then
         #expect(oversizedPackage == nil)
         #expect(oversizedStream == nil)
-        #expect(receiver.receivedPacakges[Self.streamKey(oversizedPackageId)] == nil)
-        #expect(receiver.receivedPacakges[Self.streamKey(oversizedStreamId)]?.packageCounter == 1)
+        #expect(receiver.receivedPackages[Self.streamKey(oversizedPackageId)] == nil)
+        #expect(receiver.receivedPackages[Self.streamKey(oversizedStreamId)]?.packageCounter == 1)
         #expect(receiver.cumulativeIncompleteByteCount == 4)
     }
 
@@ -721,7 +721,7 @@ struct SharePlayPackageTransportTests {
         )
 
         // Then
-        #expect(Set(receiver.receivedPacakges.keys.map(\.packageId)) == [secondId, thirdId])
+        #expect(Set(receiver.receivedPackages.keys.map(\.packageId)) == [secondId, thirdId])
         #expect(receiver.cumulativeIncompleteByteCount == 8)
     }
 
@@ -744,7 +744,7 @@ struct SharePlayPackageTransportTests {
 
         // Then
         #expect(receiver.pruneExpired() == 1)
-        #expect(receiver.receivedPacakges.isEmpty)
+        #expect(receiver.receivedPackages.isEmpty)
     }
 
     @Test("receiver expires abandoned streams without another incoming package")
@@ -772,7 +772,7 @@ struct SharePlayPackageTransportTests {
         await Task.yield()
 
         // Then
-        #expect(receiver.receivedPacakges.isEmpty)
+        #expect(receiver.receivedPackages.isEmpty)
         #expect(receiver.cumulativeIncompleteByteCount == 0)
     }
 
@@ -831,7 +831,7 @@ struct SharePlayPackageTransportTests {
 
         // Then
         #expect(removedCount == 1)
-        #expect(receiver.receivedPacakges.isEmpty)
+        #expect(receiver.receivedPackages.isEmpty)
     }
 
     @Test("receiver caps incomplete streams by evicting the least recently progressing")
@@ -861,7 +861,7 @@ struct SharePlayPackageTransportTests {
         )
 
         // Then
-        #expect(Set(receiver.receivedPacakges.keys.map(\.packageId)) == [secondId, thirdId])
+        #expect(Set(receiver.receivedPackages.keys.map(\.packageId)) == [secondId, thirdId])
     }
 
     @Test("master journals file-backed reveal and store payloads only when bytes are present")

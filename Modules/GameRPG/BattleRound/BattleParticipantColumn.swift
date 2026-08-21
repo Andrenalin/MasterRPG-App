@@ -23,8 +23,8 @@ struct BattleParticipantColumn: View {
     @ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 2) {
+        VStack(alignment: .leading, spacing: BattleRoundSpacing.tight) {
+            HStack(spacing: BattleRoundSpacing.extraTight) {
                 Button(
                     combatant.isDead ? "Mark Alive" : "Mark Dead",
                     systemImage: combatant.isDead ? "heart.fill" : "figure.fall",
@@ -103,9 +103,9 @@ struct BattleParticipantColumn: View {
                 }
 #endif
                 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: BattleRoundSpacing.compact) {
                     Button(action: selectInitiativeEntry) {
-                        HStack(spacing: 2) {
+                        HStack(spacing: BattleRoundSpacing.extraTight) {
                             Text("Ini:", bundle: .module)
                             Text(verbatim: initiativeValue ?? "")
                                 .monospacedDigit()
@@ -131,7 +131,7 @@ struct BattleParticipantColumn: View {
 #endif
                     
                     Button(action: selectHitPointsEntry) {
-                        HStack(spacing: 2) {
+                        HStack(spacing: BattleRoundSpacing.extraTight) {
                             Text("HP:", bundle: .module)
                             Text(verbatim: hitPointsValue ?? "")
                                 .monospacedDigit()
@@ -161,7 +161,7 @@ struct BattleParticipantColumn: View {
                 }
             }
 
-            HStack(spacing: 6) {
+            HStack(spacing: BattleRoundSpacing.compact) {
                 if presentation.canReceiveRoll {
                     Button(action: selectRollRecipient) {
                         Label {
@@ -255,6 +255,25 @@ struct BattleParticipantColumn: View {
 
     private func toggleDead() {
         controller.setDead(combatant.id, !combatant.isDead)
+    }
+}
+
+extension BattleParticipantColumn: Equatable {
+    /// Mirrors `BattleRoundCard`'s own `Equatable` one level down — a card's
+    /// equatable-skip is at whole-card granularity, so any single
+    /// defender's HP/roll changing used to force re-diffing every sibling
+    /// defender and the attacker column too, even though only one
+    /// participant's own data actually changed. See CODE_AUDIT §8.3. The
+    /// three action closures are excluded for the same reason
+    /// `BattleRoundCard` excludes its own: never `Equatable`, and stable
+    /// once hoisted to method references at the call site (see
+    /// `BattleRoundView`).
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.state === rhs.state
+            && lhs.presentation == rhs.presentation
+            && lhs.isActive == rhs.isActive
+            && lhs.tint == rhs.tint
+            && lhs.controller.root === rhs.controller.root
     }
 }
 

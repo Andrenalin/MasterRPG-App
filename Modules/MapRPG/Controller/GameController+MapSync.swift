@@ -27,27 +27,20 @@ extension GameController {
 
     @MainActor
     func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType {
-        let generation = networkGeneration(for: itemId)
-        return NetworkCodableDataType(
+        // See CODE_AUDIT §9.2 — shared envelope factory.
+        Self.mapNetworkData(
             id: itemId,
-            type: .map,
-            version: generation.version,
-            data: mapUpdateResult(for: itemId).data(using: .utf8),
-            assetVersion: generation.assetVersion,
-            contentVersion: generation.contentVersion
+            generation: networkGeneration(for: itemId),
+            data: mapUpdateResult(for: itemId).data(using: .utf8)
         )
     }
 
     @MainActor
     func networkPin(itemId: UUID, position: MapPinModel) -> NetworkCodableDataType {
-        let generation = networkGeneration(for: itemId)
-        return NetworkCodableDataType(
+        Self.mapNetworkData(
             id: itemId,
-            type: .map,
-            version: generation.version,
-            data: position.encodeData(),
-            assetVersion: generation.assetVersion,
-            contentVersion: generation.contentVersion
+            generation: networkGeneration(for: itemId),
+            data: position.encodeData()
         )
     }
     

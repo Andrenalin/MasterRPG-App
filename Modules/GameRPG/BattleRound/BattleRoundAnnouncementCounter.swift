@@ -7,7 +7,7 @@ struct BattleRoundAnnouncementCounter: View {
     let attackerName: String?
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: BattleRoundSpacing.standard) {
             Image(systemName: "shield.lefthalf.filled")
                 .font(.largeTitle)
                 .symbolRenderingMode(.hierarchical)

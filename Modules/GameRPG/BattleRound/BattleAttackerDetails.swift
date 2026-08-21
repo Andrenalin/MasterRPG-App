@@ -9,8 +9,8 @@ struct BattleAttackerDetails: View {
     let controller: BattleRoundController
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: BattleRoundSpacing.compact) {
+            HStack(spacing: BattleRoundSpacing.tight) {
                 if combatant.isPlayer {
                     Image(systemName: "person.fill")
                         .foregroundStyle(.secondary)

@@ -8,7 +8,7 @@ struct BattleRoundHeaderActions: View {
     let controller: BattleRoundController
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: BattleRoundSpacing.standard) {
             if isRunning {
                 Button(
                     String(localized: "Next Turn", bundle: .module),

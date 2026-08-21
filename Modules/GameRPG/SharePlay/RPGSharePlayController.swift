@@ -13,6 +13,12 @@ import SwiftUI
 import TabletopKit
 #endif
 
+// See CODE_AUDIT §9.10 for the section boundaries below — added as
+// `// MARK:` dividers rather than a physical file split, given the size of
+// this file and the cross-references a full split would need to untangle.
+
+// MARK: - Delegate protocol
+
 @MainActor
 protocol SharePlayControllerDelegate: AnyObject {
     func handleUpdate(_ model: GameNetworkModel, id: UUID) async -> Void
@@ -31,6 +37,8 @@ protocol SharePlayControllerDelegate: AnyObject {
     /// presentation must be replayed directly to this transport participant.
     func sharePlayJoinedPlayer(id: UUID) async
 }
+
+// MARK: - Session / activation / tracking support types
 
 @MainActor
 enum RPGSharePlay {
@@ -599,6 +607,8 @@ struct SharePlayMapRecoveryTracker: Sendable {
     }
 }
 
+// MARK: - Controller state & setup
+
 @MainActor @Observable
 final class RPGSharePlayController {
     private struct PendingSendOperation {
@@ -662,9 +672,6 @@ final class RPGSharePlayController {
 
     // Lifetime observers — survive session resets; re-created if setup() runs again.
     private var eligibilityTask: Task<Void, Never>?
-    #if os(visionOS)
-    private var modeChangeTask: Task<Void, Never>?
-    #endif
 
     weak var delegate: SharePlayControllerDelegate?
     weak var playBack: AVPlaybackCoordinator?
@@ -688,9 +695,6 @@ final class RPGSharePlayController {
         reset()
         eligibilityTask?.cancel()
         joinTask?.cancel()
-        #if os(visionOS)
-        modeChangeTask?.cancel()
-        #endif
         Logger.sharePlay.debug("SharePlay: deinit")
     }
 
@@ -708,19 +712,32 @@ final class RPGSharePlayController {
         }
 
         #if os(visionOS)
-        // Observe presentation mode changes and apply configuration
-        modeChangeTask?.cancel()
-        modeChangeTask = Task { [weak self] in
-            for await newMode in gameModel.shareState.modeChanged.values {
-                guard let self else { return }
-                Logger.sharePlay.debug("Presentation mode changed to: \(newMode.rawValue, privacy: .public)")
-
-                // Apply the new spatial template configuration
-                self.applyShareState()
-            }
-        }
+        // Observe presentation mode changes and apply configuration. Uses the
+        // same recursive `withObservationTracking` idiom as
+        // `MasterNetworkController.observeConnections()`/
+        // `PlayerNetworkController.observeRemovedConnection()` instead of a
+        // Combine `PassthroughSubject` — `GameShareStateModel.mode` is
+        // already `@Observable`, so no separate change-notification
+        // mechanism is needed on top of it. See CODE_AUDIT §4.2.
+        observeShareStateMode()
         #endif
     }
+
+    #if os(visionOS)
+    private func observeShareStateMode() {
+        guard let gameModel else { return }
+        _ = withObservationTracking {
+            gameModel.shareState.mode
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, let gameModel = self.gameModel else { return }
+                Logger.sharePlay.debug("Presentation mode changed to: \(gameModel.shareState.mode.rawValue, privacy: .public)")
+                self.applyShareState()
+                self.observeShareStateMode()
+            }
+        }
+    }
+    #endif
 
     func setup(audioCoordinator: AudioListenerCoordinator?) {
         self.audioCoordinator = audioCoordinator
@@ -759,6 +776,8 @@ private extension RPGSharePlayController {
     static let coordinateSessionTaskKey = UUID()
 }
 #endif
+
+// MARK: - Send / chunked transport
 
 extension RPGSharePlayController {
     /// Sends to the whole SharePlay session by default. Supplying a participant
@@ -1671,6 +1690,8 @@ extension RPGSharePlayController {
         #endif
     }
 
+    // MARK: - Session lifecycle (start / join / stop)
+
     func startSharing(with name: String?, image: AKImage?) {
         Logger.sharePlay.debug("Start Sharing state: \(self.printState(), privacy: .public)")
         #if os(macOS)
@@ -2098,6 +2119,8 @@ extension RPGSharePlayController {
         }
     }
 
+    // MARK: - Journal attachment handling
+
     func handle(_ attachments: GroupSessionJournal.Attachments.Element, sessionId: UUID) async {
         guard !Task.isCancelled,
               sessionLifecycle.isCurrent(sessionId: sessionId)
@@ -2447,6 +2470,8 @@ private extension RPGSharePlayController {
 }
 
 #if os(visionOS)
+// MARK: - visionOS spatial template configuration
+
 extension RPGSharePlayController {
     private func configureSystemCoordinator(for session: GroupSession<RPGActivity>) async {
         let sessionId = session.id

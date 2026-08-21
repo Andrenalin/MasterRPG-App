@@ -4,53 +4,50 @@ import MapRPG
 import SwiftUI
 
 struct BattleRoundCompactCardLayout: View {
-    let state: BattleRoundCardState
-    let presentation: BattleRoundCardPresentation
-    let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
+    let context: BattleRoundCardLayoutContext
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 10) {
+        VStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
+            HStack(alignment: .top, spacing: BattleRoundSpacing.relaxed) {
                 BattleRankBadge(
-                    rank: presentation.rank,
-                    isActive: presentation.isActive
+                    rank: context.presentation.rank,
+                    isActive: context.presentation.isActive
                 )
                 BattleParticipantColumn(
-                    state: state,
-                    presentation: presentation.attacker,
-                    isActive: presentation.isActive,
-                    tint: presentation.isActive ? .blue : .gray,
-                    controller: controller,
-                    showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints,
-                    selectInitiative: selectInitiative
+                    state: context.state,
+                    presentation: context.presentation.attacker,
+                    isActive: context.presentation.isActive,
+                    tint: context.presentation.isActive ? .blue : .gray,
+                    controller: context.controller,
+                    showCharacter: context.showCharacter,
+                    selectHitPoints: context.selectHitPoints,
+                    selectInitiative: context.selectInitiative
                 )
+                // See CODE_AUDIT §8.3.
+                .equatable()
                 BattleAttackerDetails(
-                    combatant: presentation.attacker.combatant,
-                    isActive: presentation.isActive,
-                    controller: controller
+                    combatant: context.presentation.attacker.combatant,
+                    isActive: context.presentation.isActive,
+                    controller: context.controller
                 )
                 Spacer(minLength: 0)
             }
 
             Divider()
 
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .top, spacing: BattleRoundSpacing.standard) {
                 Image(systemName: "arrow.turn.down.right")
                     .foregroundStyle(.tertiary)
                     .padding(.top, 18)
                     .accessibilityHidden(true)
                 BattleDefenderStrip(
-                    state: state,
-                    defenders: presentation.defenders,
-                    isActiveEntry: presentation.isActive,
-                    controller: controller,
-                    showCharacter: showCharacter,
-                    selectHitPoints: selectHitPoints,
-                    selectInitiative: selectInitiative
+                    state: context.state,
+                    defenders: context.presentation.defenders,
+                    isActiveEntry: context.presentation.isActive,
+                    controller: context.controller,
+                    showCharacter: context.showCharacter,
+                    selectHitPoints: context.selectHitPoints,
+                    selectInitiative: context.selectInitiative
                 )
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -64,12 +61,14 @@ struct BattleRoundCompactCardLayout: View {
 
     if let card = model.cardPresentations.first {
         BattleRoundCompactCardLayout(
-            state: BattleRoundCardState(),
-            presentation: card,
-            controller: controller,
-            showCharacter: { _ in },
-            selectHitPoints: { _ in },
-            selectInitiative: { _ in }
+            context: BattleRoundCardLayoutContext(
+                state: BattleRoundCardState(),
+                presentation: card,
+                controller: controller,
+                showCharacter: { _ in },
+                selectHitPoints: { _ in },
+                selectInitiative: { _ in }
+            )
         )
         .frame(width: 340)
         .padding()
