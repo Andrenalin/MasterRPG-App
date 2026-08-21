@@ -482,37 +482,83 @@ extension EditController {
         return itemController.itemOrEmpty(for: itemId)[entryId].value
     }
     
+    /// The entry's base ("max") and fully link-resolved current value — the
+    /// same "base|modifier" convention (modifier *added* to base via a "+"
+    /// substitution; either side possibly a markdown link several hops deep)
+    /// `LinkController.calculate` already evaluates for every other display
+    /// of this entry: the sheet row's own "= X" text (`linkText`), the
+    /// Battle Round card, and `pin.healthPercent`. `valueCalculated`'s plain
+    /// split-on-"|" is a poor match for a value that's itself a link with no
+    /// local modifier yet (e.g. a hit-points entry set up as
+    /// `[Lebenskraft](RPG://VALUES/...)`, no "|" at all) — it reads back "0"
+    /// instead of the real current amount, which used to make this quick
+    /// editor start every stepper adjustment from a false baseline and send
+    /// a nonsensical value nowhere close to what the player actually typed.
+    /// Returns `nil` when the entry can't be calculated or its base doesn't
+    /// resolve to a number, so callers fall back to the plain stored text.
+    @MainActor private func resolvedBaseAndCurrent(for entry: ValueEntryModel) -> (base: Double, current: Double)? {
+        guard entry.canCalculate else { return nil }
+        let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
+        let baseEntry = ValueEntryModel(id: entry.id, name: entry.name, type: entry.type, value: baseText)
+        guard let resolvedBaseText = root.linkController.calculate(entry: baseEntry),
+              let base = Double(resolvedBaseText) else {
+            return nil
+        }
+        let current = root.linkController.calculate(entry: entry).flatMap(Double.init) ?? base
+        return (base, current)
+    }
+
     @MainActor func entryValueAsDecimal(itemId: UUID, entryId: UUID?) -> Double {
         guard let entryId else { return 0.0 }
-        return itemController.itemOrEmpty(for: itemId)[entryId].valueDecimal
+        let entry = itemController.itemOrEmpty(for: itemId)[entryId]
+        return resolvedBaseAndCurrent(for: entry)?.current ?? entry.valueDecimal
     }
-    
+
     @MainActor func entryValueAsNumber(itemId: UUID, entryId: UUID?) -> Int {
         guard let entryId else { return 0 }
-        return itemController.itemOrEmpty(for: itemId)[entryId].valueNumber
+        let entry = itemController.itemOrEmpty(for: itemId)[entryId]
+        guard let resolved = resolvedBaseAndCurrent(for: entry) else { return entry.valueNumber }
+        return Int(resolved.current.rounded())
     }
-    
+
     @MainActor func entryValueAsSelected(itemId: UUID, entryId: UUID?) -> Bool {
         guard let entryId else { return false }
         return itemController.itemOrEmpty(for: itemId)[entryId].valueSelected
     }
-    
+
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, decimal: Double) {
         guard let entryId, let item = editModel(for: itemId) else { return }
-        if item[entryId].valueDecimal != decimal {
+        let entry = item[entryId]
+        guard let resolved = resolvedBaseAndCurrent(for: entry) else {
+            guard entry.valueDecimal != decimal else { return }
             item[entryId].valueDecimal = decimal
             save(updated: item, message: String(localized: "Update decimal", bundle: .module).localizedString)
             saveGameDataToPermanent(itemId: itemId, entryId: entryId)
+            return
         }
+        guard resolved.current != decimal else { return }
+        let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
+        item[entryId].value = "\(baseText)|\(decimal - resolved.base)"
+        save(updated: item, message: String(localized: "Update decimal", bundle: .module).localizedString)
+        saveGameDataToPermanent(itemId: itemId, entryId: entryId)
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, number: Int) {
         guard let entryId, let item = editModel(for: itemId) else { return }
-        if item[entryId].valueNumber != number {
+        let entry = item[entryId]
+        guard let resolved = resolvedBaseAndCurrent(for: entry) else {
+            guard entry.valueNumber != number else { return }
             item[entryId].valueNumber = number
             save(updated: item, message: String(localized: "Update number", bundle: .module).localizedString)
             saveGameDataToPermanent(itemId: itemId, entryId: entryId)
+            return
         }
+        guard Int(resolved.current.rounded()) != number else { return }
+        let baseText = entry.value.split(separator: "|").first.map(String.init) ?? entry.value
+        let modifier = Int((Double(number) - resolved.base).rounded())
+        item[entryId].value = "\(baseText)|\(modifier)"
+        save(updated: item, message: String(localized: "Update number", bundle: .module).localizedString)
+        saveGameDataToPermanent(itemId: itemId, entryId: entryId)
     }
 
     @MainActor func updateValue(itemId: UUID, entryId: UUID?, selected: Bool) {

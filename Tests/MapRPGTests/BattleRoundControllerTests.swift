@@ -164,7 +164,7 @@ struct BattleRoundControllerTests {
 
         // When
         #expect(sut.activateBattleAttacker(itemId: mapId, combatantId: player.id))
-        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id))
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id, isGameMaster: true))
 
         // Then
         var activeEntry = try #require(sut.battleRoundModel.activeEntry)
@@ -186,7 +186,7 @@ struct BattleRoundControllerTests {
         #expect(sut.gameItem(for: mapId)[MapPinId.id, monsterPin.id].isDead)
 
         // When: dehighlight removes the defender and repairs the roll target.
-        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id))
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id, isGameMaster: true))
 
         // Then
         activeEntry = try #require(sut.battleRoundModel.activeEntry)
@@ -565,7 +565,7 @@ struct BattleRoundControllerTests {
 
         // The next broadcast tick catches the pin up for players, who have
         // no local combatant and so no live path of their own.
-        #expect(sut.synchronizeBattleDefenders(itemId: mapId))
+        #expect(sut.synchronizeBattleDefenders(itemId: mapId, isGameMaster: true).healthChanged)
         let syncedPin = try #require(sut.gameItem(for: mapId).mapPins.first { $0.id == monsterPin.id })
         #expect(syncedPin.healthPercent == 80)
     }

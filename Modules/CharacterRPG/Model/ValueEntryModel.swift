@@ -180,7 +180,7 @@ extension ValueEntryModel {
             return "0"
         }
     }
-    
+
     @MainActor func calculate(on result: String) -> String {
         if let final = Calculator.calculate(result) {
             if type == .number {

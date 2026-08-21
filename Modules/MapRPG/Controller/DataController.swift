@@ -171,8 +171,9 @@ extension DataController: CoreDataSnapshotPersistable {
             location: CGPoint(x: model.location?.xPos ?? 0.0, y: model.location?.yPos ?? 0.0),
             size: MapPinModel.MapPinSize(rawValue: Int(model.size)) ?? .normal,
             isShown: model.isShown,
-            isDead: model.isDead,
-            healthPercent: model.healthPercent?.doubleValue
+            isDead: model.isDead
+            // healthPercent is deliberately never restored from CoreData — it's
+            // game-session-only data (see the matching comment on the save side).
         )
     }
 
@@ -245,6 +246,11 @@ extension DataController: CoreDataSnapshotPersistable {
         model.size = Int16(viewModel.size.rawValue)
         model.isShown = viewModel.isShown
         model.isDead = viewModel.isDead
-        model.healthPercent = viewModel.healthPercent.map(NSNumber.init)
+        // healthPercent is battle-round, game-session-only data — a computed
+        // reading of a linked Character's current hit points, meaningless
+        // (and potentially stale/wrong) outside an active game. Never write
+        // it to CoreData; explicitly scrub any value a previous build may
+        // have persisted rather than merely leaving it untouched.
+        model.healthPercent = nil
     }
 }

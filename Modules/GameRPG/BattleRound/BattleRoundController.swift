@@ -338,7 +338,19 @@ struct BattleRoundController: Sendable {
         return max(1, Int(value))
     }
 
+    /// Recomputes every combatant's `pin.healthPercent` from its linked
+    /// hit-points entry before broadcasting — mirrors `RootGameMapViewer`'s
+    /// own `sendMapUpdates()`, which does the same before its own mapState
+    /// push. Without this, `nextAttacker()`/`nextRound()` (and every other
+    /// action routed through this method) only ever updated highlights, so
+    /// a defender's health ring stayed stale — correct only on the master's
+    /// own 3D screen, which reads a live combatant lookup independent of
+    /// this persisted field, but wrong for players and for the 2D map,
+    /// which both only ever see `pin.healthPercent` as last broadcast.
     private func broadcast(mapId: UUID) {
+        // Every public entry point above already guards on
+        // `root.gameModel.gameConfig.isMaster` before reaching here.
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: mapId, isGameMaster: true)
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif

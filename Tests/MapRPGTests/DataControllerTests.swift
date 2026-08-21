@@ -138,7 +138,10 @@ struct DataControllerTests {
         #expect(fetchedOriginal.mapPins.first?.isShown == true)
         #expect(fetchedOriginal.mapPins.first?.isDead == true)
         #expect(fetchedOriginal.mapPins.first?.isHighlighted == false)
-        #expect(fetchedOriginal.mapPins.first?.healthPercent == 42.5)
+        // healthPercent is game-session-only data — it's never persisted to
+        // CoreData (deliberately scrubbed on save, never restored on load),
+        // regardless of what was set on the domain model before saving.
+        #expect(fetchedOriginal.mapPins.first?.healthPercent == nil)
         #expect(fetchedOriginal.mapPins.last?.healthPercent == nil)
         #expect(fetchedOriginal.walls == [firstWall])
         #expect(fetchedOriginal.pinScale == 2)
@@ -222,7 +225,9 @@ struct DataControllerTests {
         #expect(fetchedUpdated.mapPins.first?.isShown == true)
         #expect(fetchedUpdated.mapPins.first?.isDead == false)
         #expect(fetchedUpdated.mapPins.first?.characterId == nil)
-        #expect(fetchedUpdated.mapPins.first?.healthPercent == 12)
+        // Same as above — `updatedPin.healthPercent = 12` on the domain
+        // model must never survive the CoreData round trip.
+        #expect(fetchedUpdated.mapPins.first?.healthPercent == nil)
         #expect(fetchedUpdated.walls == [updatedWall])
         #expect(fetchedUpdated.pinScale == 1.5)
         #expect(fetchedUpdated.hexMapScale == 10)

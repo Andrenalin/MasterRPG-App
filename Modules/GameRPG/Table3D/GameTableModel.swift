@@ -967,7 +967,7 @@ final class GameTableModel: Sendable {
             toggleSelectedPin(pinId: pinId, mapModel: mapModel)
             return
         }
-        guard mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: pinId) else { return }
+        guard mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: pinId, isGameMaster: isGameMaster) else { return }
         syncPawnsWithMapPins()
         sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
     }

@@ -199,8 +199,8 @@ struct MapEditorInteractionModelTests {
         #expect(emittedPin.size == .large)
     }
 
-    @Test("Master tap highlights once while long press only toggles the action menu")
-    func masterTapAndLongPressHaveIndependentActions() throws {
+    @Test("Master tap opens the pin action menu (not highlight) when no battle is preparing, and toggles it closed again")
+    func masterTapTogglesTheActionMenu() throws {
         let pin = MapPinModel(id: UUID(), name: "Battle target")
         let map = MapModel(id: UUID(), name: "Game map", mapPins: [pin])
         let root = MapRootModel.previewFixture(models: [map])
@@ -228,24 +228,26 @@ struct MapEditorInteractionModelTests {
         session.isStreaming = true
         let node = try #require(session.pins.pinNode(for: pin.id))
 
+        // No battle round is preparing, so the master's tap can't add this
+        // pin as an attacker — it opens the pin action menu instead (long
+        // press is no longer a gesture; a tap reaches the same underlying
+        // toggle via `MapEditorActionRouter.handlePinSingleTap`'s fallback).
+        // Highlighting stays player-only, so it's never toggled here.
         node.handleTap(context: .gameMaster)
 
-        #expect(root.gameController.gameItem(for: map.id)[MapPinId.id, pin.id].isHighlighted)
-        #expect(node.pin.isHighlighted)
-        #expect(sentMapUpdates == 1)
-        #expect(!node.isExpanded)
-
-        node.handleLongPress(context: .gameMaster)
-
+        #expect(!root.gameController.gameItem(for: map.id)[MapPinId.id, pin.id].isHighlighted)
+        #expect(!node.pin.isHighlighted)
+        #expect(sentMapUpdates == 0)
         #expect(node.isExpanded)
         #expect(session.selection.pinId == pin.id)
-        #expect(root.gameController.gameItem(for: map.id)[MapPinId.id, pin.id].isHighlighted)
-        #expect(sentMapUpdates == 1)
 
-        node.handleLongPress(context: .gameMaster)
+        // A second tap on the same, already-open pin closes the menu again.
+        node.handleTap(context: .gameMaster)
+
         #expect(!node.isExpanded)
         #expect(session.selection.pinId == nil)
-        #expect(sentMapUpdates == 1)
+        #expect(!root.gameController.gameItem(for: map.id)[MapPinId.id, pin.id].isHighlighted)
+        #expect(sentMapUpdates == 0)
     }
 
     @Test("A completed editor pin drag creates one working-copy undo step")

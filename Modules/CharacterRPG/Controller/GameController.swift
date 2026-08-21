@@ -71,6 +71,13 @@ public protocol ValueGameStorable {
         characterId: UUID,
         entryId: UUID
     ) -> String?
+    /// Resolves an arbitrary value string through the same link-substitution
+    /// + arithmetic pipeline `gameEntryDisplayValue` runs a stored entry's own
+    /// `value` through — for evaluating just a *portion* of another entry's
+    /// value, such as `MapRPG`'s hit-points "base|modifier" convention, where
+    /// "base" may itself be a markdown link (e.g. `[Lebenskraft](RPG://...)`)
+    /// rather than a literal number, and possibly several link hops deep.
+    @MainActor func calculatedValue(_ text: String, type: ValueEntryModel.ValueType) -> String?
     /// Updates an existing game-memory entry while preserving its links.
     @MainActor @discardableResult func applyGameValueEntryUpdate(
         _ update: GameValueEntryUpdate
@@ -372,6 +379,15 @@ extension GameController: ValueGameStorable {
     }
 
     @MainActor
+    public func calculatedValue(_ text: String, type: ValueEntryModel.ValueType) -> String? {
+        // A synthetic, unstored entry: `LinkController.calculate(entry:)` only
+        // needs `type` (for `canCalculate`) and `value` (to scan for links and
+        // evaluate) — it doesn't require the entry to actually exist anywhere.
+        let entry = ValueEntryModel(id: UUID(), name: "", type: type, value: text)
+        return root.linkController.calculate(entry: entry) ?? text
+    }
+
+    @MainActor
     @discardableResult
     public func applyGameValueEntryUpdate(
         _ update: GameValueEntryUpdate
@@ -435,11 +451,26 @@ extension GameController: ValueGameStorable {
         await focus(on: [characterId])
     }
 
+    @MainActor
     public func updatePlayer(data: NetworkCodableDataType) async throws {
         guard data.type == itemControllable.config.module,
               let encodedData = data.data
         else { throw ItemGameStorableError.wrongData }
         try await importNetwork(from: encodedData, forceSave: true)
+        // A full-package resync (sent on reconnect, or whenever the master's
+        // cached version differs from what the player advertises) only merges
+        // into the persisted library above — `gameItem(for:)`, and everything
+        // built on it (`healthPercent(for:)` included), prefers a live
+        // `gameModel.itemData` copy once one exists. That copy gets promoted
+        // the first time any live per-field edit arrives (see
+        // `applyGameValueEntryUpdate`'s own comment), so without this a
+        // later full resync silently stops reaching gameplay reads — the
+        // player's own edits keep landing, this just leaves the *next*
+        // full-package sync (reconnect, etc.) unable to override them.
+        if gameModel.itemData[data.id] != nil,
+           let refreshed = itemController.itemSync(for: data.id)?.copy() {
+            gameModel.itemData[data.id] = refreshed
+        }
     }
 
     @MainActor

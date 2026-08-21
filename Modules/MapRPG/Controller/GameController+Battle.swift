@@ -7,6 +7,7 @@ import TableRPG
 import SwiftUI
 import CharacterRPG
 import PhotoRPG
+import os.log
 
 extension GameController {
     @MainActor
@@ -278,7 +279,9 @@ extension GameController {
               }) else {
             return false
         }
-        _ = synchronizeBattleDefenders(itemId: itemId)
+        // Only ever reached via `BattleRoundController.setDead`, which is
+        // itself gated on `root.gameModel.gameConfig.isMaster`.
+        _ = synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
         return true
     }
 
@@ -374,12 +377,32 @@ extension GameController {
         resolveBattleConfiguredValues(remap: true)
     }
 
+    /// The game master is the sole authority for battle state: auto-adding a
+    /// newly highlighted pin as a defender, repairing the attacker highlight,
+    /// and — critically — recomputing `pin.healthPercent` from each
+    /// combatant's linked hit-points entry. A player's own device runs this
+    /// same call chain too (e.g. `toggleHighlightPin` when *they* highlight a
+    /// target), but a player only ever has an empty local `battleRoundModel`
+    /// (players never receive the combatants array over the network — see
+    /// `BattleRoundNetworkState`) and no local access to another Character's
+    /// template, so `makeBattleCombatant` can't resolve a real combatant
+    /// there. Letting the loop below run anyway used to overwrite the pin's
+    /// already-correct, master-broadcast `healthPercent` with `nil` right on
+    /// the player's own screen — a healthy green monster a player merely
+    /// highlighted turned gray, and no highlight-only master action ever
+    /// came along to correct it back. Gating the whole function on
+    /// `isGameMaster` makes the master's broadcast the only thing that can
+    /// ever set `pin.healthPercent`, on every device, matching "the
+    /// gamemaster must overwrite the player's mappins — players should never
+    /// change healthPercent."
     @MainActor
-    func synchronizeBattleDefenders(itemId: UUID) -> Bool {
-        guard battleRoundModel.isRunning,
+    @discardableResult
+    func synchronizeBattleDefenders(itemId: UUID, isGameMaster: Bool) -> (changed: Bool, healthChanged: Bool) {
+        guard isGameMaster,
+              battleRoundModel.isRunning,
               battleRoundModel.mapId == itemId,
               let map = gameModel.itemData[itemId] as? MapModel else {
-            return false
+            return (false, false)
         }
 
         var repairedAttacker = false
@@ -409,6 +432,19 @@ extension GameController {
             additionalDefenders: additionalDefenders
         )
 
+        // `makeBattleCombatant` never resolves ini/HP entry ids — every other
+        // combatant-creation path (`beginBattle`, `addBattleCombatant`,
+        // `assignCharacter`) follows it with `resolveBattleConfiguredValues`,
+        // but this auto-add-on-highlight path didn't. Without this, a freshly
+        // added defender's still-nil `hitPointsEntryId` reads as "unknown
+        // health" in the loop right below and immediately overwrites its
+        // already-correct `pin.healthPercent` with `nil` — e.g. a player
+        // highlighting a healthy green monster as their target turns it gray
+        // on the spot, on whichever device (master or player) just ran this.
+        for defender in additionalDefenders {
+            resolveBattleConfiguredValues(for: defender.id)
+        }
+
         // Runs on every master tick while a battle is active, so a hit-points
         // entry edited on the Character sheet (outside any Map/BattleRound
         // action) still reaches the pin's health-bar border without a
@@ -416,6 +452,9 @@ extension GameController {
         var healthChanged = false
         for combatant in battleRoundModel.combatants {
             let percent = healthPercent(for: combatant)
+            Logger.gameController.debug(
+                "synchronizeBattleDefenders: pin \(combatant.pin.name, privacy: .public) (\(combatant.pinId, privacy: .public)) hitPointsEntryId=\(combatant.hitPointsEntryId?.uuidString ?? "nil", privacy: .public) computed=\(percent.map { "\($0)" } ?? "nil", privacy: .public) previouslyPersisted=\(combatant.pin.healthPercent.map { "\($0)" } ?? "nil", privacy: .public)"
+            )
             guard combatant.pin.healthPercent != percent else { continue }
             if updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { $0.healthPercent = percent }) {
                 healthChanged = true
@@ -425,7 +464,7 @@ extension GameController {
             _ = battleRoundModel.synchronize(pins: map.mapPins)
         }
 
-        return repairedAttacker || changed || healthChanged
+        return (repairedAttacker || changed || healthChanged, healthChanged)
     }
 
     /// Also called directly by `MapPinView` to render a tracked combatant's
@@ -440,29 +479,58 @@ extension GameController {
     /// `synchronizeBattleDefenders`/`resolveBattleConfiguredValues` push onto
     /// the pin for the network.
     ///
-    /// `entry.value` follows the same "base|modifier" convention as
-    /// `ValueEntryModel.valueCalculated`: the text before "|" is the maximum
-    /// (100%); `gameEntryDisplayValue` already resolves links and evaluates
-    /// "base|modifier" as "base+modifier" into the current amount.
+    /// `entry.value` follows the "base|modifier" convention: the text before
+    /// "|" is the maximum (100%), "base+modifier" (with the "|" replaced by
+    /// "+") is the current amount. Either side may itself be, or contain, a
+    /// markdown link (e.g. `[Lebenskraft](RPG://VALUES/0/<itemId>/<entryId>)`)
+    /// pointing at another entry — possibly one whose own value is a further-
+    /// linked formula ("KÖR+HÄ+10+LK Level+3"), several hops deep. Both sides
+    /// are resolved through `calculatedValue(_:type:)`, the same link-
+    /// substitution/recursion engine `gameEntryDisplayValue` runs a stored
+    /// entry's own value through (and what the Battle Round roster's own HP
+    /// display already relies on) — forcing `.decimal` regardless of the
+    /// entry's own type, since `ValueEntryModel.canCalculate` (and so link
+    /// resolution) only applies to `.number`/`.decimal` otherwise, and a
+    /// `.text` hit-points entry is an easy, reasonable choice for a game
+    /// master who just types a number with no reason to think the "type"
+    /// picker matters here.
     @MainActor
     func healthPercent(for combatant: BattleCombatant) -> Double? {
-        guard let gameCharacterId = combatant.gameCharacterId,
-              let entryId = combatant.hitPointsEntryId,
-              let entry = root.characterRoot.valueGameControllable.gameEntry(
-                  characterId: gameCharacterId,
-                  entryId: entryId
-              ),
-              let baseText = entry.value.split(separator: "|").first,
-              let base = Double(baseText),
-              base > 0,
-              let displayText = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
-                  characterId: gameCharacterId,
-                  entryId: entryId
-              ),
-              let current = Double(displayText) else {
+        guard let gameCharacterId = combatant.gameCharacterId else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) has no gameCharacterId — no Character linked yet")
             return nil
         }
-        return min(max(current / base * 100, 0), 100)
+        guard let entryId = combatant.hitPointsEntryId else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) (character \(gameCharacterId, privacy: .public)) has no hitPointsEntryId resolved")
+            return nil
+        }
+        guard let entry = root.characterRoot.valueGameControllable.gameEntry(
+            characterId: gameCharacterId,
+            entryId: entryId
+        ) else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — gameEntry(characterId:entryId:) found nothing for entryId \(entryId, privacy: .public) on character \(gameCharacterId, privacy: .public)")
+            return nil
+        }
+        guard let baseText = entry.value.split(separator: "|").first.map(String.init) else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) has an empty value")
+            return nil
+        }
+        let valueGameControllable = root.characterRoot.valueGameControllable
+        let resolvedBaseText = valueGameControllable.calculatedValue(baseText, type: .decimal)
+        guard let base = resolvedBaseText.flatMap(Double.init), base > 0 else {
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) base \(baseText, privacy: .public) resolved to \(resolvedBaseText ?? "nil", privacy: .public), not a positive number")
+            return nil
+        }
+        let resolvedCurrentText = valueGameControllable.calculatedValue(
+            entry.value.replacing("|", with: "+"),
+            type: .decimal
+        )
+        let current = resolvedCurrentText.flatMap(Double.init) ?? base
+        let percent = min(max(current / base * 100, 0), 100)
+        Logger.gameController.debug(
+            "healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) rawValue=\(entry.value, privacy: .public) resolvedBase=\(resolvedBaseText ?? "nil", privacy: .public) resolvedCurrent=\(resolvedCurrentText ?? "nil", privacy: .public) → base=\(base, privacy: .public) current=\(current, privacy: .public) percent=\(percent, privacy: .public)"
+        )
+        return percent
     }
 
     @MainActor
