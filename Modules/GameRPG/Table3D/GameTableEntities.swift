@@ -70,8 +70,11 @@ final class PinPawn {
         let radius = Self.radius(for: pin.size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
 
+        // Placeholder only — `update(pin:...)` always runs immediately after
+        // construction (see `GameSetup.syncPins`) and sets the real,
+        // health-derived color before this ever renders.
         var baseMaterial = UnlitMaterial()
-        baseMaterial.color = .init(tint: GameTablePlatformColor(pin.color))
+        baseMaterial.color = .init(tint: .systemGray)
         baseModel = ModelEntity(mesh: .generateCylinder(height: 0.005, radius: radius), materials: [baseMaterial])
         baseModel.name = "PinBase"
 
@@ -79,16 +82,20 @@ final class PinPawn {
         // construction (see `GameSetup.syncPins`) and sets the real,
         // health/highlight/attacker-derived color before this ever renders.
         //
-        // Sized/positioned to span the same visible band as `baseModel`'s own
-        // upper half (see `Self.ringHeight`/`Self.ringPositionY`) — the table
+        // Narrower than `baseModel` (see `Self.ringRadiusMultiplier`) and
+        // stacked in the gap above it (see `Self.ringHeight`/`ringPositionY`)
+        // so the pin reads, outside-in, as: `baseModel`'s own health color as
+        // the outer rim, this ring's health/highlight/attacker color as a
+        // middle band (the two only diverge while highlighted/attacking —
+        // see `update(pin:...)`), then `photoPlane` on top. The table
         // surface sits only `GameMetrics.mapSurfaceClearance` (0.5mm) above
-        // the solid table mesh, so a ring centered any lower than that, as
-        // this one previously was, renders entirely *inside* the opaque
-        // table and is never visible no matter its color.
+        // the solid table mesh, so a ring centered any lower than this
+        // renders entirely *inside* the opaque table and is never visible no
+        // matter its color.
         var highlightMaterial = UnlitMaterial()
         highlightMaterial.color = .init(tint: .systemGray)
         let highlight = ModelEntity(
-            mesh: .generateCylinder(height: Self.ringHeight, radius: radius * 1.18),
+            mesh: .generateCylinder(height: Self.ringHeight, radius: radius * Self.ringRadiusMultiplier),
             materials: [highlightMaterial]
         )
         highlight.name = "PinHighlightRing"
@@ -153,22 +160,35 @@ final class PinPawn {
         Float(size.size.width) * pointsToMeters / 2
     }
 
-    /// `baseModel` (height 0.005, centered on the pin's own Y) has its lower
-    /// half embedded in the solid table mesh — only its upper half, local Y
-    /// in roughly `-0.0005...0.0025`, actually clears the table surface and
-    /// renders. The ring is sized/positioned to span that same visible band
-    /// so it reads as a colored collar around the base's visible portion
-    /// instead of being buried alongside its lower half.
-    private static let ringHeight: Float = 0.003
-    private static let ringPositionY: Float = 0.001
+    /// Narrower than `baseModel`'s own radius (1.0×) so the base's identity
+    /// color remains visible as the pin's outer rim, with this ring forming
+    /// a middle band between it and `photoPlane` (0.9×) — an even ~5%-wide
+    /// step on each side.
+    private static let ringRadiusMultiplier: Float = 0.95
+    /// Stacked in the gap between `baseModel`'s top face (local Y +0.0025)
+    /// and `photoPlane` (local Y +0.004), clear of both by a real margin on
+    /// each side rather than touching either exactly: two opaque RealityKit
+    /// meshes sharing an exact Y (or, before this ring was narrowed, an
+    /// exact radius) boundary z-fight — flicker between each other every
+    /// frame — which previously showed as the base's own `pin.color`
+    /// (defaults red) shimmering through the ring's actual color. Also clear
+    /// of the table surface itself (only `GameMetrics.mapSurfaceClearance`,
+    /// 0.5mm, above the solid table mesh) — anything centered at or below
+    /// that renders entirely *inside* the opaque table and is never visible
+    /// no matter its color.
+    private static let ringHeight: Float = 0.001
+    private static let ringPositionY: Float = 0.0033
 
-    /// Applies pin state without recreating the entity. The ring mirrors the
-    /// 2D map's own pin border rules — health-colored (gray/green/orange/red,
-    /// see `MapPinModel.healthBorderColor(for:)`) at rest, an active battle
-    /// attacker overrides it blue, and a highlighted (but non-attacking) pin
-    /// overrides it red — collapsed onto this single ring rather than the 2D
-    /// map's two separate (inner health / outer highlight) rings, since a 3D
-    /// token has no room for both without them visually competing.
+    /// Applies pin state without recreating the entity. `baseModel` (the
+    /// outer rim) is health-colored (gray/green/orange/red, see
+    /// `MapPinModel.healthBorderColor(for:)`) rather than the pin's own
+    /// `pin.color` identity — a pin with no linked hit-points entry reads as
+    /// neutral gray, same as the 2D map. The middle ring mirrors the 2D
+    /// map's highlight rule on top of that: an active battle attacker
+    /// overrides it blue, a highlighted (but non-attacking) pin overrides it
+    /// red, otherwise it shows the same health color as the base — so the
+    /// two rings only diverge while a pin is actually highlighted/attacking.
+    /// Both go black when dead, matching the base's death-mark bars.
     func update(
         pin: MapPinModel,
         position: SIMD3<Float>,
@@ -184,8 +204,9 @@ final class PinPawn {
             currentPointsToMeters = pointsToMeters
             applySize(pin.size, pointsToMeters: pointsToMeters)
         }
+        let healthColor = MapPinModel.healthBorderColor(for: healthPercent)
         var baseMaterial = UnlitMaterial()
-        baseMaterial.color = .init(tint: pin.isDead ? .black : GameTablePlatformColor(pin.color))
+        baseMaterial.color = .init(tint: pin.isDead ? .black : GameTablePlatformColor(healthColor))
         baseModel.model?.materials = [baseMaterial]
 
         let isActiveAttacker = pin.id == activeAttackerPinId
@@ -196,7 +217,7 @@ final class PinPawn {
         } else if pin.isDead {
             .black
         } else {
-            MapPinModel.healthBorderColor(for: healthPercent)
+            healthColor
         }
         var highlightMaterial = UnlitMaterial()
         highlightMaterial.color = .init(tint: GameTablePlatformColor(ringColor))
@@ -224,7 +245,7 @@ final class PinPawn {
         let radius = Self.radius(for: size, pointsToMeters: pointsToMeters)
         let diameter = radius * 1.8
         baseModel.model?.mesh = .generateCylinder(height: 0.005, radius: radius)
-        highlightModel.model?.mesh = .generateCylinder(height: Self.ringHeight, radius: radius * 1.18)
+        highlightModel.model?.mesh = .generateCylinder(height: Self.ringHeight, radius: radius * Self.ringRadiusMultiplier)
         photoPlane.model?.mesh = .generatePlane(width: diameter, depth: diameter, cornerRadius: diameter / 2)
         let deathBarLength = diameter * 0.72
         let deathBarThickness = max(diameter * 0.10, 0.0015)
