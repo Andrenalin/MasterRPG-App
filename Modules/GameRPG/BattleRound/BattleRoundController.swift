@@ -348,7 +348,9 @@ struct BattleRoundController: Sendable {
     /// this persisted field, but wrong for players and for the 2D map,
     /// which both only ever see `pin.healthPercent` as last broadcast.
     private func broadcast(mapId: UUID) {
-        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: mapId)
+        // Every public entry point above already guards on
+        // `root.gameModel.gameConfig.isMaster` before reaching here.
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: mapId, isGameMaster: true)
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif

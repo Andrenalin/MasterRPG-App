@@ -1570,12 +1570,40 @@ extension MasterController {
                     data: model.data,
                     playerId: model.sender.id
                 ) {
-                    _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
-                        itemId: model.data.id
+                    // `updatePinIfCurrentGeneration` never copies the sender's
+                    // `healthPercent` (only location/isZoom/isHighlighted) —
+                    // the master is the sole authority for it. Recomputing it
+                    // here (e.g. a player highlighting a new target) only
+                    // updates the master's own authoritative copy; without
+                    // rebroadcasting, every player — including the one who
+                    // just highlighted the pin — keeps showing the stale
+                    // value until an unrelated battle action happens to
+                    // broadcast next.
+                    let syncResult = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
+                        itemId: model.data.id,
+                        isGameMaster: true
                     )
                     #if !os(tvOS)
                     root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     #endif
+                    if syncResult.healthChanged {
+                        await send(
+                            type: .update,
+                            subtype: .mapState,
+                            updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id),
+                            authoritativeMaster: true
+                        )
+                        if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
+                            for: model.data.id
+                        ) {
+                            await send(
+                                type: .update,
+                                subtype: .battleRound,
+                                updated: battleUpdate,
+                                authoritativeMaster: true
+                            )
+                        }
+                    }
                 }
             default:
                 break

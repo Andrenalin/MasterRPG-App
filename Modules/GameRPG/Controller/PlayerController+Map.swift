@@ -96,10 +96,20 @@ extension PlayerController {
                     // version changing, or its structural snapshot may be newer
                     // even though the background still matches.
                     do {
+                        // The master is unconditionally authoritative for map
+                        // state — `.overwrite` skips the default CRDT
+                        // last-writer-wins merge, which is keyed on each
+                        // device's own local wall clock and can otherwise let
+                        // this player's own stale, previously-persisted copy
+                        // of the map silently win over what the master just
+                        // broadcast (discarding e.g. a just-updated pin
+                        // healthPercent with no error). See
+                        // player-character-sync-gaps memory note.
                         try await root.mapRoot.gameControllable.updateGame(
                             data: model.data,
                             hide: true,
-                            deep: false
+                            deep: false,
+                            importMode: .overwrite
                         )
                     } catch {
                         Logger.networking.error("PlayerController: Failed to import full map payload \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -198,10 +208,14 @@ extension PlayerController {
             var importedFullPayload = false
             if !hasBaseMap || shouldImport {
                 do {
+                    // See the matching comment on the `.reveal` branch above —
+                    // the master is unconditionally authoritative for map
+                    // state, so this skips the default CRDT merge too.
                     try await root.mapRoot.gameControllable.updateGame(
                         data: model.data,
                         hide: true,
-                        deep: true
+                        deep: true,
+                        importMode: .overwrite
                     )
                 } catch {
                     Logger.networking.error("PlayerController: Failed to import full map payload \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -584,7 +598,14 @@ extension PlayerController {
             return .rejected
         }
 
-        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: model.data.id)
+        // Runs on every device that mirrors this `.mapPin` broadcast — a
+        // player device included. Only the master may let this recompute/
+        // persist `pin.healthPercent`; on a player's own device it's a
+        // guaranteed no-op (see `synchronizeBattleDefenders`'s doc comment).
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
+            itemId: model.data.id,
+            isGameMaster: root.gameModel.gameConfig.isMaster
+        )
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
@@ -605,7 +626,12 @@ extension PlayerController {
         }
         guard didApplyPin else { return }
 
-        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(itemId: itemId)
+        // Same reasoning as `applyPlayerMapPin` above: a no-op unless this
+        // device is the master.
+        _ = root.mapRoot.mapGameControllable.synchronizeBattleDefenders(
+            itemId: itemId,
+            isGameMaster: root.gameModel.gameConfig.isMaster
+        )
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif

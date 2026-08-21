@@ -211,7 +211,7 @@ final class MapEditorActionRouter {
             session.pins.pinNode(for: pinId)?.handleLongPress(context: .gameMaster)
         case .player:
             performPlayerMutation(pinId: pinId) {
-                root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId)
+                root.gameController.toggleHighlightPin(itemId: session.mapId, pinId: pinId, isGameMaster: false)
             }
         case .edit, .viewer:
             break

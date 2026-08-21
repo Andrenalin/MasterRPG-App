@@ -451,11 +451,26 @@ extension GameController: ValueGameStorable {
         await focus(on: [characterId])
     }
 
+    @MainActor
     public func updatePlayer(data: NetworkCodableDataType) async throws {
         guard data.type == itemControllable.config.module,
               let encodedData = data.data
         else { throw ItemGameStorableError.wrongData }
         try await importNetwork(from: encodedData, forceSave: true)
+        // A full-package resync (sent on reconnect, or whenever the master's
+        // cached version differs from what the player advertises) only merges
+        // into the persisted library above — `gameItem(for:)`, and everything
+        // built on it (`healthPercent(for:)` included), prefers a live
+        // `gameModel.itemData` copy once one exists. That copy gets promoted
+        // the first time any live per-field edit arrives (see
+        // `applyGameValueEntryUpdate`'s own comment), so without this a
+        // later full resync silently stops reaching gameplay reads — the
+        // player's own edits keep landing, this just leaves the *next*
+        // full-package sync (reconnect, etc.) unable to override them.
+        if gameModel.itemData[data.id] != nil,
+           let refreshed = itemController.itemSync(for: data.id)?.copy() {
+            gameModel.itemData[data.id] = refreshed
+        }
     }
 
     @MainActor

@@ -279,7 +279,9 @@ extension GameController {
               }) else {
             return false
         }
-        _ = synchronizeBattleDefenders(itemId: itemId)
+        // Only ever reached via `BattleRoundController.setDead`, which is
+        // itself gated on `root.gameModel.gameConfig.isMaster`.
+        _ = synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
         return true
     }
 
@@ -375,12 +377,32 @@ extension GameController {
         resolveBattleConfiguredValues(remap: true)
     }
 
+    /// The game master is the sole authority for battle state: auto-adding a
+    /// newly highlighted pin as a defender, repairing the attacker highlight,
+    /// and — critically — recomputing `pin.healthPercent` from each
+    /// combatant's linked hit-points entry. A player's own device runs this
+    /// same call chain too (e.g. `toggleHighlightPin` when *they* highlight a
+    /// target), but a player only ever has an empty local `battleRoundModel`
+    /// (players never receive the combatants array over the network — see
+    /// `BattleRoundNetworkState`) and no local access to another Character's
+    /// template, so `makeBattleCombatant` can't resolve a real combatant
+    /// there. Letting the loop below run anyway used to overwrite the pin's
+    /// already-correct, master-broadcast `healthPercent` with `nil` right on
+    /// the player's own screen — a healthy green monster a player merely
+    /// highlighted turned gray, and no highlight-only master action ever
+    /// came along to correct it back. Gating the whole function on
+    /// `isGameMaster` makes the master's broadcast the only thing that can
+    /// ever set `pin.healthPercent`, on every device, matching "the
+    /// gamemaster must overwrite the player's mappins — players should never
+    /// change healthPercent."
     @MainActor
-    func synchronizeBattleDefenders(itemId: UUID) -> Bool {
-        guard battleRoundModel.isRunning,
+    @discardableResult
+    func synchronizeBattleDefenders(itemId: UUID, isGameMaster: Bool) -> (changed: Bool, healthChanged: Bool) {
+        guard isGameMaster,
+              battleRoundModel.isRunning,
               battleRoundModel.mapId == itemId,
               let map = gameModel.itemData[itemId] as? MapModel else {
-            return false
+            return (false, false)
         }
 
         var repairedAttacker = false
@@ -410,6 +432,19 @@ extension GameController {
             additionalDefenders: additionalDefenders
         )
 
+        // `makeBattleCombatant` never resolves ini/HP entry ids — every other
+        // combatant-creation path (`beginBattle`, `addBattleCombatant`,
+        // `assignCharacter`) follows it with `resolveBattleConfiguredValues`,
+        // but this auto-add-on-highlight path didn't. Without this, a freshly
+        // added defender's still-nil `hitPointsEntryId` reads as "unknown
+        // health" in the loop right below and immediately overwrites its
+        // already-correct `pin.healthPercent` with `nil` — e.g. a player
+        // highlighting a healthy green monster as their target turns it gray
+        // on the spot, on whichever device (master or player) just ran this.
+        for defender in additionalDefenders {
+            resolveBattleConfiguredValues(for: defender.id)
+        }
+
         // Runs on every master tick while a battle is active, so a hit-points
         // entry edited on the Character sheet (outside any Map/BattleRound
         // action) still reaches the pin's health-bar border without a
@@ -429,7 +464,7 @@ extension GameController {
             _ = battleRoundModel.synchronize(pins: map.mapPins)
         }
 
-        return repairedAttacker || changed || healthChanged
+        return (repairedAttacker || changed || healthChanged, healthChanged)
     }
 
     /// Also called directly by `MapPinView` to render a tracked combatant's

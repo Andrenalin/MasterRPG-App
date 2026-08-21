@@ -464,7 +464,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG uses handtracking for rolling the dice during the game."
+            "value" : "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands."
           }
         },
         "th" : {
@@ -536,7 +536,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant."
+            "value" : "MasterRPG needs microphone access to enable voice commands and speech recognition features."
           }
         },
         "th" : {
@@ -584,7 +584,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "MasterRPG uses speech recognition to convert your voice into text for AI chat."
+            "value" : "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature."
           }
         },
         "th" : {

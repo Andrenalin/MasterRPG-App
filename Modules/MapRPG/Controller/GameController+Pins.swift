@@ -349,12 +349,12 @@ extension GameController {
 
     /// Optimistically toggles a shared player highlight before `.mapPin` is sent.
     @MainActor
-    func toggleHighlightPin(itemId: UUID, pinId: UUID) -> Bool {
+    func toggleHighlightPin(itemId: UUID, pinId: UUID, isGameMaster: Bool) -> Bool {
         guard updatePinState(itemId: itemId, pinId: pinId, mutation: { pin in
             pin.isHighlighted.toggle()
         }) else { return false }
         if battleRoundModel.isRunning, battleRoundModel.mapId == itemId {
-            _ = synchronizeBattleDefenders(itemId: itemId)
+            _ = synchronizeBattleDefenders(itemId: itemId, isGameMaster: isGameMaster)
         }
         return true
     }

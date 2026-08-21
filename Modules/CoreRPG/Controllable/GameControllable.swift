@@ -325,14 +325,30 @@ public extension GameControllable {
     }
 
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool) async throws {
-        try await updateGame(data: data, hide: hide, deep: deep, policy: hide ? .memoryOnly : .persist)
+        try await updateGame(data: data, hide: hide, deep: deep, policy: hide ? .memoryOnly : .persist, importMode: .merge)
     }
 
-    func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, policy: GameMutationPolicy) async throws {
+    /// Overload of the protocol-required `updateGame(data:hide:deep:)` that
+    /// lets a caller opt into `.overwrite` (see the `importMode` doc below).
+    /// `importMode` has no default here deliberately — a default would make
+    /// this ambiguous with the exact-match, protocol-required overload above
+    /// for a bare `updateGame(data:hide:deep:)` call site.
+    func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, importMode: ImportMode) async throws {
+        try await updateGame(data: data, hide: hide, deep: deep, policy: hide ? .memoryOnly : .persist, importMode: importMode)
+    }
+
+    /// `importMode` defaults to `.merge` (the historical CRDT last-writer-wins
+    /// behavior, keyed on each device's own local wall clock) for every
+    /// existing caller. Pass `.overwrite` when the sender is unconditionally
+    /// authoritative for this data — e.g. the master's own map broadcasts —
+    /// so a player's stale local copy (from before this session, or a first
+    /// reveal/repair resend) can never silently win the merge and discard
+    /// what the master just sent. See CODE_AUDIT / player-character-sync-gaps.
+    func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, policy: GameMutationPolicy, importMode: ImportMode = .merge) async throws {
         let beforeIds = await gameModel.items
         if let encodedData = data.data {
             do {
-                try await importNetwork(from: encodedData)
+                try await importNetwork(from: encodedData, importMode: importMode)
             } catch {
                 throw ItemGameStorableError.networkDecoding
             }
@@ -363,11 +379,12 @@ public extension GameControllable {
 }
 
 public extension GameControllable {
-    func importNetwork(from data: Data, forceSave: Bool = false) async throws {
+    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge) async throws {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
         let importController = await exportControllable.rootImportController
-        try await importController.importStream(from: stream, forceSave: forceSave)
+        let importModel = await ItemDataImportModel(importMode: importMode)
+        try await importController.importStream(from: stream, forceSave: forceSave, importModel: importModel)
     }
 }

@@ -200,7 +200,7 @@ struct MapPinVisibilityTests {
         // When
         #expect(sut.toggleDeadPin(itemId: mapId, pinId: pinId))
         #expect(sut.resizePin(itemId: mapId, pinId: pinId))
-        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: pinId))
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: pinId, isGameMaster: true))
         #expect(sut.zoomPin(itemId: mapId, pinId: pinId))
 
         // Then
@@ -216,7 +216,7 @@ struct MapPinVisibilityTests {
         let unknownPinId = UUID()
         #expect(!sut.toggleDeadPin(itemId: mapId, pinId: unknownPinId))
         #expect(!sut.resizePin(itemId: mapId, pinId: unknownPinId))
-        #expect(!sut.toggleHighlightPin(itemId: mapId, pinId: unknownPinId))
+        #expect(!sut.toggleHighlightPin(itemId: mapId, pinId: unknownPinId, isGameMaster: true))
         #expect(!sut.zoomPin(itemId: mapId, pinId: unknownPinId))
     }
 

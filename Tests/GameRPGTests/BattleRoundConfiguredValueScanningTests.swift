@@ -470,6 +470,183 @@ struct BattleRoundConfiguredValueScanningTests {
         #expect(abs((pin.healthPercent ?? 0) - (20.0 / 30.0 * 100)) < 0.01)
     }
 
+    /// Reproduces the reported bug: a monster with an already-correct
+    /// `pin.healthPercent` (e.g. left set from an earlier interaction, or
+    /// simply outside the room selected when the battle started, so it never
+    /// became a tracked combatant) gets highlighted — mirroring a player
+    /// tapping it as their attack target, which is the only remaining
+    /// plain-highlight trigger now that the master's own tap opens the pin
+    /// menu instead. `synchronizeBattleDefenders` auto-adds any newly
+    /// highlighted, not-yet-tracked pin as a defender via
+    /// `makeBattleCombatant` — which never resolves `hitPointsEntryId` — so
+    /// the very next line in that same function used to see "no entry id"
+    /// and immediately overwrite the pin's correct health with `nil`.
+    @Test("Highlighting an untracked monster with an already-correct pin.healthPercent doesn't reset it to nil")
+    func highlightingUntrackedMonsterDoesNotResetHealthPercent() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let masterId = UUID()
+        root.gameModel.gameConfig = GameConfigModel(
+            id: masterId,
+            state: .started,
+            master: MasterGameModel(id: masterId, type: .master, name: "Master")
+        )
+        let sut = root.mapRoot.gameController
+        sut.battleRoundSettings.hitPointsNames = ["HP"]
+
+        let playerId = UUID()
+        let playerCharacterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: playerCharacterId,
+                name: "Hero",
+                entries: [ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "30")]
+            ),
+            isInsert: true
+        )
+        var playerPin = MapPinModel(
+            id: playerId,
+            name: "Hero",
+            location: CGPoint(x: 10, y: 10),
+            isPlayer: true,
+            players: [playerId]
+        )
+        playerPin.characterId = playerCharacterId
+
+        let monsterCharacterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: monsterCharacterId,
+                name: "Goblin",
+                entries: [ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "20")]
+            ),
+            isInsert: true
+        )
+        // Outside the focused room below, so `startBattle` never picks it up
+        // as a room combatant — it starts the battle untracked.
+        var monsterPin = MapPinModel(id: UUID(), name: "Goblin one", location: CGPoint(x: 500, y: 500))
+        monsterPin.characterId = monsterCharacterId
+        monsterPin.healthPercent = 100
+
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: square(x: 0),
+            focused: true
+        )
+        let mapId = UUID()
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [room], mapPins: [playerPin, monsterPin])
+        root.mapRoot.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
+
+        // `toggleHighlightPin` is what both the 2D and 3D player tap paths
+        // call, but a player's own device now runs it with
+        // `isGameMaster: false` — a guaranteed no-op past the highlight
+        // toggle itself (see `synchronizeBattleDefenders`'s doc comment).
+        // The auto-add-defender/health-recompute this test reproduces only
+        // ever really happens on the master's own device (either from this
+        // same call with `isGameMaster: true`, or from
+        // `MasterController.handleMap` recomputing after receiving the
+        // player's `.mapPin`), so that's what's exercised here.
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id, isGameMaster: true))
+
+        let liveMap = try #require(sut.gameModel.itemData[mapId] as? MapModel)
+        let pin = try #require(liveMap.mapPins.first { $0.id == monsterPin.id })
+        #expect(pin.isHighlighted)
+        #expect(pin.healthPercent == 100)
+
+        let combatant = try #require(sut.battleRoundModel.combatant(pinId: monsterPin.id))
+        #expect(combatant.hitPointsEntryId != nil)
+    }
+
+    /// "The gamemaster must overwrite the player's mappins — players should
+    /// never change healthPercent." A player's own device runs the exact
+    /// same `toggleHighlightPin` call as the master (both the 2D and 3D
+    /// player tap paths reach it), but must pass `isGameMaster: false` —
+    /// verifies that flag alone is what keeps a player's local device from
+    /// ever computing/persisting `pin.healthPercent`, even though the
+    /// highlight toggle itself still applies locally (each device needs its
+    /// own optimistic view before the network round trip).
+    @Test("A player's own device never recomputes pin.healthPercent when it highlights an untracked pin")
+    func playerDeviceHighlightNeverMutatesHealthPercent() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let masterId = UUID()
+        root.gameModel.gameConfig = GameConfigModel(
+            id: masterId,
+            state: .started,
+            master: MasterGameModel(id: masterId, type: .master, name: "Master")
+        )
+        let sut = root.mapRoot.gameController
+        sut.battleRoundSettings.hitPointsNames = ["HP"]
+
+        let playerId = UUID()
+        let playerCharacterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: playerCharacterId,
+                name: "Hero",
+                entries: [ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "30")]
+            ),
+            isInsert: true
+        )
+        var playerPin = MapPinModel(
+            id: playerId,
+            name: "Hero",
+            location: CGPoint(x: 10, y: 10),
+            isPlayer: true,
+            players: [playerId]
+        )
+        playerPin.characterId = playerCharacterId
+
+        let monsterCharacterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: monsterCharacterId,
+                name: "Goblin",
+                entries: [ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "20")]
+            ),
+            isInsert: true
+        )
+        var monsterPin = MapPinModel(id: UUID(), name: "Goblin one", location: CGPoint(x: 500, y: 500))
+        monsterPin.characterId = monsterCharacterId
+        monsterPin.healthPercent = 100
+
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Room",
+            content: "",
+            coordinates: square(x: 0),
+            focused: true
+        )
+        let mapId = UUID()
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [room], mapPins: [playerPin, monsterPin])
+        root.mapRoot.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
+
+        // The highlight itself still applies locally...
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id, isGameMaster: false))
+
+        // ...but nothing past that: no defender was added, and the pin's
+        // already-correct health was left completely untouched.
+        let liveMap = try #require(sut.gameModel.itemData[mapId] as? MapModel)
+        let pin = try #require(liveMap.mapPins.first { $0.id == monsterPin.id })
+        #expect(pin.isHighlighted)
+        #expect(pin.healthPercent == 100)
+        #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
+
+        // Calling the sync entry point directly with `isGameMaster: false`
+        // (mirroring `applyPlayerMapPin`/`retryDeferredMapPins` running on a
+        // player's own device) is likewise a guaranteed no-op.
+        #expect(!sut.synchronizeBattleDefenders(itemId: mapId, isGameMaster: false).changed)
+        #expect(sut.battleRoundModel.combatant(pinId: monsterPin.id) == nil)
+    }
+
     private func square(x: CGFloat) -> [CGPoint] {
         [
             CGPoint(x: x, y: 0),

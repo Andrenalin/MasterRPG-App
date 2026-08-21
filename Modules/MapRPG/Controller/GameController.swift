@@ -109,7 +109,13 @@ public protocol MapGameStorable {
     @MainActor func zoomPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func resizePin(itemId: UUID, pinId: UUID) -> Bool
-    @MainActor func toggleHighlightPin(itemId: UUID, pinId: UUID) -> Bool
+    /// `isGameMaster` is threaded straight through to `synchronizeBattleDefenders`
+    /// — the actual highlight toggle always applies locally (both master and
+    /// player need their own optimistic view before the network round trip),
+    /// but only the master may let that highlight auto-add/repair battle
+    /// combatants and recompute `pin.healthPercent`. See that function's own
+    /// doc comment for why.
+    @MainActor func toggleHighlightPin(itemId: UUID, pinId: UUID, isGameMaster: Bool) -> Bool
     @MainActor func networkPin(itemId: UUID, pinId: UUID) -> NetworkCodableDataType?
     /// The player/room pins eligible to start a battle on `itemId` — pure
     /// map lookup (current map, focused/last-activated room, pins within
@@ -186,7 +192,20 @@ public protocol MapGameStorable {
         kind: BattleValueKind
     ) -> Bool
     @MainActor func refreshBattleConfiguredValues(itemId: UUID)
-    @MainActor func synchronizeBattleDefenders(itemId: UUID) -> Bool
+    /// `isGameMaster` gates every mutation this performs (auto-adding
+    /// defenders, repairing the attacker highlight, recomputing
+    /// `pin.healthPercent`) to the master only — see the implementation's
+    /// doc comment for why a player must never let this run for real.
+    /// `healthChanged` is broken out separately from the broader `changed`
+    /// flag (which also fires for highlight-only defender bookkeeping the
+    /// group-relayed `.mapPin` event already covers) so a caller can decide
+    /// to rebroadcast only when `pin.healthPercent` itself actually moved —
+    /// genuinely new information derived from Character data players don't
+    /// have, unlike `isHighlighted`.
+    @MainActor @discardableResult func synchronizeBattleDefenders(
+        itemId: UUID,
+        isGameMaster: Bool
+    ) -> (changed: Bool, healthChanged: Bool)
     /// The live health percent (0...100) for a tracked combatant, computed
     /// from its linked hit-points entry. `MapPinView` calls this directly so
     /// the game master's own screen reflects an entry change the instant it

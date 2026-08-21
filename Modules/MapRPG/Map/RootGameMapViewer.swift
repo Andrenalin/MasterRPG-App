@@ -63,7 +63,7 @@ struct RootGameMapViewer: View {
 
     private func sendMapUpdates() {
         if mode == .master {
-            _ = root.mapGameControllable.synchronizeBattleDefenders(itemId: itemId)
+            _ = root.mapGameControllable.synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
             networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
             if root.mapGameControllable.battleRoundModel.isRunning,
                let battleUpdate = root.mapGameControllable.networkBattleRoundUpdate(for: itemId) {
