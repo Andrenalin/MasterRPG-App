@@ -97,23 +97,22 @@ public struct GameTableView: View {
                         accessibilitySubscriptions.append(zoomSubscription)
                     }
 
-                    // Place the table on the actual floor of the volume, and back from
-                    // its actual front face — the volume is flatter than Apple's 1.5 m
-                    // sample, and the system may clamp the requested size on either
-                    // axis, so the fixed rootOffset alone would clip the scene or drift
-                    // out of step with the ornaments/system grab handle, which already
-                    // track these same real bounds.
+                    // Place the table on the actual floor of the volume. The volume is
+                    // flatter than Apple's 1.5 m sample (and the system may clamp the
+                    // requested size), so the fixed rootOffset would clip the scene.
+                    // Depth (Z) is not derived from live geometry here — see
+                    // `GameRenderer.rootOffset`'s own doc for why.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
-                    loadedGame.renderer.placeTable(volumeBounds: volumeBounds)
+                    loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
 
                     if let pinMenu = attachments.entity(for: "pin-menu") {
                         loadedGame.registerPinMenuAttachment(pinMenu)
                     }
 
                 } update: { content, _ in
-                    // Re-anchor to the volume's actual bounds when the user resizes it.
+                    // Re-anchor to the volume floor when the user resizes the volume.
                     let volumeBounds = content.convert(proxy.frame(in: .local), from: .local, to: .scene)
-                    loadedGame.renderer.placeTable(volumeBounds: volumeBounds)
+                    loadedGame.renderer.placeTable(bottomY: volumeBounds.min.y)
                     loadedGame.updatePinMenuAttachmentPosition()
                 } attachments: {
                     Attachment(id: "pin-menu") {

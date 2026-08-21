@@ -214,6 +214,25 @@ final class GameTableModel: Sendable {
     /// until the next roll or focus change happened to call `applyDiceRoll` again.
     var applyFocusedDiceRollForLocalSeat: (() -> Void)?
 
+    /// The pose `applyDiceRoll` most recently assigned to each currently-visible
+    /// die, keyed by equipment id — the "home" position `GameInteraction` returns
+    /// a die to after a toss. Plain, synchronous local state, deliberately *not*
+    /// read from a live TabletopKit snapshot inside the interaction's own
+    /// gesture-phase callbacks: `Die20.initialState.pose` is frozen at
+    /// equipment-creation time from `GameSetup`'s full pre-allocated pool layout
+    /// (up to `GameSetup.maxDicePerType * 2` slots wide), which this method
+    /// supersedes with a tighter, currently-active layout — so it's stale for our
+    /// purposes, the way Apple's own TabletopKit sample's fixed single-slot die
+    /// never needs to worry about. But reading the snapshot's *live* pose from
+    /// within `GameInteraction.onPhaseStarted`/`onGesturePhaseEnded` instead
+    /// caught the die mid-motion (those callbacks can run more than once across
+    /// a single gesture) and sent it flying to whatever transient position the
+    /// interaction machinery reported at that instant. This dictionary sidesteps
+    /// both problems: it only ever changes when this method itself repositions a
+    /// die, so a plain synchronous read is always either "wherever we last put
+    /// it" or absent (never mid-toss).
+    private(set) var homePoseByDieId: [EquipmentIdentifier: TableVisualState.Pose2D] = [:]
+
     // MARK: - Dice
 
     /// Mirrors the locally focused character-sheet dice set onto the local
@@ -261,10 +280,12 @@ final class GameTableModel: Sendable {
                 tabletopGame.addAction(
                     .updateEquipment(equipment, value: result, seatControl: nil, pose: layout[index], boundingBox: nil, context: 0)
                 )
+                homePoseByDieId[dieId] = layout[index]
             } else {
                 tabletopGame.addAction(
                     .updateEquipment(equipment, value: 0, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
                 )
+                homePoseByDieId[dieId] = nil
             }
         }
 
@@ -275,10 +296,12 @@ final class GameTableModel: Sendable {
                 tabletopGame.addAction(
                     .updateEquipment(equipment, value: result, seatControl: nil, pose: layout[usedD20Count + index], boundingBox: nil, context: 0)
                 )
+                homePoseByDieId[dieId] = layout[usedD20Count + index]
             } else {
                 tabletopGame.addAction(
                     .updateEquipment(equipment, value: 0, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
                 )
+                homePoseByDieId[dieId] = nil
             }
         }
 

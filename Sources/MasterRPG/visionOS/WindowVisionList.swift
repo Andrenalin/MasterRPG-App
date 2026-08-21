@@ -11,7 +11,7 @@ import GroupActivities
 
 struct WindowVisionList: Scene {
     let appModel: AppModel
-    
+
     @State private var immersionState: any ImmersionStyle = .mixed
 
     var body: some Scene {
@@ -44,15 +44,44 @@ struct WindowVisionList: Scene {
         // (see `GameTableView`), so this has to grow in lockstep with the
         // table itself, not just the table's own mesh/seat math.
         // Depth carries an extra 0.5 m of empty space in front of the table
-        // beyond that clearance — `GameRenderer.rootOffset.z` pushes the
-        // table back into it so the table doesn't sit right at the volume's
+        // beyond that clearance — `GameRenderer.placeTable(bottomY:)` pushes
+        // the table back into it (using this same 2.15 m depth, duplicated
+        // there as `GameRenderer.volumeDepth` since it can't reach this
+        // constant directly) so the table doesn't sit right at the volume's
         // near bound, uncomfortably close to the viewer, when this window
         // opens.
-        .defaultSize(width: 2.15, height: 0.3, depth: 2.15, in: .meters)
-        .defaultWindowPlacement { _, _ in
-            // Place the game table in front of the user when opened
-            WindowPlacement(.utilityPanel)
-        }
+        //
+        // Height is 1.5 m — matching Apple's own TabletopKit samples that
+        // include dice/toss physics (e.g. `.defaultSize(width: 1.5, height: 1.5,
+        // depth: 1.5, in: .meters)`), not the table's own ~0.03 m thickness. A
+        // tossed die's return-to-place animation arcs upward before settling;
+        // this used to be only 0.3 m, tall enough for the static table itself
+        // but not for that arc, and the die would clip through the volume's
+        // ceiling mid-animation and vanish. `GameRenderer.placeTable(bottomY:)`
+        // still keeps the table itself sitting on the real floor regardless of
+        // how much headroom is declared above it, so this doesn't move the
+        // table — it only gives tossed dice room to arc without leaving the
+        // volume.
+        .defaultSize(width: 2.15, height: 1.5, depth: 2.15, in: .meters)
+        // No `.defaultWindowPlacement` override — this used to return
+        // `WindowPlacement(.utilityPanel)`, but `.utilityPanel` is a small,
+        // near-body tool-panel position (meant for a persistent toolbar
+        // that hovers by your hand), not a placement for a 2 m+ room-scale
+        // volume. Using it here put a volume sized for a whole tabletop
+        // where the system expects a small panel to sit — opening right at/
+        // inside the viewer. Omitting this modifier falls back to the
+        // scene's own default placement/sizing behavior — the normal
+        // "opens in front of you" behavior every other volumetric window in
+        // this app already gets.
+        //
+        // Deliberately no `.frame(width:height:)`/`.frame(depth:)` +
+        // `physicalMetrics` pin on the content, and no explicit
+        // `.windowResizability` override, either — tried twice, both times
+        // it collapsed the window to a tiny fraction of its declared depth
+        // instead of the intended fixed size. `GameRenderer` no longer reads
+        // live window bounds for depth at all (see its own doc), so this
+        // scene doesn't need to fight the system's resizability derivation
+        // to keep the table's depth placement stable.
         .restorationBehavior(.disabled)
 
         WindowGroup(id: SceneId.gameRecover.rawValue) {
@@ -63,7 +92,7 @@ struct WindowVisionList: Scene {
         .windowStyle(.plain)
         .restorationBehavior(.disabled)
 
-        
+
         WindowGroup(id: SceneId.imageSpaceViewer.rawValue) {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()
@@ -76,7 +105,7 @@ struct WindowVisionList: Scene {
         .windowResizability(.contentSize)
         .windowStyle(.plain)
         .restorationBehavior(.disabled)
-        
+
         ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.spaceRoot.viewController.spaceImmersionWindow(
