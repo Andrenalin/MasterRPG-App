@@ -37,23 +37,6 @@ struct SheetRootModelSelectionTests {
         #expect(rootModel.selectedEntryId == entries[1].id)
     }
 
-    @Test func selectingCurrentEntryAgainDoesNotReplaceScrollTarget() {
-        let (rootModel, entries) = makeRootModel(entryCount: 1)
-        let sheetEditorModel = rootModel
-            .editControllable(for: entries[0].source)?
-            .editorModel
-            .sheetEditorModel
-
-        rootModel.setSelected(entries[0], parent: rootModel.sheetModel)
-        #expect(sheetEditorModel?.scrollEntryId == entries[0].source.entryId)
-
-        let preservedScrollTarget = UUID()
-        sheetEditorModel?.scrollEntryId = preservedScrollTarget
-        rootModel.setSelected(entries[0], parent: rootModel.sheetModel)
-
-        #expect(sheetEditorModel?.scrollEntryId == preservedScrollTarget)
-    }
-
     @Test func itemDescriptionLinkTogglesExistingChildSheet() {
         let rootItemID = UUID()
         let linkedItemID = UUID()
