@@ -47,36 +47,41 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     @MainActor
     func onGesturePhaseEnded(interaction: TabletopInteraction) {
         if let die20 = game.tabletopGame.equipment(of: Die20.self, matching: interaction.value.startingEquipmentID) {
-            // Pick a random value for the result of the die toss and toss the die.
-            let nextValue = Int.random(in: 1 ... 20)
-            interaction.addAction(.updateEquipment(die20, value: nextValue))
+            // Only start the toss here — don't set `value`/`pose` yet. Doing
+            // that synchronously at gesture-end, before the toss has even
+            // started simulating, raced the physics animation that
+            // `.toss(...)` itself was just about to start: the die would jump
+            // to whatever pose we forced instead of playing out the toss,
+            // producing exactly the symptoms this went through — flying off,
+            // resting 20-50 cm above the table, disappearing, or (with two
+            // dice) settling at two different heights, since each die's
+            // forced pose competed with the simulation's own, unpredictably.
+            // Apple's own TabletopKit dice sample (`DiceInteraction.swift`,
+            // via the `tabletopkit-simulating-dice-rolls-as-a-component-for-
+            // your-game` sample) makes the same split: `.toss(...)` here, and
+            // the final `.updateEquipment(...)` only once
+            // `onTossStart(interaction:outcomes:)` below reports where the
+            // simulation actually left the die.
             interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die20.representation)
-            // Move the die back to its actual current-layout pose on the table after
-            // the toss animation finishes. `landingPose` itself: Apple's own
-            // TabletopKit sample uses `die.initialState.pose` here directly — safe
-            // for their single die, permanently fixed to one slot, but
-            // `die20.initialState.pose` here is frozen at equipment-creation time
-            // from `GameSetup`'s full pre-allocated pool layout, which
-            // `GameTableModel.applyDiceRoll` supersedes with a tighter,
-            // currently-active layout whenever the focused dice set changes.
-            // `game.homePoseByDieId` tracks that supersession — see its own doc for
-            // why this has to be plain, synchronous local state rather than a live
-            // TabletopKit snapshot read from inside this delegate's own
-            // gesture-phase callbacks (tried that; it caught the die mid-motion and
-            // sent it flying instead).
-            let landingPose = game.homePoseByDieId[die20.id] ?? die20.initialState.pose
-            // `.updateEquipment(pose:)`, not `.moveEquipment(childOf:pose:)` (which
-            // Apple's sample uses, and which this file used until now): the die
-            // never actually changes parent — it's restricted to the table alone by
-            // `onPhaseStarted`'s `allowedDestinations` above — so re-parenting to
-            // `.tableID` it's already a child of is unnecessary, and `.moveEquipment`
-            // was resting the die roughly 40-50 cm above the table's true surface
-            // after the toss, unlike `.updateEquipment(pose:)`, which is the exact
-            // action `applyDiceRoll` already uses to place this same die correctly at
-            // rest. The two actions apparently derive resting height differently;
-            // reusing the confirmed-correct one instead of guessing further at why
-            // `.moveEquipment`'s differs.
-            interaction.addAction(.updateEquipment(die20, pose: landingPose))
+        }
+    }
+
+    /// Fires once each tossed die's physics simulation has a final resting
+    /// outcome. `outcome.pose` is that simulation's own result — the die's
+    /// actual final table-space position/rotation, not a value we compute or
+    /// guess — so setting it here is what makes the die retain that resting
+    /// state once the simulation ends, exactly as this delegate method's own
+    /// documentation describes. This project still picks its own random
+    /// face value here (rather than reading it back off
+    /// `outcome.restingOrientation`) the same way Apple's sample's own
+    /// `predeterminedOutcome` branch does — only the *pose* has to come from
+    /// the simulation; the face shown is this game's own concern.
+    @MainActor
+    func onTossStart(interaction: TabletopInteraction, outcomes: [TabletopInteraction.TossOutcome]) {
+        for outcome in outcomes {
+            guard let die20 = game.tabletopGame.equipment(of: Die20.self, matching: outcome.id) else { continue }
+            let nextValue = Int.random(in: 1 ... 20)
+            interaction.addAction(.updateEquipment(die20, value: nextValue, pose: outcome.pose))
         }
     }
 

@@ -392,11 +392,20 @@ struct PlayerSeat: TableSeat {
         let seatPosition = seatPose.position
         let lateralOffset = seatPosition.x * lateral.x + seatPosition.z * lateral.z
 
-        // Distance between neighboring dice. Kept tighter than the original
-        // 2-die-only layout's 0.14 m spacing (still centered the same way)
-        // so a seat's row stays compact even at `maxDicePerType`'s largest
-        // realistic mixes.
-        let spacing = 0.05
+        // Distance between neighboring dice, center to center. This was
+        // shrunk from the original 2-die-only layout's 0.14 m to 0.05 m to
+        // keep a seat's row compact at `maxDicePerType`'s largest realistic
+        // mixes, but never re-checked against the die's own physical size —
+        // at 0.05 m, two ~0.075 m-wide D20s (see `Die20`'s own
+        // `representation`) overlap enough that TabletopKit resolves it by
+        // resting one on top of the other instead of side by side. 0.11 m
+        // (tried first, aiming for the "half a die's width" gap this method
+        // was originally asked for) still left a partial, roughly
+        // half-die-height overlap — the die's true collision size needs
+        // closer to that original 0.14 m after all. 0.15 m stays a hair
+        // above it for margin, since the previous, closer-but-still-short
+        // guess undershot.
+        let spacing = 0.15
         let totalWidth = spacing * Double(count - 1)
 
         return (0 ..< count).map { index in
@@ -429,7 +438,7 @@ struct Die20: EntityEquipment {
     let audioPlaybackController: AudioPlaybackController?
     var initialState: DieState
     let representation: TossableRepresentation
-    
+
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
         // `0` is this table's own sentinel for a currently-unused pool slot
