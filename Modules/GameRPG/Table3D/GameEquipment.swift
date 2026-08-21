@@ -313,21 +313,27 @@ struct PlayerSeat: TableSeat {
     let id: ID
     var initialState: TableSeatState
 
-    /* Six seats around the rectangular table: a single seat at each short
-    end (index 0, the master's "head of the table" seat, and index 5), and
-    two along each long side (indices 1–4). Each seat faces the center of
-    the table. Every seat sits a full table-length/-width beyond the table
-    center along its own axis — same "well beyond the physical edge, the
-    way a chair sits beyond a real table's edge" ratio the original 3-seat
-    square layout used (see `diceLayout`'s doc for the matching dice-side
-    reasoning). */
+    /* Six seats around the rectangular table: the master (index 0) centered
+    on the near (+Z, viewer-facing) long side, two players flanking it on
+    that same side (indices 1–2), two more on the far (south) long side
+    (indices 3–4), and one at the east end (index 5) — no seat at the west
+    end. Each seat faces the center of the table. The master sits on the
+    near edge specifically so it lines up with the volumetric window's own
+    default viewing position and this view's ornaments/dice-bar (see
+    `GameSetup`'s own doc for why — without an active SharePlay session,
+    nothing else rotates the table to face whichever seat is claimed).
+    Every long-side/end seat still sits a full table-length/-width beyond
+    the table center along its own axis — same "well beyond the physical
+    edge, the way a chair sits beyond a real table's edge" ratio the
+    original 3-seat square layout used (see `diceLayout`'s doc for the
+    matching dice-side reasoning). */
     @MainActor static let seatPoses: [TableVisualState.Pose2D] = [
-        // Master — west end.
-        .init(position: .init(x: -Double(GameMetrics.tableLength), z: 0), rotation: .degrees(-90)),
-        // North long side, two seats.
+        // Master — near (+Z) edge, centered.
+        .init(position: .init(x: 0, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
+        // Near edge, flanking the master, two seats.
         .init(position: .init(x: -0.5, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
         .init(position: .init(x: 0.5, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
-        // South long side, two seats.
+        // Far (south) long side, two seats.
         .init(position: .init(x: -0.5, z: -Double(GameMetrics.tableWidth)), rotation: .degrees(180)),
         .init(position: .init(x: 0.5, z: -Double(GameMetrics.tableWidth)), rotation: .degrees(180)),
         // East end.

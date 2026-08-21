@@ -52,28 +52,36 @@ class GameSetup {
     /*
      A 2 m × 1.5 m table (`GameMetrics.tableLength`/`tableWidth`) with the
      map centered in a 0.25 m margin (`GameMetrics.mapMargin`) and six
-     seats around it: the master alone at the west end, two players along
-     each long side, and one more player at the east end — see
+     seats around it: the master centered on the near (+Z) edge — the
+     side the volumetric window's own default viewing position, and this
+     view's ornaments/dice-bar, already face (see `WindowVisionList`,
+     `GameTableView`) — flanked by two players on that same edge, two more
+     along the far (south) side, and one at the east end — see
      `PlayerSeat.seatPoses`. Each seat's own dice sit in that margin,
-     between the map and the seat itself (`PlayerSeat.diceLayout`).
+     between the map and the seat itself (`PlayerSeat.diceLayout`). Without
+     an active SharePlay session there's no per-participant spatial
+     coordination to face the viewer toward whichever seat they claim (that's
+     `TabletopGame.coordinateWithSession(_:)`'s job once a session exists —
+     see `RPGSharePlayController`), so the master's own seat is placed here,
+     near-edge, to already line up with a solo tester's fixed vantage.
 
-                     north: 2 seats
-              +--+                    +--+
-              |##|                    |##|
-              +--+                    +--+
-     +--+   +----------------------------+   +--+
-     |GM|   |         0.25 m margin      |   |E5|
-     +--+   |   +--------------------+   |   +--+
-    (west)  |   |                    |   |  (east)
-             |   |        map         |   |
-             |   |                    |   |
-             |   +--------------------+   |
-             |         0.25 m margin      |
-             +----------------------------+
-              +--+                    +--+
-              |##|                    |##|
-              +--+                    +--+
-                     south: 2 seats
+              near (+Z, viewer-facing): 3 seats
+         +--+          +--+          +--+
+         |##|          |GM|          |##|
+         +--+          +--+          +--+
+       +----------------------------------+   +--+
+       |          0.25 m margin            |   |E5|
+       |   +--------------------+          |   +--+
+       |   |                    |          |  (east)
+       |   |        map         |          |
+       |   |                    |          |
+       |   +--------------------+          |
+       |          0.25 m margin            |
+       +----------------------------------+
+                +--+          +--+
+                |##|          |##|
+                +--+          +--+
+                   south: 2 seats
      */
     init(root: Entity) {
         self.root = root
