@@ -436,7 +436,7 @@ struct BattleRoundConfiguredValueScanningTests {
         // max-HP formula.
         let aktuelleValue = "\(characterModel.url(linkNumber: 0, entryId: lebenskraftEntry.id))|-10"
         let aktuelleEntry = ValueEntryModel(id: UUID(), name: "Aktuelle", type: .number, value: aktuelleValue)
-        var fullCharacterModel = characterModel
+        let fullCharacterModel = characterModel
         fullCharacterModel.entries.append(aktuelleEntry)
         root.characterRoot.itemController.replace(model: fullCharacterModel, isInsert: true)
 
