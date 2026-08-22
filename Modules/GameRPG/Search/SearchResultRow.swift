@@ -26,7 +26,7 @@ struct SearchResultRow: View {
                 Image(systemName: module.icon)
                     .moduleForegroundStyle(module)
 
-                Text(result.itemName)
+                Text(verbatim: result.itemName)
                     .font(.headline)
 
                 Text(verbatim: "·")
@@ -43,7 +43,7 @@ struct SearchResultRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             } else if let matchedContent = result.matchedContent {
-                Text(matchedContent)
+                Text(verbatim: matchedContent)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .lineLimit(2)

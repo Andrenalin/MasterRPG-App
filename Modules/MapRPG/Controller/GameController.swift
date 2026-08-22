@@ -316,13 +316,16 @@ extension GameController: MapGameStorable {
         guard let previous = mapGameModel.authoritativeGeneration(for: itemId) else { return }
         let refreshedContentVersion = mapContentVersion(for: itemId)
         guard refreshedContentVersion != previous.contentVersion else { return }
+        // See CODE_AUDIT §9.2 — shared envelope factory.
         mapGameModel.recordAuthoritativeGeneration(
-            NetworkCodableDataType(
+            Self.mapNetworkData(
                 id: itemId,
-                type: .map,
-                version: gameItem(for: itemId).version,
-                assetVersion: previous.assetVersion,
-                contentVersion: refreshedContentVersion
+                generation: MapGameModel.AuthoritativeGeneration(
+                    version: gameItem(for: itemId).version,
+                    assetVersion: previous.assetVersion,
+                    contentVersion: refreshedContentVersion
+                ),
+                data: nil
             )
         )
     }
@@ -335,12 +338,15 @@ extension GameController: MapGameStorable {
             // makes receivers request the full package.
             return await currentMapReference(for: id)
         }
-        return NetworkCodableDataType(
+        // See CODE_AUDIT §9.2 — shared envelope factory.
+        return Self.mapNetworkData(
             id: id,
-            type: .map,
-            version: metadata.version,
-            assetVersion: metadata.assetVersion,
-            contentVersion: metadata.contentVersion
+            generation: MapGameModel.AuthoritativeGeneration(
+                version: metadata.version,
+                assetVersion: metadata.assetVersion,
+                contentVersion: metadata.contentVersion
+            ),
+            data: nil
         )
     }
 
@@ -356,13 +362,17 @@ extension GameController: MapGameStorable {
                   base.version == after.version else {
                 continue
             }
-            return NetworkCodableDataType(
+            // See CODE_AUDIT §9.2. `base.type` is always `.map` here — this is
+            // the Map module's own export path — matching the factory's fixed
+            // `type: .map`.
+            return Self.mapNetworkData(
                 id: base.id,
-                type: base.type,
-                version: after.version,
-                data: base.data,
-                assetVersion: after.assetVersion,
-                contentVersion: after.contentVersion
+                generation: MapGameModel.AuthoritativeGeneration(
+                    version: after.version,
+                    assetVersion: after.assetVersion,
+                    contentVersion: after.contentVersion
+                ),
+                data: base.data
             )
         }
         throw MapGameStorableError.packageChangedDuringExport
@@ -377,13 +387,15 @@ extension GameController: MapGameStorable {
                   await packageCoreMetadata(for: itemId) == capture.core else {
                 continue
             }
-            return NetworkCodableDataType(
+            // See CODE_AUDIT §9.2 — shared envelope factory.
+            return Self.mapNetworkData(
                 id: itemId,
-                type: .map,
-                version: metadata.version,
-                data: capture.data,
-                assetVersion: metadata.assetVersion,
-                contentVersion: metadata.contentVersion
+                generation: MapGameModel.AuthoritativeGeneration(
+                    version: metadata.version,
+                    assetVersion: metadata.assetVersion,
+                    contentVersion: metadata.contentVersion
+                ),
+                data: capture.data
             )
         }
         return await currentMapContentUpdate(for: itemId)

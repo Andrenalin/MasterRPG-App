@@ -13,13 +13,17 @@ import Testing
 /// Regression tests for two inspector toggle bugs:
 ///
 /// **Bug 1 — Circular parent/child reference (crash)**
-/// `SearchLinkController.results(text:, focusId:)` called `inspectorScopedListResults` for
-/// non-`specialCategory` items. That function returns the item itself (not its entries).
+/// `SearchLinkController.results(text:, focusId:)` used to call `inspectorScopedListResults` for
+/// non-`specialCategory` items, which returned the item itself (not its entries).
 /// `loadChildrenViaSearch` stored the item as its own child (`item.children = [item]`).
 /// `flattenCachedChildren` then recursed infinitely → crash.
 ///
-/// Fix: `results(text:, focusId:)` now routes non-folder items through `inspectorEntryResults`
-/// which returns flat entry results (entryId set, never the item itself).
+/// Fix: `loadChildrenViaSearch` now routes through the synchronous `syncExpandResults`, whose
+/// non-folder branch is structurally guaranteed to return flat entry results (`entryId` always
+/// set, never the item itself) — see the `toggleFolder*` tests below. `results(text:, focusId:)`
+/// and its `inspectorEntryResults` helper (the original fix's home) were later found to have no
+/// production callers — `loadChildrenViaSearch` had already migrated to `syncExpandResults` — and
+/// were removed as dead code; this regression's coverage now lives entirely on the current path.
 ///
 /// **Bug 2 — `performDetailSearch` lost scope in list mode**
 /// `performDetailSearch` was changed to use `results(text:)` with `filterId`.
@@ -39,16 +43,6 @@ struct InspectorToggleBugFixTests {
         return root
     }
 
-    private func makeLinkSUT(for root: PdfRootModel) -> SearchLinkController {
-        let ldm = ListDisplayModel(displayMode: .medium, listMode: .list)
-        let sm  = SearchModel.preview(module: .pdf)
-        return SearchLinkController(
-            searchController: root.searchControllable,
-            searchModel: sm,
-            listDisplayModel: ldm
-        )
-    }
-
     private func addEntry(to itemId: UUID, name: String, content: String,
                           root: PdfRootModel) -> UUID {
         let id = UUID()
@@ -56,59 +50,6 @@ struct InspectorToggleBugFixTests {
             PdfEntryModel(id: id, name: name, content: content, pageNumber: "1", bounds: .zero)
         )
         return id
-    }
-
-    // MARK: - Bug 1: results(focusId:) must never return the item itself
-
-    @Test("results(focusId: regularItem) returns entries, not the item itself")
-    func focusedResultsReturnEntriesNotSelf() async {
-        let root    = await makeRoot()
-        let itemId  = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Dragon Manual", itemId: itemId)
-        let entryId = addEntry(to: itemId, name: "Dragon Lore", content: "About fire", root: root)
-
-        let sut     = makeLinkSUT(for: root)
-        let results = await sut.results(text: "", focusId: itemId)
-
-        // The item must NOT appear without an entryId — that would make it its own child
-        // and cause infinite recursion in flattenCachedChildren → crash.
-        #expect(!results.contains(where: { $0.itemId == itemId && $0.entryId == nil }),
-                "Item must not appear as its own child in results(focusId:) — circular reference")
-        #expect(results.contains(where: { $0.entryId == entryId }),
-                "Entry must appear as a direct flat result")
-    }
-
-    @Test("results(focusId: regularItem) with non-empty search returns matching entries only")
-    func focusedNonEmptySearchReturnsMatchingEntries() async {
-        let root = await makeRoot()
-        let itemId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Rulebook", itemId: itemId)
-        let matchId = addEntry(to: itemId, name: "Dragon Chapter", content: "Fire lore", root: root)
-        _ = addEntry(to: itemId, name: "History",       content: "Unrelated",  root: root)
-
-        let sut     = makeLinkSUT(for: root)
-        let results = await sut.results(text: "Dragon", focusId: itemId)
-
-        #expect(!results.contains(where: { $0.itemId == itemId && $0.entryId == nil }),
-                "Item itself must not appear in focusId results even for non-empty search")
-        #expect(results.contains(where: { $0.entryId == matchId }),
-                "Matching entry must appear")
-    }
-
-    @Test("results(focusId: folder) still returns folder children via folder mode")
-    func focusedResultsForFolderReturnChildren() async {
-        let root     = await makeRoot()
-        let folderId = await root.itemController.addNew(type: .folder)
-        let childId  = await root.itemController.addNew(type: .item)
-        root.editController.addItem(itemId: childId, parentId: folderId)
-
-        let sut     = makeLinkSUT(for: root)
-        let results = await sut.results(text: "", focusId: folderId)
-
-        #expect(results.map(\.itemId).contains(childId),
-                "Folder child must be returned for specialCategory focusId")
-        #expect(!results.map(\.itemId).contains(folderId),
-                "The folder itself must not appear in its own focusId results")
     }
 
     // MARK: - Bug 1: toggleFolder must not crash via circular reference

@@ -298,6 +298,7 @@ extension PlayerController {
                 gameModel.markMapStateApplied(itemId: model.data.id, counter: model.counter)
                 _ = await completeMapRepairIfSatisfied(itemId: model.data.id)
                 retryDeferredMapPins(itemId: model.data.id)
+                retryDeferredBattleRoundUpdate(itemId: model.data.id)
                 gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
 
@@ -305,10 +306,21 @@ extension PlayerController {
                 // Player pin events are handled before the master-only switch.
                 return nil
             case .battleRound:
+                // A generation mismatch here used to just drop the update with
+                // no way back — unlike `.mapPin`'s `awaitingMapGeneration`/
+                // `deferMapPin` path just above, nothing ever replayed a
+                // `.battleRound` payload once the map generation caught up, so
+                // a player's turn-order UI could stay stuck on a stale round/
+                // active-attacker until an unrelated future broadcast happened
+                // to resync it. See CODE_AUDIT §5.2.
                 guard root.mapRoot.mapGameControllable.applyBattleRoundUpdate(
                     for: model.data.id,
                     with: model.data
-                ) else { return nil }
+                ) else {
+                    gameModel.queueBattleRoundUpdate(model.data)
+                    return nil
+                }
+                gameModel.discardPendingBattleRoundUpdate(itemId: model.data.id)
                 setMapUpdateTypeAndSyncPawns()
             default:
                 return nil
@@ -335,6 +347,7 @@ extension PlayerController {
             switch model.subType {
             case .mapState:
                 retryDeferredMapPins(itemId: model.data.id)
+                retryDeferredBattleRoundUpdate(itemId: model.data.id)
                 gameModel.setGameUpdateType(.map)
                 await refreshMapVisuals(itemId: model.data.id)
             case .battleRound:
@@ -386,6 +399,7 @@ extension PlayerController {
         )
         _ = await applyPendingMapState(itemId: model.data.id)
         retryDeferredMapPins(itemId: model.data.id)
+        retryDeferredBattleRoundUpdate(itemId: model.data.id)
         let completesPresentation = await completeMapRepairIfSatisfied(itemId: model.data.id)
         if completesPresentation == true {
             await presentMap(itemId: model.data.id)
@@ -575,6 +589,7 @@ extension PlayerController {
             root.mapRoot.mapGameControllable.refreshAuthoritativeMapContentVersion(for: itemId)
         }
         retryDeferredMapPins(itemId: itemId)
+        retryDeferredBattleRoundUpdate(itemId: itemId)
         gameModel.setGameUpdateType(.map)
         await refreshMapVisuals(itemId: itemId)
     }
@@ -610,6 +625,20 @@ extension PlayerController {
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
         return .applied
+    }
+
+    /// Replays a `.battleRound` update that was previously deferred by a map
+    /// generation mismatch. Called at the same points as
+    /// `retryDeferredMapPins(itemId:)` below — right after this device's map
+    /// generation just moved forward — since `applyBattleRoundUpdate` itself
+    /// re-validates the generation and the state's own sequence number
+    /// before applying anything. See CODE_AUDIT §5.2.
+    private func retryDeferredBattleRoundUpdate(itemId: UUID) {
+        guard root.mapRoot.gameControllable.gameModel.currentItemId == itemId,
+              let data = gameModel.pendingBattleRoundUpdate(for: itemId) else { return }
+        guard root.mapRoot.mapGameControllable.applyBattleRoundUpdate(for: itemId, with: data) else { return }
+        gameModel.discardPendingBattleRoundUpdate(itemId: itemId)
+        setMapUpdateTypeAndSyncPawns()
     }
 
     private func retryDeferredMapPins(itemId: UUID) {

@@ -9,9 +9,12 @@ import SwiftUI
 class GroupActivityManager {
     var tabletopGame: TabletopGame
 
-    init(tabletopGame: TabletopGame, sharePlayController: RPGSharePlayController) {
+    /// `gameTableModel` is threaded through to `RPGSharePlayController.setup(tabletopGame:gameTableModel:)`
+    /// so seat assignment can be chained *after* `coordinateWithSession(_:)` there instead of
+    /// being triggered separately and synchronously by the caller — see that method's own doc.
+    init(tabletopGame: TabletopGame, gameTableModel: GameTableModel, sharePlayController: RPGSharePlayController) {
         self.tabletopGame = tabletopGame
-        sharePlayController.setup(tabletopGame: tabletopGame)
+        sharePlayController.setup(tabletopGame: tabletopGame, gameTableModel: gameTableModel)
     }
 
     isolated deinit {

@@ -45,6 +45,42 @@ extension GameController {
         )
     }
 
+    /// Shared validation for "is this payload still for the map generation
+    /// this device currently has". Both the pin-update and battle-round-update
+    /// apply paths need this exact six-condition check to stay in sync — see
+    /// CODE_AUDIT §9.3.
+    @MainActor
+    func isCurrentGeneration(_ data: NetworkCodableDataType, for itemId: UUID) -> Bool {
+        let generation = networkGeneration(for: itemId)
+        return data.id == itemId
+            && data.type == .map
+            && gameModel.currentItemId == itemId
+            && data.version == generation.version
+            && data.assetVersion == generation.assetVersion
+            && data.contentVersion == generation.contentVersion
+    }
+
+    /// Shared factory for a `.map`-typed `NetworkCodableDataType` envelope.
+    /// Callers that already hold a `MapGameModel.AuthoritativeGeneration`
+    /// (from `networkGeneration(for:)` or a `stablePackageMetadata`/
+    /// `packageCoreMetadata` result) pass it straight through instead of
+    /// re-deriving the three version fields inline at each call site — see
+    /// CODE_AUDIT §9.2.
+    static func mapNetworkData(
+        id itemId: UUID,
+        generation: MapGameModel.AuthoritativeGeneration,
+        data: Data?
+    ) -> NetworkCodableDataType {
+        NetworkCodableDataType(
+            id: itemId,
+            type: .map,
+            version: generation.version,
+            data: data,
+            assetVersion: generation.assetVersion,
+            contentVersion: generation.contentVersion
+        )
+    }
+
     func stablePackageMetadata(for itemId: UUID) async -> PackageMetadata? {
         for _ in 0..<Self.maximumPackageExportAttempts {
             let before = await packageCoreMetadata(for: itemId)
@@ -102,25 +138,34 @@ extension GameController {
     @MainActor
     func currentMapReference(for itemId: UUID) -> NetworkCodableDataType {
         let item = gameItem(for: itemId)
-        return NetworkCodableDataType(
+        // See CODE_AUDIT §9.2 — shared envelope factory. This site
+        // deliberately builds its own generation from live state rather than
+        // `networkGeneration(for:)`/`mapGameModel.authoritativeGeneration`,
+        // since it's the package-export fallback path.
+        return Self.mapNetworkData(
             id: itemId,
-            type: .map,
-            version: item.version,
-            assetVersion: currentMapAssetVersion(for: itemId),
-            contentVersion: MapUpdatePayload(model: item).contentVersion
+            generation: MapGameModel.AuthoritativeGeneration(
+                version: item.version,
+                assetVersion: currentMapAssetVersion(for: itemId),
+                contentVersion: MapUpdatePayload(model: item).contentVersion
+            ),
+            data: nil
         )
     }
 
     @MainActor
     func currentMapContentUpdate(for itemId: UUID) -> NetworkCodableDataType {
         let capture = mapContentCapture(for: itemId)
-        return NetworkCodableDataType(
+        // See CODE_AUDIT §9.2 — same package-export fallback rationale as
+        // `currentMapReference(for:)` above.
+        return Self.mapNetworkData(
             id: itemId,
-            type: .map,
-            version: capture.core.version,
-            data: capture.data,
-            assetVersion: currentMapAssetVersion(for: itemId),
-            contentVersion: capture.core.contentVersion
+            generation: MapGameModel.AuthoritativeGeneration(
+                version: capture.core.version,
+                assetVersion: currentMapAssetVersion(for: itemId),
+                contentVersion: capture.core.contentVersion
+            ),
+            data: capture.data
         )
     }
 
@@ -141,6 +186,12 @@ extension GameController {
             backgroundPhotoId: backgroundPhotoId,
             backgroundPhotoVersion: backgroundPhotoVersion
         ).version
+    }
+
+    /// The shared "give this monotonic mutation a fresh timestamp" idiom used
+    /// by every optimistic pin/pointer write. See CODE_AUDIT §9.4.
+    static func bumpedTimeInterval(from previous: TimeInterval) -> TimeInterval {
+        max(Date.now.timeIntervalSince1970, previous.nextUp)
     }
 
     static func applyPlayerMetadata(from source: MapPinModel, to destination: inout MapPinModel) {
@@ -322,20 +373,40 @@ extension GameController {
     /// Applies a local pin mutation and gives it a monotonic timestamp. This is
     /// used by both authoritative master actions and optimistic player actions.
     @MainActor
+    @discardableResult
     func updatePinState(
         itemId: UUID,
         pinId: UUID,
         mutation: (inout MapPinModel) -> Void
     ) -> Bool {
+        mutatedPinState(itemId: itemId, pinId: pinId, mutation: mutation) != nil
+    }
+
+    /// The same mutate-bump-write-sync unit as `updatePinState(itemId:pinId:mutation:)`
+    /// above, but handing back the mutated pin for callers that need to build
+    /// something from it (e.g. a fresh `BattleCombatant`) instead of just
+    /// knowing whether the write happened. Deliberately a distinctly-named
+    /// function rather than an overload of `updatePinState` — an overload
+    /// differing only in a trailing-closure parameter's label is ambiguous at
+    /// every existing call site that discards or loosely infers the result
+    /// (verified: it broke `applyHealthPercent`/`applyActiveBattleHighlights`
+    /// below). See CODE_AUDIT §9.4.
+    @MainActor
+    @discardableResult
+    func mutatedPinState(
+        itemId: UUID,
+        pinId: UUID,
+        mutation: (inout MapPinModel) -> Void
+    ) -> MapPinModel? {
         let item = gameItem(for: itemId)
-        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return false }
+        guard var pin = item.mapPins.first(where: { $0.id == pinId }) else { return nil }
         mutation(&pin)
-        pin.timeInterval = max(Date.now.timeIntervalSince1970, pin.timeInterval.nextUp)
+        pin.timeInterval = Self.bumpedTimeInterval(from: pin.timeInterval)
         item[MapPinId.id, pinId] = pin
         if pin.isPlayer,
            let index = mapGameModel.playerPins.firstIndex(where: { $0.id == pinId }) {
             mapGameModel.playerPins[index] = pin
         }
-        return true
+        return pin
     }
 }

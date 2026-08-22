@@ -9,7 +9,7 @@ import Testing
 @MainActor
 struct SearchModelTests {
     @Test func initializesWithEmptyResults() async throws {
-        let model = SearchModel()
+        let model = GlobalSearchModel()
 
         #expect(model.searchText.isEmpty)
         #expect(model.results.isEmpty)
@@ -18,29 +18,29 @@ struct SearchModelTests {
     }
 
     @Test func initializesWithSearchText() async throws {
-        let model = SearchModel(searchText: "test")
+        let model = GlobalSearchModel(searchText: "test")
 
         #expect(model.searchText == "test")
         #expect(model.results.isEmpty)
     }
 
-    @Test func cancelSearchCancelsTask() async throws {
-        let model = SearchModel()
+    @Test func assigningNilCancelsCurrentTask() async throws {
+        let model = GlobalSearchModel()
 
         // Create a long-running task
         let task = Task<Void, Never> {
             try? await Task.sleep(for: .seconds(10))
         }
 
-        model.setSearchTask(task)
-        model.cancelSearch()
+        model.currentTask = task
+        model.currentTask = nil  // triggers `didSet`'s auto-cancel of the previous task
 
         // Task should be cancelled - just verify it completes
         await task.value
     }
 
-    @Test func setSearchTaskStoresTask() async throws {
-        let model = SearchModel()
+    @Test func currentTaskStoresTaskForTheCallerToAwait() async throws {
+        let model = GlobalSearchModel()
         var completed = false
 
         let task = Task<Void, Never> {
@@ -48,14 +48,14 @@ struct SearchModelTests {
             completed = true
         }
 
-        model.setSearchTask(task)
-        await model.awaitCurrentSearch()
+        model.currentTask = task
+        await task.value
 
         #expect(completed == true)
     }
 
-    @Test func awaitCurrentSearchWaitsForCompletion() async throws {
-        let model = SearchModel()
+    @Test func currentTaskCanBeAwaitedForCompletion() async throws {
+        let model = GlobalSearchModel()
         var value = 0
 
         let task = Task<Void, Never> {
@@ -63,33 +63,33 @@ struct SearchModelTests {
             value = 42
         }
 
-        model.setSearchTask(task)
-        await model.awaitCurrentSearch()
+        model.currentTask = task
+        await task.value
 
         #expect(value == 42)
     }
 
-    @Test func cancelSearchBeforeAwaitDoesNotHang() async throws {
-        let model = SearchModel()
+    @Test func assigningNilBeforeAwaitDoesNotHang() async throws {
+        let model = GlobalSearchModel()
 
         let task = Task<Void, Never> {
             try? await Task.sleep(for: .seconds(10))
         }
 
-        model.setSearchTask(task)
-        model.cancelSearch()
+        model.currentTask = task
+        model.currentTask = nil  // triggers `didSet`'s auto-cancel
 
-        // Should return immediately, not wait for cancelled task
+        // Should return immediately, not wait for the (now cancelled) task's original delay
         let start = ContinuousClock.now
-        await model.awaitCurrentSearch()
+        await task.value
         let duration = ContinuousClock.now - start
 
         // Should complete very quickly since task was cancelled
         #expect(duration < .seconds(1))
     }
 
-    @Test func multipleSearchTasksCancelPrevious() async throws {
-        let model = SearchModel()
+    @Test func assigningNewTaskCancelsPreviousViaDidSet() async throws {
+        let model = GlobalSearchModel()
         var firstCompleted = false
         var secondCompleted = false
 
@@ -99,18 +99,16 @@ struct SearchModelTests {
             guard !Task.isCancelled else { return }
             firstCompleted = true
         }
-        model.setSearchTask(firstTask)
-
-        // Cancel and start second task
-        model.cancelSearch()
+        model.currentTask = firstTask
 
         let secondTask = Task<Void, Never> {
             try? await Task.sleep(for: .milliseconds(50))
             guard !Task.isCancelled else { return }
             secondCompleted = true
         }
-        model.setSearchTask(secondTask)
-        await model.awaitCurrentSearch()
+        // Assigning the second task cancels the first via `didSet`.
+        model.currentTask = secondTask
+        await secondTask.value
 
         // First should be cancelled, second should complete
         #expect(firstCompleted == false)
@@ -118,7 +116,7 @@ struct SearchModelTests {
     }
 
     @Test func concurrentAccessDoesNotCrash() async throws {
-        let model = SearchModel()
+        let model = GlobalSearchModel()
 
         // Spawn multiple concurrent operations
         await withTaskGroup(of: Void.self) { group in
@@ -128,9 +126,8 @@ struct SearchModelTests {
                         try? await Task.sleep(for: .milliseconds(Double(i * 10)))
                     }
                     await MainActor.run {
-                        model.setSearchTask(task)
+                        model.currentTask = task
                     }
-                    await model.awaitCurrentSearch()
                 }
             }
 
@@ -139,7 +136,7 @@ struct SearchModelTests {
                 group.addTask {
                     try? await Task.sleep(for: .milliseconds(25))
                     await MainActor.run {
-                        model.cancelSearch()
+                        model.currentTask = nil
                     }
                 }
             }

@@ -414,7 +414,7 @@ extension ValueModel: nonisolated ItemDataAccessable {
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
         guard !filter.isEmpty else { return true }
-        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        guard !(name.localizedStandardContains(filter) || description.localizedStandardContains(filter)) else { return true }
         guard specialCategory == false else { return false }
         return entries.contains {
             $0.filter(with: filter)
@@ -463,6 +463,11 @@ extension ValueModel: nonisolated ItemDataAccessable {
         }
     }
 }
+
+// See CODE_AUDIT_EditItem §9.5 — lets `EditController`'s orphan-handling trio
+// (`isOrphanedHidden`/`willRepairOrphan`/`willRestore`) use the shared
+// `GroupableModel`-constrained default in `EditControllable` instead of its own copy.
+extension ValueModel: nonisolated GroupableModel {}
 
 extension ValueModel: nonisolated Codable {
     enum CodingKeys: CodingKey {

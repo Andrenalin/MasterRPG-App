@@ -4,32 +4,9 @@ import CoreRPG
 import Foundation
 import Observation
 
-struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.tagController = tagController
-        self.itemController = itemController
-        let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
-        let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
-        self.editorModel = editorModel
-    }
-
-    let itemController: ItemController
-    let tagController: TagController
-    let editorModel: ItemEditorModel
-}
-
-extension EditController: EditControllable {
-    typealias Model = DiceModel
-    
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
-
-}
+/// See CODE_AUDIT_EditItem §9.1 — genericized in `GenericEditController` (CoreRPG);
+/// this module has no extra stored state beyond the generic default.
+typealias EditController = GenericEditController<DiceModel>
 
 extension EditController {
     @MainActor func add(die: DieModel, itemId: UUID) {

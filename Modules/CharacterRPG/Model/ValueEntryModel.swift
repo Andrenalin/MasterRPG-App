@@ -231,7 +231,7 @@ extension ValueEntryModel: EntryDataAccessable {
     }
 
     public func filter(with search: String) -> Bool {
-        (search.isEmpty || name.localizedCaseInsensitiveContains(search) || value.localizedCaseInsensitiveContains(search))
+        (search.isEmpty || name.localizedStandardContains(search) || value.localizedStandardContains(search))
     }
     
     public func linkContent() -> String { value }

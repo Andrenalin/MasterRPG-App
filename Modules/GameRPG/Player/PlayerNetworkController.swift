@@ -37,8 +37,9 @@ final class PlayerNetworkController: Sendable {
     // `start(model:)` join path is never throttled — this device is the one
     // dialing out there with a code the user entered, not receiving an
     // unknown attempt.
-    private let connectionThrottle = ConnectionAttemptThrottle()
-    private var pendingConnectionSources: [ConnectionController.ID: String] = [:]
+    // See CODE_AUDIT §9.7 for why this is the shared `ConnectionThrottleTracker`
+    // rather than a hand-rolled throttle + pending-sources dictionary here.
+    private let connectionThrottle = ConnectionThrottleTracker()
 
     /// Bonjour role advertised after the outbound connection is lost. Direct
     /// players wait for the game master to reconnect, while proxy clients wait
@@ -111,9 +112,7 @@ private extension PlayerNetworkController {
     func restart(connection: NWConnection) async {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
         let id = UUID()
-        if let source = connection.endpoint.throttleSourceKey {
-            pendingConnectionSources[id] = source
-        }
+        await connectionThrottle.register(id: id, endpoint: connection.endpoint)
         networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
         await networkModel.connectionController?.startConnection()
     }
@@ -152,9 +151,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             // connection dropping — this is the passcode-guessing signal the
             // throttle tracks. Outbound `start(model:)` attempts never appear
             // here, since only `restart(connection:)` registers a pending source.
-            if let source = pendingConnectionSources.removeValue(forKey: id) {
-                await connectionThrottle.recordFailure(source: source)
-            }
+            await connectionThrottle.resolve(id: id, succeeded: false)
             await stop(connection: id)
         }
     }
@@ -162,7 +159,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
     @MainActor
     func lostConnection(for id: ConnectionController.ID) async {
         Logger.networking.debug("PlayerNetworkController: Lost connection")
-        pendingConnectionSources.removeValue(forKey: id)
+        await connectionThrottle.clear(id: id)
 
         guard markLostIfCurrent(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore stale or duplicate loss \(id.uuidString, privacy: .public)")
@@ -179,9 +176,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore ready callback from replaced connection \(id.uuidString, privacy: .public)")
             return
         }
-        if let source = pendingConnectionSources.removeValue(forKey: id) {
-            await connectionThrottle.recordSuccess(source: source)
-        }
+        await connectionThrottle.resolve(id: id, succeeded: true)
         await delegate.playerReady()
     }
 
@@ -271,7 +266,7 @@ extension PlayerNetworkController: ListenerManagerDelegate {
 
     @MainActor
     func listenerNewConnection(_ connection: NWConnection) async {
-        if let source = connection.endpoint.throttleSourceKey, await !connectionThrottle.shouldAllow(source: source) {
+        guard await connectionThrottle.shouldAllow(endpoint: connection.endpoint) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Rejected connection attempt from throttled source")
             connection.cancel()
             return
@@ -283,6 +278,15 @@ extension PlayerNetworkController: ListenerManagerDelegate {
         if shouldRestart {
             Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
             await restart(connection: connection)
+        } else {
+            // The listener that accepted this connection was just dropped
+            // above (`reset(listener: nil)`), and nothing else takes
+            // ownership of `connection` in this branch. Without an explicit
+            // cancel, the peer that just dialed in gets no response and must
+            // wait out its own OS-level connect timeout before it learns the
+            // attempt failed. See CODE_AUDIT §5.1.
+            Logger.playerNetworkController.debug("PlayerNetworkController: Dropping connection attempt outside a reconnect")
+            connection.cancel()
         }
     }
 }

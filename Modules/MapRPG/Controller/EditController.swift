@@ -63,11 +63,6 @@ extension EditController: EntryDataEditable {
     var itemControllable: any ItemControllable {
         itemController
     }
-    
-    var fileUrlDataController: FileUrlDataController? {
-        itemControllable.fileUrlDataController
-    }
-
 
     public var linkModules: [NetworkModules] { [.audio, .value, .dice, .map, .pdf, .photo, .table] }
     
@@ -220,6 +215,11 @@ extension EditController {
         let changedEntryIds = model.entries.compactMap { entry in
             itemController.itemOrEmpty(for: itemId)[entry.id].coordinates != entry.coordinates ? entry.id : nil
         }
+        // Intentionally fire-and-forget: `validateBeforeSave` is a synchronous protocol
+        // hook called right before `saveChanges`, and this is just room-thumbnail cache
+        // invalidation — a render reading the cache in the brief window before this Task
+        // completes can show a stale thumbnail, which self-corrects on the next redraw.
+        // Not worth making the whole save path `async` for. See CODE_AUDIT_EditItem §3.5.
         Task {
             for entryId in changedEntryIds {
                 await root.cacheController?.remove(itemId: entryId)

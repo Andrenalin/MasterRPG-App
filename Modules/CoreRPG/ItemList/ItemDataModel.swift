@@ -30,6 +30,11 @@ public final class ItemDataModel: Sendable {
     public var gameItems: [UUID] = []
     public var gameItemData: [UUID: ModelType] = [:]
 
+    /// Cancel-and-replace handle for `SyncDataControllable.updateFromSync`, so
+    /// overlapping CloudKit change notifications for this module can't race each other
+    /// applying deletes/inserts/updates out of order. See CODE_AUDIT_EditItem §3.2.
+    @ObservationIgnored public var pendingSyncTask: Task<Void, Never>?
+
     public let categoryTags: [ItemListCategory]
     public let version: Int
            
@@ -70,6 +75,14 @@ public final class ItemDataModel: Sendable {
         itemData[id] = nil
         if let index = items.firstIndex(of: id) {
             items.remove(at: index)
+        }
+        // Previously left untouched: a deleted item stayed fully resolvable via
+        // `item(for:noGame:false)` (the default every read path uses) for as long as it
+        // remained loaded into a live game session, since that path prefers
+        // `gameItemData` over `itemData`. See CODE_AUDIT_EditItem §5.5.
+        gameItemData[id] = nil
+        if let index = gameItems.firstIndex(of: id) {
+            gameItems.remove(at: index)
         }
     }
 

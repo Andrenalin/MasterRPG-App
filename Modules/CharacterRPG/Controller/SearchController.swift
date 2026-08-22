@@ -29,23 +29,23 @@ extension SearchController {
     ///   the collection's children entries.
     @MainActor func globalSearchResults(searchText: String) async -> [SearchResult] {
         guard !searchText.isEmpty else { return [] }
-        
+
         let itemIds = itemControllable.itemDataModel.items
         var foundResults: [SearchResult] = []
-        
+
         for itemId in itemIds {
             guard !Task.isCancelled else { break }
             guard let item = await itemController.item(for: itemId),
                   item.groupId == nil,      // root characters and folders only
                   item.displayState == 0 else { continue }
-            
+
             if item.specialCategory {
                 // Folder / collection — search its children entries (global = all fields)
                 await result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults)
             } else {
                 // Regular character — name and description only, no entries
-                guard item.name.localizedCaseInsensitiveContains(searchText) ||
-                        item.description.localizedCaseInsensitiveContains(searchText) else { continue }
+                guard item.name.localizedStandardContains(searchText) ||
+                        item.description.localizedStandardContains(searchText) else { continue }
                 foundResults.append(SearchResult(
                     itemId: item.id,
                     itemName: item.name,
@@ -64,21 +64,21 @@ extension SearchController {
                 ))
             }
         }
-        
+
         return foundResults.sortedByRelevance()
     }
-    
+
     // displayMode: .regular in global search so all fields are covered.
     @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
         if itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
             foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
         }
-        
+
         if !item.specialCategory {
             // Search through entries
             for entry in item.entries {
                 guard !Task.isCancelled else { break }
-                
+
                 if entry.filter(with: searchText) {
                     let relevance = calculateRelevance(
                         searchText: searchText,
@@ -98,7 +98,7 @@ extension SearchController {
                         relevanceScore: relevance
                     ))
                 }
-                
+
                 if let subValueId = entry.valueId {
                     guard let item = await itemController.item(for: subValueId) else { continue }
                     await result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults)
@@ -117,17 +117,6 @@ extension SearchController {
             return await listModeCharacterResults(searchText: searchText, displayMode: displayMode)
         case .folder:
             return await folderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
-        }
-    }
-
-    /// Synchronous list search using only in-memory data.
-    /// Mirrors `listSearchResults` but uses `itemSync` instead of `await item(for:)`.
-    @MainActor func syncListSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult] {
-        switch listMode {
-        case .list:
-            return syncListModeCharacterResults(searchText: searchText, displayMode: displayMode)
-        case .folder:
-            return syncFolderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode)
         }
     }
 
@@ -191,8 +180,10 @@ extension SearchController {
     }
 
     /// Recursively builds one folder-tree node, filtering sub-values (`groupId != nil`).
-    @MainActor private func buildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) async -> SearchResult? {
-        guard !Task.isCancelled,
+    /// - Parameter depth: recursion guard — see `FolderTreeDepthLimit`.
+    @MainActor private func buildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true, depth: Int = 0) async -> SearchResult? {
+        guard depth < FolderTreeDepthLimit.max,
+              !Task.isCancelled,
               let item = await itemController.item(for: itemId),
               item.groupId == nil,
               item.displayState == 0 else { return nil }
@@ -204,7 +195,10 @@ extension SearchController {
             if !searchText.isEmpty {
                 for entry in item.entries {
                     guard !Task.isCancelled else { break }
-                    if let child = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags) {
+                    // Yield periodically so a large folder/collection tree doesn't monopolize
+                    // the main actor in one unbroken stretch during a single search pass.
+                    await Task.yield()
+                    if let child = await buildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags, depth: depth + 1) {
                         childNodes.append(child)
                     }
                 }
@@ -222,143 +216,11 @@ extension SearchController {
             return makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
         }
     }
-
-    // MARK: - Synchronous list search helpers
-
-    /// Synchronous flat list: root characters only (`groupId == nil`).
-    /// Excludes specialCategory items (groups/folders) — they only appear in folder mode.
-    @MainActor private func syncListModeCharacterResults(searchText: String, displayMode: ListDisplayModel.DisplayMode) -> [SearchResult] {
-        let itemIds = itemControllable.itemDataModel.items
-        var foundResults: [SearchResult] = []
-        for itemId in itemIds {
-            guard let item = itemController.itemSync(for: itemId),
-                  item.groupId == nil,
-                  item.displayState == 0,
-                  !item.specialCategory else { continue }
-            guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
-            foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
-        }
-        if searchText.isEmpty {
-            return foundResults.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-        }
-        return foundResults.sortedByRelevance()
-    }
-
-    /// Synchronous folder tree: hierarchical results rooted at focusId or all root-level items.
-    @MainActor private func syncFolderModeCharacterResults(searchText: String, focusId: UUID?, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> [SearchResult] {
-        if let focusId {
-            guard let folder = itemController.itemSync(for: focusId) else { return [] }
-            var results: [SearchResult] = []
-            for entry in folder.entries {
-                if let node = syncBuildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags) {
-                    results.append(node)
-                }
-            }
-            if searchText.isEmpty {
-                if folder.category == .folder {
-                    results.sort { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-                }
-            } else {
-                results = results.sortedByRelevance()
-            }
-            return results
-        } else {
-            let allIds = itemControllable.itemDataModel.items
-            var results: [SearchResult] = []
-            for itemId in allIds {
-                guard let item = itemControllable.itemSync(for: itemId) as? ValueModel,
-                      item.groupId == nil,
-                      item.parentId == nil,
-                      item.displayState == 0 else { continue }
-                if let node = syncBuildCharacterFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode, includeTags: includeTags) {
-                    results.append(node)
-                }
-            }
-            if searchText.isEmpty {
-                return results.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-            }
-            return results.sortedByRelevance()
-        }
-    }
-
-    /// Synchronously builds one folder-tree node, filtering sub-values (`groupId != nil`).
-    @MainActor private func syncBuildCharacterFolderNode(itemId: UUID, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil, includeTags: Bool = true) -> SearchResult? {
-        guard let item = itemControllable.itemSync(for: itemId) as? ValueModel,
-              item.groupId == nil,
-              item.displayState == 0 else { return nil }
-
-        let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: includeTags)
-
-        if item.specialCategory {
-            var childNodes: [SearchResult] = []
-            if !searchText.isEmpty {
-                for entry in item.entries {
-                    if let child = syncBuildCharacterFolderNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entry.id, includeTags: includeTags) {
-                        childNodes.append(child)
-                    }
-                }
-                if item.category == .folder {
-                    childNodes = childNodes.sortedByRelevance()
-                }
-            }
-            guard itemMatches || !childNodes.isEmpty else { return nil }
-            var node = makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
-            node.children = childNodes
-            node.canOpen = childNodes.isEmpty && !item.entries.isEmpty
-            return node
-        } else {
-            guard itemMatches else { return nil }
-            return makeResult(item: item, searchText: searchText, displayMode: displayMode, parentEntryId: parentEntryId)
-        }
-    }
-
 }
 
 // MARK: - Inspector search (from LinkListItemView / FolderListController)
 
 extension SearchController {
-    /// Synchronous inspector search using only in-memory data.
-    /// Mirrors `inspectorSearchResults` but uses `itemSync` instead of `await item(for:)`.
-    @MainActor func syncInspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) -> [SearchResult] {
-        switch listMode {
-        case .folder:
-            return syncFolderModeCharacterResults(searchText: searchText, focusId: focusId, displayMode: displayMode, includeTags: false)
-        case .list:
-            if let focusId {
-                // Sub-value items (groupId != nil) are group-entry sub-values, not root characters.
-                // Return their entries as direct flat results so loadChildrenViaSearch can place
-                // them as children of the group entry row — not wrapped in a character result.
-                guard let item = itemController.itemSync(for: focusId) else { return [] }
-                if item.groupId != nil {
-                    let entries = searchText.isEmpty
-                        ? item.entries
-                        : item.entries.filter {
-                            $0.name.localizedStandardContains(searchText) ||
-                            $0.content.localizedStandardContains(searchText)
-                        }
-                    return entries
-                        .map { entry in
-                            SearchResult(
-                                itemId: focusId,
-                                itemName: item.name,
-                                module: itemControllable.config.module,
-                                category: item.category,
-                                entryId: entry.id,
-                                entryName: entry.name,
-                                matchedContent: entry.content.isEmpty ? nil : entry.content,
-                                relevanceScore: 0
-                            )
-                        }
-                        .sorted { ($0.entryName ?? "").localizedCompare($1.entryName ?? "") == .orderedAscending }
-                }
-                // Root character: return it as root item with its entries as children.
-                return syncFocusedCharacterInspector(characterId: focusId, searchText: searchText)
-            }
-            // No focus: CoreRPG-compatible inspector (entries as children, CharacterRPG filters).
-            return syncInspectorSearchResults(searchText: searchText, parentId: nil, displayMode: displayMode)
-        }
-    }
-
     @MainActor func inspectorSearchResults(searchText: String, listMode: ListDisplayModel.ListMode, displayMode: ListDisplayModel.DisplayMode, focusId: UUID?) async -> [SearchResult] {
         switch listMode {
         case .folder:
@@ -400,62 +262,6 @@ extension SearchController {
     }
 
     // MARK: - Focused character inspector
-
-    /// Synchronous version of focusedCharacterInspector using only in-memory data.
-    @MainActor private func syncFocusedCharacterInspector(characterId: UUID, searchText: String) -> [SearchResult] {
-        guard let character = itemControllable.itemSync(for: characterId) as? ValueModel else { return [] }
-
-        var entryChildren: [SearchResult] = []
-        for entry in character.entries {
-            if searchText.isEmpty {
-                var entryResult = makeEntryResult(for: entry, characterId: characterId, characterName: character.name)
-                if let subValueId = entry.valueId,
-                   let subValue = itemControllable.itemSync(for: subValueId) as? ValueModel {
-                    // Use subValueId as itemId for sub-entries so the view resolves
-                    // model?[subEntry.id] against the sub-value model (which owns them),
-                    // not the character model (which only has the group-entry link).
-                    entryResult.children = subValue.entries.map {
-                        makeEntryResult(for: $0, characterId: subValueId, characterName: subValue.name)
-                    }
-                }
-                entryChildren.append(entryResult)
-            } else {
-                let entryNameMatch    = entry.name.localizedStandardContains(searchText)
-                let entryContentMatch = entry.content.localizedStandardContains(searchText)
-                var subValueNameMatch = false
-                var subEntryMatch = false
-                var subEntries: [SearchResult] = []
-
-                if let subValueId = entry.valueId,
-                   let subValue = itemControllable.itemSync(for: subValueId) as? ValueModel {
-                    subValueNameMatch = subValue.name.localizedStandardContains(searchText)
-                    for subEntry in subValue.entries {
-                        if subEntry.name.localizedStandardContains(searchText) ||
-                           subEntry.content.localizedStandardContains(searchText) {
-                            subEntryMatch = true
-                        }
-                        // Use subValueId as itemId — see empty-search comment above.
-                        subEntries.append(
-                            makeEntryResult(for: subEntry, characterId: subValueId, characterName: subValue.name)
-                        )
-                    }
-                }
-
-                guard entryNameMatch || entryContentMatch || subValueNameMatch || subEntryMatch else { continue }
-                var entryResult = makeEntryResult(for: entry, characterId: characterId, characterName: character.name)
-                entryResult.children = subEntries
-                entryChildren.append(entryResult)
-            }
-        }
-
-        var result = makeResult(item: character, searchText: "", displayMode: .medium)
-        result.children = entryChildren
-        // Signal appendToFlat to start this item expanded so entries are visible
-        // immediately — the user opened the inspector to see this character's sheet,
-        // not to see a closed chevron.
-        result.shouldOpen = !entryChildren.isEmpty
-        return [result]
-    }
 
     /// Always returns the character. If searchText is empty all entries are children.
     /// If searchText is set, matching entries are children. A group entry also matches
@@ -539,49 +345,13 @@ extension SearchController {
         return result
     }
 
-    /// Synchronous inspector search helper using only in-memory data.
-    /// Mirrors `inspectorSearchResults(searchText:parentId:displayMode:)` but uses `itemSync`.
-    @MainActor private func syncInspectorSearchResults(searchText: String, parentId: UUID?, displayMode: ListDisplayModel.DisplayMode = .medium) -> [SearchResult] {
-        var foundResults: [SearchResult] = []
-        if let parentId {
-            if searchText.isEmpty {
-                return syncFocusedCharacterInspector(characterId: parentId, searchText: "")
-            }
-            guard let character = itemControllable.itemSync(for: parentId) as? ValueModel else { return [] }
-            syncCharacterInspectorResult(character: character, searchText: searchText, displayMode: displayMode, foundResults: &foundResults)
-            return foundResults
-        } else {
-            // Unscoped common inspector: characters are items for linking only.
-            // Do not return entry children or mark raw results as expandable.
-            let itemIds = itemControllable.itemDataModel.items
-            for itemId in itemIds {
-                guard let character = itemControllable.itemSync(for: itemId) as? ValueModel,
-                      character.groupId == nil,
-                      character.displayState == 0 else { continue }
-                if searchText.isEmpty {
-                    foundResults.append(makeResult(item: character, searchText: "", displayMode: displayMode))
-                } else {
-                    // Match at item level only. Entry exploration happens on explicit toggle.
-                    guard itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false) else { continue }
-                    foundResults.append(makeResult(item: character, searchText: searchText, displayMode: displayMode))
-                }
-            }
-            if searchText.isEmpty {
-                return foundResults.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
-            }
-            return foundResults.sortedByRelevance()
-        }
-    }
-
     /// Inspector search used by `SearchLinkController`.
     ///
     /// - `parentId != nil`: scoped to the given character. All results carry that character's
     ///   `itemId` so the UI navigates back to the character, not into a sub-value group.
     /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == 0`).
-    /// Inspector search used by `SearchLinkController`.
     ///
-    /// Empty search is now handled properly (was `guard !searchText.isEmpty else { return [] }`
-    /// which caused the inspector to show nothing on first appear):
+    /// Empty search is handled properly:
     /// - `parentId != nil`, empty → delegates to `focusedCharacterInspector` (all entries shown)
     /// - `parentId == nil`, empty → all root characters, A→Z, with raw results kept non-expandable
     @MainActor func inspectorSearchResults(searchText: String, parentId: UUID?, displayMode: ListDisplayModel.DisplayMode = .medium) async -> [SearchResult] {
@@ -614,57 +384,6 @@ extension SearchController {
                 return foundResults.sorted { $0.itemName.localizedCompare($1.itemName) == .orderedAscending }
             }
             return foundResults.sortedByRelevance()
-        }
-    }
-
-    /// Inspector search scoped to a single character (legacy helper).
-    @MainActor func inspectorSearchResults(searchText: String, characterId: UUID) async -> [SearchResult] {
-        await inspectorSearchResults(searchText: searchText, parentId: characterId)
-    }
-
-    /// Synchronously searches `character` at item-level (displayMode-aware) and all entries (always name+content).
-    /// Matching entries become children of the character result, not flat siblings.
-    @MainActor private func syncCharacterInspectorResult(character: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) {
-        let characterMatches = itemMatchesFilter(character, searchText: searchText, displayMode: displayMode, includeTags: false)
-        var entryChildren: [SearchResult] = []
-        syncCollectValueEntries(of: character, characterId: character.id, characterName: character.name, searchText: searchText, into: &entryChildren)
-        guard characterMatches || !entryChildren.isEmpty else { return }
-        var result = makeResult(item: character, searchText: searchText, displayMode: displayMode)
-        result.children = entryChildren.sortedByRelevance()
-        foundResults.append(result)
-    }
-
-    /// Synchronously collects matching entries from `item` into `entryChildren`.
-    /// Inspector always searches entry name + content, regardless of displayMode.
-    /// Recurses into sub-value groups via `entry.valueId`.
-    @MainActor private func syncCollectValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, into entryChildren: inout [SearchResult]) {
-        for entry in item.entries {
-            let entryMatches = entry.name.localizedStandardContains(searchText)
-                            || entry.content.localizedStandardContains(searchText)
-
-            if entryMatches {
-                entryChildren.append(SearchResult(
-                    itemId: characterId,
-                    itemName: characterName,
-                    module: itemControllable.config.module,
-                    category: item.category,
-                    entryId: entry.id,
-                    entryName: entry.name,
-                    matchedContent: entry.content.isEmpty ? nil : entry.content,
-                    relevanceScore: calculateRelevance(
-                        searchText: searchText,
-                        itemName: characterName,
-                        entryName: entry.name,
-                        content: entry.content,
-                        isItemMatch: false
-                    )
-                ))
-            }
-
-            if let subValueId = entry.valueId,
-               let subValue = itemControllable.itemSync(for: subValueId) as? ValueModel {
-                syncCollectValueEntries(of: subValue, characterId: characterId, characterName: characterName, searchText: searchText, into: &entryChildren)
-            }
         }
     }
 

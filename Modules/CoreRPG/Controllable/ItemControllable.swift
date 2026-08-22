@@ -108,7 +108,14 @@ public extension ItemControllable {
         
         var model = Model.empty.copy()
         model.category = type
-        try? await dataControllable?.replace(id: model.id, with: model)
+        do {
+            try await dataControllable?.replace(id: model.id, with: model)
+        } catch {
+            // Every sibling mutation below records a failed write instead of silently
+            // proceeding as if it succeeded; this path was the one exception. See
+            // CODE_AUDIT_EditItem §5.8.
+            ItemPersistenceFailureScope.reporter?.record(error)
+        }
         resetModel(with: model)
         await save()
         return model.id
@@ -407,7 +414,10 @@ public extension ItemControllable {
 
     @MainActor func updates(_ models: [ModelType]) async {
         let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        let deletedIds = itemDataModel.items.filter { id in !sortedModels.contains { $0.id == id } }
+        // O(n) set membership instead of an O(n·m) nested `.contains` scan — this runs on
+        // every full CloudKit sync reconciliation. See CODE_AUDIT_EditItem §7.1.
+        let sortedModelIds = Set(sortedModels.map(\.id))
+        let deletedIds = itemDataModel.items.filter { !sortedModelIds.contains($0) }
         for id in deletedIds {
             await delete(itemId: id)
         }
@@ -530,13 +540,21 @@ private extension ItemControllable {
     }
 
     @MainActor func insertIntoItems(model: Model) {
-        var foundIndex: Int?
-        for (index, itemId) in itemDataModel.items.enumerated() {
-            if itemSync(for: itemId, noGame: true)?.name.localizedCompare(model.name) == .orderedDescending {
-                foundIndex = index
-                break
+        // `itemDataModel.items` is maintained in sorted-by-name order, so the insertion
+        // point can be found with a binary search instead of a full linear scan that
+        // did a dictionary lookup + string comparison per existing item on every edit
+        // that changes an item's name, in every module. See CODE_AUDIT_EditItem §7.1.
+        var low = 0
+        var high = itemDataModel.items.count
+        while low < high {
+            let mid = (low + high) / 2
+            let midName = itemSync(for: itemDataModel.items[mid], noGame: true)?.name ?? ""
+            if midName.localizedCompare(model.name) == .orderedDescending {
+                high = mid
+            } else {
+                low = mid + 1
             }
         }
-        itemDataModel.insert(itemId: model.id, at: foundIndex)
+        itemDataModel.insert(itemId: model.id, at: low == itemDataModel.items.count ? nil : low)
     }
 }

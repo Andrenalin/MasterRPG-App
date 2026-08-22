@@ -59,7 +59,6 @@ extension EditController: EntryDataEditable {
     typealias Model = ValueModel
 
     var itemControllable: any ItemControllable { itemController }
-    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 
     var canAddGroups: Bool { true }
 }
@@ -241,19 +240,12 @@ extension EditController {
         let originalParentId = itemController.itemSync(for: item.id)?.parentId
         let copyId = await duplicate(itemId: item.id, withCopy: true)
 
-        // For folders: rebuild entries with independent child copies (duplicate() produces stale entry IDs)
-        if item.isFolder, let copyFolder = editModel(for: copyId),
-           let originalFolder = editModel(for: item.id) {
-            var newEntries: [Model.Entry] = []
-            for entry in originalFolder.entries {
-                let childCopyId = await duplicate(itemId: entry.childId, withCopy: false)
-                if let childCopy = editModel(for: childCopyId) {
-                    childCopy.parentId = copyId
-                    save(updated: childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString)
-                }
-                newEntries.append(Model.Entry.newChild(id: childCopyId))
-            }
-            copyFolder.entries = newEntries
+        // For folders: rebuild entries with independent child copies (duplicate() produces
+        // stale entry IDs), recursing into any child that is itself a folder so nested
+        // folder structures get independent copies all the way down, instead of only the
+        // outermost level. See CODE_AUDIT_EditItem §5.4.
+        if item.isFolder, let copyFolder = editModel(for: copyId) {
+            copyFolder.entries = await duplicateFolderEntries(of: item.id, newParentId: copyId)
             save(updated: copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
         }
 
@@ -284,6 +276,26 @@ extension EditController {
         }
     }
     
+    /// Recursively duplicates every folder-membership child of `originalFolderId`,
+    /// reparenting each copy under `newParentId`, and recursing into any child that is
+    /// itself a folder. See CODE_AUDIT_EditItem §5.4.
+    @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID) async -> [Model.Entry] {
+        guard let originalFolder = editModel(for: originalFolderId) else { return [] }
+        var newEntries: [Model.Entry] = []
+        for entry in originalFolder.entries {
+            let childCopyId = await duplicate(itemId: entry.childId, withCopy: false)
+            if let childCopy = editModel(for: childCopyId) {
+                childCopy.parentId = newParentId
+                if let originalChild = itemController.itemSync(for: entry.childId), originalChild.isFolder {
+                    childCopy.entries = await duplicateFolderEntries(of: entry.childId, newParentId: childCopyId)
+                }
+                save(updated: childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString)
+            }
+            newEntries.append(Model.Entry.newChild(id: childCopyId))
+        }
+        return newEntries
+    }
+
     func duplicate(itemId: UUID, withCopy: Bool) async -> UUID {
         let (duplicates, copyId, mapper) = await duplicateSubValue(id: itemId, withCopy: withCopy)
         await root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
@@ -331,7 +343,6 @@ extension EditController {
         guard let item = editModel(for: itemId) else { return }
         item.diceId = diceId
         save(updated: item, message: String(localized: "Change Dice", bundle: .module).localizedString)
-        //root.gameController.resetGameDiceId(itemId: model.id, entryId: entryId)
     }
     
     @MainActor func removePhotos(itemId: UUID) async {
@@ -341,37 +352,9 @@ extension EditController {
         save(updated: item, message: String(localized: "remove photos", bundle: .module).localizedString)
     }
 
-    @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
-        guard let item = itemControllable.itemSync(for: itemId) as? ValueModel else { return false }
-        guard item.displayState == 1 && item.parentId == nil else { return false }
-        if let groupId = item.groupId {
-            // Hidden with a groupId: orphaned if the parent is gone or deleted
-            let parent = itemControllable.itemSync(for: groupId)
-            return parent == nil || parent?.displayState == 2
-        }
-        return true  // no parentId, no groupId → Phase 1 orphan
-    }
-
-    @MainActor func willRepairOrphan(itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
-        guard item.groupId != nil else { return }
-        item.groupId = nil
-        save(updated: item, message: String(localized: "Repair orphan", bundle: .module).localizedString)
-    }
-
-    @MainActor func willRestore(item: inout ValueModel) {
-        if let groupId = item.groupId {
-            // Clear groupId if parent is deleted OR doesn't exist
-            if let groupItem = editModel(for: groupId) {
-                if groupItem.displayState == 2 {
-                    item.groupId = nil
-                }
-            } else {
-                // Parent doesn't exist - clear the orphaned groupId
-                item.groupId = nil
-            }
-        }
-    }
+    // `isOrphanedHidden`/`willRepairOrphan`/`willRestore` use `EditControllable`'s
+    // shared `GroupableModel`-constrained default now that `ValueModel` conforms to
+    // `GroupableModel` — see CODE_AUDIT_EditItem §9.5.
 
     @MainActor func willDeleteChildren(of item: ValueModel) async {
         guard item.category != .folder else { return }
@@ -628,31 +611,9 @@ extension EditController {
             return foundEntry ?? entry
         }
     }
-
-    @MainActor func merge(itemId: UUID, entries: [ValueEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
-        guard let item = editModel(for: itemId) else { return [] }
-        var newEntries = merge(itemId: itemId, entries: entries)
-        let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
-        let module = itemController.config.module
-        let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
-        
-        var effectedLinks = true
-        for itemRowModel in itemRowModels {
-            if !linkRegisterController.used(for: itemRowModel).isEmpty {
-                effectedLinks = false
-                break;
-            }
-        }
-        if recoverEntries != nil || effectedLinks {
-            if let recoverEntries {
-                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
-            }
-            item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString, forceSave: forceSave)
-            return []
-        }
-        return itemRowModels
-    }
+    // `merge(itemId:entries:recoverEntries:forceSave:)` uses `EntryDataEditable`'s
+    // shared default (see CODE_AUDIT_EditItem §9.2) — this module's behavior was
+    // identical to the default, so the hand-copied override was removed.
 }
 
 // MARK: - GameController

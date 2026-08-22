@@ -49,7 +49,6 @@ struct ItemEditorForegroundView<Editor: View>: View {
             parentModel: model,
             isSubFolder: isSubFolder
         )
-        //.environment(folderListController.listDisplayModel)
     }
     
     private var formEditorContent: some View {

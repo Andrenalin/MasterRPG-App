@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 // MARK: - Main View
 
 struct ListRootView: View {
-    let root: ItemRootControllable
+    let root: any ItemRootControllable
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessable)?
     var isSubFolder: Bool
@@ -146,20 +146,12 @@ private extension ListRootView {
     /// route all list operations through `detailListModel` so the detail list is
     /// displayed and mutated — not the root list.
     var listModel: FolderListModel {
-        if parentModel != nil, let detail = listController.listModel.detailListModel {
-            return detail
-        }
-        return listController.listModel
+        listController.scopedListModel(parentModel: parentModel)
     }
-    
+
     /// Determines if the "no results" overlay should be shown.
-    ///
-    /// Uses `searchModel.searchReturnedNoResults` rather than `listModel.list.isEmpty`: `buildList`
-    /// deliberately preserves the previous list when a search returns nothing (anti-flicker), so
-    /// `list.isEmpty` is never true even when the search matched zero items. The flag is set by the
-    /// single search pipeline, so it always reflects the active (and only) in-flight search.
     var shouldShowNoResults: Bool {
-        listController.searchModel.searchReturnedNoResults
+        listController.shouldShowNoResults
     }
     
     var fileTypes: [UTType] {

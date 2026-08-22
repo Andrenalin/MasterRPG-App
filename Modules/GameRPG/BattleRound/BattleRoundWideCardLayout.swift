@@ -4,46 +4,43 @@ import MapRPG
 import SwiftUI
 
 struct BattleRoundWideCardLayout: View {
-    let state: BattleRoundCardState
-    let presentation: BattleRoundCardPresentation
-    let controller: BattleRoundController
-    let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
+    let context: BattleRoundCardLayoutContext
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: BattleRoundSpacing.loose) {
             BattleRankBadge(
-                rank: presentation.rank,
-                isActive: presentation.isActive
+                rank: context.presentation.rank,
+                isActive: context.presentation.isActive
             )
             BattleParticipantColumn(
-                state: state,
-                presentation: presentation.attacker,
-                isActive: presentation.isActive,
-                tint: presentation.isActive ? .blue : .gray,
-                controller: controller,
-                showCharacter: showCharacter,
-                selectHitPoints: selectHitPoints,
-                selectInitiative: selectInitiative
+                state: context.state,
+                presentation: context.presentation.attacker,
+                isActive: context.presentation.isActive,
+                tint: context.presentation.isActive ? .blue : .gray,
+                controller: context.controller,
+                showCharacter: context.showCharacter,
+                selectHitPoints: context.selectHitPoints,
+                selectInitiative: context.selectInitiative
             )
+            // See CODE_AUDIT §8.3.
+            .equatable()
             BattleAttackerDetails(
-                combatant: presentation.attacker.combatant,
-                isActive: presentation.isActive,
-                controller: controller
+                combatant: context.presentation.attacker.combatant,
+                isActive: context.presentation.isActive,
+                controller: context.controller
             )
             Image(systemName: "arrow.right")
                 .foregroundStyle(.tertiary)
                 .padding(.top, 20)
                 .accessibilityHidden(true)
             BattleDefenderStrip(
-                state: state,
-                defenders: presentation.defenders,
-                isActiveEntry: presentation.isActive,
-                controller: controller,
-                showCharacter: showCharacter,
-                selectHitPoints: selectHitPoints,
-                selectInitiative: selectInitiative
+                state: context.state,
+                defenders: context.presentation.defenders,
+                isActiveEntry: context.presentation.isActive,
+                controller: context.controller,
+                showCharacter: context.showCharacter,
+                selectHitPoints: context.selectHitPoints,
+                selectInitiative: context.selectInitiative
             )
         }
     }
@@ -55,12 +52,14 @@ struct BattleRoundWideCardLayout: View {
 
     if let card = model.cardPresentations.first {
         BattleRoundWideCardLayout(
-            state: BattleRoundCardState(),
-            presentation: card,
-            controller: controller,
-            showCharacter: { _ in },
-            selectHitPoints: { _ in },
-            selectInitiative: { _ in }
+            context: BattleRoundCardLayoutContext(
+                state: BattleRoundCardState(),
+                presentation: card,
+                controller: controller,
+                showCharacter: { _ in },
+                selectHitPoints: { _ in },
+                selectInitiative: { _ in }
+            )
         )
         .frame(width: 700)
         .padding()

@@ -87,7 +87,12 @@ public final class ItemGameModel {
         }
     }
 
-    func apply(itemId: UUID, item: ModelType, hide: Bool, previousIds: [UUID]) -> [ModelType] {
+    /// Reads `items` itself, synchronously, as the "previously visible" baseline —
+    /// rather than taking it as a parameter read by the caller before an `await` gap —
+    /// so a concurrent call can't mutate `items` in between the read and this mutation.
+    /// See CODE_AUDIT_EditItem §3.3.
+    func apply(itemId: UUID, item: ModelType, hide: Bool) -> [ModelType] {
+        let previousIds = items
         if hide {
             if !items.contains(itemId) {
                 items.append(itemId)
@@ -345,7 +350,6 @@ public extension GameControllable {
     /// reveal/repair resend) can never silently win the merge and discard
     /// what the master just sent. See CODE_AUDIT / player-character-sync-gaps.
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, policy: GameMutationPolicy, importMode: ImportMode = .merge) async throws {
-        let beforeIds = await gameModel.items
         if let encodedData = data.data {
             do {
                 try await importNetwork(from: encodedData, importMode: importMode)
@@ -362,7 +366,7 @@ public extension GameControllable {
             item = await itemControllable.item(for: data.id)
         }
         guard let item else { throw ItemGameStorableError.itemMissing }
-        let otherItems = await gameModel.apply(itemId: data.id, item: item, hide: hide, previousIds: beforeIds)
+        let otherItems = await gameModel.apply(itemId: data.id, item: item, hide: hide)
         if policy == .persist {
             await itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
             for otherItem in otherItems {

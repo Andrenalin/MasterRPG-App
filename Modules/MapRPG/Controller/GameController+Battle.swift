@@ -9,7 +9,13 @@ import CharacterRPG
 import PhotoRPG
 import os.log
 
+// See CODE_AUDIT §9.10 for the section boundaries below — added as `// MARK:`
+// dividers rather than a physical file split, given the density of the
+// health-sync section's own commentary and cross-references.
+
 extension GameController {
+    // MARK: - Combatant lifecycle
+
     @MainActor
     func battleStartPins(itemId: UUID) -> (playerPins: [MapPinModel], roomPins: [MapPinModel])? {
         guard gameModel.currentItemId == itemId,
@@ -102,12 +108,16 @@ extension GameController {
                   let copyId = root.characterRoot.valueGameControllable
                     .createBattleCharacterCopy(for: sourceCharacterId) {
             mapGameModel.registerBattleCharacterCopy(copyId)
-            pin.characterId = copyId
-            pin.timeInterval = max(
-                Date.now.timeIntervalSince1970,
-                pin.timeInterval.nextUp
-            )
-            map.mapPins[pinIndex] = pin
+            // Routed through the shared mutate-bump-write-sync helper instead
+            // of hand-rolling the timestamp bump — see CODE_AUDIT §9.4.
+            guard let updatedPin = mutatedPinState(
+                itemId: itemId,
+                pinId: pinId,
+                mutation: { $0.characterId = copyId }
+            ) else {
+                return nil
+            }
+            pin = updatedPin
             gameCharacterId = copyId
         } else {
             gameCharacterId = nil
@@ -123,18 +133,13 @@ extension GameController {
     @MainActor
     func clearBattleHighlights(itemId: UUID) {
         guard let map = gameModel.itemData[itemId] as? MapModel else { return }
-        for index in map.mapPins.indices where map.mapPins[index].isHighlighted {
-            map.mapPins[index].isHighlighted = false
-            map.mapPins[index].timeInterval = max(
-                Date.now.timeIntervalSince1970,
-                map.mapPins[index].timeInterval.nextUp
-            )
-            if map.mapPins[index].isPlayer,
-               let playerIndex = mapGameModel.playerPins.firstIndex(where: {
-                   $0.id == map.mapPins[index].id
-               }) {
-                mapGameModel.playerPins[playerIndex] = map.mapPins[index]
-            }
+        // Ids are captured before mutating so the loop below never indexes
+        // into `map.mapPins` while `updatePinState` is rewriting it in place.
+        // Routed through the shared helper instead of hand-rolling the
+        // timestamp bump — see CODE_AUDIT §9.4.
+        let highlightedPinIds = map.mapPins.filter(\.isHighlighted).map(\.id)
+        for pinId in highlightedPinIds {
+            updatePinState(itemId: itemId, pinId: pinId) { $0.isHighlighted = false }
         }
     }
 
@@ -150,6 +155,8 @@ extension GameController {
         _ = battleRoundModel.synchronize(pins: map.mapPins)
         return true
     }
+
+    // MARK: - Turn / initiative
 
     @MainActor
     func setBattleInitiative(
@@ -244,6 +251,8 @@ extension GameController {
         return true
     }
 
+    // MARK: - Rolls & value entries
+
     @MainActor
     func addBattleRoll(
         itemId: UUID,
@@ -331,16 +340,14 @@ extension GameController {
             gameCharacterId = copyId
         }
 
-        var updatedPin = map.mapPins[pinIndex]
-        updatedPin.characterId = gameCharacterId
-        updatedPin.timeInterval = max(
-            Date.now.timeIntervalSince1970,
-            updatedPin.timeInterval.nextUp
-        )
-        map.mapPins[pinIndex] = updatedPin
-        if updatedPin.isPlayer,
-           let playerIndex = mapGameModel.playerPins.firstIndex(where: { $0.id == updatedPin.id }) {
-            mapGameModel.playerPins[playerIndex] = updatedPin
+        // Routed through the shared mutate-bump-write-sync helper instead of
+        // hand-rolling the timestamp bump — see CODE_AUDIT §9.4.
+        guard let updatedPin = mutatedPinState(
+            itemId: itemId,
+            pinId: combatant.pinId,
+            mutation: { $0.characterId = gameCharacterId }
+        ) else {
+            return false
         }
         let changed = battleRoundModel.assignCharacter(
             combatantId: combatantId,
@@ -395,6 +402,8 @@ extension GameController {
     /// ever set `pin.healthPercent`, on every device, matching "the
     /// gamemaster must overwrite the player's mappins — players should never
     /// change healthPercent."
+    // MARK: - Defender / health sync
+
     @MainActor
     @discardableResult
     func synchronizeBattleDefenders(itemId: UUID, isGameMaster: Bool) -> (changed: Bool, healthChanged: Bool) {
@@ -449,15 +458,20 @@ extension GameController {
         // entry edited on the Character sheet (outside any Map/BattleRound
         // action) still reaches the pin's health-bar border without a
         // dedicated notification path.
+        // The diagnostic log below only fires once a combatant's health
+        // actually persists a new value, not for every combatant on every
+        // battle tick — see CODE_AUDIT §7.1. Gameplay content (pin name,
+        // computed value) is logged `.private` rather than `.public` — see
+        // CODE_AUDIT §6.3.
         var healthChanged = false
         for combatant in battleRoundModel.combatants {
             let percent = healthPercent(for: combatant)
-            Logger.gameController.debug(
-                "synchronizeBattleDefenders: pin \(combatant.pin.name, privacy: .public) (\(combatant.pinId, privacy: .public)) hitPointsEntryId=\(combatant.hitPointsEntryId?.uuidString ?? "nil", privacy: .public) computed=\(percent.map { "\($0)" } ?? "nil", privacy: .public) previouslyPersisted=\(combatant.pin.healthPercent.map { "\($0)" } ?? "nil", privacy: .public)"
-            )
             guard combatant.pin.healthPercent != percent else { continue }
             if updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { $0.healthPercent = percent }) {
                 healthChanged = true
+                Logger.gameController.debug(
+                    "synchronizeBattleDefenders: pin \(combatant.pin.name, privacy: .private) (\(combatant.pinId, privacy: .private)) hitPointsEntryId=\(combatant.hitPointsEntryId?.uuidString ?? "nil", privacy: .private) computed=\(percent.map { "\($0)" } ?? "nil", privacy: .private) previouslyPersisted=\(combatant.pin.healthPercent.map { "\($0)" } ?? "nil", privacy: .private)"
+                )
             }
         }
         if healthChanged {
@@ -494,31 +508,34 @@ extension GameController {
     /// `.text` hit-points entry is an easy, reasonable choice for a game
     /// master who just types a number with no reason to think the "type"
     /// picker matters here.
+    // Gameplay content (pin names, entry names/values, computed percentages)
+    // is logged `.private` throughout this function rather than `.public` —
+    // see CODE_AUDIT §6.3.
     @MainActor
     func healthPercent(for combatant: BattleCombatant) -> Double? {
         guard let gameCharacterId = combatant.gameCharacterId else {
-            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) has no gameCharacterId — no Character linked yet")
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .private) has no gameCharacterId — no Character linked yet")
             return nil
         }
         guard let entryId = combatant.hitPointsEntryId else {
-            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) (character \(gameCharacterId, privacy: .public)) has no hitPointsEntryId resolved")
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .private) (character \(gameCharacterId, privacy: .private)) has no hitPointsEntryId resolved")
             return nil
         }
         guard let entry = root.characterRoot.valueGameControllable.gameEntry(
             characterId: gameCharacterId,
             entryId: entryId
         ) else {
-            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — gameEntry(characterId:entryId:) found nothing for entryId \(entryId, privacy: .public) on character \(gameCharacterId, privacy: .public)")
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .private) — gameEntry(characterId:entryId:) found nothing for entryId \(entryId, privacy: .private) on character \(gameCharacterId, privacy: .private)")
             return nil
         }
         guard let baseText = entry.value.split(separator: "|").first.map(String.init) else {
-            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) has an empty value")
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .private) — entry \(entry.name, privacy: .private) has an empty value")
             return nil
         }
         let valueGameControllable = root.characterRoot.valueGameControllable
         let resolvedBaseText = valueGameControllable.calculatedValue(baseText, type: .decimal)
         guard let base = resolvedBaseText.flatMap(Double.init), base > 0 else {
-            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) base \(baseText, privacy: .public) resolved to \(resolvedBaseText ?? "nil", privacy: .public), not a positive number")
+            Logger.gameController.debug("healthPercent: pin \(combatant.pin.name, privacy: .private) — entry \(entry.name, privacy: .private) base \(baseText, privacy: .private) resolved to \(resolvedBaseText ?? "nil", privacy: .private), not a positive number")
             return nil
         }
         let resolvedCurrentText = valueGameControllable.calculatedValue(
@@ -528,10 +545,12 @@ extension GameController {
         let current = resolvedCurrentText.flatMap(Double.init) ?? base
         let percent = min(max(current / base * 100, 0), 100)
         Logger.gameController.debug(
-            "healthPercent: pin \(combatant.pin.name, privacy: .public) — entry \(entry.name, privacy: .public) rawValue=\(entry.value, privacy: .public) resolvedBase=\(resolvedBaseText ?? "nil", privacy: .public) resolvedCurrent=\(resolvedCurrentText ?? "nil", privacy: .public) → base=\(base, privacy: .public) current=\(current, privacy: .public) percent=\(percent, privacy: .public)"
+            "healthPercent: pin \(combatant.pin.name, privacy: .private) — entry \(entry.name, privacy: .private) rawValue=\(entry.value, privacy: .private) resolvedBase=\(resolvedBaseText ?? "nil", privacy: .private) resolvedCurrent=\(resolvedCurrentText ?? "nil", privacy: .private) → base=\(base, privacy: .private) current=\(current, privacy: .private) percent=\(percent, privacy: .private)"
         )
         return percent
     }
+
+    // MARK: - Network apply / export
 
     @MainActor
     func networkBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType? {
@@ -539,26 +558,23 @@ extension GameController {
               let state = battleRoundModel.networkState() else {
             return nil
         }
-        let generation = networkGeneration(for: itemId)
-        return NetworkCodableDataType(
+        // See CODE_AUDIT §9.2 — shared envelope factory.
+        return Self.mapNetworkData(
             id: itemId,
-            type: .map,
-            version: generation.version,
-            data: state.encodeData(),
-            assetVersion: generation.assetVersion,
-            contentVersion: generation.contentVersion
+            generation: networkGeneration(for: itemId),
+            data: state.encodeData()
         )
     }
 
     @MainActor
     func applyBattleRoundUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
-        let generation = networkGeneration(for: itemId)
-        guard data.id == itemId,
-              data.type == .map,
-              gameModel.currentItemId == itemId,
-              data.version == generation.version,
-              data.assetVersion == generation.assetVersion,
-              data.contentVersion == generation.contentVersion,
+        // See CODE_AUDIT §9.3 — shared generation-match guard, kept in sync
+        // with `updatePinIfCurrentGeneration` in GameController+Pins.swift.
+        // A generation mismatch here has no reconciliation of its own: the
+        // caller (`PlayerController+Map.swift`'s `.battleRound` case) defers
+        // and replays this exact payload once a matching `.mapState` lands —
+        // see CODE_AUDIT §5.2.
+        guard isCurrentGeneration(data, for: itemId),
               let state = BattleRoundNetworkState.decodeData(of: data.data),
               state.mapId == itemId else {
             return false

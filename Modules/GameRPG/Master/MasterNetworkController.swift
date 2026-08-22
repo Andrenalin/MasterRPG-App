@@ -35,8 +35,9 @@ final class MasterNetworkController: Sendable {
     // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the inbound
     // listener. connectToPlayer's outbound reconnect dial-outs are never throttled —
     // this device is the one connecting there, not receiving an unknown attempt.
-    private let connectionThrottle = ConnectionAttemptThrottle()
-    private var pendingConnectionSources: [ConnectionController.ID: String] = [:]
+    // See CODE_AUDIT §9.7 for why this is the shared `ConnectionThrottleTracker`
+    // rather than a hand-rolled throttle + pending-sources dictionary here.
+    private let connectionThrottle = ConnectionThrottleTracker()
 
     static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, supporterTier, proxy, passcode, delegate in
@@ -76,7 +77,7 @@ extension MasterNetworkController: MasterNetworkControllable {
     func startStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Streaming")
 
-        resetConntections()
+        resetConnections()
         networkModel.isStreaming = true
         networkModel.passcode = passcode
 
@@ -91,7 +92,7 @@ extension MasterNetworkController: MasterNetworkControllable {
     func startProxyStreaming(passcode: String) {
         Logger.networking.debug("MasterNetworkController: Start Proxy Streaming")
 
-        resetConntections()
+        resetConnections()
         networkModel.isStreaming = true
         networkModel.passcode = passcode
 
@@ -106,7 +107,7 @@ extension MasterNetworkController: MasterNetworkControllable {
     func stopStreaming() {
         Logger.networking.debug("MasterNetworkController: Stop Streaming")
 
-        resetConntections()
+        resetConnections()
         networkModel.isStreaming = false
     }
 
@@ -118,7 +119,7 @@ extension MasterNetworkController: MasterNetworkControllable {
         }
     }
 
-    private func resetConntections() {
+    private func resetConnections() {
         networkModel.observeConnectionsTask?.cancel()
         networkModel.observeConnectionsTask = nil
         networkModel.connectionStartTasks.values.forEach { $0.cancel() }
@@ -129,7 +130,10 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.listener = nil
         networkModel.browserConnections = []
         browserConnectionEndpoints = [:]
-        pendingConnectionSources = [:]
+        // Fire-and-forget: `resetConnections()` is synchronous (called from
+        // the non-async `startStreaming`/`stopStreaming`), and clearing
+        // pending entries has no ordering dependency on anything else here.
+        Task { await connectionThrottle.clearAllPending() }
         networkModel.connections = []
     }
 }
@@ -177,9 +181,7 @@ extension MasterNetworkController {
 extension MasterNetworkController: ConnectionControllerDelegate {
     @MainActor
     func failed(with error: String?, for id: ConnectionController.ID) async {
-        if let source = pendingConnectionSources.removeValue(forKey: id) {
-            await connectionThrottle.recordFailure(source: source)
-        }
+        await connectionThrottle.resolve(id: id, succeeded: false)
         await removeConnectionAndNotify(id: id)
     }
 
@@ -188,15 +190,13 @@ extension MasterNetworkController: ConnectionControllerDelegate {
     /// pending entry without penalizing the source.
     @MainActor
     func lostConnection(for id: ConnectionController.ID) async {
-        pendingConnectionSources.removeValue(forKey: id)
+        await connectionThrottle.clear(id: id)
         await removeConnectionAndNotify(id: id)
     }
 
     @MainActor
     func readyConnection(for id: ConnectionController.ID) async {
-        if let source = pendingConnectionSources.removeValue(forKey: id) {
-            await connectionThrottle.recordSuccess(source: source)
-        }
+        await connectionThrottle.resolve(id: id, succeeded: true)
         await delegate.masterReady(for: id)
     }
 
@@ -214,17 +214,14 @@ extension MasterNetworkController: ListenerManagerDelegate {
 
     @MainActor
     func listenerNewConnection(_ connection: NWConnection) async {
-        let source = connection.endpoint.throttleSourceKey
-        if let source, await !connectionThrottle.shouldAllow(source: source) {
+        guard await connectionThrottle.shouldAllow(endpoint: connection.endpoint) else {
             Logger.networking.debug("MasterNetworkController: Rejected connection attempt from throttled source")
             connection.cancel()
             return
         }
         Logger.networking.debug("MasterNetworkController: New Connection")
         let id = UUID()
-        if let source {
-            pendingConnectionSources[id] = source
-        }
+        await connectionThrottle.register(id: id, endpoint: connection.endpoint)
         addNew(ConnectionController(id: id, connection: connection, delegate: self))
     }
 

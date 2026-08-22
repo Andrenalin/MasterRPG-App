@@ -19,19 +19,24 @@ import os.log
     @MainActor public let model: LinkRegisterListModel
 
     /// Fetches all persisted `LinkReferenceDataModel` rows from CoreData and populates both indexes. Call once on startup.
-    @MainActor public func setup(context: NSManagedObjectContext?) {
-        guard let context else { return }
+    /// Returns the running task so a caller that needs rehydration to actually finish
+    /// before allowing edits that register links (e.g. right after launch) can await it.
+    @discardableResult
+    @MainActor public func setup(context: NSManagedObjectContext?) -> Task<Void, Never>? {
+        guard let context else { return nil }
         model.context = context
-        
-        Task(priority: .userInitiated) {
-            await context.perform {
+
+        return Task(priority: .userInitiated) {
+            let parsedModels: [LinkRegisterModel] = await context.perform {
                 do {
                     let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                     // Grows with every cross-item link reference in every module; batch the
                     // fetch instead of materializing the whole table at once.
                     request.fetchBatchSize = 500
-                    guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return }
+                    guard let linkReferenceModels = try context.fetch(request) as? [LinkReferenceDataModel] else { return [] }
                     var nextLegacyOccurrence: [LegacyLinkKey: Int] = [:]
+                    var results: [LinkRegisterModel] = []
+                    results.reserveCapacity(linkReferenceModels.count)
                     for linkReferenceModel in linkReferenceModels {
                         let source = ItemRowModel(itemId: linkReferenceModel.sourceId ?? UUID(), entryId: linkReferenceModel.sourceEntryId, typeId: NetworkModules(rawValue: Int(linkReferenceModel.sourceModule)) ?? .none)
                         let destination = ItemRowModel(itemId: linkReferenceModel.destinationId ?? UUID(), entryId: linkReferenceModel.destinationEntryId, typeId: NetworkModules(rawValue: Int(linkReferenceModel.destinationModule)) ?? .none)
@@ -48,20 +53,30 @@ import os.log
                             linkNumber = nil
                         }
 
-                        let newModel = LinkRegisterModel(
+                        results.append(LinkRegisterModel(
                             id: linkReferenceModel.uuid ?? UUID(),
                             name: name,
                             source: source,
                             destination: destination,
                             linkNumber: linkNumber,
                             command: linkReferenceModel.command
-                        )
-                        
-                        updateLink(addedModel: newModel)
+                        ))
                     }
+                    return results
                 } catch {
                     Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                    return []
                 }
+            }
+
+            // Apply the fully-parsed batch with a single MainActor hop instead of one
+            // unstructured `Task` per row (the old `updateLink(addedModel:)` behavior) —
+            // the per-row Tasks let `setup(context:)` return before rehydration actually
+            // finished, so an edit made right after launch could run its synchronous
+            // dedup check against a partially-populated register and register a
+            // duplicate link. See CODE_AUDIT_EditItem §3.1.
+            for parsedModel in parsedModels {
+                model.append(parsedModel)
             }
         }
     }
@@ -191,12 +206,6 @@ public extension LinkRegisterController {
 }
 
 private extension LinkRegisterController {
-    nonisolated func updateLink(addedModel: LinkRegisterModel) {
-        Task { @MainActor in
-            model.append(addedModel)
-        }
-    }
-
     @MainActor func updateLinkSync(addedModel: LinkRegisterModel) {
         if model.append(addedModel) {
             model.pendingAffectedSourceIds.insert(addedModel.source.itemId)

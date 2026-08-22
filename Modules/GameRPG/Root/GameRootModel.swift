@@ -811,29 +811,36 @@ extension GameRoot {
     func rootController(for module: NetworkModules) -> ItemRootController {
         switch module {
         case .adventure:
-            adventureRoot.rootController
+            return adventureRoot.rootController
         case .audio:
-            audioRoot.rootController
+            return audioRoot.rootController
         case .value:
-            characterRoot.rootController
+            return characterRoot.rootController
         case .dice:
-            diceRoot.rootController
+            return diceRoot.rootController
         case .map:
-            mapRoot.rootController
+            return mapRoot.rootController
         case .pdf:
-            pdfRoot.rootController
+            return pdfRoot.rootController
         case .photo:
-            photoRoot.rootController
+            return photoRoot.rootController
         case .rule:
-            ruleRoot?.rootController ?? adventureRoot.rootController
+            // `searchAllItems()` only ever produces `.rule` results when `ruleRoot` exists, so
+            // this should never be reached with a nil `ruleRoot`. Assert loudly in debug builds
+            // rather than silently mislabeling Adventure content as a Rule search result.
+            guard let ruleRoot else {
+                assertionFailure("rootController(for: .rule) called with a nil ruleRoot")
+                return adventureRoot.rootController
+            }
+            return ruleRoot.rootController
         case .space:
-            spaceRoot.rootController
+            return spaceRoot.rootController
         case .table:
-            tableRoot.rootController
+            return tableRoot.rootController
         case .weather:
-            weatherRoot.rootController
+            return weatherRoot.rootController
         default:
-            adventureRoot.rootController
+            return adventureRoot.rootController
         }
     }
 }

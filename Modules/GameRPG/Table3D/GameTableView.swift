@@ -122,6 +122,15 @@ public struct GameTableView: View {
                 .tabletopGame(loadedGame.tabletopGame, parent: loadedGame.renderer.root) { _ in
                     GameInteraction(game: loadedGame)
                 }
+                // Chained directly onto this same, already-mounted `RealityView`/
+                // `.tabletopGame(...)` view — not fired from `initializeGameIfNeeded()`'s
+                // outer `.task` — so `coordinateWithSession(_:)` never races the
+                // `.tabletopGame(_:parent:)` modifier's own mount. See
+                // `setUpSharePlayCoordinationIfNeeded(for:)`'s own doc for why that
+                // ordering matters.
+                .task {
+                    setUpSharePlayCoordinationIfNeeded(for: loadedGame)
+                }
                 // Pin drag: the handlers guard permissions — the master moves
                 // every pin, a player only its own.
                 // Uses simultaneousGesture so TabletopKit's own gesture recognisers
@@ -338,10 +347,12 @@ public struct GameTableView: View {
         root.gameModel.shareState.mode = .tabletop
         root.networkStore.sharePlayStore.applyShareState()
 
-        activityManager = .init(
-            tabletopGame: initializedGame.tabletopGame,
-            sharePlayController: root.networkStore.sharePlayStore
-        )
+        // `activityManager` (and the `coordinateWithSession(_:)` it triggers) is
+        // deliberately *not* created here — setting `game` above only schedules a
+        // SwiftUI re-render; it doesn't synchronously mount the `RealityView`/
+        // `.tabletopGame(...)` below. See `setUpSharePlayCoordinationIfNeeded(for:)`,
+        // called instead from a `.task` chained directly onto that mounted view.
+
         // Set before `setupSeating` claims a seat — `GameObserver.playerChangedSeats`
         // can fire as part of that claim landing, and needs this hook already in
         // place to retry a dice-focus mirror that raced the not-yet-existing seat.
@@ -369,6 +380,51 @@ public struct GameTableView: View {
         // was already showing a result on the 2D screen would sit at its
         // default face on the table until someone rolled again.
         applyCurrentFocusedDiceRoll(to: initializedGame)
+    }
+
+    /// Creates `activityManager`, which is what actually calls
+    /// `tabletopGame.coordinateWithSession(_:)` (via `GroupActivityManager.init` →
+    /// `RPGSharePlayController.setup(tabletopGame:gameTableModel:)`) once a
+    /// SharePlay session exists — deliberately called from a `.task` chained
+    /// directly onto the already-mounted `RealityView`/`.tabletopGame(...)` view
+    /// below, not from `initializeGameIfNeeded()`'s outer `.task`.
+    ///
+    /// `coordinateWithSession(_:)` joins this device into the SharePlay session's
+    /// RealityKit *shared simulation* — a lower-level join than anything
+    /// TabletopKit's own Swift API surface does. That join replays the master's
+    /// already-established ECS state against this device's local scene, resolved
+    /// through TabletopKit's own RealityKit `System`, which the
+    /// `.tabletopGame(_:parent:)` modifier registers when it mounts. Setting the
+    /// `game` `@State` (in `initializeGameIfNeeded()`) only *schedules* a SwiftUI
+    /// re-render — it doesn't synchronously mount the view below — so triggering
+    /// the join from that same synchronous stretch of code raced
+    /// `.tabletopGame(_:parent:)`'s own mount. Losing that race left the shared-
+    /// simulation replay running against a scene TabletopKit's system hadn't
+    /// attached to yet, unpredictably failing to resolve one of the master's
+    /// already-known equipment entities — "Could not find static equipment with
+    /// identifier: ..." — inside RealityKit's own engine
+    /// (`RCPSharedSimulationExecuteUpdate` → `-[MRUISharedSimulation
+    /// _joinWithConnectionContext:error:]`), well below any of our own Swift-level
+    /// TabletopKit calls (`claimSeat`, `setupSeating`, etc. — see their own docs
+    /// for a *different*, since-fixed race that never was the actual cause here).
+    /// Apple's own TabletopKit SharePlay samples never hit this because their
+    /// `.tabletopGame(_:parent:)` is unconditionally present from the very first
+    /// render — never gated behind an async-loaded `@State` the way `game` is
+    /// here — so their own `.task { activityManager = .init(...) }`, chained on
+    /// that same view, can't ever run before it.
+    ///
+    /// Guarded on `activityManager == nil`: this `.task` re-fires whenever the
+    /// RealityView reappears (e.g. the volumetric window disappearing and
+    /// reappearing while `@State` is retained — see `initializeGameIfNeeded()`'s
+    /// own "if let game" branch), and re-coordinating an already-coordinated
+    /// `tabletopGame` is neither needed nor safe.
+    private func setUpSharePlayCoordinationIfNeeded(for game: GameTableModel) {
+        guard activityManager == nil else { return }
+        activityManager = .init(
+            tabletopGame: game.tabletopGame,
+            gameTableModel: game,
+            sharePlayController: root.networkStore.sharePlayStore
+        )
     }
 
     /// Applies the locally focused dice set to `game`'s own seat, or clears

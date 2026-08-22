@@ -3514,6 +3514,12 @@
         }
       }
     },
+    "Move Earlier in Turn Order" : {
+
+    },
+    "Move Later in Turn Order" : {
+
+    },
     "Move Up" : {
       "localizations" : {
         "de" : {

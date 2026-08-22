@@ -102,7 +102,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
             isShown = lastIsShown
 
             // Set isHidden based on match
-            let result = name.localizedCaseInsensitiveContains(searchText) || description.localizedCaseInsensitiveContains(searchText)
+            let result = name.localizedStandardContains(searchText) || description.localizedStandardContains(searchText)
             isHidden = !result && !hasResult
 
             // If any child matches, expand this entry to show the matching child
@@ -111,39 +111,6 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
             }
         }
         return !isHidden
-    }
-    
-    func reset(with otherSheetModel: SheetModel) {
-        source <=> otherSheetModel.source
-        destination <=> otherSheetModel.destination
-        linkNumber <=> otherSheetModel.linkNumber
-        level <=> otherSheetModel.level
-        
-        sheetType <=> otherSheetModel.sheetType
-        isShown <=> otherSheetModel.isShown
-        lastIsShown <=> otherSheetModel.lastIsShown
-        isHidden <=> otherSheetModel.isHidden
-        isFolded <=> otherSheetModel.isFolded
-        
-        name <=> otherSheetModel.name
-        description <=> otherSheetModel.description
-        inlineEntries <=> otherSheetModel.inlineEntries
-        entries = otherSheetModel.entries
-        
-        editType <=> otherSheetModel.editType
-        isEditing <=> otherSheetModel.isEditing
-        hasChanged <=> otherSheetModel.hasChanged
-        isGeneratedAnswer <=> otherSheetModel.isGeneratedAnswer
-        isGeneratedSelected <=> otherSheetModel.isGeneratedSelected
-        isGeneratedAccepted <=> otherSheetModel.isGeneratedAccepted
-        isGeneratedHidden <=> otherSheetModel.isGeneratedHidden
-        generatedBatchID <=> otherSheetModel.generatedBatchID
-        isSelected <=> otherSheetModel.isSelected
-        entryReviewModel = otherSheetModel.entryReviewModel
-        isReviewPlaceholder <=> otherSheetModel.isReviewPlaceholder
-
-        canAdd <=> otherSheetModel.canAdd
-        showHeader <=> otherSheetModel.showHeader
     }
     
     public static var empty: SheetModel {

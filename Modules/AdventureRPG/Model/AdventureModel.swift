@@ -302,6 +302,11 @@ extension AdventureModel: nonisolated ItemDataAccessable {
     }
 }
 
+// See CODE_AUDIT_EditItem §9.5 — lets `EditController`'s orphan-handling trio
+// (`isOrphanedHidden`/`willRepairOrphan`/`willRestore`) use the shared
+// `GroupableModel`-constrained default in `EditControllable` instead of its own copy.
+extension AdventureModel: nonisolated GroupableModel {}
+
 extension AdventureModel: nonisolated Comparable {
     nonisolated public static func < (lhs: AdventureModel, rhs: AdventureModel) -> Bool {
         return assumeMainActorIsolated {

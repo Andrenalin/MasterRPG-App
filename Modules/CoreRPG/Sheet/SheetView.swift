@@ -2,6 +2,12 @@
 
 import SwiftUI
 
+/// Leading indent applied per nesting level when a sub-entry's own linked sheet is
+/// rendered recursively (see `SheetView.row(entry:)`) — deliberately smaller than any
+/// system spacing token, so it's kept as a named constant instead of a magic literal.
+/// See CODE_AUDIT_Sheet §8.1.
+private let nestedSheetLeadingInset: CGFloat = 2
+
 struct SheetView<LinkType: LinkDataTransferable>: View {
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
@@ -219,7 +225,7 @@ private extension SheetView {
         ForEach(entry.entries) { subEntry in
             if let root = rootModel.rootController(for: subEntry.source.typeId), subEntry.isShown {
                 SheetView(root: root, rootModel: rootModel, sheetModel: subEntry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
-                    .padding(.leading, 2)
+                    .padding(.leading, nestedSheetLeadingInset)
                     .transition(.persistedSheetEntry)
             }
         }

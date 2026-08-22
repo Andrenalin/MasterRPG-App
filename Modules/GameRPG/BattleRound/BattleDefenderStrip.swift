@@ -14,7 +14,7 @@ struct BattleDefenderStrip: View {
 
     var body: some View {
         if defenders.isEmpty {
-            VStack(spacing: 4) {
+            VStack(spacing: BattleRoundSpacing.tight) {
                 Image(systemName: "person.badge.plus")
                     .foregroundStyle(.tertiary)
                 Text("Highlight defenders on the map", bundle: .module)
@@ -25,7 +25,7 @@ struct BattleDefenderStrip: View {
             .frame(minWidth: 100, minHeight: 74)
         } else {
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 10) {
+                LazyHStack(alignment: .top, spacing: BattleRoundSpacing.relaxed) {
                     ForEach(defenders) { defender in
                         BattleParticipantColumn(
                             state: state,
@@ -37,6 +37,8 @@ struct BattleDefenderStrip: View {
                             selectHitPoints: selectHitPoints,
                             selectInitiative: selectInitiative
                         )
+                        // See CODE_AUDIT §8.3.
+                        .equatable()
                     }
                 }
             }

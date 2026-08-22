@@ -88,10 +88,10 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: entryModel.isGeneratedSelected)
         .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: entryModel.isSelected)
         .onChange(of: entryModel.name) {
-            rootModel.updateParent(parentModel)
+            rootModel.scheduleParentReconcile(parentModel)
         }
         .onChange(of: entryModel.description) {
-            rootModel.updateParent(parentModel)
+            rootModel.scheduleParentReconcile(parentModel)
         }
         // The context menu carries structural edit actions (add/duplicate/move/
         // delete) — only available where edits actually persist: the standalone
@@ -445,6 +445,10 @@ private struct SheetEntryEditTypeIndicatorView: View {
                     theme.tint(for: entryModel.source.typeId).opacity(0.3)
                 )
             }
+            // Matches SheetEntryMainRowView's "Ask AI about this entry" button — see
+            // CODE_AUDIT_Sheet §8.2. Applied after `.background` so it enlarges the tap
+            // target without stretching the stroked circle to fill it.
+            .frame(minWidth: 44, minHeight: 44)
 #if !os(tvOS)
             .popover(isPresented: $isPickerPresented, arrowEdge: .leading) {
                 Picker(

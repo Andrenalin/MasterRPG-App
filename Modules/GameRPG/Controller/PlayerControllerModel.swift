@@ -137,6 +137,13 @@ final class PlayerControllerModel: Sendable {
     private var mapContentVersions: [UUID: Int] = [:]
     private var pendingMapRepairs: [UUID: PendingMapRepair] = [:]
     private var pendingMapBackgroundRepairs: [UUID: PendingMapRepair] = [:]
+    /// Latest `.battleRound` update that arrived while its map generation was
+    /// not yet current on this device — mirrors `pendingMapStates`, not the
+    /// per-pin `deferredMapPins`: there is only one battle-round state per
+    /// map, and `BattleRoundNetworkState.sequence` (checked inside
+    /// `applyRemoteState`) already rejects a stale replay, so only the single
+    /// latest deferred payload per map needs to be retained. See CODE_AUDIT §5.2.
+    private var pendingBattleRoundUpdates: [UUID: NetworkCodableDataType] = [:]
 
     func increaseMessageCounter() {
         messageCounter += 1
@@ -746,6 +753,23 @@ final class PlayerControllerModel: Sendable {
         pendingMapStates[itemId] = nil
     }
 
+    /// See CODE_AUDIT §5.2 — replay slot for a `.battleRound` update whose
+    /// generation didn't match at receipt time. Always overwrites: a later
+    /// deferral is always at least as recent as an earlier one, and
+    /// `applyRemoteState`'s own sequence check is the final arbiter of
+    /// whether a replay is still worth applying.
+    func queueBattleRoundUpdate(_ data: NetworkCodableDataType) {
+        pendingBattleRoundUpdates[data.id] = data
+    }
+
+    func pendingBattleRoundUpdate(for itemId: UUID) -> NetworkCodableDataType? {
+        pendingBattleRoundUpdates[itemId]
+    }
+
+    func discardPendingBattleRoundUpdate(itemId: UUID) {
+        pendingBattleRoundUpdates[itemId] = nil
+    }
+
     func shouldApplyMapContentUpdate(itemId: UUID, counter: Int) -> Bool {
         counter == 0 || counter > max(
             lastMapContentUpdateCounters[itemId] ?? 0,
@@ -908,6 +932,7 @@ final class PlayerControllerModel: Sendable {
         pendingMapRequests.removeAll()
         deferredMapPins.removeAll()
         deferredMapPinOrder.removeAll()
+        pendingBattleRoundUpdates.removeAll()
     }
 
     func reset(lostMaster: Bool) {

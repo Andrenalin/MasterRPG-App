@@ -43,7 +43,7 @@ struct SearchListView: View {
         .navigationTitle(Text("Search Results", bundle: .module))
 #if !os(tvOS)
         .searchable(text: $model.searchText, placement: .sidebar,
-                    prompt: "Search items and entries")
+                    prompt: Text("Search items and entries", bundle: .module))
 #endif
         .task(id: model.searchText) {
             // Only perform search if the search text has actually changed
@@ -77,7 +77,7 @@ private extension SearchListView {
     }
     
     @ViewBuilder
-    func listView(model: Bindable<SearchModel>) -> some View {
+    func listView(model: Bindable<GlobalSearchModel>) -> some View {
         List(selection: model.selection) {
             ForEach(modules, id: \.self) { module in
                 let results = model.wrappedValue.results[module, default: []]

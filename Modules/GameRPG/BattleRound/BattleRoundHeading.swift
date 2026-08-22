@@ -8,7 +8,7 @@ struct BattleRoundHeading: View {
     let activeAttackerName: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: BattleRoundSpacing.extraTight) {
             if isRunning {
                 BattleRoundTitle(round: round)
                     .font(.title2.bold())

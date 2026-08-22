@@ -9,6 +9,9 @@ import Security
 protocol JoinCodeStorage: Sendable {
     func string(forKey key: String) -> String?
     func set(_ value: String, forKey key: String)
+    /// Lets a code be cleared the same way it's set, rather than needing a
+    /// separate storage mechanism just for deletion. See CODE_AUDIT §6.2.
+    func remove(forKey key: String)
 }
 
 /// Keychain-backed `JoinCodeStorage`. Each code is stored as a generic password item, scoped
@@ -52,5 +55,14 @@ struct KeychainJoinCodeStorage: JoinCodeStorage {
             addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
             SecItemAdd(addQuery as CFDictionary, nil)
         }
+    }
+
+    func remove(forKey key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 }

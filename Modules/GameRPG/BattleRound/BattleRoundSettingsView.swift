@@ -43,7 +43,7 @@ struct BattleRoundSettingsView: View {
                         systemImage: "arrow.up.arrow.down"
                     )
                 }
-                .padding(8)
+                .padding(BattleRoundSpacing.standard)
     }
 }
 
@@ -55,9 +55,6 @@ private struct BattleRoundPatternSection: View {
     let controller: BattleRoundController
     let screenModel: BattleRoundScreenModel
 
-    @Environment(ScenesManager.self) private var scenesManager
-    @State private var newName = ""
-
     var body: some View {
         Label(title, systemImage: systemImage)
             .font(.headline)
@@ -66,10 +63,28 @@ private struct BattleRoundPatternSection: View {
             BattleRoundPatternRow(name: name, kind: kind, settings: settings)
         }
 
-        addRow
+        BattleRoundPatternAddRow(
+            kind: kind,
+            settings: settings,
+            controller: controller,
+            screenModel: screenModel
+        )
     }
+}
 
-    private var addRow: some View {
+/// Extracted from `BattleRoundPatternSection` into its own `View` struct
+/// rather than a computed property, per the project's rule against
+/// decomposing views that way. See CODE_AUDIT §8.1.
+private struct BattleRoundPatternAddRow: View {
+    let kind: BattleValueKind
+    let settings: BattleRoundSettingsModel
+    let controller: BattleRoundController
+    let screenModel: BattleRoundScreenModel
+
+    @Environment(ScenesManager.self) private var scenesManager
+    @State private var newName = ""
+
+    var body: some View {
         HStack {
             TextField(String(localized: "Add Pattern", bundle: .module), text: $newName)
                 .onSubmit(addTypedName)
@@ -90,7 +105,7 @@ private struct BattleRoundPatternSection: View {
             }
             .labelStyle(.iconOnly)
         }
-        .padding(8)
+        .padding(BattleRoundSpacing.standard)
         .battleLinkCharacterDropDestination { values, _ in
             guard let value = values.first, value.entryId != nil else {
                 return false
@@ -126,7 +141,7 @@ private struct BattleRoundPatternRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(.red)
         }
-        .padding(8)
+        .padding(BattleRoundSpacing.standard)
         .background(.fill.tertiary, in: .rect(cornerRadius: 8))
     }
 }

@@ -13,15 +13,6 @@ public protocol SearchRootControllable: Sendable  {
     /// - Returns: Array of search results matching the query
     @MainActor func results(text: String) async -> [SearchResult]
     
-    /// Child/entry expansion — called by `loadChildrenViaSearch` when the user taps a chevron.
-    /// May load data from SwiftData if not cached.
-    /// Returns flat entry/child results for the focusId item:
-    ///   - `specialCategory` → folder children via folder-mode search.
-    ///   - Regular item → flat entry list via `inspectorEntryResults`.
-    /// - Warning: Must never return the item itself — that would make the item its own child (infinite recursion).
-    /// - Note: This method is rarely used now that `syncExpandResults` handles most cases
-    @MainActor func results(text: String, focusId: UUID) async -> [SearchResult]
-    
     /// Scoped view — called by `performDetailSearch` to build the detail list for a parent model.
     /// May load data from SwiftData if not cached.
     /// Returns a view-rooted result: character-as-root for the character inspector,

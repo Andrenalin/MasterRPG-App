@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import Foundation
 
 struct SharePlayCompletedPackage: Sendable {
@@ -50,7 +49,7 @@ final class SharePlayPackageReceiver {
         self.sleep = sleep
     }
 
-    private(set) var receivedPacakges: [SharePlayPackageStreamKey: PackageMessageList] = [:]
+    private(set) var receivedPackages: [SharePlayPackageStreamKey: PackageMessageList] = [:]
     private(set) var cumulativeIncompleteByteCount = 0
     private let maxIncompleteStreams: Int
     private let maxPackagesPerStream: Int
@@ -68,7 +67,7 @@ final class SharePlayPackageReceiver {
     func reset() {
         expirationTask?.cancel()
         expirationTask = nil
-        receivedPacakges.removeAll()
+        receivedPackages.removeAll()
         cumulativeIncompleteByteCount = 0
         lastReceivedAt.removeAll()
         activityOrder.removeAll()
@@ -110,7 +109,7 @@ final class SharePlayPackageReceiver {
         }
 
         let packageList: PackageMessageList
-        if let list = receivedPacakges[streamKey] {
+        if let list = receivedPackages[streamKey] {
             guard let additionalByteCount = list.additionalByteCount(for: package) else {
                 scheduleNextExpiration()
                 return nil
@@ -141,7 +140,7 @@ final class SharePlayPackageReceiver {
                 return nil
             }
             packageList = PackageMessageList(initalPackage: package)
-            receivedPacakges[streamKey] = packageList
+            receivedPackages[streamKey] = packageList
             cumulativeIncompleteByteCount += packageData.count
         }
         recordActivity(for: streamKey, at: receivedAt)
@@ -179,7 +178,7 @@ final class SharePlayPackageReceiver {
     }
 
     private func makeStreamCapacity() -> Bool {
-        while receivedPacakges.count >= maxIncompleteStreams {
+        while receivedPackages.count >= maxIncompleteStreams {
             guard evictLeastRecentlyActiveStream() else { return false }
         }
         return true
@@ -218,7 +217,7 @@ final class SharePlayPackageReceiver {
     }
 
     private func removeStream(key: SharePlayPackageStreamKey) {
-        if let removed = receivedPacakges.removeValue(forKey: key) {
+        if let removed = receivedPackages.removeValue(forKey: key) {
             cumulativeIncompleteByteCount -= removed.receivedByteCount
         }
         lastReceivedAt.removeValue(forKey: key)

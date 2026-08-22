@@ -112,6 +112,10 @@ final class ListenerManager: ListenerManaging {
 }
 
 actor ListenerServerController {
+    /// How long each individual sleep in `run()`'s keep-alive loop lasts —
+    /// not a listener timeout. See CODE_AUDIT §9.12.
+    private static let keepAliveInterval: Duration = .seconds(24 * 60 * 60)
+
     fileprivate let events: AsyncStream<ListenerEvent>
     private let continuation: AsyncStream<ListenerEvent>.Continuation
     private let name: String
@@ -147,8 +151,18 @@ actor ListenerServerController {
 
         listener.start(queue: .main)
 
+        // `run()` only needs to stay suspended — actual listening is entirely
+        // driven by `listener`'s own callbacks above — so this loops a bounded
+        // sleep indefinitely rather than a single fixed-duration one. A single
+        // `Task.sleep` here used to let `run()` return normally once it
+        // elapsed, which tore the listener down (via the `defer` above)
+        // without ever yielding a `.cancelled`/`.failed` event, so a session
+        // hosted for more than a day would silently stop accepting
+        // connections with no signal to `ListenerManager`. See CODE_AUDIT §3.1.
         try await withTaskCancellationHandler {
-            try await Task.sleep(for: .seconds(24*60*60))
+            while true {
+                try await Task.sleep(for: Self.keepAliveInterval)
+            }
         } onCancel: {
             listener.cancel()
         }

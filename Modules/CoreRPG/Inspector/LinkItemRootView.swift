@@ -14,32 +14,27 @@ public struct LinkItemRootView: View {
         self.root = root
         self.type = type
         self.itemSelectionModel = itemSelectionModel
-        if let parentId = itemSelectionModel.onlyChildrenFrom {
-            self._parentModel = State(initialValue: root.itemControllable.itemSync(for: parentId))
-        } else {
-            self._parentModel = State(initialValue: nil)
-        }
     }
-    
+
     let root: any ItemRootControllable
     let type: LinkRootType
     let itemSelectionModel: ItemSelectionModel
-    
-    @State private var parentModel: (any ItemDataAccessable)?
-        
+
+    /// Derived directly from `itemSelectionModel.onlyChildrenFrom` on every body evaluation —
+    /// not `@State`, since `itemSelectionModel` is `@Observable` and this view owns no state
+    /// of its own here. A plain computed property tracks changes to `onlyChildrenFrom`
+    /// automatically and avoids the one-frame gap an `@State` seeded from it in `init` (and
+    /// only kept in sync afterward by a `.task(id:)`) would otherwise risk. `LinkItemListView`
+    /// below only keys off `parentModel?.id`, so recomputing this on every re-render is safe.
+    var parentModel: (any ItemDataAccessable)? {
+        guard let parentId = itemSelectionModel.onlyChildrenFrom else { return nil }
+        return root.itemControllable.itemSync(for: parentId)
+    }
+
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
+
         LinkItemListView(root: root, type: type, selectionModel: itemSelectionModel, parentModel: parentModel)
-            .task(id: itemSelectionModel.onlyChildrenFrom) {
-                // Using task instead of onChange for better lifecycle management
-                // and automatic cancellation when the ID changes
-                if let newValue = itemSelectionModel.onlyChildrenFrom {
-                    parentModel = root.itemControllable.itemSync(for: newValue)
-                } else {
-                    parentModel = nil
-                }
-            }
     }
 }
 

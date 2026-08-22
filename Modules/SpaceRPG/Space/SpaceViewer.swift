@@ -733,14 +733,31 @@ private extension SpaceViewer {
     /// or the model is dragged, matching `GameTableModel.registerPinMenuAttachment`'s
     /// convention of parenting UI to a stable ancestor rather than the entity
     /// it labels, so drag/rotate/scale manipulation never distorts the button.
+    ///
+    /// The `rootEntity.addChild(closeButtonEntity)` call is deliberately
+    /// deferred one MainActor turn rather than made inline. The first call
+    /// here runs from `RealityView`'s `make` closure immediately after
+    /// `loadEntity` → `placeUnderHeadAnchor` has just called `content.add(headAnchor)`
+    /// for the *same* `rootEntity` — RealityKit's own engine-side insertion of
+    /// that just-added anchor subtree (`re::ecs2::Scene::addToAllEntitiesRecursively`)
+    /// can still be in flight at that instant. Parenting this attachment's own
+    /// `_HostingEntity` to `rootEntity` in that same synchronous continuation
+    /// crashed visionOS 26.5 — reproducibly, on first open, nothing else
+    /// closing — inside RealityKit's engine with
+    /// `__CALLER_IS_PARENTING_AN_ENTITY_TO_AN_ENTITY_BEING_REMOVED__`
+    /// (`SwiftUI._HostingEntity.didActivate(in:)` → `re::ecs2::Entity::setParentInternal`).
+    /// visionOS 27 doesn't hit this; the deferral is a no-op there, so it's
+    /// kept unconditionally rather than gated on OS version.
     @MainActor
     func attachCloseButtonIfNeeded(_ attachments: RealityViewAttachments) {
         guard nameEntity == nil,
               let rootEntity,
               let closeButtonEntity = attachments.entity(for: "NameBarView") else { return }
-        rootEntity.addChild(closeButtonEntity)
         nameEntity = closeButtonEntity
-        updateCloseButtonPosition()
+        Task { @MainActor in
+            rootEntity.addChild(closeButtonEntity)
+            updateCloseButtonPosition()
+        }
     }
 
     /// Keeps the close button just above the object's actual bounding box

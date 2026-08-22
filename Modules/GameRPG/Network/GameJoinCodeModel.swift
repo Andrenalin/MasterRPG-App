@@ -30,7 +30,7 @@ public final class GameJoinCodeModel: Sendable {
         self.codeStorage = KeychainJoinCodeStorage()
         masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults)
         playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults)
-        lastUsedMasterJoinCode = UserDefaults.standard.string(forKey: Self.lastUsedMasterJoinCodeKey)
+        lastUsedMasterJoinCode = Self.loadLastUsedMasterJoinCode(storage: codeStorage, legacyDefaults: defaults)
     }
 
     init(defaults: UserDefaults, codeStorage: any JoinCodeStorage = KeychainJoinCodeStorage()) {
@@ -38,27 +38,28 @@ public final class GameJoinCodeModel: Sendable {
         self.codeStorage = codeStorage
         masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults)
         playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults)
-        lastUsedMasterJoinCode = defaults.string(forKey: Self.lastUsedMasterJoinCodeKey)
+        lastUsedMasterJoinCode = Self.loadLastUsedMasterJoinCode(storage: codeStorage, legacyDefaults: defaults)
     }
 
     private let defaults: UserDefaults?
-    /// Backs `masterCode`/`playerCode` — the codes that gate network trust between devices.
-    /// `lastUsedMasterJoinCode` below stays in `defaults`: it's a remembered convenience value
-    /// (a code entered for joining a *different* device), not a secret this device presents.
-    /// See CODE_AUDIT §6.2.
+    /// Backs all three codes below, including `lastUsedMasterJoinCode` — it
+    /// is still a live authentication secret (the code currently granting
+    /// access to whatever game it was last used to join), so it belongs in
+    /// the same Keychain-backed, non-backed-up storage as `masterCode`/
+    /// `playerCode` rather than UserDefaults. See CODE_AUDIT §6.2.
     private let codeStorage: any JoinCodeStorage
 
     public var masterCode: String {
         didSet {
             guard oldValue != masterCode else { return }
-            codeStorage.set(masterCode, forKey: Self.masterCodeKey)
+            Self.write(masterCode, forKey: Self.masterCodeKey, to: codeStorage)
         }
     }
 
     public var playerCode: String {
         didSet {
             guard oldValue != playerCode else { return }
-            codeStorage.set(playerCode, forKey: Self.playerCodeKey)
+            Self.write(playerCode, forKey: Self.playerCodeKey, to: codeStorage)
         }
     }
 
@@ -69,9 +70,13 @@ public final class GameJoinCodeModel: Sendable {
         didSet {
             guard oldValue != lastUsedMasterJoinCode else { return }
             if let lastUsedMasterJoinCode {
-                defaults?.set(lastUsedMasterJoinCode, forKey: Self.lastUsedMasterJoinCodeKey)
+                Self.write(lastUsedMasterJoinCode, forKey: Self.lastUsedMasterJoinCodeKey, to: codeStorage)
             } else {
-                defaults?.removeObject(forKey: Self.lastUsedMasterJoinCodeKey)
+                let codeStorage = codeStorage
+                let key = Self.lastUsedMasterJoinCodeKey
+                Task.detached(priority: .utility) {
+                    codeStorage.remove(forKey: key)
+                }
             }
         }
     }
@@ -79,7 +84,7 @@ public final class GameJoinCodeModel: Sendable {
     /// A fresh, random 4-digit code (`"0000"`...`"9999"`, always zero-padded).
     public static func randomCode() -> String {
         let digits = String(Int.random(in: 0...9999))
-        return String(repeating: "0", count: 4 - digits.count) + digits
+        return String(repeating: "0", count: Self.codeLength - digits.count) + digits
     }
 
     private static func loadOrGenerate(key: String, storage: any JoinCodeStorage, legacyDefaults: UserDefaults?) -> String {
@@ -99,10 +104,41 @@ public final class GameJoinCodeModel: Sendable {
         return generated
     }
 
-    static func isValidCode(_ code: String) -> Bool {
-        code.count == 4 && code.allSatisfy(\.isNumber)
+    /// Mirrors `loadOrGenerate` for the one code that has no "generate a
+    /// fresh one if missing" fallback — it's fine for this to simply be
+    /// unset. See CODE_AUDIT §6.2.
+    private static func loadLastUsedMasterJoinCode(
+        storage: any JoinCodeStorage,
+        legacyDefaults: UserDefaults?
+    ) -> String? {
+        if let stored = storage.string(forKey: lastUsedMasterJoinCodeKey), isValidCode(stored) {
+            return stored
+        }
+        if let legacy = legacyDefaults?.string(forKey: lastUsedMasterJoinCodeKey), isValidCode(legacy) {
+            storage.set(legacy, forKey: lastUsedMasterJoinCodeKey)
+            legacyDefaults?.removeObject(forKey: lastUsedMasterJoinCodeKey)
+            return legacy
+        }
+        return nil
     }
 
+    /// `codeStorage.set` performs a synchronous Keychain write; every stored
+    /// property here writes through this helper instead of calling it
+    /// directly so the write happens off the main actor rather than blocking
+    /// it during a live UI edit. See CODE_AUDIT §3.3.
+    private static func write(_ value: String, forKey key: String, to codeStorage: any JoinCodeStorage) {
+        Task.detached(priority: .utility) {
+            codeStorage.set(value, forKey: key)
+        }
+    }
+
+    static func isValidCode(_ code: String) -> Bool {
+        code.count == Self.codeLength && code.allSatisfy(\.isNumber)
+    }
+
+    /// Digit count for every join code. See CODE_AUDIT §9.12 — previously
+    /// duplicated as a bare `4` in both `randomCode()` and `isValidCode(_:)`.
+    private static let codeLength = 4
     private static let masterCodeKey = "MasterRPGMasterJoinCode"
     private static let playerCodeKey = "MasterRPGPlayerJoinCode"
     private static let lastUsedMasterJoinCodeKey = "MasterRPGLastUsedMasterJoinCode"

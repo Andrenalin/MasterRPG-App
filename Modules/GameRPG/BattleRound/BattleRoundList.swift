@@ -33,9 +33,9 @@ struct BattleRoundList: View {
             .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(8)
+        .padding(BattleRoundSpacing.standard)
 
-        ForEach(cards) { card in
+        ForEach(cards.enumerated(), id: \.element.id) { index, card in
             BattleRoundCard(
                 presentation: card,
                 controller: controller,
@@ -52,6 +52,15 @@ struct BattleRoundList: View {
                 reorder(payloads, over: card.id)
             }
 #endif
+            // Drag-to-reorder has no VoiceOver/Switch Control equivalent on
+            // its own — these actions give the same reordering capability a
+            // non-visual way in. See CODE_AUDIT §8.2.
+            .accessibilityAction(named: Text("Move Earlier in Turn Order", bundle: .module)) {
+                moveEntry(at: index, by: -1)
+            }
+            .accessibilityAction(named: Text("Move Later in Turn Order", bundle: .module)) {
+                moveEntry(at: index, by: 1)
+            }
         }
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -63,6 +72,18 @@ struct BattleRoundList: View {
 
     private func dragPayload(for entryId: UUID) -> String {
         Self.dragPayloadPrefix + entryId.uuidString
+    }
+
+    /// Non-drag equivalent of `reorder(_:over:)` for VoiceOver/Switch
+    /// Control — swaps the entry at `index` with its neighbor one position
+    /// earlier (`offset == -1`) or later (`offset == 1`) in the turn order.
+    /// A no-op at either end of the list, where that neighbor doesn't exist.
+    /// See CODE_AUDIT §8.2.
+    private func moveEntry(at index: Int, by offset: Int) {
+        let targetIndex = index + offset
+        guard cards.indices.contains(index), cards.indices.contains(targetIndex) else { return }
+        let destination = targetIndex > index ? targetIndex + 1 : targetIndex
+        controller.moveEntries(IndexSet(integer: index), destination)
     }
 
     private func reorder(_ payloads: [String], over targetId: UUID) {
@@ -88,7 +109,7 @@ struct BattleRoundList: View {
     let screenModel = BattleRoundScreenModel(model: controller.model, layout: .wide)
 
     ScrollView {
-        LazyVStack(alignment: .leading, spacing: 8) {
+        LazyVStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
             BattleRoundList(
                 cards: model.cardPresentations,
                 controller: controller,

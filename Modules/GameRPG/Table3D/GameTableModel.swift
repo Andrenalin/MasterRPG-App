@@ -129,15 +129,29 @@ final class GameTableModel: Sendable {
     // MARK: - Seating & Space Setup
 
     /// Called when the 3D table view appears to set up seating.
+    ///
+    /// When a SharePlay session is active, the actual seat claim is
+    /// deliberately *not* made here — it's made by
+    /// `RPGSharePlayController.setup(tabletopGame:gameTableModel:)`, chained
+    /// after `tabletopGame.coordinateWithSession(_:)` there instead. `claimSeat`/
+    /// `claimAnySeat` are themselves TabletopKit-synchronized actions:
+    /// submitting one before this game's network coordinator is attached to
+    /// the group session left a joining player's claim unsynced against the
+    /// master's already-running session, and TabletopKit's internal
+    /// reconciliation could then no longer resolve a later synced update
+    /// against the mismatched local state — crashing every joining player
+    /// with "Could not find static equipment with identifier: ...". Only the
+    /// no-session (local/single-player) case claims a seat directly here,
+    /// since there's no coordinator to race — see `GameObserver.canAutoClaimSeat`'s
+    /// own doc for the matching guard on its fallback re-claim.
     func setupSeating(sharePlayController: RPGSharePlayController) {
         let isMaster = sharePlayController.gameModel?.gameConfig.isMaster ?? false
         observer.isMaster = isMaster
-        if sharePlayController.isActive, let groupSession = sharePlayController.groupSession {
-            Logger.sharePlay.debug("Setting up seating with SharePlay")
-            assignSeatsForSharePlay(groupSession: groupSession, isMaster: isMaster)
-            sharePlayController.setupSeatAssignment(gameTableModel: self)
+        if sharePlayController.isActive, sharePlayController.groupSession != nil {
+            Logger.sharePlay.debug("Setting up seating with SharePlay — seat claim deferred until coordinateWithSession(_:) attaches")
         } else {
             Logger.sharePlay.debug("Setting up seating for single-player")
+            observer.canAutoClaimSeat = true
             tabletopGame.claimAnySeat()
         }
         // `GameObserver.playerChangedSeats` keeps this current for every

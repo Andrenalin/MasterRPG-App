@@ -61,11 +61,6 @@ extension EditController: EntryDataEditable {
 
     var itemControllable: any ItemControllable { itemController }
 
-    @MainActor
-    var linkRegisterController: LinkRegisterController {
-        itemController.linkRegisterController
-    }
-
     var linkModules: [NetworkModules] {
         [.adventure, .audio, .value, .dice, .map, .pdf, .photo, .rule, .space, .table, .weather]
     }
