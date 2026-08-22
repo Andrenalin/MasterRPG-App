@@ -757,14 +757,28 @@ final class RPGSharePlayController {
             // in }` for the same reason. Do the same so it runs as its own main-actor turn
             // instead of serializing in front of the seating/map/pawn sync work that follows
             // it in `GameTableView.initializeGameIfNeeded()`.
-            let task = Task { @MainActor [weak self, weak tabletopGame] in
+            //
+            // `setupSeatAssignment` is chained *inside* this same deferred task, after
+            // `coordinateWithSession` returns, rather than fired separately and synchronously
+            // by the caller (as it used to be, via `GameTableModel.setupSeating`). `claimSeat`/
+            // `claimAnySeat` are themselves TabletopKit-synchronized actions — submitting one
+            // before this game's network coordinator is attached to the group session left a
+            // joining player's seat claim unsynced against the master's already-running
+            // session. TabletopKit's own internal reconciliation could then no longer resolve
+            // an in-flight synced update against the mismatched local state, crashing every
+            // joining player with "Could not find static equipment with identifier: ...". The
+            // master never hit this because it originates the session instead of reconciling
+            // into one; local (non-SharePlay) play never hit it because `coordinateWithSession`
+            // is never called at all there — see `GameTableModel.setupSeating`'s own doc.
+            let task = Task { @MainActor [weak self, weak tabletopGame, weak gameTableModel] in
                 guard let self, let tabletopGame, self.tabletopGame === tabletopGame else { return }
                 tabletopGame.coordinateWithSession(groupSession)
+                if let gameTableModel {
+                    self.setupSeatAssignment(gameTableModel: gameTableModel)
+                }
             }
             trackSessionTask(task, key: Self.coordinateSessionTaskKey)
-        }
-
-        if let gameTableModel = gameTableModel {
+        } else if let gameTableModel {
             setupSeatAssignment(gameTableModel: gameTableModel)
         }
     }

@@ -252,6 +252,40 @@ public extension EntryDataEditable {
         merge(itemId: itemId, entries: entries, recoverEntries: recoverEntries, forceSave: false)
     }
 
+    /// Default `merge(itemId:entries:recoverEntries:forceSave:)`: computes the merged
+    /// entries via `merge(itemId:entries:)` (module-specific matching), then applies the
+    /// shared "diff removed ids → check link usage → replace-or-report" skeleton that
+    /// Character/Adventure/Table each hand-copied identically. A module whose merge
+    /// needs genuinely different behavior at this level — RuleRPG's stable-identity +
+    /// hierarchy-fallback matching, or MapRPG's deliberate choice not to thread
+    /// `forceSave` into the final `save(...)` call — keeps its own override instead of
+    /// relying on this default. See CODE_AUDIT_EditItem §9.2.
+    @MainActor
+    func merge(itemId: UUID, entries: [Model.Entry], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
+        guard let item = editModel(for: itemId) else { return [] }
+        var newEntries = merge(itemId: itemId, entries: entries)
+        let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
+        let module = itemControllable.config.module
+        let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
+
+        var effectedLinks = true
+        for itemRowModel in itemRowModels {
+            if !linkRegisterController.used(for: itemRowModel).isEmpty {
+                effectedLinks = false
+                break
+            }
+        }
+        if recoverEntries != nil || effectedLinks {
+            if let recoverEntries {
+                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
+            }
+            item.entries = newEntries
+            save(updated: item, message: String(localized: "Entries replaced", bundle: .module).localizedString, forceSave: forceSave)
+            return []
+        }
+        return itemRowModels
+    }
+
     @MainActor
     func insertEntry(itemId: UUID, name: String, content: String, position: SheetInsertionPosition, forceSave: Bool) -> UUID? {
         guard let item = editModel(for: itemId) else { return nil }

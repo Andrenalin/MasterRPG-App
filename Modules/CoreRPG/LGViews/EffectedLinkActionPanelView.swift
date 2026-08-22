@@ -69,10 +69,12 @@ public struct EffectedLinkActionPanelView: View {
                 }
             }
         }
-        .onChange(of: removeEntryList.removeItems, initial: true) {
-            Task {
-                removeEntryList.linkTree = await EffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
-            }
+        // `.task(id:)` cancels the previous run automatically when `removeItems` changes,
+        // so two rapid selection changes can't have their link-scan results land out of
+        // order — `Task { }` inside `.onChange` had no such cancellation. See
+        // CODE_AUDIT_EditItem §3.6.
+        .task(id: removeEntryList.removeItems) {
+            removeEntryList.linkTree = await EffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
         }
     }
 }

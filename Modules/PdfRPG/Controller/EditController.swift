@@ -20,41 +20,27 @@ struct LinkPdfModuleTransferable: LinkDataTransferable {
     }
 }
 
-struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.tagController = tagController
-        self.itemController = itemController
-        let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
-        let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
-        self.editorModel = editorModel
-    }
+/// See CODE_AUDIT_EditItem §9.1 — genericized in `GenericEditController` (CoreRPG);
+/// this module has no extra stored state beyond the generic default (its extra
+/// bookmark/extraction behavior below needs no stored properties of its own).
+typealias EditController = GenericEditController<PdfModel>
 
-    let itemController: ItemController
-    let tagController: TagController
-    let editorModel: ItemEditorModel
-}
-
-extension EditController: EntryDataEditable {
-    typealias Model = PdfModel
-    
-    var itemControllable: any ItemControllable { itemController }
-    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
-
+extension EditController: @retroactive EntryDataEditable {
     public var linkModules: [NetworkModules] { [] }
     
     public func linkSelectionDestination(itemRowModel: ItemRowModel) -> any NavigationDestination {
         SelectionRoute.selection
     }
 
-    func create(name: String, content: String) -> PdfEntryModel {
+    public func create(name: String, content: String) -> PdfEntryModel {
         PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: "", bounds: .zero)
     }
-    
-    @MainActor func merge(itemId: UUID, entries: [PdfEntryModel]) -> [PdfEntryModel] {
+
+    @MainActor public func merge(itemId: UUID, entries: [PdfEntryModel]) -> [PdfEntryModel] {
         entries
     }
 
-    func merge(itemId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
+    public func merge(itemId: UUID, entries: [PdfEntryModel], recoverEntries: [CoreRPG.ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         []
     }
     

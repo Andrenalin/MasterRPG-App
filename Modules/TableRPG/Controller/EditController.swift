@@ -54,7 +54,6 @@ extension EditController: EntryDataEditable {
     typealias Model = TableModel
     
     var itemControllable: any ItemControllable { itemController }
-    var fileUrlDataController: FileUrlDataController? { itemController.fileUrlDataController }
 }
     
 // MARK: - EntryList editor
@@ -118,33 +117,7 @@ extension EditController {
             return foundEntry ?? entry
         }
     }
-
-    @MainActor func merge(itemId: UUID, entries: [TableEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
-        guard let item = editModel(for: itemId) else { return [] }
-        var newEntries = entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.content = entry.content
-            return foundEntry ?? entry
-        }
-        let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
-        let module = itemController.config.module
-        let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
-
-        var effectedLinks = true
-        for itemRowModel in itemRowModels {
-            if !linkRegisterController.used(for: itemRowModel).isEmpty {
-                effectedLinks = false
-                break;
-            }
-        }
-        if recoverEntries != nil || effectedLinks {
-            if let recoverEntries {
-                newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
-            }
-            item.entries = newEntries
-            save(updated: item, message: String(localized: "Entries replaced", bundle: .module), forceSave: forceSave)
-            return []
-        }
-        return itemRowModels
-    }
+    // `merge(itemId:entries:recoverEntries:forceSave:)` uses `EntryDataEditable`'s
+    // shared default (see CODE_AUDIT_EditItem §9.2) — this module's behavior was
+    // identical to the default, so the hand-copied override was removed.
 }

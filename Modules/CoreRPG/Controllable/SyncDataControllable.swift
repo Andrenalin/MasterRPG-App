@@ -40,50 +40,71 @@ public extension SyncDataControllable {
 
     @Sendable
     func updateFromSync(deletedIds: [UUID], insertedIds: [UUID], updatedIds: [UUID]) {
-        Task(priority: .userInitiated) {
-            do {
-                await CloudKitOperationCounter.shared.recordOperation(
-                    function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
-                    file: "SyncDataControllable.swift"
-                )
+        Task { @MainActor in
+            // Cancel any still-in-flight sync from a previous notification so overlapping
+            // CloudKit change batches for this module can't race each other applying
+            // deletes/inserts/updates out of order — mirrors the cancel-and-replace
+            // pattern `FolderListControllable` already uses for its own debounced work.
+            // See CODE_AUDIT_EditItem §3.2.
+            itemControllable.itemDataModel.pendingSyncTask?.cancel()
+            itemControllable.itemDataModel.pendingSyncTask = Task(priority: .userInitiated) {
+                do {
+                    try Task.checkCancellation()
+                    await CloudKitOperationCounter.shared.recordOperation(
+                        function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
+                        file: "SyncDataControllable.swift"
+                    )
 
-                // Process deletions — act directly on the reported ids instead of fetching
-                // every id in the store and diffing against the full in-memory set; that
-                // O(n) full-table reconciliation is reserved for `fetchUpdates()`, which
-                // already runs once at `start()` and would catch any deletion this misses.
-                for deletedId in deletedIds {
-                    await itemControllable.delete(itemId: deletedId, withFileData: false, withDatabase: false)
-                }
+                    // Process deletions — act directly on the reported ids instead of fetching
+                    // every id in the store and diffing against the full in-memory set; that
+                    // O(n) full-table reconciliation is reserved for `fetchUpdates()`, which
+                    // already runs once at `start()` and would catch any deletion this misses.
+                    for deletedId in deletedIds {
+                        try Task.checkCancellation()
+                        await itemControllable.delete(itemId: deletedId, withFileData: false, withDatabase: false)
+                    }
 
-                // Process insertions
-                // The data is ALREADY in Core Data (we're fetching from it!)
-                // We only need to update in-memory models, NOT save back to database
-                for insertedId in insertedIds {
-                    guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
-                    // `resetModel(with:)` is itself `@MainActor` — `await` alone hops, same as
-                    // `delete(itemId:...)` above; no `MainActor.run` wrapper needed.
-                    await itemControllable.resetModel(with: model)
-                }
+                    // Process insertions
+                    // The data is ALREADY in Core Data (we're fetching from it!)
+                    // We only need to update in-memory models, NOT save back to database
+                    for insertedId in insertedIds {
+                        try Task.checkCancellation()
+                        guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
+                        // `resetModel(with:)` is itself `@MainActor` — `await` alone hops, same as
+                        // `delete(itemId:...)` above; no `MainActor.run` wrapper needed.
+                        itemControllable.resetModel(with: model)
+                    }
 
-                // Process updates
-                for updatedId in updatedIds {
-                    guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
-                    // Use mergeUpdates to avoid database writes during sync
-                    await itemControllable.mergeUpdates(model: model)
+                    // Process updates
+                    for updatedId in updatedIds {
+                        try Task.checkCancellation()
+                        guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
+                        // Use mergeUpdates to avoid database writes during sync
+                        itemControllable.mergeUpdates(model: model)
+                    }
+                } catch {
+                    // Sync errors are non-fatal; the next CloudKit notification will retry —
+                    // but log so a merge that keeps failing (rather than self-healing on the
+                    // next notification) is actually diagnosable. (Cancellation surfaces here
+                    // too, as `CancellationError` — expected when a newer batch superseded
+                    // this one, not itself worth alarming about, but harmless to log.)
+                    Logger.syncDataControllable.error(
+                        "updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count)) failed: \(error.localizedDescription, privacy: .public)"
+                    )
                 }
-            } catch {
-                // Sync errors are non-fatal; the next CloudKit notification will retry —
-                // but log so a merge that keeps failing (rather than self-healing on the
-                // next notification) is actually diagnosable.
-                Logger.syncDataControllable.error(
-                    "updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count)) failed: \(error.localizedDescription, privacy: .public)"
-                )
             }
         }
     }
-    
+
     private func fetchUpdates() async {
-        guard let newItems = try? await dataControllable.fetchAll() else { return }
-        await itemControllable.updates(newItems)
+        do {
+            let newItems = try await dataControllable.fetchAll()
+            await itemControllable.updates(newItems)
+        } catch {
+            // Mirrors `updateFromSync`'s logging above — this full-table reconciliation
+            // only runs once, at `start()`, so a failure here otherwise leaves no trace
+            // of why items never loaded at launch. See CODE_AUDIT_EditItem §5.9.
+            Logger.syncDataControllable.error("fetchUpdates() failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 }

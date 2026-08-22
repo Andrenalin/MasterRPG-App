@@ -340,6 +340,7 @@ public struct GameTableView: View {
 
         activityManager = .init(
             tabletopGame: initializedGame.tabletopGame,
+            gameTableModel: initializedGame,
             sharePlayController: root.networkStore.sharePlayStore
         )
         // Set before `setupSeating` claims a seat — `GameObserver.playerChangedSeats`

@@ -28,18 +28,22 @@ extension ItemController: ItemControllable {
 }
 
 extension ItemController {
-    @MainActor func hasAudio(itemId: UUID) -> Bool {
-        guard let model = itemSync(for: itemId) else { return false }
+    // `depth` guards against recursing forever should a folder/collection cycle ever
+    // form (import, CloudKit merge conflict, …) — the same defense-in-depth every other
+    // tree-walker in the codebase applies via `FolderTreeDepthLimit`. See
+    // CODE_AUDIT_EditItem §5.11.
+    @MainActor func hasAudio(itemId: UUID, depth: Int = 0) -> Bool {
+        guard depth < FolderTreeDepthLimit.max, let model = itemSync(for: itemId) else { return false }
         guard model.specialCategory else { return model.url != nil }
-        return model.entries.contains { hasAudio(itemId: $0.childId) }
+        return model.entries.contains { hasAudio(itemId: $0.childId, depth: depth + 1) }
     }
-    
-    @MainActor func audioList(itemId: UUID) -> [AudioModel] {
-        guard let model = itemSync(for: itemId) else { return [] }
+
+    @MainActor func audioList(itemId: UUID, depth: Int = 0) -> [AudioModel] {
+        guard depth < FolderTreeDepthLimit.max, let model = itemSync(for: itemId) else { return [] }
         guard model.specialCategory else {
             guard model.url != nil else { return [] }
             return [model]
         }
-        return model.entries.flatMap { audioList(itemId: $0.childId) }
+        return model.entries.flatMap { audioList(itemId: $0.childId, depth: depth + 1) }
     }
 }

@@ -32,7 +32,7 @@ public final class DiceRootModel {
         self.gameController = gameController
         let linkController = LinkController(itemController: itemController, gameController: gameController)
         self.linkController = linkController
-        let editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
+        let editController = EditController(itemController: itemController, tagController: tagController)
         self.editController = editController
         let importController = ImportController(itemController: itemController, editController: editController)
         self.importController = importController
@@ -197,7 +197,7 @@ public extension DiceRootModel {
     func itemDataCleanup() async throws {
         for itemId in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: itemId) else { continue }
-            if model.displayState == 2 {
+            if model.displayState == DisplayStateMask.totalHidden.rawValue {
                 await editController.delete(itemId: model.id)
             }
         }

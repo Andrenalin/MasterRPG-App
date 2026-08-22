@@ -464,6 +464,11 @@ extension ValueModel: nonisolated ItemDataAccessable {
     }
 }
 
+// See CODE_AUDIT_EditItem §9.5 — lets `EditController`'s orphan-handling trio
+// (`isOrphanedHidden`/`willRepairOrphan`/`willRestore`) use the shared
+// `GroupableModel`-constrained default in `EditControllable` instead of its own copy.
+extension ValueModel: nonisolated GroupableModel {}
+
 extension ValueModel: nonisolated Codable {
     enum CodingKeys: CodingKey {
         case _id

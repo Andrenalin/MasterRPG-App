@@ -4,17 +4,25 @@ import SwiftUI
 
 @Observable @MainActor
 final class GroupEditorModel {
-    internal init(namePlaceHolder: String, descriptionPlaceHolder: String, tagsPlaceHolder: String) {
+    internal init(namePlaceHolder: String, descriptionPlaceHolder: String, tags: [String], tagsPlaceHolder: String) {
         self.namePlaceHolder = namePlaceHolder
         self.descriptionPlaceHolder = descriptionPlaceHolder
+        self.tags = tags
+        self.originalTags = tags
         self.tagsPlaceHolder = tagsPlaceHolder
     }
-    
+
     var name: String = ""
     var namePlaceHolder: String
     var description: String = ""
     var descriptionPlaceHolder: String
-    var tags: [String] = []
+    // Seeded with the selected items' shared tags (when they all share the same set) so
+    // `RemoveTagsEditor` actually shows what it's bound to remove, instead of starting
+    // empty while the placeholder implies tags are already there. See CODE_AUDIT_EditItem §5.6.
+    var tags: [String]
+    // Immutable snapshot of the seeded value above, so `save()` can tell whether the user
+    // actually changed anything even though `tags` may start non-empty now.
+    let originalTags: [String]
     var tagsPlaceHolder: String
 }
 
@@ -64,13 +72,25 @@ struct GroupEditorController {
             }
         }
         
-        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module).localizedString, descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module).localizedString, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module).localizedString)
+        // Seed the editable `tags` with the shared set only when every selected item
+        // actually agrees on it — if they differ, there's no single starting set to show
+        // (matching the "Different Tags" placeholder), and starting from a mix would risk
+        // silently introducing tags to items that never had them. See CODE_AUDIT_EditItem §5.6.
+        let sharedTags = tagsIsDifferent ? [] : (tags ?? [])
+        return GroupEditorModel(namePlaceHolder: name ?? String(localized: "Different Names", bundle: .module).localizedString, descriptionPlaceHolder: description ?? String(localized: "Different Descriptions", bundle: .module).localizedString, tags: sharedTags, tagsPlaceHolder: tags?.joined(separator: " ") ?? String(localized: "Different Tags", bundle: .module).localizedString)
     }
-    
+
     @MainActor func save() {
+        // Only touch tags if the user actually changed them from what was loaded —
+        // `reset(tags:)` fully replaces an item's tags, so saving unconditionally
+        // whenever `model.tags` was merely non-empty (its old always-empty starting
+        // value made "non-empty" and "changed" the same thing indistinguishable) used to
+        // wipe out every selected item's original tags the moment the user added just one
+        // new tag. See CODE_AUDIT_EditItem §5.6.
+        let tagsChanged = model.tags != model.originalTags
         guard !model.name.isEmpty && model.name != model.namePlaceHolder ||
                 !model.description.isEmpty && model.description != model.descriptionPlaceHolder ||
-                !model.tags.isEmpty && model.tags.joined(separator: " ") != model.tagsPlaceHolder else { return }
+                tagsChanged else { return }
         for itemId in ids {
             // The standalone item editor always persists, even while a game is
             // running — unlike in-game quick-edit surfaces, which stay memory-only.
@@ -82,7 +102,7 @@ struct GroupEditorController {
                 editController.reset(description: model.description, itemId: itemId, forceSave: true)
             }
 
-            if !model.tags.isEmpty {
+            if tagsChanged {
                 editController.reset(tags: model.tags, itemId: itemId, forceSave: true)
             }
         }

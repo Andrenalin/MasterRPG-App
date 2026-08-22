@@ -35,6 +35,22 @@ public protocol EditControllable: Sendable {
     @MainActor func addItem(sheet: SheetModel, forceSave: Bool) async -> UUID?
 }
 
+// MARK: - Diagnostics
+
+public extension EditControllable {
+    /// Fires a diagnostic CloudKit-operation-count update. An `async` caller should
+    /// `await` this directly; a synchronous caller has no choice but to fire-and-forget
+    /// and should go through `trackOperation(_:)` below instead of hand-copying a
+    /// `Task { await ... }`. See CODE_AUDIT_EditItem §3.4.
+    @MainActor func recordOperation(_ function: String) async {
+        await CloudKitOperationCounter.shared.recordOperation(function: function, file: "EditControllable.swift")
+    }
+
+    @MainActor func trackOperation(_ function: String) {
+        Task { await recordOperation(function) }
+    }
+}
+
 public extension EditControllable {
     var fileUrlDataController: FileUrlDataController? { itemControllable.fileUrlDataController }
 
@@ -151,6 +167,50 @@ public extension EditControllable {
     }
 }
 
+// MARK: - Groupable Models
+
+/// A domain model that supports being organized into a same-type "group" — a
+/// phase-1-hidden sub-item owned by a parent item via `groupId`, distinct from the
+/// plain folder/collection `parentId` hierarchy. CharacterRPG's `ValueModel` and
+/// AdventureRPG's `AdventureModel` are the only two conformers today; both
+/// independently reimplemented the exact same orphan-handling trio below before this
+/// was hoisted into a shared, constrained default. See CODE_AUDIT_EditItem §9.5.
+public protocol GroupableModel: ItemDataAccessable {
+    var groupId: UUID? { get set }
+}
+
+public extension EditControllable where Model: GroupableModel {
+    @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
+        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return false }
+        guard item.displayState == 1 && item.parentId == nil else { return false }
+        if let groupId = item.groupId {
+            // Hidden with a groupId: orphaned if the parent is gone or deleted.
+            let parent = itemControllable.itemSync(for: groupId)
+            return parent == nil || parent?.displayState == 2
+        }
+        return true // no parentId, no groupId → phase-1 orphan
+    }
+
+    @MainActor func willRepairOrphan(itemId: UUID) {
+        guard var item = editModel(for: itemId) else { return }
+        guard item.groupId != nil else { return }
+        item.groupId = nil
+        save(updated: item, message: String(localized: "Repair orphan", bundle: .module).localizedString)
+    }
+
+    @MainActor func willRestore(item: inout Model) {
+        guard let groupId = item.groupId else { return }
+        // Clear groupId if the parent is deleted or no longer exists.
+        if let groupItem = editModel(for: groupId) {
+            if groupItem.displayState == 2 {
+                item.groupId = nil
+            }
+        } else {
+            item.groupId = nil
+        }
+    }
+}
+
 // MARK: - Other
 
 public extension EditControllable {
@@ -228,9 +288,6 @@ public extension EditControllable {
         // search/list tree-builder (`buildFolderTreeNode`, `appendToFlat`, …) walks this exact
         // `entries`/`childId` graph assuming it's acyclic and has no cycle guard of its own.
         guard !isDescendant(parentId, of: itemId) else { return }
-        if (parentItem.isFolder && parentItem.category == .item) && item.parentId == parentId {
-            return
-        }
         if parentItem.isFolder && item.parentId != nil {
             removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false)
         }
@@ -386,13 +443,8 @@ public extension EditControllable {
     }
     
     @MainActor func delete(itemId: UUID) async {
-        Task {
-            await CloudKitOperationCounter.shared.recordOperation(
-                function: "EditControllable.delete(itemId:)",
-                file: "EditControllable.swift"
-            )
-        }
-        
+        await recordOperation("EditControllable.delete(itemId:)")
+
         guard let item = await itemControllable.item(for: itemId) as? Model else { return }
         await willDeleteChildren(of: item)
         for entry in item.entries {
@@ -413,47 +465,11 @@ public extension EditControllable {
     }
     
     @MainActor func duplicate(item: any ItemDataAccessable) async {
-        Task {
-            await CloudKitOperationCounter.shared.recordOperation(
-                function: "EditControllable.duplicate(item:)",
-                file: "EditControllable.swift"
-            )
-        }
-        
+        await recordOperation("EditControllable.duplicate(item:)")
+
         guard let model = editModel(for: item.id) else { return }
         let originalParentId = model.parentId
-        let duplicate = model.duplicate()
-        itemControllable.replace(model: duplicate, isInsert: true)
-
-        if let fileUrl = model.fileUrl, let fileUrlDataController,
-           let data = try? await fileUrlDataController.loadData(for: fileUrl) {
-            var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
-            if path == "./" { path = "" }
-            try? await resetFile(data: data, itemId: duplicate.id, path: path)
-        }
-
-        // For folders: create independent copies of each child and update the new folder's entries
-        if model.isFolder {
-            var newEntries: [Model.Entry] = []
-            for entry in model.entries {
-                if let childModel = editModel(for: entry.childId) {
-                    var dupChild = childModel.duplicate()
-                    dupChild.parentId = duplicate.id
-                    itemControllable.replace(model: dupChild, isInsert: true)
-                    newEntries.append(Model.Entry.newChild(id: dupChild.id))
-                    if let childFileUrl = childModel.fileUrl, let fileUrlDataController,
-                       let data = try? await fileUrlDataController.loadData(for: childFileUrl) {
-                        var path = childFileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
-                        if path == "./" { path = "" }
-                        try? await resetFile(data: data, itemId: dupChild.id, path: path)
-                    }
-                }
-            }
-            if let folderModel = editModel(for: duplicate.id) {
-                folderModel.entries = newEntries
-                save(updated: folderModel, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
-            }
-        }
+        let duplicate = await duplicateRecursively(model: model)
 
         // Re-register the duplicate in the same parent folder
         if let parentId = originalParentId {
@@ -471,6 +487,44 @@ public extension EditControllable {
             }
         }
     }
+
+    /// Duplicates `model`, its attached file (if any), and — when it's a folder — every
+    /// child, recursing into any child that is itself a folder. Without the recursion, a
+    /// nested folder's own `entries` were left pointing at the *original* grandchildren
+    /// (for modules where `Entry.childId` is a separate stored field, aliasing them —
+    /// deleting the duplicate later deleted the real originals too) or at newly-random,
+    /// now-nonexistent ids (for modules where `Entry.childId` is derived from the
+    /// entry's own `id`, silently emptying the copy). See CODE_AUDIT_EditItem §5.1-§5.4.
+    @MainActor private func duplicateRecursively(model: Model) async -> Model {
+        let duplicate = model.duplicate()
+        itemControllable.replace(model: duplicate, isInsert: true)
+
+        if let fileUrl = model.fileUrl, let fileUrlDataController,
+           let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
+            if path == "./" { path = "" }
+            try? await resetFile(data: data, itemId: duplicate.id, path: path)
+        }
+
+        guard model.isFolder else { return duplicate }
+
+        // Create independent copies of each child — recursively, so a nested folder gets
+        // its own independent copies of its children too — and rebuild the new folder's
+        // entries to point at them.
+        var newEntries: [Model.Entry] = []
+        for entry in model.entries {
+            guard let childModel = editModel(for: entry.childId) else { continue }
+            var dupChild = await duplicateRecursively(model: childModel)
+            dupChild.parentId = duplicate.id
+            itemControllable.replace(model: dupChild, isInsert: false)
+            newEntries.append(Model.Entry.newChild(id: dupChild.id))
+        }
+        if let folderModel = editModel(for: duplicate.id) {
+            folderModel.entries = newEntries
+            save(updated: folderModel, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
+        }
+        return duplicate
+    }
     
     @MainActor func markForDeletion(itemId: UUID) {
         guard var item = editModel(for: itemId) else { return }
@@ -480,13 +534,8 @@ public extension EditControllable {
     }
     
     @MainActor func restore(itemId: UUID) {
-        Task {
-            await CloudKitOperationCounter.shared.recordOperation(
-                function: "EditControllable.restore(itemId:)",
-                file: "EditControllable.swift"
-            )
-        }
-        
+        trackOperation("EditControllable.restore(itemId:)")
+
         guard var item = editModel(for: itemId) else { return }
 
         // If this is a folder being restored, handle children based on their deletion state
@@ -613,8 +662,16 @@ public extension EditControllable {
             reset(name: name, itemId: itemId)
         }
 
-        let updatedFileUrl = try? await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
-        reset(fileUrl: updatedFileUrl, itemId: itemId)
+        do {
+            let updatedFileUrl = try await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
+            reset(fileUrl: updatedFileUrl, itemId: itemId)
+        } catch {
+            // Don't paper over a failed attach by silently leaving/forcing `fileUrl` to
+            // nil as if nothing was ever selected — log and surface it so the picker UI
+            // can tell the user the attach failed. See CODE_AUDIT_EditItem §5.7.
+            Logger.editController.error("resetFile(url:itemId:) failed to create file url: \(error.localizedDescription, privacy: .public)")
+            itemControllable.itemDataModel.lastPersistenceError = error
+        }
     }
     
     @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
@@ -664,12 +721,7 @@ public extension EditControllable {
     }
 
     @MainActor func saveChanges(to newValue: Model, name: String, forceSave: Bool = false) {
-        Task {
-            await CloudKitOperationCounter.shared.recordOperation(
-                function: "EditControllable.saveChanges(to:name:\(name))",
-                file: "EditControllable.swift"
-            )
-        }
+        trackOperation("EditControllable.saveChanges(to:name:\(name))")
 
         if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
             let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)
