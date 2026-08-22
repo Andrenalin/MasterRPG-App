@@ -104,10 +104,6 @@ public final class DiceRootModel {
         }
     }
 
-#if os(visionOS)
-    let diceSpaceModel = DiceSpaceModel()
-#endif
-
     public let config: ModuleConfiguration
     @MainActor public var navigationModel: ModuleNavigationModel
     @ObservationIgnored public var itemSelectionModel: ItemSelectionModel

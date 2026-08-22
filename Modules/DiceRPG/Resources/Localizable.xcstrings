@@ -687,9 +687,6 @@
         }
       }
     },
-    "Cancel" : {
-
-    },
     "change add dice" : {
       "localizations" : {
         "de" : {
@@ -1215,6 +1212,7 @@
       }
     },
     "Dice scale" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1231,6 +1229,7 @@
       }
     },
     "Dice space" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1409,12 +1408,6 @@
           }
         }
       }
-    },
-    "Hand Tracking permission was turned off. Grant it again in Settings to keep rolling dice by hand." : {
-
-    },
-    "Hand Tracking Unavailable" : {
-
     },
     "Hidden" : {
       "comment" : "Title for the toggle editor.",
@@ -1667,9 +1660,6 @@
           }
         }
       }
-    },
-    "Open Settings" : {
-
     },
     "Open When Created" : {
       "comment" : "Whether the dice should be opened when created.",
@@ -2106,6 +2096,7 @@
       }
     },
     "Roll first die" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2122,6 +2113,7 @@
       }
     },
     "Roll second die" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2192,6 +2184,7 @@
       }
     },
     "Scale" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2322,6 +2315,7 @@
       }
     },
     "Show 2nd D20" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2354,6 +2348,7 @@
       }
     },
     "Show Dice in Space" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
