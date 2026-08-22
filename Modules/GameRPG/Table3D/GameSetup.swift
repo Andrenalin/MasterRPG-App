@@ -25,7 +25,7 @@ class GameSetup {
     /// (unlike `PinPawn`) can't be added once `TableSetup` is frozen. Sized
     /// to `maxDicePerType` so `GameTableModel.applyDiceRoll` can mirror any
     /// locally focused dice set up to that many d20s; every slot starts
-    /// hidden (`Die20.entity.isEnabled = false`, `initialState.value = 0`)
+    /// parked off-table (`initialState.pose = .parkedDicePose`, `.value = 0`)
     /// until a roll actually claims it. See `playerD6Ids` for the matching
     /// d6 pool — together they're how a focused set "mixes" die types.
     var playerD20Ids: [TableSeatIdentifier: [EquipmentIdentifier]] = [:]
@@ -106,24 +106,23 @@ class GameSetup {
             // D6s per seat, created up front like the seats themselves —
             // TabletopKit equipment can't be added once `TableSetup` is
             // frozen. `GameTableModel.applyDiceRoll` reveals exactly as many
-            // of each type as the locally focused dice set needs; the rest
-            // stay hidden (see `Die20`/`Die.init`). Initial poses here are
-            // mostly nominal — every slot starts hidden, and the ones that
-            // do get shown are repositioned into a compact layout sized to
-            // just the active count. `seatControl` stays `.any`, matching
+            // of each type as the locally focused dice set needs, repositioning
+            // them into a compact layout sized to just the active count; the
+            // rest stay parked off-table (see `Die20`/`Die.init`, and
+            // `TableVisualState.Pose2D.parkedDicePose`'s own doc for why that's
+            // a synced pose rather than a locally-disabled entity) until
+            // `applyDiceRoll` claims them. `seatControl` stays `.any`, matching
             // the original single shared die: on-device testing showed
             // seat-restricted equipment never rendered for *any* player,
             // master included, and TabletopKit's docs don't fully specify
             // whether `ControllingSeats.restricted` also affects per-device
             // rendering (vs. only interaction). Ownership here is visual/
             // positional only.
-            let dicePoses = PlayerSeat.diceLayout(inFrontOf: pose, count: Self.maxDicePerType * 2)
             var d20Ids: [EquipmentIdentifier] = []
             var d6Ids: [EquipmentIdentifier] = []
             for slot in 0 ..< Self.maxDicePerType {
                 let d20 = Die20(
                     id: EquipmentIdentifier(idGenerator.newId()),
-                    pose: dicePoses[slot],
                     seatIndex: index,
                     dieNumber: slot + 1
                 )
@@ -132,7 +131,6 @@ class GameSetup {
 
                 let d6 = Die(
                     id: EquipmentIdentifier(idGenerator.newId()),
-                    pose: dicePoses[Self.maxDicePerType + slot],
                     seatIndex: index,
                     dieNumber: slot + 1
                 )

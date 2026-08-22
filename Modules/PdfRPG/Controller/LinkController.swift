@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import SwiftUI
+import os.log
 
 struct LinkController: Sendable {
     let itemController: ItemController
@@ -19,13 +20,14 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             if command == LinkType.show.rawValue {
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
+            guard command == LinkType.share.rawValue else { return text }
             guard let shareResult else { return text }
-            Task { @MainActor in
+            Task {
                 if shareResult.gameModus == .master {
                     await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                 } else {
@@ -37,7 +39,7 @@ extension LinkController: LinkControllable {
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     await toggler(itemId, itemControllable.config.module)
                 }
             }
@@ -54,5 +56,33 @@ extension LinkController: LinkControllable {
             let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
             return text.toggleLink(url: url, with: result)
         }
+    }
+
+    @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
+        var result = content
+        for link in links {
+            result = repairLink(link, for: result, for: [.all])
+        }
+        return result
+    }
+
+    @MainActor public func validateLinks(on itemId: UUID) {
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+
+        replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
+
+        for entry in inspectedItem.entries {
+            var validatedEntry = entry
+            let links = LinkReplaceController.links(for: entry.content)
+            validatedEntry.content = repairLinks(links, in: validatedEntry.content)
+            if !entry.isSame(validatedEntry) {
+                replacedItem[entry.id] = validatedEntry
+            }
+        }
+        if !replacedItem.isSame(inspectedItem) {
+            Logger.linkController.info("Pdf: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            itemController.replace(model: replacedItem, isInsert: false)
+        }
+        resetLinkRegister(replacedItem)
     }
 }

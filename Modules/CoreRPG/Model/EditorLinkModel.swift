@@ -117,7 +117,7 @@ public final class EditorLinkModel {
         case .table: return rootManager.tableRoot.folderLinkControllable
         case .value: return rootManager.characterRoot.folderLinkControllable
         case .weather: return rootManager.weatherRoot.folderLinkControllable
-        default: return rootManager.adventureRoot.folderLinkControllable
+        case .none, .game, .setting, .editor, .search, .generator: return nil
         }
     }
     
@@ -134,7 +134,7 @@ public final class EditorLinkModel {
         case .table: tableSelectionModel
         case .value: characterSelectionModel
         case .weather: weatherSelectionModel
-        default: adventureSelectionModel
+        case .none, .game, .setting, .editor, .search, .generator: adventureSelectionModel
         }
     }
     
@@ -156,7 +156,7 @@ public final class EditorLinkModel {
         for itemSelection in selection.selection {
             let item = rootController.itemControllable.itemOrEmpty(for: itemSelection.itemId)
             let entryId = itemSelection.entryId
-            let name = entryId == nil ? item.urlName() : item.urlName(entryId: entryId!)
+            let name = if let entryId { item.urlName(entryId: entryId) } else { item.urlName() }
             editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
         }
         selection.resetSelection(itemId: nil, entryId: nil)

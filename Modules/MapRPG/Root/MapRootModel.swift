@@ -137,7 +137,7 @@ public final class MapRootModel {
     let sheetController: SheetController
 
     @ObservationIgnored lazy var linkController: LinkController = {
-        LinkController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
+        LinkController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
     }()
     @ObservationIgnored lazy var editController: EditController = {
         EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)

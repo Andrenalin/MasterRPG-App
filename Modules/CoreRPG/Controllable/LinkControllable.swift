@@ -157,13 +157,6 @@ public extension LinkControllable {
         return brokenLink
     }
     
-    @MainActor
-    func handleLink(url: URL, for itemId: UUID, in text: AttributedString, editAction: ((ItemRowModel) -> Bool)?) -> (OpenURLAction.Result, AttributedString) {
-//        handleLink(url: url, for: itemId, in: text, shareResult: nil, toggler: nil) {
-//            editAction?($0) ?? false
-//        }
-        return (.discarded, text)
-    }
 }
 
 // MARK: - Toggle Links
@@ -190,18 +183,6 @@ public extension LinkControllable {
         return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: itemControllable.config.module.localizedTitle)) \(String(localized: "Link is broken", bundle: .module))")
     }
 
-    @MainActor
-    func toggleLink(linkNumber: Int, itemId: UUID, entryId: UUID?, in text: AttributedString, textGetter: @escaping (Observable) -> String) -> AttributedString {
-        let item = itemControllable.itemOrEmpty(for: itemId)
-        let link = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
-        return text.toggleLink(url: link, with: textGetter(item))
-    }
-    
-    @MainActor
-    func toggleLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: AttributedString, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> AttributedString {
-        text
-    }
-    
 }
 
 // MARK: - Repair Links

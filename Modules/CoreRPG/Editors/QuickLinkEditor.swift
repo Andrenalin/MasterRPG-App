@@ -41,7 +41,7 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
                     }
                     .rowEditColor()
                     .background {
-                        RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.8))
+                        Color.primary.opacity(0.8).clipShape(.rect(cornerRadius: 12))
                     }
                     .padding(.horizontal)
                     .offset(x: 0, y: -8)
@@ -80,7 +80,6 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
                             withAnimation(accessibilityReduceMotion ? nil : .default) {
                                 model.wrappedValue = afterEntries
                             }
-                            //editController.save(with: String(localized: "Quick links added", bundle: .module).localizedString)
                             dismiss()
                         } label: {
                             Image(systemName: "square.and.arrow.down")

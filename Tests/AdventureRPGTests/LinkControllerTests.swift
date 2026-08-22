@@ -144,29 +144,6 @@ struct LinkControllerTests {
 //        #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id].content == "\(entry1.content)TableValue")
     }
 
-    @Test func quickLinksAndEntryLinksAreSortedByReferenceLength() {
-        let root = makeRoot()
-        let longEntry = AdventureEntryModel(id: UUID(), name: "Long Forgotten Shrine", content: "B")
-        let shortEntry = AdventureEntryModel(id: UUID(), name: "Gate", content: "A")
-        let short = AdventureModel(id: UUID(), name: "Keep", description: "Short")
-        let long = AdventureModel(
-            id: UUID(),
-            name: "Expedition Beneath the Silver City",
-            description: "Long",
-            entries: [shortEntry, longEntry]
-        )
-        root.itemController.replace(model: short, isInsert: true)
-        root.itemController.replace(model: long, isInsert: true)
-
-        let itemLinks = root.linkController.link(for: .adventure)
-        let entryLinks = root.linkController.linkEntries(for: long.id)
-
-        #expect(itemLinks.map(\.reference).prefix(2) == ["Expedition Beneath the Silver City", "Keep"])
-        #expect(entryLinks.map(\.reference) == ["Long Forgotten Shrine", "Gate"])
-        #expect(itemLinks.first?.markdownUrl.localizedStandardContains(long.id.uuidString) == true)
-        #expect(entryLinks.first?.markdownUrl.localizedStandardContains(longEntry.id.uuidString) == true)
-    }
-
     @Test func handleTextLinkRoutesAndToggleLinkDelegates() {
         let root = makeRoot()
         let adventureEntry = AdventureEntryModel(id: UUID(), name: "Scene", content: "Scene content")

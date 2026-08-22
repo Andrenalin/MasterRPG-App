@@ -46,8 +46,10 @@ public extension URL {
     }
 
     var commandKey: String? {
-        if childId != nil {
-            guard pathComponents.count > 4 else { return nil }
+        // Keyed off the raw path shape, not `childId`'s parse success — a link with 5
+        // components but an invalid entry-id segment should still read the command from
+        // index 4, not misread the invalid entry-id itself as the command.
+        if pathComponents.count > 4 {
             return pathComponents[4]
         }
         guard pathComponents.count > 3 else { return nil }

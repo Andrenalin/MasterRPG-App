@@ -3,11 +3,13 @@
 import CoreRPG
 import DiceRPG
 import Foundation
+import PdfRPG
 import SwiftUI
 import os.log
 
 struct LinkController: Sendable {
     let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
     let itemController: ItemController
     let gameController: GameController
 
@@ -24,11 +26,11 @@ extension LinkController: LinkControllable {
             case LinkType.generate.rawValue:
                 shareResult?.generationAction(itemId)
             case LinkType.show.rawValue:
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
             case LinkType.share.rawValue:
-                Task { @MainActor in
+                Task {
                     await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
                 }
             default:
@@ -37,7 +39,7 @@ extension LinkController: LinkControllable {
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     await toggler(itemId, itemControllable.config.module)
                 }
             }
@@ -58,35 +60,36 @@ extension LinkController: LinkControllable {
             return text.toggleLink(url: url, with: result)
         }
     }
-    
+
     @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
         var result = content
         for link in links {
             result = diceRoot.linkControllable.repairLink(link, for: result, for: [.table])
+            result = pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
     }
-    
+
     @MainActor public func validateLinks(on itemId: UUID) {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
-        
+
         if let diceId = replacedItem.diceId {
             if !diceRoot.linkControllable.validateLink(itemId: diceId) {
                 Logger.linkController.warning("Table: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                 replacedItem.diceId = nil
             }
         }
-        
+
         for entry in inspectedItem.entries {
             var validatedEntry = entry
-            
+
             let links = entry.links(for: entry.content)
             validatedEntry.content = repairLinks(links, in: validatedEntry.content)
-            
+
             if !entry.isSame(validatedEntry) {
                 replacedItem[entry.id]  = validatedEntry
-            }                
+            }
         }
         if !replacedItem.isSame(inspectedItem) {
             Logger.linkController.info("Table: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
@@ -108,18 +111,27 @@ extension LinkController {
             return item.url(linkNumber: 0)
         }
     }
-    
-    @MainActor
-    func link(for module: NetworkModules) -> [LinkEntryModel] {
-        itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }.sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
-    }
-    
-    @MainActor
-    func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
-        return item.entries
-            .sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: item.url(linkNumber: 0, entryId: $0.id)) }
+}
+
+extension LinkController {
+    @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
+        guard let item = itemController.itemSync(for: itemId) else { return [] }
+        var photoIds: [UUID] = []
+        item.entries.forEach {
+            let links = $0.links(for: $0.content)
+            links.forEach {
+                switch $0.module {
+                case .photo:
+                    photoIds.append($0.itemId)
+                case .dice:
+                    photoIds.append(contentsOf: diceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .pdf:
+                    photoIds.append(contentsOf: pdfRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                default:
+                    break
+                }
+            }
+        }
+        return Array(Set(photoIds))
     }
 }

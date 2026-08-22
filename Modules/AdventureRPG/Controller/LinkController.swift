@@ -22,7 +22,7 @@ struct LinkController: Sendable {
 
     var rootManager: RootManager?
     let itemController: ItemController
-    
+
     public var itemControllable: any ItemControllable { itemController }
 
     private var resolvedRootManager: RootManager {
@@ -104,13 +104,13 @@ extension LinkController: LinkControllable {
                 let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
-            Task { @MainActor in
+            Task {
                 await toggler?(itemId, itemControllable.config.module)
             }
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     await toggler(itemId, itemController.config.module)
                 }
             }
@@ -150,11 +150,18 @@ extension LinkController: LinkControllable {
 
     @MainActor public func validateLinks(on itemId: UUID) {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
-    
+
         if let photoId = replacedItem.photoId {
             if !resolvedRootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
+            }
+        }
+
+        if let diceId = replacedItem.diceId {
+            if !resolvedRootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
+                Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
+                replacedItem.diceId = nil
             }
         }
 
@@ -177,49 +184,45 @@ extension LinkController: LinkControllable {
 }
 
 extension LinkController {
-    @MainActor
-    func link(for module: NetworkModules) -> [LinkEntryModel] {
-        itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }.sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
-    }
-
-    @MainActor
-    func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
-        return item.entries
-            .sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: item.url(linkNumber: 0, entryId: $0.id)) }
-    }
-}
-
-extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
         guard let item = itemController.itemSync(for: itemId) else { return [] }
-        var photoIds: [UUID] = []
+        var linkIds: [UUID] = []
         if let id = item.photoId {
-            photoIds.append(id)
+            linkIds.append(id)
         }
         item.entries.forEach {
             let links = $0.links(for: $0.content)
             links.forEach {
                 switch $0.module {
                 case .photo:
-                    photoIds.append($0.itemId)
+                    linkIds.append($0.itemId)
                 case .value:
-                    photoIds.append(contentsOf: resolvedRootManager.characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    linkIds.append(contentsOf: resolvedRootManager.characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .map:
-                    photoIds.append(contentsOf: resolvedRootManager.mapRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    linkIds.append(contentsOf: resolvedRootManager.mapRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .weather:
-                    photoIds.append(contentsOf: resolvedRootManager.weatherRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    linkIds.append(contentsOf: resolvedRootManager.weatherRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .audio:
+                    linkIds.append(contentsOf: resolvedRootManager.audioRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .dice:
+                    linkIds.append(contentsOf: resolvedRootManager.diceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .pdf:
+                    linkIds.append(contentsOf: resolvedRootManager.pdfRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .rule:
+                    linkIds.append(contentsOf: resolvedRootManager.ruleRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .space:
+                    linkIds.append(contentsOf: resolvedRootManager.spaceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .table:
+                    linkIds.append(contentsOf: resolvedRootManager.tableRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .adventure:
                     if $0.entryId == nil {
-                        photoIds.append(contentsOf: resolvedRootManager.adventureRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                        linkIds.append(contentsOf: resolvedRootManager.adventureRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                     }
                 default:
                     break
                 }
             }
         }
-        return Array(Set(photoIds))
+        return Array(Set(linkIds))
     }
 }

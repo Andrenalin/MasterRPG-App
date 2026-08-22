@@ -111,7 +111,7 @@ public final class CharacterRootModel {
 
     let itemController: ItemController
     @ObservationIgnored lazy var linkController: LinkController = {
-        LinkController(root: self, diceRoot: diceRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
+        LinkController(root: self, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
     }()
     @ObservationIgnored lazy var sheetController: SheetController = {
         SheetController(itemController: itemController, linkController: linkController)

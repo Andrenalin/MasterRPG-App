@@ -432,6 +432,35 @@ struct DiceComponent: Component {
     let sides: Int
 }
 
+/// Off-table park position for a pool die that isn't part of any seat's
+/// currently focused set — every die's initial pose (`Die20`/`Die.init`),
+/// and reapplied by `GameTableModel.applyDiceRoll` whenever a previously-
+/// active slot falls out of the focused set. Replaces this table's
+/// original approach of leaving the die at its (irrelevant) nominal
+/// position and hiding it by setting `Entity.isEnabled = false` instead.
+///
+/// `Entity.isEnabled` is a purely local, unsynced RealityKit property —
+/// none of Apple's own TabletopKit samples (dice, cards, the coin-
+/// collecting mini-game) ever set it on equipment; every hide/park/reset
+/// they show goes through the equipment's own *synced* pose or parentID
+/// instead (e.g. the playing-card sample's own off-table `poseOffTable`
+/// pattern this mirrors, or the mini-game's `ResetPlayer` moving a piece to
+/// `.bankID(for:)`). A permanently-disabled die — every pool slot, from
+/// creation, until its owning seat actually rolls — was never enabled on a
+/// joining player's own device, and it turned out that also meant it was
+/// never registered as "static equipment" for TabletopKit's own RealityKit-
+/// level shared-simulation join there. The very first snapshot read that
+/// touched one of those still-disabled dice crashed with "Could not find
+/// static equipment with identifier: ...". Far outside the table's
+/// 2.0×1.5 m surface (`GameMetrics.tableLength`/`tableWidth`) and every
+/// seat position (`PlayerSeat.seatPoses`), so a parked die reads as
+/// plainly off-table rather than overlapping a claimed seat.
+extension TableVisualState.Pose2D {
+    static var parkedDicePose: Self {
+        .init(position: .init(x: -5, z: -5), rotation: .zero)
+    }
+}
+
 struct Die20: EntityEquipment {
     let id: ID
     let entity: Entity
@@ -442,9 +471,9 @@ struct Die20: EntityEquipment {
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
         // `0` is this table's own sentinel for a currently-unused pool slot
-        // (see `GameSetup.maxDicePerType` and `GameTableModel.updateDiceVisibility(using:)`)
-        // — the die is hidden whenever this holds, so its orientation is
-        // irrelevant. Handled before the face lookup so it doesn't trip the
+        // (see `GameSetup.maxDicePerType` and `TableVisualState.Pose2D.parkedDicePose`)
+        // — the die is parked off-table whenever this holds, so its
+        // orientation is irrelevant. Handled before the face lookup so it doesn't trip the
         // "invalid value" fallback below, which is for genuine sync issues.
         guard state.value != 0 else { return .init() }
         guard let normal = Self.faceNormals[state.value] else {
@@ -504,7 +533,7 @@ struct Die20: EntityEquipment {
     ]
     
     @MainActor
-    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
+    init(id: ID, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
         // protocol. Rather than crash the whole tabletop feature over a missing/corrupt
@@ -558,10 +587,13 @@ struct Die20: EntityEquipment {
         // pre-scale bounds by the same literal scale factor sidesteps the question entirely.
         representation = .icosahedron(height: unscaledHeight * 0.00025)
         // `value: 0` — this table's own sentinel meaning "not part of the
-        // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`
-        // and `updateDiceVisibility(using:)`); `restingOrientation` above
-        // treats it specially rather than as a corrupt/out-of-range value.
-        initialState = .init(value: 0, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
+        // seat's currently focused dice set" (see `GameTableModel.applyDiceRoll`);
+        // `restingOrientation` above treats it specially rather than as a
+        // corrupt/out-of-range value. `pose: .parkedDicePose` — every slot
+        // starts off-table, not merely disabled; see that pose's own doc for
+        // why a locally-disabled entity crashed a joining player instead of
+        // just staying invisible.
+        initialState = .init(value: 0, parentID: .tableID, seatControl: seatControl, pose: .parkedDicePose, entity: self.entity)
 
         // The direct on-table toss gesture otherwise has no accessible
         // equivalent — see CODE_AUDIT §8.2. `GameTableModel.tossDieForAccessibility`
@@ -574,14 +606,11 @@ struct Die20: EntityEquipment {
         accessibility.systemActions = .activate
         self.entity.components.set(accessibility)
 
-        // Hidden until `GameTableModel.updateDiceVisibility(using:)` confirms
-        // both that this seat is actually claimed *and* that this slot is
-        // part of the seat's currently focused dice set — every seat's pool
-        // is pre-allocated here (TabletopKit equipment can't be added once
-        // `TableSetup` is frozen), so without this every seat's dice would
-        // sit visible on an empty side of the table before anyone sits down
-        // or rolls anything.
-        self.entity.isEnabled = false
+        // Deliberately no `self.entity.isEnabled = false` here — every seat's
+        // pool is pre-allocated (TabletopKit equipment can't be added once
+        // `TableSetup` is frozen), but hiding an unclaimed/unused slot is now
+        // done entirely through its synced `.parkedDicePose` above, not by
+        // disabling the entity. See that pose's own doc.
     }
 
     /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
@@ -652,7 +681,7 @@ struct Die: EntityEquipment {
     }
     
     @MainActor
-    init(id: ID, pose: TableVisualState.Pose2D, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
+    init(id: ID, seatControl: ControllingSeats = .any, seatIndex: Int = 0, dieNumber: Int = 1) {
         self.id = id
         // `entity` is a required, non-optional property of TabletopKit's `EntityEquipment`
         // protocol — see the matching comment on `Die20.init` for why this degrades to a
@@ -684,8 +713,9 @@ struct Die: EntityEquipment {
         representation = .cube(height: entity.visualBounds(relativeTo: nil).extents.x)
         // `value: 0` — see the matching comment on `Die20.init`: this
         // table's own sentinel for "not part of the seat's currently
-        // focused dice set".
-        initialState = .init(value: 0, parentID: .tableID, seatControl: seatControl, pose: pose, entity: self.entity)
+        // focused dice set". `pose: .parkedDicePose` — see the matching
+        // comment on `Die20.init` for why.
+        initialState = .init(value: 0, parentID: .tableID, seatControl: seatControl, pose: .parkedDicePose, entity: self.entity)
 
         // See the matching accessibility setup on `Die20.init` (CODE_AUDIT §8.2).
         self.entity.components.set(DiceComponent(dieId: id, sides: 6))
@@ -695,8 +725,8 @@ struct Die: EntityEquipment {
         accessibility.systemActions = .activate
         self.entity.components.set(accessibility)
 
-        // See the matching comment on `Die20.init`.
-        self.entity.isEnabled = false
+        // See the matching comment on `Die20.init` — deliberately no
+        // `self.entity.isEnabled = false` here either.
     }
 
     /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).

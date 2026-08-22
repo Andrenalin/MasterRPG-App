@@ -90,7 +90,8 @@ public final class SimpleSheetEditingSession {
         // A plain, non-DEBUG-gated public API (`Modules/CoreRPG/Controllable/RootManager.swift`)
         // that fans one root out to every module slot — exactly what a
         // standalone session with no other modules to link to needs.
-        root.rootManager = RootManager.preview(fake: root)
+        let sessionRootManager = RootManager.preview(fake: root)
+        root.rootManager = sessionRootManager
 
         // The result item holds whatever the caller seeds afterward — the
         // actual outcome content. Registered before the wrapping root so
@@ -108,7 +109,7 @@ public final class SimpleSheetEditingSession {
         self.editController = editController
         self.sheetEditorModel = sheetEditorModel
         self.sheetRootModel = SheetRootModel(
-            rootManager: root.rootManager!,
+            rootManager: sessionRootManager,
             linkControllable: linkController,
             sheetControllable: sheetController,
             itemId: rootItemId,

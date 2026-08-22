@@ -6,6 +6,7 @@ import SwiftUI
 import os.log
 import AudioRPG
 import DiceRPG
+import PdfRPG
 import PhotoRPG
 import TableRPG
 import CharacterRPG
@@ -14,6 +15,7 @@ struct LinkController: Sendable {
     let root: MapRootModel
     let audioRoot: AudioRootModel
     let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
     let characterRoot: CharacterRootModel
@@ -30,18 +32,19 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             if command == LinkType.show.rawValue {
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
-            Task { @MainActor in
+            guard command == LinkType.share.rawValue else { return text }
+            Task {
                 await shareResult?.networkActions?.shareId(root.gameController.shareMap(id: itemId))
             }
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     await toggler(itemId, itemController.config.module)
                 }
             }
@@ -67,6 +70,7 @@ extension LinkController: LinkControllable {
         for link in links {
             result = audioRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .table, .value])
+            result = pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = characterRoot.linkControllable.repairLink(link, for: result, for: [.all])
@@ -74,16 +78,16 @@ extension LinkController: LinkControllable {
         }
         return result
     }
-    
+
     @MainActor public func validateLinks(on itemId: UUID) {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
 
         for entry in inspectedItem.entries {
             var validatedEntry = entry
-            
+
             let links = entry.links(for: entry.content)
             validatedEntry.content = repairLinks(links, in: validatedEntry.content)
-            
+
             if !entry.isSame(validatedEntry) {
                 replacedItem[entry.id]  = validatedEntry
             }
@@ -92,7 +96,7 @@ extension LinkController: LinkControllable {
             Logger.linkController.info("Map: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
-        
+
         defer { resetLinkRegister(replacedItem) }
 
         guard let photoId = inspectedItem.photoId, let replacedItem = itemController.copy(of: itemId) else { return }
@@ -105,22 +109,6 @@ extension LinkController: LinkControllable {
             replacedItem.photoId = nil
             itemController.replace(model: replacedItem, isInsert: false)
         }
-    }
-}
-
-extension LinkController {
-    @MainActor
-    func link(for module: NetworkModules) -> [LinkEntryModel] {
-        itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }.sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
-    }
-    
-    @MainActor
-    func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
-        return itemController.itemOrEmpty(for: itemId).entries
-            .sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: item.url(linkNumber: 0, entryId: $0.id)) }
     }
 }
 
@@ -139,6 +127,14 @@ extension LinkController {
                     photoIds.append($0.itemId)
                 case .value:
                     photoIds.append(contentsOf: characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .audio:
+                    photoIds.append(contentsOf: audioRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .dice:
+                    photoIds.append(contentsOf: diceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .pdf:
+                    photoIds.append(contentsOf: pdfRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .table:
+                    photoIds.append(contentsOf: tableRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 default:
                     break
                 }

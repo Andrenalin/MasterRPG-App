@@ -24,8 +24,12 @@ struct LinkControllerTests {
         #expect(link.contains("[Storm Watch]"))
         #expect(link.contains(weatherId.uuidString))
 
+        // WeatherModel.url(linkNumber:entryId:) deliberately collapses to a plain
+        // item-level link (linkNumber reset to 0, no entryId in the path) — Weather
+        // entries are single-child references, not independently linkable content.
         let entryLink = sut.generateLink(linkNumber: 5, itemId: weatherId, entryId: UUID())
-        #expect(entryLink.contains("RPG://WEATHERS/5/"))
+        #expect(entryLink.contains("RPG://WEATHERS/0/"))
+        #expect(entryLink.contains(weatherId.uuidString))
 
         let shareResult = ShareValueResult.preview()
         var text = sut.toggleTextLink(

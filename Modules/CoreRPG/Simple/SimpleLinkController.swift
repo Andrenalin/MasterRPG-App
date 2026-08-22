@@ -10,18 +10,18 @@ import Foundation
 /// (`Modules/CoreRPG/Controllable/LinkControllable.swift`) — empty arrays,
 /// `nil`, identity transforms — which are the right answer here too, not
 /// stand-ins for missing behavior.
-public final class SimpleLinkController: LinkControllable, @unchecked Sendable {
+public final class SimpleLinkController: LinkControllable, Sendable {
     public init(itemControllable: any ItemControllable) {
         self.itemControllable = itemControllable
     }
 
     public let itemControllable: any ItemControllable
 
-    public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         text
     }
 
-    public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
+    @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         text
     }
 

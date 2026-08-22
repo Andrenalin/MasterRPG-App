@@ -60,7 +60,7 @@ public final class TableRootModel {
             generationSessionStore: generationSessionStore
         )
         self.gameController = gameController
-        let linkController = LinkController(diceRoot: diceRoot, itemController: itemController, gameController: gameController)
+        let linkController = LinkController(diceRoot: diceRoot, pdfRoot: pdfRoot, itemController: itemController, gameController: gameController)
         self.linkController = linkController
         let editController = EditController(diceRoot: diceRoot, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
         self.editController = editController

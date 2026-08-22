@@ -269,12 +269,3 @@ private struct LegacyLinkKey: Hashable {
     let source: ItemRowModel
     let destination: ItemRowModel
 }
-
-// NOTE: `effectedItems` is currently unimplemented (unreferenced elsewhere in the codebase —
-// the live "what links here" UI uses a separate `effectedItems` in EffectedLinkActionPanelView).
-// Wire this up against `LinkReferenceDataModel`/CoreData if this registry-based lookup is needed.
-public extension LinkRegisterController {
-    func effectedItems(targetId: UUID, targetEntryId: UUID? = nil, targetModule: NetworkModules) -> [EffectedItemModel] {
-        return []
-    }
-}

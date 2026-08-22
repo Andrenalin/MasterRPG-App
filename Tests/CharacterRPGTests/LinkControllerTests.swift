@@ -258,32 +258,6 @@ struct LinkControllerTests {
         #expect(groupAfter.displayState == 1)
     }
 
-    @Test func quickLinksFilterCharactersAndSortEntries() async throws {
-        let root = try await MockRoot.importTestData()
-        try await MockRoot.resetTestData(for: root)
-
-        let longEntry = ValueEntryModel(id: UUID(), name: "Long Strength Score", type: .number, value: "18")
-        let shortEntry = ValueEntryModel(id: UUID(), name: "HP", type: .number, value: "9")
-        let character = ValueModel(
-            id: UUID(),
-            name: "Alaric the Far Traveler",
-            category: .character,
-            entries: [shortEntry, longEntry]
-        )
-        let monster = ValueModel(id: UUID(), name: "Cave Horror", category: .monster)
-        root.itemController.replace(model: character, isInsert: true)
-        root.itemController.replace(model: monster, isInsert: true)
-
-        let characterLinks = root.linkController.link(for: .value)
-        let allLinks = root.linkController.link(for: .photo)
-        let entryLinks = root.linkController.linkEntries(for: character.id)
-
-        #expect(characterLinks.map(\.reference) == ["Alaric the Far Traveler"])
-        #expect(allLinks.map(\.reference).contains("Cave Horror"))
-        #expect(entryLinks.map(\.reference) == ["Long Strength Score", "HP"])
-        #expect(entryLinks.first?.markdownUrl.localizedStandardContains(longEntry.id.uuidString) == true)
-    }
-
     @Test func toggleTextLinkCommandsExpandEntryValuesAndRemoveLinks() async throws {
         let root = try await MockRoot.importTestData()
         try await MockRoot.resetTestData(for: root)

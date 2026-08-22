@@ -3,6 +3,7 @@
 import CoreRPG
 import Foundation
 import SwiftUI
+import os.log
 
 struct LinkController: Sendable {
     let itemController: ItemController
@@ -21,7 +22,7 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             if command == LinkType.show.rawValue {
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
@@ -35,7 +36,7 @@ extension LinkController: LinkControllable {
                         shareResult.networkActions?.game(gameController.requestPlay(id: itemId), .playAudio, nil)
                         return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                     } else {
-                        Task { @MainActor in
+                        Task {
                             await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                         }
                         return text.toggleLink(url: playUrl, with: "share audio", replace: true)
@@ -46,14 +47,14 @@ extension LinkController: LinkControllable {
                     return text.toggleLink(url: playUrl, with: "\(!isPlaying ? "playing" : "pause")", replace: true)
                 }
             }
-            // send
-            Task { @MainActor in
+            guard command == LinkType.share.rawValue else { return text }
+            Task {
                 await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
             }
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     await toggler(itemId, itemControllable.config.module)
                 }
             }
@@ -67,10 +68,26 @@ extension LinkController: LinkControllable {
             return text.toggleLink(url: url, with: result)
         }
     }
-    
-    @MainActor
-    public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        guard let entryId else { return itemControllable.itemOrEmpty(for: itemId).url(linkNumber: linkNumber) }
-        return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
-    }    
+
+    @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
+        var result = content
+        for link in links {
+            result = repairLink(link, for: result, for: [.all])
+        }
+        return result
+    }
+
+    @MainActor public func validateLinks(on itemId: UUID) {
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+
+        // Entries are single-child references (`ChildEntryModel`) with no free-text `content`
+        // of their own to repair — only the item's own `description` can embed a link.
+        replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
+
+        if !replacedItem.isSame(inspectedItem) {
+            Logger.linkController.info("Audio: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            itemController.replace(model: replacedItem, isInsert: false)
+        }
+        resetLinkRegister(replacedItem)
+    }
 }

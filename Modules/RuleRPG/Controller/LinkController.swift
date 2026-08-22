@@ -27,6 +27,14 @@ struct LinkController: Sendable {
     func setUp(rootManager: RootManager) {
         rootReference.rootManager = rootManager
     }
+
+    @MainActor
+    private var resolvedRootManager: RootManager {
+        guard let rootManager = rootReference.rootManager else {
+            preconditionFailure("Rule LinkController requires setUp(rootManager:) to be called before use.")
+        }
+        return rootManager
+    }
 }
 
 extension LinkController: LinkControllable {
@@ -40,7 +48,7 @@ extension LinkController: LinkControllable {
     ) -> String {
         let module = url.moduleIdentifier
         if module != .rule,
-           let controller = rootReference.rootManager?.rootModel(for: module)?.linkControllable {
+           let controller = resolvedRootManager.rootModel(for: module)?.linkControllable {
             return controller.handleTextLink(
                 url: url,
                 in: text,
@@ -94,7 +102,7 @@ extension LinkController: LinkControllable {
                     remove: true
                 )
             }
-            Task { @MainActor in
+            Task {
                 if command != LinkType.share.rawValue {
                     await toggler?(itemId, .rule)
                 }
@@ -103,7 +111,7 @@ extension LinkController: LinkControllable {
         }
 
         if let toggler, entryId == nil, editAction == nil {
-            Task { @MainActor in await toggler(itemId, .rule) }
+            Task { await toggler(itemId, .rule) }
         }
         let item = itemController.itemOrEmpty(for: itemId)
         let showAction = toggler != nil && entryId != nil
@@ -133,7 +141,7 @@ extension LinkController: LinkControllable {
             if link.module == .rule {
                 return repairLink(link, for: current, for: [.all])
             }
-            return rootReference.rootManager?.rootModel(for: link.module)?.linkControllable
+            return resolvedRootManager.rootModel(for: link.module)?.linkControllable
                 .repairLink(link, for: current, for: [.all]) ?? current
         }
     }
@@ -172,28 +180,6 @@ extension LinkController: LinkControllable {
         let matchingEntries = item.entries.filter { $0.name == entryName }
         guard matchingEntries.count == 1, let entry = matchingEntries.first else { return nil }
         return item.url(linkNumber: 0, entryId: entry.id)
-    }
-
-    @MainActor
-    func link(for module: NetworkModules) -> [LinkEntryModel] {
-        guard module == .rule else { return [] }
-        return itemController.itemDataModel.items
-            .map { itemController.itemOrEmpty(for: $0) }
-            .sorted { $0.name.count > $1.name.count }
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
-    }
-
-    @MainActor
-    func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
-        return item.entries
-            .sorted { $0.name.count > $1.name.count }
-            .map {
-                LinkEntryModel(
-                    reference: $0.name,
-                    markdownUrl: item.url(linkNumber: 0, entryId: $0.id)
-                )
-            }
     }
 
     @MainActor

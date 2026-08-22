@@ -167,46 +167,33 @@ final class GameTableModel: Sendable {
             observer.canAutoClaimSeat = true
             tabletopGame.claimAnySeat()
         }
-        // `GameObserver.playerChangedSeats` keeps this current for every
-        // later seat change (players joining/leaving SharePlay); this call
-        // covers the gap between the claim(s) above and that callback's
-        // first firing, so no seat's dice flash visible before its claim
-        // is reflected.
-        tabletopGame.withCurrentSnapshot { snapshot in
-            updateDiceVisibility(using: snapshot)
-        }
     }
 
-    /// Shows a die only once two conditions both hold: its seat is actually
-    /// claimed (a player, or the master for seat 0), and the die itself is
-    /// currently part of that seat's focused dice set — tracked via the
-    /// die's own synced `value`, using `0` as this table's own sentinel for
-    /// "not part of the current set" (see `GameSetup.maxDicePerType`, and
-    /// the matching guard in `Die20`/`Die.restingOrientation`). Every seat
-    /// pre-allocates a full pool of both types up front (TabletopKit
-    /// equipment can't be added once `TableSetup` is frozen) —
-    /// `applyDiceRoll` claims exactly as many of each type as the locally
-    /// focused dice model needs by giving them a real value, and this
-    /// method is what turns that synced value into actual visibility for
-    /// every participant. Driven by `GameObserver.playerChangedSeats` (seat
-    /// occupancy changed) and `GameObserver.actionWasConfirmed` (a die's
-    /// value changed), both of which already receive a fresh `TableSnapshot`.
-    func updateDiceVisibility(using snapshot: TableSnapshot) {
-        for (seatId, dieIds) in setup.playerD20Ids {
-            let isOccupied = (snapshot.state(matching: seatId) as? TableSeatState)?.playerID != nil
-            for dieId in dieIds {
-                guard let (die20, state) = snapshot.equipment(of: Die20.self, matching: dieId) else { continue }
-                die20.entity.isEnabled = isOccupied && state.value != 0
-            }
-        }
-        for (seatId, dieIds) in setup.playerD6Ids {
-            let isOccupied = (snapshot.state(matching: seatId) as? TableSeatState)?.playerID != nil
-            for dieId in dieIds {
-                guard let (die, state) = snapshot.equipment(of: Die.self, matching: dieId) else { continue }
-                die.entity.isEnabled = isOccupied && state.value != 0
-            }
-        }
-    }
+    /// Removed 2026-08-23: this used to derive local dice visibility from
+    /// `Entity.isEnabled` (occupied seat + a nonzero synced value ⇒
+    /// enabled), called from `GameObserver.playerChangedSeats`/
+    /// `actionWasConfirmed` and from `setupSeating` via a snapshot read.
+    /// `Entity.isEnabled` is a purely local, unsynced RealityKit property —
+    /// none of Apple's own TabletopKit samples (dice, cards, the
+    /// coin-collecting mini-game) ever set it on equipment; every hide/park
+    /// they show goes through the equipment's own *synced* pose/parentID
+    /// instead (e.g. the card sample's off-table `poseOffTable`, or the
+    /// mini-game's `ResetPlayer` moving a piece to `.bankID(for:)`). A
+    /// permanently-disabled die (every pool slot, from creation, until its
+    /// owning seat actually rolls) was never enabled on a joining player's
+    /// own device — and so, it turned out, never registered as "static
+    /// equipment" for TabletopKit's own RealityKit-level shared-simulation
+    /// join there either. The very first snapshot read touching one of
+    /// those still-disabled dice (this method, scanning every seat's pool)
+    /// crashed with "Could not find static equipment with identifier: ...".
+    /// `Die20`/`Die.init` and `GameTableModel.applyDiceRoll` now park an
+    /// unused die off-table via its synced pose (`.parkedDicePose`) instead,
+    /// and leave every die's entity permanently enabled — visibility is
+    /// entirely a function of synced state now, so no local re-derivation
+    /// is needed. Known gap: a seat that becomes unoccupied after being
+    /// claimed doesn't re-park its dice (this app doesn't otherwise support
+    /// leaving a claimed seat mid-session, so this hasn't been worth solving
+    /// yet — flagged here rather than silently dropped).
 
     /// This device's own seat, however it was claimed (SharePlay assignment
     /// or `claimAnySeat()` for local/single-player) — queried directly from
@@ -247,7 +234,7 @@ final class GameTableModel: Sendable {
     /// player's own seat — showing exactly as many `Die20`/`Die` (d6) slots
     /// as the set needs of each type, typed and positioned to match (a mix
     /// of both is fine), and parking every other slot in this seat's pool
-    /// back at the hidden `0` sentinel (see `updateDiceVisibility(using:)`).
+    /// back off-table at `.parkedDicePose` with the hidden `0` sentinel.
     /// Reuses DiceRPG's existing focus-dice mechanism as the trigger (see
     /// `GameTableView`'s observer) rather than building a new, separate
     /// notion of "selected dice" for the table. `TabletopGame.addAction`
@@ -289,8 +276,13 @@ final class GameTableModel: Sendable {
                     .updateEquipment(equipment, value: result, seatControl: nil, pose: layout[index], boundingBox: nil, context: 0)
                 )
             } else {
+                // Parks this slot off-table via its synced pose instead of
+                // leaving `pose: nil` (no-op) and relying on a separate,
+                // local-only `Entity.isEnabled` toggle — see the doc where
+                // `updateDiceVisibility(using:)` used to live, just above
+                // `applyDiceRoll`, for why.
                 tabletopGame.addAction(
-                    .updateEquipment(equipment, value: 0, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+                    .updateEquipment(equipment, value: 0, seatControl: nil, pose: .parkedDicePose, boundingBox: nil, context: 0)
                 )
             }
         }
@@ -304,7 +296,7 @@ final class GameTableModel: Sendable {
                 )
             } else {
                 tabletopGame.addAction(
-                    .updateEquipment(equipment, value: 0, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
+                    .updateEquipment(equipment, value: 0, seatControl: nil, pose: .parkedDicePose, boundingBox: nil, context: 0)
                 )
             }
         }

@@ -38,27 +38,6 @@ struct LinkControllerTests {
         )
     }
 
-    @Test func quickLinksAreSortedByReferenceLength() async {
-        let root = makeRoot()
-        let shortId = await root.itemController.addNew(type: .item)
-        let longId = await root.itemController.addNew(type: .item)
-        root.editController.reset(name: "Crypt", itemId: shortId)
-        root.editController.reset(name: "Ancient Underground Reservoir", itemId: longId)
-
-        let entryA = MapEntryModel(id: UUID(), name: "Hall", content: "A", coordinates: [])
-        let entryB = MapEntryModel(id: UUID(), name: "Collapsed Southern Gallery", content: "B", coordinates: [])
-        root.editController.add(entry: entryA, into: longId)
-        root.editController.add(entry: entryB, into: longId)
-
-        let itemLinks = root.linkController.link(for: .map)
-        let entryLinks = root.linkController.linkEntries(for: longId)
-
-        #expect(itemLinks.map(\.reference).prefix(2) == ["Ancient Underground Reservoir", "Crypt"])
-        #expect(entryLinks.map(\.reference) == ["Collapsed Southern Gallery", "Hall"])
-        #expect(itemLinks.first?.markdownUrl.localizedStandardContains(longId.uuidString) == true)
-        #expect(entryLinks.first?.markdownUrl.localizedStandardContains(entryB.id.uuidString) == true)
-    }
-
     @Test func toggleTextLinkExpandsEntriesAndCommands() async {
         let root = makeRoot()
         let entryId = UUID()

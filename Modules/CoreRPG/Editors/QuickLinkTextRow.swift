@@ -3,12 +3,19 @@
 import SwiftUI
 
 struct QuickLinkTextRow<EntryViewModel: ItemLinkEditable>: View {
+    init(linkControllable: LinkControllable, model: EntryViewModel, original: Bool) {
+        self.linkControllable = linkControllable
+        self.model = model
+        self.original = original
+        _linkTextModel = State(wrappedValue: LinkHighlightTextModel(linkControllable: linkControllable, text: model.textLinkContent, highlightedText: nil, toggler: nil, shareResult: nil, editAction: { _ in !original }))
+    }
+
     let linkControllable: LinkControllable
     let model: EntryViewModel
     let original: Bool
 
     @Environment(\.colorScheme) private var colorScheme
-    @State private var _linkTextModel: LinkHighlightTextModel?
+    @State private var linkTextModel: LinkHighlightTextModel
 
     var body: some View {
         LinkHighlightTextView(model: linkTextModel)
@@ -16,30 +23,8 @@ struct QuickLinkTextRow<EntryViewModel: ItemLinkEditable>: View {
             .foregroundStyle(original ? .black : .white)
             .rowColorBackground(isSelected: false, backgroundColor: rowColor)
             .onChange(of: model.textLinkContent, initial: false) {
-                updateEntryValues()
+                withAnimation { linkTextModel.reset(text: model.textLinkContent) }
             }
-    }
-
-    private var linkTextModel: LinkHighlightTextModel {
-        guard let linkModel = _linkTextModel else {
-            return updateEntryValues()
-        }
-        return linkModel
-    }
-
-    @discardableResult
-    private func updateEntryValues() -> LinkHighlightTextModel {
-        let entryText = model.textLinkContent
-        if let linkModel = _linkTextModel {
-            withAnimation { linkModel.reset(text: entryText) }
-            return linkModel
-        } else {
-            let linkModel = LinkHighlightTextModel(linkControllable: linkControllable, text: entryText, highlightedText: nil, toggler: nil, shareResult: nil, editAction: { _ in !original })
-            Task {
-                _linkTextModel = linkModel
-            }
-            return linkModel
-        }
     }
 
     private var rowColor: Color {

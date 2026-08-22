@@ -423,23 +423,4 @@ public extension EntryDataEditable {
         }
         return linkModel
     }
-    
-    func scanReplace(entry: Model.Entry, linkEntry: LinkEntryModel, getLink: @Sendable @escaping (Model.Entry) -> String, setLink: @Sendable @escaping (String, Model.Entry) -> Model.Entry, caseInsensitive: Bool, words: Bool) -> Model.Entry {
-        var replacedEntry = entry
-        var nextRange = Range(uncheckedBounds: (getLink(replacedEntry).startIndex, getLink(replacedEntry).endIndex))
-        while let range = getLink(replacedEntry).range(of: linkEntry.reference, options: caseInsensitive ? [.caseInsensitive] : [], range: nextRange) {
-            let endIndex = getLink(replacedEntry).endIndex
-            let lastIndex = range.upperBound == endIndex ? getLink(replacedEntry).index(before: endIndex) : range.upperBound
-            let lastCharacter = getLink(replacedEntry)[lastIndex]
-            if (!words || (lastCharacter.isWhitespace || lastCharacter.isPunctuation)) && !getLink(replacedEntry).isRangeInsideLink(range) {
-                var link = getLink(replacedEntry)
-                link.replaceSubrange(range, with: linkEntry.markdownUrl)
-                replacedEntry = setLink(link, replacedEntry)
-            }
-            guard range.upperBound < getLink(replacedEntry).endIndex else { break }
-            let nextIndex = getLink(replacedEntry).index(after: range.upperBound)
-            nextRange = Range(uncheckedBounds: (nextIndex, getLink(replacedEntry).endIndex))
-        }
-        return replacedEntry
-    }
 }

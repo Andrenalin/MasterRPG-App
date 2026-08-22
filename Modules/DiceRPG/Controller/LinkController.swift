@@ -3,10 +3,7 @@
 import CoreRPG
 import Foundation
 import SwiftUI
-
-#if !os(tvOS)
-import WidgetKit
-#endif
+import os.log
 
 struct LinkController: Sendable {
     let itemController: ItemController
@@ -28,13 +25,13 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: rollUrl, with: gameController.resultText(itemId: itemId), replace: true)
             }
             if command == LinkType.show.rawValue {
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
-            // send
-            Task { @MainActor in
+            guard command == LinkType.share.rawValue else { return text }
+            Task {
                 if let shareResult, let result = try? await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory) {
                     shareResult.networkActions?.game(result, .show, nil)
                 }
@@ -51,33 +48,30 @@ extension LinkController: LinkControllable {
         }
     }
 
-    @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        guard let entryId else { return itemControllable.itemOrEmpty(for: itemId).url(linkNumber: linkNumber) }
-        return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
+    @MainActor public func repairLinks(_ links: [LinkReplaceModel], in content: String) -> String {
+        var result = content
+        for link in links {
+            result = repairLink(link, for: result, for: [.all])
+        }
+        return result
+    }
+
+    @MainActor public func validateLinks(on itemId: UUID) {
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+
+        // Entries are single-child references (`ChildEntryModel`) with no free-text `content`
+        // of their own to repair — only the item's own `description` can embed a link.
+        replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
+
+        if !replacedItem.isSame(inspectedItem) {
+            Logger.linkController.info("Dice: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            itemController.replace(model: replacedItem, isInsert: false)
+        }
+        resetLinkRegister(replacedItem)
     }
 
     @MainActor public func link(for name: String, entryName: String?) -> String? {
         guard let itemId = itemController.itemDataModel.items.first(where: { itemController.itemSync(for: $0)?.name == name }) else { return nil }
         return itemController.itemOrEmpty(for: itemId).url(linkNumber: 0)
-    }
-
-    @MainActor public func link(for module: NetworkModules) -> [LinkEntryModel] {
-        let category: ItemListCategory
-        switch module {
-        case .table: category = .table
-        case .value: category = .value
-        default: category = .all
-        }
-        
-        var items = itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }
-        if category != .all {
-            items = items.filter { $0.category == category }
-        }
-        return items.sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
-    }
-
-    @MainActor public func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
-        [LinkEntryModel(reference: itemController.itemOrEmpty(for: itemId).name, markdownUrl: itemController.itemOrEmpty(for: itemId).url(linkNumber: 0))]
     }
 }

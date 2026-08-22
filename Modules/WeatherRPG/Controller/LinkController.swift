@@ -22,18 +22,19 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             if command == LinkType.show.rawValue {
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
             }
-            Task { @MainActor in
+            guard command == LinkType.share.rawValue else { return text }
+            Task {
                 await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
             }
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     await toggler(itemId, itemControllable.config.module)
                 }
             }
@@ -50,24 +51,19 @@ extension LinkController: LinkControllable {
 
     @MainActor public func validateLinks(on itemId: UUID) {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
-        
+
         if let photoId = replacedItem.photoId {
             if !photoRoot.linkControllable.validateLink(itemId: photoId) {
                 Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
         }
-        
+
         if !replacedItem.isSame(inspectedItem) {
             Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)
-    }
-
-    @MainActor public func generateLink(linkNumber: Int, itemId: UUID, entryId: UUID?) -> String {
-        guard let entryId else { return itemControllable.itemOrEmpty(for: itemId).url(linkNumber: linkNumber) }
-        return itemControllable.itemOrEmpty(for: entryId).url(linkNumber: linkNumber)
     }
 }
 

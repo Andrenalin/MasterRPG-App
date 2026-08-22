@@ -18,9 +18,11 @@ struct LinkControllerTests {
         let link = sut.generateLink(linkNumber: 3, itemId: itemId, entryId: nil)
         #expect(link == "[3D Item](RPG://SPACES/3/B76C7CA1-D594-4123-9563-33545ADD23A3)")
 
+        // SpaceModel.urlName(entryId:) falls back to "<name>-0" when entryId matches no
+        // real entry (its own deliberate, index-based display-name scheme).
         let entryId = UUID()
         let linkWithEntry = sut.generateLink(linkNumber: 3, itemId: itemId, entryId: entryId)
-        #expect(linkWithEntry == "[](RPG://SPACES/3/\(entryId))")
+        #expect(linkWithEntry == "[ 3D Item-0](RPG://SPACES/3/B76C7CA1-D594-4123-9563-33545ADD23A3/\(entryId))")
     }
 
     @Test func toggleWithShareTogglerAndEditAction() async throws {

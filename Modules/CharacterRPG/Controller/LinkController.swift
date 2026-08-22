@@ -6,11 +6,13 @@ import SwiftUI
 import os.log
 import TableRPG
 import DiceRPG
+import PdfRPG
 import PhotoRPG
 
 struct LinkController: Sendable {
     let root: CharacterRootModel
     let diceRoot: DiceRootModel
+    let pdfRoot: PdfRootModel
     let photoRoot: PhotoRootModel
     let tableRoot: TableRootModel
     let itemController: ItemController
@@ -30,7 +32,7 @@ extension LinkController: LinkControllable {
                 return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
             }
             if command == LinkType.show.rawValue {
-                Task { @MainActor in
+                Task {
                     await toggler?(itemId, itemControllable.config.module)
                 }
                 return text
@@ -38,7 +40,7 @@ extension LinkController: LinkControllable {
             return text
         } else {
             if let toggler, entryId == nil, editAction == nil {
-                Task { @MainActor in
+                Task {
                     try? await Task.sleep(for: Self.linkToggleDelay)
                     await toggler(itemId, itemController.config.module)
                 }
@@ -66,12 +68,14 @@ extension LinkController: LinkControllable {
         var result = content
         for link in links {
             result = diceRoot.linkControllable.repairLink(link, for: result, for: [.rules, .value])
+            result = pdfRoot.linkControllable.repairLink(link, for: result, for: [.all])
+            result = photoRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = tableRoot.linkControllable.repairLink(link, for: result, for: [.all])
             result = repairLink(link, for: result, for: [.all])
         }
         return result
     }
-    
+
     @MainActor public func validateLinks(reportModel: ValidateRepairModel) async {
         reportModel.update(phase: .validateLinks)
         for inspectedId in itemController.itemDataModel.items {
@@ -82,10 +86,10 @@ extension LinkController: LinkControllable {
         }
         validateParentId()
     }
-    
+
     @MainActor public func validateLinks(on itemId: UUID) {
         guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
-        
+
         replacedItem.photos = replacedItem.photos.compactMap { photoId in
             if photoRoot.linkControllable.validateLink(itemId: photoId) {
                 return photoId
@@ -101,30 +105,30 @@ extension LinkController: LinkControllable {
                 replacedItem.photoId = nil
             }
         }
-        
+
         for entry in inspectedItem.entries {
             var validatedEntry = entry
-            
+
             if let diceId = validatedEntry.diceId {
                 if !diceRoot.linkControllable.validateLink(itemId: diceId) {
                     Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                     validatedEntry.diceId = nil
                 }
             }
-            
+
             if let valueId = validatedEntry.valueId {
                 if !validateLink(itemId: valueId) {
                     Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Value \(valueId, privacy: .public) is gone. Reset ValueId, no recovery possible.")
                     validatedEntry.valueId = nil
                 }
             }
-            
+
             var links = entry.links(for: entry.name)
             validatedEntry.name = repairLinks(links, in: validatedEntry.name)
-            
+
             links = entry.links(for: entry.value)
             validatedEntry.value = repairLinks(links, in: validatedEntry.value)
-            
+
             if !entry.isSame(validatedEntry) {
                 replacedItem[entry.id]  = validatedEntry
             }
@@ -161,32 +165,6 @@ extension LinkController: LinkControllable {
 }
 
 extension LinkController {
-    @MainActor
-    func link(for module: NetworkModules) -> [LinkEntryModel] {
-        let category: ItemListCategory
-        switch module {
-        case .value: category = .character
-        default: category = .all
-        }
-        
-        var items = itemController.itemDataModel.items.map { itemController.itemOrEmpty(for: $0) }
-        if category != .all {
-            items = items.filter { $0.category == category }
-        }
-        return items.sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name, markdownUrl: $0.url(linkNumber: 0)) }
-    }
-    
-    @MainActor
-    func linkEntries(for itemId: UUID) -> [LinkEntryModel] {
-        let item = itemController.itemOrEmpty(for: itemId)
-        return item.entries
-            .sorted(by: { $0.name.count > $1.name.count })
-            .map { LinkEntryModel(reference: $0.name.withoutLink(), markdownUrl: item.url(linkNumber: 0, entryId: $0.id)) }
-    }
-}
-
-extension LinkController {
     @MainActor public func validate(id: UUID?) -> UUID? {
         guard let itemId = itemController.itemDataModel.items.first(where: { $0 == id }) else { return nil }
         return itemId
@@ -200,22 +178,22 @@ extension LinkController {
         if let valueId = entry.valueId {
             otherValue = itemController.itemOrEmpty(for: valueId).url(linkNumber: 0)
         }
-        
+
         if let valueText = calculate(entry: entry, deep: 0), entry.value != valueText {
             otherValue = "= \(valueText)"
         }
-        
+
         let rowText = entry.valueLinkText(otherValue: " \(otherValue)", withoutName: withoutName)
         return rowText
     }
-    
+
     @MainActor
     func calculate(entry: ValueEntryModel, deep: Int = 0) -> String? {
         guard entry.canCalculate else { return nil }
         let links = entry.links(for: entry.value)
         var result = entry.value
         var valid = true
-        
+
         links.forEach { link in
             guard link.module == .value, let entryId = link.entryId else {
                 valid = false
@@ -228,7 +206,7 @@ extension LinkController {
             let linkTable = itemController.itemOrEmpty(for: link.itemId)
             result = result.replacing(linkTable.url(linkNumber: link.linkNumber, entryId: entryId), with: "\(linkValue)")
         }
-        
+
         guard valid else {
             // A link outside the `.value` module (e.g. a Table roll kept for
             // provenance) can't be re-evaluated here, but the entry still
@@ -240,7 +218,7 @@ extension LinkController {
         result = result.replacing("|", with: "+")
         return entry.calculate(on: result)
     }
-    
+
     @MainActor
     private func calculate(itemId: UUID, entryId: UUID, deep: Int) -> String? {
         let entry = itemController.itemOrEmpty(for: itemId)[entryId]
@@ -265,7 +243,7 @@ extension LinkController {
             }
         }
     }
-    
+
     @MainActor
     func repairValueLinks(models: [ValueModel], mapper: [UUID: UUID], text: String) -> String {
         let links = LinkReplaceController.links(for: text).filter { $0.module == .value && mapper[$0.itemId] != nil }
@@ -273,7 +251,7 @@ extension LinkController {
         for link in links {
             let originalModel = itemController.itemOrEmpty(for: link.itemId)
             guard let newId = mapper[link.itemId], let newModel = models.first(where: { $0.id == newId }) else { continue }
-            
+
             let markDown: String
             if let entryId = link.entryId {
                 guard let index = originalModel.entries.firstIndex(where: { $0.id == entryId }), index < newModel.entries.count else { continue }
@@ -301,8 +279,9 @@ extension LinkController {
             $0.module == itemController.config.module && $0.entryId != nil && $0.entryId != entryId && itemController.itemSync(for: $0.itemId) != nil
         }
         for detail in details {
+            guard let detailEntryId = detail.entryId else { continue }
             _ = withObservationTracking {
-                itemController.itemOrEmpty(for: detail.itemId)[detail.entryId!].value
+                itemController.itemOrEmpty(for: detail.itemId)[detailEntryId].value
             } onChange: {
                 Task { @MainActor in
                     action()
