@@ -183,6 +183,44 @@ public extension LinkControllable {
         return text.toggleLink(url: url.absoluteString, with: "🚨 \(String(localized: itemControllable.config.module.localizedTitle)) \(String(localized: "Link is broken", bundle: .module))")
     }
 
+    /// The `.remove`/`.show` command handling shared byte-for-byte by every module's
+    /// `toggleTextLink`. Returns the text to return immediately if `command` was one of
+    /// these two; `nil` if the caller should keep dispatching (`.share`, or a
+    /// module-specific command like Audio's `.play`). See CODE_AUDIT_Link.md §9.3 —
+    /// extracted to stop this block from being hand-copied (and drifting, as the
+    /// `generateLink`/share-guard bugs it once masked showed) into 9 module files.
+    @MainActor
+    func standardCommand(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String, in text: String, toggler: ((UUID, NetworkModules) async -> Void)?) -> String? {
+        if command == LinkType.remove.rawValue {
+            let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
+            return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
+        }
+        if command == LinkType.show.rawValue {
+            Task {
+                await toggler?(itemId, itemControllable.config.module)
+            }
+            return text
+        }
+        return nil
+    }
+
+    /// The toggler auto-trigger (fires once, when an item-level link with no explicit
+    /// `editAction` is first expanded) plus the trailing "remove" affordance, shared by
+    /// every module's `toggleTextLink` else-branch. Each module still assembles its own
+    /// `result` string with its own ordering/detail text — only this common tail is
+    /// centralized. `removeActionSpacing` defaults to the majority modules' leading
+    /// space; pass `""` for the modules that render without one (Space, Weather), so
+    /// this refactor changes zero modules' rendered output. See CODE_AUDIT_Link.md §9.3.
+    @MainActor
+    func autoToggleAndRemoveAction(linkNumber: Int, itemId: UUID, entryId: UUID?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?, removeActionSpacing: String = " ") -> String {
+        if let toggler, entryId == nil, editAction == nil {
+            Task {
+                await toggler(itemId, itemControllable.config.module)
+            }
+        }
+        let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module)) ?? false
+        return editLine ? "\(removeActionSpacing)\(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
+    }
 }
 
 // MARK: - Repair Links

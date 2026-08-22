@@ -109,15 +109,9 @@ extension LinkController: LinkControllable {
             }
             return text
         } else {
-            if let toggler, entryId == nil, editAction == nil {
-                Task {
-                    await toggler(itemId, itemController.config.module)
-                }
-            }
             let item = itemController.itemOrEmpty(for: itemId)
             let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId)) " : ""
-            let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemController.config.module)) ?? false
-            let removeAction = editLine ? " \(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
+            let removeAction = autoToggleAndRemoveAction(linkNumber: linkNumber, itemId: itemId, entryId: entryId, toggler: toggler, editAction: editAction)
             let description: String
             if let entryId {
                 description = item[entryId].content

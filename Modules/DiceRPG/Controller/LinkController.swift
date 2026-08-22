@@ -15,20 +15,13 @@ struct LinkController: Sendable {
 extension LinkController: LinkControllable {
     @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
-            if command == LinkType.remove.rawValue {
-                let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
-                return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
+            if let handled = standardCommand(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command, in: text, toggler: toggler) {
+                return handled
             }
             if command == LinkType.roll.rawValue {
                 gameController.rollDice(itemId: itemId, networkActions: shareResult?.networkActions, resultCategopry: nil, rollSynced: true)
                 let rollUrl = specialLink(linkType: .roll, linkNumber: linkNumber, itemId: itemId, entryId: entryId)
                 return text.toggleLink(url: rollUrl, with: gameController.resultText(itemId: itemId), replace: true)
-            }
-            if command == LinkType.show.rawValue {
-                Task {
-                    await toggler?(itemId, itemControllable.config.module)
-                }
-                return text
             }
             guard command == LinkType.share.rawValue else { return text }
             Task {

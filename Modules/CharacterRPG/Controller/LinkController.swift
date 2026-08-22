@@ -27,15 +27,8 @@ struct LinkController: Sendable {
 extension LinkController: LinkControllable {
     @MainActor public func toggleTextLink(linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         if let command {
-            if command == LinkType.remove.rawValue {
-                let url = generateLink(linkNumber: linkNumber - LinkType.remove.linkNumberAddition, itemId: itemId, entryId: entryId)
-                return text.toggleLink(url: url, with: name(for: itemId, entryId: entryId), remove: true)
-            }
-            if command == LinkType.show.rawValue {
-                Task {
-                    await toggler?(itemId, itemControllable.config.module)
-                }
-                return text
+            if let handled = standardCommand(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command, in: text, toggler: toggler) {
+                return handled
             }
             return text
         } else {
