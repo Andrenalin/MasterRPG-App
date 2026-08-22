@@ -10,6 +10,28 @@ class GameObserver: TabletopGame.Observer {
     let tabletop: TabletopGame
     let renderer: GameRenderer
     var isMaster: Bool = false
+    /// Gates `playerChangedSeats`'s automatic re-claim below (line ~44) while a
+    /// SharePlay group session is active but `coordinateWithSession(_:)` hasn't
+    /// attached to it yet. Defaults `false` — not `true` — because this
+    /// observer is registered (`tabletopGame.addObserver`) the moment
+    /// `GameTableModel.init` constructs `tabletopGame`, which happens well
+    /// before `GameTableView` gets a chance to call `setupSeating` and learn
+    /// whether a SharePlay session is even involved; if `playerChangedSeats`
+    /// fires with `newSeat == nil` for the local player anywhere in that
+    /// window (TabletopKit replays/settles initial seat state as part of
+    /// constructing a fresh `TableSetup`), an ungated `claimAnySeat()` here
+    /// races the network coordinator exactly like the seat claim `setupSeating`
+    /// itself defers — see that method's own doc — just earlier and outside
+    /// its control, still crashing a joining player with "Could not find
+    /// static equipment with identifier: ...". `setupSeating` flips this
+    /// `true` immediately for the no-session (local/single-player) case,
+    /// where there's no coordinator to race; `RPGSharePlayController` flips
+    /// it `true` once its own coordinated seat assignment has actually been
+    /// submitted, in both places it does that (the deferred task in
+    /// `setup(tabletopGame:gameTableModel:)`, and the session-configure flow
+    /// that calls `setupSeatAssignment` directly after an already-attached
+    /// `coordinateWithSession`).
+    var canAutoClaimSeat = false
 
     init(tabletop: TabletopGame, renderer: GameRenderer) {
         self.tabletop = tabletop
@@ -39,7 +61,7 @@ class GameObserver: TabletopGame.Observer {
     }
 
     func playerChangedSeats(_ player: Player, oldSeat: (any TableSeat)?, newSeat: (any TableSeat)?, snapshot: TableSnapshot) {
-        if player.id == tabletop.localPlayer.id, newSeat == nil {
+        if player.id == tabletop.localPlayer.id, newSeat == nil, canAutoClaimSeat {
             if isMaster {
                 tabletop.claimSeat(matching: TableSeatIdentifier(0))
             } else {

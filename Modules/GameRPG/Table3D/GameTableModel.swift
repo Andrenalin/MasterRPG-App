@@ -142,7 +142,8 @@ final class GameTableModel: Sendable {
     /// against the mismatched local state — crashing every joining player
     /// with "Could not find static equipment with identifier: ...". Only the
     /// no-session (local/single-player) case claims a seat directly here,
-    /// since there's no coordinator to race.
+    /// since there's no coordinator to race — see `GameObserver.canAutoClaimSeat`'s
+    /// own doc for the matching guard on its fallback re-claim.
     func setupSeating(sharePlayController: RPGSharePlayController) {
         let isMaster = sharePlayController.gameModel?.gameConfig.isMaster ?? false
         observer.isMaster = isMaster
@@ -150,6 +151,7 @@ final class GameTableModel: Sendable {
             Logger.sharePlay.debug("Setting up seating with SharePlay — seat claim deferred until coordinateWithSession(_:) attaches")
         } else {
             Logger.sharePlay.debug("Setting up seating for single-player")
+            observer.canAutoClaimSeat = true
             tabletopGame.claimAnySeat()
         }
         // `GameObserver.playerChangedSeats` keeps this current for every
