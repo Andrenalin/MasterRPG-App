@@ -22,7 +22,7 @@ public protocol EntryDataAccessable {
 
 public extension EntryDataAccessable {
     func filter(with search: String) -> Bool {
-        name.localizedCaseInsensitiveContains(search)
+        name.localizedStandardContains(search)
     }
     
     func filter(_ text: String, selectedTags: [TagFilterSelection]) -> Bool {

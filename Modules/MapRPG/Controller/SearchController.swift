@@ -1,14 +1,5 @@
 // @copyright André Trettin
 
 import CoreRPG
-import Foundation
 
-struct SearchController: Sendable {
-    let itemController: ItemController
-}
-
-extension SearchController: SearchControllable {
-    var itemControllable: any ItemControllable {
-        itemController
-    }
-}
+typealias SearchController = GenericSearchController<ItemController>

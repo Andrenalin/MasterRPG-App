@@ -60,7 +60,7 @@ extension AdventureEntryModel: EntryDataAccessable {
     }
     
     public func filter(with search: String) -> Bool {
-        (search.isEmpty || name.localizedCaseInsensitiveContains(search) || content.localizedCaseInsensitiveContains(search))
+        (search.isEmpty || name.localizedStandardContains(search) || content.localizedStandardContains(search))
     }
 
     public func linkContent() -> String { content }

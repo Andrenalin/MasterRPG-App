@@ -222,6 +222,12 @@ public extension EditControllable {
 public extension EditControllable {
     @MainActor func addItem(itemId: UUID, parentId: UUID?) {
         guard let parentId, itemId != parentId, let parentItem = editModel(for: parentId), var item = editModel(for: itemId) else { return }
+        // Refuse a link that would make `itemId` an ancestor of itself: if `parentId` is
+        // already reachable by descending from `itemId` through folder/collection membership,
+        // linking `itemId` under `parentId` below would close the loop. Every recursive
+        // search/list tree-builder (`buildFolderTreeNode`, `appendToFlat`, …) walks this exact
+        // `entries`/`childId` graph assuming it's acyclic and has no cycle guard of its own.
+        guard !isDescendant(parentId, of: itemId) else { return }
         if (parentItem.isFolder && parentItem.category == .item) && item.parentId == parentId {
             return
         }
@@ -267,6 +273,22 @@ public extension EditControllable {
         if shouldCheckForMove {
             movedFile(itemId: itemId)
         }
+    }
+
+    /// Returns true if `candidateId` is reachable from `rootId` by descending through folder/
+    /// collection membership (`entries.childId`) — i.e. whether `rootId` is already an
+    /// ancestor of `candidateId` in that graph. `visited` makes the walk itself cycle-safe in
+    /// case one already exists somehow, rather than relying on the graph being acyclic.
+    @MainActor private func isDescendant(_ candidateId: UUID, of rootId: UUID) -> Bool {
+        var visited: Set<UUID> = []
+        var stack: [UUID] = [rootId]
+        while let current = stack.popLast() {
+            guard visited.insert(current).inserted else { continue }
+            if current == candidateId { return true }
+            guard let currentItem = itemControllable.itemSync(for: current) else { continue }
+            stack.append(contentsOf: currentItem.entries.map(\.childId))
+        }
+        return false
     }
 
     @MainActor func remove(itemId: UUID, parentId: UUID, oneUp: Bool) {

@@ -12,8 +12,7 @@ struct SearchRootView: View {
             .modifier(CompactNavigationModifier(
                 root: root,
                 navigator: navigator,
-                model: root.searchController.model,
-                
+                model: root.searchController.model
             ))
     }
 }
@@ -23,7 +22,7 @@ struct SearchRootView: View {
 private struct CompactNavigationModifier: ViewModifier {
     let root: GameRoot
     let navigator: Navigator
-    @Bindable var model: SearchModel
+    @Bindable var model: GlobalSearchModel
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 

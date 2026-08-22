@@ -18,17 +18,16 @@ import SpaceRPG
 struct SearchGlobalController {
     init(root: GameRoot, searchText: String = "") {
         self.root = root
-        self.model = SearchModel(searchText: searchText)
+        self.model = GlobalSearchModel(searchText: searchText)
     }
-    
+
     let root: GameRoot
-    let model: SearchModel
+    let model: GlobalSearchModel
 
     func performSearch() async {
-        // Cancel any ongoing search
-        model.cancelSearch()
-
         guard !model.searchText.isEmpty else {
+            // Assigning nil still cancels any in-flight search via `currentTask`'s `didSet`.
+            model.currentTask = nil
             model.results = [:]
             return
         }
@@ -46,8 +45,9 @@ struct SearchGlobalController {
             model.results = await searchAllItems()
         }
 
-        model.setSearchTask(searchTask)
-        await model.awaitCurrentSearch()
+        // Assigning cancels any previous in-flight search via `didSet`.
+        model.currentTask = searchTask
+        await searchTask.value
     }
 
     private func searchAllItems() async -> [NetworkModules: [SearchResult]] {

@@ -134,23 +134,16 @@ public struct LinkItemListView: View {
 // MARK: - Private helpers
 
 private extension LinkItemListView {
-    /// Routes to `detailListModel` when a parent scope is active, exactly as `ListRootView` does.
-    /// This keeps the scoped inspector state (entries, open/close, scroll) independent from
-    /// the unscoped inspector so switching back doesn't reset the main list.
+    /// Routes to `detailListModel` when a parent scope is active. This keeps the scoped
+    /// inspector state (entries, open/close, scroll) independent from the unscoped inspector
+    /// so switching back doesn't reset the main list.
     var listModel: FolderListModel {
-        if parentModel != nil, let detail = root.folderLinkControllable.listModel.detailListModel {
-            return detail
-        }
-        return root.folderLinkControllable.listModel
+        root.folderLinkControllable.scopedListModel(parentModel: parentModel)
     }
-    
+
     /// Determines if the "no results" overlay should be shown.
-    ///
-    /// Uses `searchModel.searchReturnedNoResults` rather than `listModel.list.isEmpty`: `buildList`
-    /// preserves the previous list when a search returns nothing (anti-flicker), so `list.isEmpty`
-    /// is never true even when the search matched zero items.
     var shouldShowNoResults: Bool {
-        root.folderLinkControllable.searchModel.searchReturnedNoResults
+        root.folderLinkControllable.shouldShowNoResults
     }
 
     @ViewBuilder
