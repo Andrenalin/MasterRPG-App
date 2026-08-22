@@ -154,7 +154,7 @@ public extension ExportControllable {
                 // tight-loop function called from every module's `exporting(itemIds:)`
                 // override, and this is purely a diagnostic log line — not worth making
                 // the whole BFS (and every override) `async` for. See CODE_AUDIT_EditItem §3.4.
-                Task { await self.logExport(title: "exporting not found \(id.uuidString))", count: 1) }
+                Task { await self.logExport(title: "exporting not found \(id.uuidString)", count: 1) }
                 continue
             }
             results.insert(id)

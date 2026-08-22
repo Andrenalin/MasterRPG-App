@@ -637,6 +637,24 @@ final class RPGSharePlayController {
 
     #if os(visionOS)
     private var systemCoordinator: SystemCoordinator?
+    /// Identifies the `TabletopGame` instance `deferCoordinateAndAssignSeats`
+    /// has already coordinated, so the two independent triggers that can both
+    /// reach it — `setup(tabletopGame:gameTableModel:)` (table view opens
+    /// after the session already exists) and `configureGroupSession` (the
+    /// session starts while the table view is already open) — coordinate the
+    /// same instance at most once, no matter which fires first or how many
+    /// times either fires. Each defers its own call into a `Task { @MainActor
+    /// }` (blocking-main-thread reasons — see `deferCoordinateAndAssignSeats`'s
+    /// own doc), and a `Task` whose body never checks `Task.isCancelled` still
+    /// runs to completion even after `trackSessionTask` cancels it. Without
+    /// this guard, both triggers landing on the same instance called
+    /// `coordinateWithSession` twice and submitted a duplicate `claimSeat`
+    /// each, corrupting TabletopKit's shared-simulation role/template
+    /// negotiation and reliably reproducing "Could not find static equipment
+    /// with identifier: ..." moments later — reproduced on-device 2026-08-22
+    /// pairing a Release and a Debug build (their differing startup speed is
+    /// exactly what exposes the ordering).
+    private var coordinatedTabletopGame: ObjectIdentifier?
     #endif
 
     private let groupStateObserver = GroupStateObserver()
@@ -750,37 +768,62 @@ final class RPGSharePlayController {
     func setup(tabletopGame: TabletopGame, gameTableModel: GameTableModel? = nil) {
         self.tabletopGame = tabletopGame
         if let groupSession {
-            // `coordinateWithSession` is a synchronous, @MainActor-required TabletopKit call
-            // that can block the main thread while the audio session is active (its internal
-            // AVAudioSession route/category reconfiguration — SessionCore::setCategory).
-            // Apple's own TabletopKit sample defers this exact call inside `Task { @MainActor
-            // in }` for the same reason. Do the same so it runs as its own main-actor turn
-            // instead of serializing in front of the seating/map/pawn sync work that follows
-            // it in `GameTableView.initializeGameIfNeeded()`.
-            //
-            // `setupSeatAssignment` is chained *inside* this same deferred task, after
-            // `coordinateWithSession` returns, rather than fired separately and synchronously
-            // by the caller (as it used to be, via `GameTableModel.setupSeating`). `claimSeat`/
-            // `claimAnySeat` are themselves TabletopKit-synchronized actions — submitting one
-            // before this game's network coordinator is attached to the group session left a
-            // joining player's seat claim unsynced against the master's already-running
-            // session. TabletopKit's own internal reconciliation could then no longer resolve
-            // an in-flight synced update against the mismatched local state, crashing every
-            // joining player with "Could not find static equipment with identifier: ...". The
-            // master never hit this because it originates the session instead of reconciling
-            // into one; local (non-SharePlay) play never hit it because `coordinateWithSession`
-            // is never called at all there — see `GameTableModel.setupSeating`'s own doc.
-            let task = Task { @MainActor [weak self, weak tabletopGame, weak gameTableModel] in
-                guard let self, let tabletopGame, self.tabletopGame === tabletopGame else { return }
-                tabletopGame.coordinateWithSession(groupSession)
-                if let gameTableModel {
-                    self.setupSeatAssignment(gameTableModel: gameTableModel)
-                }
-            }
-            trackSessionTask(task, key: Self.coordinateSessionTaskKey)
+            deferCoordinateAndAssignSeats(
+                tabletopGame: tabletopGame,
+                groupSession: groupSession,
+                gameTableModel: gameTableModel
+            )
         } else if let gameTableModel {
             setupSeatAssignment(gameTableModel: gameTableModel)
         }
+    }
+
+    /// Coordinates `tabletopGame` with `groupSession` and assigns seats — but
+    /// see `coordinatedTabletopGame`'s own doc for why doing that at most
+    /// once per `tabletopGame` instance needs an explicit guard, not just
+    /// `trackSessionTask`'s cancel-and-replace.
+    ///
+    /// Deferred into its own main-actor turn (never called inline) because
+    /// `coordinateWithSession` is a synchronous, @MainActor-required
+    /// TabletopKit call that can block the main thread while the audio
+    /// session is active (its internal AVAudioSession route/category
+    /// reconfiguration — SessionCore::setCategory). Apple's own TabletopKit
+    /// sample defers this exact call inside `Task { @MainActor in }` for the
+    /// same reason.
+    ///
+    /// `setupSeatAssignment` is chained *inside* this same deferred task,
+    /// after `coordinateWithSession` returns, rather than fired separately
+    /// and synchronously by the caller (as it used to be, via
+    /// `GameTableModel.setupSeating`). `claimSeat`/`claimAnySeat` are
+    /// themselves TabletopKit-synchronized actions — submitting one before
+    /// this game's network coordinator is attached to the group session left
+    /// a joining player's seat claim unsynced against the master's
+    /// already-running session. TabletopKit's own internal reconciliation
+    /// could then no longer resolve an in-flight synced update against the
+    /// mismatched local state, crashing every joining player with "Could not
+    /// find static equipment with identifier: ...". The master never hits
+    /// this because it originates the session instead of reconciling into
+    /// one; local (non-SharePlay) play never hits it because
+    /// `coordinateWithSession` is never called at all there — see
+    /// `GameTableModel.setupSeating`'s own doc.
+    private func deferCoordinateAndAssignSeats(
+        tabletopGame: TabletopGame,
+        groupSession: GroupSession<RPGActivity>,
+        gameTableModel: GameTableModel?
+    ) {
+        let task = Task { @MainActor [weak self, weak tabletopGame, weak gameTableModel] in
+            guard let self, let tabletopGame, self.tabletopGame === tabletopGame else { return }
+            let identifier = ObjectIdentifier(tabletopGame)
+            guard self.coordinatedTabletopGame != identifier else { return }
+            self.coordinatedTabletopGame = identifier
+            tabletopGame.coordinateWithSession(groupSession)
+            if let gameTableModel {
+                self.setupSeatAssignment(gameTableModel: gameTableModel)
+            } else {
+                Logger.sharePlay.debug("GameTableModel not available at session configure time — seats assigned later")
+            }
+        }
+        trackSessionTask(task, key: Self.coordinateSessionTaskKey)
     }
     #endif
 }
@@ -1699,6 +1742,7 @@ extension RPGSharePlayController {
         #if os(visionOS)
         tabletopGame?.detachNetworkCoordinator()
         systemCoordinator = nil
+        coordinatedTabletopGame = nil
         gameModel?.shareState.isSharePlayActive = false
         gameModel?.shareState.groupImmersionActive = false
         #endif
@@ -2077,20 +2121,23 @@ extension RPGSharePlayController {
         sessionLifecycle.didRequestJoin(sessionId: groupSession.id)
         playBack?.coordinateWithSession(groupSession)
         #if os(visionOS)
-        // This API is synchronous. Calling it directly keeps coordination in
-        // the configured session's lifetime instead of spawning an obsolete,
-        // untracked task that reset() cannot cancel.
         guard !Task.isCancelled,
               sessionLoopIsCurrent(sessionId: groupSession.id)
         else { return }
-        tabletopGame?.coordinateWithSession(groupSession)
-
-        if tabletopGame != nil {
-            if let gameTableModel = gameModel?.gameTableModel {
-                setupSeatAssignment(gameTableModel: gameTableModel)
-            } else {
-                Logger.sharePlay.debug("GameTableModel not available at session configure time — seats assigned later")
-            }
+        // This call handles the mirror-image ordering of
+        // `setup(tabletopGame:gameTableModel:)`'s own call to the same
+        // deferred helper: `tabletopGame` is already registered here because
+        // the 3D table view opened *before* this SharePlay session did, where
+        // that other call site handles a session that was already active
+        // before the table view opened. `deferCoordinateAndAssignSeats`'s own
+        // `coordinatedTabletopGame` guard keeps the two idempotent against
+        // each other regardless of which fires first.
+        if let tabletopGame {
+            deferCoordinateAndAssignSeats(
+                tabletopGame: tabletopGame,
+                groupSession: groupSession,
+                gameTableModel: gameModel?.gameTableModel
+            )
         }
         #endif
     }

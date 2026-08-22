@@ -12,7 +12,12 @@ final class FakeExportController: ExportControllable, @unchecked Sendable {
     var itemControllable: any ItemControllable
     private var _hubControllable: (any RootExportControllable)?
     var hubControllable: any RootExportControllable {
-        get { _hubControllable! }
+        get {
+            guard let hub = _hubControllable else {
+                preconditionFailure("\(itemControllable.config.module.token) export requires its Adventure export hub after setup.")
+            }
+            return hub
+        }
         set { _hubControllable = newValue }
     }
 

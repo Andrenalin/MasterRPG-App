@@ -10,21 +10,6 @@ public enum ImportMode: Hashable, Sendable, CaseIterable {
     case merge, overwrite, manual
 }
 
-public enum ImportResolution: Hashable, Sendable, CaseIterable {
-    case old, new, merge
-}
-
-public struct ImportReviewItem: Identifiable, Sendable {
-    public enum Kind: Sendable { case new, updated, deleted }
-
-    public let id: UUID
-    public let name: String
-    public let moduleName: String
-    public let kind: Kind
-    public var resolution: ImportResolution
-    let applyResolution: @MainActor @Sendable (ImportResolution) async -> Void
-}
-
 @MainActor @Observable
 public final class ItemDataImportModel {
     public init() {}
@@ -745,7 +730,20 @@ extension InputStream {
         return Int(u32)
     }
 
+    /// Upper bound on a single item/file block's declared size. `size` below comes
+    /// straight off the wire (a 4-byte counter, up to ~4.29 billion) with nothing else
+    /// validating it first — without this cap a single corrupted or malicious header
+    /// (from a bad import file, or a peer's SharePlay/Bonjour network payload) would
+    /// make `readData(size:)` attempt a multi-gigabyte allocation before the
+    /// subsequent `read` call ever gets a chance to fail with `.notEnoughData`. See
+    /// CODE_AUDIT_Import §6.1. 512 MB comfortably covers the largest legitimate single
+    /// blob this format carries (an embedded PDF or 3D object file) with headroom.
+    static let maxSingleBlockSize = 512 * 1_024 * 1_024
+
     func readData(size: Int) throws -> Data {
+        guard size >= 0, size <= Self.maxSingleBlockSize else {
+            throw ItemDataImportableError.notEnoughData
+        }
         var readBuffer = [UInt8](repeating: 0, count: size)
         let readCount = read(&readBuffer, maxLength: size)
         guard readCount == readBuffer.count else {

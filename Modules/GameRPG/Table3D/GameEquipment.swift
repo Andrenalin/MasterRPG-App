@@ -743,11 +743,25 @@ extension GameTableModel {
     /// device computes the same sorted `activeParticipants` list — and
     /// surfaced via `sharedSeatPlayerCount` and a log instead of being
     /// silent. See CODE_AUDIT §5.2.
+    /// Submits `claimSeat` only if this exact `(session, seat)` pair hasn't
+    /// already been requested — see `GameTableModel.lastRequestedSeatAssignment`'s
+    /// own doc for why a redundant identical claim is unsafe, not just
+    /// wasteful.
+    @MainActor
+    private func claimSeatIfNeeded(_ seatId: TableSeatIdentifier, sessionId: UUID) {
+        guard lastRequestedSeatAssignment?.sessionId != sessionId
+            || lastRequestedSeatAssignment?.seatId != seatId
+        else { return }
+        lastRequestedSeatAssignment = (sessionId, seatId)
+        tabletopGame.claimSeat(matching: seatId)
+    }
+
     @MainActor
     func assignSeatsForSharePlay(groupSession: GroupSession<RPGActivity>?, isMaster: Bool) {
         guard let groupSession else {
             Logger.sharePlay.debug("No active GroupSession — claiming any seat for single player")
             sharedSeatPlayerCount = nil
+            lastRequestedSeatAssignment = nil
             tabletopGame.claimAnySeat()
             return
         }
@@ -755,7 +769,7 @@ extension GameTableModel {
         Logger.sharePlay.debug("SharePlay seat assignment for \(groupSession.activeParticipants.count, privacy: .public) participants (isMaster: \(isMaster, privacy: .public))")
 
         if isMaster {
-            tabletopGame.claimSeat(matching: TableSeatIdentifier(0))
+            claimSeatIfNeeded(TableSeatIdentifier(0), sessionId: groupSession.id)
             sharedSeatPlayerCount = nil
             Logger.sharePlay.debug("Assigned seat 0 (master)")
             return
@@ -773,6 +787,7 @@ extension GameTableModel {
         guard let localIndex = sortedParticipants.firstIndex(where: { $0.id == localParticipant.id }) else {
             Logger.sharePlay.debug("Could not find local participant — claiming any seat")
             sharedSeatPlayerCount = nil
+            lastRequestedSeatAssignment = nil
             tabletopGame.claimAnySeat()
             return
         }
@@ -795,7 +810,7 @@ extension GameTableModel {
             sharedSeatPlayerCount = nil
         }
         Logger.sharePlay.debug("Assigned seat \(seatIndex, privacy: .public) to player (index \(localIndex, privacy: .public))")
-        tabletopGame.claimSeat(matching: TableSeatIdentifier(seatIndex))
+        claimSeatIfNeeded(TableSeatIdentifier(seatIndex), sessionId: groupSession.id)
     }
 
     @MainActor

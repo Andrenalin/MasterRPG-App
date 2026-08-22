@@ -128,7 +128,21 @@ public struct GameTableView: View {
                 // `.tabletopGame(_:parent:)` modifier's own mount. See
                 // `setUpSharePlayCoordinationIfNeeded(for:)`'s own doc for why that
                 // ordering matters.
+                //
+                // `waitForFirstRenderedFrame(of:)` closes a *further* gap this same
+                // mount-order race left open: `.tabletopGame(_:parent:)`'s own
+                // RealityKit-side registration runs as part of the engine's regular
+                // per-frame ECS tick (`re::Scheduler::executePhase` /
+                // `RCPSharedSimulationExecuteUpdate`), not synchronously during this
+                // SwiftUI mount pass — so merely being chained onto the mounted view,
+                // and even deferring `RPGSharePlayController`'s own coordination by a
+                // full extra `Task { @MainActor }` turn, still wasn't reliably enough
+                // of a wait: reproduced on-device joining an already-active session
+                // ("Could not find static equipment with identifier: ...") with both of
+                // those in place. Proof that a frame has actually rendered this scene is
+                // a stronger signal than any fixed number of Task turns.
                 .task {
+                    await waitForFirstRenderedFrame(of: loadedGame)
                     setUpSharePlayCoordinationIfNeeded(for: loadedGame)
                 }
                 // Pin drag: the handlers guard permissions — the master moves
@@ -307,6 +321,14 @@ public struct GameTableView: View {
         .onDisappear {
             roomActionTask?.cancel()
             accessibilitySubscriptions.removeAll()
+            // `game`/`renderer.root` are retained across this volumetric window
+            // disappearing (see `initializeGameIfNeeded()`'s "if let game"
+            // branch), but the "pin-menu" `Attachment`'s `_HostingEntity` is
+            // not — detach it now rather than leaving it parented under
+            // `renderer.root` as a stale, mid-teardown entity for the next
+            // `RealityView` mount's `content.add(renderer.root)` to walk back
+            // over. See `GameTableModel.registerPinMenuAttachment(_:)`'s doc.
+            game?.detachPinMenuAttachment()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()
             if root.gameModel.gameTableModel === game {
@@ -425,6 +447,23 @@ public struct GameTableView: View {
             gameTableModel: game,
             sharePlayController: root.networkStore.sharePlayStore
         )
+    }
+
+    /// Awaits one `SceneEvents.Update` from `game`'s scene — see this
+    /// method's call site (the `.task` right above the `.tabletopGame(_:
+    /// parent:)` modifier) for why proof of an actual rendered frame is
+    /// needed before triggering SharePlay coordination, not just being
+    /// chained onto the mounted view. A no-op (returns immediately) if the
+    /// scene somehow isn't attached yet, rather than hanging forever.
+    private func waitForFirstRenderedFrame(of game: GameTableModel) async {
+        guard let scene = game.renderer.root.scene else { return }
+        await withCheckedContinuation { continuation in
+            var subscription: (any Cancellable)?
+            subscription = scene.subscribe(to: SceneEvents.Update.self) { _ in
+                subscription?.cancel()
+                continuation.resume()
+            }
+        }
     }
 
     /// Applies the locally focused dice set to `game`'s own seat, or clears

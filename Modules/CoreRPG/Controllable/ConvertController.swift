@@ -20,10 +20,17 @@ public struct ConvertController: Sendable {
         await repairItems(reportModel: reportModel, only: importedIds)
     }
 
+    /// Repairs either the whole library (`repairIds == nil`, from `repairHiddenAndFolders`)
+    /// or just the ids from one import batch. The targeted path iterates `repairIds`
+    /// directly instead of scanning every item in the module and filtering by
+    /// membership — this runs after every non-manual import, including every
+    /// live game-networking sync, so scanning the full item list on each call would
+    /// scale with total library size instead of with the (usually tiny) import batch.
+    /// See CODE_AUDIT_Import §7.1.
     @MainActor private func repairItems(reportModel: ValidateRepairModel, only repairIds: Set<UUID>?) async {
-        for itemId in itemController.itemDataModel.items {
+        let itemIds = repairIds.map(Array.init) ?? itemController.itemDataModel.items
+        for itemId in itemIds {
             guard !Task.isCancelled else { return }
-            guard repairIds?.contains(itemId) ?? true else { continue }
             guard let item = itemController.itemSync(for: itemId), item.displayState != 2 else { continue }
 
             // Increment progress and yield so @Observable notifies SwiftUI before continuing.

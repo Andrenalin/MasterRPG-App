@@ -46,8 +46,13 @@ public struct ExportProgressPanelView: View {
                 await startExport()
             }
 #if !os(tvOS)
-            .fileMover(isPresented: $showExporter, file: saveUrl) { _ in
-                outcome = .finished
+            .fileMover(isPresented: $showExporter, file: saveUrl) { result in
+                switch result {
+                case .success:
+                    outcome = .finished
+                case .failure(let error):
+                    outcome = error is CancellationError ? .cancelled : .failed(error.localizedDescription)
+                }
             }
 #endif
             .toolbar {

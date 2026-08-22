@@ -22,6 +22,19 @@ final class GameTableModel: Sendable {
 #if os(visionOS)
     let tabletopGame: TabletopGame
     let observer: GameObserver
+    /// The `(session, seat)` pair most recently submitted via `claimSeat` in
+    /// `assignSeatsForSharePlay` — see that method's own `claimSeatIfNeeded`
+    /// helper for why a redundant identical claim needs to be suppressed,
+    /// not just deduplicated for its own sake: `GroupSession.
+    /// $activeParticipants` replays its *current* roster immediately when
+    /// `setupSeatAssignment`'s own participant-change observation loop
+    /// starts, firing `updateSeatsForParticipantChange` again right after the
+    /// initial claim even though nothing actually changed. Resubmitting
+    /// `claimSeat` for the same seat before the first request has been
+    /// reconciled through TabletopKit's SharePlay sync layer corrupts the
+    /// shared-simulation role/template negotiation and crashes with "Could
+    /// not find static equipment with identifier: ...".
+    var lastRequestedSeatAssignment: (sessionId: UUID, seatId: TableSeatIdentifier)?
 #endif
 
     // References to root models for accessing game controllers.
@@ -824,13 +837,38 @@ final class GameTableModel: Sendable {
     /// Registers the SwiftUI attachment used for the game-master pin menu.
     /// It remains parented to the table root rather than the pawn so pin size
     /// and zoom transforms never scale the controls.
+    ///
+    /// Discards any previously registered attachment first: `renderer.root`
+    /// outlives one `RealityView` mount (see `GameTableView.initializeGameIfNeeded()`'s
+    /// "if let game" branch), but the `Attachment(id: "pin-menu")` view given
+    /// here does not — closing the volumetric window tears its `_HostingEntity`
+    /// down. Without detaching the stale one before adopting the new one, both
+    /// end up parented under `renderer.root` at once, and the next `content.add(
+    /// renderer.root)` on reopen walks straight back over the old, mid-teardown
+    /// entity — RealityKit aborts with `__CALLER_IS_PARENTING_AN_ENTITY_TO_AN_ENTITY_BEING_REMOVED__`.
+    /// See `detachPinMenuAttachment()`, called from `GameTableView`'s
+    /// `.onDisappear`, which is the other half of this same fix — that one
+    /// covers the disappear side, this one is a belt-and-suspenders guard for
+    /// any path that re-registers without having gone through it.
     func registerPinMenuAttachment(_ attachment: Entity) {
+        if let previous = pinMenuAttachment, previous !== attachment {
+            previous.removeFromParent()
+        }
         pinMenuAttachment = attachment
         attachment.components.set(BillboardComponent())
         if attachment.parent == nil {
             renderer.root.addChild(attachment)
         }
         updatePinMenuAttachmentPosition()
+    }
+
+    /// Detaches the pin-menu SwiftUI attachment from the persisted table root
+    /// before its owning `RealityView`/window tears down — see
+    /// `registerPinMenuAttachment(_:)`'s doc for why leaving it parented past
+    /// that point crashes the *next* time the window opens, not this one.
+    func detachPinMenuAttachment() {
+        pinMenuAttachment?.removeFromParent()
+        pinMenuAttachment = nil
     }
 
     // MARK: - Pin Selection & Gestures
