@@ -3,7 +3,7 @@
 import Foundation
 import SwiftUI
 
-@MainActor @Observable public final class SheetEditorModel {
+@MainActor @Observable public final class SheetEditorModel: Sendable {
     public init(itemId: UUID? = nil, entryId: UUID? = nil, module: NetworkModules = .none) {
         self.itemId = itemId
         self.entryId = entryId

@@ -224,7 +224,17 @@ public final class SheetRootModel: Sendable {
     @ObservationIgnored let sheetControllable: SheetControllable
     @ObservationIgnored let linkControllable: any LinkControllable
     @ObservationIgnored private var linkTextModel: [LinkHighlightTextModelId: LinkHighlightTextModel] = [:]
-    
+    /// Cancel-then-replace slot for the deferred reconcile after a cross-group entry
+    /// move — shared by `moveEntry(_:in:into:)`/`moveEntryOutOfGroup(_:in:parent:)` so a
+    /// rapid second move cancels the first move's still-pending reconcile instead of
+    /// leaving it running uncancelled. See CODE_AUDIT_Sheet §9.2.
+    @ObservationIgnored private var pendingGroupMoveTask: Task<Void, Never>?
+    /// Cancel-then-replace slots (keyed by parent id), coalescing repeated
+    /// `updateParent(_:)` calls fired from `SheetEntryView`'s own
+    /// `.onChange(of: name/description)` when several sibling entries under the same
+    /// parent change within one external reconcile. See CODE_AUDIT_Sheet §7.1.
+    @ObservationIgnored private var pendingParentReconcileTasks: [UUID: Task<Void, Never>] = [:]
+
     /// Reset this model for a new item without replacing the instance.
     /// Callers in other modules (e.g. DetailEditorView in each RPG module) use this
     /// to avoid a @State assignment, which would otherwise re-run DetailEditorView.body
@@ -315,12 +325,12 @@ public final class SheetRootModel: Sendable {
     
     func description(for sheetModel: SheetModel) -> String? {
         guard !searchText.isEmpty else { return sheetModel.description }
-        return sheetModel.description.localizedCaseInsensitiveContains(searchText) ? sheetModel.description : nil
+        return sheetModel.description.localizedStandardContains(searchText) ? sheetModel.description : nil
     }
     
     func linkTextModel(for id: LinkHighlightTextModelId, text: String, shareResults: ShareValueResult? = nil) -> LinkHighlightTextModel {
         guard let model = linkTextModel[id] else {
-            let model = LinkHighlightTextModel(linkControllable: linkRootController, text: text, highlightedText: searchText, toggler: { self.toggle(id: id, itemId: $0, module: $1, linkNumber: $2) }, shareResult: shareResults)
+            let model = LinkHighlightTextModel(linkControllable: linkRootController, text: text, highlightedText: searchText, toggler: { [weak self] in self?.toggle(id: id, itemId: $0, module: $1, linkNumber: $2) }, shareResult: shareResults)
             linkTextModel[id] = model
             return model
         }
@@ -846,7 +856,11 @@ public final class SheetRootModel: Sendable {
 
         let entry = parentModel.entries[sourceIndex]
         parentModel.entries.remove(at: sourceIndex)
-        let insertIndex = sourceIndex < targetIndex ? targetIndex : targetIndex
+        // Removing `sourceIndex` shifts every later index down by one, so the forward
+        // (sourceIndex < targetIndex) direction needs the -1 compensation to land the
+        // entry directly before the target; the backward direction doesn't, since the
+        // removal happened after `targetIndex` and never shifted it. See CODE_AUDIT_Sheet §5.1.
+        let insertIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
         parentModel.entries.insert(entry, at: insertIndex)
 
         editable.move(itemId: parentModel.source.itemId, entryIds: parentModel.entries.compactMap { $0.source.entryId }, forceSave: persistsEdits)
@@ -943,7 +957,8 @@ public final class SheetRootModel: Sendable {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }
         editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder, forceSave: persistsEdits)
-        delayedTask(.milliseconds(100)) { [self] in
+        pendingGroupMoveTask?.cancel()
+        pendingGroupMoveTask = delayedTask(.milliseconds(100)) { [self] in
             updateParent(parentModel)
         }
     }
@@ -962,7 +977,8 @@ public final class SheetRootModel: Sendable {
         guard let entryId = entryModel.source.entryId,
               let editable = entryDataEditable(for: entryModel.source) else { return }
         editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent, forceSave: persistsEdits)
-        delayedTask(.milliseconds(100)) { [self] in
+        pendingGroupMoveTask?.cancel()
+        pendingGroupMoveTask = delayedTask(.milliseconds(100)) { [self] in
             updateParent(parentModel)
         }
     }
@@ -993,6 +1009,20 @@ public final class SheetRootModel: Sendable {
             updateFilteredEntries()
         }
         syncCounterpart()
+    }
+
+    /// Debounced counterpart to `updateParent(_:)` for call sites that may fire once per
+    /// mutated field across several sibling entries under the same parent within a single
+    /// external reconcile (e.g. each entry's own `.onChange(of: name/description)` in
+    /// `SheetEntryView`), coalescing them into one reconcile of `parentModel` instead of
+    /// one per changed field. See CODE_AUDIT_Sheet §7.1.
+    func scheduleParentReconcile(_ parentModel: SheetModel) {
+        let parentId = parentModel.id
+        pendingParentReconcileTasks[parentId]?.cancel()
+        pendingParentReconcileTasks[parentId] = delayedTask(.milliseconds(100)) { [self] in
+            pendingParentReconcileTasks[parentId] = nil
+            updateParent(parentModel)
+        }
     }
 
     /// Updates from the root SheetModel down - use when changes may affect calculated values throughout the tree
