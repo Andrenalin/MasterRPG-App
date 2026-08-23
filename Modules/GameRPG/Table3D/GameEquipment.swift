@@ -20,9 +20,15 @@ extension EquipmentIdentifier {
 }
 
 struct Table: Tabletop {
+    // `width` is TabletopKit's X-extent, `height` its Z-extent (matching
+    // `TableAssetFactory.makePlainWoodTable()`'s own `generateBox(width:height:depth:)`
+    // call for the same mesh). The table's long dimension runs along Z
+    // (`tableLength`), not X, so the long sides recede away from the
+    // viewer instead of spanning left-right in front of them — see
+    // `PlayerSeat.seatPoses`'s own doc for the seat layout this supports.
     var shape: TabletopShape = .rectangular(
-        width: GameMetrics.tableLength,
-        height: GameMetrics.tableWidth,
+        width: GameMetrics.tableWidth,
+        height: GameMetrics.tableLength,
         thickness: GameMetrics.tableThickness
     )
 
@@ -314,30 +320,37 @@ struct PlayerSeat: TableSeat {
     var initialState: TableSeatState
 
     /* Six seats around the rectangular table: the master (index 0) centered
-    on the near (+Z, viewer-facing) long side, two players flanking it on
-    that same side (indices 1–2), two more on the far (south) long side
-    (indices 3–4), and one at the east end (index 5) — no seat at the west
-    end. Each seat faces the center of the table. The master sits on the
-    near edge specifically so it lines up with the volumetric window's own
-    default viewing position and this view's ornaments/dice-bar (see
-    `GameSetup`'s own doc for why — without an active SharePlay session,
-    nothing else rotates the table to face whichever seat is claimed).
-    Every long-side/end seat still sits a full table-length/-width beyond
-    the table center along its own axis — same "well beyond the physical
-    edge, the way a chair sits beyond a real table's edge" ratio the
-    original 3-seat square layout used (see `diceLayout`'s doc for the
-    matching dice-side reasoning). */
+    on the near (+Z, South, viewer-facing) short edge, with the table's
+    long sides running away from the viewer along Z rather than spanning
+    left-right in front of them. Four more seats flank those long
+    (West/East) sides in two bands — near master (indices 1–2) and toward
+    the far end (indices 3–4) — and the sixth seat (index 5) sits opposite
+    the master on the far (-Z, North) short edge. Each seat faces the
+    center of the table. The master sits on the near short edge
+    specifically so it lines up with the volumetric window's own default
+    viewing position and this view's ornaments/dice-bar (see `GameSetup`'s
+    own doc for why — without an active SharePlay session, nothing else
+    rotates the table to face whichever seat is claimed).
+    `assignSeatsForSharePlay` claims seats 1...5 in this array's order, so
+    joining players fill West-then-East, near-band-then-far-band, exactly
+    matching the order below. Every short-edge/long-side seat still sits a
+    full table-length/-width beyond the table center along its own axis —
+    same "well beyond the physical edge, the way a chair sits beyond a real
+    table's edge" ratio the original layout used (see `diceLayout`'s doc
+    for the matching dice-side reasoning). */
     @MainActor static let seatPoses: [TableVisualState.Pose2D] = [
-        // Master — near (+Z) edge, centered.
-        .init(position: .init(x: 0, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
-        // Near edge, flanking the master, two seats.
-        .init(position: .init(x: -0.5, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
-        .init(position: .init(x: 0.5, z: Double(GameMetrics.tableWidth)), rotation: .degrees(0)),
-        // Far (south) long side, two seats.
-        .init(position: .init(x: -0.5, z: -Double(GameMetrics.tableWidth)), rotation: .degrees(180)),
-        .init(position: .init(x: 0.5, z: -Double(GameMetrics.tableWidth)), rotation: .degrees(180)),
-        // East end.
-        .init(position: .init(x: Double(GameMetrics.tableLength), z: 0), rotation: .degrees(90))
+        // Master — South (near, +Z) short edge, centered.
+        .init(position: .init(x: 0, z: Double(GameMetrics.tableLength)), rotation: .degrees(0)),
+        // West side, near band (close to master/South).
+        .init(position: .init(x: -Double(GameMetrics.tableWidth), z: 0.5), rotation: .degrees(270)),
+        // East side, near band (close to master/South).
+        .init(position: .init(x: Double(GameMetrics.tableWidth), z: 0.5), rotation: .degrees(90)),
+        // West side, far band (toward North).
+        .init(position: .init(x: -Double(GameMetrics.tableWidth), z: -0.5), rotation: .degrees(270)),
+        // East side, far band (toward North).
+        .init(position: .init(x: Double(GameMetrics.tableWidth), z: -0.5), rotation: .degrees(90)),
+        // North (far, -Z) short edge — the sixth seat.
+        .init(position: .init(x: 0, z: -Double(GameMetrics.tableLength)), rotation: .degrees(180))
     ]
 
     init(id: TableSeatIdentifier, pose: TableVisualState.Pose2D) {
@@ -380,10 +393,11 @@ struct PlayerSeat: TableSeat {
 
         // The seat's near table edge along its own facing axis. `direction`
         // is always axis-aligned (a multiple of 90°), so exactly one term is
-        // non-zero — this picks `tableLength` for the end seats and
-        // `tableWidth` for the long-side seats automatically.
-        let halfExtent = abs(direction.x) * Double(GameMetrics.tableLength / 2)
-            + abs(direction.z) * Double(GameMetrics.tableWidth / 2)
+        // non-zero — this picks `tableWidth` (X is the short axis now) for
+        // the West/East long-side seats, and `tableLength` (Z is the long
+        // axis now) for the South/North short-edge seats, automatically.
+        let halfExtent = abs(direction.x) * Double(GameMetrics.tableWidth / 2)
+            + abs(direction.z) * Double(GameMetrics.tableLength / 2)
         let radius = halfExtent - Double(GameMetrics.diceEdgeInset)
 
         // This seat's own position along the lateral axis — 0 for the

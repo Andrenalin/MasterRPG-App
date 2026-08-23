@@ -235,8 +235,11 @@ struct MapTableProjection {
     /// inside this box preserving the source image's aspect ratio, so it
     /// only fills both dimensions when the image's aspect ratio happens to
     /// match the box's.
-    static let maxPlaneWidth: Float = GameMetrics.tableLength - (GameMetrics.mapMargin * 2)
-    static let maxPlaneDepth: Float = GameMetrics.tableWidth - (GameMetrics.mapMargin * 2)
+    // `maxPlaneWidth` is the board's X-extent, `maxPlaneDepth` its Z-extent
+    // — the table's long dimension is now Z (`tableLength`), not X. See
+    // `PlayerSeat.seatPoses`'s own doc for why.
+    static let maxPlaneWidth: Float = GameMetrics.tableWidth - (GameMetrics.mapMargin * 2)
+    static let maxPlaneDepth: Float = GameMetrics.tableLength - (GameMetrics.mapMargin * 2)
     /// Token height above the board surface.
     static let pinHeight: Float = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
     /// Pin diameter (meters) used when no map is on the table and there's no

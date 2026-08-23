@@ -25,18 +25,22 @@ final class TableScaleGestureController {
     let minScale: Float = 0.4
     /// Ceiling on how far the pinch gesture can grow the table. The volumetric
     /// window itself is a *fixed* size (`WindowVisionList`'s `.defaultSize(width: 2.15,
-    /// depth: 2.15, in: .meters)`, chosen to exactly fit `GameMetrics.tableLength`/
-    /// `tableWidth` at scale 1 plus a little clearance) — RealityKit clips anything
+    /// depth: 2.65, in: .meters)`, chosen to exactly fit `GameMetrics.tableWidth`/
+    /// `tableLength` — X/Z respectively now, see `PlayerSeat.seatPoses`'s own doc for
+    /// why — at scale 1 plus a little clearance) — RealityKit clips anything
     /// outside those bounds rather than growing the window to fit, so scaling the
     /// table up doesn't "grow the volume," it just pushes the table's own edges (and
     /// its seats' dice) past the window's fixed bounds and off-screen. The window's
     /// system grab handle and this view's ornaments stay anchored to that fixed
     /// volume regardless, so an oversized table reads as the handle/ornaments having
     /// drifted away from it. `1.05` keeps the scaled table's footprint
-    /// (`GameMetrics.tableLength` × `tableWidth`) inside the tighter of the window's
-    /// two constraints — width (2.15 / 2.0 ≈ 1.075) and the depth actually available
+    /// (`GameMetrics.tableWidth` × `tableLength`) inside the tighter of the window's
+    /// two constraints — width (2.15 / 1.5 ≈ 1.43) and the depth actually available
     /// to the table after `GameRenderer.rootOffset`'s 0.5 m viewer clearance
-    /// ((2.15 − 0.5) / 1.5 ≈ 1.10) — with a small margin for the table mesh's own rim.
+    /// ((2.65 − 0.5) / 2.0 ≈ 1.075) — with a small margin for the table mesh's own
+    /// rim. That depth margin (≈0.025, vs. the original ≈0.05) is tighter than
+    /// before — worth widening (lowering `maxScale`) if on-device testing shows the
+    /// scaled-up table's far edge or the North seat's dice clipping.
     let maxScale: Float = 1.05
 
     /// Distance (m) between middle-finger tip and thumb tip that counts as a pinch.

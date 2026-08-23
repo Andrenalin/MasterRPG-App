@@ -68,18 +68,21 @@ final class GameRenderer {
         )
         let elevation = (.pi / 2) - Self.angleFromTop
         // The camera looks along Z at an elevated angle, so the table's
-        // X-extent (`tableLength`) frames the horizontal FOV, while its
-        // Z-extent (`tableWidth`) is what the elevation angle foreshortens
-        // for the vertical FOV — no longer the same value now the table
-        // isn't square.
-        let halfTableLength = GameMetrics.tableLength / 2
-        let halfTableWidth = GameMetrics.tableWidth / 2
-        let forwardDepth = halfTableWidth * cos(elevation)
+        // X-extent frames the horizontal FOV, while its Z-extent is what the
+        // elevation angle foreshortens for the vertical FOV — no longer the
+        // same value now the table isn't square. The table's long dimension
+        // (`tableLength`) runs along Z, not X, now (see `PlayerSeat.seatPoses`'s
+        // own doc for why), so it's `tableWidth` that sizes the X half-extent
+        // here and `tableLength` the Z one — named for axis role, not source
+        // constant, to keep that straight.
+        let halfTableX = GameMetrics.tableWidth / 2
+        let halfTableZ = GameMetrics.tableLength / 2
+        let forwardDepth = halfTableZ * cos(elevation)
         let framingMargin: Float = 1.12
 
         let distanceForWidth = forwardDepth
-            + (halfTableLength * framingMargin) / tan(horizontalHalfFieldOfView)
-        let projectedTableDepth = halfTableWidth * sin(elevation)
+            + (halfTableX * framingMargin) / tan(horizontalHalfFieldOfView)
+        let projectedTableDepth = halfTableZ * sin(elevation)
         let distanceForHeight = forwardDepth
             + (projectedTableDepth * framingMargin) / tan(verticalHalfFieldOfView)
         let distance = max(distanceForWidth, distanceForHeight)

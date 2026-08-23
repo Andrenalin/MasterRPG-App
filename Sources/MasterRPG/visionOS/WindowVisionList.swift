@@ -37,19 +37,29 @@ struct WindowVisionList: Scene {
         }
         .windowStyle(.volumetric)
         // Keep the system grab handle just outside the tabletop instead of
-        // at the front of the former 2.5 m-deep volume. Sized to
-        // `GameMetrics.tableLength`/`tableWidth` (2.0 m × 1.5 m) plus the
-        // same ~0.15 m clearance the original square 0.7 m table used —
-        // RealityView clips content outside the volume's actual bounds
-        // (see `GameTableView`), so this has to grow in lockstep with the
-        // table itself, not just the table's own mesh/seat math.
-        // Depth carries an extra 0.5 m of empty space in front of the table
-        // beyond that clearance — `GameRenderer.placeTable(bottomY:)` pushes
-        // the table back into it (using this same 2.15 m depth, duplicated
-        // there as `GameRenderer.volumeDepth` since it can't reach this
-        // constant directly) so the table doesn't sit right at the volume's
-        // near bound, uncomfortably close to the viewer, when this window
-        // opens.
+        // at the front of the former 2.5 m-deep volume. Width is sized to
+        // `GameMetrics.tableLength` (2.0 m, the table's short X-extent now —
+        // see `PlayerSeat.seatPoses`'s own doc for why the table's long
+        // dimension moved onto Z) plus the same ~0.15 m clearance the
+        // original square 0.7 m table used — RealityView clips content
+        // outside the volume's actual bounds (see `GameTableView`), so this
+        // has to grow in lockstep with the table itself, not just the
+        // table's own mesh/seat math. Left at this comfortably-oversized
+        // 2.15 m rather than shrunk to match the table's narrower 1.5 m
+        // width now that width no longer drives the tight dimension.
+        //
+        // Depth grew from 2.15 to 2.65 m for the same reason: the table's
+        // long dimension (2.0 m) now runs along Z instead of X, so fitting
+        // it — plus the same 0.5 m front standoff and ~0.15 m back
+        // clearance the original 2.15 m depth carried — needs
+        // 0.5 + 2.0 + 0.15 = 2.65 m. `GameRenderer.placeTable(bottomY:)`
+        // pushes the table back into that depth (using this same 2.65 m
+        // value, duplicated there as `GameRenderer.volumeDepth` since it
+        // can't reach this constant directly) so the table's near edge
+        // doesn't sit right at the volume's near bound, uncomfortably close
+        // to the viewer, when this window opens — only the *far* end (now
+        // holding the table's long axis, plus its sixth, North seat)
+        // reaches further into the room than the old 2.15 m depth did.
         //
         // Height is 1.5 m — matching Apple's own TabletopKit samples that
         // include dice/toss physics (e.g. `.defaultSize(width: 1.5, height: 1.5,
@@ -62,7 +72,7 @@ struct WindowVisionList: Scene {
         // how much headroom is declared above it, so this doesn't move the
         // table — it only gives tossed dice room to arc without leaving the
         // volume.
-        .defaultSize(width: 2.15, height: 1.5, depth: 2.15, in: .meters)
+        .defaultSize(width: 2.15, height: 1.5, depth: 2.65, in: .meters)
         // No `.defaultWindowPlacement` override — this used to return
         // `WindowPlacement(.utilityPanel)`, but `.utilityPanel` is a small,
         // near-body tool-panel position (meant for a persistent toolbar

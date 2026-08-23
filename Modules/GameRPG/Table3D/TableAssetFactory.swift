@@ -24,11 +24,16 @@ enum TableAssetFactory {
             named: "table_assembly",
             in: tabletopGameContentBundle
         )
+        // `width`/`depth` are X/Z respectively (`generateBox`'s own
+        // convention) — the table's long dimension runs along Z
+        // (`tableLength`), not X, matching `Table.shape`'s own
+        // `.rectangular(width:height:thickness:)` for the same table. See
+        // `PlayerSeat.seatPoses`'s own doc for why.
         let table = ModelEntity(
             mesh: .generateBox(
-                width: GameMetrics.tableLength,
+                width: GameMetrics.tableWidth,
                 height: GameMetrics.tableThickness,
-                depth: GameMetrics.tableWidth
+                depth: GameMetrics.tableLength
             )
         )
         if let sourceModel = firstModelComponent(in: materialSource) {
