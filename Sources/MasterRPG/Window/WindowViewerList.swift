@@ -106,17 +106,33 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
     /// behind it render as a solid floating rectangle in the space instead of
     /// leaving passthrough/mixed reality visible around the 3D content.
     let isImmersiveSpace: Bool
+    /// Whether `UserSettingsViewModifier` paints `theme.backgroundGradient`
+    /// behind this content. Defaults to `!isImmersiveSpace` — the common case
+    /// of a 2D window wants the opaque themed background, an ImmersiveSpace
+    /// never does — but is a separate knob from `isImmersiveSpace` because a
+    /// plain `WindowGroup` can *also* host RealityView content that should
+    /// own its own compositing (e.g. `ImageSpaceView`'s spatial photo
+    /// viewer): that content still wants the 2D-window frame/external-events
+    /// handling `isImmersiveSpace` would otherwise strip, just not the
+    /// background sitting behind it. Without this, `theme.backgroundGradient`
+    /// shows through whenever the RealityView doesn't fully cover the
+    /// window — still loading, letterboxed aspect-ratio margins, or briefly
+    /// while resyncing — which is what made a stalled spatial photo look
+    /// like a black gradient instead of passthrough.
+    let appliesBackground: Bool
 
     init(
         model: AppModel,
         module: NetworkModules,
         showsWindowToolbarBackground: Bool = false,
-        isImmersiveSpace: Bool = false
+        isImmersiveSpace: Bool = false,
+        appliesBackground: Bool? = nil
     ) {
         self.model = model
         self.module = module
         self.showsWindowToolbarBackground = showsWindowToolbarBackground
         self.isImmersiveSpace = isImmersiveSpace
+        self.appliesBackground = appliesBackground ?? !isImmersiveSpace
     }
 
     @Environment(\.colorScheme) private var colorScheme
@@ -131,7 +147,7 @@ struct WindowViewerSetUpViewModifier: ViewModifier {
             .moduleTint(module)
             .environmentSetUp(model)
             .environmentActionSetUp(model)
-            .modifier(UserSettingsViewModifier(appModel: model, appliesBackground: !isImmersiveSpace))
+            .modifier(UserSettingsViewModifier(appModel: model, appliesBackground: appliesBackground))
 #if os(macOS)
             .toolbarBackgroundVisibility(
                 showsWindowToolbarBackground ? .visible : .hidden,

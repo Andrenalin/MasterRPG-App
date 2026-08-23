@@ -107,7 +107,14 @@ struct WindowVisionList: Scene {
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
                 appModel.photoRoot.viewController.imageSpaceView()
                     .sceneTracker(for: SceneId.imageSpaceViewer)
-                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .photo))
+                    // No themed background: this window's content is a
+                    // RealityView (ImagePresentationView) that owns its own
+                    // compositing against passthrough. See
+                    // WindowViewerSetUpViewModifier.appliesBackground's doc —
+                    // theme.backgroundGradient behind it was showing through
+                    // as a black gradient whenever the spatial photo didn't
+                    // fully cover the window.
+                    .modifier(WindowViewerSetUpViewModifier(model: appModel, module: .photo, appliesBackground: false))
             }
             .environment(appModel.scenesManager)
             .frame(minWidth: 600, maxWidth: 2000, minHeight: 600, maxHeight: 2000)
