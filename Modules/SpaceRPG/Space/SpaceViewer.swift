@@ -57,6 +57,11 @@ struct SpaceViewer: View {
     @State private var manipulationStartPosition: SIMD3<Float>?
     @State private var manipulationBeganSubscription: EventSubscription?
     @State private var manipulationEndedSubscription: EventSubscription?
+    /// Holds the one-shot `SceneEvents.Update` wait `attachCloseButtonIfNeeded`
+    /// uses to defer `rootEntity.addChild(closeButtonEntity)` — see that
+    /// method's own doc for why a real engine tick is needed instead of a
+    /// `Task { @MainActor }` hop.
+    @State private var closeButtonAttachSubscription: EventSubscription?
 #endif
 
 #if os(visionOS)
@@ -417,7 +422,7 @@ private extension SpaceViewer {
         RealityView { content, attachments in
             await loadEntity(into: content)
             if isImmersiveSpace {
-                attachCloseButtonIfNeeded(attachments)
+                attachCloseButtonIfNeeded(attachments, content: content)
             }
         } update: { content, attachments in
             // Only update if entity is loaded and valid
@@ -434,7 +439,7 @@ private extension SpaceViewer {
             // other SpaceViewer on screen is a plain 2D-embedded preview (detail
             // view, inline row, etc.) with its own dismiss affordance.
             if isImmersiveSpace {
-                attachCloseButtonIfNeeded(attachments)
+                attachCloseButtonIfNeeded(attachments, content: content)
                 nameEntity?.isEnabled = showCloseButton
                 updateCloseButtonPosition()
             }
@@ -735,28 +740,58 @@ private extension SpaceViewer {
     /// it labels, so drag/rotate/scale manipulation never distorts the button.
     ///
     /// The `rootEntity.addChild(closeButtonEntity)` call is deliberately
-    /// deferred one MainActor turn rather than made inline. The first call
-    /// here runs from `RealityView`'s `make` closure immediately after
-    /// `loadEntity` → `placeUnderHeadAnchor` has just called `content.add(headAnchor)`
-    /// for the *same* `rootEntity` — RealityKit's own engine-side insertion of
-    /// that just-added anchor subtree (`re::ecs2::Scene::addToAllEntitiesRecursively`)
-    /// can still be in flight at that instant. Parenting this attachment's own
+    /// deferred to the next `SceneEvents.Update` tick rather than made inline —
+    /// mirrors `GameTableView.waitForFirstRenderedFrame(of:)`'s own reasoning:
+    /// proof of an actual rendered frame is a stronger signal than any fixed
+    /// number of `Task` turns. The first call here runs from `RealityView`'s
+    /// `make` closure immediately after `loadEntity` → `placeUnderHeadAnchor`
+    /// has just called `content.add(headAnchor)` for the *same* `rootEntity` —
+    /// RealityKit's own engine-side insertion of that just-added anchor
+    /// subtree (`re::ecs2::Scene::addToAllEntitiesRecursively`) can still be
+    /// in flight at that instant. Parenting this attachment's own
     /// `_HostingEntity` to `rootEntity` in that same synchronous continuation
     /// crashed visionOS 26.5 — reproducibly, on first open, nothing else
     /// closing — inside RealityKit's engine with
     /// `__CALLER_IS_PARENTING_AN_ENTITY_TO_AN_ENTITY_BEING_REMOVED__`
     /// (`SwiftUI._HostingEntity.didActivate(in:)` → `re::ecs2::Entity::setParentInternal`).
-    /// visionOS 27 doesn't hit this; the deferral is a no-op there, so it's
-    /// kept unconditionally rather than gated on OS version.
+    ///
+    /// A one-`Task`-turn defer (the original fix) wasn't actually enough:
+    /// reproduced again opening the immersive space while a second,
+    /// window-embedded `SpaceViewer` for the same item was already on screen
+    /// (`ItemDetailContentView`'s inline preview) — the crash's own stack
+    /// showed the whole cascade (SwiftUI's `DisplayList.ViewUpdater`
+    /// reinserting subviews, `CALayerSwizzle` translating that into ECS
+    /// entity reparenting, six levels of recursive `addToAllEntitiesRecursively`
+    /// down the just-loaded USDZ hierarchy, landing on this attachment's
+    /// `_HostingEntity` activating) all happening *inside one still-unwinding
+    /// `CATransaction`* — a bare MainActor `Task` hop can still land inside
+    /// that same reentrant call stack. `SceneEvents.Update` is posted by
+    /// RealityKit's own per-frame engine tick, which only runs after the
+    /// current transaction has actually committed, so waiting for it (instead
+    /// of a fixed number of hops) reliably lands outside that window.
+    /// visionOS 27 doesn't hit this at all; the wait is a practically
+    /// immediate no-op there, so it's kept unconditionally rather than gated
+    /// on OS version.
     @MainActor
-    func attachCloseButtonIfNeeded(_ attachments: RealityViewAttachments) {
+    func attachCloseButtonIfNeeded(_ attachments: RealityViewAttachments, content: some RealityViewContentProtocol) {
         guard nameEntity == nil,
               let rootEntity,
               let closeButtonEntity = attachments.entity(for: "NameBarView") else { return }
         nameEntity = closeButtonEntity
-        Task { @MainActor in
-            rootEntity.addChild(closeButtonEntity)
-            updateCloseButtonPosition()
+        // `[weak rootEntity]`, not `self`, in the subscribe closure itself —
+        // mirrors `loadEntity`'s own `manipulationBeganSubscription`/
+        // `manipulationEndedSubscription` handlers just below, which hop
+        // through an inner `Task { @MainActor in }` before touching `self`
+        // rather than capturing this (non-`Sendable`) view struct directly
+        // in RealityKit's subscription closure.
+        closeButtonAttachSubscription = content.subscribe(to: SceneEvents.Update.self) { [weak rootEntity] _ in
+            Task { @MainActor in
+                self.closeButtonAttachSubscription?.cancel()
+                self.closeButtonAttachSubscription = nil
+                guard let rootEntity else { return }
+                rootEntity.addChild(closeButtonEntity)
+                self.updateCloseButtonPosition()
+            }
         }
     }
 
