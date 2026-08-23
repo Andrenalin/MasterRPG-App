@@ -8,11 +8,17 @@ import SwiftUI
 import CharacterRPG
 import PhotoRPG
 
+// Renamed from GameController+MapSync.swift — "Map" was redundant inside
+// MapRPG's own GameController. `saveAll()` moved to +Metadata.swift
+// (export/persistence, not sync) and `demoNextMap` moved to +Demo.swift.
+// See CODE_AUDIT_Game §9.25.
+
 extension GameController {
     @MainActor
     @discardableResult
     func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool {
-        guard let mapData = data.data, let text = String(data: mapData, encoding: .utf8) else { return false }
+        guard let mapData = data.data else { return false }
+        let text = String(decoding: mapData, as: UTF8.self)
         guard updateMap(for: itemId, with: text) else { return false }
         mapGameModel.recordAuthoritativeGeneration(data)
         return true
@@ -31,7 +37,7 @@ extension GameController {
         Self.mapNetworkData(
             id: itemId,
             generation: networkGeneration(for: itemId),
-            data: mapUpdateResult(for: itemId).data(using: .utf8)
+            data: Data(mapUpdateResult(for: itemId).utf8)
         )
     }
 
@@ -42,27 +48,5 @@ extension GameController {
             generation: networkGeneration(for: itemId),
             data: position.encodeData()
         )
-    }
-    
-    @MainActor
-    func saveAll() -> ItemModuleIds {
-        for itemId in gameModel.items {
-            gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
-        }
-        return exportController.exportingAll()
-    }
-    
-    @MainActor
-    func demoNextMap(itemId: UUID, restart: Bool) -> NetworkCodableDataType? {
-        let item = gameItem(for: itemId)
-        if restart {
-            item.entries.forEach {
-                item.toggle($0.id)
-            }
-            return networkMapUpdate(for: itemId)
-        }
-        guard let firstEntry = item.entries.first(where: { !$0.isShown }) else { return nil }
-        item.toggle(firstEntry.id)
-        return networkMapUpdate(for: itemId)
     }
 }

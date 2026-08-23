@@ -7,6 +7,17 @@ import SwiftUI
 
 // MARK: - Direct-mode delegate protocols
 
+// All four delegate protocols below are @MainActor: their witnesses
+// (MasterController/PlayerController) are @MainActor classes, and under this
+// project's SWIFT_APPROACHABLE_CONCURRENCY = YES setting, an async witness of
+// a *nonisolated* protocol requirement becomes `nonisolated(nonsending)` —
+// it inherits whichever actor the *caller* happens to be on (the LAN path
+// calls in from the ConnectionController actor), not the conforming type's
+// own isolation. That turned what reads as one atomic @MainActor block into
+// a sequence of independently-interleavable hops. Declaring the protocol
+// requirements @MainActor makes the whole call one guaranteed atomic hop
+// instead. See CODE_AUDIT_Game §3.1.
+@MainActor
 protocol MasterNetworkStoreDelegate: Sendable & AnyObject {
     /// Authenticates an inbound transport envelope before the network bridge
     /// relays it to another transport or any sibling LAN connection.
@@ -30,6 +41,7 @@ extension MasterNetworkStoreDelegate {
     }
 }
 
+@MainActor
 protocol PlayerNetworkStoreDelegate: Sendable & AnyObject {
     func lostConnection() async
     func ready() async
@@ -121,6 +133,7 @@ extension PlayerNetworkStoreDelegate {
 
 // MARK: - Proxy-mode delegate protocols
 
+@MainActor
 protocol MasterNetworkProxyControllerDelegate: Sendable & AnyObject {
     func lostProxy(for connectionId: ConnectionController.ID) async
     func readyProxy(for connectionId: ConnectionController.ID) async
@@ -131,6 +144,7 @@ extension MasterNetworkProxyControllerDelegate {
     func lostProxy(for connectionId: ConnectionController.ID) async {}
 }
 
+@MainActor
 protocol PlayerNetworkProxyControllerDelegate: Sendable & AnyObject {
     func lostProxyConnection() async
     func readyProxy() async

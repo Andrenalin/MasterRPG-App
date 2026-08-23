@@ -13,7 +13,7 @@ extension PlayerController: PlayerNetworkProxyControllerDelegate {
 
     func readyProxy() async {
         Logger.networking.debug("PlayerController: Proxy Ready")
-        await gameModel.reset(lostMaster: false)
+        gameModel.reset(lostMaster: false)
         await sendAudioList()
         await sendPhotoList()
         await sendPdfList()

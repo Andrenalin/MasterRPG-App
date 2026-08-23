@@ -15,6 +15,19 @@ public extension EnvironmentValues {
     @Entry var isSpaceSharePlayActive: Bool = false
 }
 
+/// Shared wall-clock admission policy for event timestamps arriving over the
+/// network (map pins, Space transforms, generic game envelopes). Previously
+/// declared independently in three places with two different spellings of
+/// the same five-minute value — consolidated here so a change to the
+/// tolerance can't silently apply to only one transport.
+/// See CODE_AUDIT_Game §9.12.
+public enum NetworkTimestampPolicy {
+    /// Bounds wall-clock ordering input before it can become the
+    /// presentation baseline. A timestamp more than this far in this
+    /// device's future is rejected as implausible.
+    public static let maximumFutureSkew: TimeInterval = 300
+}
+
 public struct NetworkActions: Sendable {
     public let shareId: @MainActor @Sendable (NetworkCodableDataType) -> Void
     public let send: @MainActor @Sendable (NetworkCodableDataType) -> Void

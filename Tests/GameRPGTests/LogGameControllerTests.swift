@@ -20,12 +20,11 @@ import Testing
 @MainActor
 struct LogGameControllerTests {
 
-    @Test func logModelsPlayersAttachmentsAndScreenUpdatesReflectGameModelState() async throws {
+    @Test func logModelsPlayersAndAttachmentsReflectGameModelState() async throws {
         let root = try await MockRoot.createGameRoot()
         let sut = LogGameController(root: root, gameModel: root.gameModel)
         let playerA = UUID()
         let playerB = UUID()
-        let screenData = Data([1, 2, 3, 4])
 
         root.gameModel.gameRoster.players = [
             PlayerGameModel(id: playerB, type: .player, name: "Zara"),
@@ -46,20 +45,14 @@ struct LogGameControllerTests {
             chunked: SharePlayChunkTransportLog(count: 7, byteCount: 1_250_000)
         )
         root.gameModel.logData[8]?.sharePlayTransport = transport
-        sut.updateScreen(counter: 0, player: playerB, data: nil)
-        sut.updateScreen(counter: 1, player: playerB, data: screenData)
 
         let log = try #require(sut.logModels.first)
-        let players = sut.players
         let attachments = sut.attachments
         let missingRow = try #require(sut.logRows.first)
 
         #expect(log.id == 7)
         #expect(log.players == [playerA])
         #expect(sut.maxPlayers == 2)
-        #expect(players.map(\.name) == ["Arin", "Zara"])
-        #expect(players.first?.data == nil)
-        #expect(players.last?.data == screenData)
         #expect(attachments.map(\.id) == ["MAPS", "PHOTOS"])
         #expect(attachments.count == 2)
         #expect(sut.playerNames(for: [playerA, UUID(), playerB]) == "Arin, Unknown Player, Zara")

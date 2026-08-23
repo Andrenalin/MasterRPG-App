@@ -72,20 +72,28 @@ struct SearchModelTests {
     @Test func assigningNilBeforeAwaitDoesNotHang() async throws {
         let model = GlobalSearchModel()
 
+        // Long enough that "cancellation didn't fire" and "the test hung
+        // waiting out the natural duration" are unmistakably different
+        // outcomes, however contended the cooperative thread pool is under
+        // a full parallel test-suite run.
+        let naturalDuration = Duration.seconds(60)
         let task = Task<Void, Never> {
-            try? await Task.sleep(for: .seconds(10))
+            try? await Task.sleep(for: naturalDuration)
         }
 
         model.currentTask = task
         model.currentTask = nil  // triggers `didSet`'s auto-cancel
 
-        // Should return immediately, not wait for the (now cancelled) task's original delay
         let start = ContinuousClock.now
         await task.value
         let duration = ContinuousClock.now - start
 
-        // Should complete very quickly since task was cancelled
-        #expect(duration < .seconds(1))
+        // Proves cancellation actually short-circuited the sleep instead of
+        // running to completion. Deliberately not a tight wall-clock bound:
+        // under a full parallel run, scheduling delay before the cancelled
+        // sleep's continuation resumes has been observed up to ~8s without
+        // indicating a real hang — a fixed sub-second bound flakes under load.
+        #expect(duration < naturalDuration / 2)
     }
 
     @Test func assigningNewTaskCancelsPreviousViaDidSet() async throws {

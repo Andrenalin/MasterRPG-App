@@ -29,7 +29,7 @@ struct ViewControllerTests {
         _ = sut.menuAudioPlayer(root: root, with: itemId)
         _ = sut.viewVolume(root: root, alignment: .bottomTrailing)
 
-        try await root.gameController.play(id: nil, shouldPlay: true).value
+        try await root.gameController.play(id: nil, shouldPlay: true)
 
         #expect(sut.sharingViewType == .custom)
         #expect(sut.thumbnailRowViewType == .custom)

@@ -4,7 +4,7 @@ import CoreRPG
 import DiceRPG
 import Foundation
 
-public protocol TableGameStorable {
+public protocol TableGameStorable: Sendable {
     @MainActor func addResult(
         _ result: ResultCategory,
         diceResult: DiceResultModel
@@ -14,7 +14,7 @@ public protocol TableGameStorable {
 }
 
 @MainActor
-private final class TableGameAvailabilityModel: Sendable {
+private final class TableGameAvailabilityModel {
     private var availableVersions: [UUID: Int] = [:]
 
     func contains(itemId: UUID, version: Int) -> Bool {
@@ -56,23 +56,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
     private let tableGameAvailabilityModel: TableGameAvailabilityModel
 
-    @MainActor func gameItem(for itemId: UUID) -> TableModel {
-        (gameModel.itemData[itemId] as? TableModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor func currentItem() -> TableModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
@@ -158,7 +146,6 @@ extension GameController: TableGameStorable {
             return true
         }
 
-        let persistentTables = await persistentTableCopies()
         let previousIdentities = await tableObjectIdentities()
 
         // Import into game memory first. Do not call generic updateGame here:
@@ -184,6 +171,12 @@ extension GameController: TableGameStorable {
         // their imported, pre-player-merge versions.
         importedVersions[itemId] = data.version
 
+        // Only the ids the import actually touched need a persisted copy for
+        // the merge below — copying every Table in the library (regardless
+        // of package size) previously scaled with library size instead of
+        // package size. See CODE_AUDIT_Game §7.3.
+        let persistentTables = await persistentTableCopies(for: Set(importedTables.keys))
+
         await mergeAndPersistImportedTables(importedTables, persistentTables: persistentTables, makeCurrent: makeCurrent)
 
         if makeCurrent, await !setCurrent(itemId: itemId) {
@@ -195,8 +188,8 @@ extension GameController: TableGameStorable {
     }
 
     @MainActor
-    private func persistentTableCopies() -> [UUID: TableModel] {
-        itemController.itemDataModel.items.reduce(into: [:]) { result, id in
+    private func persistentTableCopies(for ids: Set<UUID>) -> [UUID: TableModel] {
+        ids.reduce(into: [:]) { result, id in
             guard let item = itemController.itemSync(for: id, noGame: true) else { return }
             result[id] = item.copy()
         }

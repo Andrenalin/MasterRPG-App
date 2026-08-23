@@ -8,7 +8,7 @@ import PhotoRPG
 import TableRPG
 
 @MainActor @Observable
-final class ValueGameModel: Sendable {
+final class ValueGameModel {
     init() {}
 
     var gameEntryDiceId: [UUID: UUID] = [:]
@@ -35,7 +35,7 @@ public struct GameEntryPath: Sendable {
     public let name: String
 }
 
-public protocol ValueGameStorable {
+public protocol ValueGameStorable: Sendable {
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func imageIds(for id: UUID) -> [UUID]
     @MainActor func playerPinPhoto(for characterId: UUID) -> UUID?
@@ -125,23 +125,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
     let gameDiceModel: ValueGameModel
     
-    @MainActor func gameItem(for itemId: UUID) -> ValueModel {
-        (gameModel.itemData[itemId] as? ValueModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor func currentItem() -> ValueModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 // MARK: - Dice for the game
 
@@ -151,40 +139,33 @@ extension GameController {
         let entry = gameItem(for: itemId)[entryId]
         guard let diceId = entry.diceId else { return nil }
         guard entry.type == .number else { return diceId }
-        let gameEntryDiceId = gameDiceModel.gameEntryDiceId[entryId]
-        let gameDiceId: UUID?
-        if gameEntryDiceId != diceId {
-            // reset
-            gameDiceModel.gameEntryDiceId[entryId] = diceId
-            gameDiceId = nil
-        } else {
-            gameDiceId = gameDiceModel.gameDiceId[entryId]
-        }
-        let newDiceId = diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
-        if gameDiceId != nil {
-            return gameDiceId
-        }
-        gameDiceModel.gameDiceId[entryId] = newDiceId
-        return newDiceId
+        return cachedGameDice(key: entryId, diceId: diceId)
     }
 
-    
     @MainActor
     func gameDiceId(itemId: UUID, diceId: UUID) -> UUID? {
-        let gameEntryDiceId = gameDiceModel.gameEntryDiceId[itemId]
+        cachedGameDice(key: itemId, diceId: diceId)
+    }
+
+    /// Shared body for both `gameDiceId` overloads: returns the cached game
+    /// dice for `key` (an entry id or item id, per caller), invalidating the
+    /// cache when the underlying dice template changed. See CODE_AUDIT_Game §9.23.
+    @MainActor
+    private func cachedGameDice(key: UUID, diceId: UUID) -> UUID? {
+        let gameEntryDiceId = gameDiceModel.gameEntryDiceId[key]
         let gameDiceId: UUID?
         if gameEntryDiceId != diceId {
             // reset
-            gameDiceModel.gameEntryDiceId[itemId] = diceId
+            gameDiceModel.gameEntryDiceId[key] = diceId
             gameDiceId = nil
         } else {
-            gameDiceId = gameDiceModel.gameDiceId[itemId]
+            gameDiceId = gameDiceModel.gameDiceId[key]
         }
         let newDiceId = diceRoot.diceGameControllable.createGameDice(for: diceId, gameDiceId: gameDiceId)
         if gameDiceId != nil {
             return gameDiceId
         }
-        gameDiceModel.gameDiceId[itemId] = newDiceId
+        gameDiceModel.gameDiceId[key] = newDiceId
         return newDiceId
     }
     
@@ -330,7 +311,12 @@ extension GameController: ValueGameStorable {
         let name = currentItem.entries[leafIndex].name
         var indices = [leafIndex]
 
+        // `groupId` comes from Character data that can arrive over the
+        // network (updatePlayer(data:) → importNetwork); a crafted cyclic
+        // pair must not hang this loop forever. See CODE_AUDIT_Game §5.7.
+        var depth = 0
         while let ownerId = currentItem.groupId {
+            guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
             let owner = gameItem(for: ownerId)
             guard let linkIndex = owner.entries.firstIndex(where: { $0.valueId == currentItemId }) else {
                 return nil
@@ -338,6 +324,7 @@ extension GameController: ValueGameStorable {
             indices.append(linkIndex)
             currentItem = owner
             currentItemId = ownerId
+            depth += 1
         }
 
         return GameEntryPath(indices: Array(indices.reversed()), rootCharacterId: currentItemId, name: name)
@@ -387,6 +374,45 @@ extension GameController: ValueGameStorable {
         return root.linkController.calculate(entry: entry) ?? text
     }
 
+    /// Game-memory copy of `itemId`, promoting one from persistence on first
+    /// touch — the shared half of `applyGameValueEntryUpdate`'s two
+    /// resolution paths. A player's Character is normally imported into the
+    /// master's item store during join; this is what makes the *first* live
+    /// value update (whichever item it targets) promote a copy into game
+    /// memory so gameplay changes never mutate persistence.
+    @MainActor
+    private func gameMemoryCopy(for itemId: UUID) -> ValueModel? {
+        if let current = gameModel.itemData[itemId] as? ValueModel {
+            return current
+        }
+        guard let stored = itemController.itemSync(for: itemId)?.copy() else { return nil }
+        gameModel.itemData[itemId] = stored
+        return stored
+    }
+
+    /// Walks `path` (root-to-leaf indices, from `GameEntryPath.indices`) to
+    /// the `ValueModel` that actually owns the leaf entry, together with its
+    /// index in that model's own `entries` — the mutation must land on
+    /// whichever nested group actually owns the entry, not necessarily
+    /// `rootCharacterId`'s own top-level entries. See CODE_AUDIT_Game §5.3.
+    @MainActor
+    private func resolveGroupedEntry(
+        rootCharacterId: UUID,
+        path: [Int]
+    ) -> (owner: ValueModel, index: Int)? {
+        guard !path.isEmpty, var currentItem = gameMemoryCopy(for: rootCharacterId) else { return nil }
+        for (offset, index) in path.enumerated() {
+            guard currentItem.entries.indices.contains(index) else { return nil }
+            if offset == path.count - 1 {
+                return (currentItem, index)
+            }
+            guard let valueId = currentItem.entries[index].valueId,
+                  let nested = gameMemoryCopy(for: valueId) else { return nil }
+            currentItem = nested
+        }
+        return nil
+    }
+
     @MainActor
     @discardableResult
     public func applyGameValueEntryUpdate(
@@ -395,23 +421,26 @@ extension GameController: ValueGameStorable {
         guard let type = ValueEntryModel.ValueType(rawValue: update.typeRawValue) else {
             return false
         }
-        let character: ValueModel
-        if let current = gameModel.itemData[update.characterId] as? ValueModel {
-            character = current
-        } else if let stored = itemController.itemSync(for: update.characterId)?.copy() {
-            // A player's Character is normally imported into the master's item
-            // store during join. Promote a copy into game memory on the first
-            // live value update so gameplay changes never mutate persistence.
-            character = stored
-            gameModel.itemData[update.characterId] = stored
+        let owner: ValueModel
+        let index: Int
+        // Most tracked values (HP included) are frequently grouped, not
+        // top-level — resolve through the same path a battle copy uses
+        // instead of only ever checking characterId's own top-level entries.
+        // See CODE_AUDIT_Game §5.3.
+        if let path = update.path, !path.isEmpty {
+            guard let resolved = resolveGroupedEntry(rootCharacterId: update.characterId, path: path) else {
+                return false
+            }
+            (owner, index) = resolved
         } else {
-            return false
+            guard let character = gameMemoryCopy(for: update.characterId),
+                  let topLevelIndex = character.entries.firstIndex(where: { $0.id == update.entryId }) else {
+                return false
+            }
+            owner = character
+            index = topLevelIndex
         }
-        guard
-              let index = character.entries.firstIndex(where: { $0.id == update.entryId }) else {
-            return false
-        }
-        var entry = character.entries[index]
+        var entry = owner.entries[index]
         let previous = entry
         entry.name = update.name
         entry.type = type
@@ -421,7 +450,7 @@ extension GameController: ValueGameStorable {
         if entry != previous {
             // diceId and valueId intentionally remain those of the master's
             // existing runtime entry.
-            character.entries[index] = entry
+            owner.entries[index] = entry
         }
         return true
     }

@@ -98,20 +98,49 @@ extension EditController {
     ) -> NetworkCodableDataType? {
         guard let entryId,
               let character = itemController.itemSync(for: itemId),
-              let entry = character.entries.first(where: { $0.id == entryId }),
-              let data = GameValueEntryUpdate(
-                  characterId: itemId,
+              let entry = character.entries.first(where: { $0.id == entryId })
+        else { return nil }
+
+        // `itemId` is whichever item the row is currently displayed under —
+        // for a nested value "group" table that's the group, not the root
+        // Character. Walk up via groupId so the wire message always names
+        // the root (what the receiver's sender guard checks against) plus a
+        // path the receiver can replay to find the same nested entry.
+        // See CODE_AUDIT_Game §5.3.
+        guard let leafIndex = character.entries.firstIndex(where: { $0.id == entryId }) else {
+            return nil
+        }
+        var indices = [leafIndex]
+        var currentItem = character
+        var currentItemId = itemId
+        var depth = 0
+        while let ownerId = currentItem.groupId {
+            guard depth < RecursionLimits.maxValueLinkDepth,
+                  let owner = itemController.itemSync(for: ownerId),
+                  let linkIndex = owner.entries.firstIndex(where: { $0.valueId == currentItemId })
+            else { return nil }
+            indices.append(linkIndex)
+            currentItem = owner
+            currentItemId = ownerId
+            depth += 1
+        }
+        let rootCharacterId = currentItemId
+        let path = indices.count > 1 ? Array(indices.reversed()) : nil
+
+        guard let data = GameValueEntryUpdate(
+                  characterId: rootCharacterId,
                   entryId: entry.id,
                   name: entry.name,
                   typeRawValue: entry.type.rawValue,
                   isGenerator: entry.isGenerator,
                   value: entry.value,
-                  displayState: entry.displayState
+                  displayState: entry.displayState,
+                  path: path
               ).encodeData() else {
             return nil
         }
         return NetworkCodableDataType(
-            id: itemId,
+            id: rootCharacterId,
             type: .value,
             version: 1,
             data: data

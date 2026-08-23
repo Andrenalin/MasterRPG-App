@@ -4,8 +4,9 @@ import CoreRPG
 import Foundation
 
 @MainActor @Observable
-final class SpaceGameModel: Sendable {
-    private static let maximumFutureTransformTimestampSkew: TimeInterval = 300
+final class SpaceGameModel {
+    // See CODE_AUDIT_Game §9.12 — shared with GameRPG/MapRPG's identical policy.
+    private static let maximumFutureTransformTimestampSkew = NetworkTimestampPolicy.maximumFutureSkew
     init() {}
 
     var openSpace: Bool = false
@@ -173,8 +174,6 @@ public protocol SpaceGameControllable: Sendable {
     @MainActor func removeSpaceReports(for playerId: UUID)
 
     @MainActor func isValidSpaceTransform(_ data: NetworkCodableDataType) -> Bool
-    @discardableResult
-    @MainActor func applySpaceTransform(data: NetworkCodableDataType, counter: Int) -> Bool
     @MainActor func applySpaceTransform(
         data: NetworkCodableDataType,
         counter: Int,
@@ -204,23 +203,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
     let spaceGameModel: SpaceGameModel
 
-    @MainActor func gameItem(for itemId: UUID) -> SpaceModel {
-        (gameModel.itemData[itemId] as? SpaceModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor func currentItem() -> SpaceModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
@@ -323,12 +310,6 @@ extension GameController: SpaceGameControllable {
 
     @MainActor
     @discardableResult
-    func applySpaceTransform(data: NetworkCodableDataType, counter: Int) -> Bool {
-        applySpaceTransform(data: data, counter: counter, timestamp: 0)
-    }
-
-    @MainActor
-    @discardableResult
     func applySpaceTransform(
         data: NetworkCodableDataType,
         counter: Int,
@@ -384,11 +365,6 @@ extension GameController: SpaceGameControllable {
     @MainActor
     func resetSpaceTransforms() {
         spaceGameModel.resetTransforms()
-    }
-
-    func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {
-        guard subtype == .spaceTransform else { return }
-        _ = await applySpaceTransform(data: data, counter: 0)
     }
 
     @MainActor

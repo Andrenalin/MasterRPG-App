@@ -197,7 +197,7 @@ extension GameController {
             // A metadata-only Photo cannot render a pin. Route both missing
             // ownership and missing local bytes through the same Photo repair.
             guard !hasItem || !hasFile else { continue }
-            await result.append(root.photoRoot.gameControllable.share(id: photoId))
+            result.append(await root.photoRoot.gameControllable.share(id: photoId))
         }
         return result
     }

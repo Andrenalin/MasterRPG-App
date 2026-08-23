@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 
 @MainActor @Observable
-final class PdfGameModel: Sendable {
+final class PdfGameModel {
     init() {}
 
     /// Reported file versions keyed by PDF and participant. The game master's
@@ -75,23 +75,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
     let pdfGameModel: PdfGameModel
     
-    @MainActor func gameItem(for itemId: UUID) -> PdfModel {
-        (gameModel.itemData[itemId] as? PdfModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor func currentItem() -> PdfModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }

@@ -111,6 +111,12 @@ struct GameMessageEvent: Sendable {
 
 actor GameMessagePipeline {
     private let recentLimit: Int
+    /// Unlike `recentKeys`, `messages` itself had no cap — each element
+    /// retains a full `GameNetworkModel`, megabytes for a map/photo/pdf/space
+    /// package, so a producer faster than the consumer (a SharePlay journal
+    /// burst, or a peer sending distinct-counter payloads on purpose) could
+    /// accumulate unbounded memory. See CODE_AUDIT_Game §7.4.
+    private let maximumQueuedMessages: Int
     private var messages: [GameMessageEvent] = []
     private var processing = false
     private var isCancelled = false
@@ -119,12 +125,13 @@ actor GameMessagePipeline {
     private var pendingKeySet: Set<GameMessageKey> = []
     private var currentKey: GameMessageKey?
 
-    init(recentLimit: Int = 256) {
+    init(recentLimit: Int = 256, maximumQueuedMessages: Int = 128) {
         self.recentLimit = recentLimit
+        self.maximumQueuedMessages = maximumQueuedMessages
     }
 
     func enqueue(_ event: GameMessageEvent) -> Bool {
-        guard !isCancelled else { return false }
+        guard !isCancelled, messages.count < maximumQueuedMessages else { return false }
         if let key = event.deduplicationKey {
             guard !recentKeySet.contains(key), !pendingKeySet.contains(key) else { return false }
             pendingKeySet.insert(key)

@@ -323,7 +323,9 @@ public final class BattleRoundModel: Sendable {
     ) -> Bool {
         guard isRunning else { return false }
         var changed = false
-        let pinsById = Dictionary(uniqueKeysWithValues: pins.map { ($0.id, $0) })
+        // Last-wins rather than a trapping uniqueKeysWithValues — `pins`
+        // ultimately comes from a decoded network payload. See CODE_AUDIT_Game §5.5.
+        let pinsById = Dictionary(pins.map { ($0.id, $0) }, uniquingKeysWith: { _, new in new })
 
         for index in combatants.indices {
             guard let pin = pinsById[combatants[index].pinId], combatants[index].pin != pin else {
@@ -438,6 +440,16 @@ public final class BattleRoundModel: Sendable {
         activeAttackerId = state.activePinId.flatMap { combatant(pinId: $0)?.id }
         rollRecipientCombatantId = activeAttackerId
         return true
+    }
+
+    /// Clears just the sequence gate, without touching the rest of the
+    /// displayed round state, so a lost/rejoined connection can accept the
+    /// next authoritative update even if the master restarted its own
+    /// sequence lower than what this device last saw. A full `reset()` would
+    /// also blank the visible round/combatants until the resync arrives.
+    /// See CODE_AUDIT_Game §5.6.
+    public func resetNetworkSequence() {
+        networkSequence = 0
     }
 
     func networkState() -> BattleRoundNetworkState? {

@@ -89,6 +89,37 @@ struct GameValueUpdateTests {
         )
     }
 
+    /// See CODE_AUDIT_Game §6.1: `sender.characterId` is otherwise
+    /// self-declared, untrusted network input — every peer already sees
+    /// every pin's `characterId`, so without this binding any admitted
+    /// player could claim another player's Character id and have
+    /// `handleValue` apply value updates (including HP) against it.
+    @Test("Character ownership binding rejects a claim on another sender's Character")
+    func characterOwnershipBindingRejectsHijack() {
+        let model = MasterControllerModel()
+        let ownerId = UUID()
+        let attackerId = UUID()
+        let characterId = UUID()
+
+        // The legitimate owner's join handshake binds first.
+        #expect(model.bindCharacterOwnership(senderId: ownerId, characterId: characterId))
+        #expect(model.isCharacterOwnershipAuthorized(senderId: ownerId, characterId: characterId))
+
+        // A different sender claiming the same Character id is rejected
+        // outright, and the owner's own binding is unaffected.
+        #expect(!model.bindCharacterOwnership(senderId: attackerId, characterId: characterId))
+        #expect(!model.isCharacterOwnershipAuthorized(senderId: attackerId, characterId: characterId))
+        #expect(model.isCharacterOwnershipAuthorized(senderId: ownerId, characterId: characterId))
+
+        // The owner re-claiming their own Character (e.g. a reconnect) is fine...
+        #expect(model.bindCharacterOwnership(senderId: ownerId, characterId: characterId))
+        // ...but the owner can't later switch to claiming a different Character id.
+        #expect(!model.bindCharacterOwnership(senderId: ownerId, characterId: UUID()))
+
+        model.resetCharacterOwnership()
+        #expect(!model.isCharacterOwnershipAuthorized(senderId: ownerId, characterId: characterId))
+    }
+
     @Test("Timestamp ledger rejects stale, duplicate, and far-future updates")
     func timestampLedgerRejectsStaleUpdates() {
         let root = GameRootModel()

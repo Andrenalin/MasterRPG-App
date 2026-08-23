@@ -1294,7 +1294,7 @@ struct MasterControllerDirectProxyTests {
         #expect(env.root.gameModel.gameRoster.players.isEmpty)
     }
 
-    @Test("weather and game handlers cover report, reveal, and screen updates")
+    @Test("weather handler covers report/reveal; game handler is a harmless no-op")
     func weatherAndGameHandlers() async throws {
         let env = try await MasterControllerHarness.make(asProxy: false)
         let weatherId = await env.root.weatherRoot.itemController.addNew(type: .scenario)
@@ -1311,18 +1311,20 @@ struct MasterControllerDirectProxyTests {
         let okResult = try await env.master.handle(ok)
         #expect(okResult == nil)
 
-        let screenData = Data("screen".utf8)
+        // `.game`-typed envelopes are a legacy no-op dispatch target (the
+        // player-screenshot-sharing feature they carried was removed as dead
+        // code — see CODE_AUDIT_Game §9.17); this just confirms the dispatch
+        // case still exists and is harmless.
         let gameMessage = GameNetworkModel(
             counter: 13,
             proxyCounter: 0,
             type: .update,
             subType: .generic,
             gameConfig: playerConfig,
-            data: NetworkCodableDataType(id: UUID(), type: .game, version: 1, data: screenData)
+            data: NetworkCodableDataType(id: UUID(), type: .game, version: 1, data: Data("screen".utf8))
         )
         let gameResult = try await env.master.handle(gameMessage)
         #expect(gameResult == nil)
-        #expect(env.root.gameModel.playerScreens[playerConfig.id] == screenData)
     }
 }
 

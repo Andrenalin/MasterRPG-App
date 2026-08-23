@@ -15,7 +15,7 @@ import PdfRPG
 import SpaceRPG
 
 @MainActor @Observable
-final class MasterControllerModel: Sendable {
+final class MasterControllerModel {
     private struct SpaceTransformSequenceKey: Hashable, Sendable {
         let playerId: UUID
         let itemId: UUID
@@ -167,12 +167,56 @@ final class MasterControllerModel: Sendable {
     /// back to a requester-only SharePlay chunk transfer.
     var sentGameItems: [NetworkModules: [UUID: Int]] = [:]
 
+    /// Which Character id each sender is authorized to act on — established
+    /// once at that sender's join handshake and enforced on every later
+    /// `.value` message. `sender.characterId` is otherwise self-declared,
+    /// untrusted network input every peer can already read off the wire
+    /// (encoded in `.mapState`). See CODE_AUDIT_Game §6.1.
+    private var characterOwnership: [UUID: UUID] = [:]
+
+    /// Binds `senderId` to `characterId` if this is their first claim, or
+    /// confirms it matches their existing binding. Rejects the claim if a
+    /// *different* sender already owns this Character. Call only from the
+    /// `.store` join handshake — see `isCharacterOwnershipAuthorized` for the
+    /// read-only check every later message must use instead, so a message
+    /// arriving before the real owner's join can't squat the binding.
+    @discardableResult
+    func bindCharacterOwnership(senderId: UUID, characterId: UUID) -> Bool {
+        if characterOwnership.contains(where: { $0.key != senderId && $0.value == characterId }) {
+            return false
+        }
+        if let bound = characterOwnership[senderId] {
+            return bound == characterId
+        }
+        characterOwnership[senderId] = characterId
+        return true
+    }
+
+    /// Read-only enforcement for every `.value` message after the join
+    /// handshake — never creates a binding itself.
+    func isCharacterOwnershipAuthorized(senderId: UUID, characterId: UUID) -> Bool {
+        characterOwnership[senderId] == characterId
+    }
+
+    func resetCharacterOwnership() {
+        characterOwnership.removeAll()
+    }
+
     func hasSentGameItem(type: NetworkModules, id: UUID, version: Int) -> Bool {
         sentGameItems[type]?[id] == version
     }
 
     func markSentGameItem(type: NetworkModules, id: UUID, version: Int) {
         sentGameItems[type, default: [:]][id] = version
+    }
+
+    /// Rolls back a reservation `markSentGameItem` made before an export that
+    /// then failed, but only if nothing else has since marked a *newer*
+    /// version sent for the same item — an out-of-order rollback must not
+    /// erase a valid, more recent mark. See CODE_AUDIT_Game §3.9.
+    func unmarkSentGameItem(type: NetworkModules, id: UUID, version: Int) {
+        guard sentGameItems[type]?[id] == version else { return }
+        sentGameItems[type]?[id] = nil
     }
     
     /// Reserves the next counter atomically. Reading and incrementing in separate
@@ -364,6 +408,7 @@ final class MasterControllerModel: Sendable {
         return true
     }
 
+    /// Test affordance. See CODE_AUDIT_Game §9.22.
     var trackedPeerAvailabilitySourceCount: Int {
         peerAvailabilitySources.count
     }
@@ -451,7 +496,7 @@ final class MasterControllerModel: Sendable {
 }
 
 @MainActor
-final class MasterController: Sendable {
+final class MasterController {
     private struct MapRecoveryBundle: Sendable {
         let full: NetworkCodableDataType
         let content: NetworkCodableDataType
@@ -462,6 +507,9 @@ final class MasterController: Sendable {
         case generationChanged
     }
 
+    /// The outermost of three nested retry levels — see
+    /// `MapRPG.GameController.maximumPackageExportAttempts`'s doc comment for
+    /// the full compounding chain. See CODE_AUDIT_Game §9.13.
     private static let maximumMapRecoveryCaptureAttempts = 3
 
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
@@ -514,6 +562,7 @@ extension MasterController {
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
         gameModel.sentGameItems.removeAll()
+        gameModel.resetCharacterOwnership()
         gameModel.resetAudioListSequence()
         gameModel.resetPhotoListSequence()
         gameModel.resetPdfListSequence()
@@ -538,12 +587,10 @@ extension MasterController {
             players.append(gameConfig.master.id)
             players.sort()
         }
-        root.audioRoot.gameControllable.gameModel.setCurrent(players: players)
-        root.photoRoot.gameControllable.gameModel.setCurrent(players: players)
-        root.pdfRoot.gameControllable.gameModel.setCurrent(players: players)
-        root.spaceRoot.gameControllable.gameModel.setCurrent(players: players)
-        root.tableRoot.gameControllable.gameModel.setCurrent(players: players)
-        root.weatherRoot.gameControllable.gameModel.setCurrent(players: players)
+        // See CODE_AUDIT_Game §9.18 — Map and Dice have their own reset logic below.
+        for controllable in root.fileBackedGameModules {
+            controllable.gameModel.setCurrent(players: players)
+        }
 
         var playerNames = gameRoster.players.filter { $0.type != .observer }.map { $0.name }.sorted()
         if asProxy {
@@ -626,8 +673,12 @@ extension MasterController {
         // reference; players still holding the item show it from memory, the
         // others request it.
         if Self.sendsFullPayloadOnFirstShow(resolvedIdType.type), !gameModel.hasSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion) {
+            // Reserved before the export `await` (not after it succeeds) so the
+            // receive path can't independently decide to publish the same
+            // item/version during the suspension and double the broadcast.
+            // Rolled back below if the export fails. See CODE_AUDIT_Game §3.9.
+            gameModel.markSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion)
             if let fullData = try? await createGameData(for: resolvedIdType) {
-                gameModel.markSentGameItem(type: fullData.type, id: fullData.id, version: fullData.effectiveAssetVersion)
                 await send(type: .reveal, subtype: .show, updated: fullData)
                 if fullData.type == .map,
                    let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
@@ -638,6 +689,7 @@ extension MasterController {
                 }
                 return
             }
+            gameModel.unmarkSentGameItem(type: resolvedIdType.type, id: resolvedIdType.id, version: resolvedIdType.effectiveAssetVersion)
             Logger.networking.error("MasterController: Cannot create package for \(resolvedIdType.type.token, privacy: .public) \(resolvedIdType.id, privacy: .public) — sending reference instead")
         }
         await send(type: .reveal, subtype: .show, updated: resolvedIdType)
@@ -659,20 +711,46 @@ extension MasterController {
         }
     }
 
+    /// `createGameData`/`createMapGameData`/`createWeatherGameData` are
+    /// `nonisolated async` protocol requirements — under this project's
+    /// approachable-concurrency setting they otherwise run on the *caller's*
+    /// actor (see CODE_AUDIT_Game §3.1's mechanism), which for every call
+    /// site of this dispatcher is the main actor. `Task.detached` here gives
+    /// the export an explicit off-main starting point, matching the pattern
+    /// `ImportControllable.importUrl` already uses; the implementation still
+    /// hops back to the main actor itself for whatever pieces genuinely need
+    /// it. Each controllable is fetched on the main actor first and handed
+    /// into the detached task by value, rather than capturing `root` itself
+    /// (a plain, non-`Sendable` class). See CODE_AUDIT_Game §3.5.
     private func createGameData(for idType: NetworkCodableDataType) async throws -> NetworkCodableDataType? {
         switch idType.type {
         case .map:
-            try await root.mapRoot.mapGameControllable.createMapGameData(for: idType.id)
+            let controllable = root.mapRoot.mapGameControllable
+            return try await Task.detached(priority: .userInitiated) {
+                try await controllable.createMapGameData(for: idType.id)
+            }.value
         case .photo:
-            try await root.photoRoot.gameControllable.createGameData(for: idType.id)
+            let controllable = root.photoRoot.gameControllable
+            return try await Task.detached(priority: .userInitiated) {
+                try await controllable.createGameData(for: idType.id)
+            }.value
         case .pdf:
-            try await root.pdfRoot.gameControllable.createGameData(for: idType.id)
+            let controllable = root.pdfRoot.gameControllable
+            return try await Task.detached(priority: .userInitiated) {
+                try await controllable.createGameData(for: idType.id)
+            }.value
         case .space:
-            try await root.spaceRoot.gameControllable.createGameData(for: idType.id)
+            let controllable = root.spaceRoot.gameControllable
+            return try await Task.detached(priority: .userInitiated) {
+                try await controllable.createGameData(for: idType.id)
+            }.value
         case .weather:
-            try await root.weatherRoot.weatherGameControllable.createWeatherGameData(for: idType.id)
+            let controllable = root.weatherRoot.weatherGameControllable
+            return try await Task.detached(priority: .userInitiated) {
+                try await controllable.createWeatherGameData(for: idType.id)
+            }.value
         default:
-            nil
+            return nil
         }
     }
     
@@ -840,7 +918,7 @@ extension MasterController {
 
 extension MasterController: MasterNetworkStoreDelegate {
     func accepts(_ model: GameNetworkModel, origin: GameMessageOrigin) async -> Bool {
-        let expectedMasterId = await root.gameModel.gameConfig.master.id
+        let expectedMasterId = root.gameModel.gameConfig.master.id
 
         // Every message entering the master's receive side came from a remote
         // player transport. A remote endpoint can never acquire authority by
@@ -882,7 +960,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
 
         if let connectionId = origin.participantConnectionId {
-            guard await gameModel.accepts(
+            guard gameModel.accepts(
                 connectionId: connectionId,
                 sender: model.sender
             ) else { return false }
@@ -892,7 +970,7 @@ extension MasterController: MasterNetworkStoreDelegate {
             // through participant-attributed SharePlay Messenger.
             if case .sharePlay = origin,
                model.isPlayerJournalAdmissionMetadata {
-                guard await gameModel.admitPlayerJournalMetadata(model) else {
+                guard gameModel.admitPlayerJournalMetadata(model) else {
                     Logger.networking.debug("MasterController: Rejected conflicting player Journal admission")
                     return false
                 }
@@ -901,7 +979,7 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
 
         if origin == .file {
-            guard await gameModel.acceptsPlayerJournal(model) else {
+            guard gameModel.acceptsPlayerJournal(model) else {
                 Logger.networking.debug("MasterController: Rejected uncorrelated Journal sender \(model.sender.id, privacy: .public)")
                 return false
             }
@@ -959,21 +1037,21 @@ extension MasterController: MasterNetworkStoreDelegate {
             // OS-confirmed join to clear an earlier retirement so the
             // reconnected player's messages bind again instead of being
             // rejected forever.
-            await gameModel.reinstateConnection(participantId)
+            gameModel.reinstateConnection(participantId)
         }
         await replayCurrentPresentation(to: origin)
     }
     
     func lostPlayer(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Lost Player for \(connectionId, privacy: .public)")
-        guard let playerId = await gameModel.remove(connectionId: connectionId) else { return }
-        await root.audioRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
-        await root.photoRoot.photoGameControllable.removePhotoReports(for: playerId)
-        await root.pdfRoot.pdfGameControllable.removePdfReports(for: playerId)
-        await root.spaceRoot.spaceGameControllable.removeSpaceReports(for: playerId)
-        await root.tableRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
-        await root.weatherRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
-        if await root.gameModel.remove(playerId: playerId) {
+        guard let playerId = gameModel.remove(connectionId: connectionId) else { return }
+        root.audioRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
+        root.photoRoot.photoGameControllable.removePhotoReports(for: playerId)
+        root.pdfRoot.pdfGameControllable.removePdfReports(for: playerId)
+        root.spaceRoot.spaceGameControllable.removeSpaceReports(for: playerId)
+        root.tableRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
+        root.weatherRoot.gameControllable.gameModel.removePlayerReport(for: playerId)
+        if root.gameModel.remove(playerId: playerId) {
             await root.statisticsModel.participantLeft(id: playerId)
             await resetPlayers()
         }
@@ -1006,6 +1084,16 @@ extension MasterController: MasterNetworkStoreDelegate {
 
     private func processMessages() async {
         while let event = await messagePipeline.next() {
+            // Matches PlayerController.processMessages' policy: stop
+            // draining on cancellation rather than continuing to process
+            // (or silently drop) the remaining backlog — the pipeline
+            // retains any still-queued events for the next real trigger to
+            // resume, instead of the two controllers disagreeing about what
+            // cancellation means. See CODE_AUDIT_Game §3.8.
+            guard !Task.isCancelled else {
+                await messagePipeline.processed(success: false)
+                return
+            }
             let success = await process(event)
             await messagePipeline.processed(success: success)
         }
@@ -1032,7 +1120,8 @@ extension MasterController: MasterNetworkStoreDelegate {
         }
 
         guard let model = normalizedObserverMessage(receivedModel) else {
-            Logger.networking.debug("MasterController: Observer action ignored \(receivedModel.debugDescription, privacy: .public)")
+            // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.debug("MasterController: Observer action ignored \(receivedModel.debugDescription, privacy: .private)")
             return true
         }
 
@@ -1086,7 +1175,8 @@ extension MasterController: MasterNetworkStoreDelegate {
         } catch is CancellationError {
             return false
         } catch {
-            Logger.networking.error("MasterController: Failed to process \(model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.error("MasterController: Failed to process \(model.debugDescription, privacy: .private): \(error.localizedDescription, privacy: .public)")
             return false
         }
     }
@@ -1228,7 +1318,7 @@ extension MasterController: MasterNetworkStoreDelegate {
     
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        guard await root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
+        guard root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
         guard await accepts(model, origin: .file) else { return }
         guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) else {
             Logger.networking.debug("MasterController: Duplicate file ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
@@ -1255,7 +1345,8 @@ extension MasterController {
     ) async throws -> NetworkCodableDataType? {
         switch model.data.type {
         case .adventure, .none, .rule, .setting, .editor, .generator, .search:
-            Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) but model request data is not supported. \(model.debugDescription, privacy: .public)")
+            // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) but model request data is not supported. \(model.debugDescription, privacy: .private)")
             return nil
         case .audio:
             return try await handleAudio(model)
@@ -1278,7 +1369,8 @@ extension MasterController {
         case .space:
             return try await handleSpace(model)
         @unknown default:
-            Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) has an unrecognized module \(model.data.type.token, privacy: .public); ignoring. \(model.debugDescription, privacy: .public)")
+            // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.error("MasterController: Request \(model.type.debugDescription, privacy: .public) has an unrecognized module \(model.data.type.token, privacy: .public); ignoring. \(model.debugDescription, privacy: .private)")
             return nil
         }
     }
@@ -1300,8 +1392,26 @@ extension MasterController {
             switch model.subType {
             case .generic:
                 guard root.gameModel.gameControl.features.audioSharing else { return nil }
-                try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
-                await send(type: .reveal, subtype: .show, updated: model.data)
+                // Defend the master's own canonical copy first — mirrors
+                // handlePhoto/handlePdf/handleSpace's `.itemMissing` import
+                // fallback (this is also the legitimate path for a player
+                // contributing a brand-new audio item the master has never
+                // seen, exercised by PlayerMasterControllerTests.handleAudio).
+                // The previous version of this fix unconditionally required
+                // local data first, which blocked that legitimate case; the
+                // actual vulnerability was importing an admitted player's
+                // bytes over an *existing* master-owned copy with no check
+                // at all — this restores that check. See CODE_AUDIT_Game §6.2.
+                do {
+                    let canonical = try await root.audioRoot.gameControllable.createGameData(for: model.data.id)
+                    await send(type: .reveal, subtype: .show, updated: canonical)
+                } catch ItemGameStorableError.itemMissing {
+                    guard model.data.data != nil else { return nil }
+                    try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+                    await send(type: .reveal, subtype: .show, updated: model.data)
+                } catch {
+                    Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
+                }
             case .playAudio:
                 guard root.gameModel.gameControl.features.audioSharing else { return nil }
                 await requestAudioPlay(model.data)
@@ -1402,7 +1512,13 @@ extension MasterController {
         await send(type: .update, subtype: .playAudio, updated: data)
         let hasLocalPlayer = root.networkStore.model.hasLocalPlayer
         if !hasLocalPlayer {
-            let _ = await root.audioRoot.audioGameControllable.play(with: data).result
+            // A failed playlist load/playback start used to be silently
+            // swallowed here. See CODE_AUDIT_Game §4.2.
+            do {
+                try await root.audioRoot.audioGameControllable.play(with: data)
+            } catch {
+                Logger.networking.error("MasterController: Failed to start audio playback for \(data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
     
@@ -1446,11 +1562,20 @@ extension MasterController {
         return nil
     }
     
+    /// `.game`-typed envelopes carried a player-screenshot-sharing feature
+    /// that had no UI consumer (a write path with no reader, growing
+    /// `Data` per player for the session with no eviction) — removed.
+    /// See CODE_AUDIT_Game §9.17. The dispatch case is kept as a no-op so an
+    /// unrecognized/legacy `.game` message is silently ignored rather than
+    /// logged as an error by the `@unknown default` path.
     func handleGame(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
-        root.logGameController.updateScreen(counter: model.counter, player: model.sender.id, data: model.data.data)
-        return nil
+        nil
     }
     
+    /// Test affordance — real dispatch always goes through `handle(_:origin:)`,
+    /// which calls the `origin`-based overload below directly. Kept as the
+    /// entry point the extensive `MapPlayerSequencingTests`/`MapMasterMessageFlowTests`
+    /// suites already use. See CODE_AUDIT_Game §9.22.
     func handleMap(
         _ model: GameNetworkModel,
         connectionId: ConnectionController.ID? = nil
@@ -1616,11 +1741,17 @@ extension MasterController {
     /// Map generation. Each component suspends independently, so compare their
     /// fingerprints and retry instead of sending a torn recovery sequence.
     private func stableMapRecoveryBundle(for itemId: UUID) async throws -> MapRecoveryBundle {
+        let mapControllable = root.mapRoot.mapGameControllable
         for _ in 0..<Self.maximumMapRecoveryCaptureAttempts {
             try Task.checkCancellation()
             let full: NetworkCodableDataType
             do {
-                full = try await root.mapRoot.mapGameControllable.createMapGameData(for: itemId)
+                // Off-main starting point for the expensive capture — same
+                // reasoning as the `createGameData(for:)` dispatcher above.
+                // See CODE_AUDIT_Game §3.5.
+                full = try await Task.detached(priority: .userInitiated) {
+                    try await mapControllable.createMapGameData(for: itemId)
+                }.value
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
@@ -2017,6 +2148,10 @@ extension MasterController {
                   model.effectiveAudience == .master,
                   let characterId = model.sender.characterId,
                   characterId == model.data.id,
+                  // sender.characterId is otherwise self-declared, untrusted
+                  // network input — every peer already sees every pin's
+                  // characterId. See CODE_AUDIT_Game §6.1.
+                  gameModel.isCharacterOwnershipAuthorized(senderId: model.sender.id, characterId: characterId),
                   let update = GameValueEntryUpdate.decodeData(of: model.data.data),
                   update.characterId == characterId,
                   root.gameModel.canApplyValueUpdate(
@@ -2046,7 +2181,10 @@ extension MasterController {
               model.subType == .store,
               model.senderType == .player,
               let characterId = model.sender.characterId,
-              characterId == model.data.id
+              characterId == model.data.id,
+              // The join handshake — binds this sender to characterId (or
+              // confirms an existing binding). See CODE_AUDIT_Game §6.1.
+              gameModel.bindCharacterOwnership(senderId: model.sender.id, characterId: characterId)
         else { return nil }
 
         if model.data.data == nil {
@@ -2319,13 +2457,13 @@ extension MasterController {
 extension MasterController: MasterNetworkProxyControllerDelegate {
     func lostProxy(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Lost Proxy for \(connectionId, privacy: .public)")
-        _ = await gameModel.remove(connectionId: connectionId)
+        _ = gameModel.remove(connectionId: connectionId)
     }
 
     func readyProxy(for connectionId: ConnectionController.ID) async {
         Logger.networking.debug("MasterController: Proxy Ready for \(connectionId, privacy: .public)")
         await replayCurrentPresentation(to: .proxy(connectionId))
-        guard let characterId = await root.gameModel.gamePlayer.characterId else { return }
+        guard let characterId = root.gameModel.gamePlayer.characterId else { return }
         if let data = try? await root.characterRoot.gameControllable.createGameData(for: characterId) {
             await send(
                 type: .update,
@@ -2462,7 +2600,8 @@ private extension MasterController {
                     }
                     return true
                 } catch {
-                    Logger.networking.error("MasterController: Cannot serve proxy request locally \(model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+                    Logger.networking.error("MasterController: Cannot serve proxy request locally \(model.debugDescription, privacy: .private): \(error.localizedDescription, privacy: .public)")
                 }
             }
             // The host lacks the data itself — ask the master as the host. The
@@ -2501,7 +2640,8 @@ private extension MasterController {
     /// counter, host sender identity, same payload.
     func remapUpstream(_ model: GameNetworkModel) async {
         guard let playerController = root.gameModel.playerController else {
-            Logger.networking.error("MasterController: No player controller to remap proxy message \(model.debugDescription, privacy: .public)")
+            // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+            Logger.networking.error("MasterController: No player controller to remap proxy message \(model.debugDescription, privacy: .private)")
             return
         }
         // This message came from a proxy client. Sending it upstream must not

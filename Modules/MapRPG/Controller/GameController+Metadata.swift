@@ -10,7 +10,15 @@ import PhotoRPG
 import os.log
 
 extension GameController {
-    static let maximumFuturePinTimestampSkew: TimeInterval = 5 * 60
+    // See CODE_AUDIT_Game §9.12 — shared with GameRPG/SpaceRPG's identical policy.
+    static let maximumFuturePinTimestampSkew = NetworkTimestampPolicy.maximumFutureSkew
+    /// Retries used at three independent, *nested* levels: `stablePackageMetadata`
+    /// (this file) calls it once per attempt of `createGameData`/`createMapGameData`
+    /// (GameController.swift), which themselves each retry up to this many times —
+    /// so the effective worst-case export budget compounds to roughly this value
+    /// squared, not this value. See CODE_AUDIT_Game §9.13; the master-level
+    /// `MasterController.maximumMapRecoveryCaptureAttempts` wraps a third level
+    /// around all of this.
     static let maximumPackageExportAttempts = 3
 
     struct PackageMetadata: Equatable, Sendable {
@@ -264,13 +272,15 @@ extension GameController {
         guard let mapId = battleRoundModel.mapId else { return }
         let percent = healthPercent(for: combatant)
         guard combatant.pin.healthPercent != percent else {
-            Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .public) unchanged at \(percent.map { "\($0)" } ?? "nil", privacy: .public), not persisting")
+            // Matches synchronizeBattleDefenders' .private policy for the same
+            // kind of data (GameController+Battle.swift). See CODE_AUDIT_Game §6.3.
+            Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .private) unchanged at \(percent.map { "\($0)" } ?? "nil", privacy: .private), not persisting")
             return
         }
         let persisted = updatePinState(itemId: mapId, pinId: combatant.pinId) { pin in
             pin.healthPercent = percent
         }
-        Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .public) → \(percent.map { "\($0)" } ?? "nil", privacy: .public), updatePinState persisted=\(persisted, privacy: .public)")
+        Logger.gameController.debug("applyHealthPercent: pin \(combatant.pin.name, privacy: .private) → \(percent.map { "\($0)" } ?? "nil", privacy: .private), updatePinState persisted=\(persisted, privacy: .public)")
     }
 
     func battleInitiative(from value: String) -> Int? {
@@ -408,5 +418,17 @@ extension GameController {
             mapGameModel.playerPins[index] = pin
         }
         return pin
+    }
+
+    /// Strips transient player pins before persisting/exporting every map —
+    /// moved here from `GameController+MapSync.swift` (renamed
+    /// `+Sync.swift`), since this is export/persistence, not live sync.
+    /// See CODE_AUDIT_Game §9.25.
+    @MainActor
+    func saveAll() -> ItemModuleIds {
+        for itemId in gameModel.items {
+            gameItem(for: itemId).mapPins = gameItem(for: itemId).mapPins.filter { !$0.isPlayer }
+        }
+        return exportController.exportingAll()
     }
 }

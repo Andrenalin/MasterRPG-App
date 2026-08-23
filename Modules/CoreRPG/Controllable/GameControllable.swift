@@ -138,7 +138,6 @@ public protocol GameControllable: Sendable {
     var gameModel: ItemGameModel { get }
 
     // overwrite methods
-    func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws
     @MainActor func allPlayersReported(for id: UUID) -> Bool
     @MainActor func report(itemId: UUID, for player: UUID)
 
@@ -167,8 +166,6 @@ public enum ItemGameStorableError: Error {
 }
 
 public extension GameControllable {
-    func updateGame(data: NetworkCodableDataType, subtype: RPGMessageActionType) async throws {}
-
     var currentId: UUID {
         get async {
             // `currentItemId` is itself `@MainActor` (inherited from `ItemGameModel`'s class

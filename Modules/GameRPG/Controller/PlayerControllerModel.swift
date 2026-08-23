@@ -12,7 +12,7 @@ enum SharePlayMasterParticipantAcceptance: Equatable, Sendable {
 }
 
 @MainActor @Observable
-final class PlayerControllerModel: Sendable {
+final class PlayerControllerModel {
     private struct DeferredPhotoRevealKey: Hashable, Sendable {
         let masterId: UUID
         let senderId: UUID
@@ -49,7 +49,15 @@ final class PlayerControllerModel: Sendable {
         let version: Int
     }
 
-    private struct PresentationIntent {
+    // Deferred-buffer caps — hoisted to match MasterControllerModel's
+    // equivalents (`maximumDeliveryMessages` et al.). See CODE_AUDIT_Game §9.20.
+    private static let maximumDeferredPhotoReveals = 32
+    private static let maximumDeferredPdfReveals = 32
+    private static let maximumDeferredSpaceReveals = 32
+    private static let maximumDeferredSpaceTransforms = 64
+    private static let maximumDeferredMapPins = 64
+
+    private struct PresentationIntent: Sendable {
         let module: NetworkModules
         let counter: Int
         let itemId: UUID
@@ -248,8 +256,7 @@ final class PlayerControllerModel: Sendable {
         deferredPhotoRevealOrder.append(key)
         deferredPhotoReveals[key] = model
 
-        let maximumDeferredPhotoReveals = 32
-        while deferredPhotoRevealOrder.count > maximumDeferredPhotoReveals {
+        while deferredPhotoRevealOrder.count > Self.maximumDeferredPhotoReveals {
             let oldestKey = deferredPhotoRevealOrder.removeFirst()
             deferredPhotoReveals[oldestKey] = nil
         }
@@ -306,8 +313,7 @@ final class PlayerControllerModel: Sendable {
         deferredPdfRevealOrder.append(key)
         deferredPdfReveals[key] = model
 
-        let maximumDeferredPdfReveals = 32
-        while deferredPdfRevealOrder.count > maximumDeferredPdfReveals {
+        while deferredPdfRevealOrder.count > Self.maximumDeferredPdfReveals {
             let oldestKey = deferredPdfRevealOrder.removeFirst()
             deferredPdfReveals[oldestKey] = nil
         }
@@ -364,8 +370,7 @@ final class PlayerControllerModel: Sendable {
         deferredSpaceRevealOrder.append(key)
         deferredSpaceReveals[key] = model
 
-        let maximumDeferredSpaceReveals = 32
-        while deferredSpaceRevealOrder.count > maximumDeferredSpaceReveals {
+        while deferredSpaceRevealOrder.count > Self.maximumDeferredSpaceReveals {
             let oldestKey = deferredSpaceRevealOrder.removeFirst()
             deferredSpaceReveals[oldestKey] = nil
         }
@@ -428,8 +433,7 @@ final class PlayerControllerModel: Sendable {
         deferredSpaceTransformOrder.append(key)
         deferredSpaceTransforms[key] = model
 
-        let maximumDeferredSpaceTransforms = 64
-        while deferredSpaceTransformOrder.count > maximumDeferredSpaceTransforms {
+        while deferredSpaceTransformOrder.count > Self.maximumDeferredSpaceTransforms {
             deferredSpaceTransforms[deferredSpaceTransformOrder.removeFirst()] = nil
         }
     }
@@ -462,7 +466,7 @@ final class PlayerControllerModel: Sendable {
               model.subType == .mapPin,
               model.data.type == .map,
               let data = model.data.data,
-              let pin = try? JSONDecoder().decode(MapPinModel.self, from: data),
+              let pin = MapPinModel.decodeData(of: data),
               GameNetworkModel.acceptsEventTimestamp(pin.timeInterval)
         else { return }
 
@@ -486,8 +490,7 @@ final class PlayerControllerModel: Sendable {
             pinTimestamp: pin.timeInterval
         )
 
-        let maximumDeferredMapPins = 64
-        while deferredMapPinOrder.count > maximumDeferredMapPins {
+        while deferredMapPinOrder.count > Self.maximumDeferredMapPins {
             deferredMapPins[deferredMapPinOrder.removeFirst()] = nil
         }
     }
@@ -1021,6 +1024,11 @@ final class PlayerControllerModel: Sendable {
         sendCharacterTask?.cancel()
         sendCharacterTask = nil
         sendCharacterTaskId = nil
+        // See CODE_AUDIT_Game §3.10 — this task's delayed completion must not
+        // overwrite `selectedCharacter` after the session it belongs to is gone.
+        proxyFocusTask?.cancel()
+        proxyFocusTask = nil
+        proxyFocusTaskId = nil
         pendingMapRequests = []
         pendingAudioRequests = []
         requestedRepairIds = []

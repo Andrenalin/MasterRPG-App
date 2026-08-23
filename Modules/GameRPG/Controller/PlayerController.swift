@@ -20,7 +20,7 @@ import UIKit
 #endif
 
 @MainActor
-final class PlayerController: Sendable {
+final class PlayerController {
     // Strong on purpose: an intentional, temporary cycle GameRoot → GameModel →
     // PlayerController → GameRoot that stopGame() breaks by dropping the controllers.
     // `unowned` crashed here when in-flight controller tasks outlived
@@ -81,6 +81,9 @@ extension PlayerController {
         gameModel.proxyFocusTask?.cancel()
         gameModel.proxyFocusTask = nil
         gameModel.proxyFocusTaskId = nil
+        // The proxy's own MasterController owns its message pipeline and
+        // session state — never torn down previously. See CODE_AUDIT_Game §3.11.
+        await proxyMasterController?.stop()
         await root.networkProxyStore.stopGame()
         await root.networkStore.stopGame()
         await root.adventureRoot.adventureGameControllable.resetGame()
@@ -145,12 +148,11 @@ extension PlayerController {
 
     func resetPlayers() {
         let players = root.gameModel.gameControl.controls.compactMap { $0.show ? $0.id : nil }
-        root.audioRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        root.photoRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        root.pdfRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        root.spaceRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        root.tableRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
-        root.weatherRoot.gameControllable.gameModel.currentPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        let sortedPlayers = (players + [root.gameModel.gameConfig.master.id]).sorted()
+        // See CODE_AUDIT_Game §9.18 — Dice has its own reset logic below.
+        for controllable in root.fileBackedGameModules {
+            controllable.gameModel.currentPlayers = sortedPlayers
+        }
         let playerNames = root.gameModel.gameControl.controls.map { $0.name }.sorted()
         root.diceRoot.diceGameControllable.resetPlayerDice(to: [root.gameModel.gameConfig.master.name] + playerNames)
     }
@@ -626,7 +628,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
     }
 
     func sharePlayParticipantLeft(id: UUID) async {
-        guard await gameModel.removeSharePlayMasterParticipant(id: id) else { return }
+        guard gameModel.removeSharePlayMasterParticipant(id: id) else { return }
         await resetForLostConnection(preservingSharePlayRebind: true)
     }
 
@@ -636,13 +638,17 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         Logger.networking.debug("PlayerController: Lost Connection - Reset State")
         gameModel.resetForLostConnection(preservingSharePlayRebind: preservingSharePlayRebind)
         root.spaceRoot.spaceGameControllable.resetSpaceTransforms()
+        // The master may restart its own battle-round sequence lower than
+        // what this device last saw; clear the gate so the next authoritative
+        // update isn't rejected forever. See CODE_AUDIT_Game §5.6.
+        root.mapRoot.mapGameControllable.battleRoundModel.resetNetworkSequence()
         gameModel.reset(lostMaster: true)
         gameModel.reset(sendPlayer: false)
     }
 
     func ready() async {
         Logger.networking.debug("PlayerController: Ready")
-        await gameModel.reset(lostMaster: false)
+        gameModel.reset(lostMaster: false)
         await sendAudioList()
         await sendPhotoList()
         await sendPdfList()
@@ -652,7 +658,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("PlayerController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
-        let receivesOppositeRole = await root.gameModel.gameConfig.isMaster != model.sender.isMaster
+        let receivesOppositeRole = root.gameModel.gameConfig.isMaster != model.sender.isMaster
         // A player-authored file presentation has already been authenticated by
         // GameNetworkController before it reaches this callback. LAN and
         // SharePlay both fan that group event out to sibling players, so equal
@@ -687,7 +693,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // player-only device. Validate it before GameNetworkController commits
         // the physical participant binding, preventing an unknown or wrong-role
         // first packet from poisoning that immutable transport identity.
-        return await root.gameModel.gameRoster.players.contains {
+        return root.gameModel.gameRoster.players.contains {
             $0.id == model.sender.id && $0.type == .player
         }
     }
@@ -706,7 +712,7 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         // An existing non-player roster entry is an authoritative rejection,
         // not an ordering race. Only an entirely absent identity gets one
         // opportunity to wait for the next master roster update.
-        return await !root.gameModel.gameRoster.players.contains {
+        return !root.gameModel.gameRoster.players.contains {
             $0.id == model.sender.id
         }
     }
@@ -718,11 +724,11 @@ extension PlayerController: PlayerNetworkStoreDelegate {
         guard model.sender.isMaster,
               model.sender.id == model.masterId,
               model.masterState != nil,
-              await gameModel.isSharePlayMasterParticipant(id: participantId),
-              await root.gameModel.gameConfig.master.id == model.masterId
+              gameModel.isSharePlayMasterParticipant(id: participantId),
+              root.gameModel.gameConfig.master.id == model.masterId
         else { return false }
 
-        return await gameModel.hasAppliedMasterState(
+        return gameModel.hasAppliedMasterState(
             from: model.masterId,
             counter: model.counter
         )
@@ -741,22 +747,22 @@ extension PlayerController: PlayerNetworkStoreDelegate {
 
     func isLocalSharePlayTarget(_ targetId: UUID?) async -> Bool {
         guard let targetId else { return true }
-        return await root.gameModel.gameConfig.id == targetId
+        return root.gameModel.gameConfig.id == targetId
     }
 
     func receivedSharePlayFile(_ model: GameNetworkModel) async {
-        let receivesOppositeRole = await root.gameModel.gameConfig.isMaster != model.sender.isMaster
+        let receivesOppositeRole = root.gameModel.gameConfig.isMaster != model.sender.isMaster
         guard receivesOppositeRole || model.isPlayerFilePresentationEvent else { return }
         await receivedProcess(model, origin: .file)
     }
 
     func isPinnedSharePlayMasterParticipant(id: UUID) async -> Bool {
-        await gameModel.isSharePlayMasterParticipant(id: id)
+        gameModel.isSharePlayMasterParticipant(id: id)
     }
 
     func sharePlayFileLoadFailed(_ model: GameNetworkModel) async {
         guard model.sender.isMaster,
-              await !root.gameModel.gameConfig.isMaster,
+              !root.gameModel.gameConfig.isMaster,
               await acceptsSessionMessage(model, origin: .file)
         else { return }
 
@@ -903,7 +909,9 @@ extension PlayerController: PlayerNetworkStoreDelegate {
             let spaceSharing = root.gameModel.gameControl.features.spaceSharing
             let dicePlayers = root.gameModel.gameControl.features.dicePlayers
             guard type == .proxy || type == .observer || controls.isEmpty || controls.contains(where: { $0.id == localId && $0.show == true }) else {
-                Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .public)")
+                // The controls array carries every participant's id and display
+                // name — private. See CODE_AUDIT_Game §6.3.
+                Logger.networking.debug("PlayerController: Message will be ignored because of controls \(controls, privacy: .private)")
                 return false
             }
             // SharePlay physically broadcasts player-to-master repair requests.
@@ -936,7 +944,8 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 spaceSharing &&
                 model.effectiveAudience == .group
             guard root.gameModel.gameType == .proxy || model.sender.isMaster || acceptsPlayerDice || acceptsPlayerPhotoReveal || acceptsPlayerPdfReveal || acceptsPlayerSpaceReveal || acceptsPlayerMapPin || acceptsPlayerSpaceTransform else {
-                Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .public)")
+                // senderName is a participant's real display name — private. See CODE_AUDIT_Game §6.3.
+                Logger.networking.debug("PlayerController: Message will be ignored because it is send from Player \(model.senderName, privacy: .private)")
                 return false
             }
         }
@@ -1033,7 +1042,8 @@ extension PlayerController: PlayerNetworkStoreDelegate {
                 await messagePipeline.processed(success: false)
                 return
             } catch {
-                Logger.networking.error("PlayerController: Failed to process \(event.model.debugDescription, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.
+                Logger.networking.error("PlayerController: Failed to process \(event.model.debugDescription, privacy: .private): \(error.localizedDescription, privacy: .public)")
                 if event.origin != .local {
                     let failure = await response(for: event.model, isSuccess: false, requestData: false)
                     await sendUpstream(model: failure)

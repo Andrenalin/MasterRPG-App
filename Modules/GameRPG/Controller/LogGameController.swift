@@ -20,11 +20,17 @@ struct LogGameController: Sendable {
     let gameModel: GameRootModel
 
     static let maximumVisibleMessages = 25
+    /// See CODE_AUDIT_Game §7.5 — bounds `gameModel.logs`/`logData`, which
+    /// otherwise grow for the whole session even though only
+    /// `maximumVisibleMessages` are ever shown.
+    static let maximumRetainedMessages = 300
 
     static var noPlayersText: String {
         String(localized: "No Players", bundle: .module).localizedString
     }
     
+    /// Test affordance — production code reads `logRows` instead.
+    /// See CODE_AUDIT_Game §9.22.
     @MainActor
     var logModels: [LogGameModel] {
         gameModel.logs.compactMap { gameModel.logData[$0] }
@@ -32,12 +38,15 @@ struct LogGameController: Sendable {
 
     @MainActor
     var logRows: [LogMessageRowModel] {
-        let playerNamesById = Dictionary(uniqueKeysWithValues: gameModel.gameRoster.players.map { ($0.id, $0.name) })
+        // `uniqueKeysWithValues` traps on a duplicate id; roster/recipient data
+        // ultimately originates off-device, so last-wins here instead of
+        // crashing the whole log view. See CODE_AUDIT_Game §5.5.
+        let playerNamesById = Dictionary(gameModel.gameRoster.players.map { ($0.id, $0.name) }, uniquingKeysWith: { _, new in new })
 
         var rows: [LogMessageRowModel] = []
         for counter in gameModel.logs.reversed() {
             guard let model = gameModel.logData[counter] else { continue }
-            let snapshotNamesById = Dictionary(uniqueKeysWithValues: model.expectedRecipients.map { ($0.id, $0.name) })
+            let snapshotNamesById = Dictionary(model.expectedRecipients.map { ($0.id, $0.name) }, uniquingKeysWith: { _, new in new })
             let namesById = playerNamesById.merging(snapshotNamesById) { _, snapshotName in snapshotName }
             rows.append(LogMessageRowModel(
                 id: model.id,
@@ -54,13 +63,7 @@ struct LogGameController: Sendable {
         return rows
     }
     
-    @MainActor
-    var players: [PlayerScreenModel] {
-        gameModel.gameRoster.players.map {
-            PlayerScreenModel(id: $0.id, name: $0.name, data: gameModel.playerScreens[$0.id])
-        }.sorted { $0.name < $1.name }
-    }
-
+    /// Test affordance. See CODE_AUDIT_Game §9.22.
     @MainActor
     var maxPlayers: Int {
         gameModel.gameRoster.players.count
@@ -123,10 +126,20 @@ struct LogGameController: Sendable {
 
         if gameModel.logData[messageID.counter] == nil {
             gameModel.logs.append(messageID.counter)
+            // Unbounded before this — a long session produced thousands of
+            // entries even though the UI only ever renders `maximumVisibleMessages`.
+            // Same bounded-FIFO treatment as `MasterControllerModel.deliveryMessagesByWireID`.
+            // See CODE_AUDIT_Game §7.5.
+            while gameModel.logs.count > Self.maximumRetainedMessages {
+                gameModel.logData[gameModel.logs.removeFirst()] = nil
+            }
         }
         gameModel.logData[messageID.counter] = log
     }
     
+    /// Test affordance — production code calls `updateMessage(messageID:player:)`
+    /// directly, already having the full `GameDeliveryMessageID`.
+    /// See CODE_AUDIT_Game §9.22.
     @MainActor
     func updateMessage(counter: Int, player: UUID) {
         guard let messageID = gameModel.logData[counter]?.messageID else { return }
@@ -145,12 +158,6 @@ struct LogGameController: Sendable {
         return log.acknowledge(playerID: player)
     }
 
-    @MainActor
-    func updateScreen(counter: Int, player: UUID, data: Data?) {
-        guard let data else { return }
-        gameModel.playerScreens[player] = data
-    }
-
     /// Exact logical recipients captured with the same policy as a delivery
     /// row. Peer-origin file presentations use this snapshot for correlating
     /// their later acknowledgements even though they do not create a master
@@ -160,9 +167,10 @@ struct LogGameController: Sendable {
         Set(recipientSnapshot(targetID: targetID).map(\.id))
     }
 
+    /// Test affordance. See CODE_AUDIT_Game §9.22.
     @MainActor
     func playerNames(for players: [UUID]) -> String {
-        let playerNamesById = Dictionary(uniqueKeysWithValues: gameModel.gameRoster.players.map { ($0.id, $0.name) })
+        let playerNamesById = Dictionary(gameModel.gameRoster.players.map { ($0.id, $0.name) }, uniquingKeysWith: { _, new in new })
         return namedPlayers(for: players, namesById: playerNamesById)
     }
     
@@ -233,7 +241,11 @@ struct LogGameController: Sendable {
     @MainActor
     private func recipientSnapshot(targetID: UUID?) -> [LogMessageRecipient] {
         let controls = gameModel.gameControl.controls
-        let controlsByID = Dictionary(uniqueKeysWithValues: controls.map { ($0.id, $0.show) })
+        // `controls` is fed by the master's broadcast state — on a
+        // proxy-hosting player device it came straight off the wire, so a
+        // malformed/hostile master must not crash every relaying player.
+        // See CODE_AUDIT_Game §5.5.
+        let controlsByID = Dictionary(controls.map { ($0.id, $0.show) }, uniquingKeysWith: { _, new in new })
         var seen = Set<UUID>()
 
         return gameModel.gameRoster.players.compactMap { player in
@@ -323,10 +335,4 @@ enum LogMessageDeliveryState: Equatable, Sendable {
 struct AttachmentMetadata: Identifiable {
     let id: String
     let itemId: String
-}
-
-struct PlayerScreenModel: Identifiable {
-    let id: UUID
-    let name: String
-    let data: Data?
 }

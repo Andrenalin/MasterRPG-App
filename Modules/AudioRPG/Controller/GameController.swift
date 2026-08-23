@@ -6,8 +6,11 @@ import Foundation
 import Observation
 import os.log
 
-public protocol AudioGameStoreable {
-    func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error>
+public protocol AudioGameStoreable: Sendable {
+    // Returning a Task<Void, Error> instead of being async throws let both
+    // call sites discard `.result` (and any thrown error) via `let _ =`.
+    // See CODE_AUDIT_Game §4.2.
+    @MainActor func play(id: UUID?, shouldPlay: Bool) async throws
     /// Loads the playlist for `id` and prepares the first item for coordinator sync
     /// without triggering play locally. Used in SharePlay mode where
     /// AVPlayerPlaybackCoordinator propagates play() from the initiating device.
@@ -19,7 +22,7 @@ public protocol AudioGameStoreable {
     @MainActor func applyAudioList(data: NetworkCodableDataType, for playerId: UUID, authoritative: Bool) -> Bool
     @MainActor func missingPlayers(for itemId: UUID) -> [UUID]
     func hasLocalAudioData(for itemId: UUID) async -> Bool
-    func play(with data: NetworkCodableDataType) -> Task<Void, Error>
+    @MainActor func play(with data: NetworkCodableDataType) async throws
     func shouldPlay(with data: NetworkCodableDataType) -> Bool
     @MainActor func requestPlay(id: UUID) -> NetworkCodableDataType
 }
@@ -44,38 +47,33 @@ struct GameController: Sendable {
         (item.fileUrl, item.name)
     }
 
-    @MainActor
-    func gameItem(for itemId: UUID) -> AudioModel {
-        (gameModel.itemData[itemId] as? AudioModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor
-    func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor
-    func currentItem() -> AudioModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }
     var exportControllable: any ExportControllable { exportController as ExportControllable }
 
-    @MainActor func allPlayersReported(for id: UUID, deep: Int = 0) -> Bool {
-        guard deep < 10 else { return false }
+    @MainActor func allPlayersReported(for id: UUID) -> Bool {
+        allPlayersReported(for: id, visited: [])
+    }
+
+    // A named recursion depth (`deep < 10`) doesn't actually guard against a
+    // playlist cycle, only against a very deep one — switched to the same
+    // `visited` cycle guard the rest of this file's playlist traversals
+    // (missingPlayers/report/hasLocalAudioData) already use.
+    // See CODE_AUDIT_Game §9.14.
+    @MainActor private func allPlayersReported(for id: UUID, visited: Set<UUID>) -> Bool {
+        guard !visited.contains(id) else { return true }
+        let visited = visited.union([id])
         let item = gameItem(for: id)
         let players = gameModel.playerReport(for: id)
         guard gameModel.currentPlayers.filter({ !players.contains($0) }).isEmpty else { return false }
         for entry in item.entries {
-            if !allPlayersReported(for: entry.audioId, deep: deep + 1) {
+            if !allPlayersReported(for: entry.audioId, visited: visited) {
                 return false
             }
         }
@@ -221,18 +219,16 @@ extension GameController {
 }
 
 extension GameController: AudioGameStoreable {
-    @discardableResult
-    func play(id: UUID?, shouldPlay: Bool) -> Task<Void, Error> {
-        Task { @MainActor in
-            guard let id else { return }
-            guard shouldPlay else {
-                audioController.pause()
-                return
-            }
-            let list = fetchPlaylist(id: id)
-            await audioController.add(audio: list, replace: true)
-            audioController.togglePlay(id: list.first?.id, triggerPlay: true)
+    @MainActor
+    func play(id: UUID?, shouldPlay: Bool) async throws {
+        guard let id else { return }
+        guard shouldPlay else {
+            audioController.pause()
+            return
         }
+        let list = fetchPlaylist(id: id)
+        await audioController.add(audio: list, replace: true)
+        audioController.togglePlay(id: list.first?.id, triggerPlay: true)
     }
 
     @MainActor
@@ -304,9 +300,10 @@ extension GameController: AudioGameStoreable {
         return true
     }
     
-    func play(with data: NetworkCodableDataType) -> Task<Void, Error> {
+    @MainActor
+    func play(with data: NetworkCodableDataType) async throws {
         let request = AudioPlayRequest.decodeData(of: data.data)
-        return play(id: request?.id, shouldPlay: request?.shouldPlay ?? false)
+        try await play(id: request?.id, shouldPlay: request?.shouldPlay ?? false)
     }
 
     func shouldPlay(with data: NetworkCodableDataType) -> Bool {

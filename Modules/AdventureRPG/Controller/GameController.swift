@@ -14,7 +14,7 @@ import SpaceRPG
 import CharacterRPG
 import WeatherRPG
 
-public protocol AdventureStoreGameable {
+public protocol AdventureStoreGameable: Sendable {
     @MainActor func startGame(with id: UUID) async
     @MainActor func focusDice(for itemId: UUID) -> UUID?
     @MainActor func resetGame() async
@@ -35,25 +35,11 @@ struct GameController: Sendable {
     let exportController: ExportController
     
     let gameModel: ItemGameModel
-    
-    @MainActor func gameItem(for itemId: UUID) -> AdventureModel {
-        (gameModel.itemData[itemId] as? AdventureModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor
-    func currentItem() -> AdventureModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable {

@@ -90,11 +90,29 @@ final class GameStatisticsModel: Sendable {
         }
     }
 
+    /// Fire-and-forget on purpose: persistence latency (a Core Data
+    /// duplicate-check fetch plus insert) must never be serialized into the
+    /// latency of the game message that triggered it, including small,
+    /// latency-sensitive ones like `.mapPin`/`.spaceTransform`. The actual
+    /// work runs in a detached child task this function does not await, so
+    /// every existing `await ...record(...)` call site returns almost
+    /// immediately without needing to change. See CODE_AUDIT_Game §7.1.
     func record(
         _ model: GameNetworkModel,
         direction: GameStatisticDirection,
         origin: GameMessageOrigin,
         at date: Date = .now
+    ) async {
+        Task { [weak self] in
+            await self?.recordAndPersist(model, direction: direction, origin: origin, at: date)
+        }
+    }
+
+    private func recordAndPersist(
+        _ model: GameNetworkModel,
+        direction: GameStatisticDirection,
+        origin: GameMessageOrigin,
+        at date: Date
     ) async {
         guard isCollectionEnabled,
               let context,

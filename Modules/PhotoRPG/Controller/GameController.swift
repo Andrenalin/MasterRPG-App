@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 
 @MainActor @Observable
-final class PhotoGameModel: Sendable {
+final class PhotoGameModel {
     init() {}
 
     /// Reported file versions keyed by photo and participant. The master's
@@ -42,7 +42,7 @@ final class PhotoGameModel: Sendable {
     }
 }
 
-public protocol PhotoGameControllable {
+public protocol PhotoGameControllable: Sendable {
     @MainActor func photoList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType
     @discardableResult
     @MainActor func applyPhotoList(data: NetworkCodableDataType, for playerId: UUID, with masterId: UUID, authoritative: Bool) async -> Bool
@@ -70,23 +70,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
     let photoGameModel: PhotoGameModel
 
-    @MainActor func gameItem(for itemId: UUID) -> PhotoModel {
-        (gameModel.itemData[itemId] as? PhotoModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor func currentItem() -> PhotoModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }

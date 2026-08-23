@@ -243,6 +243,50 @@ struct EditControllerTests {
         #expect(Double(resolved) == 25)
     }
 
+    /// See CODE_AUDIT_Game §5.3: HP and other tracked values are frequently
+    /// grouped, not top-level — before the fix, `gameValueEntryUpdate` named
+    /// the *group* as the wire message's id, which the receiver's sender
+    /// guard (`message.id == playerCharacterId`) always rejected, so a
+    /// grouped value's edits never reached the master at all.
+    @Test func groupedValueEntryUpdateNamesTheRootAndAppliesToTheNestedEntry() async throws {
+        let root = Self.makeRoot()
+        let sut = root.editController
+
+        let playerId = await root.itemController.addNew(type: .character)
+        let groupEntryId = await sut.addNewGroup(itemId: playerId)
+        let groupId = try #require(root.itemController.itemOrEmpty(for: playerId)[groupEntryId].valueId)
+
+        let hpEntry = ValueEntryModel(id: UUID(), name: "Lebenskraft", type: .number, value: "40")
+        sut.add(entry: hpEntry, itemId: groupId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        sut.updateValue(itemId: groupId, entryId: hpEntry.id, number: 25)
+
+        // The wire message must name the root Character, not the group —
+        // that's what the receive-side sender guard checks against.
+        let update = try #require(sut.gameValueEntryUpdate(itemId: groupId, entryId: hpEntry.id))
+        #expect(update.id == playerId)
+
+        let decoded = try #require(GameValueEntryUpdate.decodeData(of: update.data))
+        #expect(decoded.characterId == playerId)
+        #expect(decoded.path != nil)
+
+        // The master applies it and it must land on the nested entry inside
+        // the group, not silently no-op against the root's own top-level
+        // entries (which don't contain this entryId at all).
+        let gameController = root.gameController
+        #expect(gameController.applyGameValueEntryUpdate(decoded))
+        let appliedGroup = try #require(gameController.gameModel.itemData[groupId] as? ValueModel)
+        // Same base|modifier delta convention `updateValue(number:)` used
+        // above (see `EditController.resolvedBaseAndCurrent`) — resolve
+        // through the link pipeline the same way `gameEntryDisplayValue`
+        // does, rather than asserting the raw stored string.
+        #expect(appliedGroup[hpEntry.id].value != hpEntry.value)
+        #expect(gameController.gameEntryDisplayValue(characterId: groupId, entryId: hpEntry.id) == "25")
+    }
+
     /// The standalone entry editor (`EntryEditorHeaderView`) always persists,
     /// even while a game is running — unlike `updateValue`'s live in-game quick
     /// editor above, which stays memory-only except for its own explicit,

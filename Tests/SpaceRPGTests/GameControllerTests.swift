@@ -111,7 +111,8 @@ struct GameControllerTests {
                 version: 11,
                 transform: firstTransform
             ),
-            counter: 4
+            counter: 4,
+            timestamp: 0
         )
         let appliedSecond = sut.applySpaceTransform(
             data: Self.transformData(
@@ -119,7 +120,8 @@ struct GameControllerTests {
                 version: 22,
                 transform: secondTransform
             ),
-            counter: 5
+            counter: 5,
+            timestamp: 0
         )
         let appliedNewerFirst = sut.applySpaceTransform(
             data: Self.transformData(
@@ -127,7 +129,8 @@ struct GameControllerTests {
                 version: 22,
                 transform: newerFirstTransform
             ),
-            counter: 6
+            counter: 6,
+            timestamp: 0
         )
 
         // Then
@@ -151,24 +154,28 @@ struct GameControllerTests {
         let nextTransform = Self.transform(seed: 4)
         let currentData = Self.transformData(itemId: itemId, version: 31, transform: currentTransform)
 
-        #expect(sut.applySpaceTransform(data: currentData, counter: 8))
+        #expect(sut.applySpaceTransform(data: currentData, counter: 8, timestamp: 0))
 
         // When
         let duplicateApplied = sut.applySpaceTransform(
             data: Self.transformData(itemId: itemId, version: 31, transform: nextTransform),
-            counter: 8
+            counter: 8,
+            timestamp: 0
         )
         let staleApplied = sut.applySpaceTransform(
             data: Self.transformData(itemId: itemId, version: 31, transform: nextTransform),
-            counter: 7
+            counter: 7,
+            timestamp: 0
         )
         let legacyAppliedAfterSequencedState = sut.applySpaceTransform(
             data: Self.transformData(itemId: itemId, version: 31, transform: nextTransform),
-            counter: 0
+            counter: 0,
+            timestamp: 0
         )
         let negativeApplied = sut.applySpaceTransform(
             data: Self.transformData(itemId: itemId, version: 31, transform: nextTransform),
-            counter: -1
+            counter: -1,
+            timestamp: 0
         )
         let malformedApplied = sut.applySpaceTransform(
             data: NetworkCodableDataType(
@@ -177,7 +184,8 @@ struct GameControllerTests {
                 version: 31,
                 data: Data("not a transform".utf8)
             ),
-            counter: 50
+            counter: 50,
+            timestamp: 0
         )
         let wrongModuleApplied = sut.applySpaceTransform(
             data: NetworkCodableDataType(
@@ -186,7 +194,8 @@ struct GameControllerTests {
                 version: 31,
                 data: nextTransform.encodeData()
             ),
-            counter: 50
+            counter: 50,
+            timestamp: 0
         )
 
         // Then
@@ -201,7 +210,8 @@ struct GameControllerTests {
         // When - malformed counter 50 did not reserve the sequence.
         let nextApplied = sut.applySpaceTransform(
             data: Self.transformData(itemId: itemId, version: 31, transform: nextTransform),
-            counter: 9
+            counter: 9,
+            timestamp: 0
         )
 
         // Then
@@ -397,7 +407,8 @@ struct GameControllerTests {
                 version: 41,
                 transform: Self.transform(seed: 5)
             ),
-            counter: 1
+            counter: 1,
+            timestamp: 0
         ))
         #expect(sut.applySpaceTransform(
             data: Self.transformData(
@@ -405,7 +416,8 @@ struct GameControllerTests {
                 version: 42,
                 transform: Self.transform(seed: 6)
             ),
-            counter: 2
+            counter: 2,
+            timestamp: 0
         ))
         sut.spaceGameModel.openSpace = true
 

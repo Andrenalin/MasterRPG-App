@@ -89,6 +89,11 @@ private struct CanonicalMapContent: Codable, Sendable {
                 canonicalPin.isZoom = false
                 canonicalPin.isDead = false
                 canonicalPin.isHighlighted = false
+                // healthPercent is session-only battle-round state, recomputed
+                // every attacker/round advance — it must not perturb the
+                // structural fingerprint any more than the other runtime
+                // fields above do. See CODE_AUDIT_Game §5.2.
+                canonicalPin.healthPercent = nil
                 canonicalPin.players.sort { $0.uuidString < $1.uuidString }
                 return canonicalPin
             }

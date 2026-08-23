@@ -9,7 +9,7 @@ import CharacterRPG
 import PhotoRPG
 
 @MainActor @Observable
-final class MapGameModel: Sendable {
+final class MapGameModel {
     struct AuthoritativeGeneration: Equatable, Sendable {
         let version: Int
         let assetVersion: Int
@@ -74,9 +74,14 @@ final class MapGameModel: Sendable {
     }
 }
 
-public protocol MapGameStorable {
+public protocol MapGameStorable: Sendable {
     @MainActor var battleRoundModel: BattleRoundModel { get }
     @MainActor var battleRoundSettings: BattleRoundSettingsModel { get }
+    /// Parses a Character entry's display value into a valid battle initiative
+    /// (minimum 1). Guards against a finite-but-out-of-`Int`-range value
+    /// trapping `Int(_:)` — the single correct implementation, exposed here so
+    /// `BattleRoundController` doesn't need its own copy. See CODE_AUDIT_Game §5.1/§9.1.
+    func battleInitiative(from value: String) -> Int?
     func mapAssetVersion(for itemId: UUID) async -> Int
     @MainActor func mapContentVersion(for itemId: UUID) -> Int
     @MainActor func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType)
@@ -241,23 +246,11 @@ struct GameController: Sendable {
     let gameModel: ItemGameModel
     let mapGameModel: MapGameModel
 
-    @MainActor func gameItem(for itemId: UUID) -> MapModel {
-        (gameModel.itemData[itemId] as? MapModel) ?? itemController.itemOrEmpty(for: itemId)
-    }
-    
-    @MainActor func setGame(item: ItemGameModel.ModelType, itemId: UUID) {
-        if gameModel.items.firstIndex(where: { $0 == itemId }) != nil {
-            gameModel.itemData[itemId] = item
-        } else {
-            gameModel.items.insert(itemId, at: 0)
-            gameModel.itemData[itemId] = item
-        }
-    }
-    
-    @MainActor func currentItem() -> MapModel {
-        gameItem(for: gameModel.currentItemId ?? UUID())
-    }
 }
+
+// gameItem(for:)/setGame(item:itemId:)/currentItem() come from
+// ModuleGameControllable's default implementations. See CODE_AUDIT_Game §9.1.
+extension GameController: ModuleGameControllable {}
 
 extension GameController: GameControllable {
     var itemControllable: any ItemControllable { itemController as (any ItemControllable) }

@@ -14,7 +14,16 @@ import MapRPG
 /// injected closure.
 @MainActor
 struct BattleRoundController: Sendable {
-    let root: GameRoot
+    // `unowned`, not strong: this struct is stored on `GameRoot` itself
+    // (`GameRoot.battleRoundController`), so a strong `root` here is a
+    // self-retain cycle that leaks every `GameRoot` once the battle window
+    // is opened. Unlike MasterController/PlayerController's documented
+    // strong self-cycle (kept strong because in-flight async tasks
+    // outlived `unowned` teardown there), this struct holds no tasks and
+    // every method is a synchronous @MainActor call reachable only while
+    // `root` is alive — `unowned` breaks the cycle with no optional-chaining
+    // ripple through the file. See CODE_AUDIT_Game §5.8.
+    unowned let root: GameRoot
 
     var model: BattleRoundModel {
         root.mapRoot.mapGameControllable.battleRoundModel
@@ -282,10 +291,10 @@ struct BattleRoundController: Sendable {
         )
     }
 
-    /// Local, non-broadcast map-level mutation. Maps a dropped/picked value
-    /// entry onto a combatant's initiative or hit-points slot. Never leaves
-    /// the device, so it calls the map controller directly instead of going
-    /// through `broadcast(mapId:)`.
+    /// Maps a dropped/picked value entry onto a combatant's initiative or
+    /// hit-points slot. Broadcasts on an actual change (previously did not —
+    /// see CODE_AUDIT_Game §5.4 — a `.hitPoints` assignment changes what
+    /// `healthPercent(for:)` computes just as much as any other mutator here).
     @discardableResult
     func assignValueEntry(
         combatantId: UUID,
@@ -293,7 +302,10 @@ struct BattleRoundController: Sendable {
         sourceEntryId: UUID,
         kind: BattleValueKind
     ) -> Bool {
-        guard let mapId = model.mapId,
+        // authorizedMapId, not model.mapId — this mutates and (below)
+        // broadcasts state; broadcast(mapId:) assumes its caller already
+        // enforced the master-only invariant. See CODE_AUDIT_Game §5.4.
+        guard let mapId = authorizedMapId,
               let combatant = model.combatant(id: combatantId),
               // `sourceCharacterId`/`sourceEntryId` are whatever was
               // dropped/picked, which may sit inside a nested value "group"
@@ -323,32 +335,31 @@ struct BattleRoundController: Sendable {
             entryId: gameEntry.id,
             kind: kind
         )
+        var initiativeChanged = false
         if kind == .initiative,
            let value = root.characterRoot.valueGameControllable.gameEntryDisplayValue(
                characterId: gameCharacterId,
                entryId: gameEntry.id
            ),
-           let initiative = battleInitiative(from: value) {
-            return setInitiative(combatantId, initiative) || mappingChanged
+           let initiative = root.mapRoot.mapGameControllable.battleInitiative(from: value) {
+            initiativeChanged = setInitiative(combatantId, initiative)
         }
-        return mappingChanged
+        let changed = mappingChanged || initiativeChanged
+        // Unlike its doc comment's "never leaves the device" claim (true only
+        // for the map-level mutation itself), the health-affecting case
+        // (.hitPoints) needs the same broadcast every other battle mutator
+        // does — otherwise players and the 2D map keep a stale health ring
+        // until unrelated traffic happens to broadcast. See CODE_AUDIT_Game §5.4.
+        if changed {
+            broadcast(mapId: mapId)
+        }
+        return changed
     }
 
     func refreshConfiguredValues() {
-        guard let mapId = model.mapId else { return }
+        guard let mapId = authorizedMapId else { return }
         root.mapRoot.mapGameControllable.refreshBattleConfiguredValues(itemId: mapId)
-    }
-
-    private func battleInitiative(from value: String) -> Int? {
-        if let value = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            return max(1, value)
-        }
-        guard let value = Double(
-            value.trimmingCharacters(in: .whitespacesAndNewlines)
-        ), value.isFinite else {
-            return nil
-        }
-        return max(1, Int(value))
+        broadcast(mapId: mapId)
     }
 
     /// Recomputes every combatant's `pin.healthPercent` from its linked

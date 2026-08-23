@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Observation
+import os.log
 import SwiftUI
 
 public struct ViewController: Sendable {
@@ -46,13 +47,27 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor func viewAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
-        root.gameController.play(id: id, shouldPlay: true)
+        // play(id:shouldPlay:) is async throws — fire-and-forget from this
+        // synchronous view builder, same as before. See CODE_AUDIT_Game §4.2.
+        Task {
+            do {
+                try await root.gameController.play(id: id, shouldPlay: true)
+            } catch {
+                Logger.gameController.error("ViewController: Failed to start audio playback for \(id?.uuidString ?? "current", privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
         return AudioPlayerView()
             .environment(root)
     }
 
     @MainActor func menuAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
-        root.gameController.play(id: id, shouldPlay: true)
+        Task {
+            do {
+                try await root.gameController.play(id: id, shouldPlay: true)
+            } catch {
+                Logger.gameController.error("ViewController: Failed to start audio playback for \(id?.uuidString ?? "current", privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
         return AudioPlayerBarView()
             .environment(root)
     }

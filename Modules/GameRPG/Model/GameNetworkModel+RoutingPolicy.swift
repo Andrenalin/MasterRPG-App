@@ -12,7 +12,8 @@ extension GameNetworkModel {
     /// Bounds wall-clock ordering input before it can become the presentation
     /// baseline. Legacy envelopes use zero; current envelopes must carry a
     /// finite positive time that is not implausibly ahead of this device.
-    static let maximumFutureEventTimestampSkew: TimeInterval = 300
+    /// See CODE_AUDIT_Game §9.12 — shared with MapRPG/SpaceRPG's identical policy.
+    static let maximumFutureEventTimestampSkew = NetworkTimestampPolicy.maximumFutureSkew
 
     nonisolated static func acceptsEventTimestamp(
         _ timestamp: TimeInterval,

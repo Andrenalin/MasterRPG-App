@@ -81,10 +81,14 @@ extension MapSnapshot {
     @MainActor
     func apply(to model: MapModel) {
         let pointer = model.pointer
+        // uniquingKeysWith (last-wins) rather than uniqueKeysWithValues, which
+        // traps on a duplicate id — this model can be built from a decoded
+        // network payload. See CODE_AUDIT_Game §5.5.
         let entryRuntimeState = Dictionary(
-            uniqueKeysWithValues: model.entries.map { ($0.id, (isShown: $0.isShown, focused: $0.focused)) }
+            model.entries.map { ($0.id, (isShown: $0.isShown, focused: $0.focused)) },
+            uniquingKeysWith: { _, new in new }
         )
-        let localPins = Dictionary(uniqueKeysWithValues: model.mapPins.map { ($0.id, $0) })
+        let localPins = Dictionary(model.mapPins.map { ($0.id, $0) }, uniquingKeysWith: { _, new in new })
 
         var updatedEntries = entries.wrappedValue
         for index in updatedEntries.indices {

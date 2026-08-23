@@ -40,11 +40,12 @@ final class GameRootModel: Sendable {
 
     var logData: [Int: LogGameModel] = [:]
     var logs: [Int] = []
-    var playerScreens: [UUID: Data] = [:]
     var generatedValueEntry: ValueEntryModel?
     var attachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
     var metaDataAttachments: [NetworkModules: UUID] = [:]
     private var latestValueUpdateTimestamps: [ValueUpdateKey: TimeInterval] = [:]
+    private var latestValueUpdateOrder: [ValueUpdateKey] = []
+    private static let maximumRetainedValueUpdateTimestamps = 512
 
     var masterController: MasterController?
     var playerController: PlayerController?
@@ -69,7 +70,17 @@ final class GameRootModel: Sendable {
 
         let isNewPlayer: Bool
         if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
-            gameRoster.players[index] = playerModel
+            // `characterId` travels on every message as sender-declared,
+            // otherwise-untrusted input — this runs for every inbound
+            // message, not just the join handshake, so overwriting it here
+            // let any later message silently reassign which Character a
+            // roster entry claims. Once set, preserve it; only a still-nil
+            // slot may be claimed. See CODE_AUDIT_Game §6.1.
+            var updated = playerModel
+            if let ownedCharacterId = gameRoster.players[index].characterId {
+                updated.characterId = ownedCharacterId
+            }
+            gameRoster.players[index] = updated
             isNewPlayer = false
         } else {
             gameRoster.players.append(playerModel)
@@ -268,13 +279,21 @@ final class GameRootModel: Sendable {
         entryId: UUID,
         timestamp: TimeInterval
     ) {
-        latestValueUpdateTimestamps[
-            ValueUpdateKey(
-                senderId: senderId,
-                characterId: characterId,
-                entryId: entryId
-            )
-        ] = timestamp
+        let key = ValueUpdateKey(
+            senderId: senderId,
+            characterId: characterId,
+            entryId: entryId
+        )
+        if latestValueUpdateTimestamps[key] == nil {
+            latestValueUpdateOrder.append(key)
+            // Growable by a peer sending many distinct entryIds — bounded
+            // the same way `deliveryMessagesByWireID` is.
+            // See CODE_AUDIT_Game §7.5.
+            while latestValueUpdateOrder.count > Self.maximumRetainedValueUpdateTimestamps {
+                latestValueUpdateTimestamps[latestValueUpdateOrder.removeFirst()] = nil
+            }
+        }
+        latestValueUpdateTimestamps[key] = timestamp
     }
 }
 
@@ -376,6 +395,21 @@ public final class GameRoot {
     /// the same `BattleRoundModel` instance, so retained player identity and
     /// initiative carry over as already implemented in `BattleRoundModel`.
     lazy var battleRoundController = BattleRoundController(root: self)
+
+    /// The modules whose `resetPlayers()` shape is a uniform "tell this
+    /// module's game model who the current players are" — Map and Dice are
+    /// deliberately excluded, since their reset has genuinely different
+    /// per-module logic beyond this shared step. See CODE_AUDIT_Game §9.18.
+    var fileBackedGameModules: [any GameControllable] {
+        [
+            audioRoot.gameControllable,
+            photoRoot.gameControllable,
+            pdfRoot.gameControllable,
+            spaceRoot.gameControllable,
+            tableRoot.gameControllable,
+            weatherRoot.gameControllable
+        ]
+    }
 
     #if os(visionOS)
     /// True only while an actual SharePlay `GroupSession` is active — see

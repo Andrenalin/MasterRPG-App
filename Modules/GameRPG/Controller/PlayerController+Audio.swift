@@ -53,7 +53,13 @@ extension PlayerController {
                     isSharePlayActive: usesSharePlayPlaybackCoordination,
                     asGameMaster: asGameMaster
                 ) {
-                    let _ = await root.audioRoot.audioGameControllable.play(with: model.data).result
+                    // A failed playlist load/playback start used to be
+                    // silently swallowed here. See CODE_AUDIT_Game §4.2.
+                    do {
+                        try await root.audioRoot.audioGameControllable.play(with: model.data)
+                    } catch {
+                        Logger.networking.error("PlayerController: Failed to start audio playback for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                    }
                 } else {
                     // The master device initiates playback; other SharePlay
                     // participants only prepare for AVPlayerPlaybackCoordinator.

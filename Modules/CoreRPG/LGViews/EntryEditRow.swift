@@ -60,7 +60,7 @@ private extension EntryEditRow {
     }
     
     var linkTextModel: LinkHighlightTextModel {
-        editController.linkTextModel(itemId: itemId, for: entry, linkController: root.linkControllable, cacheItemListModel: cacheItemListModel, searchModel: searchModel)
+        editController.linkTextModel(itemId: itemId, for: entry, linkController: root.rootManager?.adventureRoot.linkControllable ?? root.linkControllable, cacheItemListModel: cacheItemListModel, searchModel: searchModel)
     }
     
     var hasThumbnail: Bool {
