@@ -46,13 +46,21 @@ public extension URL {
     }
 
     var commandKey: String? {
-        // Keyed off the raw path shape, not `childId`'s parse success — a link with 5
-        // components but an invalid entry-id segment should still read the command from
-        // index 4, not misread the invalid entry-id itself as the command.
+        // A 5-component link always carries its command at index 4, regardless of
+        // whether index 3 parses as a valid entry id — a link with an invalid
+        // entry-id segment should still read the command from index 4, not
+        // misread the invalid entry-id itself as the command.
         if pathComponents.count > 4 {
             return pathComponents[4]
         }
-        guard pathComponents.count > 3 else { return nil }
+        // A 4-component link is ambiguous by count alone: it's either
+        // `itemId/entryId` (no command — the common case for a freshly
+        // generated entry link) or `itemId/command` (no entry). Only treat
+        // index 3 as the command when it does *not* parse as an entry id;
+        // otherwise this would misread a bare entry link's id as an
+        // unrecognized command and silently drop it (e.g. the auto-toggle
+        // that expands a Table link never firing). See CODE_AUDIT_Link.md §9.3.
+        guard pathComponents.count > 3, UUID(uuidString: pathComponents[3]) == nil else { return nil }
         return pathComponents[3]
     }
 }
