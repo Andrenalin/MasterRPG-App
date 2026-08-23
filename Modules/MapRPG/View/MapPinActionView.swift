@@ -16,13 +16,13 @@ enum MapPinActionContext: Equatable {
         case .editor:
             [.remove, .copy, .photo, .resize, .dead]
         case .gameMaster:
-            [.dead, .visibility, .resize, .zoom, .battle]
+            [.dead, .visibility, .resize, .zoom, .highlight, .battle]
         }
     }
 }
 
 enum MapPinButtonType: String, Hashable {
-    case remove, copy, photo, resize, dead, visibility, zoom, battle
+    case remove, copy, photo, resize, dead, visibility, zoom, highlight, battle
 
     func systemImage(for pin: MapPinModel) -> String {
         switch self {
@@ -33,6 +33,7 @@ enum MapPinButtonType: String, Hashable {
         case .dead: return pin.isDead ? "heart.fill" : "xmark.circle"
         case .visibility: return pin.isShown ? "eye.slash" : "eye"
         case .zoom: return pin.isZoom ? "minus.magnifyingglass" : "plus.magnifyingglass"
+        case .highlight: return pin.isHighlighted ? "circle.fill" : "circle"
         case .battle: return "person.badge.plus"
         }
     }
@@ -48,6 +49,7 @@ enum MapPinButtonType: String, Hashable {
         case .visibility: .blue
         case .zoom: .indigo
         case .dead: pin.isDead ? .green : .red
+        case .highlight: .red
         case .battle: .orange
         }
     }
@@ -70,6 +72,10 @@ enum MapPinButtonType: String, Hashable {
             pin.isZoom
                 ? LocalizedStringResource("Reset Pin Zoom", bundle: .module)
                 : LocalizedStringResource("Zoom Pin", bundle: .module)
+        case .highlight:
+            pin.isHighlighted
+                ? LocalizedStringResource("Remove Pin Highlight", bundle: .module)
+                : LocalizedStringResource("Highlight Pin", bundle: .module)
         case .battle:
             LocalizedStringResource("Add Pin to Battle Round", bundle: .module)
         }

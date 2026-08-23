@@ -1224,6 +1224,9 @@
         }
       }
     },
+    "Highlight Pin" : {
+
+    },
     "Hit Points Value" : {
       "comment" : "A label for the hit points value.",
       "extractionState" : "stale",
@@ -1827,6 +1830,9 @@
           }
         }
       }
+    },
+    "Remove Pin Highlight" : {
+
     },
     "Remove Point" : {
       "localizations" : {

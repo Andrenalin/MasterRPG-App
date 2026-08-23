@@ -54,6 +54,14 @@ private struct GamePinActionMenuContent: View {
                 isSelected: pin.isZoom,
                 action: game.toggleSelectedPinZoom
             )
+            GamePinMenuButton(
+                title: pin.isHighlighted
+                    ? LocalizedStringResource("Remove Pin Highlight", bundle: .module)
+                    : LocalizedStringResource("Highlight Pin", bundle: .module),
+                systemImage: pin.isHighlighted ? "circle.fill" : "circle",
+                isSelected: pin.isHighlighted,
+                action: game.toggleSelectedPinHighlight
+            )
             if game.canAddSelectedPinToBattleRound {
                 GamePinMenuButton(
                     title: LocalizedStringResource("Add Pin to Battle Round", bundle: .module),

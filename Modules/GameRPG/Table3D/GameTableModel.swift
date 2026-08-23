@@ -1047,6 +1047,16 @@ final class GameTableModel: Sendable {
         broadcastMapState(for: mapId)
     }
 
+    /// Highlights (red border) the selected pin — the master's local pin
+    /// action menu equivalent of a player's single tap, which now opens
+    /// this menu instead. See `pinTapped(pinId:)`'s own doc.
+    func toggleSelectedPinHighlight() {
+        guard isGameMaster, let mapId = currentMapId, let selectedPinId,
+              mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: selectedPinId, isGameMaster: isGameMaster) else { return }
+        syncPawnsWithMapPins()
+        broadcastMapState(for: mapId)
+    }
+
     func resizeSelectedPin() {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.resizePin(itemId: mapId, pinId: selectedPinId) else { return }

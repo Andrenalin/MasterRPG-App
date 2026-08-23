@@ -278,7 +278,7 @@ final class MapPinViewModel {
             resizePin(id: node.id)
         case (.editor, .dead):
             toggleDeadPin(id: node.id)
-        case (.editor, .visibility), (.editor, .zoom), (.editor, .battle),
+        case (.editor, .visibility), (.editor, .zoom), (.editor, .highlight), (.editor, .battle),
              (.gameMaster, _), (.none, _):
             break
         }
