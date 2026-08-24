@@ -27,9 +27,13 @@ public final class RpgSpotlightIndexerModel: Sendable {
 #if !os(tvOS)
 public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate {
     public let model: RpgSpotlightIndexerModel = RpgSpotlightIndexerModel()
-        
-    var observables: AnyObject?
-        
+
+    /// Replaces the previous closure-based `addObserver(forName:object:queue:using:)`
+    /// token with a `Task` iterating the async `notifications(named:)` sequence —
+    /// cancelling it is the direct equivalent of the old `removeObserver(_:)` call.
+    /// See CODE_AUDIT_9 §4.4.
+    private var indexingTask: Task<Void, Never>?
+
     public override func domainIdentifier() -> String {
         "de.andretrettin.gamemaster"
     }
@@ -37,31 +41,29 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     public override func indexName() -> String? {
         "masterRPG-index"
     }
-    
+
     public override func attributeSet(for object: NSManagedObject) -> CSSearchableItemAttributeSet? {
         guard let objectAttritube = object as? SpotlightIndexerAttribute else { return nil }
         return objectAttritube.attributeSet()
     }
-    
+
     public func observeIndexing() {
-        let center = NotificationCenter.default
-        if isIndexingEnabled && observables == nil {
-            let queue = OperationQueue.main
-            observables = center.addObserver(forName: NSCoreDataCoreSpotlightDelegate.indexDidUpdateNotification,
-                                                         object: nil,
-                                             queue: queue) { [weak model] (notification) in
-                let userInfo = notification.userInfo
-                let storeID = userInfo?[NSStoreUUIDKey] as? String
-                let token = userInfo?[NSPersistentHistoryTokenKey] as? NSPersistentHistoryToken
-                if let storeID = storeID, let token = token {
-                    model?.reset(message: "Store with identifier \(storeID) has completed indexing and has processed history token up through \(String(describing: token)).")
+        if isIndexingEnabled && indexingTask == nil {
+            let model = model
+            indexingTask = Task {
+                for await notification in NotificationCenter.default.notifications(named: NSCoreDataCoreSpotlightDelegate.indexDidUpdateNotification) {
+                    let userInfo = notification.userInfo
+                    let storeID = userInfo?[NSStoreUUIDKey] as? String
+                    let token = userInfo?[NSPersistentHistoryTokenKey] as? NSPersistentHistoryToken
+                    if let storeID = storeID, let token = token {
+                        model.reset(message: "Store with identifier \(storeID) has completed indexing and has processed history token up through \(String(describing: token)).")
+                    }
                 }
             }
         } else {
-            if observables == nil {
-                return
-            }
-            center.removeObserver(observables as Any)
+            guard indexingTask != nil else { return }
+            indexingTask?.cancel()
+            indexingTask = nil
         }
     }
 }

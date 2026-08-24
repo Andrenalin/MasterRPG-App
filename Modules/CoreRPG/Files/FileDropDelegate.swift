@@ -3,6 +3,7 @@
 #if !os(tvOS)
 import SwiftUI
 import UniformTypeIdentifiers
+import os.log
 
 public struct FileDropDelegate: DropDelegate {
     public init(for types: [UTType], updateFile: @escaping (URL) -> Void) {
@@ -35,6 +36,10 @@ public struct FileDropDelegate: DropDelegate {
                     Task { @MainActor in
                         updateFile(url)
                     }
+                } else if let error {
+                    // Previously dropped silently — the drop looked like a no-op with no
+                    // indication a file was rejected. See CODE_AUDIT_9 §4.1.
+                    Logger.fileStore.error("FileDropDelegate: failed to load dropped URL: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }

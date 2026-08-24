@@ -103,36 +103,43 @@ Findings cite `path/to/file.swift:LINE` so you can jump straight to them in Xcod
 
 ## 4. API modernity
 
-### 4.1 `NSItemProvider` completion-handler APIs wrapped in continuations — confirmed still open since round 8 §4.1, one new site found
-- **Location:** `Modules/PhotoRPG/Controller/ItemController.swift:48-64` (`withCheckedThrowingContinuation` around `loadDataRepresentation(forTypeIdentifier:completionHandler:)`), `Sources/RPGShare/ItemProviderImporter.swift:180-210` (both already documented in `CODE_AUDIT_8.md §4.1`, confirmed unchanged) plus **`Modules/CoreRPG/Files/FileDropDelegate.swift:30-42`** (`loadObject(ofClass:completionHandler:)` wrapped in a raw `Task { @MainActor in }`, not found by round 8's narrower scope)
-- **What:** All three wrap old completion-handler `NSItemProvider` APIs instead of the native `async throws` equivalents shipping since iOS 16/macOS 13 — well below this app's 26.0 floor. `FileDropDelegate.swift:34` additionally drops the callback's `error` parameter entirely, silently swallowing load failures (round 8 didn't catch this because it wasn't in that pass's file set).
-- **Why:** Legacy debt at this deployment target; `FileDropDelegate`'s dropped error is a small independent correctness gap on top of the modernity issue.
-- **Action:** Replace all three with the direct async `NSItemProvider` APIs; restore error propagation in `FileDropDelegate`.
-- **Severity:** Low (modernity) / the `FileDropDelegate` error-swallowing alone would be Medium if it has a reachable user-facing symptom — not confirmed reachable in this pass.
+### 4.1 `NSItemProvider` completion-handler APIs wrapped in continuations — **Partially re-investigated and fixed 2026-08-24; the "native async" premise for the other two sites does not hold**
+- **Re-investigation:** Checked directly against current Apple documentation (`NSItemProvider`'s full "Loading the provider's contents" method list) before touching anything: there is **no** native `async throws` overload of `loadItem`/`loadDataRepresentation`/`loadObject` anywhere in the current SDK — every loading method on `NSItemProvider` is still completion-handler/`Progress`-returning only, at any deployment target including this app's 26.0 floor. So `ItemController.swift:48-64` and `ItemProviderImporter.swift:180-210` wrapping the completion handler in `withCheckedThrowingContinuation` is not legacy debt to modernize away — it *is* the modern, idiomatic bridge, and both sites already do it correctly. No change made to either; the "Action" below as originally written (replace with "the direct async NSItemProvider APIs") isn't executable because that API doesn't exist.
+- **Fix:** The one genuine, independent bug in this finding — `FileDropDelegate.swift:33-39` dropping the completion handler's `error` parameter entirely — is fixed: the `else if let error` branch now logs the failure via `Logger.fileStore.error(...)` instead of silently doing nothing. Verified with a full clean `xcodebuild build` of `MasterRPG` (iOS Simulator), `MasterMac`, and `MasterTV` — all **BUILD SUCCEEDED**.
+- **Location:** `Modules/PhotoRPG/Controller/ItemController.swift:48-64` (`withCheckedThrowingContinuation` around `loadDataRepresentation(forTypeIdentifier:completionHandler:)`), `Sources/RPGShare/ItemProviderImporter.swift:180-210` (both already documented in `CODE_AUDIT_8.md §4.1`, confirmed unchanged — correctly so) plus **`Modules/CoreRPG/Files/FileDropDelegate.swift:30-42`** (`loadObject(ofClass:completionHandler:)` wrapped in a raw `Task { @MainActor in }`, not found by round 8's narrower scope)
+- **What:** `FileDropDelegate.swift:34` (pre-fix) dropped the callback's `error` parameter entirely, silently swallowing load failures (round 8 didn't catch this because it wasn't in that pass's file set).
+- **Why:** Legacy debt claim doesn't hold for the two continuation-wrapped sites (see re-investigation above); `FileDropDelegate`'s dropped error was a real, independent correctness gap, now fixed.
+- **Severity:** Low (modernity claim retracted for 2 of 3 sites) / the `FileDropDelegate` error-swallowing — now fixed.
 
-### 4.2 Combine `Timer.publish` used for recurring effects instead of `TimelineView`/an async sleep loop
+### 4.2 Combine `Timer.publish` used for recurring effects instead of `TimelineView`/an async sleep loop — **Fixed 2026-08-24**
+- **Fix:** `LightningView` no longer holds a `Timer.publish(...).autoconnect()` property or does manual `timer.upstream.connect().cancel()`/reassignment bookkeeping — a new private `PeriodicStrikeTrigger` view wraps `TimelineView(.periodic(from:by:))` and calls `strike()` on each tick, mounted conditionally via `.background { if frequency >= 1 { ... } }` (matching the old "frequency < 1 means off" behavior with no timer at all). `AppExitNotificationsViewModifier`'s `Timer.publish(every: 60, ...)` is replaced by a cancellable `runPeriodicHousekeeping()` `Task`-based sleep loop, run as one of the view's `.task` modifiers so SwiftUI cancels it automatically on disappear — same lifecycle the Combine subscription had. The `Combine` import is no longer needed in either file. Verified with a full clean `xcodebuild build` of `MasterRPG` (iOS Simulator), `MasterMac`, and `MasterTV` — all **BUILD SUCCEEDED**.
 - **Location:** `Modules/WeatherRPG/Weather/LightningView.swift:12,46,73,75`; `Modules/CoreRPG/App/AppExitNotificationsViewModifier.swift:15,30,47`
 - **What:** Both drive a repeating effect with `Timer.publish(every:on:in:).autoconnect()` + `.onReceive`, including manual cancel-and-republish bookkeeping (`LightningView.swift:73-75`) to change the interval. These are the only two `Timer.publish` usages in the app.
 - **Why:** At this deployment target, `TimelineView(.periodic(from:by:))` (rendering cadence) or a cancellable `Task`-based sleep loop (periodic housekeeping) replaces both without the Combine dependency or manual reconnect bookkeeping.
 - **Action:** Replace `LightningView`'s with `TimelineView`; replace `AppExitNotificationsViewModifier`'s with a `Task`-based sleep loop.
 - **Severity:** Medium
 
-### 4.3 Legacy `FileManager` directory lookup instead of `URL.documentsDirectory`
+### 4.3 Legacy `FileManager` directory lookup instead of `URL.documentsDirectory` — **Fixed 2026-08-24**
+- **Fix:** `rootScansFolder()` now returns `URL.documentsDirectory.appending(path: "Scans/", directoryHint: .isDirectory)` directly — the function keeps its `-> URL?` signature (implicitly wrapping the non-optional result) since its sole call site already unwraps via `guard let`. Verified with a full clean `xcodebuild build` of `MasterRPG` (iOS Simulator) and `MasterMac` — both **BUILD SUCCEEDED**.
 - **Location:** `Modules/SpaceRPG/Record/CaptureFolderManager.swift:205-213` (`rootScansFolder()`)
 - **What:** The sole remaining use of `FileManager.default.url(for: .documentDirectory, in:appropriateFor:create:)`; every other directory lookup in the codebase (`AppGroup.swift:50`, `FilePersistenceController.swift:107,118,122`, `LocationFileManager.swift:17`, several `Intent` files) already uses `URL.documentsDirectory`.
 - **Action:** Replace with `URL.documentsDirectory.appending(path: "Scans/", directoryHint: .isDirectory)`.
 - **Severity:** Low
 
-### 4.4 Closure-based `NotificationCenter` observation where the async `notifications(named:)` sequence exists
+### 4.4 Closure-based `NotificationCenter` observation where the async `notifications(named:)` sequence exists — **Fixed 2026-08-24**
+- **Fix:** All four converted to `.task { for await _ in NotificationCenter.default.notifications(named:) { … } }` (or the `Task`-iterating-an-async-sequence equivalent for the one non-View case):
+  - `KeyboardObserverViewModifier` — two `.task`s (show/hide), replacing the merged `Publishers.Merge` + `.onReceive`; the `Combine` import is gone.
+  - `KeyboardAvoiding` — two `.task`s (show/hide) reading `notification.keyboardHeight` directly, replacing `Publishers.keyboardHeight` + `.onReceive`; the `Combine` import and the `Publishers.keyboardHeight` extension are gone (the `Notification.keyboardHeight` extension is kept — still used by the show handler).
+  - `AppExitNotificationsViewModifier` — folded into the §4.2 fix above: its two notification subscriptions are now `.task`s over `notifications(named:)` alongside the periodic-housekeeping `.task`.
+  - `RpgSpotlightIndexerDelegate.observeIndexing()` — the one non-View, non-`.task`-eligible case: the `addObserver(forName:object:queue:using:)` token (`observables: AnyObject?`) is replaced by a `private var indexingTask: Task<Void, Never>?` that iterates `NotificationCenter.default.notifications(named:)` in a loop; cancelling the task is the direct equivalent of the old `removeObserver(_:)` call, preserving the original enable/disable toggle semantics.
+  - The two justified exceptions (`AudioPlayerSession.swift`, `CoreDataChangeObserver.swift`) were left unchanged, per the original finding's own reasoning.
+  - Verified with a full clean `xcodebuild build` of `MasterRPG` (iOS Simulator), `MasterMac`, and `MasterTV` — all **BUILD SUCCEEDED**.
 - **Location:** `Modules/CoreRPG/App/KeyboardObserver.swift:30-39`, `Modules/CoreRPG/ViewModifiers/KeyboardAvoiding.swift:14-20`, `Modules/CoreRPG/Persistence/RpgSpotlightIndexerDelegate.swift:46-59`, `Modules/CoreRPG/App/AppExitNotificationsViewModifier.swift:20-51`
-- **What:** All four register via `.publisher(for:)`/`.onReceive` or `addObserver(forName:object:queue:using:)`, then bridge into `Task { await … }` inside the callback — with no ordering requirement forcing this shape, unlike two justified exceptions elsewhere (`AudioPlayerSession.swift:90-115` needs synchronous main-thread ordering; `CoreDataChangeObserver.swift:8-21` needs to intercept Core Data's off-main synchronous delivery before hopping actors).
-- **Action:** Convert these four to `.task { for await _ in NotificationCenter.default.notifications(named:) { … } }`, leaving the two justified exceptions unchanged.
-- **Severity:** Low
 
-### 4.5 Dead `@available` guard below the deployment floor in vendored Navigator — confirmed unchanged since round 8 §4.2
+### 4.5 Dead `@available` guard below the deployment floor in vendored Navigator — confirmed unchanged since round 8 §4.2, **no action taken (by design)**
 - **Location:** `Modules/CoreRPG/Navigator/Extensions/NavigationLink+Navigator.swift:40,102`
 - **What:** `@available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)` on vendored third-party (`NavigatorUI`) code, unreachable-false at this app's 26.0 floor.
-- **Action:** No action unless the vendored package is forked. Informational only, as in round 8.
+- **Action:** No action unless the vendored package is forked. Informational only, as in round 8. Re-confirmed 2026-08-24 during the §4.1-4.5 fix pass — left untouched intentionally, per the finding's own recommendation; this is not vendored-package code we own.
 - **Severity:** Low
 
 ---

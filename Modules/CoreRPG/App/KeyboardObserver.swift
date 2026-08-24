@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import SwiftUI
 
 public extension View {
@@ -11,31 +10,22 @@ public extension View {
 
 struct KeyboardObserverViewModifier: ViewModifier {
     let keyboardShowHandler: (Bool) -> Void
-    
+
     func body(content: Content) -> some View {
 #if os(iOS)
         content
-            .onReceive(keyboardPublisher) { isShowing in
-                keyboardShowHandler(isShowing)
+            .task {
+                for await _ in NotificationCenter.default.notifications(named: UIResponder.keyboardWillShowNotification) {
+                    keyboardShowHandler(true)
+                }
+            }
+            .task {
+                for await _ in NotificationCenter.default.notifications(named: UIResponder.keyboardWillHideNotification) {
+                    keyboardShowHandler(false)
+                }
             }
 #else
         content
 #endif
     }
-    
-#if os(iOS)
-    var keyboardPublisher: AnyPublisher<Bool, Never> {
-        Publishers
-            .Merge(
-                NotificationCenter
-                    .default
-                    .publisher(for: UIResponder.keyboardWillShowNotification)
-                    .map { _ in true },
-                NotificationCenter
-                    .default
-                    .publisher(for: UIResponder.keyboardWillHideNotification)
-                    .map { _ in false })
-            .eraseToAnyPublisher()
-    }
-#endif
 }

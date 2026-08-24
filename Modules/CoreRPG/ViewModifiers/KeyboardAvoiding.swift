@@ -6,20 +6,6 @@ import SwiftUI
 
 // by klaytonb
 // https://forums.developer.apple.com/forums/thread/699111?answerId=740437022#740437022
-import Combine
-
-extension Publishers {
-    @MainActor
-    static var keyboardHeight: AnyPublisher<CGFloat, Never> {
-        let willShow = NotificationCenter.default.publisher(for: UIApplication.keyboardWillShowNotification)
-            .map { $0.keyboardHeight }
-        let willHide = NotificationCenter.default.publisher(for: UIApplication.keyboardWillHideNotification)
-            .map { _ in CGFloat(0) }
-        
-        return MergeMany(willShow, willHide)
-            .eraseToAnyPublisher()
-    }
-}
 
 extension Notification {
     @MainActor
@@ -34,14 +20,25 @@ struct KeyboardAvoiding: ViewModifier {
     public init(height: CGFloat) {
         self.height = height
     }
-    
+
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom, spacing: keyboardActiveAdjustment) {
                 EmptyView().frame(height: 0)
             }
-            .onReceive(Publishers.keyboardHeight) {
-                self.keyboardActiveAdjustment = min($0, height)
+            // Replaces a merged Combine publisher of the two keyboard
+            // notifications with two independent async sequences — SwiftUI's
+            // `.task` cancels both automatically on disappear. See
+            // CODE_AUDIT_9 §4.4.
+            .task {
+                for await notification in NotificationCenter.default.notifications(named: UIApplication.keyboardWillShowNotification) {
+                    keyboardActiveAdjustment = min(notification.keyboardHeight, height)
+                }
+            }
+            .task {
+                for await _ in NotificationCenter.default.notifications(named: UIApplication.keyboardWillHideNotification) {
+                    keyboardActiveAdjustment = min(0, height)
+                }
             }
     }
 }

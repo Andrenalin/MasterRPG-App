@@ -203,13 +203,7 @@ final class CaptureFolderManager {
 
     /// Returns the app documents folder for all our captures.
     private static func rootScansFolder() -> URL? {
-        guard let documentsFolder =
-                try? FileManager.default.url(for: .documentDirectory,
-                                             in: .userDomainMask,
-                                             appropriateFor: nil, create: false) else {
-            return nil
-        }
-        return documentsFolder.appending(path: "Scans/", directoryHint: .isDirectory)
+        URL.documentsDirectory.appending(path: "Scans/", directoryHint: .isDirectory)
     }
 }
 
