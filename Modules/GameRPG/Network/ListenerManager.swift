@@ -122,6 +122,12 @@ actor ListenerServerController {
     private let supporterTier: SupporterTier
     private let serviceType: GameServiceType
     private let passcode: String
+    // NWListener needs a dispatch queue for its callbacks, which immediately
+    // hop into this actor via Task { await self... } below — a dedicated
+    // background queue matches ConnectionController's own NWConnection
+    // wrapper rather than routing through the main queue. See CODE_AUDIT_9
+    // §3.4.
+    private let queue = DispatchQueue(label: "de.andretrettin.MasterRPG.ListenerServerController")
 
     init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String) {
         self.name = name
@@ -149,7 +155,7 @@ actor ListenerServerController {
             Task { await self.handleNewConnection(connection) }
         }
 
-        listener.start(queue: .main)
+        listener.start(queue: queue)
 
         // `run()` only needs to stay suspended — actual listening is entirely
         // driven by `listener`'s own callbacks above — so this loops a bounded

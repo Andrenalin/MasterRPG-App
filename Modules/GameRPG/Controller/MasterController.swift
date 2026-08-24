@@ -726,31 +726,54 @@ extension MasterController {
         switch idType.type {
         case .map:
             let controllable = root.mapRoot.mapGameControllable
-            return try await Task.detached(priority: .userInitiated) {
+            return try await detachedGameData {
                 try await controllable.createMapGameData(for: idType.id)
-            }.value
+            }
         case .photo:
             let controllable = root.photoRoot.gameControllable
-            return try await Task.detached(priority: .userInitiated) {
+            return try await detachedGameData {
                 try await controllable.createGameData(for: idType.id)
-            }.value
+            }
         case .pdf:
             let controllable = root.pdfRoot.gameControllable
-            return try await Task.detached(priority: .userInitiated) {
+            return try await detachedGameData {
                 try await controllable.createGameData(for: idType.id)
-            }.value
+            }
         case .space:
             let controllable = root.spaceRoot.gameControllable
-            return try await Task.detached(priority: .userInitiated) {
+            return try await detachedGameData {
                 try await controllable.createGameData(for: idType.id)
-            }.value
+            }
         case .weather:
             let controllable = root.weatherRoot.weatherGameControllable
-            return try await Task.detached(priority: .userInitiated) {
+            return try await detachedGameData {
                 try await controllable.createWeatherGameData(for: idType.id)
-            }.value
+            }
         default:
             return nil
+        }
+    }
+
+    /// Runs `operation` on a detached, off-main task and propagates
+    /// cancellation of the *caller's* task into it, matching the pattern
+    /// used everywhere else in the codebase a detached task wraps an
+    /// awaited result (e.g. `FoundrySystemPackageReader.read`,
+    /// `FoundryVTTImportReader`, `ImportControllable.importUrl`). Without
+    /// this, cancelling a reveal/repair/recovery left the detached export
+    /// running to completion regardless. See CODE_AUDIT_9 §3.1.
+    private func detachedGameData<Value: Sendable>(
+        priority: TaskPriority = .userInitiated,
+        _ operation: @Sendable @escaping () async throws -> Value
+    ) async throws -> Value {
+        let task = Task.detached(priority: priority) {
+            try await operation()
+        }
+        return try await withTaskCancellationHandler {
+            let value = try await task.value
+            try Task.checkCancellation()
+            return value
+        } onCancel: {
+            task.cancel()
         }
     }
     
@@ -1747,11 +1770,12 @@ extension MasterController {
             let full: NetworkCodableDataType
             do {
                 // Off-main starting point for the expensive capture — same
-                // reasoning as the `createGameData(for:)` dispatcher above.
-                // See CODE_AUDIT_Game §3.5.
-                full = try await Task.detached(priority: .userInitiated) {
+                // reasoning as the `createGameData(for:)` dispatcher above,
+                // including cancellation propagation into the detached task.
+                // See CODE_AUDIT_Game §3.5, CODE_AUDIT_9 §3.1.
+                full = try await detachedGameData {
                     try await mapControllable.createMapGameData(for: itemId)
-                }.value
+                }
             } catch is CancellationError {
                 throw CancellationError()
             } catch {

@@ -9,7 +9,7 @@ import UIKit
 #endif
 
 
-public actor ObjectCache<Object: AnyObject> {
+public actor ObjectCache<Object: AnyObject & Sendable> {
     public init(countLimit: Int = 2500) {
         self.countLimit = countLimit
     }

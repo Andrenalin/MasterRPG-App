@@ -104,6 +104,13 @@ final class GameTableModel: Sendable {
     /// "show/hide all", and a map change — shares one cancel-then-replace point instead of
     /// racing each other with independently-awaited direct calls. See CODE_AUDIT §5.5/§3.3.
     private var fogOfWarTask: Task<Void, Never>?
+    /// Tracks the in-flight `performMapChange` `Task`, created and replaced only through
+    /// `replaceMapChangeTask(isGameMaster:)`. The view's initial-appear `.task` and its
+    /// `.task(id:)` map-selection watcher are two *independent* Task hierarchies on this
+    /// same model instance, so SwiftUI's automatic cancel-on-id-change only protects
+    /// re-entrant calls within one of them — this choke point protects across both,
+    /// mirroring `fogOfWarTask` above. See CODE_AUDIT_9 §3.2.
+    private var mapChangeTask: Task<Void, Never>?
     /// Signature of every value that affects the rendered board texture.
     /// Pin-only mapState messages can then skip a full fog recomposite.
     private var fogSignature: Int?
@@ -342,6 +349,23 @@ final class GameTableModel: Sendable {
     }
 
     func handleMapChange(isGameMaster: Bool) async {
+        await replaceMapChangeTask(isGameMaster: isGameMaster).value
+    }
+
+    /// Cancels any in-flight `performMapChange`, starts a new one, and stores it as the
+    /// current `mapChangeTask` — the single choke point both of `handleMapChange`'s
+    /// independent call sites route through, so a slower, stale request (e.g. the initial
+    /// appear's plain `.task` racing the `.task(id:)` map-selection watcher) can't overwrite
+    /// a newer one's state. Mirrors `replaceFogOfWarTask` below. See CODE_AUDIT_9 §3.2.
+    @discardableResult
+    private func replaceMapChangeTask(isGameMaster: Bool) -> Task<Void, Never> {
+        mapChangeTask?.cancel()
+        let task = Task { await performMapChange(isGameMaster: isGameMaster) }
+        mapChangeTask = task
+        return task
+    }
+
+    private func performMapChange(isGameMaster: Bool) async {
         let roleChanged = self.isGameMaster != isGameMaster
         self.isGameMaster = isGameMaster
 
@@ -362,6 +386,10 @@ final class GameTableModel: Sendable {
             Logger.gameTable.error("Current item is not a MapModel")
             return
         }
+        // Re-validate after the suspension above: a newer call may have
+        // already superseded this one via `replaceMapChangeTask`. See
+        // CODE_AUDIT_9 §3.2.
+        guard !Task.isCancelled else { return }
 
         let mapChanged = currentItemId != currentMapId
         let photoMetadata = mapModel.photoId.flatMap(photoMetadata(for:))
@@ -383,6 +411,7 @@ final class GameTableModel: Sendable {
         } else {
             await replaceFogOfWarTask(isGameMaster: isGameMaster).value
         }
+        guard !Task.isCancelled else { return }
         syncPawnsWithMapPins()
     }
 
@@ -1151,6 +1180,7 @@ final class GameTableModel: Sendable {
     isolated deinit {
         pendingThumbnailTasks.values.forEach { $0.cancel() }
         fogOfWarTask?.cancel()
+        mapChangeTask?.cancel()
 #if os(visionOS)
         tabletopGame.removeObserver(observer)
         tabletopGame.removeRenderDelegate(renderer)

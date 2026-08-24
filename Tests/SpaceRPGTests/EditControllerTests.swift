@@ -837,7 +837,7 @@ struct EditControllerTests {
         await sut.duplicate(item: originalItem)
 
         // Wait a bit for async operation
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        try? await Task.sleep(for: .milliseconds(100))
 
         // Verify a new item was created
         let newCount = root.itemController.itemDataModel.items.count
