@@ -12,49 +12,48 @@ import os.log
 class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
-    /// Must match `WindowVisionList`'s `.defaultSize(depth:)`. Kept as a
-    /// hardcoded constant, not read from the window at runtime — see
-    /// `rootOffset`'s own doc for why depth specifically stays static now.
-    /// 2.65 m (grown from an earlier 2.15 m) — the table's long dimension
-    /// moved from X onto Z (see `PlayerSeat.seatPoses`'s own doc for why),
-    /// so the volume's depth needed to grow to keep fitting it; see
-    /// `frontStandoff`'s own doc for the specific math.
-    private static let volumeDepth: Double = 2.65
+    /// Not read from the window at runtime — see `rootOffset`'s own doc for
+    /// why depth specifically stays static. Reads `GameTableView.volumeSize`
+    /// (the single source of truth also feeding `WindowVisionList`'s
+    /// `.defaultSize(...)`) rather than duplicating its own copy of the same
+    /// figure — see `GameTableView.frontClearance`'s own doc for the
+    /// specific math.
+    private static var volumeDepth: Double { GameTableView.volumeSize.depth }
     /// How far back from the volume's front (near-viewer, +Z) face the table
-    /// sits, so it doesn't land right at the near clipping bound,
-    /// uncomfortably close to the viewer, when this window opens. Held fixed
-    /// across the `volumeDepth` growth from 2.15 to 2.65 m so the table's
-    /// near edge — and the master's own seat and dice, which sit right at
-    /// it — stays exactly where it already was; only the *far* end (now
-    /// holding the table's long axis, plus the sixth, North seat) reaches
-    /// further into the room. `WindowVisionList`'s `.defaultSize(depth:)`
-    /// carries this much extra room beyond the table's own footprint,
-    /// specifically so it opens in front of the table instead of pushing
-    /// the table's far edge past the volume's back bound.
-    private static let frontStandoff: Double = 0.5
+    /// sits. Tightened from an earlier ~0.5 m held here for viewer comfort
+    /// so the window's system grab handle and this view's
+    /// `.bottomLeadingFront`/`.bottomTrailingFront` ornaments — both
+    /// anchored to that same front face — sit close to the table's own
+    /// front edge instead of a visible gap; 15 cm rather than 1 cm (which
+    /// `sideClearance` uses on X) because — confirmed on-device — the master
+    /// seat's own tossed dice overshoot their resting position mid-toss, and
+    /// 1/5/10 cm all let that overshoot clip through the volume's front
+    /// bound. Reads `GameTableView.frontClearance` rather than its own
+    /// duplicate literal — see that property's own doc.
+    private static var frontClearance: Double { GameTableView.frontClearance }
     // Y (-0.7) is only an initial fallback, good until `placeTable(bottomY:)`
     // reports the actual volume bounds — -0.7 assumes Apple's 1.5 m-tall
     // sample volume (origin at volume center); our volume is flatter.
     //
-    // Z, unlike Y, is set here once and for good — see `frontStandoff`'s own
-    // doc for why depth stays a fixed constant rather than a live read.
+    // Z, unlike Y, is set here once and for good — see `frontClearance`'s
+    // own doc for why depth stays a fixed constant rather than a live read.
     // `root`'s own local origin is the *center* of the wood table, not its
     // front edge: `TableAssetFactory.makePlainWoodTable()` generates it as a
     // box centered on its own origin, only ever offsetting Y (to rest its
     // bottom at the floor), never X/Z. So placing the table's front edge
-    // `frontStandoff` behind the volume's front (near-viewer, +Z) face means
-    // subtracting *both* that standoff *and* half the table's own depth
+    // `frontClearance` behind the volume's front (near-viewer, +Z) face means
+    // subtracting *both* that clearance *and* half the table's own depth
     // (`GameMetrics.tableLength / 2` — the table's long axis is Z now, see
     // `PlayerSeat.seatPoses`'s own doc) from the volume's own half-depth —
     // an earlier version of this omitted the table's own half-depth
     // entirely, which pushed the whole table (and, past its own front edge,
     // the near-edge seat's dice) 0.75 m too far toward the viewer — enough
-    // to clip past the volume's front bound and disappear. With the new,
-    // longer Z-extent this same mistake would clip by a full meter instead.
+    // to clip past the volume's front bound and disappear. With `frontClearance`
+    // now only 15 cm, that same omission would clip almost immediately.
     let rootOffset: Vector3D = .init(
         x: 0,
         y: -0.7,
-        z: volumeDepth / 2 - frontStandoff - Double(GameMetrics.tableLength) / 2
+        z: volumeDepth / 2 - frontClearance - Double(GameMetrics.tableLength) / 2
     )
     weak var game: GameTableModel?
     private var didLoadAssets = false

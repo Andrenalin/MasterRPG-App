@@ -12,10 +12,87 @@ import SpaceRPG
 import SwiftUI
 import TabletopKit
 
+extension GameTableView {
+    /// How far back from the volumetric window's front (near-viewer, +Z)
+    /// face the table sits — feeds `GameRenderer.rootOffset`'s placement
+    /// math (see that property's own doc). Tightened from an earlier 0.5 m
+    /// held purely for viewer comfort (so the table wouldn't land right at
+    /// the volume's near clipping bound when the window opens), which also
+    /// left the window's system grab handle and this view's own
+    /// `.bottomLeadingFront`/`.bottomTrailingFront` ornaments — both
+    /// anchored to that same front face — sitting a visible ~0.5 m off the
+    /// table's actual edge. 1 cm (matching `sideClearance`), 5 cm, and 10 cm
+    /// all still clipped on-device — not the table mesh itself (a plain,
+    /// bounding-box-exact box, see `TableAssetFactory.makePlainWoodTable()`),
+    /// but the master (South) seat's own tossed dice: `PlayerSeat.diceLayout`
+    /// already rests them only ~6 cm inside the table's own front edge
+    /// (`GameMetrics.diceEdgeInset`), and a toss's physics carries them
+    /// further forward, transiently, before they settle — with less than
+    /// 15 cm of margin that overshoot clipped straight through the volume's
+    /// front bound and made the die vanish mid-toss. Confirmed working
+    /// on-device at 15 cm; don't retighten this without re-testing an actual
+    /// dice toss (a static screenshot of the table at rest won't show the
+    /// problem). Declared here, not in `GameRenderer` itself, so it shares
+    /// one definition with `volumeSize` below instead of two files each
+    /// hardcoding the same literal. `public` — read from `WindowVisionList`,
+    /// in the app target rather than this module.
+    public static let frontClearance: Double = 0.15
+    /// Clearance left on each side (X) of the table's own footprint —
+    /// deliberately tight (not `backClearance`'s 0.15 m) so the leading/
+    /// trailing window handle and this view's own `.bottomLeadingFront`/
+    /// `.bottomTrailingFront` ornaments sit right at the table's edge
+    /// instead of the ~0.3 m gap the old `tableLength`-derived width left.
+    /// `TableScaleGestureController.maxScale` is tuned against this same
+    /// 1 cm budget — see its own doc before widening this back out.
+    static let sideClearance: Double = 0.01
+    /// Clearance left beyond the table's own footprint at the volume's back
+    /// (far, −Z) edge — mirrors the ~0.15 m the original 0.7 m square table
+    /// used, carried forward unchanged since. Not tightened alongside
+    /// `sideClearance`/`frontClearance`: nothing is anchored to the back
+    /// edge the way the handle/ornaments are to the sides and front.
+    static let backClearance: Double = 0.15
+    /// Fixed height (m) of the volumetric window — headroom for a tossed
+    /// die's return-to-place arc (see `GameRenderer.placeTable(bottomY:)`),
+    /// not derived from the table's own ~0.03 m thickness. An earlier 0.3 m
+    /// value was tall enough for the static table but clipped a tossed
+    /// die's upward arc through the volume's ceiling mid-animation.
+    static let volumeHeight: Double = 1.5
+
+    /// Fixed size (in meters) of the volumetric window this table renders
+    /// inside — the single source of truth for `WindowVisionList`'s
+    /// `.defaultSize(...)` (which is also what determines where the
+    /// system's own grab/resize handle lands, right at the tabletop —
+    /// SwiftUI exposes no way to draw or reposition that handle from inside
+    /// this view's own body) and `GameRenderer.rootOffset`'s depth term
+    /// (kept there as its own read of `frontClearance`/`volumeSize` rather
+    /// than a second hardcoded literal — see that property's own doc for
+    /// why depth specifically stays a fixed constant instead of a live
+    /// window-bounds read).
+    ///
+    /// `width` is derived from `GameMetrics.tableWidth` (the table's actual
+    /// X-extent) plus `sideClearance` on each side — this used to reuse
+    /// `tableLength` instead (the table's *Z*-extent, 2.0 m vs. `tableWidth`'s
+    /// 1.5 m), which left the handle/ornaments sitting ~30 cm off the
+    /// table's real edge rather than the ~1 cm this now targets. `depth`
+    /// uses `tableLength` (correctly — the table's Z-extent) plus
+    /// `frontClearance` at the front (also tightened, to 15 cm, for the
+    /// same handle/ornament-alignment reason as `sideClearance` — see that
+    /// property's own doc for why it's 15 cm rather than matching
+    /// `sideClearance`'s 1 cm) and `backClearance` at the back (left alone —
+    /// see its own doc).
+    public static var volumeSize: Size3D {
+        Size3D(
+            width: Double(GameMetrics.tableWidth) + sideClearance * 2,
+            height: volumeHeight,
+            depth: frontClearance + Double(GameMetrics.tableLength) + backClearance
+        )
+    }
+}
+
 @MainActor
 public struct GameTableView: View {
     let root: GameRoot
-    
+
     @State private var game: GameTableModel?
     @State private var activityManager: GroupActivityManager?
     @State private var scaleController = TableScaleGestureController()
@@ -39,9 +116,10 @@ public struct GameTableView: View {
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
-    /// Backs the trailing-side window menu ornament's `GameWindowMenuButtonView` —
-    /// mirrors `MasterGameScreen`/`PlayerGameScreen`'s own `gameScreenModel`,
-    /// likewise owned per-screen rather than shared through `GameRoot`.
+    /// Backs `windowOpenButton` (leading ornament, row 2) and the trailing
+    /// window-menu ornament's own buttons — mirrors `MasterGameScreen`/
+    /// `PlayerGameScreen`'s own `gameScreenModel`, likewise owned per-screen
+    /// rather than shared through `GameRoot`.
     @State private var gameScreenModel = GameScreenModel()
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
@@ -68,6 +146,29 @@ public struct GameTableView: View {
     }
 
     private static let staleGestureTimeout: TimeInterval = 3
+
+    /// The leading ornament's window-controls row (row 1, alongside
+    /// `GameTableSideMenu`) — toggles the floating adventure (master) or
+    /// character sheet (player) window. Was `GameTableSideMenu`'s own first
+    /// button when that view was still a separate trailing-side ornament;
+    /// moved here (and `GameTableSideMenu` folded into the same row right
+    /// after it) so every window-opening button the table volume offers —
+    /// every "open a module window" button in row 1 plus the table/map
+    /// toggle in row 2 — reads as one connected set of window controls
+    /// instead of being split across two opposite corners. Mirrors
+    /// `GameTableSideMenu`'s former gating for this one button exactly:
+    /// master needs `adventureId` before it can even show; player needs an
+    /// active (non-observer) game.
+    @ViewBuilder
+    private var windowOpenButton: some View {
+        if root.gameModel.gameConfig.isMaster {
+            if let adventureId = root.gameModel.gameConfig.master.adventureId {
+                GameWindowMenuButtonView(isMaster: true, itemId: adventureId)
+            }
+        } else if root.gameModel.gameType != .observer {
+            GameWindowMenuButtonView(isMaster: false, itemId: root.gameModel.selectedCharacter)
+        }
+    }
 
     public var body: some View {
         GeometryReader3D { proxy in
@@ -255,16 +356,51 @@ public struct GameTableView: View {
         // `AppGameStateModel` on the scene, none of which a bare
         // `RealityView` gets for free — see `WindowVisionList`.
         //
-        // The dice action bar (same view `MasterGameScreen` ornaments at
-        // `.bottomLeading` on the flat Game screen) sits under the map
-        // toolbar in this one stacked ornament rather than as its own
-        // separate ornament at the same corner — that would leave two
-        // ornaments contending for the identical anchor point instead of
-        // the map toolbar simply sitting higher to make room, which a
-        // shared VStack gives for free.
+        // The window-controls row (row 1) and dice action bar (row 3 — same
+        // view `MasterGameScreen` ornaments at `.bottomLeading` on the flat
+        // Game screen) sit alongside the map toolbar (row 2) in this one
+        // stacked ornament rather than as their own separate ornaments —
+        // that would leave multiple ornaments contending for anchor points
+        // instead of a shared VStack giving that stacking for free. Row 1 is
+        // every window-opening button the table volume offers —
+        // `windowOpenButton` (the floating adventure/character window
+        // toggle) plus `GameTableSideMenu` (the *other* module windows) —
+        // combined into one row rather than a separate trailing-side
+        // ornament this view used to have: with only `windowOpenButton`
+        // moved here and `GameTableSideMenu` left as its own
+        // `.bottomTrailingFront` ornament, the module-window buttons stayed
+        // visually split across two corners for no real reason once one of
+        // them had already moved — see `windowOpenButton`'s own doc for why
+        // it moved in the first place. Placed above the map toolbar (rather
+        // than below it, where it first landed) so the table's own window
+        // controls read as the top of the stack. No manual Y
+        // `.offset(...)` on the stack itself — an up-then-down row-height
+        // estimate was tried here to compensate for the two extra rows and
+        // ended up clipping the ornament against the volume's own bounds
+        // on-device; removed rather than tuned further, since the
+        // anchor/padding below already positions the stack correctly on its
+        // own without it.
         .ornament(attachmentAnchor: .parent(.bottomLeadingFront), contentAlignment: .topLeading) {
             if let game {
                 VStack(alignment: .leading, spacing: 12) {
+                    // `GameTableSideMenu` is deliberately bare (no own
+                    // `HStack`/`GlassEffectContainerAll`) so it and
+                    // `windowOpenButton` share this one glass group instead
+                    // of nesting one inside another — see that struct's own
+                    // doc. No extra `.padding()` here, matching row 2
+                    // (`GameTableToolbar`) and row 3 (the dice bar's own
+                    // `GlassEffectContainerAll`, similarly unpadded) — this
+                    // row stays flush with the others under the shared
+                    // VStack's leading alignment instead of indenting itself.
+                    GlassEffectContainerAll {
+                        HStack(spacing: 8) {
+                            windowOpenButton
+
+                            GameTableSideMenu(root: root, isMaster: root.gameModel.gameConfig.isMaster)
+                        }
+                    }
+                    .environment(gameScreenModel)
+
                     // GameTableToolbar itself keeps the table/map window
                     // toggle always visible and only hides the shared
                     // map-specific controls until a map is loaded.
@@ -276,24 +412,6 @@ public struct GameTableView: View {
                 }
                 .padding(.top, 12)
             }
-        }
-        // Companion to the leading map-toolbar/dice-bar ornament above: the
-        // window menu (`GameTableSideMenu`) letting the master/player open
-        // other module windows without leaving the table volume — same
-        // buttons as the flat 2D game screens' own trailing ornament
-        // (`MasterSideMenu`/`PlayerSideMenu`), just laid out as a row
-        // instead of a column. `.parent(.bottomTrailingFront)` for the same
-        // reason `.bottomLeadingFront` is used above rather than
-        // `.scene(.trailing)` (what the flat screens use): the 2D
-        // `UnitPoint` anchor has no Z, so SwiftUI would pick a depth that
-        // lands mid-volume instead of the front face.
-        .ornament(attachmentAnchor: .parent(.bottomTrailingFront), contentAlignment: .topTrailing) {
-            GameTableSideMenu(
-                root: root,
-                isMaster: root.gameModel.gameConfig.isMaster,
-                adventureId: root.gameModel.gameConfig.master.adventureId
-            )
-            .environment(gameScreenModel)
         }
         .task {
             await initializeGameIfNeeded()

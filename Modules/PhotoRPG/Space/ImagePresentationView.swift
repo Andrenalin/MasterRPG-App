@@ -46,8 +46,8 @@ struct ImagePresentationView: View {
             RealityView { content in
                 // Scale the entity to fit in the bounds.
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
-                lastAvailableBounds = availableBounds
                 scaleImagePresentationToFit(in: availableBounds)
+                cacheAvailableBounds(availableBounds)
                 content.add(model.contentEntity)
                 // `SceneEvents.Update` isn't MainActor-isolated, and
                 // `model.contentEntity` lives on `model`'s `@MainActor`
@@ -61,8 +61,8 @@ struct ImagePresentationView: View {
                 }
             } update: { content in
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
-                lastAvailableBounds = availableBounds
-                syncPresentation()
+                syncPresentation(boundsInMeters: availableBounds)
+                cacheAvailableBounds(availableBounds)
             }
             .task(id: model.selectedItemId) {
                 await model.createAndShowSpatial3DImage(root: root)
@@ -100,10 +100,14 @@ struct ImagePresentationView: View {
     }
     
     /// Positions the entity at the back of the window and rescales it to fit
-    /// `lastAvailableBounds`, called from both the `update` closure and the
+    /// `boundsInMeters`, called from both the `update` closure and the
     /// per-frame `SceneEvents.Update` subscription so the two stay in sync —
     /// see `sceneUpdateSubscription`'s doc for why the subscription exists.
-    func syncPresentation() {
+    /// `update` passes the bounds it just computed directly so this frame
+    /// isn't left waiting on `cacheAvailableBounds`'s deferred write; the
+    /// per-frame subscription (which has no fresh value of its own) omits it
+    /// and falls back to the cached `lastAvailableBounds`.
+    func syncPresentation(boundsInMeters: BoundingBox? = nil) {
         guard let presentationScreenSize = model
             .contentEntity
             .observable
@@ -115,10 +119,26 @@ struct ImagePresentationView: View {
         let originalPosition = model.contentEntity.position(relativeTo: nil)
         model.contentEntity.setPosition(SIMD3<Float>(originalPosition.x, originalPosition.y, 0.0), relativeTo: nil)
         // Scale the entity to fit in the bounds.
-        guard let lastAvailableBounds else {
+        guard let boundsInMeters = boundsInMeters ?? lastAvailableBounds else {
             return
         }
-        scaleImagePresentationToFit(in: lastAvailableBounds)
+        scaleImagePresentationToFit(in: boundsInMeters)
+    }
+
+    /// Caches `bounds` into `lastAvailableBounds` for the per-frame
+    /// `SceneEvents.Update` subscription to read back later — see that
+    /// property's own doc. Deferred through a `Task` rather than assigned
+    /// directly: `RealityView`'s `make`/`update` closures run synchronously
+    /// as part of SwiftUI's own view-update pass, and writing straight to
+    /// `@State` there trips "Modifying state during view update, this will
+    /// cause undefined behavior." Both call sites already have the fresh
+    /// value in hand and pass it straight to `scaleImagePresentationToFit`/
+    /// `syncPresentation` instead of relying on the cache for their own
+    /// frame, so the one-tick delay here only affects later reads.
+    func cacheAvailableBounds(_ bounds: BoundingBox) {
+        Task {
+            lastAvailableBounds = bounds
+        }
     }
 
     /// Fit the image presentation inside a bounding box by scaling the content entity.

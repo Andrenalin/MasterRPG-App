@@ -174,11 +174,27 @@ public extension GameControllable {
         }
     }
 
+    /// A pure availability/version check — used for reference lookups such as
+    /// a map's pin photos (`GameController+Pins.missingMapImages`) or a
+    /// proxy repair check (`MasterController.canServeProxyRequest`), not
+    /// just direct reveals. Caches the item's data via `append` (not
+    /// `insert`) when it isn't tracked yet, so a not-yet-cached *reference*
+    /// (e.g. a monster pin's photo, checked while sending its map) is never
+    /// promoted to `currentItemId` — `ItemGameModel.currentItemId` is
+    /// literally `items.first`, and `insert(itemId:item:)` always places the
+    /// new item at index 0. Before this fix, checking a pin photo's
+    /// availability made it "current" the same way an actual reveal does,
+    /// which `GameRootViewer`'s `onChange(of: ...currentItemId)` can't tell
+    /// apart from a real reveal — silently popping the spatial photo window
+    /// open for a pin's photo the GM never explicitly revealed. Only an
+    /// explicit reveal path (`reveal(itemId:data:save:)`,
+    /// `setCurrent(itemId:)`) should ever call `insert` and change what's
+    /// current.
     @MainActor func hasItem(id: UUID, version: Int) async -> Bool {
         guard gameModel.itemData[id] != nil, let localItem = await itemControllable.item(for: id) else {
             guard let item = await itemControllable.item(for: id, version: version) else { return false }
             let gameItem = item.copy()
-            gameModel.insert(itemId: item.id, item: gameItem)
+            gameModel.append(itemId: item.id, item: gameItem)
             return true
         }
         return version == 0 || version == localItem.version

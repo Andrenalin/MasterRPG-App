@@ -9,10 +9,11 @@ import SwiftUI
 /// table). Purely numeric with no platform dependency, so it's declared once
 /// here instead of duplicated per platform file — see CODE_AUDIT §9.1.
 enum GameMetrics {
-    /// The table's X-axis extent — its long dimension, seating two players a
-    /// side plus one at each end (see `PlayerSeat.seatPoses`).
+    /// The table's Z-axis extent — its long dimension, seating two players a
+    /// side plus one at each end (see `PlayerSeat.seatPoses`'s own doc for
+    /// why the long dimension runs along Z rather than X).
     static let tableLength: Float = 2.0
-    /// The table's Z-axis extent.
+    /// The table's X-axis extent — its short dimension.
     static let tableWidth: Float = 1.5
     static let tableThickness: Float = 0.0146
     static let mapSurfaceClearance: Float = 0.0005

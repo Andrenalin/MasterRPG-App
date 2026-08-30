@@ -8,6 +8,12 @@ public enum WindowPlacementPosition {
     case trailing(_ id: String, fallback: String? = nil)
     case above(_ id: String, fallback: String? = nil)
     case below(_ id: String, fallback: String? = nil)
+    /// No placement preference — falls back to the scene's own default
+    /// placement (system-chosen, e.g. "in front of where the person is
+    /// looking" for a window's first appearance on visionOS). Use this
+    /// instead of omitting `defaultWindowPlacementAll(_:)` entirely when the
+    /// choice of position itself is conditional on app state.
+    case none
 }
 
 /// Cross-platform restoration behavior for scenes
@@ -35,6 +41,8 @@ extension SwiftUI.Scene {
             }
             
             switch windowPlacementPosition {
+            case .none:
+                return WindowPlacement(.none)
             case .utilityPanel:
                 return WindowPlacement(.utilityPanel)
             case .leading(let id, let fallback):

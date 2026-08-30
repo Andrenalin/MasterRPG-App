@@ -36,43 +36,20 @@ struct WindowVisionList: Scene {
                 .environment(appModel.appGameStateModel)
         }
         .windowStyle(.volumetric)
-        // Keep the system grab handle just outside the tabletop instead of
-        // at the front of the former 2.5 m-deep volume. Width is sized to
-        // `GameMetrics.tableLength` (2.0 m, the table's short X-extent now —
-        // see `PlayerSeat.seatPoses`'s own doc for why the table's long
-        // dimension moved onto Z) plus the same ~0.15 m clearance the
-        // original square 0.7 m table used — RealityView clips content
-        // outside the volume's actual bounds (see `GameTableView`), so this
-        // has to grow in lockstep with the table itself, not just the
-        // table's own mesh/seat math. Left at this comfortably-oversized
-        // 2.15 m rather than shrunk to match the table's narrower 1.5 m
-        // width now that width no longer drives the tight dimension.
-        //
-        // Depth grew from 2.15 to 2.65 m for the same reason: the table's
-        // long dimension (2.0 m) now runs along Z instead of X, so fitting
-        // it — plus the same 0.5 m front standoff and ~0.15 m back
-        // clearance the original 2.15 m depth carried — needs
-        // 0.5 + 2.0 + 0.15 = 2.65 m. `GameRenderer.placeTable(bottomY:)`
-        // pushes the table back into that depth (using this same 2.65 m
-        // value, duplicated there as `GameRenderer.volumeDepth` since it
-        // can't reach this constant directly) so the table's near edge
-        // doesn't sit right at the volume's near bound, uncomfortably close
-        // to the viewer, when this window opens — only the *far* end (now
-        // holding the table's long axis, plus its sixth, North seat)
-        // reaches further into the room than the old 2.15 m depth did.
-        //
-        // Height is 1.5 m — matching Apple's own TabletopKit samples that
-        // include dice/toss physics (e.g. `.defaultSize(width: 1.5, height: 1.5,
-        // depth: 1.5, in: .meters)`), not the table's own ~0.03 m thickness. A
-        // tossed die's return-to-place animation arcs upward before settling;
-        // this used to be only 0.3 m, tall enough for the static table itself
-        // but not for that arc, and the die would clip through the volume's
-        // ceiling mid-animation and vanish. `GameRenderer.placeTable(bottomY:)`
-        // still keeps the table itself sitting on the real floor regardless of
-        // how much headroom is declared above it, so this doesn't move the
-        // table — it only gives tossed dice room to arc without leaving the
-        // volume.
-        .defaultSize(width: 2.15, height: 1.5, depth: 2.65, in: .meters)
+        // Keep the system grab handle right at the tabletop's own edge
+        // instead of the ~0.3 m gap the former, tableLength-derived width
+        // left. SwiftUI gives no way to draw or reposition that handle from
+        // inside `GameTableView`'s own body — a volumetric window's
+        // grab/resize chrome is owned by the system and only ever
+        // influenced indirectly, through the scene's own declared size —
+        // so the actual derivation (why this specific width/height/depth,
+        // and how it tracks the table's own footprint) lives once, in
+        // `GameTableView.volumeSize`'s own doc, next to the table geometry
+        // (`GameMetrics`) it depends on, instead of duplicated here.
+        // `GameRenderer.rootOffset` reads that same
+        // `GameTableView.volumeSize`/`.frontClearance` to place the table
+        // inside whatever this declares, so the two can't drift apart.
+        .defaultSize(GameTableView.volumeSize, in: .meters)
         // No `.defaultWindowPlacement` override — this used to return
         // `WindowPlacement(.utilityPanel)`, but `.utilityPanel` is a small,
         // near-body tool-panel position (meant for a persistent toolbar
@@ -122,6 +99,7 @@ struct WindowVisionList: Scene {
         .windowResizability(.contentSize)
         .windowStyle(.plain)
         .restorationBehavior(.disabled)
+        .defaultWindowPlacementAll(imageSpaceViewerPlacement)
 
         ImmersiveSpace(id: SceneId.spaceViewer.rawValue, for: ItemSelection.self) { $selection in
             DataBaseAppStoreAvailable(appModel: appModel) { appModel in
@@ -152,5 +130,39 @@ struct WindowVisionList: Scene {
     /// `UUID()` here churned view identity on every body re-evaluation that hit this fallback.
     /// See CODE_AUDIT §8.6.
     private static let noSpaceSelectionId = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+
+    /// Stacks the spatial photo presentation window above the main "Game"
+    /// window (`SceneId.game`) whenever a game is running.
+    ///
+    /// Deliberately does NOT anchor against the volumetric table window
+    /// (`SceneId.gameTable`), even though it's open at exactly the times
+    /// `SceneId.game` is pushed aside (see
+    /// `GameTableWindowButton.toggleTable()`): returning
+    /// `WindowPlacement(.above(volumetricWindowProxy))` for a `.volumetric`
+    /// window reproducibly kept this window from opening at all, instead of
+    /// falling back to a default placement the way the graceful "id not
+    /// found" path in `WindowPlacementPosition.above(id:fallback:)` does.
+    /// `SceneId.game`'s own `WindowProxy` keeps resolving even while it's
+    /// backgrounded (pushed aside, not dismissed), so anchoring to it alone
+    /// reopens reliably whether the table is showing or not; if it's ever
+    /// not found either, `WindowPlacementPosition`'s existing "not found →
+    /// no placement" fallback still applies, so this can't fail to open the
+    /// window even then.
+    ///
+    /// Only applied while a game is actually running
+    /// (`AppGameStateModel.isGameRunning`); a photo window opened for some
+    /// other reason before/after a game falls back to the window's normal
+    /// default placement (system-chosen), same as any other unconfigured
+    /// window.
+    ///
+    /// visionOS's `WindowPlacement.Position` only offers this kind of
+    /// semantic relative position (`.above`/`.below`/`.leading`/`.trailing`),
+    /// with a system-chosen gap — there's no public API for an exact
+    /// numeric offset (e.g. a fixed 50 cm) from another window, volumetric
+    /// or not.
+    private var imageSpaceViewerPlacement: WindowPlacementPosition {
+        guard appModel.appGameStateModel.isGameRunning else { return .none }
+        return .above(SceneId.game.rawValue)
+    }
 }
 #endif
