@@ -748,9 +748,9 @@ extension EditController {
 
         let afterNames = item.entries.map { itemControllable.nameSync(itemId: $0.childId) }
         if !removedNames.isEmpty {
-            Logger.editController.warning("[Repair] Folder '\(item.name, privacy: .public)': removed invalid children \(removedNames, privacy: .public)")
+            Logger.editController.warning("[Repair] Folder '\(item.name, privacy: .private)': removed invalid children \(removedNames, privacy: .private)")
         }
-        Logger.editController.info("[Repair] Folder '\(item.name, privacy: .public)': entries now \(afterNames, privacy: .public)")
+        Logger.editController.info("[Repair] Folder '\(item.name, privacy: .private)': entries now \(afterNames, privacy: .private)")
 
         save(updated: item, message: String(localized: "Repair folder", bundle: .module).localizedString)
     }
@@ -777,7 +777,7 @@ extension EditController {
         }
         guard item.entries.count != before else { return }
 
-        Logger.editController.warning("[Repair] Collection '\(item.name, privacy: .public)': removed \(before - item.entries.count) invalid children \(removedNames, privacy: .public)")
+        Logger.editController.warning("[Repair] Collection '\(item.name, privacy: .private)': removed \(before - item.entries.count) invalid children \(removedNames, privacy: .private)")
 
         save(updated: item, message: String(localized: "Repair collection", bundle: .module).localizedString)
     }
@@ -793,7 +793,7 @@ extension EditController {
             } ?? false
             if !isInFolder {
                 let parentName = itemControllable.nameSync(itemId: parentId)
-                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': cleared orphaned parentId (folder '\(parentName, privacy: .public)' has no matching entry)")
+                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .private)': cleared orphaned parentId (folder '\(parentName, privacy: .private)' has no matching entry)")
                 item.parentId = nil
                 changed = true
             }
@@ -805,7 +805,7 @@ extension EditController {
             guard let valueId = entry.valueId else { return entry }
             guard let target = itemControllable.itemSync(for: valueId) as? ValueModel else {
                 let targetName = itemControllable.nameSync(itemId: valueId)
-                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': entry '\(entry.name, privacy: .public)' had non-GroupItem valueId pointing to '\(targetName, privacy: .public)' — cleared")
+                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .private)': entry '\(entry.name, privacy: .private)' had non-GroupItem valueId pointing to '\(targetName, privacy: .private)' — cleared")
                 entriesChanged = true
                 return ValueEntryModel(
                     id: entry.id, name: entry.name, type: entry.type,
@@ -822,7 +822,7 @@ extension EditController {
                 }
 
                 let targetName = itemControllable.nameSync(itemId: valueId)
-                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .public)': entry '\(entry.name, privacy: .public)' had non-GroupItem valueId pointing to '\(targetName, privacy: .public)' — cleared")
+                Logger.editController.warning("[Repair] Character '\(item.name, privacy: .private)': entry '\(entry.name, privacy: .private)' had non-GroupItem valueId pointing to '\(targetName, privacy: .private)' — cleared")
                 entriesChanged = true
                 return ValueEntryModel(
                     id: entry.id, name: entry.name, type: entry.type,
@@ -880,7 +880,7 @@ extension EditController {
         }
         let groupItemName = itemControllable.nameSync(itemId: groupItemId)
 
-        Logger.editController.warning("[Repair] GroupItem '\(groupItemName, privacy: .public)': removed duplicate reference from '\(oldOwner.name, privacy: .public)'")
+        Logger.editController.warning("[Repair] GroupItem '\(groupItemName, privacy: .private)': removed duplicate reference from '\(oldOwner.name, privacy: .private)'")
         save(updated: oldOwner, message: String(localized: "Repair group item", bundle: .module).localizedString)
     }
 }

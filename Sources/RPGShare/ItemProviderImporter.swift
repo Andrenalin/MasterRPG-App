@@ -145,7 +145,7 @@ private extension ItemProviderImporter {
         CGImageDestinationAddImage(
             destination,
             thumbnail,
-            [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary
+            [kCGImageDestinationLossyCompressionQuality: JPEGQuality.downsampledImport] as CFDictionary
         )
         guard CGImageDestinationFinalize(destination) else {
             return data

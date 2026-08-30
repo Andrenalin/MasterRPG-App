@@ -52,12 +52,20 @@ public struct QuickAddButtonStyle: ButtonStyle {
             .font(.body)
             .padding()
             .foregroundStyle(.teal)
+            // `.glassEffectAll(_:in:)` doesn't exist on visionOS (see `PlatformModifiers.swift`);
+            // this style is only ever applied on iOS (`.quickAdd` in `QuickEditorButtonView.body`
+            // above is iOS-only), but the type still needs to compile for every platform. The
+            // previous manual `.background(.ultraThinMaterial)` + `.shadow` + `.clipShape` chain
+            // had a dead pre-clip shadow (clipped away before it could render) — `.glassEffectAll`
+            // composits shape/shadow internally, so no manual shadow is needed here. See CODE_AUDIT_9 §8.4/§8.5.
+#if os(visionOS)
             .background(.ultraThinMaterial)
-            .shadow(radius: 10)
             .clipShape(Circle())
+#else
+            .glassEffectAll(.regular, in: .circle)
+#endif
             .opacity(configuration.isPressed ? 0.9 : 1)
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .shadow(color: Color.black.opacity(configuration.isPressed ? 0 : 0.2), radius: 10, x: 10, y: 10)
     }
 }
 

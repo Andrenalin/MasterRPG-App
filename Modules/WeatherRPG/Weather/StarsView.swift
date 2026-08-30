@@ -67,7 +67,6 @@ struct StarsView: View {
         .mask(
             LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .bottom)
         )
-//        .frame(width: size.width, height: size.height)
     }
 
     private var shouldPauseAnimation: Bool {

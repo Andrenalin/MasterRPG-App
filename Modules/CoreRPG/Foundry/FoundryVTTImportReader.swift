@@ -29,19 +29,35 @@ public struct FoundryVTTImportReader: Sendable {
                 if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
             }
             try Task.checkCancellation()
-            return try FoundryVTTDecoder(limits: limits).decode(from: url)
+            // Parse the source once and hand it to the decoder, instead of letting
+            // `decode(from:)` reparse it internally — the parsed source is reused below to
+            // avoid a second full read+parse of the same (up to 1 GiB) archive. See CODE_AUDIT_9 §7.3.
+            let source = try FoundryVTTDataSource(url: url, limits: limits)
+            let package = try FoundryVTTDecoder(limits: limits).decode(source: source)
+            return (package: package, source: source)
         }
-        var package = try await withTaskCancellationHandler {
+        let (decodedPackage, decodedSource) = try await withTaskCancellationHandler {
             let decoded = try await task.value
             try Task.checkCancellation()
             return decoded
         } onCancel: {
             task.cancel()
         }
+        var package = decodedPackage
 
         if package.kind == .system {
             do {
-                let rulePackage = try await FoundrySystemPackageReader(limits: limits).read(from: url)
+                let rulePackage: FoundryRulePackage
+                if case .archive(let archive, let sourceSHA256) = decodedSource {
+                    // Reuse the ZIP central directory already parsed above rather than
+                    // re-reading and re-parsing the same archive from disk a second time.
+                    rulePackage = try await FoundrySystemPackageReader(limits: limits).read(
+                        reusingArchive: archive,
+                        sourceSHA256: sourceSHA256
+                    )
+                } else {
+                    rulePackage = try await FoundrySystemPackageReader(limits: limits).read(from: url)
+                }
                 package = package.with(rulePackage: rulePackage)
             } catch is CancellationError {
                 throw CancellationError()
@@ -260,6 +276,13 @@ private struct FoundryVTTDecoder {
 
     func decode(from url: URL) throws -> FoundryVTTImportPackage {
         let source = try FoundryVTTDataSource(url: url, limits: limits)
+        return try decode(source: source)
+    }
+
+    /// Decodes an already-parsed source. Split out of `decode(from:)` so a caller that needs
+    /// the parsed source afterward (`FoundryVTTImportReader.read(from:)`, to hand its archive
+    /// to `FoundrySystemPackageReader` without reparsing) can build it once and reuse it.
+    func decode(source: FoundryVTTDataSource) throws -> FoundryVTTImportPackage {
         if source.selectedPath?.lowercased().hasSuffix(".mrpgfoundry") == true {
             return try FoundryBridgeDecoder(limits: limits).decodePackage(source: source)
         }

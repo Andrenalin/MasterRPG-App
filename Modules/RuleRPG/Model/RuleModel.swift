@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import CryptoKit
 import Foundation
 import Observation
 
@@ -605,7 +604,7 @@ extension RuleModel: ItemDiffComparable {
     }
 
     public var version: Int {
-        StableRuleVersion.digest(CanonicalRuleContent(self))
+        StableVersionDigest.digest(CanonicalRuleContent(self))
     }
 }
 
@@ -802,20 +801,6 @@ private struct CanonicalRuleContent: Codable, Sendable {
         sourceMetadata = model.sourceMetadata
         sourcePayload = model.sourcePayload
         parentId = model.parentId
-    }
-}
-
-private enum StableRuleVersion {
-    static func digest<Value: Encodable>(_ value: Value) -> Int {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(value) else { return 1 }
-        let digest = SHA256.hash(data: data)
-        let rawValue = digest.prefix(8).reduce(UInt64(0)) { result, byte in
-            result << 8 | UInt64(byte)
-        }
-        let version = Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
-        return version == 0 ? 1 : version
     }
 }
 

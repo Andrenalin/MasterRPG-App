@@ -124,13 +124,11 @@ class GameRenderer: TabletopGame.RenderDelegate {
         root.transform.translation.y = bottomY
     }
 
-    nonisolated func updateCursor(_ proposedDestination: EquipmentIdentifier?, valid: Bool = false) {
-        Task { @MainActor in
-            guard let game = game else {
-                return
-            }
-            game.renderer.cursorTransform = nil
-        }
+    /// Sets (or clears) the drag-destination cursor's transform directly — called
+    /// from `GameInteraction.update(interaction:)`, which is itself already
+    /// `@MainActor`, so no actor hop is needed here. See CODE_AUDIT_9 §5.2.
+    func updateCursor(_ transform: Transform?) {
+        cursorTransform = transform
     }
 }
 

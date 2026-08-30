@@ -7,7 +7,6 @@ import SwiftUI
 import Testing
 import CoreRPG
 import DiceRPG
-import GeneratorRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
@@ -38,8 +37,7 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
     @Test("ViewerRootView")
     func snapshotViewerRootView() async throws {
         try await assertPreviewSnapshot("ViewerRootView") {
-            CharacterRPG.ViewerRootView(model: .preview, configuration: ViewerConfiguration(), dismissAction: nil)
-                .environment(CharacterRootModel.previewWithData)
+            CharacterRPG.ViewerRootView(model: .preview, configuration: .init(), dismissAction: nil)
         }
     }
 
@@ -83,11 +81,6 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CharacterRPG::AddEntryButton
-    // REMOVED: `AddEntryButton` no longer exists in CharacterRPG — consolidated into
-    // CoreRPG's shared `SheetEntryAddButton` in a prior audit round; this generated test
-    // was never regenerated. Pre-existing staleness, unrelated to this session's fixes.
-
     // snapshot-root: CharacterRPG::AddGroupButton
     @Test("AddGroupButton")
     func snapshotAddGroupButton() async throws {
@@ -125,6 +118,16 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
     func snapshotDiceDropSection() async throws {
         try await assertPreviewSnapshot("DiceDropSection") {
             CharacterRPG.DiceDropSection(root: .preview, model: .preview)
+        }
+    }
+
+    // snapshot-root: CharacterRPG::DiceRowRemoveButton
+    @Test("DiceRowRemoveButton")
+    func snapshotDiceRowRemoveButton() async throws {
+        try await assertPreviewSnapshot("DiceRowRemoveButton") {
+            CharacterRPG.DiceRowRemoveButton(itemId: ValueModel.previewId, entryId: UUID())
+                .environment(CharacterRootModel.preview)
+                .padding()
         }
     }
 
@@ -173,14 +176,6 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CharacterRPG::QuickEditorButton
-    @Test("QuickEditorButton")
-    func snapshotQuickEditorButton() async throws {
-        try await assertPreviewSnapshot("QuickEditorButton") {
-            CharacterRPG.QuickEditorButton(root: .preview, model: .preview)
-        }
-    }
-
     // snapshot-root: CharacterRPG::QuickEntryEditor
     @Test("QuickEntryEditor")
     func snapshotQuickEntryEditor() async throws {
@@ -205,8 +200,6 @@ struct CharacterRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier())
-                .environment(AppFocusModel())
-                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

@@ -19,9 +19,9 @@ struct WeatherThunderEditor: View {
 
     var body: some View {
         Section {
-            lightningFrequencyEditorView
-            lightningMaxBoltsEditorView
-            lightningForkEditorView
+            WeatherLightningFrequencyEditor(model: model, editModel: lightningFrequency)
+            WeatherLightningMaxBoltsEditor(model: model, editModel: lightningMaxBolts)
+            WeatherLightningForkEditor(model: model, editModel: lightningForkProbability)
         } header: {
 #if os(macOS)
             Divider()
@@ -73,61 +73,77 @@ struct WeatherThunderEditor: View {
     }
 }
 
-private extension WeatherThunderEditor {
-    @ViewBuilder var lightningFrequencyEditorView: some View {
+/// Extracted from `WeatherThunderEditor` computed properties: dedicated `View` structs so
+/// dragging one slider doesn't re-evaluate every sibling section's body — computed properties
+/// share the parent's invalidation boundary, dedicated `View` structs don't. See CODE_AUDIT_9 §8.1.
+private struct WeatherLightningFrequencyEditor: View {
+    let model: WeatherModel
+    @Bindable var editModel: EditIdentifierModel<Double>
+
+    var body: some View {
         LabeledContent {
 #if os(tvOS)
             Text(model.lightningFrequency, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $lightningFrequency.value, in: 0 ... 100)
+            Slider(value: $editModel.value, in: 0 ... 100)
                 .accessibilityLabel(Text("Frequency", bundle: .module))
                 .accessibilityValue(
-                    Text(lightningFrequency.value, format: .number.precision(.fractionLength(0)))
+                    Text(editModel.value, format: .number.precision(.fractionLength(0)))
                 )
 #endif
         } label: {
             Text("Frequency", bundle: .module)
         }
-        .onSignificantChange(of: lightningFrequency.value) {
-            lightningFrequency.save()
+        .onSignificantChange(of: editModel.value) {
+            editModel.save()
         }
     }
+}
 
-    @ViewBuilder var lightningMaxBoltsEditorView: some View {
+private struct WeatherLightningMaxBoltsEditor: View {
+    let model: WeatherModel
+    @Bindable var editModel: EditIdentifierModel<Double>
+
+    var body: some View {
         LabeledContent {
 #if os(tvOS)
             Text(model.lightningMaxBolts, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $lightningMaxBolts.value, in: 0 ... 10)
+            Slider(value: $editModel.value, in: 0 ... 10)
                 .accessibilityLabel(Text("Max Bolts", bundle: .module))
                 .accessibilityValue(
-                    Text(lightningMaxBolts.value, format: .number.precision(.fractionLength(0)))
+                    Text(editModel.value, format: .number.precision(.fractionLength(0)))
                 )
 #endif
         } label: {
             Text("Max Bolts", bundle: .module)
         }
-        .onSignificantChange(of: lightningMaxBolts.value) {
-            lightningMaxBolts.save()
+        .onSignificantChange(of: editModel.value) {
+            editModel.save()
         }
     }
+}
 
-    @ViewBuilder var lightningForkEditorView: some View {
+private struct WeatherLightningForkEditor: View {
+    let model: WeatherModel
+    @Bindable var editModel: EditIdentifierModel<Double>
+
+    var body: some View {
         LabeledContent {
 #if os(tvOS)
             Text(model.lightningForkProbability, format: .number.precision(.fractionLength(0)))
 #else
-            Slider(value: $lightningForkProbability.value, in: 0 ... 100)
+            Slider(value: $editModel.value, in: 0 ... 100)
                 .accessibilityLabel(Text("Fork %", bundle: .module))
                 .accessibilityValue(
-                    Text(lightningForkProbability.value / 100, format: .percent.precision(.fractionLength(0)))
+                    Text(editModel.value / 100, format: .percent.precision(.fractionLength(0)))
                 )
 #endif
         } label: {
             Text("Fork %", bundle: .module)
         }
-        .onSignificantChange(of: lightningForkProbability.value) {
-            lightningForkProbability.save()
+        .onSignificantChange(of: editModel.value) {
+            editModel.save()
         }
     }
 }

@@ -53,4 +53,21 @@ extension simd_float4x4 {
     }
 }
 
+extension Pose3D {
+    /// Converts a `TabletopInteraction.Value.pose` (Spatial's double-precision
+    /// `Pose3D`) into a RealityKit `Transform`, via its underlying matrix — used to
+    /// place content that lives outside TabletopKit's own automatic equipment
+    /// rendering, currently only the drag-destination cursor. See CODE_AUDIT_9 §5.2.
+    var cursorTransform: Transform {
+        let m = matrix
+        let singlePrecision = simd_float4x4(
+            SIMD4<Float>(m.columns.0),
+            SIMD4<Float>(m.columns.1),
+            SIMD4<Float>(m.columns.2),
+            SIMD4<Float>(m.columns.3)
+        )
+        return Transform(matrix: singlePrecision)
+    }
+}
+
 #endif

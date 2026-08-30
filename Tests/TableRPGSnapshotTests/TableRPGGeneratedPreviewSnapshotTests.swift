@@ -34,6 +34,16 @@ struct TableRPGGeneratedPreviewSnapshotTests {
         }
     }
 
+    // snapshot-root: TableRPG::ViewerRootView
+    @Test("ViewerRootView")
+    func snapshotViewerRootView() async throws {
+        try await assertPreviewSnapshot("ViewerRootView") {
+            ManagedNavigationStack {
+                TableRPG.ViewerRootView(model: .preview, configuration: .init(), dismissAction: nil)
+            }
+        }
+    }
+
     // snapshot-root: TableRPG::ViewerRouteDestinationView
     @Test("ViewerRouteDestinationView")
     func snapshotViewerRouteDestinationView() async throws {
@@ -74,13 +84,6 @@ struct TableRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: TableRPG::AddEntryButton
-    // REMOVED: `AddEntryButton` no longer exists in TableRPG — it was consolidated into
-    // CoreRPG's shared `SheetEntryAddButton` in a prior audit round (CODE_AUDIT §8.1's
-    // history), but this generated test wasn't regenerated at the time. Pre-existing
-    // staleness, unrelated to this session's fixes; removed here only because it was
-    // blocking the whole test scheme from building.
-
     // snapshot-root: TableRPG::AddLinkButton
     @Test("AddLinkButton")
     func snapshotAddLinkButton() async throws {
@@ -113,19 +116,75 @@ struct TableRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: TableRPG::QuickEditorButton
-    @Test("QuickEditorButton")
-    func snapshotQuickEditorButton() async throws {
-        try await assertPreviewSnapshot("QuickEditorButton") {
-            TableRPG.QuickEditorButton(root: .preview, model: .preview)
-        }
-    }
-
     // snapshot-root: TableRPG::QuickEntryEditor
     @Test("QuickEntryEditor")
     func snapshotQuickEntryEditor() async throws {
         try await assertPreviewSnapshot("QuickEntryEditor") {
             TableRPG.QuickEntryEditor(model: .preview)
+        }
+    }
+
+    // snapshot-root: TableRPG::TableGenerationEditAsSheetButton
+    @Test("TableGenerationEditAsSheetButton")
+    func snapshotTableGenerationEditAsSheetButton() async throws {
+        try await assertPreviewSnapshot("TableGenerationEditAsSheetButton") {
+            TableRPG.TableGenerationEditAsSheetButton(model: .previewFullyDecided, controller: .preview)
+                .padding()
+        }
+    }
+
+    // snapshot-root: TableRPG::TableGenerationFooterView
+    @Test("TableGenerationFooterView")
+    func snapshotTableGenerationFooterView() async throws {
+        try await assertPreviewSnapshot("TableGenerationFooterView") {
+            TableRPG.TableGenerationFooterView(
+                closeAction: {},
+                isEditingOutcomeSheet: false,
+                saveAction: {},
+                sendAction: { _ in }
+            )
+        }
+    }
+
+    // snapshot-root: TableRPG::TableGenerationHeaderView
+    @Test("TableGenerationHeaderView")
+    func snapshotTableGenerationHeaderView() async throws {
+        try await assertPreviewSnapshot("TableGenerationHeaderView") {
+            TableRPG.TableGenerationHeaderView(model: .preview, controller: .preview)
+        }
+    }
+
+    // snapshot-root: TableRPG::TableGenerationResultView
+    @Test("TableGenerationResultView")
+    func snapshotTableGenerationResultView() async throws {
+        try await assertPreviewSnapshot("TableGenerationResultView") {
+            // Multi-select table: only the linked entry is decided so far, the
+            // rest are still undecided — not fully decided yet, stays compact.
+            TableRPG.TableGenerationResultView(model: .previewNested)
+                .padding()
+        }
+    }
+
+    // snapshot-root: TableRPG::TableGenerationRootView
+    @Test("TableGenerationRootView")
+    func snapshotTableGenerationRootView() async throws {
+        try await assertPreviewSnapshot("TableGenerationRootView") {
+            TableRPG.TableGenerationRootView(
+                itemId: TableModel.previewId,
+                controller: .preview,
+                sessionStore: .preview,
+                dismissAction: {}
+            )
+            .preferredColorScheme(.dark)
+        }
+    }
+
+    // snapshot-root: TableRPG::TableGenerationSaveSendButton
+    @Test("TableGenerationSaveSendButton")
+    func snapshotTableGenerationSaveSendButton() async throws {
+        try await assertPreviewSnapshot("TableGenerationSaveSendButton") {
+            TableRPG.TableGenerationSaveSendButton(saveAction: {}, sendAction: { _ in })
+                .padding()
         }
     }
 
@@ -145,8 +204,6 @@ struct TableRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext))
-                .environment(AppFocusModel())
-                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

@@ -42,11 +42,11 @@ struct GameStatisticsControllerTests {
             )
         ]
         let events: [GameStatisticEventSnapshot] = [
-            .fixture(id: deterministicUUID(10), sessionID: sessions[0].id, outcome: .critical, quantity: 2),
-            .fixture(id: deterministicUUID(11), sessionID: sessions[1].id, outcome: .fumble),
+            .fixture(id: deterministicUUID(10), sessionId: sessions[0].id, outcome: .critical, quantity: 2),
+            .fixture(id: deterministicUUID(11), sessionId: sessions[1].id, outcome: .fumble),
             .fixture(
                 id: deterministicUUID(12),
-                sessionID: sessions[0].id,
+                sessionId: sessions[0].id,
                 kind: .contentShared,
                 module: .photo,
                 outcome: .none,
@@ -54,7 +54,7 @@ struct GameStatisticsControllerTests {
             ),
             .fixture(
                 id: deterministicUUID(13),
-                sessionID: sessions[0].id,
+                sessionId: sessions[0].id,
                 kind: .audioPlayed,
                 origin: .sharePlay,
                 module: .audio,
@@ -63,8 +63,8 @@ struct GameStatisticsControllerTests {
             )
         ]
         let participants: [GameStatisticParticipantSnapshot] = [
-            .fixture(id: deterministicUUID(20), sessionID: sessions[0].id, connectedDuration: 5_400),
-            .fixture(id: deterministicUUID(21), sessionID: sessions[1].id, connectedDuration: 3_600)
+            .fixture(id: deterministicUUID(20), sessionId: sessions[0].id, connectedDuration: 5_400),
+            .fixture(id: deterministicUUID(21), sessionId: sessions[1].id, connectedDuration: 3_600)
         ]
         let dataSet = GameStatisticsDataSet(sessions: sessions, participants: participants, events: events)
         var configuration = GameStatisticsDashboardConfiguration.default
@@ -181,19 +181,19 @@ struct GameStatisticsControllerTests {
         let events: [GameStatisticEventSnapshot] = [
             .fixture(
                 id: deterministicUUID(83),
-                sessionID: shortGame.id,
+                sessionId: shortGame.id,
                 quantity: 100,
                 payloadByteCount: 1_000
             ),
             .fixture(
                 id: deterministicUUID(84),
-                sessionID: boundaryGame.id,
+                sessionId: boundaryGame.id,
                 quantity: 2,
                 payloadByteCount: 200
             ),
             .fixture(
                 id: deterministicUUID(85),
-                sessionID: normalGame.id,
+                sessionId: normalGame.id,
                 kind: .contentShared,
                 module: .photo,
                 outcome: .none,
@@ -204,17 +204,17 @@ struct GameStatisticsControllerTests {
         let participants: [GameStatisticParticipantSnapshot] = [
             .fixture(
                 id: deterministicUUID(86),
-                sessionID: shortGame.id,
+                sessionId: shortGame.id,
                 connectedDuration: shortGame.duration
             ),
             .fixture(
                 id: deterministicUUID(87),
-                sessionID: boundaryGame.id,
+                sessionId: boundaryGame.id,
                 connectedDuration: boundaryGame.duration
             ),
             .fixture(
                 id: deterministicUUID(88),
-                sessionID: normalGame.id,
+                sessionId: normalGame.id,
                 connectedDuration: normalGame.duration
             )
         ]
@@ -300,7 +300,7 @@ struct GameStatisticsControllerTests {
             )
             return controller.eventDraft(
                 for: message,
-                sessionID: UUID(),
+                sessionId: UUID(),
                 localParticipantID: masterId,
                 direction: .outgoing,
                 origin: .local

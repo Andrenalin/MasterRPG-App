@@ -8,7 +8,7 @@ import Foundation
 
 #Playground("Chat with out structure") {
     let instructions = """
-            You are an assitent to support the game master for a fanatasy game. 
+            You are an assitent to support the game master for a fanatasy game.
             """
 
     let session = LanguageModelSession(instructions: instructions)
@@ -19,20 +19,25 @@ import Foundation
 
     do {
         let response = try await session.respond(to: prompt)
+#if DEBUG
         print(response.content)
-        
+#endif
     } catch {
         if let error = error as? LanguageModelSession.GenerationError {
+#if DEBUG
             print(error.localizedDescription)
+#endif
         }
+#if DEBUG
         print(error.localizedDescription)
+#endif
     }
 }
 
 
 #Playground("Prompt Builder") {
     let instructions = """
-            Your job is to identify the the type of text, and split into Adventure, Map, Character or Table related text blocks. 
+            Your job is to identify the the type of text, and split into Adventure, Map, Character or Table related text blocks.
             """
     let session = LanguageModelSession(instructions: instructions)
 
@@ -74,36 +79,48 @@ import Foundation
         7. EMPTY ROOM Not used by the brigands.
 """
     }
-    
-    
+
+
     let contentTaggingModel = SystemLanguageModel(useCase: .contentTagging)
 
 
     do {
-        let stream = session.streamResponse(to: prompt, generating: BlockGenModel.self)
+        let stream = session.streamResponse(to: prompt, generating: BlockEntryGenModel.self)
 
         for try await partialResponse in stream {
+#if DEBUG
             print(partialResponse.content)
+#endif
         }
 
         if !contentTaggingModel.isAvailable { return }
         do {
             let session = LanguageModelSession(model: contentTaggingModel)
-            let stream = session.streamResponse(to: prompt, generating: BlockGenModel.self)
+            let stream = session.streamResponse(to: prompt, generating: BlockEntryGenModel.self)
             for try await newTags in stream {
+#if DEBUG
                 print(newTags.content)
+#endif
             }
         } catch {
+#if DEBUG
             print(error.localizedDescription)
+#endif
         }
 
-        
+
     } catch let error as LanguageModelSession.GenerationError {
+#if DEBUG
         print(error.localizedDescription)
+#endif
     } catch let error as LanguageModelSession.ToolCallError {
+#if DEBUG
         print(error.tool)
+#endif
     } catch {
+#if DEBUG
         print(error.localizedDescription)
+#endif
     }
 }
 

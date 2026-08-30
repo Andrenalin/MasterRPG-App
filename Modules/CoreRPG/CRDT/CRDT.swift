@@ -24,13 +24,26 @@ public struct CRDT<T: Codable> {
 
     public var wrappedValue: T {
         get { _crdtValue.value }
-        set {
-            if let textValue = newValue as? String, let data = textValue.data(using: .utf8), let value = try? JSONDecoder().decode(LWWRegister<String, T>.self, from: data) {
-                _crdtValue = value
-            } else {
-                _crdtValue.value = newValue
-            }
+        set { _crdtValue.value = newValue }
+    }
+
+    /// Explicitly restores the register's full serialized state (actor ID,
+    /// timestamp, value) from its `rawValue` JSON form — e.g. re-hydrating a
+    /// previously exported `CRDT`. Distinct from the plain setter above, which
+    /// always performs a normal, tracked LWW value update: this is a
+    /// deserialize, not a user edit, so it replaces the register wholesale
+    /// (mirroring `init(string:defaultValue:)`) instead of going through LWW
+    /// history. Previously the plain setter itself special-cased this when
+    /// `T == String` and the new value happened to parse as the register's own
+    /// JSON schema — silently discarding provenance on what looked like an
+    /// ordinary text edit. No-op if `string` isn't valid serialized register
+    /// JSON. See CODE_AUDIT_9 §5.6.
+    public mutating func restore(from string: String) {
+        guard let data = string.data(using: .utf8),
+              let value = try? JSONDecoder().decode(LWWRegister<String, T>.self, from: data) else {
+            return
         }
+        _crdtValue = value
     }
 
     private static func converter(initialValue: String, defaultValue: T) -> LWWRegister<String, T> {

@@ -73,12 +73,15 @@ public struct ImageOverlayButton: View {
             .imageScale(.medium)
             .padding(8)
 #if os(iOS)
-            .background(.ultraThinMaterial)
             .foregroundStyle(disabled ? Color.secondary : Color.teal)
             .hoverEffect(.highlight, isEnabled: !disabled)
-#endif
+            // `.glassEffectAll` composits shape/shadow internally, replacing the previous
+            // `.background(.ultraThinMaterial)` + `.clipShape` + `.shadow` chain. See CODE_AUDIT_9 §8.5.
+            .glassEffectAll(.regular, in: .circle)
+#else
             .clipShape(.circle)
             .shadow(color: .primary, radius: 4)
+#endif
 #endif
     }
 }

@@ -32,6 +32,14 @@ public extension NSImage {
         
         return imageRep.representation(using: .jpeg, properties: options)
     }
+
+    /// Mirrors `UIImage.pngData()`'s signature so `AKImage.pngRepresentationData()` can call
+    /// through uniformly on every platform. See CODE_AUDIT_9 §9.4.
+    func pngData() -> Data? {
+        guard let tiff = tiffRepresentation else { return nil }
+        guard let imageRep = NSBitmapImageRep(data: tiff) else { return nil }
+        return imageRep.representation(using: .png, properties: [:])
+    }
 }
 
 public extension AKImage {
@@ -230,17 +238,40 @@ public extension AKImage {
     }
 }
 
+/// Thrown by `AKImage.pngRepresentationData()` when PNG encoding fails.
+public struct AKImageEncodingError: Error, Sendable {
+    public init() {}
+}
+
+public extension AKImage {
+    /// Cross-platform PNG encode, throwing instead of returning an optional so AppIntent
+    /// `Entity` conformances (`PdfEntity`, `PhotoEntity`, `SpaceEntity`) don't each need their
+    /// own local error type and `#if canImport(UIKit)/#elseif canImport(AppKit)` branch — the
+    /// platform difference (`UIImage.pngData()` is native; `NSImage.pngData()` is the bridge
+    /// extension above) is resolved once, here. See CODE_AUDIT_9 §9.4.
+    func pngRepresentationData() throws -> Data {
+        guard let data = pngData() else {
+            throw AKImageEncodingError()
+        }
+        return data
+    }
+}
+
 /// Named JPEG compression-quality tiers, so each `jpegData(compressionQuality:)`
 /// call site documents the tradeoff it's making instead of a bare, unexplained
-/// float. The three values already in use across the app genuinely serve
-/// different purposes — this doesn't unify them to one number, only names the
-/// ones that exist.
+/// float. The values already in use across the app genuinely serve different
+/// purposes — this doesn't unify them to one number, only names the ones that exist.
 public enum JPEGQuality {
     /// Bandwidth-constrained real-time transport (e.g. mirroring a game screen
     /// over the network), where small size matters more than fidelity.
     public static let transport: CGFloat = 0.5
     /// Disk-cached thumbnails — balances file size against visible quality.
     public static let cachedThumbnail: CGFloat = 0.8
+    /// A user-provided import clamped down to a bounded pixel size before it enters
+    /// the app's working copy (e.g. `ItemProviderImporter.downsampledIfNeeded`) —
+    /// higher fidelity than a thumbnail since it may still be viewed at near-full
+    /// size, but not the export tier since the source was already downsampled.
+    public static let downsampledImport: CGFloat = 0.85
     /// User-facing exports/edits, where fidelity matters more than size.
     public static let export: CGFloat = 0.9
 }

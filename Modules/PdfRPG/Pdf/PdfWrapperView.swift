@@ -99,55 +99,77 @@ struct PdfWrapperView: CustomViewRepresentable {
     func updateView(_ pdfView: PDFView, context: Context) {
         pdfView.document?.delegate = context.coordinator
         pdfView.delegate = context.coordinator
-        
-        if !searchModel.pdfSearching && !searchModel.searchText.isEmpty {
-            let searchText = searchModel.searchText
-            Task { @MainActor in
-                searchModel.pdfSearching = true
-                searchModel.isSearching = true
+        context.coordinator.pdfView = pdfView
 
-                let matches = pdfView.document?.findString(searchText, withOptions: .caseInsensitive)
-                matches?.forEach { match in
-                    match.color = AKColor.yellow
-                }
-                if let match = matches?.first {
-                    pdfView.go(to: match)
-                }
-                pdfView.highlightedSelections = matches
-                Task { @MainActor in
-                    if let matches {
-                        searchModel.matches = matches
-                        searchModel.currentIndex = 0
-                        searchModel.setSearchMatch = { matches, index in
-                            let selection = matches[index]
-                            pdfView.go(to: selection)
-                            selection.color = AKColor.clear
-                            var updatedMatches = matches
-                            updatedMatches[index] = selection
-                            pdfView.highlightedSelections = updatedMatches
-                            Task {
-                                try? await Task.sleep(for: Self.pdfViewNavigationDelay)
-                                selection.color = AKColor.yellow
-                                updatedMatches[index] = selection
-                                pdfView.highlightedSelections = updatedMatches
-                            }
-                        }
-                    }
-                    searchModel.isSearching = false
-                }
-            }
+        if !searchModel.pdfSearching && !searchModel.searchText.isEmpty {
+            searchModel.pdfSearching = true
+            searchModel.isSearching = true
+            // `beginFindString(_:withOptions:)` searches asynchronously off the main
+            // thread, unlike `findString(_:withOptions:)` (used previously), which
+            // blocks the caller for the full scan — a real hitch on a large,
+            // multi-page rulebook PDF even inside a `Task { @MainActor in }`, since
+            // that only defers scheduling and doesn't move the work off-thread.
+            // Matches arrive one at a time via `Coordinator.didMatchString(_:)`,
+            // finalized in `documentDidEndDocumentFind(_:)`. See CODE_AUDIT_9 §5.4.
+            context.coordinator.beginSearch(searchModel.searchText)
         }
     }
-    
+
     func makeCoordinator() -> Coordinator {
         return Coordinator(parent: self)
     }
-    
+
     final class Coordinator: NSObject, PDFViewDelegate, PDFDocumentDelegate {
         let parent: PdfWrapperView
-        
+        weak var pdfView: PDFView?
+        /// Accumulated across `didMatchString(_:)` calls for the search currently
+        /// in flight; PDFKit delivers these as one sequential scan, so a plain
+        /// (non-actor-isolated) array is safe here — no two matches for the same
+        /// search arrive concurrently. See CODE_AUDIT_9 §5.4.
+        private var pendingMatches: [PDFSelection] = []
+
         init(parent: PdfWrapperView) {
             self.parent = parent
+        }
+
+        @MainActor func beginSearch(_ searchText: String) {
+            pendingMatches = []
+            pdfView?.document?.beginFindString(searchText, withOptions: .caseInsensitive)
+        }
+
+        func didMatchString(_ instance: PDFSelection) {
+            instance.color = AKColor.yellow
+            pendingMatches.append(instance)
+        }
+
+        func documentDidEndDocumentFind(_ notification: Notification) {
+            let matches = pendingMatches
+            let pdfView = pdfView
+            let searchModel = parent.searchModel
+            Task { @MainActor in
+                guard let pdfView else { return }
+                if let match = matches.first {
+                    pdfView.go(to: match)
+                }
+                pdfView.highlightedSelections = matches
+                searchModel.matches = matches
+                searchModel.currentIndex = 0
+                searchModel.setSearchMatch = { matches, index in
+                    let selection = matches[index]
+                    pdfView.go(to: selection)
+                    selection.color = AKColor.clear
+                    var updatedMatches = matches
+                    updatedMatches[index] = selection
+                    pdfView.highlightedSelections = updatedMatches
+                    Task {
+                        try? await Task.sleep(for: PdfWrapperView.pdfViewNavigationDelay)
+                        selection.color = AKColor.yellow
+                        updatedMatches[index] = selection
+                        pdfView.highlightedSelections = updatedMatches
+                    }
+                }
+                searchModel.isSearching = false
+            }
         }
     }
 }

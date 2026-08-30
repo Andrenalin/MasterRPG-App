@@ -23,21 +23,29 @@ extension CacheController: ImageCacheControllable {
         guard let fileUrlDataController, let fileUrl = item.fileUrl  else { return }
         let trace = PerformanceTrace.begin("ImageDecode", itemId: itemId, kind: "full")
         defer { trace?.end() }
-        let image: AKImage?
-        if let data = fileUrl.data {
-            image = AKImage(data: data)
-        } else if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
-            image = AKImage(data: data)
-        } else {
-            image = await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
-                guard let url else { return nil }
-                return AKImage(contentsOfFile: url.relativePath)
-            }
-        }
+        let image = await Self.decodedImage(for: fileUrl, fileUrlDataController: fileUrlDataController)
         if let image {
             await imageCacheController.setObject(image, for: itemId)
         } else {
             Logger.cacheController.warning("Cannot get image \(itemId, privacy: .public)")
+        }
+    }
+
+    /// Full-resolution image decompression is a blocking, CPU-bound call for large source
+    /// images (map backgrounds, character portraits) — `@concurrent` keeps it off the main
+    /// actor, matching the pattern already used by `AudioPlayerSession.setActive()`.
+    /// See CODE_AUDIT_9 §7.2.
+    @concurrent
+    private static func decodedImage(for fileUrl: FileUrl, fileUrlDataController: FileUrlDataController) async -> AKImage? {
+        if let data = fileUrl.data {
+            return AKImage(data: data)
+        } else if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
+            return AKImage(data: data)
+        } else {
+            return await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
+                guard let url else { return nil }
+                return AKImage(contentsOfFile: url.relativePath)
+            }
         }
     }
 

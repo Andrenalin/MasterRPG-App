@@ -719,6 +719,48 @@ struct FoundryVTTImportReaderTests {
             _ = try await task.value
         }
     }
+
+    @Test("A ZIP-packaged system reuses the archive parsed for the document decode when deriving its RuleRPG package")
+    func systemPackageReusesTheParsedArchive() async throws {
+        // Given: a ZIP-archived system (not a directory — every other system-package test in this
+        // file/target reads from an extracted directory, where this reuse path never engages), so
+        // this specifically exercises FoundryVTTImportReader.read(from:)'s
+        // FoundrySystemPackageReader.read(reusingArchive:sourceSHA256:) fast path. See CODE_AUDIT_9 §7.3.
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manifest = #"""
+        {
+          "id": "ds4",
+          "title": "Synthetic DS4",
+          "version": "1.0.0",
+          "packs": [
+            { "name": "spells", "label": "Spells", "path": "./packs/spells", "type": "Item", "system": "ds4" }
+          ]
+        }
+        """#
+        let rule = #"""
+        { "_id": "spell001", "name": "Spark", "type": "spell", "system": { "description": "" } }
+        """#
+        let table = FoundryLevelDBFixture.table(records: [
+            FoundryLevelDBRecord(key: "!items!spell001", sequence: 1, operation: .value, value: Data(rule.utf8)),
+        ])
+        let zipURL = directory.appending(path: "ds4.zip")
+        try makeFoundryZIPArchive(entries: [
+            (path: "system.json", data: Data(manifest.utf8)),
+            (path: "packs/spells/000005.ldb", data: table),
+        ]).write(to: zipURL)
+
+        // When
+        let package = try await FoundryVTTImportReader().read(from: zipURL)
+
+        // Then
+        #expect(package.kind == .system)
+        let rulePackage = try #require(package.rulePackage)
+        #expect(rulePackage.manifest.id == "ds4")
+        #expect(rulePackage.manifest.version == "1.0.0")
+        #expect(rulePackage.rules.first?.name == "Spark")
+        #expect(rulePackage.diagnostics.contains { $0.code == "rules-decoded" })
+    }
 }
 
 struct BridgeContractTestCase: Sendable, CustomTestStringConvertible {
@@ -868,4 +910,91 @@ private func manifestVarint(_ value: UInt64) -> [UInt8] {
     }
     result.append(UInt8(value))
     return result
+}
+
+/// A minimal stored-entries-only ZIP writer, just enough to exercise the ZIP-archive branch of
+/// `FoundryVTTImportReader.read(from:)` (every other system-package fixture in this target reads
+/// from an extracted directory instead). Mirrors `FoundryZIPArchiveTests.swift`'s own fixture
+/// writer; kept separate since that one is file-private to its own file.
+private func makeFoundryZIPArchive(entries: [(path: String, data: Data)]) -> Data {
+    var localRecords = Data()
+    var centralDirectory = Data()
+
+    for entry in entries {
+        let pathData = Data(entry.path.utf8)
+        let checksum = foundryZIPFixtureCRC32(of: entry.data)
+        let localOffset = UInt32(localRecords.count)
+
+        localRecords.appendFoundryZIPLittleEndian(UInt32(0x0403_4B50))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(20))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(0x0800))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(0))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(0))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(0))
+        localRecords.appendFoundryZIPLittleEndian(checksum)
+        localRecords.appendFoundryZIPLittleEndian(UInt32(entry.data.count))
+        localRecords.appendFoundryZIPLittleEndian(UInt32(entry.data.count))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(pathData.count))
+        localRecords.appendFoundryZIPLittleEndian(UInt16(0))
+        localRecords.append(pathData)
+        localRecords.append(entry.data)
+
+        centralDirectory.appendFoundryZIPLittleEndian(UInt32(0x0201_4B50))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(20))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(20))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0x0800))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(checksum)
+        centralDirectory.appendFoundryZIPLittleEndian(UInt32(entry.data.count))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt32(entry.data.count))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(pathData.count))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt16(0))
+        centralDirectory.appendFoundryZIPLittleEndian(UInt32(0))
+        centralDirectory.appendFoundryZIPLittleEndian(localOffset)
+        centralDirectory.append(pathData)
+    }
+
+    var archive = localRecords
+    let centralDirectoryOffset = UInt32(archive.count)
+    archive.append(centralDirectory)
+    archive.appendFoundryZIPLittleEndian(UInt32(0x0605_4B50))
+    archive.appendFoundryZIPLittleEndian(UInt16(0))
+    archive.appendFoundryZIPLittleEndian(UInt16(0))
+    archive.appendFoundryZIPLittleEndian(UInt16(entries.count))
+    archive.appendFoundryZIPLittleEndian(UInt16(entries.count))
+    archive.appendFoundryZIPLittleEndian(UInt32(centralDirectory.count))
+    archive.appendFoundryZIPLittleEndian(centralDirectoryOffset)
+    archive.appendFoundryZIPLittleEndian(UInt16(0))
+    return archive
+}
+
+private func foundryZIPFixtureCRC32(of data: Data) -> UInt32 {
+    var checksum = UInt32.max
+    for byte in data {
+        checksum ^= UInt32(byte)
+        for _ in 0..<8 {
+            let mask = UInt32(bitPattern: -Int32(checksum & 1))
+            checksum = checksum >> 1 ^ (0xEDB8_8320 & mask)
+        }
+    }
+    return checksum ^ UInt32.max
+}
+
+private extension Data {
+    mutating func appendFoundryZIPLittleEndian(_ value: UInt16) {
+        append(UInt8(truncatingIfNeeded: value))
+        append(UInt8(truncatingIfNeeded: value >> 8))
+    }
+
+    mutating func appendFoundryZIPLittleEndian(_ value: UInt32) {
+        append(UInt8(truncatingIfNeeded: value))
+        append(UInt8(truncatingIfNeeded: value >> 8))
+        append(UInt8(truncatingIfNeeded: value >> 16))
+        append(UInt8(truncatingIfNeeded: value >> 24))
+    }
 }

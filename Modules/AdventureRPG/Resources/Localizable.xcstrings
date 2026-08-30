@@ -642,6 +642,7 @@
       }
     },
     "Quick Editor" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

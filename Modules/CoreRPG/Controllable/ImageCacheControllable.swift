@@ -199,41 +199,83 @@ extension ImageCacheControllable {
 
 /// Observable cache for synchronous image access in SwiftUI views
 /// This bridges the async ImageCacheController with SwiftUI's synchronous observation
+///
+/// Bounded LRU by count — unlike the actor-isolated `ImageCacheController` (NSCache-backed,
+/// 2,500-object/256MB bound — see `ObjectCache`), this cache used to be a plain, unevicted
+/// dictionary that only shrank on item deletion, growing unboundedly for the app session's
+/// lifetime (every full-resolution image ever displayed stayed resident). See CODE_AUDIT_9 §7.1.
 @MainActor @Observable
 public final class ObservableImageCache: Sendable {
     public init() {}
-    
+
+    /// Full images are the expensive ones (decompressed, uncapped resolution), so this stays
+    /// small; thumbnails are cheap and shown in list rows, so a larger bound is fine.
+    private static let imageCountLimit = 120
+    private static let thumbnailCountLimit = 400
+
     private var imageCache: [UUID: AKImage] = [:]
+    private var imageOrder: [UUID] = []
     private var thumbnailCache: [UUID: AKImage] = [:]
-    
+    private var thumbnailOrder: [UUID] = []
+
     public func image(for itemId: UUID) -> AKImage? {
         imageCache[itemId]
     }
-    
+
     public func thumbnail(for itemId: UUID) -> AKImage? {
         thumbnailCache[itemId]
     }
-    
+
     public func setImage(_ image: AKImage?, for itemId: UUID) {
+        guard let image else {
+            removeImage(for: itemId)
+            return
+        }
+        touch(itemId, in: &imageOrder, isNew: imageCache[itemId] == nil)
         imageCache[itemId] = image
+        evictLeastRecentlyUsed(cache: &imageCache, order: &imageOrder, limit: Self.imageCountLimit)
     }
-    
+
     public func setThumbnail(_ image: AKImage?, for itemId: UUID) {
+        guard let image else {
+            removeThumbnail(for: itemId)
+            return
+        }
+        touch(itemId, in: &thumbnailOrder, isNew: thumbnailCache[itemId] == nil)
         thumbnailCache[itemId] = image
+        evictLeastRecentlyUsed(cache: &thumbnailCache, order: &thumbnailOrder, limit: Self.thumbnailCountLimit)
     }
-    
+
     public func removeImage(for itemId: UUID) {
         imageCache.removeValue(forKey: itemId)
+        imageOrder.removeAll { $0 == itemId }
     }
-    
+
     public func removeThumbnail(for itemId: UUID) {
         thumbnailCache.removeValue(forKey: itemId)
+        thumbnailOrder.removeAll { $0 == itemId }
     }
-    
+
     public func reset(for itemId: UUID, includeImage: Bool = true) {
         if includeImage {
             removeImage(for: itemId)
         }
         removeThumbnail(for: itemId)
+    }
+
+    /// Marks `itemId` as most-recently-used, appending it to `order` if it isn't tracked yet.
+    private func touch(_ itemId: UUID, in order: inout [UUID], isNew: Bool) {
+        if !isNew {
+            order.removeAll { $0 == itemId }
+        }
+        order.append(itemId)
+    }
+
+    /// Drops the least-recently-used entries until `cache`/`order` are back at `limit`.
+    private func evictLeastRecentlyUsed(cache: inout [UUID: AKImage], order: inout [UUID], limit: Int) {
+        while order.count > limit {
+            let oldest = order.removeFirst()
+            cache.removeValue(forKey: oldest)
+        }
     }
 }

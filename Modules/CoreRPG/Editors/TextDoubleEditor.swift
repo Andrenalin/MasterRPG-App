@@ -9,17 +9,17 @@ public final class EditIdentifierModel<Value: Equatable> {
         self._value = value.wrappedValue
         self.bindingValue = value
     }
-    
+
     public init(valueId: UUID = UUID(), value: Value, save: ((UUID, Value) -> Void)? = nil) {
         self.valueId = valueId
         self._value = value
         self._save = save
     }
-    
+
     private var bindingValue: Binding<Value>?
     private var _value: Value
     private var _save: ((UUID, Value) -> Void)?
-    
+
     public private(set) var valueId: UUID
     public var value: Value {
         get {
@@ -37,14 +37,14 @@ public final class EditIdentifierModel<Value: Equatable> {
             }
         }
     }
-    
+
     public func reset(valueId: UUID, value: Value, saveHandler: ((UUID, Value) -> Void)?) {
         //save()
         self.valueId = valueId
         self.value = value
         self._save = saveHandler
     }
-    
+
     public func save() {
         _save?(valueId, value)
     }
@@ -69,10 +69,17 @@ public struct TextDoubleEditor: View {
 
     @FocusState private var focusState: Bool
     @State private var text: String = ""
-    
+
     public var body: some View {
         LabeledContent {
-            textInputView
+            TextDoubleEditorTextField(
+                model: model,
+                title: title,
+                prompt: prompt,
+                bundle: bundle,
+                text: $text,
+                focusState: $focusState
+            )
         } label: {
             Label { Text(title, bundle: bundle) } icon: { Image(systemName: icon).imageScale(.large) }
         }
@@ -81,25 +88,40 @@ public struct TextDoubleEditor: View {
             model.save()
         }
         .onChange(of: model.valueId, initial: true) {
-            text = format(number: model.value)
+            text = Self.format(number: model.value)
         }
         .onChange(of: model.value) {
-            text = format(number: model.value)
+            text = Self.format(number: model.value)
             model.save()
         }
-        
+
         LabeledContent {
-            sliderView
+            TextDoubleEditorSlider(model: model, title: title, bundle: bundle, range: range)
         } label: {
 #if os(macOS)
             Text(title, bundle: bundle)
 #endif
         }
     }
+
+    static func format(number: Double) -> String {
+        number.formatted(.number.precision(.fractionLength(1)))
+    }
 }
 
-private extension TextDoubleEditor {
-    var textInputView: some View {
+/// Extracted from a `TextDoubleEditor` computed property: a dedicated `View` struct so typing
+/// in the text field doesn't re-evaluate the slider section's body (and vice versa) — computed
+/// properties share the parent's invalidation boundary, dedicated `View` structs don't.
+/// See CODE_AUDIT_9 §8.1.
+private struct TextDoubleEditorTextField: View {
+    let model: EditIdentifierModel<Double>
+    let title: LocalizedStringKey
+    let prompt: LocalizedStringKey
+    let bundle: Bundle?
+    @Binding var text: String
+    var focusState: FocusState<Bool>.Binding
+
+    var body: some View {
         TextField(text: $text, prompt: Text(prompt, bundle: bundle)) {
             Text(title, bundle: bundle)
         }
@@ -111,7 +133,7 @@ private extension TextDoubleEditor {
         .numericInput($text, includeDecimal: true)
         .labelsHidden()
         .submitLabel(.next)
-        .focused($focusState)
+        .focused(focusState)
         .onSubmit {
             // `wholeMatch(of:)` requires the entire string to match, unlike
             // `Double(_:format:)`'s prefix-matching parse — see Calculator.swift's
@@ -122,9 +144,15 @@ private extension TextDoubleEditor {
             model.save()
         }
     }
+}
 
-    @ViewBuilder var sliderView: some View {
-        @Bindable var model = model
+private struct TextDoubleEditorSlider: View {
+    @Bindable var model: EditIdentifierModel<Double>
+    let title: LocalizedStringKey
+    let bundle: Bundle?
+    let range: ClosedRange<Double>
+
+    var body: some View {
 #if !os(tvOS)
         Slider(
             value: $model.value,
@@ -139,10 +167,6 @@ private extension TextDoubleEditor {
 #else
         EmptyView()
 #endif
-    }
-
-    func format(number: Double) -> String {
-        number.formatted(.number.precision(.fractionLength(1)))
     }
 }
 

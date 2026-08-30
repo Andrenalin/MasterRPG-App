@@ -87,14 +87,14 @@ extension LinkController: LinkControllable {
             if photoRoot.linkControllable.validateLink(itemId: photoId) {
                 return photoId
             } else {
-                Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+                Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
                 return nil
             }
         }
 
         if let photoId = replacedItem.photoId {
             if !photoRoot.linkControllable.validateLink(itemId: photoId) {
-                Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+                Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
         }
@@ -104,14 +104,14 @@ extension LinkController: LinkControllable {
 
             if let diceId = validatedEntry.diceId {
                 if !diceRoot.linkControllable.validateLink(itemId: diceId) {
-                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
+                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .private) is gone. Reset DiceId, no recovery possible.")
                     validatedEntry.diceId = nil
                 }
             }
 
             if let valueId = validatedEntry.valueId {
                 if !validateLink(itemId: valueId) {
-                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .public) --> Value \(valueId, privacy: .public) is gone. Reset ValueId, no recovery possible.")
+                    Logger.linkController.warning("Value: \(replacedItem.name, privacy: .private) --> Value \(valueId, privacy: .private) is gone. Reset ValueId, no recovery possible.")
                     validatedEntry.valueId = nil
                 }
             }
@@ -127,7 +127,7 @@ extension LinkController: LinkControllable {
             }
         }
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Value: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.info("Value: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)
@@ -144,7 +144,7 @@ extension LinkController: LinkControllable {
                 guard child.groupId == nil else { continue }
                 if let parentId = child.parentId {
                     if parentId != item.id {
-                        Logger.linkController.info("Value: \(child.name, privacy: .public) has a different parentId. It has \(itemController.itemOrEmpty(for: parentId).name) and now \(item.name) claim to be the parent")
+                        Logger.linkController.info("Value: \(child.name, privacy: .private) has a different parentId. It has \(itemController.itemOrEmpty(for: parentId).name) and now \(item.name) claim to be the parent")
                     }
                 } else {
                     let updateChild = child.copy()

@@ -95,7 +95,13 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
             case .twenty:
                 return 20
             case let .number(sides):
-                if sides < 2 {
+                // `sides == 1` is a valid "always rolls 1" die (a common
+                // guaranteed-minimum mechanic in imported game systems) — only
+                // clamp genuinely invalid (≤0) values up. Previously any
+                // `sides < 2` was doubled to a coin flip, silently turning a
+                // deterministic "d1" into a 50% chance of rolling 2. See
+                // CODE_AUDIT_9 §5.3.
+                if sides < 1 {
                     return 2
                 }
                 return sides

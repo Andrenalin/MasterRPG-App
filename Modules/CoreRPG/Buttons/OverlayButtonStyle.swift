@@ -13,11 +13,12 @@ public struct ImageOverlayButtonStyle: ButtonStyle {
             .glassBackgroundEffect()
             .hoverEffect(.highlight, isEnabled: true)
 #else
-            .background(.ultraThinMaterial)
-            .shadow(radius: 10)
-            .clipShape(Circle())
+            // `.glassEffectAll` composits shape/shadow internally, so the previous manual
+            // `.background(.ultraThinMaterial)` + pre-clip `.shadow` (clipped away before it could
+            // render) + `.clipShape` + post-clip `.shadow` chain collapses to this one call.
+            // See CODE_AUDIT_9 §8.4/§8.5.
+            .glassEffectAll(.regular, in: .circle)
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .shadow(color: Color.black.opacity(configuration.isPressed ? 0 : 0.2), radius: 10, x: 10, y: 10)
 #endif
     }
 }

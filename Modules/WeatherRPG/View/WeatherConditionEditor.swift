@@ -17,8 +17,8 @@ struct WeatherConditionEditor: View {
 
     var body: some View {
         Section {
-            timeEditorView
-            cloudsEditorView
+            WeatherTimeEditor(model: model)
+            WeatherCloudsEditor(model: cloudEditModel)
         } header: {
 #if os(macOS)
             Divider()
@@ -44,10 +44,14 @@ struct WeatherConditionEditor: View {
     }
 }
 
-private extension WeatherConditionEditor {
-    @ViewBuilder var timeEditorView: some View {
-        @Bindable var model = model
+/// Extracted from `WeatherConditionEditor` computed properties: dedicated `View` structs so
+/// dragging the time slider doesn't re-evaluate the clouds picker's body (and vice versa) —
+/// computed properties share the parent's invalidation boundary, dedicated `View` structs
+/// don't. See CODE_AUDIT_9 §8.1.
+private struct WeatherTimeEditor: View {
+    @Bindable var model: WeatherModel
 
+    var body: some View {
         LabeledContent {
 #if os(tvOS)
             Text(formattedTime)
@@ -64,15 +68,19 @@ private extension WeatherConditionEditor {
         }
     }
 
-    @ViewBuilder var cloudsEditorView: some View {
-        ValuePickerEditor(model: cloudEditModel, allCategories: Cloud.Thickness.allCases, title: "Clouds", bundle: .module) { thickness in
-            Text(thickness.localizedTitle)
-        }
-    }
-
-    var formattedTime: String {
+    private var formattedTime: String {
         let start = Calendar.current.startOfDay(for: Date.now)
         let advanced = start.addingTimeInterval(model.time * 24 * 60 * 60)
         return advanced.formatted(date: .omitted, time: .shortened)
+    }
+}
+
+private struct WeatherCloudsEditor: View {
+    let model: EditIdentifierModel<Cloud.Thickness>
+
+    var body: some View {
+        ValuePickerEditor(model: model, allCategories: Cloud.Thickness.allCases, title: "Clouds", bundle: .module) { thickness in
+            Text(thickness.localizedTitle)
+        }
     }
 }

@@ -181,7 +181,9 @@ struct SharingControlActionsKey: EnvironmentKey {
         Color.blue
             .toolbar {
                 ControlSharingView(alignment: .bottomTrailing) {
+#if DEBUG
                     print("")
+#endif
                 }
                 .environment(\.sharingControlActions, SharingControlActions(control: { controls }, update: { updated in controls = updated }))
             }

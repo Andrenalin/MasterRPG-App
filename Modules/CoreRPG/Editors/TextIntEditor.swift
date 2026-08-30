@@ -22,23 +22,23 @@ public struct TextIntEditor: View {
         let uppperBound = range.upperBound <= range.lowerBound ? range.lowerBound + 1 : range.upperBound
         self.range = ClosedRange(uncheckedBounds: (Double(range.lowerBound), Double(uppperBound)))
     }
-    
+
     let model: EditIdentifierModel<Double>
     let title: LocalizedStringKey
     let icon: String
     let prompt: LocalizedStringKey
     let bundle: Bundle?
     let range: ClosedRange<Double>
-    
+
     @FocusState private var focusState: Bool
     @State private var text: String = ""
-    
+
     public var body: some View {
         HStack {
-            textInputView
+            TextIntEditorTextField(model: model, title: title, prompt: prompt, bundle: bundle, text: $text, focusState: $focusState)
                 .frame(maxWidth: 64, alignment: .leading)
-            
-            sliderView
+
+            TextIntEditorSlider(model: model, title: title, bundle: bundle, range: range)
         }
         .onChange(of: focusState, initial: false) {
             guard focusState == false else { return }
@@ -54,8 +54,19 @@ public struct TextIntEditor: View {
     }
 }
 
-private extension TextIntEditor{
-    var textInputView: some View {
+/// Extracted from a `TextIntEditor` computed property: a dedicated `View` struct so typing in
+/// the text field doesn't re-evaluate the slider section's body (and vice versa) — computed
+/// properties share the parent's invalidation boundary, dedicated `View` structs don't.
+/// See CODE_AUDIT_9 §8.1.
+private struct TextIntEditorTextField: View {
+    let model: EditIdentifierModel<Double>
+    let title: LocalizedStringKey
+    let prompt: LocalizedStringKey
+    let bundle: Bundle?
+    @Binding var text: String
+    var focusState: FocusState<Bool>.Binding
+
+    var body: some View {
         TextField(text: $text, prompt: Text(prompt, bundle: bundle)) {
             Text(title, bundle: bundle)
         }
@@ -67,7 +78,7 @@ private extension TextIntEditor{
             .numericInput($text, includeDecimal: false)
             .labelsHidden()
             .submitLabel(.next)
-            .focused($focusState)
+            .focused(focusState)
             .onSubmit {
                 if let value = Int(text) {
                     model.value <=> Double(value)
@@ -75,9 +86,15 @@ private extension TextIntEditor{
                 model.save()
             }
     }
-    
-    @ViewBuilder var sliderView: some View {
-        @Bindable var model = model
+}
+
+private struct TextIntEditorSlider: View {
+    @Bindable var model: EditIdentifierModel<Double>
+    let title: LocalizedStringKey
+    let bundle: Bundle?
+    let range: ClosedRange<Double>
+
+    var body: some View {
 #if !os(tvOS)
         Slider(
             value: $model.value,

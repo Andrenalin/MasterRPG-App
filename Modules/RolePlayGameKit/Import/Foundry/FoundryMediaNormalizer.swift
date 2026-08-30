@@ -228,7 +228,7 @@ private extension FoundryMediaNormalizer {
             throw FoundryMediaNormalizationError.jpegEncodingFailed
         }
         var properties: [CFString: Any] = [
-            kCGImageDestinationLossyCompressionQuality: 0.9,
+            kCGImageDestinationLossyCompressionQuality: JPEGQuality.export,
         ]
         if let sourceProperties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
            let orientation = sourceProperties[kCGImagePropertyOrientation] {

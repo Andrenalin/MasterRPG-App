@@ -424,6 +424,7 @@
       }
     },
     "Adventure: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -868,6 +869,7 @@
       }
     },
     "Blocks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -884,6 +886,7 @@
       }
     },
     "Campaign: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1045,6 +1048,7 @@
       }
     },
     "Context" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1209,6 +1213,7 @@
       }
     },
     "Delete answers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1225,6 +1230,7 @@
       }
     },
     "Delete Answers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1893,6 +1899,7 @@
       }
     },
     "Generating block" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2285,6 +2292,7 @@
       }
     },
     "No Blocks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2317,6 +2325,7 @@
       }
     },
     "Not selected" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2714,6 +2723,7 @@
       }
     },
     "Restore" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2747,6 +2757,7 @@
       }
     },
     "Scenario: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2811,6 +2822,7 @@
       }
     },
     "Selected" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2894,6 +2906,7 @@
       }
     },
     "Sheet Blocks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2910,6 +2923,7 @@
       }
     },
     "Sheet blocks and generated blocks will appear here." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3071,6 +3085,7 @@
       }
     },
     "Take" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

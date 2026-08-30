@@ -122,7 +122,7 @@ final class GameStatisticsModel: Sendable {
 
         let draft = statisticsController.eventDraft(
             for: model,
-            sessionID: activeSessionID,
+            sessionId: activeSessionID,
             localParticipantID: activeLocalParticipantID,
             direction: direction,
             origin: origin,

@@ -8,11 +8,6 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     let game: GameTableModel
 
     @MainActor
-    func updateCursor(_ proposedDestination: EquipmentIdentifier?, valid: Bool = false) {
-        game.renderer.cursorTransform = nil
-    }
-
-    @MainActor
     mutating func update(interaction: TabletopKit.TabletopInteraction) {
         var destination = interaction.value.proposedDestination?.equipmentID
 
@@ -29,7 +24,14 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
             onPhaseEnded(interaction: interaction)
         }
 
-        game.renderer.updateCursor(destination)
+        // `interaction.value.pose` is the live table-space pose of the
+        // dragged equipment — exactly where it would land right now — so
+        // it doubles as the cursor's preview position/orientation while a
+        // destination is proposed. Previously this always passed `nil`,
+        // so the cursor mesh (built in `GameRenderer`) never rendered.
+        // See CODE_AUDIT_9 §5.2.
+        let cursorTransform = destination != nil ? interaction.value.pose.cursorTransform : nil
+        game.renderer.updateCursor(cursorTransform)
     }
 
     @MainActor

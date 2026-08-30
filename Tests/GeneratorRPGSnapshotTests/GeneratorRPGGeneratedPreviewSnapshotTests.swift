@@ -41,95 +41,12 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
                 .environment(FoundationManager())
         }
     }
-    
+
     // snapshot-root: GeneratorRPG::TokenUsageBar
     @Test("TokenUsageBar")
     func snapshotTokenUsageBar() async throws {
         try await assertPreviewSnapshot("TokenUsageBar") {
             GeneratorRPG.TokenUsageBar(currentTokenCount: 4_200, maxContextSize: 8_192, tokenUsageFraction: 0.51)
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureBlockListSectionHeader
-    @Test("AdventureBlockListSectionHeader")
-    func snapshotAdventureBlockListSectionHeader() async throws {
-        try await assertPreviewSnapshot("AdventureBlockListSectionHeader") {
-            GeneratorRPG.AdventureBlockListSectionHeader(
-                title: "Answers / Ideas",
-                count: 4,
-                systemImage: "sparkles",
-                isWorking: false,
-                selectedCount: 2,
-                isTaken: false,
-                canTake: true,
-                takeAction: {},
-                restoreAction: {},
-                deleteAction: {}
-            )
-            .padding()
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureChatHeaderView
-    @Test("AdventureChatHeaderView")
-    func snapshotAdventureChatHeaderView() async throws {
-        try await assertPreviewSnapshot("AdventureChatHeaderView") {
-            GeneratorRPG.AdventureChatHeaderView(seedBlocks: [], sourceCount: 3, generatedCount: 4, selectedCount: 2)
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureChatMetricPill
-    @Test("AdventureChatMetricPill")
-    func snapshotAdventureChatMetricPill() async throws {
-        try await assertPreviewSnapshot("AdventureChatMetricPill") {
-            GeneratorRPG.AdventureChatMetricPill(value: 4, label: "Blocks", systemImage: "square.stack.3d.up")
-                .padding()
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureCurrentAnswerCard
-    @Test("AdventureCurrentAnswerCard")
-    func snapshotAdventureCurrentAnswerCard() async throws {
-        try await assertPreviewSnapshot("AdventureCurrentAnswerCard") {
-            GeneratorRPG.AdventureCurrentAnswerCard(text: "The sealed gate opens only when the old oath is spoken.")
-                .padding()
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureGenView
-    @Test("AdventureGenView")
-    func snapshotAdventureGenView() async throws {
-        try await assertPreviewSnapshot("AdventureGenView") {
-            GeneratorRPG.AdventureGenView()
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureGeneratedBlockRow
-    @Test("AdventureGeneratedBlockRow")
-    func snapshotAdventureGeneratedBlockRow() async throws {
-        try await assertPreviewSnapshot("AdventureGeneratedBlockRow") {
-            GeneratorRPG.AdventureGeneratedBlockRow(
-                block: AdventureChatPreviewData.blocks[0],
-                isSelected: true,
-                toggleSelectionAction: {}
-            )
-            .padding()
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::AdventureNoBlocksView
-    @Test("AdventureNoBlocksView")
-    func snapshotAdventureNoBlocksView() async throws {
-        try await assertPreviewSnapshot("AdventureNoBlocksView") {
-            GeneratorRPG.AdventureNoBlocksView()
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::CampaignGenView
-    @Test("CampaignGenView")
-    func snapshotCampaignGenView() async throws {
-        try await assertPreviewSnapshot("CampaignGenView") {
-            GeneratorRPG.CampaignGenView()
         }
     }
 
@@ -141,14 +58,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
                 value: CharacterGenModel(name: "Mira", information: "A careful ruin scout.", tags: ["scout"]),
                 level: 0
             )
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::EntryGenView
-    @Test("EntryGenView")
-    func snapshotEntryGenView() async throws {
-        try await assertPreviewSnapshot("EntryGenView") {
-            GeneratorRPG.EntryGenView()
         }
     }
 
@@ -175,14 +84,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
     func snapshotSaveView() async throws {
         try await assertPreviewSnapshot("SaveView") {
             GeneratorRPG.SaveView(root: .preview, restoresState: false)
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::ScenarioGenView
-    @Test("ScenarioGenView")
-    func snapshotScenarioGenView() async throws {
-        try await assertPreviewSnapshot("ScenarioGenView") {
-            GeneratorRPG.ScenarioGenView()
         }
     }
 
@@ -239,21 +140,15 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
     func snapshotPdfSummaryAnalysisView() async throws {
         try await assertPreviewSnapshot("PdfSummaryAnalysisView") {
             if let url = PreviewAssetFixture.url(.pdf),
-               let pdfDocument = PDFDocument(url: url) {
-                GeneratorRPG.PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
-                    print("Analyzed: \(content.title)")
+                   let pdfDocument = PDFDocument(url: url) {
+                    GeneratorRPG.PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
+            #if DEBUG
+                        print("Analyzed: \(content.title)")
+            #endif
+                    }
+                } else {
+                    Text(verbatim: "PDF fixture is available in Debug previews")
                 }
-            } else {
-                Text(verbatim: "PDF fixture is available in Debug previews")
-            }
-        }
-    }
-
-    // snapshot-root: GeneratorRPG::SheetAIAssistantOverlayView
-    @Test("SheetAIAssistantOverlayView")
-    func snapshotSheetAIAssistantOverlayView() async throws {
-        try await assertPreviewSnapshot("SheetAIAssistantOverlayView") {
-            GeneratorRPG.SheetAIAssistantOverlayView(generatorController: GeneratorController(), rootModel: .fake)
         }
     }
 
@@ -286,8 +181,6 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier())
-                .environment(AppFocusModel())
-                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

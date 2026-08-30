@@ -80,7 +80,7 @@ extension LinkController: LinkControllable {
             }
         }
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Map: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.info("Map: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
 
@@ -92,7 +92,7 @@ extension LinkController: LinkControllable {
                 await root.editController.resetImageSize(photoId: photoId, updateModel: replacedItem, save: true)
             }
         } else {
-            Logger.linkController.warning("Map: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+            Logger.linkController.warning("Map: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .private) is gone. Reset PhotoId, no recovery possible.")
             replacedItem.photoId = nil
             itemController.replace(model: replacedItem, isInsert: false)
         }

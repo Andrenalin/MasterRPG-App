@@ -18,10 +18,13 @@ struct WeatherStormEditor: View {
 
     var body: some View {
         Section {
-            precipitationEditorView
-            rainIntensityEditorView
-            rainAngleEditorView
-            rainDirectionEditorView
+            WeatherStormPrecipitationEditor(model: stormEditModel)
+            WeatherStormRainIntensityEditor(model: model)
+            WeatherStormRainAngleEditor(model: model)
+            WeatherStormRainDirectionEditor(
+                model: directionEditModel,
+                icon: model.rainDirection ? "chevron.right" : "chevron.left"
+            )
         } header: {
 #if os(macOS)
             Divider()
@@ -64,16 +67,23 @@ struct WeatherStormEditor: View {
     }
 }
 
-private extension WeatherStormEditor {
-    @ViewBuilder var precipitationEditorView: some View {
-        ValuePickerEditor(model: stormEditModel, allCategories: Storm.Contents.allCases, title: "Precipitation", bundle: .module) { stormType in
+/// Extracted from `WeatherStormEditor` computed properties: dedicated `View` structs so
+/// dragging one slider doesn't re-evaluate every sibling section's body — computed properties
+/// share the parent's invalidation boundary, dedicated `View` structs don't. See CODE_AUDIT_9 §8.1.
+private struct WeatherStormPrecipitationEditor: View {
+    let model: EditIdentifierModel<Storm.Contents>
+
+    var body: some View {
+        ValuePickerEditor(model: model, allCategories: Storm.Contents.allCases, title: "Precipitation", bundle: .module) { stormType in
             Text(stormType.localizedTitle)
         }
     }
+}
 
-    @ViewBuilder var rainIntensityEditorView: some View {
-        @Bindable var model = model
+private struct WeatherStormRainIntensityEditor: View {
+    @Bindable var model: WeatherModel
 
+    var body: some View {
         LabeledContent {
 #if os(tvOS)
             Text(model.rainIntensity, format: .number.precision(.fractionLength(0)))
@@ -88,10 +98,12 @@ private extension WeatherStormEditor {
             Text("Intensity", bundle: .module)
         }
     }
+}
 
-    @ViewBuilder var rainAngleEditorView: some View {
-        @Bindable var model = model
+private struct WeatherStormRainAngleEditor: View {
+    @Bindable var model: WeatherModel
 
+    var body: some View {
         LabeledContent {
 #if os(tvOS)
             Text(model.rainAngle, format: .number.precision(.fractionLength(0)))
@@ -108,8 +120,13 @@ private extension WeatherStormEditor {
             Text("Angle", bundle: .module)
         }
     }
+}
 
-    @ViewBuilder var rainDirectionEditorView: some View {
-        ToggleEditor(model: directionEditModel, title: "Direction", bundle: .module, icon: model.rainDirection ? "chevron.right" : "chevron.left")
+private struct WeatherStormRainDirectionEditor: View {
+    let model: EditIdentifierModel<Bool>
+    let icon: String
+
+    var body: some View {
+        ToggleEditor(model: model, title: "Direction", bundle: .module, icon: icon)
     }
 }

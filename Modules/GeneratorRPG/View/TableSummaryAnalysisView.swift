@@ -23,7 +23,8 @@ public struct TableSummaryAnalysisView: View {
                 if model.isAnalyzing {
                     analyzingView
                 } else {
-                    languagePicker
+                    OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
+                        .padding(.horizontal, 4)
                     analyzeButton
                 }
 
@@ -36,24 +37,6 @@ public struct TableSummaryAnalysisView: View {
     }
 
     // MARK: - Subviews
-
-    private var languagePicker: some View {
-        HStack {
-            Text("Output Language", bundle: .module)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Picker(selection: $selectedLanguage) {
-                ForEach(OutputLanguage.supported) { language in
-                    Text(verbatim: language.displayName).tag(language)
-                }
-            } label: {
-                Text("Output Language", bundle: .module)
-            }
-            .labelsHidden()
-        }
-        .padding(.horizontal, 4)
-    }
 
     private var analyzeButton: some View {
         Button {

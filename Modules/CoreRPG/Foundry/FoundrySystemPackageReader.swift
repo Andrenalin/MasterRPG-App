@@ -24,7 +24,28 @@ public struct FoundrySystemPackageReader: Sendable {
                 }
             }
             try Task.checkCancellation()
-            return try Self.readSynchronously(from: url, limits: limits)
+            let source = try FoundryPackageDataSource(url: url, limits: limits)
+            return try Self.readSynchronously(source: source, limits: limits)
+        }
+        return try await withTaskCancellationHandler {
+            let package = try await task.value
+            try Task.checkCancellation()
+            return package
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    /// Reuses a ZIP central directory the caller already parsed (`FoundryVTTImportReader.read(from:)`
+    /// parses the same archive for its own document decode) instead of re-reading and re-parsing the
+    /// same file from disk a second time. `FoundryZIPArchive` holds the full archive bytes already in
+    /// memory, so no file access — and no security-scoped resource — is needed here. See CODE_AUDIT_9 §7.3.
+    func read(reusingArchive archive: FoundryZIPArchive, sourceSHA256: String) async throws -> FoundryRulePackage {
+        let limits = limits
+        let task = Task.detached(priority: .userInitiated) {
+            try Task.checkCancellation()
+            let source = FoundryPackageDataSource.archive(archive, sourceSHA256: sourceSHA256)
+            return try Self.readSynchronously(source: source, limits: limits)
         }
         return try await withTaskCancellationHandler {
             let package = try await task.value
@@ -115,8 +136,7 @@ public struct FoundrySystemPackageReader: Sendable {
 }
 
 private extension FoundrySystemPackageReader {
-    static func readSynchronously(from url: URL, limits: FoundryImportLimits) throws -> FoundryRulePackage {
-        let source = try FoundryPackageDataSource(url: url, limits: limits)
+    static func readSynchronously(source: FoundryPackageDataSource, limits: FoundryImportLimits) throws -> FoundryRulePackage {
         let manifestPath = try source.manifestPath()
         guard let manifestData = try source.data(forPath: manifestPath) else {
             throw FoundryImportError.missingManifest

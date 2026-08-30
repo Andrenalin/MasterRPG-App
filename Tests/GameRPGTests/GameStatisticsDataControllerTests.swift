@@ -26,7 +26,7 @@ struct GameStatisticsDataControllerTests {
             participants: [participant]
         )
         let event = GameStatisticEventDraft.fixture(
-            sessionID: sessionID,
+            sessionId: sessionID,
             occurredAt: startedAt.addingTimeInterval(60)
         )
 

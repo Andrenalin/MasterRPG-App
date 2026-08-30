@@ -23,7 +23,8 @@ public struct PdfSummaryAnalysisView: View {
                 if model.isAnalyzing {
                     analyzingView
                 } else {
-                    languagePicker
+                    OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
+                        .padding(.horizontal, 4)
                     analyzeButton
                 }
 
@@ -36,24 +37,6 @@ public struct PdfSummaryAnalysisView: View {
     }
 
     // MARK: - Subviews
-
-    private var languagePicker: some View {
-        HStack {
-            Text("Output Language", bundle: .module)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Picker(selection: $selectedLanguage) {
-                ForEach(OutputLanguage.supported) { language in
-                    Text(verbatim: language.displayName).tag(language)
-                }
-            } label: {
-                Text("Output Language", bundle: .module)
-            }
-            .labelsHidden()
-        }
-        .padding(.horizontal, 4)
-    }
 
     private var analyzeButton: some View {
         Button {
@@ -181,7 +164,9 @@ public struct PdfSummaryAnalysisView: View {
     if let url = PreviewAssetFixture.url(.pdf),
        let pdfDocument = PDFDocument(url: url) {
         PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
+#if DEBUG
             print("Analyzed: \(content.title)")
+#endif
         }
     } else {
         Text(verbatim: "PDF fixture is available in Debug previews")

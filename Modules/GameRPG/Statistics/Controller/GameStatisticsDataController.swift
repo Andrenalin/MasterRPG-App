@@ -120,13 +120,13 @@ struct GameStatisticsDataController: Sendable {
         in context: NSManagedObjectContext
     ) async throws {
         try await context.perform {
-            guard let session = try self.fetchSession(id: draft.sessionID, in: context), !session.isComplete else { return }
+            guard let session = try self.fetchSession(id: draft.sessionId, in: context), !session.isComplete else { return }
 
             if !draft.deduplicationKey.isEmpty {
                 let duplicateRequest = NSFetchRequest<RPGGameStatisticEvent>(entityName: "RPGGameStatisticEvent")
                 duplicateRequest.predicate = NSPredicate(
                     format: "sessionID == %@ AND deduplicationKey == %@",
-                    draft.sessionID as NSUUID,
+                    draft.sessionId as NSUUID,
                     draft.deduplicationKey
                 )
                 duplicateRequest.fetchLimit = 1
@@ -135,7 +135,7 @@ struct GameStatisticsDataController: Sendable {
 
             let event = RPGGameStatisticEvent(context: context)
             event.uuid = draft.id
-            event.sessionID = draft.sessionID
+            event.sessionID = draft.sessionId
             event.occurredAt = draft.occurredAt
             event.kindRaw = draft.kind.rawValue
             event.directionRaw = draft.direction.rawValue
@@ -171,7 +171,7 @@ struct GameStatisticsDataController: Sendable {
             session.transportMask |= Int32(1 << Int(draft.origin.rawValue))
 
             if let participant {
-                try self.synchronizeParticipants([participant], sessionID: draft.sessionID, session: session, at: draft.occurredAt, in: context)
+                try self.synchronizeParticipants([participant], sessionID: draft.sessionId, session: session, at: draft.occurredAt, in: context)
             }
             try self.saveIfNeeded(context)
         }
@@ -373,12 +373,12 @@ struct GameStatisticsDataController: Sendable {
 
     private static func participantSnapshot(_ participant: RPGGameStatisticParticipant) -> GameStatisticParticipantSnapshot? {
         guard let id = participant.uuid,
-              let sessionID = participant.sessionID,
+              let sessionId = participant.sessionID,
               let participantID = participant.participantID
         else { return nil }
         return GameStatisticParticipantSnapshot(
             id: id,
-            sessionID: sessionID,
+            sessionId: sessionId,
             participantID: participantID,
             characterID: participant.characterID,
             name: participant.name ?? "",
@@ -392,12 +392,12 @@ struct GameStatisticsDataController: Sendable {
 
     private static func eventSnapshot(_ event: RPGGameStatisticEvent) -> GameStatisticEventSnapshot? {
         guard let id = event.uuid,
-              let sessionID = event.sessionID,
+              let sessionId = event.sessionID,
               let occurredAt = event.occurredAt
         else { return nil }
         return GameStatisticEventSnapshot(
             id: id,
-            sessionID: sessionID,
+            sessionId: sessionId,
             occurredAt: occurredAt,
             kind: GameStatisticEventKind(rawValue: event.kindRaw) ?? .message,
             direction: GameStatisticDirection(rawValue: event.directionRaw) ?? .local,

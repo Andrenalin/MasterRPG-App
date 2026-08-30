@@ -249,7 +249,11 @@ struct InlineImporterView: View, Equatable {
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.itemId == rhs.itemId
+        // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
+        // uses this to decide whether to skip re-rendering, and both drive stored state
+        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
+        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
+        lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
     }
 }
 

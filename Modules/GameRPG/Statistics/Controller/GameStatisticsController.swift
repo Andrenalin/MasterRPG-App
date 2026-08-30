@@ -9,7 +9,7 @@ struct GameStatisticsController: Sendable {
 
     func eventDraft(
         for model: GameNetworkModel,
-        sessionID: UUID,
+        sessionId: UUID,
         localParticipantID: UUID,
         direction: GameStatisticDirection,
         origin: GameMessageOrigin,
@@ -22,7 +22,7 @@ struct GameStatisticsController: Sendable {
 
         return GameStatisticEventDraft(
             id: UUID(),
-            sessionID: sessionID,
+            sessionId: sessionId,
             occurredAt: diceResult?.timestamp ?? occurredAt,
             kind: kind,
             direction: direction,
@@ -92,8 +92,8 @@ struct GameStatisticsController: Sendable {
             $0.duration >= Self.minimumCountedSessionDuration
         }
         let countedSessionIDs = Set(sessions.map(\.id))
-        let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionID) }
-        let participants = dataSet.participants.filter { countedSessionIDs.contains($0.sessionID) }
+        let events = dataSet.events.filter { countedSessionIDs.contains($0.sessionId) }
+        let participants = dataSet.participants.filter { countedSessionIDs.contains($0.sessionId) }
         let totalDuration = sessions.reduce(0) { $0 + $1.duration }
         let diceEvents = events.filter { $0.kind == .diceRolled }
 

@@ -13,6 +13,7 @@ import GeneratorRPG
 import PdfRPG
 import PhotoRPG
 import TableRPG
+import TipKit
 @testable import MapRPG
 
 @MainActor
@@ -29,6 +30,15 @@ struct MapRPGGeneratedPreviewSnapshotTests {
                 size: CGSize(width: 320, height: 240),
                 initialEntryId: MapEntryModel.previewId
             )
+        }
+    }
+
+    // snapshot-root: MapRPG::ChooseMapPinsButton
+    @Test("ChooseMapPinsButton")
+    func snapshotChooseMapPinsButton() async throws {
+        try await assertPreviewSnapshot("ChooseMapPinsButton") {
+            MapRPG.ChooseMapPinsButton(root: .preview, focusedRoomId: nil, onMonstersAdded: {})
+                .environment(ScenesManager())
         }
     }
 
@@ -94,6 +104,17 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         }
     }
 
+    // snapshot-root: MapRPG::ViewerRootView
+    @Test("ViewerRootView")
+    func snapshotViewerRootView() async throws {
+        try await assertPreviewSnapshot("ViewerRootView") {
+            ManagedNavigationStack {
+                MapRPG.ViewerRootView(model: .preview, configuration: .init())
+                    .preferredColorScheme(.dark)
+            }
+        }
+    }
+
     // snapshot-root: MapRPG::ViewerRouteDestinationView
     @Test("ViewerRouteDestinationView")
     func snapshotViewerRouteDestinationView() async throws {
@@ -133,11 +154,6 @@ struct MapRPGGeneratedPreviewSnapshotTests {
             MapRPG.MapRouteDestinationView(itemId: MapModel.previewId)
         }
     }
-
-    // snapshot-root: MapRPG::AddEntryButton
-    // REMOVED: `AddEntryButton` no longer exists in MapRPG — consolidated into
-    // CoreRPG's shared `SheetEntryAddButton` in a prior audit round; this generated test
-    // was never regenerated. Pre-existing staleness, unrelated to this session's fixes.
 
     // snapshot-root: MapRPG::AddLinkButton
     @Test("AddLinkButton")
@@ -232,14 +248,6 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: MapRPG::QuickEditorButton
-    @Test("QuickEditorButton")
-    func snapshotQuickEditorButton() async throws {
-        try await assertPreviewSnapshot("QuickEditorButton") {
-            MapRPG.QuickEditorButton(model: .preview)
-        }
-    }
-
     // snapshot-root: MapRPG::QuickEntryEditor
     @Test("QuickEntryEditor")
     func snapshotQuickEntryEditor() async throws {
@@ -264,8 +272,6 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext))
-                .environment(AppFocusModel())
-                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

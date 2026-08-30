@@ -46,7 +46,7 @@ public struct BatchTextSummaryExtractionView: View {
                 List {
                     if !isRunning {
                         Section {
-                            languagePicker
+                            OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
                         }
                     }
                     Section {
@@ -96,23 +96,6 @@ public struct BatchTextSummaryExtractionView: View {
     }
 
     // MARK: - Subviews
-
-    private var languagePicker: some View {
-        HStack {
-            Text("Output Language", bundle: .module)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Picker(selection: $selectedLanguage) {
-                ForEach(OutputLanguage.supported) { language in
-                    Text(verbatim: language.displayName).tag(language)
-                }
-            } label: {
-                Text("Output Language", bundle: .module)
-            }
-            .labelsHidden()
-        }
-    }
 
     private func itemRow(for id: UUID) -> some View {
         let name = itemController.itemSync(for: id)?.name ?? ""

@@ -435,7 +435,7 @@ def generated_test(module_name, cases, imports)
     #{import_lines}@testable import #{module_name}
 
     @MainActor
-@Suite(.serialized, .snapshots, .tags(.snapshot))
+    @Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
     struct #{suite_name} {
     #{tests}
 

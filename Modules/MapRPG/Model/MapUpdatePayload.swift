@@ -2,7 +2,6 @@
 
 import CoreRPG
 import CoreGraphics
-import CryptoKit
 import Foundation
 
 /// Versioned, photo-free map metadata sent through the ordinary chunked
@@ -24,7 +23,7 @@ struct MapUpdatePayload: Codable, Sendable, MessageMapper {
         let snapshot = MapSnapshot(model)
         self.schemaVersion = schemaVersion
         self.snapshot = snapshot
-        contentVersion = StableMapVersion.digest(
+        contentVersion = StableVersionDigest.digest(
             CanonicalMapContent(schemaVersion: schemaVersion, snapshot: snapshot)
         )
     }
@@ -133,19 +132,6 @@ struct MapAssetFingerprint: Codable, Sendable {
     let backgroundPhotoVersion: Int?
 
     var version: Int {
-        StableMapVersion.digest(self)
-    }
-}
-
-private enum StableMapVersion {
-    static func digest<Value: Encodable>(_ value: Value) -> Int {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(value) else { return -1 }
-        let digest = SHA256.hash(data: data)
-        let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
-            partialResult << 8 | UInt64(byte)
-        }
-        return Int(bitPattern: UInt(truncatingIfNeeded: rawValue))
+        StableVersionDigest.digest(self)
     }
 }

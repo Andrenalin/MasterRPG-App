@@ -82,11 +82,6 @@ struct AdventureRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: AdventureRPG::AdventureAddEntryButton
-    // REMOVED: `AdventureAddEntryButton` no longer exists in AdventureRPG — consolidated
-    // into CoreRPG's shared `SheetEntryAddButton` in a prior audit round; this generated
-    // test was never regenerated. Pre-existing staleness, unrelated to this session's fixes.
-
     // snapshot-root: AdventureRPG::AdventureAddLinkButton
     @Test("AdventureAddLinkButton")
     func snapshotAdventureAddLinkButton() async throws {
@@ -100,14 +95,6 @@ struct AdventureRPGGeneratedPreviewSnapshotTests {
     func snapshotAdventureExtractToolBarButton() async throws {
         try await assertPreviewSnapshot("AdventureExtractToolBarButton") {
             AdventureRPG.AdventureExtractToolBarButton(model: .preview)
-        }
-    }
-
-    // snapshot-root: AdventureRPG::AdventureQuickEditorButton
-    @Test("AdventureQuickEditorButton")
-    func snapshotAdventureQuickEditorButton() async throws {
-        try await assertPreviewSnapshot("AdventureQuickEditorButton") {
-            AdventureRPG.AdventureQuickEditorButton(model: .preview)
         }
     }
 
@@ -195,8 +182,6 @@ struct AdventureRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier())
-                .environment(AppFocusModel())
-                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in
