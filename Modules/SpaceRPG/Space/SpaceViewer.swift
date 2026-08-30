@@ -200,9 +200,35 @@ private extension SpaceViewer {
     @MainActor
     func apply(remote transform: SpaceTransformModel?) {
         guard isImmersiveSpace, let transform, let objectEntity else { return }
+
+        // While this device is the one actively driving the object —
+        // `ManipulationComponent` owns and drives `objectEntity.transform`
+        // directly every frame — that live gesture is the sole source of
+        // truth for the visible pose. Any network-sourced value observed
+        // here during that window is stale by definition, most commonly this
+        // device's own optimistic self-echo: `PlayerController.send()` /
+        // `MasterController.send()` write the just-sent pose into
+        // `spaceGameModel` asynchronously, serialized through
+        // `GameRootModel.scheduleNetworkAction`'s queue, so it can land after
+        // `lastSentTransform` below has already moved on to a newer pose —
+        // which breaks the "this is just my own echo" equality check right
+        // after it and used to fight the live gesture with a 100ms tween
+        // pulling backward toward the stale value every time it happened.
+        // Skipping outright here is also exactly "apply immediately, no
+        // master checking": the hand/gesture input already *is* the
+        // immediate local truth, so there is nothing to reconcile against
+        // until the gesture ends. Bookkeeping still updates so
+        // `sendTransformIfChanged`'s retry counter doesn't misfire once it does.
+        guard !isManipulating else {
+            lastAcknowledgedTransform = transform
+            unacknowledgedTransformTicks = 0
+            return
+        }
+
         if transform == lastSentTransform {
-            // The master rebroadcast is the acknowledgement for our optimistic
-            // local manipulation. Stop periodic retries without moving the model.
+            // The echo of our own just-completed gesture's optimistic local
+            // apply, or another participant's rebroadcast matching what we
+            // already have. Stop periodic retries without moving the model.
             lastAcknowledgedTransform = transform
             unacknowledgedTransformTicks = 0
             return
