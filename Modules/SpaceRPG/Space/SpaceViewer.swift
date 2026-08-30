@@ -78,6 +78,11 @@ struct SpaceViewer: View {
     @State private var lastAcknowledgedTransform: SpaceTransformModel?
     @State private var unacknowledgedTransformTicks = 0
     @State private var isSharedPlacement = false
+    /// True while a `ManipulationComponent` gesture is actively driving
+    /// `objectEntity`'s transform — drives `sendTransformLoop`'s cadence
+    /// (dense while manipulating, sparse otherwise) instead of streaming at
+    /// one fixed rate regardless of whether anything is moving.
+    @State private var isManipulating = false
 #endif
 
     var body: some View {
@@ -203,23 +208,57 @@ private extension SpaceViewer {
             return
         }
 
-        objectEntity.transform.rotation = transform.orientation
-        objectEntity.position = transform.position
-        objectEntity.scale = transform.scale
+        // Ease into the new pose instead of snapping to it. The sender streams
+        // roughly every `transformBroadcastActiveThrottle` while a gesture is
+        // in progress (and `transformBroadcastThrottle` otherwise); a tween
+        // slightly longer than the active cadence overlaps consecutive
+        // updates so both that cadence and ordinary network jitter — GroupActivities
+        // routes through the FaceTime relay, not LAN, so latency is
+        // noticeably higher than local network — read as continuous motion
+        // rather than a series of teleports. `withAnimation` doesn't apply
+        // here: `Entity` isn't part of SwiftUI's animatable state, so the
+        // RealityKit-native tween (`HasTransform.move(to:relativeTo:duration:timingFunction:)`)
+        // is used instead.
+        objectEntity.move(
+            to: Transform(
+                scale: transform.scale,
+                rotation: transform.orientation,
+                translation: transform.position
+            ),
+            relativeTo: objectEntity.parent,
+            duration: Self.remoteTransformEaseDuration,
+            timingFunction: .linear
+        )
         lastAcknowledgedTransform = transform
         unacknowledgedTransformTicks = 0
     }
 
-    /// Throttle for `sendTransformLoop`'s broadcast cadence. See CODE_AUDIT §9.14.
+    /// Idle-cadence throttle for `sendTransformLoop`'s reconciliation retries
+    /// when no gesture is active. See CODE_AUDIT §9.14.
     private static let transformBroadcastThrottle: Duration = .milliseconds(300)
+    /// Active-gesture cadence: dense enough for `apply(remote:)`'s tween to
+    /// read as continuous motion on the receiving end, without broadcasting
+    /// on every rendered frame (`ManipulationComponent` drives the local
+    /// transform every frame; only a throttled sample of that is sent).
+    private static let transformBroadcastActiveThrottle: Duration = .milliseconds(50)
+    /// How long `apply(remote:)` takes to ease into each received pose.
+    /// Slightly longer than `transformBroadcastActiveThrottle` so consecutive
+    /// tweens overlap instead of leaving a visible pause between them.
+    private static let remoteTransformEaseDuration: TimeInterval = 0.1
 
     /// Broadcasts local manipulations (drag / magnify / rotate) on the game
-    /// control channel, throttled so a gesture in progress streams updates.
+    /// control channel. Streams at `transformBroadcastActiveThrottle` while
+    /// `isManipulating` (set from the `ManipulationEvents.WillBegin`/`WillEnd`
+    /// subscriptions in `loadEntity`) and falls back to the sparser
+    /// `transformBroadcastThrottle` otherwise — this is a reconciliation/retry
+    /// heartbeat between gestures, not a live-motion stream, so it doesn't
+    /// need the dense cadence.
     @MainActor
     func sendTransformLoop() async {
         guard isImmersiveSpace, hasLoaded, networkActions != nil else { return }
         while !Task.isCancelled {
-            try? await Task.sleep(for: Self.transformBroadcastThrottle)
+            let interval = isManipulating ? Self.transformBroadcastActiveThrottle : Self.transformBroadcastThrottle
+            try? await Task.sleep(for: interval)
             sendTransformIfChanged()
         }
     }
@@ -606,11 +645,12 @@ private extension SpaceViewer {
             // Apple's own "Manipulate with solid collisions" sample.
             loadedEntity.components[ManipulationComponent.self]?.releaseBehavior = .stay
 
-            // Window-embedded instance only: watch `ManipulationComponent`'s
-            // own event stream (not a second gesture — see the "drag is gone"
-            // history on `moveToImmersiveSpace`) to detect "dragged far
-            // enough" and hand the object off to the immersive space.
+            // Watch `ManipulationComponent`'s own event stream (not a second
+            // gesture — see the "drag is gone" history on `moveToImmersiveSpace`)
+            // for two different purposes depending on which instance this is.
             if !isImmersiveSpace {
+                // Window-embedded instance: detect "dragged far enough" and
+                // hand the object off to the immersive space.
                 manipulationBeganSubscription = content.subscribe(
                     to: ManipulationEvents.WillBegin.self
                 ) { [weak loadedEntity] event in
@@ -625,6 +665,31 @@ private extension SpaceViewer {
                     guard event.entity == loadedEntity else { return }
                     Task { @MainActor in
                         self.handleManipulationEnded(event.entity)
+                    }
+                }
+            } else {
+                // Immersive-space instance: no handoff detection needed (it's
+                // already the immersive one), but this is the instance that
+                // actually broadcasts — track gesture activity so
+                // `sendTransformLoop` switches to the dense active cadence
+                // only while someone is really dragging/rotating/scaling it,
+                // and flush the settled pose the instant the gesture ends
+                // instead of waiting for the next active-cadence tick.
+                manipulationBeganSubscription = content.subscribe(
+                    to: ManipulationEvents.WillBegin.self
+                ) { [weak loadedEntity] event in
+                    guard event.entity == loadedEntity else { return }
+                    Task { @MainActor in
+                        self.isManipulating = true
+                    }
+                }
+                manipulationEndedSubscription = content.subscribe(
+                    to: ManipulationEvents.WillEnd.self
+                ) { [weak loadedEntity] event in
+                    guard event.entity == loadedEntity else { return }
+                    Task { @MainActor in
+                        self.isManipulating = false
+                        self.sendTransformIfChanged()
                     }
                 }
             }
