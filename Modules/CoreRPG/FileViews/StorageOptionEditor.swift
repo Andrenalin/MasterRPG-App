@@ -65,7 +65,7 @@ public struct StorageOptionEditor<Sync: View>: View {
             }
             
         } header: {
-            Text("Databse Settings", bundle: .module)
+            Text("Database Settings", bundle: .module)
         } footer: {
             Text("Settings about the Database storage. You can switch back and furth, the database will not be removed. If you like you can export the current database and import it the other one. Use iCloud if you want automatical sync between the devices.", bundle: .module)
         }

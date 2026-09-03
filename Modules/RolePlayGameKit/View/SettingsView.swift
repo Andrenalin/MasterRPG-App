@@ -57,11 +57,18 @@ public struct SettingsView: View {
                 )
             }
 
+            // tvOS never honors this toggle — AppModel hardcodes
+            // `useCloudKit: false` there (Core Data boots local-only
+            // regardless of this setting), so the toggle is hidden rather
+            // than shown in a state the app doesn't actually implement. See
+            // CODE_AUDIT_10 §5.1.
+            #if !os(tvOS)
             StorageOptionEditor {
                 if let model = store.coreDataInitModel {
                     CloudKitSyncStatusView(syncState: model.cloudKitSyncState, lastSync: model.lastSuccessfulSync)
                 }
             }
+            #endif
 
             SectionGroupEditorView {
                 Button {

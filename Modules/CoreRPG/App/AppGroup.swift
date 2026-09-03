@@ -37,6 +37,15 @@ public extension FileManager {
     /// see `UserDefaults.appGroup` and CODE_AUDIT §5.1. Callers must not force-unwrap this.
     static let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: UserDefaults.appGroupString)
 
+    /// Always `nil` on tvOS: `MasterTV`'s (and `RPGShare`'s) entitlements
+    /// deliberately don't declare `com.apple.developer.ubiquity-container-
+    /// identifiers`, matching `AppModel`'s tvOS Core Data setup, which
+    /// likewise hardcodes `useCloudKit: false` — Apple TV is intentionally a
+    /// local-only platform, not synced via iCloud. See CODE_AUDIT_10 §5.1/
+    /// §6.1. File-backed modules (Audio/Pdf/Photo/Space) fall back to
+    /// `groupURL` below there, so an item saved on tvOS won't appear on a
+    /// player's other devices and vice versa — an accepted platform
+    /// limitation, not a bug, unless that decision changes.
     static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: cloudContainerIdentifier)
 
     /// The preferred storage root, in order: the iCloud ubiquity container,
@@ -46,6 +55,9 @@ public extension FileManager {
     /// case; see `groupURL`/`cloudURL`'s own doc comments). Centralizes what
     /// was previously the same fallback chain hand-copied into 4 separate
     /// files. See CODE_AUDIT §9.3.
+    ///
+    /// On tvOS this always resolves to `groupURL` (see `cloudURL`'s doc
+    /// comment) — device-local, on purpose.
     static var preferredRootUrl: URL {
         cloudURL ?? groupURL ?? URL.documentsDirectory
     }
