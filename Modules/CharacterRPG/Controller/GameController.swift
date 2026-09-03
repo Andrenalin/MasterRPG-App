@@ -496,9 +496,25 @@ extension GameController: ValueGameStorable {
         // later full resync silently stops reaching gameplay reads — the
         // player's own edits keep landing, this just leaves the *next*
         // full-package sync (reconnect, etc.) unable to override them.
-        if gameModel.itemData[data.id] != nil,
+        //
+        // Mutate the existing live instance in place (`replace(with:)`)
+        // rather than swapping in a fresh `.copy()` under the same dictionary
+        // key: any view or model already holding a reference to this exact
+        // `@Observable` instance — e.g. `LinkController.updateValueCalculation`'s
+        // manually-armed `withObservationTracking`, which `EntryListDiceRow`
+        // relies on to notice a linked value changed — must see the change
+        // through its own reference. A full resync fires on every reconnect
+        // and on every advertised-version mismatch, i.e. potentially after
+        // every single edit in an active session, so replacing the reference
+        // here silently orphaned that tracking mid-session: the inline dice
+        // display stopped picking up further calculated-value changes even
+        // though the underlying data kept updating correctly. Matches the
+        // identity-preserving pattern already used by
+        // `ItemControllable.replaceInGameMemory(model:)`'s "existing" branch
+        // and `syncGameMemoryIfLoaded`.
+        if let existing = gameModel.itemData[data.id] as? ValueModel,
            let refreshed = itemController.itemSync(for: data.id)?.copy() {
-            gameModel.itemData[data.id] = refreshed
+            _ = existing.replace(with: refreshed)
         }
     }
 

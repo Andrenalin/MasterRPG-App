@@ -410,6 +410,248 @@ struct LinkControllerTests {
         #expect(root.linkController.validate(id: UUID()) == nil)
     }
 
+    // MARK: - updateValueCalculation
+
+    private static func makeRoot() -> CharacterRootModel {
+        let diceRoot = DiceRootModel.testRoot()
+        let pdfRoot = PdfRootModel.testRoot()
+        let photoRoot = PhotoRootModel.testRoot()
+        let tableRoot = TableRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
+        return CharacterRootModel.testRoot(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
+    }
+
+    /// Reproduces the reported "inline dice not updating" bug: an entry (B) whose
+    /// value formula links to another entry (A) on the same character. `updateValueCalculation`
+    /// is what `EntryListDiceRow` uses to know when to recompute B's dice display after A
+    /// changes. Registered *before* either entry has ever been touched this game session
+    /// (i.e. before either exists in `gameItemData`) — matching the real flow: the dice row
+    /// appears and arms tracking against the current (permanent) instance, then later the
+    /// player edits A for the first time this session.
+    @Test func updateValueCalculationFiresWhenLinkedDependencyFirstEntersGameMemory() async throws {
+        let root = Self.makeRoot()
+        let sut = root.linkController
+        let edit = root.editController
+
+        let itemId = await root.itemController.addNew(type: .character)
+        let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
+        edit.add(entry: aEntry, itemId: itemId)
+
+        let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
+        let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText)
+        edit.add(entry: bEntry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        // Sanity check matching the bug's precondition: neither entry has been
+        // touched yet this game session, so there's nothing in gameItemData yet.
+        #expect(root.itemController.itemDataModel.gameItemData[itemId] == nil)
+
+        var fireCount = 0
+        sut.updateValueCalculation(itemId: itemId, entryId: bEntry.id) {
+            fireCount += 1
+        }
+
+        // First edit to A this game session — this is what makes `replaceInGameMemory`
+        // insert a brand-new instance into `gameItemData` rather than mutating one
+        // already there.
+        edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 35)
+
+        // The withObservationTracking `onChange` dispatches `action()` via
+        // `Task { @MainActor in ... }`, so give it a turn to run.
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(fireCount == 1)
+    }
+
+    /// Full end-to-end reproduction of the reported bug: entry B has an attached dice
+    /// whose die-count scales with B's own calculated value (`DiceModel.addDiceEvery`/
+    /// `resetDice()`), and B's formula links to entry A. Mirrors `EntryListDiceRow`'s
+    /// actual wiring (`updateValueCalculation` re-arming → `validateForValue` →
+    /// `DiceModel.compareValue.didSet` → `resetDice()`) rather than calling the dice
+    /// update helper directly, so a break anywhere in that chain shows up here.
+    @Test func inlineDiceCountUpdatesWhenLinkedValueChanges() async throws {
+        let root = Self.makeRoot()
+        let edit = root.editController
+        let sut = root.linkController
+
+        // One die, +1 die every 20 points of the compared value.
+        let diceTemplate = DiceModel(id: UUID(), name: "Attack Dice", dice: [DieModel(id: UUID(), die: .twenty)], addDiceEvery: 20)
+        root.diceRoot.itemController.replace(model: diceTemplate, isInsert: true)
+
+        let itemId = await root.itemController.addNew(type: .character)
+        let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
+        edit.add(entry: aEntry, itemId: itemId)
+
+        let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
+        let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText, diceId: diceTemplate.id)
+        edit.add(entry: bEntry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        guard let gameDiceId = root.gameController.gameDiceId(itemId: itemId, entryId: bEntry.id) else {
+            Issue.record("expected a game dice id for entry B")
+            return
+        }
+
+        func pushDiceValue() {
+            let entry = root.itemController.itemOrEmpty(for: itemId)[bEntry.id]
+            guard let text = sut.calculate(entry: entry), let value = Int(text) else { return }
+            root.diceRoot.diceGameControllable.validateForValue(diceId: gameDiceId, compareValue: value)
+        }
+
+        // Mirrors `.onChange(of: updateOtherValue, initial: true)`: push the current
+        // value once, then arm tracking for the next change.
+        pushDiceValue()
+        sut.updateValueCalculation(itemId: itemId, entryId: bEntry.id) {
+            pushDiceValue()
+        }
+
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).dice.count == 3)
+
+        edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 35)
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).dice.count == 2)
+    }
+
+    /// Guards `updateValueCalculation`'s self-re-arming chain (mirroring
+    /// `EntryListDiceRow`'s `updateOtherValue` toggle-and-reregister pattern) across
+    /// *multiple* successive changes to the same dependency, not just the first —
+    /// isolated from any network/resync involvement. See CODE_AUDIT note: an earlier,
+    /// now-reverted attempt at hardening this function (having the tracked closure
+    /// also read `itemController.itemDataModel.gameItemData[detail.itemId]`, to react
+    /// to a dependency's first game-memory promotion) silently broke exactly this —
+    /// the second re-arm's registration never fired again. Found via this test.
+    @Test func inlineDiceCountUpdatesAcrossMultipleSuccessiveChanges() async throws {
+        let root = Self.makeRoot()
+        let edit = root.editController
+        let sut = root.linkController
+
+        let diceTemplate = DiceModel(id: UUID(), name: "Attack Dice", dice: [DieModel(id: UUID(), die: .twenty)], addDiceEvery: 20)
+        root.diceRoot.itemController.replace(model: diceTemplate, isInsert: true)
+
+        let itemId = await root.itemController.addNew(type: .character)
+        let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
+        edit.add(entry: aEntry, itemId: itemId)
+
+        let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
+        let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText, diceId: diceTemplate.id)
+        edit.add(entry: bEntry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        guard let gameDiceId = root.gameController.gameDiceId(itemId: itemId, entryId: bEntry.id) else {
+            Issue.record("expected a game dice id for entry B")
+            return
+        }
+
+        func pushDiceValue() {
+            let entry = root.itemController.itemOrEmpty(for: itemId)[bEntry.id]
+            guard let text = sut.calculate(entry: entry), let value = Int(text) else { return }
+            root.diceRoot.diceGameControllable.validateForValue(diceId: gameDiceId, compareValue: value)
+        }
+        // Mirrors `.onChange(of: updateOtherValue, initial: true)`: each firing
+        // re-registers itself for the *next* change, not just the first.
+        func armTracking() {
+            sut.updateValueCalculation(itemId: itemId, entryId: bEntry.id) {
+                pushDiceValue()
+                armTracking()
+            }
+        }
+        pushDiceValue()
+        armTracking()
+
+        edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 35)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).compareValue == 35)
+
+        edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 15)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).compareValue == 15)
+    }
+
+    /// Reproduces the reported bug end to end: a full-package resync
+    /// (`GameController.updatePlayer(data:)`, sent on reconnect or on any
+    /// advertised-version mismatch — i.e. potentially after *every* edit in an
+    /// active session) used to replace `gameModel.itemData[characterId]` with a
+    /// fresh `.copy()` instance instead of mutating the existing one in place. That
+    /// silently orphaned `LinkController.updateValueCalculation`'s
+    /// `withObservationTracking` registrations (armed against entries on the *old*
+    /// instance), so a linked value's *next* change — after a resync landed in
+    /// between — never reached the inline dice display again, even though the
+    /// calculated value kept updating correctly. `GameController.updatePlayer(data:)`
+    /// now mutates the existing instance in place via `replace(with:)` instead.
+    @Test func inlineDiceCountSurvivesFullResyncMidSession() async throws {
+        let root = Self.makeRoot()
+        let edit = root.editController
+        let sut = root.linkController
+
+        let diceTemplate = DiceModel(id: UUID(), name: "Attack Dice", dice: [DieModel(id: UUID(), die: .twenty)], addDiceEvery: 20)
+        root.diceRoot.itemController.replace(model: diceTemplate, isInsert: true)
+
+        let itemId = await root.itemController.addNew(type: .character)
+        let aEntry = ValueEntryModel(id: UUID(), name: "Strength", type: .number, value: "45")
+        edit.add(entry: aEntry, itemId: itemId)
+
+        let linkText = root.itemController.itemOrEmpty(for: itemId).url(linkNumber: 0, entryId: aEntry.id)
+        let bEntry = ValueEntryModel(id: UUID(), name: "Attack", type: .number, value: linkText, diceId: diceTemplate.id)
+        edit.add(entry: bEntry, itemId: itemId)
+
+        root.itemController.itemDataModel.isGameMode = true
+        defer { root.itemController.itemDataModel.isGameMode = false }
+
+        guard let gameDiceId = root.gameController.gameDiceId(itemId: itemId, entryId: bEntry.id) else {
+            Issue.record("expected a game dice id for entry B")
+            return
+        }
+
+        func pushDiceValue() {
+            let entry = root.itemController.itemOrEmpty(for: itemId)[bEntry.id]
+            guard let text = sut.calculate(entry: entry), let value = Int(text) else { return }
+            root.diceRoot.diceGameControllable.validateForValue(diceId: gameDiceId, compareValue: value)
+        }
+        // Mirrors `EntryListDiceRow`'s actual `updateOtherValue` re-arm chain — each
+        // firing re-registers itself for the *next* change, not just the first.
+        func armTracking() {
+            sut.updateValueCalculation(itemId: itemId, entryId: bEntry.id) {
+                pushDiceValue()
+                armTracking()
+            }
+        }
+
+        pushDiceValue()
+        armTracking()
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).dice.count == 3)
+
+        // First edit — this is what promotes `itemId` into `gameModel.itemData`
+        // in the first place (via `EditController.updateValue` → `replaceInGameMemory`).
+        edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 35)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).dice.count == 2)
+
+        // A full-package resync lands mid-session — e.g. the player's own edit
+        // round-tripping back with a version the master already had, or a
+        // reconnect. Build it from the item's current (already-edited) state,
+        // exactly like the network layer would.
+        let resyncData = try await root.gameController.createGameData(for: itemId)
+        try await root.gameController.updatePlayer(data: resyncData)
+        try await Task.sleep(for: .milliseconds(100))
+
+        // The resync must not have discarded the calculated dice state that was
+        // already correct.
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).dice.count == 2)
+
+        // Second edit, *after* the resync — this is the one that went silent
+        // before the fix: tracking armed against the pre-resync instance never
+        // fires again once that instance is orphaned.
+        edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 15)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(root.diceRoot.gameController.gameItem(for: gameDiceId).dice.count == 1)
+    }
+
     @MainActor
     private func shareResult() -> ShareValueResult {
         ShareValueResult.preview()
