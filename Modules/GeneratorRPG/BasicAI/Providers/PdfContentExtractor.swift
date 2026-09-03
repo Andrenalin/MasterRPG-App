@@ -59,16 +59,38 @@ struct PdfContentExtractor: Sendable {
         // Note: Foundation Models streaming for arrays doesn't provide complete objects incrementally
         do {
             var blocks: [BlockEntryGenModel] = []
+
+            // Each page deliberately gets its own fresh session rather than
+            // reusing one across the whole PDF: Apple's on-device model has a
+            // 4096-token context window *per session* (TN3193, "Managing the
+            // on-device foundation model's context window"), and that
+            // window is shared by every prior prompt/response in a session's
+            // transcript. Reusing one session across up to `maxPages` pages
+            // (each up to `maxCharacters` ≈ 1750+ tokens of input, plus the
+            // generated schema/output) would very quickly exceed that
+            // budget and start throwing `.exceededContextWindowSize` on
+            // pages that succeed today — TN3193's own guidance for a task
+            // like this is exactly the opposite: split it across multiple
+            // sessions. What *was* genuinely wasteful is `prewarm()`
+            // ("preload... within a few seconds" of an expected need) being
+            // called immediately before the very `respond(to:)` it's meant
+            // to prepare for, with nothing to overlap. Instead, the *next*
+            // page's session is created and prewarmed while the *current*
+            // page's response is still generating, so its warm-up is hidden
+            // behind real work instead of adding pure serial latency to
+            // every page. See CODE_AUDIT_10 §7.2.
+            var upcomingSession = LanguageModelSession(instructions: instructions)
+            upcomingSession.prewarm()
+
             for page in extractedText {
                 // Report progress for current page. `setPageProgress` is itself `@MainActor`
                 // — `await` alone hops there, no `MainActor.run` wrapper needed (a cross-actor
                 // property *write*, unlike a read, can't compose as `await obj.property = value`).
                 await resultModel.setPageProgress(PdfAnalysisProgress(currentPage: page.pageNumber, totalPages: pageLimit))
 
-                let session = LanguageModelSession(instructions: instructions)
-
-                // Prewarm for faster generation
-                session.prewarm()
+                let session = upcomingSession
+                upcomingSession = LanguageModelSession(instructions: instructions)
+                upcomingSession.prewarm()
 
                 let response = try await session.respond(
                     to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pdfDocument.pageCount),

@@ -37,11 +37,22 @@ struct RuleEntryTree: Sendable {
             resolvedParents[entry.id] = parentID
         }
         parentByEntryID = resolvedParents
+
+        var groupedChildren: [UUID?: [RuleEntryModel]] = [:]
+        for entry in entries {
+            groupedChildren[resolvedParents[entry.id], default: []].append(entry)
+        }
+        childrenByParentID = groupedChildren
     }
 
     let entries: [RuleEntryModel]
 
     private let parentByEntryID: [UUID: UUID]
+    /// `entries` grouped by resolved parent id (`nil` for roots), computed
+    /// once here instead of `nodes(parentID:visited:)` re-scanning the full
+    /// `entries` array at every level of every branch — O(n²) for a large
+    /// imported rule/compendium hierarchy. See CODE_AUDIT_10 §7.3.
+    private let childrenByParentID: [UUID?: [RuleEntryModel]]
 
     var roots: [Node] {
         nodes(parentID: nil, visited: [])
@@ -141,8 +152,9 @@ struct RuleEntryTree: Sendable {
     }
 
     private func nodes(parentID: UUID?, visited: Set<UUID>) -> [Node] {
-        entries.compactMap { entry in
-            guard parentByEntryID[entry.id] == parentID, !visited.contains(entry.id) else {
+        let children = childrenByParentID[parentID] ?? []
+        return children.compactMap { entry in
+            guard !visited.contains(entry.id) else {
                 return nil
             }
             let nextVisited = visited.union([entry.id])

@@ -424,8 +424,7 @@ final class GameTableModel: Sendable {
             fogSignature = Self.renderSignature(
                 of: mapModel,
                 degrees: 0,
-                isGameMaster: renderIsGameMaster,
-                viewportPan: manualViewportOffset
+                isGameMaster: renderIsGameMaster
             )
             setup.board.clearMap()
             Logger.gameTable.debug("Map has no photo")
@@ -451,8 +450,7 @@ final class GameTableModel: Sendable {
         fogSignature = Self.renderSignature(
             of: mapModel,
             degrees: degrees,
-            isGameMaster: renderIsGameMaster,
-            viewportPan: manualViewportOffset
+            isGameMaster: renderIsGameMaster
         )
         setup.board.updateMap(
             image: image,
@@ -512,8 +510,7 @@ final class GameTableModel: Sendable {
         let signature = Self.renderSignature(
             of: mapModel,
             degrees: currentMapDegrees,
-            isGameMaster: renderIsGameMaster,
-            viewportPan: manualViewportOffset
+            isGameMaster: renderIsGameMaster
         )
         guard signature != fogSignature else { return }
         guard !Task.isCancelled else { return }
@@ -541,11 +538,16 @@ final class GameTableModel: Sendable {
 
     /// Includes all board inputs, not merely room visibility, so edits to room
     /// geometry, map dimensions, display configuration, photo, and role render.
+    ///
+    /// Deliberately excludes `manualViewportOffset`: `boardFocusRect` never
+    /// applies it (see its own doc comment), so folding it in here used to
+    /// bust this cache on every pan-drag delta and trigger a full fog/board
+    /// recomposite for a value with no rendering effect. See CODE_AUDIT_10
+    /// §7.1.
     private static func renderSignature(
         of mapModel: MapModel,
         degrees: Double,
-        isGameMaster: Bool,
-        viewportPan: CGPoint
+        isGameMaster: Bool
     ) -> Int {
         var hasher = Hasher()
         hasher.combine(mapModel.id)
@@ -555,8 +557,6 @@ final class GameTableModel: Sendable {
         hasher.combine(degrees)
         hasher.combine(isGameMaster)
         hasher.combine(mapModel.displayConfig)
-        hasher.combine(viewportPan.x)
-        hasher.combine(viewportPan.y)
         for entry in mapModel.entries {
             hasher.combine(entry.id)
             hasher.combine(entry.coordinates)
@@ -608,7 +608,9 @@ final class GameTableModel: Sendable {
     /// the map surface while a room is focused. No longer has any rendering
     /// effect (`boardFocusRect` never crops), since only the 2D map still
     /// zooms into a focused room; kept, along with the gesture that drives
-    /// it, rather than ripping the pan gesture out entirely.
+    /// it, rather than ripping the pan gesture out entirely. No longer
+    /// triggers a fog/board recomposite either, for the same reason — see
+    /// `renderSignature`'s doc comment. See CODE_AUDIT_10 §7.1.
     private func panViewport(by delta: CGPoint) {
         guard focusedRoomId != nil else { return }
         // Dragging right should bring content on the left into view (like
@@ -616,7 +618,6 @@ final class GameTableModel: Sendable {
         // crop moves opposite the finger.
         manualViewportOffset.x -= delta.x
         manualViewportOffset.y -= delta.y
-        replaceFogOfWarTask(isGameMaster: isGameMaster)
         syncPawnsWithMapPins()
     }
 
