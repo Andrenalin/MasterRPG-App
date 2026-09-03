@@ -44,6 +44,23 @@ struct Scanner3DRootView: View {
                 CircularProgressView()
             }
         }
+        // Apple's sample never needs this: `ContentView` there *is* the app's only
+        // `WindowGroup` root, so `ObjectCaptureView` is proposed the screen's own bounds
+        // directly. Here it's several layers deeper — `fullScreenCover` →
+        // `ManagedPresentationView` (its own `@LazyState` navigator plumbing) → this
+        // `VStack` — and a plain `VStack` only adopts a child's flexible ideal size once
+        // that child has one to report; forcing it explicitly removes any chance the
+        // first layout pass proposes RealityKit's internal `CAMetalLayer` a zero/ambiguous
+        // size before it settles (matching the "CAMetalLayer ignoring invalid
+        // setDrawableSize width=0.000000 height=0.000000" log lines).
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+        .onAppear {
+            // Reopening after a cancel leaves `appModel` idling at `.ready` with no
+            // session — see `AppDataModel.cancelAndDismiss()` — so kick off a fresh one.
+            // No-op on first launch / while a session is already running.
+            appModel.beginCaptureIfNeeded()
+        }
         .onChange(of: appModel.state) { _, newState in
             if newState == .failed {
                 showErrorAlert = true

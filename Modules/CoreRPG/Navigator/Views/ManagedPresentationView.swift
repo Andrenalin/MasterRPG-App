@@ -43,6 +43,7 @@ public struct ManagedPresentationView<Content: View>: View {
     @LazyState private var navigator: Navigator
 
     private let content: Content
+    private let themed: Bool
 
     /// Wraps presented content in a managed navigator-aware context.
     ///
@@ -56,8 +57,14 @@ public struct ManagedPresentationView<Content: View>: View {
     ///     }
     /// }
     /// ```
-    public init(name: String? = nil, @ViewBuilder content: () -> Content) {
+    /// - Parameter themed: Paints the app's themed background behind `content`
+    ///   (`themedSurface()`). Pass `false` for content that must stay visually
+    ///   transparent behind whatever it draws itself — e.g. a live camera feed —
+    ///   where an opaque background would otherwise silently stand in for content
+    ///   that fails to render, rather than leaving the failure visible.
+    public init(name: String? = nil, themed: Bool = true, @ViewBuilder content: () -> Content) {
         self.content = content()
+        self.themed = themed
         self._navigator = .init(wrappedValue: Navigator(owner: .presenter, name: name))
     }
 
@@ -70,10 +77,24 @@ public struct ManagedPresentationView<Content: View>: View {
         content
             .modifier(NavigationPresentationModifiers(navigator: navigator))
             .environment(\.navigator, navigator)
-            .themedSurface()
+            .modifier(ThemedIf(themed: themed))
             .onAppear {
                 navigator.set(current: navigator)
             }
     }
 
+}
+
+/// Applies `themedSurface()` only when `themed` is true — see
+/// `ManagedPresentationView.init(name:themed:content:)`.
+private struct ThemedIf: ViewModifier {
+    let themed: Bool
+
+    func body(content: Content) -> some View {
+        if themed {
+            content.themedSurface()
+        } else {
+            content
+        }
+    }
 }

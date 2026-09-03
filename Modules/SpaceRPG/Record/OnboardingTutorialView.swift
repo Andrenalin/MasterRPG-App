@@ -106,7 +106,7 @@ struct OnboardingTutorialView: View {
         } else {
             videoName = onboardingStateToTutorialNameMapOnIphone[onboardingStateMachine.currentState] ?? "ScanPasses-iPhone-FixedHeight-1"
         }
-        return Bundle.main.url(forResource: videoName, withExtension: "mp4")
+        return Bundle.module.url(forResource: videoName, withExtension: "mp4")
     }
 
     private func getOrbitImageName(orbit: AppDataModel.Orbit) -> String? {

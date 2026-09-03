@@ -41,7 +41,7 @@ struct CaptureOverlayView: View {
 
             Spacer()
 
-            if shouldShowTutorial, let url = Bundle.main.url(
+            if shouldShowTutorial, let url = Bundle.module.url(
                 forResource: appModel.orbit.feedbackVideoName(
                     for: UIDevice.current.userInterfaceIdiom,
                     isObjectFlippable: appModel.isObjectFlippable),

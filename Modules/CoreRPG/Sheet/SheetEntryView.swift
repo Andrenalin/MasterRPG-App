@@ -210,7 +210,7 @@ private extension SheetEntryView {
             // Observe the row's own state so the quick controls are inserted in the
             // same update as the edit-button tap on both iOS and macOS.
             InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
-                rootModel.updateSheetModel(entryModel: entryModel, updatedText: text)
+                rootModel.updateSheetModel(entryModel: entryModel, parentModel: parentModel, updatedText: text)
                 guard appGameStateModel.isGameRunning,
                       appGameStateModel.gameModus == .player,
                       let update = entryDataEditable.gameValueEntryUpdate(

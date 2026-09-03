@@ -115,6 +115,65 @@ final class AppDataModel: Identifiable {
         state = .completed
     }
 
+    /// Set right before a cancel that's also dismissing the capture UI entirely, so
+    /// `performStateTransition`'s usual "land on `.ready` → immediately start a new
+    /// capture" behavior is skipped once. See ``cancelAndDismiss()``.
+    private var skipNextAutoRestart = false
+
+    /// Cancels the current capture and tells the state machine not to silently spin up
+    /// a replacement session behind it.
+    ///
+    /// Call this — instead of `objectCaptureSession?.cancel()` directly — from any
+    /// control that also dismisses the capture UI (see `CaptureCancelButton`). Apple's
+    /// original sample always keeps its single capture screen on screen, so landing back
+    /// on `.ready` after a cancel is meant to immediately offer a fresh capture; here the
+    /// screen closes too, so without this a brand-new `ObjectCaptureSession` was started
+    /// and left running invisibly, holding the camera and fighting the next session
+    /// opened for the hardware (the Fig camera-source asserts, "No depth/confidence map
+    /// available", stuck `shouldShowARKitCoachingView`, and growing ARFrame-retention
+    /// warnings all trace back to that orphaned session).
+    func cancelAndDismiss() {
+        skipNextAutoRestart = true
+        objectCaptureSession?.cancel()
+    }
+
+    /// Starts a new capture session if one isn't already running.
+    ///
+    /// Call when presenting the capture UI: `cancelAndDismiss()` leaves the model
+    /// idling at `.ready` with no session so the camera is released immediately, so
+    /// reopening the capture screen needs an explicit kick to start a fresh one.
+    func beginCaptureIfNeeded() {
+        guard state == .ready, objectCaptureSession == nil else { return }
+        scheduleStartNewCapture()
+    }
+
+    /// Task started by the most recent `scheduleStartNewCapture()`, tracked so a rapid
+    /// second call (e.g. `beginCaptureIfNeeded()` firing right after the `.ready` case
+    /// in `performStateTransition` already scheduled one) cancels the first instead of
+    /// both racing to claim the camera.
+    private var pendingCaptureStartTask: Task<Void, Never>?
+
+    /// Starts a new capture session after a short delay instead of immediately.
+    ///
+    /// Dropping the last reference to the previous `ObjectCaptureSession` runs its
+    /// `deinit` synchronously, but the actual handoff of the physical camera back to the
+    /// system underneath that isn't guaranteed to finish in the same instant — starting
+    /// a replacement `ObjectCaptureSession` right away can reach AVFoundation while the
+    /// old one is still mid-teardown, which surfaces as `FigCaptureSourceRemote` camera
+    /// errors (`err=-12784`) and a session that never gets a working camera feed. A
+    /// small explicit gap here gives that teardown room to actually finish first.
+    private func scheduleStartNewCapture() {
+        pendingCaptureStartTask?.cancel()
+        pendingCaptureStartTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self, self.state == .ready, self.objectCaptureSession == nil else { return }
+            guard self.startNewCapture() else {
+                Logger.scanner3D.error("Starting new capture failed!")
+                return
+            }
+        }
+    }
+
     // This sample doesn't modify the `showPreviewModel` directly. The `CapturePrimaryView`
     // remains on screen and blurred underneath, it doesn't pause.  So, pause
     // the `objectCaptureSession` after showing the model and start it before
@@ -310,10 +369,11 @@ final class AppDataModel: Identifiable {
 
         switch toState {
             case .ready:
-                guard startNewCapture() else {
-                    Logger.scanner3D.error("Starting new capture failed!")
+                guard !skipNextAutoRestart else {
+                    skipNextAutoRestart = false
                     break
                 }
+                scheduleStartNewCapture()
             case .capturing:
                 orbitState = .initial
             case .prepareToReconstruct:

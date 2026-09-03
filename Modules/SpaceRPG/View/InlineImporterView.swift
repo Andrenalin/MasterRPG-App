@@ -139,12 +139,30 @@ struct InlineImporterView: View, Equatable {
         )
 #endif
 #if os(iOS) && !targetEnvironment(simulator)
-        .sheet(isPresented: $showScanner) {
-            ManagedPresentationView {
-                Scanner3DRootView(itemId: itemId) { url in
-                    await root.editController.resetFile(url: url, itemId: itemId)
-                }
+        // ObjectCaptureSession needs a true full-screen host to reach `cameraTracking == .normal`;
+        // inside a page-sheet (`.sheet`) it can stay stuck showing the system's own initial
+        // guidance ("Move iPhone to start") indefinitely, since `CapturePrimaryView` only shows
+        // its own capture overlay once tracking normalizes.
+        .fullScreenCover(isPresented: $showScanner) {
+            // Deliberately NOT wrapped in `ManagedPresentationView`: nothing in the
+            // scanner reads `@Environment(\.navigator)` (only plain `@Environment(\.dismiss)`
+            // in `CaptureCancelButton`), and `ManagedPresentationView` adds real
+            // indirection — a `@LazyState`-deferred `Navigator`, `NavigationPresentationModifiers`
+            // (its own nested, initially-inactive `.sheet`/`.fullScreenCover`), plus the
+            // themed background — between this cover and `ObjectCaptureView`'s own
+            // internal Metal view that Apple's sample (a flat `WindowGroup` root) never
+            // has. `ObjectCaptureView`'s `CAMetalLayer` needs a real, immediately-correct
+            // frame to size its drawable; it never recovers if the layout pass it first
+            // sees is degenerate (matching the persistent "CAMetalLayer ignoring invalid
+            // setDrawableSize width=0.000000 height=0.000000" — camera hardware active,
+            // frames arriving, nothing rendered). Presenting the plain view removes that
+            // extra layer rather than trying to work around it.
+            Scanner3DRootView(itemId: itemId) { url in
+                await root.editController.resetFile(url: url, itemId: itemId)
             }
+        }
+        .onChange(of: showScanner) { _, isShowing in
+            root.isScanning3D = isShowing
         }
 #endif
     }

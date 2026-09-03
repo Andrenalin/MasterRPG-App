@@ -23,7 +23,15 @@ struct DetailFolderListView: View {
             configuration: .init(editorAsBackground: true, editorOnTop: editorOnTop, isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
-            ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))
+            // Skip the background `RealityView` while a 3D scan is running: it and
+            // `Scanner3DRootView`'s ObjectCaptureSession would otherwise render
+            // concurrently and starve each other of Metal drawables. See
+            // `SpaceRootModel.isScanning3D`.
+            if root.isScanning3D {
+                Color.clear
+            } else {
+                ViewerRootView(model: model, configuration: ViewerConfiguration(closeButton: false, addToolbar: false, isGame: false))
+            }
         } viewer: { itemId, dismiss in
             root.viewController.viewer(
                 root: root,

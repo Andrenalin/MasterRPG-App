@@ -69,7 +69,14 @@ struct CapturePrimaryView: View {
     }
 
     private var shouldShowOverlayView: Bool {
-        !showInfo && !appModel.showPreviewModel && !session.isPaused && session.cameraTracking == .normal
+        // Apple's original `CapturePrimaryView` shows `CaptureOverlayView` unconditionally —
+        // `CaptureOverlayView` already adapts its own content to `session.state` internally.
+        // Gating the whole overlay on `session.cameraTracking == .normal` (as this used to)
+        // has no counterpart there: if tracking never reports exactly `.normal` — even once the
+        // system's own ARKit coaching overlay has genuinely dismissed and capture could proceed —
+        // the entire capture UI (bounding-box guidance, Continue/Capture buttons) never mounts,
+        // leaving a bare camera feed with nothing to interact with.
+        !showInfo && !appModel.showPreviewModel && !session.isPaused
     }
 }
 

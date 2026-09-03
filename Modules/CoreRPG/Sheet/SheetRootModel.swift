@@ -715,12 +715,22 @@ public final class SheetRootModel: Sendable {
         updateParent(parentModel)
     }
 
-    /// Update the sheet model after inline edits
-    func updateSheetModel(entryModel: SheetModel, updatedText: String) {
+    /// Update the sheet model after inline edits.
+    ///
+    /// Patches `entryModel`'s own displayed text immediately (cheap, and keeps
+    /// a stepper/quick-editor feeling instant), then schedules a debounced
+    /// reconcile of `parentModel` via `scheduleParentReconcile(_:)` so any
+    /// *other* entry whose value formula links to this one — including one in
+    /// a different group — picks up the new result. Without this, an entry's
+    /// own row updated correctly but a sibling/other-group entry computed
+    /// from it via a markdown link (`LinkController.calculate`) stayed stale
+    /// until some unrelated reconcile happened to run.
+    func updateSheetModel(entryModel: SheetModel, parentModel: SheetModel, updatedText: String) {
         entryModel.description = updatedText
         let lookupId = entryModel.source.entryId ?? entryModel.source.itemId
         linkTextModel[.entry(lookupId)]?.reset(text: entryModel.name)
         linkTextModel[.entryContent(lookupId)]?.reset(text: entryModel.description)
+        scheduleParentReconcile(parentModel)
     }
     
     func addNewEntry(in sheetModel: SheetModel) -> UUID? {

@@ -92,6 +92,17 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
                 }
             }
             .task {
+                // `@SceneStorage` may only be read/written while this view is
+                // synchronously installed — touching it again after the `await`
+                // below resumes on a detached continuation, which is exactly what
+                // logs "Accessing a SceneStorage value outside of being installed
+                // on a View". So snapshot (and clean up any corrupted value) here,
+                // then only ever touch the plain snapshot after the delay.
+                let restoredItemId = selectedItemId.flatMap(UUID.init(uuidString:))
+                if selectedItemId != nil, restoredItemId == nil {
+                    selectedItemId <=> nil
+                }
+
                 do {
                     try await Task.sleep(for: stateRestorationDelay)
                 } catch {
@@ -99,14 +110,7 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
                 }
                 guard !Task.isCancelled else { return }
 
-                if let itemIdString = selectedItemId, let itemId = UUID(uuidString: itemIdString) {
-                    if root.navigationModel.selectedItemId != itemId {
-                        root.navigationModel.selectedItemId = itemId
-                    }
-                } else {
-                    selectedItemId <=> nil
-                    root.navigationModel.selectedItemId <=> nil
-                }
+                root.navigationModel.selectedItemId <=> restoredItemId
             }
     }
 }

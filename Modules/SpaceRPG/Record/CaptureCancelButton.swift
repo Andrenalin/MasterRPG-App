@@ -16,7 +16,7 @@ extension CaptureOverlayView {
         var body: some View {
             Button {
                 Logger.scanner3D.log("\(LocalizedString.cancel) button clicked!")
-                appModel.objectCaptureSession?.cancel()
+                appModel.cancelAndDismiss()
                 dismiss()
             } label: {
                 Text(LocalizedString.cancel)

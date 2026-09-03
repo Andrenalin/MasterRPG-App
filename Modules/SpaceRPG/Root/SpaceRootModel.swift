@@ -110,6 +110,16 @@ public final class SpaceRootModel {
     @ObservationIgnored public var linkSelectionModel: ItemSelectionModel
     public let removeEntryListModel: RemoveEntryListModel
 
+    /// Set while `Scanner3DRootView`'s `ObjectCaptureSession` is running (iOS, device only).
+    ///
+    /// `DetailFolderListView` reads this to skip building its background `SpaceViewer`/
+    /// `RealityView` while a scan is active: that RealityView and the scanner's own
+    /// ARKit/RealityKit Metal pipeline would otherwise render concurrently and starve
+    /// each other of `CAMetalLayer` drawables (`[CAMetalLayer nextDrawable] returning nil
+    /// because allocation failed`), which leaves the scanner stuck showing the system's
+    /// initial "Move iPhone to start" guidance since its camera feed never actually renders.
+    public var isScanning3D: Bool = false
+
     let searchModel: SearchModel
     let listDisplayModel: ListDisplayModel
 
