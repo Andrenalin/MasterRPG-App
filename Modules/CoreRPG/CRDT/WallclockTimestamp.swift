@@ -3,6 +3,37 @@
 //
 
 import Foundation
+import Synchronization
+
+/// Hands out `Date()`-based timestamps for new local writes, guaranteed to
+/// strictly increase within this process even when two writes land in the
+/// same underlying clock tick — `Date()`'s effective resolution is coarser
+/// than two back-to-back calls on modern hardware. Without this, two
+/// independently value-copied `LWWRegister`s that still share an actor ID
+/// (e.g. `var a = original; var b = original`, each later mutated locally)
+/// can tie on both clock *and* actor ID, and `merged(with:)`'s tie-break
+/// then falls back to picking whichever operand happens to be `other` —
+/// silently discarding whichever write actually happened later.
+///
+/// The values handed out remain real wall-clock time, nudged forward by at
+/// most `nextUp`'s epsilon, so ordering against another device's genuinely
+/// distinct `Date()`-based timestamp is unaffected — this only breaks local
+/// ties. See CODE_AUDIT_10 §3 follow-up.
+///
+/// `public` only because it backs a default argument value on `public`
+/// initializers below — not intended as a general-purpose API.
+public enum MonotonicWallClock {
+    private static let lastIssued = Mutex<TimeInterval>(0)
+
+    public static func now() -> TimeInterval {
+        lastIssued.withLock { last in
+            let candidate = Date().timeIntervalSinceReferenceDate
+            let issued = candidate > last ? candidate : last.nextUp
+            last = issued
+            return issued
+        }
+    }
+}
 
 /// A wall-clock timestamp for a specific actor.
 ///
@@ -33,7 +64,7 @@ public struct WallclockTimestamp<ActorID: Hashable & Comparable>: Identifiable, 
     /// - Parameters:
     ///   - clock: An optional initial clock value, that otherwise defaults to a value determined by the current time.
     ///   - actorId: The actor identity for the timestamp.
-    public init(actorId: ActorID, timestamp: TimeInterval = Date().timeIntervalSinceReferenceDate) {
+    public init(actorId: ActorID, timestamp: TimeInterval = MonotonicWallClock.now()) {
         clock = timestamp
         self.actorId = actorId
     }

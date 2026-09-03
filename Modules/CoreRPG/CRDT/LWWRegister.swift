@@ -18,7 +18,11 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
         internal var value: T
         internal var clockId: WallclockTimestamp<ActorID>
 
-        init(value: T, id: ActorID, timestamp: TimeInterval = Date().timeIntervalSinceReferenceDate) {
+        // See MonotonicWallClock's doc comment — the default here (not
+        // WallclockTimestamp's own, unused when called from here since this
+        // always passes `timestamp` through explicitly) is what every local
+        // `LWWRegister.value =` assignment actually goes through.
+        init(value: T, id: ActorID, timestamp: TimeInterval = MonotonicWallClock.now()) {
             self.value = value
             clockId = WallclockTimestamp(actorId: id, timestamp: timestamp)
         }
