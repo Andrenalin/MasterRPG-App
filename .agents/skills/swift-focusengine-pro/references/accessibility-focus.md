@@ -76,33 +76,41 @@ entity.accessibilityLabel = "3D Trophy Model"
 entity.isAccessibilityElement = true
 ```
 
+## accessibilityDefaultFocus (OS 26+)
+
+> Evidence: SDK-verified — `@available(iOS 26.0, macOS 26.0, tvOS 26.0, watchOS 26.0, visionOS 26.0, *)` in the 26.5 SDK SwiftUI interface on all five platforms.
+
+The accessibility analog of `defaultFocus`: declares which element VoiceOver focus should land on by default when a view appears, driven by an `AccessibilityFocusState` binding:
+
+```swift
+@AccessibilityFocusState private var a11yFocus: Field?
+
+VStack {
+    TextField("Email", text: $email)
+        .accessibilityFocused($a11yFocus, equals: .email)
+    SecureField("Password", text: $password)
+        .accessibilityFocused($a11yFocus, equals: .password)
+}
+.accessibilityDefaultFocus($a11yFocus, .email)
+```
+
+This controls **VoiceOver focus only** — it does not touch UI focus (`@FocusState`/`defaultFocus`). When both matter (tvOS especially), set both defaults and keep the two systems' targets consistent so VoiceOver users and remote users land on the same element.
+
 ## Full Keyboard Access (iOS/iPadOS)
 
-Full Keyboard Access (Settings > Accessibility > Keyboards) enables Tab/arrow navigation for ALL users, not just those with hardware keyboards connected. It activates the full focus system.
+Full Keyboard Access (Settings > Accessibility > Keyboards) requires a connected hardware keyboard — what it changes is *reach*: with FKA on, Tab/arrow navigation reaches ALL controls, not just text fields and lists (the default keyboard-focus scope). It activates the full focus system.
 
 ### Focus Groups with Full Keyboard Access
 
+`.focusSection()` is NOT available on iOS (macOS/tvOS only) — on iOS, focus groups are defined in UIKit with `focusGroupIdentifier` (iOS 14+):
+
 ```swift
-VStack {
-    // Group 1: Navigation
-    HStack {
-        Button("Home") { }
-        Button("Search") { }
-        Button("Settings") { }
-    }
-    .focusSection()
-    
-    // Group 2: Content
-    LazyVGrid(columns: columns) {
-        ForEach(items) { item in
-            CardView(item: item)
-        }
-    }
-    .focusSection()
-}
+// UIKit — group the navigation bar and the content grid separately
+navigationStack.focusGroupIdentifier = "com.app.navigation"
+contentCollectionView.focusGroupIdentifier = "com.app.content"
 ```
 
-Tab moves between groups. Arrow keys move within a group. Without `.focusSection()`, Tab moves through every individual element.
+Tab moves between groups; arrow keys move within a group. In pure SwiftUI on iOS there is no focus-section equivalent — the system derives groups from structure, so put related controls in a common container and verify the Tab order with FKA enabled.
 
 ### UIFocusGroupPriority (UIKit)
 
@@ -129,7 +137,7 @@ Switch Control lets users navigate with external switches (buttons, head movemen
 - `.accessibilityElement(children: .combine)` groups children into one switch target
 
 ### visionOS
-- Uses Dwell Control variant — gaze at element for set duration
+- Switch Control works with external switches; Dwell Control is a separate feature (gaze at an element for a set duration instead of pinching)
 - RealityKit entities need accessibility properties
 
 ## Accessibility Labels for Focusable Elements
@@ -149,7 +157,7 @@ Button(action: play) {
 .accessibilityLabel("Play video")
 ```
 
-### TVos Focused State Announcements
+### tvOS Focused State Announcements
 
 When focus moves to a new element on tvOS, VoiceOver announces the element. Custom views must provide meaningful labels:
 

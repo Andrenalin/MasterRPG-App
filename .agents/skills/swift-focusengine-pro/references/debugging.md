@@ -28,11 +28,17 @@ Returns detailed explanation of why the view is or isn't focusable. Checks:
 ```
 Walks the preferred focus chain without actually moving focus. Shows which view WOULD receive focus.
 
-### Check focus group tree
+### Check focus groups
 ```
-(lldb) po UIFocusDebugger.checkFocusGroupTree(for: focusSystem)
+(lldb) po UIFocusDebugger.focusGroups(for: myEnvironment)
 ```
-Prints the entire focus group hierarchy.
+Prints the focus group hierarchy for the given environment.
+
+### Check preferred focus chain
+```
+(lldb) po UIFocusDebugger.preferredFocusEnvironments(for: myEnvironment)
+```
+Prints the hierarchy of preferred focus environments — pairs well with anti-pattern #30 (missing `preferredFocusEnvironments` override).
 
 ### List all commands
 ```
@@ -263,7 +269,7 @@ override func windowDidLoad() {
 3. Is the view hidden, zero-alpha, or not in a window?
 4. Is `isHidden` true on an ancestor?
 5. Is the view in the key view loop? Check `nextKeyView` chain.
-6. Is `recalculatesKeyViewLoop` enabled and possibly excluding the view geometrically?
+6. Is `autorecalculatesKeyViewLoop` enabled and possibly excluding the view geometrically?
 
 **Focus ring not appearing:**
 1. Is `focusRingType` set to `.none`?

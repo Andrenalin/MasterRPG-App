@@ -100,7 +100,7 @@ HStack { /* left-aligned pills */ }
 
 ## prefersDefaultFocus(_:in:) + focusScope(_:)
 
-Controls which view gets focus by default within a namespace scope. tvOS and watchOS only.
+Controls which view gets focus by default within a namespace scope. macOS 12+, tvOS 14+, watchOS 7+ (not iOS).
 
 ```swift
 @Namespace private var namespace
@@ -121,7 +121,7 @@ VStack {
 Rules:
 - `focusScope(namespace)` MUST be on an ancestor of views using `prefersDefaultFocus`
 - `resetFocus(in:)` re-evaluates preferences and moves focus
-- Does NOT work inside ScrollView — use `defaultFocus` instead
+- Does NOT work inside ScrollView — use `defaultFocus` instead (but see anti-pattern #28: `defaultFocus` with `.userInitiated` seeds initial appearance only, not re-entry)
 
 ## defaultFocus(_:_:priority:)
 
@@ -188,12 +188,12 @@ Read-only focus state. Returns true if nearest focusable ancestor is focused.
 
 Used in custom ButtonStyles for visual feedback. See `references/focus-styling.md`.
 
-## Hover Effects (tvOS 17+)
+## Hover Effects
 
 ```swift
-.hoverEffect(.lift)       // Default for Buttons — lifts the view
-.hoverEffect(.highlight)  // Adds perspective shift + specular shine (great for artwork)
-.focusEffectDisabled()     // Disables default focus appearance
+.hoverEffect(.lift)       // tvOS 16+ — default for Buttons; lifts the view
+.hoverEffect(.highlight)  // tvOS 16+ — perspective shift + specular shine (great for artwork)
+.focusEffectDisabled()    // tvOS 17+ — disables default focus appearance
 ```
 
 ## AutoFocus Pattern
@@ -201,23 +201,19 @@ Used in custom ButtonStyles for visual feedback. See `references/focus-styling.m
 One-time programmatic focus on screen load, coordinated with layout completion:
 
 ```swift
-class AutoFocusManager: ObservableObject {
-    @Published var shouldAutoFocus = true
-    private let subject = PassthroughSubject<Void, Never>()
-    var publisher: AnyPublisher<Void, Never> { subject.eraseToAnyPublisher() }
-    private var hasTriggered = false
+@MainActor @Observable
+final class AutoFocusManager {
+    // Non-UI bookkeeping — kept out of observation entirely
+    @ObservationIgnored private var hasTriggered = false
+    var focusRequest: Int = 0  // incremented once per screen appearance
 
     func trigger() {
-        guard shouldAutoFocus, !hasTriggered else { return }
-        subject.send()
+        guard !hasTriggered else { return }
         hasTriggered = true
-        shouldAutoFocus = false
+        focusRequest += 1
     }
 
-    func reset() {
-        shouldAutoFocus = true
-        hasTriggered = false
-    }
+    func reset() { hasTriggered = false }
 }
 
 // In parent view — trigger after layout completes:
@@ -225,8 +221,10 @@ class AutoFocusManager: ObservableObject {
     if complete { autoFocusManager.trigger() }
 }
 
-// In child view — receive and set focus:
-.onReceive(autoFocusManager.publisher) { _ in
+// In child view — react and set focus:
+.onChange(of: autoFocusManager.focusRequest) { _, _ in
     focusedField = .mainContent
 }
 ```
+
+`@MainActor` is explicit so the class compiles identically in modules with and without Swift 6.2's default MainActor isolation (in new Xcode 26 projects it's inferred). The Combine `ObservableObject` version of this pattern still works but re-evaluates every observing view on each `@Published` write.

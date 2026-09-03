@@ -81,7 +81,7 @@ struct FocusBorder: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .cornerRadius(cornerRadius)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay {
                 if isFocused {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -111,6 +111,18 @@ extension View {
 - `.buttonStyle(.bordered)` — bordered button with focus highlight.
 
 Prefer `.card` for media content — it provides parallax, shadow, and the standard tvOS "lift" feel that custom scale effects don't replicate.
+
+## tvOS 26 / Liquid Glass
+
+> Evidence: Apple documentation / release notes (Aug 2026) — doc-sourced, not yet production-verified.
+
+OS 26 introduced no new focus APIs, but Liquid Glass changes what *focused* looks like:
+
+- System controls (including `.glass` button styles and standard tab/sidebar chrome) render focus with glass treatments on tvOS 26. Custom ButtonStyles built to visually match tvOS ≤18 system focus (scale + shadow) may now look out of place next to system chrome — compare on-device before shipping.
+- **Device matrix caveat:** Apple's tvOS 26 release notes state the design updates are NOT carried forward to Apple TV 4K (1st gen) and older — the same app shows pre-glass focus visuals there. Test both looks.
+- `ControlSize` works on tvOS starting with tvOS 26 (`.controlSize(_:)`, environment value) — focused-control sizing can now vary by control size, which affects scale-matching math.
+- The 1.13x focus scale (see the table in layout-patterns.md) is confirmed unchanged on tvOS 26 — simulator-measured 1.133x on tvOS 26.4 with the `.card` style. Re-measure on device only for pixel-critical matching.
+- Apps built with the 26 SDKs also change SwiftUI-vs-UIKit **gesture priority**: SwiftUI gestures now yield to a view's existing `UIGestureRecognizer`s/`NSGestureRecognizer`s by default (previously they didn't). Use `highPriorityGesture(_:isEnabled:)` when your SwiftUI gesture must take precedence, or `simultaneousGesture(_:isEnabled:)` to run both — relevant wherever remote gestures and focus interactions coexist.
 
 ## UIKit Focus Animations
 
@@ -166,20 +178,10 @@ override func prepareForReuse() {
 
 ## clipsToBounds considerations
 
-When cells scale up on focus, content clips if `clipsToBounds = true`. Set `clipsToBounds = false` on the cell and its contentView, or use a SwiftUI helper:
+When cells scale up on focus, content clips if `clipsToBounds = true`.
 
-```swift
-extension View {
-    func clipsToBoundsDisabled() -> some View {
-        self.background(
-            GeometryReader { _ in
-                Color.clear
-                    .preference(key: ClipsToBoundsKey.self, value: false)
-            }
-        )
-    }
-}
-```
+- **UIKit:** set `clipsToBounds = false` on the cell AND its `contentView` (both clip independently), and leave enough inter-item spacing for the scaled frame.
+- **SwiftUI:** there is no clipsToBounds toggle — avoid `.clipped()` and fixed-size ancestors around focus-scaling content, and give rows headroom (padding on the container) so the 1.13x scale isn't cut off by a scroll view edge. Raise the focused card with `.zIndex(1)` if neighbors overlap it.
 
 ## macOS Focus Ring Styling
 
@@ -214,9 +216,11 @@ class CircularAvatarView: NSView {
         path.fill()
     }
 
-    // Notify AppKit when the mask shape changes (e.g., resize)
-    override func noteFocusRingChanged() {
-        super.noteFocusRingChanged()
+    // If content that shapes the ring changes in a way AppKit can't detect
+    // (e.g., the avatar image is swapped), CALL noteFocusRingMaskChanged().
+    // Resizes and needsDisplay re-evaluate the mask automatically.
+    func avatarDidChange() {
+        noteFocusRingMaskChanged()
     }
 }
 ```
@@ -227,7 +231,7 @@ class CircularAvatarView: NSView {
 class CustomStyledView: NSView {
     override var focusRingType: NSFocusRingType { .none }
 
-    override func drawRect(_ dirtyRect: NSRect) {
+    override func draw(_ dirtyRect: NSRect) {
         // Draw custom focus indicator when focused
         if window?.firstResponder === self {
             NSColor.controlAccentColor.setStroke()

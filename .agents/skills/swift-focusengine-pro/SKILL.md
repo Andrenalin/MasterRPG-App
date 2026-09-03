@@ -1,7 +1,7 @@
 ---
 name: swift-focusengine-pro
 description: Reviews, writes, and fixes focus management code for all Apple platforms (tvOS, iOS/iPadOS, watchOS, visionOS, macOS), covering SwiftUI, UIKit, AppKit, and RealityKit. Use when reading, writing, or reviewing apps that handle focus, hover, key view loops, or Digital Crown navigation.
-version: 1.7.1
+version: 1.8.1
 author: Michael Haviv
 tags:
   - swift
@@ -57,7 +57,7 @@ If doing a partial review, load only the relevant reference files.
 ### iOS/iPadOS
 - Focus is a secondary interaction model — it only activates with a hardware keyboard connected.
 - Tab moves between focus groups; arrow keys move within a group. This two-level model does NOT exist on tvOS.
-- Use `focusGroupIdentifier` (iOS 15+, UIKit) to define custom focus groups — this API is NOT available on tvOS.
+- Use `focusGroupIdentifier` (iOS 14+, UIKit) to define custom focus groups — this API is NOT available on tvOS.
 - Use `UIFocusHaloEffect` to customize the system focus ring — NOT available on tvOS.
 - Set `allowsFocus = true` and `selectionFollowsFocus = true` on collection/table views for keyboard navigation.
 - Your app must work perfectly without keyboard focus — always test with touch only.
@@ -79,7 +79,7 @@ If doing a partial review, load only the relevant reference files.
 ### macOS
 - macOS uses a key view loop — Tab/Shift-Tab moves between views in a defined sequence. This is NOT spatial like tvOS.
 - Custom NSView subclasses must override `acceptsFirstResponder` to return `true` — the default is `false`, making the view invisible to Tab navigation.
-- `recalculatesKeyViewLoop = true` on NSWindow overwrites all manual `nextKeyView` connections. Pick one approach.
+- `autorecalculatesKeyViewLoop = true` on NSWindow overwrites all manual `nextKeyView` connections. Pick one approach.
 - Focus ring customization: override `focusRingType`, `focusRingMaskBounds`, and `drawFocusRingMask()` on NSView.
 - `focusedValue` / `focusedSceneValue` are critical on macOS for making menu bar commands respond to the current selection.
 - Mac Catalyst: inherits iPad `UIFocusSystem`. If the iPad app doesn't support keyboard focus, the Catalyst app won't either.
@@ -90,13 +90,18 @@ If doing a partial review, load only the relevant reference files.
 - Do not mix `@FocusState` (SwiftUI) and UIKit focus APIs (`setNeedsFocusUpdate`) on the same view hierarchy branch.
 - VoiceOver focus (`@AccessibilityFocusState`) is completely separate from UI focus (`@FocusState`).
 
+### Toolchain status (as of Xcode 27 beta, Aug 2026)
+- OS 26 added exactly **one** new focus API — `accessibilityDefaultFocus(_:_:)` (SwiftUI, all platforms 26.0+, sets default VoiceOver focus; see `references/accessibility-focus.md`) — and **no focus deprecations**; the OS 27 betas add none. Verified by scanning the installed 26.5 SDK interfaces for all five platforms, not just release notes. What else changed around focus: Liquid Glass alters focused-control appearance on tvOS 26 (4K 2nd gen+ only — older devices keep pre-glass visuals), `ControlSize` works on tvOS 26+, `.sidebarAdaptable` TabView (tvOS 18+) moves the tab region to a leading sidebar, and visionOS 26 adds opt-in gaze scrolling (`.scrollInputBehavior(.enabled, for: .look)`).
+- The 27 SDKs **require the scene-based lifecycle** on iOS/iPadOS/tvOS/visionOS/Mac Catalyst (apps fail to launch without it; macOS and watchOS are unaffected), and tvOS 27 adds Dynamic Type — both affect focus sample scaffolding and sizing, not focus APIs.
+- Swift 6.2: new Xcode 26 projects default to module-wide MainActor isolation; keep explicit `@MainActor` in examples that must compile in both worlds (see `references/async-focus.md`).
+
 
 ## Output Format
 
 Organize findings by file. For each issue:
 
 1. State the file and relevant line(s).
-2. Name the rule being violated (e.g., "Use `.allowsHitTesting(false)` instead of `.disabled()`").
+2. Name the rule being violated (e.g., "Do not remove ordinary controls from the tvOS focus chain — gate the action instead of using `.disabled()`; the deliberate dual-`@FocusState` entry-gating pattern in anti-pattern #25 is the one exception").
 3. Show a brief before/after code fix.
 
 Skip files with no issues. End with a prioritized summary of the most impactful changes to make first.
@@ -143,7 +148,7 @@ End of example.
 
 ## References
 
-- `references/anti-patterns.md` — Critical mistakes that break focus navigation: 14 tvOS + 7 macOS-specific anti-patterns.
+- `references/anti-patterns.md` — Critical mistakes that break focus navigation: 30 numbered anti-patterns across tvOS/general and macOS-specific sections.
 - `references/swiftui-focus.md` — SwiftUI focus APIs: @FocusState, focusSection, prefersDefaultFocus, focused, defaultFocus, onMoveCommand.
 - `references/uikit-focus.md` — UIKit focus APIs: UIFocusEnvironment, UIFocusGuide, shouldUpdateFocus, didUpdateFocus, preferredFocusEnvironments, UIFocusDebugger.
 - `references/focus-styling.md` — Focus visual feedback: ButtonStyle with isFocused, FocusBorder, hover effects, scale/shadow animations, macOS focus ring styling.

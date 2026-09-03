@@ -48,17 +48,16 @@ Custom effects are **precomputed at view creation** and executed by the system c
 Coordinates multiple hover effects to activate together:
 
 ```swift
-@Namespace var hoverGroup
-
 HStack {
     Image(systemName: "star")
-        .hoverEffect(in: HoverEffectGroup(hoverGroup))
+        .hoverEffect(.highlight, in: group)   // hoverEffect(_:in:isEnabled:) — effect + group
     Text("Favorite")
-        .hoverEffect(in: HoverEffectGroup(hoverGroup))
+        .hoverEffect(.highlight, in: group)
 }
+.hoverEffectGroup()  // or: .hoverEffectGroup(id:in:behavior:) with a @Namespace for cross-container groups
 ```
 
-Looking at *any* view in the group activates all views' effects simultaneously.
+Looking at *any* view in the group activates all views' effects simultaneously. Note the real signatures: `hoverEffect(_:in:isEnabled:)` takes the effect first, and `hoverEffectGroup()` / `hoverEffectGroup(id:in:behavior:)` declare the group — there is no bare `.hoverEffect(in:)` overload without an effect or trailing closure.
 
 ### .contentShape(.hoverEffect, shape)
 
@@ -80,9 +79,32 @@ Button("No hover") { }
     .hoverEffectDisabled(true)
 ```
 
-### .defaultHoverEffect() (visionOS 2.0+)
+### .defaultHoverEffect() (visionOS 1.0+)
 
 Sets the default hover effect for a subtree. Children inherit unless overridden.
+
+## visionOS 26: Look to Scroll
+
+> Evidence: Apple documentation / release notes (Aug 2026) — doc-sourced, not yet production-verified.
+
+Gaze-driven scrolling is **opt-in** per scroll view. The `scrollInputBehavior(_:for:)` modifier exists since visionOS 2, but the `.look` input kind is visionOS 26+:
+
+```swift
+ScrollView {
+    ...
+}
+.scrollInputBehavior(.enabled, for: .look)  // ScrollInputKind.look — visionOS 26+
+```
+
+Review notes:
+- It is NOT on by default in your app — Apple documents it as opt-in per scroll view.
+- `scrollDisabled(true)` wins over any per-input enablement.
+
+## Spatial accessories (visionOS 26)
+
+> Evidence: Apple documentation / release notes (Aug 2026) — doc-sourced, not yet production-verified.
+
+visionOS 26 adds tracked spatial accessories (PlayStation VR2 Sense controller, Logitech Muse) with 6DOF input — a pointer-class input alongside gaze-and-pinch. When reviewing input code, don't assume gaze is the only targeting path on visionOS anymore.
 
 ## RealityKit Entity Hover
 
@@ -185,7 +207,7 @@ Alternative targeting instead of eyes:
 
 ### Dwell Control
 Interact by looking at control for set duration (no pinch needed):
-- Settings > Accessibility > AssistiveTouch > Dwell Control
+- Settings > Accessibility > Interaction > Dwell Control
 
 ### Switch Control
 Works with external switches. RealityKit entities need accessibility properties.
