@@ -139,7 +139,16 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                 editControllable: root.editControllable,
                 model: editingItem.model,
                 module: root.configurable.module,
-                dismiss: { self.editingItem = nil }
+                dismiss: {
+                    self.editingItem = nil
+                    // Name/description edits made here bypass SheetRootModel entirely (they go
+                    // straight through EditControllable), so the materialized SheetModel tree —
+                    // which only copies those fields at construction/reconcile time — never
+                    // learns about the change on its own. Reconcile both live sheet slots so
+                    // SheetView picks it up immediately instead of on some unrelated update.
+                    root.editControllable.editorModel.sheetRootModel?.updateFromRoot()
+                    root.editControllable.editorModel.gameSheetRootModel?.updateFromRoot()
+                }
             )
             .id(editingItem.id)
             .transition(itemHeaderEditorTransition)
