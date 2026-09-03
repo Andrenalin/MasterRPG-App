@@ -93,13 +93,22 @@ private struct TestDataSnapshot: Sendable {
     let testName: String
 }
 
+// Deliberately not @MainActor, unlike CLAUDE.md's mandate for @Observable
+// classes: `SwiftDataController.replace(uuid:with:mapper:updater:)` takes
+// synchronous, non-isolated `@Sendable` mapper/updater closures over `Model`
+// (see `ModelType = Observable & Sendable`) — isolating this fixture to
+// @MainActor makes every one of those closures' property accesses illegal
+// ("main actor-isolated property ... can not be referenced from a Sendable
+// closure"), since a @Sendable closure may run off the actor that isolates
+// its captures. `SwiftDataController` has no production caller to check this
+// contract against elsewhere in the codebase. See CODE_AUDIT_10 §3.5.
 @Observable
 fileprivate final class TestModel: @unchecked Sendable {
     init(id: UUID, testName: String) {
         self.id = id
         self.testName = testName
     }
-    
+
     var id: UUID
     var testName: String
 }

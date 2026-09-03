@@ -28,7 +28,6 @@ extension View {
 #endif
     }
 
-    @available(iOS 26.0, macOS 26.0, tvOS 26.0, *)
     nonisolated public func glassEffectAll() -> some View {
 #if os(visionOS)
         self
@@ -38,12 +37,10 @@ extension View {
     }
 
 #if !os(visionOS)
-    @available(iOS 26.0, macOS 26.0, tvOS 26.0, *)
     nonisolated public func glassEffectAll(_ style: Glass) -> some View {
         glassEffect(style)
     }
 
-    @available(iOS 26.0, macOS 26.0, tvOS 26.0, *)
     nonisolated public func glassEffectAll<S>(_ style: Glass, in shape: S) -> some View where S : Shape {
         glassEffect(style, in: shape)
     }

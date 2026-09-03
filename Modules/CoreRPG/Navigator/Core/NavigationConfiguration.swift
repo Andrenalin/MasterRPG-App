@@ -77,11 +77,10 @@ nonisolated public struct NavigationConfiguration {
         verbosity: NavigationEvent.Verbosity = .warning,
         autoDestinationMode: Bool = true
     ) {
-        if #available(iOS 18, *) {
-            self.executionDelay = min(max(0.3, executionDelay), 5.0)
-        } else {
-            self.executionDelay = min(max(0.7, executionDelay), 5.0)
-        }
+        // iOS 18 is below this project's iOS 26.0 deployment floor, so the
+        // pre-iOS-18 branch this once guarded (a 0.7 floor) could never run —
+        // collapsed to just the reachable branch. See CODE_AUDIT_10 §3.2.
+        self.executionDelay = min(max(0.3, executionDelay), 5.0)
         self.restorationKey = restorationKey
         self.logger = logger
         self.verbosity = verbosity

@@ -522,6 +522,18 @@ final class MasterController {
     let asProxy: Bool
     let messagePipeline = GameMessagePipeline()
 
+    /// Chains every `resetPlayers()` call onto the previous one so only a
+    /// single broadcast sequence is ever in flight, regardless of which of
+    /// `resetPlayers()`'s three independent call sites triggered it — the
+    /// `messagePipeline`-drained network path, `lostPlayer(for:)` (called
+    /// directly on connection loss, bypassing `messagePipeline`), and
+    /// `GameRootModel.sharingControlActions`'s own, separately-serialized
+    /// `scheduleNetworkAction` chain. Without this, `resetPlayers()`'s
+    /// several internal `await`s let two independently triggered calls
+    /// interleave and each broadcast its own stale roster/map snapshot. See
+    /// CODE_AUDIT_10 §3.1.
+    private var resetPlayersTask: Task<Void, Never>?
+
     init(root: GameRoot, asProxy: Bool) {
         self.root = root
         self.asProxy = asProxy
@@ -559,6 +571,8 @@ extension MasterController {
     func stop() async {
         Logger.networking.debug("MasterController: Stop")
         await messagePipeline.cancelAll()
+        resetPlayersTask?.cancel()
+        resetPlayersTask = nil
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
         gameModel.sentGameItems.removeAll()
@@ -578,7 +592,21 @@ extension MasterController {
         root.gameModel.gameControl.controls = []
     }
     
+    /// Serializing entry point — see `resetPlayersTask`'s doc comment. Every
+    /// call site awaits this, so each caller still only returns once its own
+    /// broadcast sequence (and any it was queued behind) has fully run.
     func resetPlayers() async {
+        let previous = resetPlayersTask
+        let task = Task { @MainActor [weak self] in
+            await previous?.value
+            guard let self, !Task.isCancelled else { return }
+            await self.performResetPlayers()
+        }
+        resetPlayersTask = task
+        await task.value
+    }
+
+    private func performResetPlayers() async {
         let (gameConfig, gameRoster, gameControl) = (root.gameModel.gameConfig, root.gameModel.gameRoster, root.gameModel.gameControl)
 
         let previousAudioPlayers = Set(root.audioRoot.gameControllable.gameModel.currentPlayers)
