@@ -7,7 +7,11 @@ struct AddtionalEntryRow: View, Equatable {
     let source: ItemRowModel
     let entry: any EntryDataAccessable
     let textModel: LinkHighlightTextModel?
-    
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated.
+    var resolvedModel: ValueModel? = nil
+
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.appTheme) private var theme
     
@@ -34,13 +38,13 @@ struct AddtionalEntryRow: View, Equatable {
                 }
             }
             
-            EntryListDiceRow(itemId: source.itemId, entryId: entryId)
+            EntryListDiceRow(itemId: source.itemId, entryId: entryId, resolvedModel: model)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
     private var model: ValueModel {
-        root.itemController.itemOrEmpty(for: source.itemId)
+        resolvedModel ?? root.itemController.itemOrEmpty(for: source.itemId)
     }
     
     private var valueEntry: ValueEntryModel {

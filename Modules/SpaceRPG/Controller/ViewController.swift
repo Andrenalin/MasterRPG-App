@@ -19,6 +19,10 @@ extension ViewController: ViewControllable {
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
         AnyView(InlineRowViewer(source: source, destination: destination).equatable())
     }
+
+    @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView {
+        AnyView(InlineRowViewer(source: source, destination: destination, sourceModel: sourceModel).equatable())
+    }
 }
 
 // MARK: - List View

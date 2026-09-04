@@ -22,6 +22,13 @@ extension ViewController: ViewControllable {
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView {
         AnyView(InlineRowViewer(source: source, destination: destination).equatable())
     }
+
+    // No 4-arg override: `InlineRowViewer` here delegates to `DiceInline`,
+    // which resolves via `gameController.gameItem(for:)` (game-session
+    // state), not `itemController.itemSync`/`itemOrEmpty` — so it isn't
+    // part of the `itemData`-whole-dictionary subscription this override
+    // exists to avoid. The 2-arg protocol default already covers this
+    // correctly. See CODE_AUDIT_10 §8.1.
 }
 
 // MARK: Viewer

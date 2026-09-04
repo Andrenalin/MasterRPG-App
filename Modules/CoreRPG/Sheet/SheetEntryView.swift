@@ -128,9 +128,45 @@ private func resolvedViewController(for source: ItemRowModel, rootModel: SheetRo
     rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
 }
 
+/// Mirrors `resolvedViewController` above: resolves `row`'s model once
+/// here, at this per-row (but not per-item-in-a-list) boundary, instead of
+/// letting `rowViewer`'s leaf re-resolve via `itemSync`/`itemOrEmpty` deep
+/// inside its own `body` — that subscribes the leaf to the *entire*
+/// `itemData` dictionary (Observation tracks a dictionary property at
+/// whole-property granularity), so any item edit in the module
+/// re-invalidates every other open row, not just this one. See
+/// CODE_AUDIT_10 §8.1.
+@MainActor
+private func resolvedModel(for row: ItemRowModel, rootModel: SheetRootModel) -> (any ModelType)? {
+    rootModel.rootManager.itemRootController(for: row.typeId)?.itemControllable.itemSync(for: row.itemId)
+}
+
+/// Shared by `SheetEntryView` and `SheetEntryMainRowView` below — resolves
+/// `source`/`destination`'s models once here instead of leaving it to
+/// `rowViewer`'s leaf to re-resolve via `itemSync`/`itemOrEmpty` inside its
+/// own `body`. See `resolvedModel`'s doc comment / CODE_AUDIT_10 §8.1.
+@MainActor
+private func resolvedRowViewer(
+    for viewController: ViewControllable?,
+    source: ItemRowModel,
+    destination: ItemRowModel,
+    rootModel: SheetRootModel
+) -> AnyView? {
+    viewController?.rowViewer(
+        source: source,
+        destination: destination,
+        sourceModel: resolvedModel(for: source, rootModel: rootModel),
+        destinationModel: resolvedModel(for: destination, rootModel: rootModel)
+    )
+}
+
 private extension SheetEntryView {
     func viewController(for source: ItemRowModel) -> ViewControllable? {
         resolvedViewController(for: source, rootModel: rootModel)
+    }
+
+    func rowViewer(viewController: ViewControllable?, source: ItemRowModel, destination: ItemRowModel) -> AnyView? {
+        resolvedRowViewer(for: viewController, source: source, destination: destination, rootModel: rootModel)
     }
 
     @ViewBuilder var rowContent: some View {
@@ -176,7 +212,7 @@ private extension SheetEntryView {
                 switch inlineSheet.sheetType {
                 case .photo:
                     // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
-                    viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                    rowViewer(viewController: viewController(for: inlineSheet.source), source: inlineSheet.source, destination: inlineSheet.destination)
                         .frame(height: 96)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .clipShape(.rect(cornerRadius: 16))
@@ -193,10 +229,14 @@ private extension SheetEntryView {
                 switch inlineSheet.sheetType {
                 case .dice:
                     // Use inlineSheet.source for both viewController lookup and rowViewer
-                    viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                    rowViewer(
+                        viewController: viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source),
+                        source: inlineSheet.source,
+                        destination: inlineSheet.destination
+                    )
                 case .pdf:
                     // Use inlineSheet.source for both viewController lookup and rowViewer
-                    viewController(for: inlineSheet.source)?.rowViewer(source: inlineSheet.source, destination: inlineSheet.destination)
+                    rowViewer(viewController: viewController(for: inlineSheet.source), source: inlineSheet.source, destination: inlineSheet.destination)
                 default:
                     EmptyView()
                 }
@@ -329,18 +369,18 @@ private struct SheetEntryMainRowView: View {
                         .font(.headline)
 
                 case .dice:
-                    resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                    resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                 case .photo:
-                    resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                    resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                         .frame(height: 256)
                         .clipShape(.rect(cornerRadius: 16))
                 case .pdf, .space, .weather:
-                    resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                    resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                         .frame(height: 256)
 
                 case .audio:
                     HStack {
-                        resolvedViewController(for: entryModel.source, rootModel: rootModel)?.rowViewer(source: entryModel.source, destination: entryModel.destination)
+                        resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                         LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
                     }
                     .font(.body)

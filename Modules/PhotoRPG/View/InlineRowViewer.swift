@@ -4,11 +4,22 @@ import CoreRPG
 import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
+    init(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)? = nil) {
+        self.source = source
+        self.destination = destination
+        self.sourceModel = sourceModel
+    }
+
     let source: ItemRowModel
     let destination: ItemRowModel
-    
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `photoRow`'s own
+    /// `itemSync` lookup when nil, so this stays correct for any call site
+    /// that hasn't been updated to pass it.
+    let sourceModel: (any ModelType)?
+
     @Environment(PhotoRootModel.self) private var root
-    
+
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
     @Environment(\.appTheme) private var theme
@@ -16,7 +27,7 @@ struct InlineRowViewer: View, Equatable {
     var body: some View {
         GameShareView(root: root.rootController, itemId: source.itemId) {
             HStack {
-                root.viewController.photoRow(root: root, for: source.itemId)
+                photoContent
                     .background {
                         RoundedRectangle(cornerRadius: 24, style: .continuous).fill(theme.background(for: root.config.module))
                     }
@@ -51,7 +62,15 @@ struct InlineRowViewer: View, Equatable {
     var title: String {
         String(localized: "Open Photo", bundle: .module)
     }
-        
+
+    @ViewBuilder private var photoContent: some View {
+        if let cacheController = root.cacheController {
+            if let model = (sourceModel as? PhotoModel) ?? root.itemController.itemSync(for: source.itemId) {
+                CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
+            }
+        }
+    }
+
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source
     }

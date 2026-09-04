@@ -4,7 +4,7 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditRow: View {
-    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel) {
+    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, resolvedModel: (any ModelType)? = nil) {
         self.root = root
         self.editController = editController
         self.itemId = itemId
@@ -12,6 +12,7 @@ public struct EntryEditRow: View {
         self.cacheItemListModel = cacheItemListModel
         self.listDisplayModel = listDisplayModel
         self.searchModel = searchModel
+        self.resolvedModel = resolvedModel
     }
 
     let root: any ItemRootControllable
@@ -21,6 +22,10 @@ public struct EntryEditRow: View {
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated.
+    let resolvedModel: (any ModelType)?
 
     @Environment(\.navigator) private var navigator
     
@@ -56,7 +61,7 @@ public struct EntryEditRow: View {
 
 private extension EntryEditRow {
     var model: any ItemDataAccessable {
-        editController.itemControllable.itemOrEmpty(for: itemId)
+        (resolvedModel as? any ItemDataAccessable) ?? editController.itemControllable.itemOrEmpty(for: itemId)
     }
     
     var linkTextModel: LinkHighlightTextModel {

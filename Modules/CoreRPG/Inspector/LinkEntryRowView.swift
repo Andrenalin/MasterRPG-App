@@ -16,7 +16,7 @@ struct LinkEntryRowView: View {
         if let entryId = item.source.entryId,
            let itemModel = root.itemControllable.itemSync(for: item.source.itemId) {
             if let editController {
-                EntryEditRow(root: root, editController: editController, itemId: item.source.itemId, entry: itemModel[entryId], cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: listDisplayModel, searchModel: root.folderLinkControllable.searchModel)
+                EntryEditRow(root: root, editController: editController, itemId: item.source.itemId, entry: itemModel[entryId], cacheItemListModel: root.folderLinkControllable.cacheListItemModel, listDisplayModel: listDisplayModel, searchModel: root.folderLinkControllable.searchModel, resolvedModel: itemModel)
             } else {
                 Text(verbatim: "\(itemModel[entryId].name): \(itemModel[entryId].content)")
             }

@@ -63,6 +63,21 @@ public protocol ViewControllable: Sendable {
     @MainActor func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView
+    /// Same as `rowViewer(source:destination:)`, but lets a caller that has
+    /// already resolved `source`/`destination`'s models (typically by
+    /// reading `RootManager.itemRootController(for:)?.itemControllable`
+    /// once, at whatever list/`ForEach` level actually owns that
+    /// subscription) hand them straight down instead of the leaf row
+    /// re-resolving via `itemSync`/`itemOrEmpty` inside its own `body`.
+    /// Reading `itemData` inside a per-row `body` subscribes that row to
+    /// the module's *entire* `itemData` dictionary — Observation tracks a
+    /// dictionary-typed property at whole-property granularity, not
+    /// per-key — so editing any one item re-invalidates every other open
+    /// row that resolved this way, however far down the call chain the
+    /// read happened. See CODE_AUDIT_10 §8.1. Defaults to the plain
+    /// 2-parameter version (ignoring both models) so conformers that don't
+    /// override this keep working exactly as before.
+    @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView
     @MainActor func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView?
 }
 
@@ -77,6 +92,9 @@ public extension ViewControllable {
     @MainActor func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView { thumbnailRowView(for: model.id) }
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView {
+        rowViewer(source: source, destination: destination)
+    }
 
     var supportsBatchExtraction: Bool { false }
     var hasCustomSpaceAction: Bool { false }

@@ -7,13 +7,17 @@ import DiceRPG
 struct EntryListDiceRow: View {
     let itemId: UUID
     let entryId: UUID
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated.
+    var resolvedModel: ValueModel? = nil
 
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var updateOtherValue: Bool = false
 
     var body: some View {
-        @Bindable var model = root.itemController.itemOrEmpty(for: itemId)
+        @Bindable var model = resolvedModel ?? root.itemController.itemOrEmpty(for: itemId)
         if let id = root.gameController.gameDiceId(itemId: itemId, entryId: entryId) {
             root.diceRoot.viewController.viewDice(root: root.diceRoot, with: id, for: ResultCategory(id: itemId, childId: entryId, module: root.itemController.config.module), player: true)
                 .onChange(of: model[entryId].diceId, initial: false) {

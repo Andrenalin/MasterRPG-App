@@ -6,14 +6,18 @@ import SwiftUI
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
     let destination: ItemRowModel
-    
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated.
+    var sourceModel: (any ModelType)? = nil
+
     @Environment(SpaceRootModel.self) private var root
-    
+
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
 
     var body: some View {
-        ViewerRootView(model: root.itemController.itemOrEmpty(for: source.itemId), configuration: ViewerConfiguration(isGame: false))
+        ViewerRootView(model: (sourceModel as? SpaceModel) ?? root.itemController.itemOrEmpty(for: source.itemId), configuration: ViewerConfiguration(isGame: false))
             .frame(height: 256)
             .overlay(alignment: .trailing) {
                 Button {

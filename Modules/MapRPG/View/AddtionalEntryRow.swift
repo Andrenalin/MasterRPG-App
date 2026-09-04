@@ -6,9 +6,13 @@ import SwiftUI
 struct AddtionalEntryRow: View, Equatable {
     let source: ItemRowModel
     let entry: any EntryDataAccessable
-    
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated.
+    var resolvedModel: MapModel? = nil
+
     @Environment(MapRootModel.self) private var root
-    
+
     var body: some View {
         @Bindable var model = model
         VStack(alignment: .trailing) {
@@ -17,15 +21,15 @@ struct AddtionalEntryRow: View, Equatable {
                     Text("Shown", bundle: .module)
                 }
                 .labelsHidden()
-                
+
                 Text("Shown", bundle: .module)
             }
             Text("\(pinsCounter) pins", bundle: .module)
         }
     }
-    
+
     private var model: MapModel {
-        root.itemController.itemOrEmpty(for: source.itemId)
+        resolvedModel ?? root.itemController.itemOrEmpty(for: source.itemId)
     }
     
     private var mapEntryModel: MapEntryModel {

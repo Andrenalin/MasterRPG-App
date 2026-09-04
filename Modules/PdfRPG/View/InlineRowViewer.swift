@@ -6,9 +6,13 @@ import SwiftUI
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
     let destination: ItemRowModel
-    
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated.
+    var sourceModel: (any ModelType)? = nil
+
     @Environment(PdfRootModel.self) private var root
-    
+
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.navigator) private var navigator
 
@@ -46,7 +50,7 @@ struct InlineRowViewer: View, Equatable {
     }
 
     var model: PdfModel {
-        root.itemController.itemOrEmpty(for: source.itemId)
+        (sourceModel as? PdfModel) ?? root.itemController.itemOrEmpty(for: source.itemId)
     }
 
     var title: String {

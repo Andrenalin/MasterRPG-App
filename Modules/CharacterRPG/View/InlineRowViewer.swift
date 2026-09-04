@@ -10,7 +10,14 @@ import TableRPG
 struct InlineRowViewer: View, Equatable {
     let source: ItemRowModel
     let destination: ItemRowModel
-    
+    /// Pre-resolved by the caller where available — see `ViewControllable`'s
+    /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
+    /// nil, so this stays correct for any call site not yet updated. Only
+    /// covers the `destination.entryId != nil` branch below — the `else`
+    /// branch resolves a runtime-remapped `diceSource` id the ancestor
+    /// couldn't have known ahead of time.
+    var destinationModel: (any ModelType)? = nil
+
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.isSheetEditor) private var isSheetEditor
 
@@ -18,9 +25,10 @@ struct InlineRowViewer: View, Equatable {
         switch module {
         case .dice:
             if let entryId = destination.entryId {
+                let resolvedModel = (destinationModel as? ValueModel) ?? root.itemController.itemOrEmpty(for: destination.itemId)
                 HStack(spacing: 4) {
-                    EntryListDiceRow(itemId: destination.itemId, entryId: entryId)
-                    if isSheetEditor && root.itemController.itemOrEmpty(for: destination.itemId)[entryId].diceId != nil {
+                    EntryListDiceRow(itemId: destination.itemId, entryId: entryId, resolvedModel: resolvedModel)
+                    if isSheetEditor && resolvedModel[entryId].diceId != nil {
                         DiceRowRemoveButton(itemId: destination.itemId, entryId: entryId)
                     }
                 }

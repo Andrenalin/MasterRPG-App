@@ -142,7 +142,12 @@ private extension SheetView {
             // Display inline entries directly without SheetEntryView wrapper
             // to avoid triggering beforeInline/afterInline recursion
             Group {
-                viewController(for: inlineEntry.source)?.rowViewer(source: inlineEntry.source, destination: inlineEntry.destination)
+                viewController(for: inlineEntry.source)?.rowViewer(
+                    source: inlineEntry.source,
+                    destination: inlineEntry.destination,
+                    sourceModel: resolvedModel(for: inlineEntry.source, rootManager: rootModel.rootManager),
+                    destinationModel: resolvedModel(for: inlineEntry.destination, rootManager: rootModel.rootManager)
+                )
             }
             .applyIf(inlineEntry.sheetType == .photo) {
                 $0.frame(height: 160)
@@ -157,6 +162,15 @@ private extension SheetView {
     
     func viewController(for source: ItemRowModel) -> ViewControllable? {
         rootModel.rootController(for: source.typeId)?.viewControllable
+    }
+
+    /// Resolves `row`'s model once here — the `ForEach` above already
+    /// subscribes to this module's `itemData` regardless (it needs to know
+    /// about additions/removals), so doing the read here instead of inside
+    /// `rowViewer`'s per-row leaf keeps that one, expected subscription at
+    /// the list boundary. See CODE_AUDIT_10 §8.1.
+    func resolvedModel(for row: ItemRowModel, rootManager: RootManager) -> (any ModelType)? {
+        rootManager.itemRootController(for: row.typeId)?.itemControllable.itemSync(for: row.itemId)
     }
     
     var shareResult: ShareValueResult {
