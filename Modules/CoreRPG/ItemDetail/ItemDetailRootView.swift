@@ -146,7 +146,17 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable, 
         // chained after this view) so the file viewer still renders above
         // it — wrapping the other way around would swap that stacking
         // order. See CODE_AUDIT_10 §9.11.
-        if showsBottomOverlayBar, let bottomOverlayBarHeight {
+        // `BottomOverlayBar == EmptyView` means the caller never passed
+        // `bottomOverlayBar:` at all (its default). Reaching `.safeAreaInset`
+        // below with genuinely empty content collapses the *entire* detail
+        // view — SwiftUI can't measure an `EmptyView`'s ideal size once
+        // `.opacity(0)` erases it, and `HeaderContentScrollView`'s own
+        // layout depends on that measurement. Regression from CODE_AUDIT_10
+        // §9.11: every module without its own bar (the majority, via the
+        // shared `DetailFolderList`) silently lost its detail editor.
+        if BottomOverlayBar.self == EmptyView.self {
+            content
+        } else if showsBottomOverlayBar, let bottomOverlayBarHeight {
             content
                 .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
                     Color.clear
