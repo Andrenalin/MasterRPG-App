@@ -10,7 +10,7 @@ struct GameStatisticsController: Sendable {
     func eventDraft(
         for model: GameNetworkModel,
         sessionId: UUID,
-        localParticipantID: UUID,
+        localParticipantId: UUID,
         direction: GameStatisticDirection,
         origin: GameMessageOrigin,
         occurredAt: Date = .now
@@ -27,10 +27,10 @@ struct GameStatisticsController: Sendable {
             kind: kind,
             direction: direction,
             origin: GameStatisticOrigin(origin),
-            actorID: model.sender.id,
-            actorCharacterID: model.sender.characterId,
+            actorId: model.sender.id,
+            actorCharacterId: model.sender.characterId,
             actorName: model.sender.name,
-            targetID: model.targetId,
+            targetId: model.targetId,
             itemId: model.data.id,
             itemName: "",
             module: model.data.type,
@@ -52,7 +52,7 @@ struct GameStatisticsController: Sendable {
 
     func participants(
         from model: GameNetworkModel,
-        localParticipantID: UUID
+        localParticipantId: UUID
     ) -> [GameStatisticParticipantDraft] {
         var players = model.masterState?.players ?? []
         if !players.contains(where: { $0.id == model.sender.id }) {
@@ -67,18 +67,18 @@ struct GameStatisticsController: Sendable {
         var participantIDs = Set<UUID>()
         return players.compactMap { player in
             guard participantIDs.insert(player.id).inserted else { return nil }
-            return participantDraft(player: player, localParticipantID: localParticipantID)
+            return participantDraft(player: player, localParticipantId: localParticipantId)
         }
     }
 
-    func participantDraft(player: PlayerGameModel, localParticipantID: UUID) -> GameStatisticParticipantDraft {
+    func participantDraft(player: PlayerGameModel, localParticipantId: UUID) -> GameStatisticParticipantDraft {
         GameStatisticParticipantDraft(
-            participantID: player.id,
-            characterID: player.characterId,
+            participantId: player.id,
+            characterId: player.characterId,
             name: player.name,
             characterName: player.characterId == nil ? "" : player.name,
             role: GameStatisticRole(gameType: player.type),
-            isLocal: player.id == localParticipantID,
+            isLocal: player.id == localParticipantId,
             isGameMaster: player.type == .master
         )
     }
@@ -116,13 +116,13 @@ struct GameStatisticsController: Sendable {
                 title: { $0.role.title }
             ),
             characters: categoryPoints(
-                sessions: sessions.filter { $0.characterID != nil || !$0.characterName.isEmpty },
-                key: { $0.characterID?.uuidString ?? $0.characterName },
+                sessions: sessions.filter { $0.characterId != nil || !$0.characterName.isEmpty },
+                key: { $0.characterId?.uuidString ?? $0.characterName },
                 title: { $0.characterName.isEmpty ? String(localized: "Unknown Character", bundle: .module) : $0.characterName }
             ),
             adventures: categoryPoints(
-                sessions: sessions.filter { $0.adventureID != nil || !$0.adventureTitle.isEmpty },
-                key: { $0.adventureID?.uuidString ?? $0.adventureTitle },
+                sessions: sessions.filter { $0.adventureId != nil || !$0.adventureTitle.isEmpty },
+                key: { $0.adventureId?.uuidString ?? $0.adventureTitle },
                 title: { $0.adventureTitle.isEmpty ? String(localized: "Unknown Adventure", bundle: .module) : $0.adventureTitle }
             ),
             diceOutcomes: diceOutcomePoints(events: diceEvents),
@@ -283,7 +283,7 @@ struct GameStatisticsController: Sendable {
         let remote = participants.filter { !$0.isLocal }
         var aggregates: [String: (title: String, duration: TimeInterval, count: Int)] = [:]
         for participant in remote {
-            let key = participant.characterID?.uuidString ?? participant.participantID.uuidString
+            let key = participant.characterId?.uuidString ?? participant.participantId.uuidString
             let title = participant.characterName.isEmpty ? participant.name : participant.characterName
             var aggregate = aggregates[key] ?? (title, 0, 0)
             aggregate.duration += participant.connectedDuration

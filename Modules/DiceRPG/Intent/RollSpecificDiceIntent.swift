@@ -64,28 +64,6 @@ public struct RollSpecificDiceIntent: AppIntent {
         )
     }
     
-    private func formatValues(results: [Int], sumUp: Bool, modifier: Double) -> String {
-        if sumUp {
-            let sum = results.reduce(0, +)
-            if modifier != 0 {
-                let modifierString = modifier > 0 ? "+\(Int(modifier))" : "\(Int(modifier))"
-                return results.map { String($0) }.joined(separator: ", ") + " \(modifierString) = \(Int(Double(sum) + modifier))"
-            } else {
-                return results.map { String($0) }.joined(separator: ", ") + " = \(sum)"
-            }
-        } else {
-            if let first = results.first {
-                if modifier != 0 {
-                    let modifierString = modifier > 0 ? "+\(Int(modifier))" : "\(Int(modifier))"
-                    return "\(first) \(modifierString) = \(Int(Double(first) + modifier))"
-                } else {
-                    return String(first)
-                }
-            }
-            return ""
-        }
-    }
-    
 }
 
 // MARK: - Snippet View

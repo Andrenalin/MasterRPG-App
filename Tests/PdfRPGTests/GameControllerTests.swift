@@ -113,7 +113,7 @@ struct GameControllerTests {
         let playerId = UUID()
         sut.setMasterVersion(itemId: pdfId, version: 6, masterId: masterId)
         sut.markPdfAvailable(itemId: pdfId, version: 6, for: [playerId], masterId: masterId)
-        let originalVersions = sut.pdfGameModel.playerVersions
+        let originalVersions = sut.versionLedger.playerVersions
         let originalReports = sut.gameModel.playerReports
         let malformedData = NetworkCodableDataType(
             id: UUID(),
@@ -145,7 +145,7 @@ struct GameControllerTests {
         // Then
         #expect(!appliedMalformed)
         #expect(!appliedMissing)
-        #expect(sut.pdfGameModel.playerVersions == originalVersions)
+        #expect(sut.versionLedger.playerVersions == originalVersions)
         #expect(sut.gameModel.playerReports == originalReports)
         #expect(sut.isPdfAvailable(itemId: pdfId, for: playerId, masterId: masterId))
     }
@@ -200,7 +200,7 @@ struct GameControllerTests {
         await sut.reset()
 
         // Then
-        #expect(sut.pdfGameModel.playerVersions.isEmpty)
+        #expect(sut.versionLedger.playerVersions.isEmpty)
         #expect(sut.gameModel.playerReports.isEmpty)
         #expect(sut.masterVersion(for: pdfId, masterId: masterId) == nil)
         #expect(!sut.isPdfAvailable(itemId: pdfId, for: playerId, masterId: masterId))

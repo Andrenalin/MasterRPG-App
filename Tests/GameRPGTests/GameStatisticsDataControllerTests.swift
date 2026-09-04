@@ -17,12 +17,12 @@ struct GameStatisticsDataControllerTests {
         let sut = GameStatisticsDataController()
         let startedAt = Date(timeIntervalSince1970: 1_704_067_200)
         let sessionID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
-        let participantID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
-        let participant = GameStatisticParticipantDraft.fixture(participantID: participantID)
+        let participantId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
+        let participant = GameStatisticParticipantDraft.fixture(participantId: participantId)
         let session = GameStatisticSessionDraft.fixture(
             id: sessionID,
             startedAt: startedAt,
-            localParticipantID: participantID,
+            localParticipantId: participantId,
             participants: [participant]
         )
         let event = GameStatisticEventDraft.fixture(
@@ -40,7 +40,7 @@ struct GameStatisticsDataControllerTests {
         )
         try await sut.participantLeft(
             sessionID: sessionID,
-            participantID: participantID,
+            participantId: participantId,
             at: startedAt.addingTimeInterval(1_200),
             in: store.context
         )

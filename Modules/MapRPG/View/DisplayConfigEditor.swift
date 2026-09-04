@@ -15,7 +15,6 @@ struct DisplayConfigEditor: View {
     
     @State private var color = Color.black
     @State private var borderToggleEditModel: EditIdentifierModel<Bool> = EditIdentifierModel(value: false)
-    @State private var showTileEditor = false
     @State private var tileImage: AKImage?
     
     var body: some View {
@@ -163,10 +162,6 @@ struct DisplayConfigEditor: View {
     private func clearTileCoordinates() {
         root.editController.reset(tileCoordinates: [], itemId: model.id)
         tileImage = nil
-    }
-    
-    private func saveTileCoordinates(_ coordinates: [CGPoint]) {
-        root.editController.reset(tileCoordinates: coordinates, itemId: model.id)
     }
     
     private func loadTileImage() {

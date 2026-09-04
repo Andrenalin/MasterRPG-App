@@ -13,7 +13,7 @@ public struct DetailFolderList<Editor: View, Viewer: View, LinkTypes: LinkDataTr
     let openFileWindowModel: OpenFileWindowModel
     let detailListController: FolderListControllable
     let selectedModel: any ItemDataAccessable
-    let configuration: ItemDetailRootView<Editor, LinkTypes>.Configuration
+    let configuration: ItemDetailConfiguration
     let linkTypes: LinkTypes.Type
     let editor: () -> Editor
     let viewer: (UUID, @escaping () -> Void) -> Viewer
@@ -23,7 +23,7 @@ public struct DetailFolderList<Editor: View, Viewer: View, LinkTypes: LinkDataTr
         openFileWindowModel: OpenFileWindowModel,
         detailListController: FolderListControllable,
         selectedModel: any ItemDataAccessable,
-        configuration: ItemDetailRootView<Editor, LinkTypes>.Configuration = .init(),
+        configuration: ItemDetailConfiguration = .init(),
         linkTypes: LinkTypes.Type,
         @ViewBuilder editor: @escaping () -> Editor,
         @ViewBuilder viewer: @escaping (UUID, @escaping () -> Void) -> Viewer

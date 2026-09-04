@@ -426,7 +426,7 @@ struct GameControllerTests {
 
         // Then
         #expect(!sut.spaceGameModel.openSpace)
-        #expect(sut.spaceGameModel.playerVersions.isEmpty)
+        #expect(sut.versionLedger.playerVersions.isEmpty)
         #expect(sut.spaceGameModel.transformStates.isEmpty)
         #expect(sut.latestSpaceTransform(for: firstSpaceId, version: 41) == nil)
         #expect(sut.latestSpaceTransform(for: secondSpaceId, version: 42) == nil)

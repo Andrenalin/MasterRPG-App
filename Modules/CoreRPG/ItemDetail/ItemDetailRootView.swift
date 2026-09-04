@@ -15,32 +15,38 @@ struct EditingItem: Identifiable {
     }
 }
 
+/// Configuration for `ItemDetailRootView` behavior. A top-level type rather
+/// than nested inside `ItemDetailRootView` — it doesn't depend on any of
+/// that view's generic parameters, and nesting it would force every
+/// external reference to spell out all of them (`Editor`, `LinkTypes`, and
+/// `BottomOverlayBar` once that was added for CODE_AUDIT_10 §9.11) just to
+/// name this type.
+public struct ItemDetailConfiguration {
+    public var editorAsBackground: Bool
+    /// When `editorAsBackground` is true, layers the editor above the
+    /// file-importer/description overlays instead of beneath them, padded
+    /// clear of the top overlay. See `ItemEditorBackgroundView`.
+    public var editorOnTop: Bool
+    public var disableHideHeader: Bool
+    public var isSubFolder: Bool
+
+    public init(
+        editorAsBackground: Bool = false,
+        editorOnTop: Bool = false,
+        disableHideHeader: Bool = false,
+        isSubFolder: Bool = false
+    ) {
+        self.editorAsBackground = editorAsBackground
+        self.editorOnTop = editorOnTop
+        self.disableHideHeader = disableHideHeader
+        self.isSubFolder = isSubFolder
+    }
+}
+
 // MARK: - Main View
 
-public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>: View {
-
-    /// Configuration for ItemDetailRootView behavior
-    public struct Configuration {
-        public var editorAsBackground: Bool
-        /// When `editorAsBackground` is true, layers the editor above the
-        /// file-importer/description overlays instead of beneath them, padded
-        /// clear of the top overlay. See `ItemEditorBackgroundView`.
-        public var editorOnTop: Bool
-        public var disableHideHeader: Bool
-        public var isSubFolder: Bool
-
-        public init(
-            editorAsBackground: Bool = false,
-            editorOnTop: Bool = false,
-            disableHideHeader: Bool = false,
-            isSubFolder: Bool = false
-        ) {
-            self.editorAsBackground = editorAsBackground
-            self.editorOnTop = editorOnTop
-            self.disableHideHeader = disableHideHeader
-            self.isSubFolder = isSubFolder
-        }
-    }
+public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable, BottomOverlayBar: View>: View {
+    public typealias Configuration = ItemDetailConfiguration
 
     public init(
         root: any ItemRootControllable,
@@ -48,12 +54,18 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         selectedModel: any ItemDataAccessable,
         configuration: Configuration = Configuration(),
         linkTypes: LinkTypes.Type,
+        showsBottomOverlayBar: Bool = true,
+        bottomOverlayBarHeight: CGFloat? = nil,
+        @ViewBuilder bottomOverlayBar: @escaping () -> BottomOverlayBar = { EmptyView() },
         @ViewBuilder editor: () -> Editor
     ) {
         self.root = root
         self.folderListController = detailListController
         self.selectedModel = selectedModel
         self.configuration = configuration
+        self.showsBottomOverlayBar = showsBottomOverlayBar
+        self.bottomOverlayBarHeight = bottomOverlayBarHeight
+        self.bottomOverlayBar = bottomOverlayBar
         self.editor = editor()
     }
 
@@ -61,8 +73,28 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     let folderListController: FolderListControllable
     let selectedModel: any ItemDataAccessable
     let configuration: Configuration
+    /// See `bottomOverlayBar`'s own doc — three modules (Audio/Weather/Dice)
+    /// used to hand-implement this exact `safeAreaInset`/`overlay` stack
+    /// independently. See CODE_AUDIT_10 §9.11.
+    let showsBottomOverlayBar: Bool
+    /// `nil` (the default) measures `bottomOverlayBar()`'s own real content,
+    /// at zero opacity, for the safe-area inset — matching what
+    /// Weather/Dice's bespoke copies did. A fixed value instead uses an
+    /// invisible `Color.clear` spacer of that height, leaving
+    /// `bottomOverlayBar()` to be composed however the caller wants for the
+    /// *visible* copy only — matching Audio's bespoke copy, which reserves a
+    /// fixed 80pt rather than measuring `AudioPlayerBarView` itself.
+    let bottomOverlayBarHeight: CGFloat?
+    /// A bar shown at `.bottom`, sitting between the editor content and
+    /// `.openFileWindowOverlay` in the modifier chain so the file viewer
+    /// still renders above it — callers apply their own padding/hit-testing
+    /// modifiers inside this closure exactly as they want the *visible* bar
+    /// to appear; only the invisible measurement copy (when
+    /// `bottomOverlayBarHeight` is nil) is forced to zero opacity /
+    /// disabled hit-testing / hidden accessibility here.
+    let bottomOverlayBar: () -> BottomOverlayBar
     let editor: Editor
-    
+
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @State private var editingItem: EditingItem?
     @State private var itemIdHasUrl = UUID()
@@ -73,8 +105,8 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
     
     public var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
-        ItemDetailContentView(
+
+        let content = ItemDetailContentView<Editor, LinkTypes>(
             root: root,
             model: selectedModel,
             configuration: configuration,
@@ -104,6 +136,35 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable>:
         }
         .onDisappear {
             clearCompactSelectionAfterPop()
+        }
+
+        // Three modules (Audio/Weather/Dice) used to hand-implement this
+        // exact safeAreaInset/overlay stack independently, each with an
+        // identical comment explaining why it bypasses the shared
+        // `DetailFolderList` instead: the bar must sit *between* this
+        // content and `.openFileWindowOverlay` (applied by the caller,
+        // chained after this view) so the file viewer still renders above
+        // it — wrapping the other way around would swap that stacking
+        // order. See CODE_AUDIT_10 §9.11.
+        if showsBottomOverlayBar, let bottomOverlayBarHeight {
+            content
+                .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                    Color.clear
+                        .frame(height: bottomOverlayBarHeight)
+                        .allowsHitTesting(false)
+                }
+                .overlay(alignment: .bottom) { bottomOverlayBar() }
+        } else if showsBottomOverlayBar {
+            content
+                .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
+                    bottomOverlayBar()
+                        .opacity(0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+                .overlay(alignment: .bottom) { bottomOverlayBar() }
+        } else {
+            content
         }
     }
 }
@@ -188,10 +249,11 @@ private extension ItemDetailRootView {
             description: "A weathered map showing the road to the lost keep.",
             tags: ["Map", "Quest"]
         ),
-        linkTypes: EmptyLinkTransferable.self
-    ) {
-        Text(verbatim: "Editor content")
-    }
+        linkTypes: EmptyLinkTransferable.self,
+        editor: {
+            Text(verbatim: "Editor content")
+        }
+    )
     .environment(AppWindowSizeModel())
 }
 

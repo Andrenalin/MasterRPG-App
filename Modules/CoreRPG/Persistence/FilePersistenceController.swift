@@ -34,8 +34,8 @@ struct FilePersistenceController: Sendable {
 extension FilePersistenceController {
     func load() async -> [DataModel] {
         guard type != .memory else { return await model.cache }
-        let oldUrl = oldFileURL
-        let loadUrl = fileURL
+        let oldUrl = oldFileUrl
+        let loadUrl = fileUrl
         do {
             try await migrateOldFile(oldUrl: oldUrl, newUrl: loadUrl)
             let exists = FileManager.default.fileExists(atPath: loadUrl.relativePath)
@@ -59,9 +59,9 @@ extension FilePersistenceController {
             await model.setCache(update: data)
             return
         }
-        let saveURL = fileURL
+        let saveUrl = fileUrl
         do {
-            try FilePersistenceController.saveModel(data: data, into: saveURL)
+            try FilePersistenceController.saveModel(data: data, into: saveUrl)
         } catch {
             Logger.filePersistenceController.error("Error saving data \(error.localizedDescription, privacy: .public)")
         }
@@ -72,8 +72,8 @@ extension FilePersistenceController {
             await model.setCache(update: [])
             return
         }
-        let removeURL = fileURL
-        try? FileManager.default.removeItem(at: removeURL)
+        let removeUrl = fileUrl
+        try? FileManager.default.removeItem(at: removeUrl)
     }
 }
 
@@ -81,44 +81,44 @@ extension FilePersistenceController {
 
 extension FilePersistenceController {
     func loadData(for uuid: String) async throws -> Data? {
-        guard let url = try dataURL(for: uuid) else { return nil }
+        guard let url = try dataUrl(for: uuid) else { return nil }
         return try Data(contentsOf: url)
     }
 
     func saveData(_ data: Data, for uuid: String) async throws {
-        guard let url = try dataURL(for: uuid) else { return }
+        guard let url = try dataUrl(for: uuid) else { return }
         try data.write(to: url)
     }
 
     func removeData(for uuid: String) async throws {
-        guard let url = try dataURL(for: uuid) else { return }
+        guard let url = try dataUrl(for: uuid) else { return }
         try FileManager.default.removeItem(at: url)
     }
 }
 
 private extension FilePersistenceController {
-    static func saveModel(data: [DataModel], into fileURL: URL) throws {
+    static func saveModel(data: [DataModel], into fileUrl: URL) throws {
         let encoder = JSONEncoder()
         guard let encodedData = try? encoder.encode(data) else { return }
-        try encodedData.write(to: fileURL)
+        try encodedData.write(to: fileUrl)
     }
 
-    func dataURL(for uuid: String) throws -> URL? {
-        var documentsURL = URL.documentsDirectory.appending(path: name)
-        try FileManager.default.createDirectory(at: documentsURL, withIntermediateDirectories: true)
-        documentsURL.appendPathComponent("\(uuid)\(dataExtension ?? "")")
-        return documentsURL
+    func dataUrl(for uuid: String) throws -> URL? {
+        var documentsUrl = URL.documentsDirectory.appending(path: name)
+        try FileManager.default.createDirectory(at: documentsUrl, withIntermediateDirectories: true)
+        documentsUrl.appendPathComponent("\(uuid)\(dataExtension ?? "")")
+        return documentsUrl
     }
 
-    // Falls back to `URL.documentsDirectory` (the same root `oldFileURL` already uses)
+    // Falls back to `URL.documentsDirectory` (the same root `oldFileUrl` already uses)
     // when the App Group entitlement/provisioning profile doesn't grant access, rather
     // than crashing — see CODE_AUDIT §5.1. Widgets sharing this data won't see it in
     // that edge case, but the app keeps functioning locally instead of crashing at launch.
-    var fileURL: URL {
+    var fileUrl: URL {
         (FileManager.groupURL ?? URL.documentsDirectory).appending(path: "\(name).json")
     }
 
-    var oldFileURL: URL {
+    var oldFileUrl: URL {
         URL.documentsDirectory.appending(path: "\(name).json")
     }
 

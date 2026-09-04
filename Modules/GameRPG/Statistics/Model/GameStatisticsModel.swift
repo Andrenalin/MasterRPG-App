@@ -74,7 +74,7 @@ final class GameStatisticsModel: Sendable {
             }
             try await dataController.beginSession(draft, in: context)
             activeSessionID = draft.id
-            activeLocalParticipantID = draft.localParticipantID
+            activeLocalParticipantID = draft.localParticipantId
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
@@ -123,17 +123,17 @@ final class GameStatisticsModel: Sendable {
         let draft = statisticsController.eventDraft(
             for: model,
             sessionId: activeSessionID,
-            localParticipantID: activeLocalParticipantID,
+            localParticipantId: activeLocalParticipantID,
             direction: direction,
             origin: origin,
             occurredAt: date
         )
-        let participants = statisticsController.participants(from: model, localParticipantID: activeLocalParticipantID)
+        let participants = statisticsController.participants(from: model, localParticipantId: activeLocalParticipantID)
 
         do {
             try await dataController.recordEvent(
                 draft,
-                participant: participants.first(where: { $0.participantID == model.sender.id }),
+                participant: participants.first(where: { $0.participantId == model.sender.id }),
                 in: context
             )
             if participants.count > 1 {
@@ -154,7 +154,7 @@ final class GameStatisticsModel: Sendable {
         do {
             try await dataController.participantLeft(
                 sessionID: activeSessionID,
-                participantID: id,
+                participantId: id,
                 at: date,
                 in: context
             )

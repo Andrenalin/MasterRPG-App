@@ -19,11 +19,6 @@ struct SheetRowGeometryMatch {
     let isSource: Bool
 }
 
-private struct GeneratedAcceptanceKey: Hashable {
-    let parentModelID: UUID
-    let persistedEntryID: UUID
-}
-
 /// Main-actor coordinator for one recursively rendered RPG sheet.
 ///
 /// A sheet root owns the materialized ``SheetModel`` tree and coordinates

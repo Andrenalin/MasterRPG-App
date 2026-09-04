@@ -101,12 +101,10 @@ public struct GameTableView: View {
     /// on `.onEnded` — mirrors the iOS/macOS `viewportPanGesture`'s
     /// `viewportPanStart`. See CODE_AUDIT §8.1.
     @State private var viewportPanStart: SIMD3<Float>?
-    /// Timestamp of the most recent `.onChanged` for the in-flight pan. If `.onEnded` is never
-    /// delivered (system interruption, window backgrounding mid-drag), `viewportPanStart` would
-    /// otherwise stay stuck non-nil forever, wedging every future pan against a stale start
-    /// position. A later `.onChanged` that arrives after a long gap — meaning the previous
-    /// gesture silently died — re-arms from a fresh start instead. See CODE_AUDIT §5.10.
-    @State private var viewportPanLastUpdate: Date?
+    /// See `StaleGestureTracker`'s own doc — if `.onEnded` is never delivered (system
+    /// interruption, window backgrounding mid-drag), `viewportPanStart` would otherwise stay
+    /// stuck non-nil forever, wedging every future pan against a stale start position.
+    @State private var viewportPanTracker = StaleGestureTracker()
     /// The focused room captured when the in-flight pan started — `panViewport` discards the
     /// commit if this no longer matches the current focus by the time `.onEnded` fires. See
     /// CODE_AUDIT §5.12.
@@ -116,7 +114,7 @@ public struct GameTableView: View {
     /// `diceShowOptionModel`, which is likewise owned per-screen rather than
     /// shared through `GameRoot`.
     @State private var diceDisplayModel = DiceDisplayModel()
-    /// Backs `windowOpenButton` (leading ornament, row 2) and the trailing
+    /// Backs `WindowOpenButton` (leading ornament, row 2) and the trailing
     /// window-menu ornament's own buttons — mirrors `MasterGameScreen`/
     /// `PlayerGameScreen`'s own `gameScreenModel`, likewise owned per-screen
     /// rather than shared through `GameRoot`.
@@ -133,42 +131,10 @@ public struct GameTableView: View {
     /// `GameTableModel.fogOfWarTask`'s own cancel-then-replace pattern instead of firing
     /// detached, untracked `Task`s per tap. See CODE_AUDIT §5.5.
     private func performRoomAction(_ action: @escaping @MainActor @Sendable () async -> Void) {
-        roomActionTask?.cancel()
-        roomActionTask = Task { await action() }
-    }
-
-    /// True once a stuck `viewportPanStart` has gone long enough without a follow-up
-    /// `.onChanged` that its originating gesture almost certainly never delivered `.onEnded`.
-    /// See CODE_AUDIT §5.10.
-    private func isViewportPanStale() -> Bool {
-        guard let viewportPanLastUpdate else { return false }
-        return Date.now.timeIntervalSince(viewportPanLastUpdate) > Self.staleGestureTimeout
+        replaceTask(in: &roomActionTask, with: action)
     }
 
     private static let staleGestureTimeout: TimeInterval = 3
-
-    /// The leading ornament's window-controls row (row 1, alongside
-    /// `GameTableSideMenu`) — toggles the floating adventure (master) or
-    /// character sheet (player) window. Was `GameTableSideMenu`'s own first
-    /// button when that view was still a separate trailing-side ornament;
-    /// moved here (and `GameTableSideMenu` folded into the same row right
-    /// after it) so every window-opening button the table volume offers —
-    /// every "open a module window" button in row 1 plus the table/map
-    /// toggle in row 2 — reads as one connected set of window controls
-    /// instead of being split across two opposite corners. Mirrors
-    /// `GameTableSideMenu`'s former gating for this one button exactly:
-    /// master needs `adventureId` before it can even show; player needs an
-    /// active (non-observer) game.
-    @ViewBuilder
-    private var windowOpenButton: some View {
-        if root.gameModel.gameConfig.isMaster {
-            if let adventureId = root.gameModel.gameConfig.master.adventureId {
-                GameWindowMenuButtonView(isMaster: true, itemId: adventureId)
-            }
-        } else if root.gameModel.gameType != .observer {
-            GameWindowMenuButtonView(isMaster: false, itemId: root.gameModel.selectedCharacter)
-        }
-    }
 
     public var body: some View {
         GeometryReader3D { proxy in
@@ -281,14 +247,14 @@ public struct GameTableView: View {
                         .targetedToEntity(where: .has(BoardSurfaceComponent.self))
                         .onChanged { value in
                             guard let parent = value.entity.parent else { return }
-                            if viewportPanStart == nil || isViewportPanStale() {
+                            if viewportPanStart == nil || viewportPanTracker.isStale(after: Self.staleGestureTimeout) {
                                 viewportPanStart = value.convert(value.location3D, from: .local, to: parent)
                                 viewportPanRoomId = loadedGame.focusedRoomId
                             }
-                            viewportPanLastUpdate = .now
+                            viewportPanTracker.recordUpdate()
                         }
                         .onEnded { value in
-                            defer { viewportPanStart = nil; viewportPanLastUpdate = nil; viewportPanRoomId = nil }
+                            defer { viewportPanStart = nil; viewportPanTracker.reset(); viewportPanRoomId = nil }
                             guard let start = viewportPanStart, let parent = value.entity.parent else { return }
                             let end = value.convert(value.location3D, from: .local, to: parent)
                             loadedGame.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
@@ -363,14 +329,14 @@ public struct GameTableView: View {
         // that would leave multiple ornaments contending for anchor points
         // instead of a shared VStack giving that stacking for free. Row 1 is
         // every window-opening button the table volume offers —
-        // `windowOpenButton` (the floating adventure/character window
+        // `WindowOpenButton` (the floating adventure/character window
         // toggle) plus `GameTableSideMenu` (the *other* module windows) —
         // combined into one row rather than a separate trailing-side
-        // ornament this view used to have: with only `windowOpenButton`
+        // ornament this view used to have: with only `WindowOpenButton`
         // moved here and `GameTableSideMenu` left as its own
         // `.bottomTrailingFront` ornament, the module-window buttons stayed
         // visually split across two corners for no real reason once one of
-        // them had already moved — see `windowOpenButton`'s own doc for why
+        // them had already moved — see `WindowOpenButton`'s own doc for why
         // it moved in the first place. Placed above the map toolbar (rather
         // than below it, where it first landed) so the table's own window
         // controls read as the top of the stack. No manual Y
@@ -385,7 +351,7 @@ public struct GameTableView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // `GameTableSideMenu` is deliberately bare (no own
                     // `HStack`/`GlassEffectContainerAll`) so it and
-                    // `windowOpenButton` share this one glass group instead
+                    // `WindowOpenButton` share this one glass group instead
                     // of nesting one inside another — see that struct's own
                     // doc. No extra `.padding()` here, matching row 2
                     // (`GameTableToolbar`) and row 3 (the dice bar's own
@@ -394,7 +360,7 @@ public struct GameTableView: View {
                     // VStack's leading alignment instead of indenting itself.
                     GlassEffectContainerAll {
                         HStack(spacing: 8) {
-                            windowOpenButton
+                            WindowOpenButton(root: root)
 
                             GameTableSideMenu(root: root, isMaster: root.gameModel.gameConfig.isMaster)
                         }
@@ -619,6 +585,36 @@ public struct GameTableView: View {
     }
 }
 
+/// The leading ornament's window-controls row (row 1, alongside
+/// `GameTableSideMenu`) — toggles the floating adventure (master) or
+/// character sheet (player) window. Was `GameTableSideMenu`'s own first
+/// button when that view was still a separate trailing-side ornament; moved
+/// here (and `GameTableSideMenu` folded into the same row right after it) so
+/// every window-opening button the table volume offers — every "open a
+/// module window" button in row 1 plus the table/map toggle in row 2 — reads
+/// as one connected set of window controls instead of being split across two
+/// opposite corners. Mirrors `GameTableSideMenu`'s former gating for this
+/// one button exactly: master needs `adventureId` before it can even show;
+/// player needs an active (non-observer) game. Extracted into its own `View`
+/// struct rather than a computed property on `GameTableView`, matching this
+/// codebase's own extraction discipline (CODE_AUDIT_9 §8.1) — a computed
+/// property shares its parent's invalidation boundary instead of getting its
+/// own. See CODE_AUDIT_10 §8.2.
+@MainActor
+private struct WindowOpenButton: View {
+    let root: GameRoot
+
+    var body: some View {
+        if root.gameModel.gameConfig.isMaster {
+            if let adventureId = root.gameModel.gameConfig.master.adventureId {
+                GameWindowMenuButtonView(isMaster: true, itemId: adventureId)
+            }
+        } else if root.gameModel.gameType != .observer {
+            GameWindowMenuButtonView(isMaster: false, itemId: root.gameModel.selectedCharacter)
+        }
+    }
+}
+
 #Preview {
     GameTableView(root: .preview)
 }
@@ -754,12 +750,10 @@ private struct GameTableRealityContent: View {
     /// commits once, in a single step, rather than re-rendering the board
     /// texture on every touch-move event.
     @State private var viewportPanStart: SIMD3<Float>?
-    /// Timestamp of the most recent `.onChanged` for the in-flight pan. If `.onEnded` is never
-    /// delivered (system interruption, window backgrounding mid-drag), `viewportPanStart` would
-    /// otherwise stay stuck non-nil forever, wedging every future pan against a stale start
-    /// position. A later `.onChanged` that arrives after a long gap — meaning the previous
-    /// gesture silently died — re-arms from a fresh start instead. See CODE_AUDIT §5.10.
-    @State private var viewportPanLastUpdate: Date?
+    /// See `StaleGestureTracker`'s own doc — if `.onEnded` is never delivered (system
+    /// interruption, window backgrounding mid-drag), `viewportPanStart` would otherwise stay
+    /// stuck non-nil forever, wedging every future pan against a stale start position.
+    @State private var viewportPanTracker = StaleGestureTracker()
     /// The focused room captured when the in-flight pan started — `panViewport` discards the
     /// commit if this no longer matches the current focus by the time `.onEnded` fires. See
     /// CODE_AUDIT §5.12.
@@ -769,11 +763,11 @@ private struct GameTableRealityContent: View {
     /// is cumulative from the gesture's start, not per-frame, so this is what lets `.onChanged`
     /// apply only the *new* delta each call. Reset on `.onEnded`.
     @State private var tableMoveLastTranslation: CGSize = .zero
-    /// Timestamp of the most recent `.onChanged` for the in-flight table-move drag. Mirrors
-    /// `viewportPanLastUpdate`'s own doc: if `.onEnded` is never delivered, `tableMoveLastTranslation`
-    /// would otherwise stay stuck non-zero forever, applying one large, wrong jump to the table's
-    /// position on the next unrelated table-move gesture. See CODE_AUDIT §5.1.
-    @State private var tableMoveLastUpdate: Date?
+    /// See `StaleGestureTracker`'s own doc — if `.onEnded` is never delivered,
+    /// `tableMoveLastTranslation` would otherwise stay stuck non-zero forever, applying one
+    /// large, wrong jump to the table's position on the next unrelated table-move gesture. See
+    /// CODE_AUDIT §5.1.
+    @State private var tableMoveTracker = StaleGestureTracker()
     /// `nil` at rest; decided once per `boardDragGesture`, on its first
     /// `.onChanged` call, from whether a room was focused *then* — not
     /// re-checked on every subsequent call, so a focus change arriving
@@ -789,24 +783,7 @@ private struct GameTableRealityContent: View {
     /// `GameTableModel.fogOfWarTask`'s own cancel-then-replace pattern instead of firing
     /// detached, untracked `Task`s per tap. See CODE_AUDIT §5.5.
     private func performRoomAction(_ action: @escaping @MainActor @Sendable () async -> Void) {
-        roomActionTask?.cancel()
-        roomActionTask = Task { await action() }
-    }
-
-    /// True once a stuck `viewportPanStart` has gone long enough without a follow-up
-    /// `.onChanged` that its originating gesture almost certainly never delivered `.onEnded`.
-    /// See CODE_AUDIT §5.10.
-    private func isViewportPanStale() -> Bool {
-        guard let viewportPanLastUpdate else { return false }
-        return Date.now.timeIntervalSince(viewportPanLastUpdate) > Self.staleGestureTimeout
-    }
-
-    /// True once a stuck `tableMoveLastTranslation` has gone long enough without a follow-up
-    /// `.onChanged` that its originating gesture almost certainly never delivered `.onEnded`.
-    /// See CODE_AUDIT §5.1.
-    private func isTableMoveStale() -> Bool {
-        guard let tableMoveLastUpdate else { return false }
-        return Date.now.timeIntervalSince(tableMoveLastUpdate) > Self.staleGestureTimeout
+        replaceTask(in: &roomActionTask, with: action)
     }
 
     private static let staleGestureTimeout: TimeInterval = 3
@@ -919,11 +896,11 @@ private struct GameTableRealityContent: View {
 
                 if pansViewport {
                     guard let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
-                    if viewportPanStart == nil || isViewportPanStale() {
+                    if viewportPanStart == nil || viewportPanTracker.isStale(after: Self.staleGestureTimeout) {
                         viewportPanStart = position
                         viewportPanRoomId = game.focusedRoomId
                     }
-                    viewportPanLastUpdate = .now
+                    viewportPanTracker.recordUpdate()
                 } else {
                     applyTableMoveDelta(translation: value.translation)
                 }
@@ -931,13 +908,13 @@ private struct GameTableRealityContent: View {
             .onEnded { value in
                 defer { boardDragPansViewport = nil }
                 if boardDragPansViewport == true {
-                    defer { viewportPanStart = nil; viewportPanLastUpdate = nil; viewportPanRoomId = nil }
+                    defer { viewportPanStart = nil; viewportPanTracker.reset(); viewportPanRoomId = nil }
                     guard let start = viewportPanStart,
                           let end = value.tablePosition(relativeTo: game.renderer.root) else { return }
                     game.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
                 } else {
                     tableMoveLastTranslation = .zero
-                    tableMoveLastUpdate = nil
+                    tableMoveTracker.reset()
                 }
             }
     }
@@ -965,7 +942,7 @@ private struct GameTableRealityContent: View {
             }
             .onEnded { _ in
                 tableMoveLastTranslation = .zero
-                tableMoveLastUpdate = nil
+                tableMoveTracker.reset()
             }
     }
 
@@ -975,11 +952,11 @@ private struct GameTableRealityContent: View {
     /// type (`DragGesture.Value` or `EntityTargetValue<DragGesture.Value>`
     /// both expose it as `CGSize`), so only the value itself needs passing.
     private func applyTableMoveDelta(translation: CGSize) {
-        if isTableMoveStale() {
+        if tableMoveTracker.isStale(after: Self.staleGestureTimeout) {
             // The previous drag's `.onEnded` was likely never delivered (system
             // interruption, window backgrounding mid-drag) — re-arm from this call's
             // value instead of computing a delta against the stale one, mirroring
-            // `viewportPanStart`/`isViewportPanStale()`. See CODE_AUDIT §5.1.
+            // `viewportPanStart`/`StaleGestureTracker`. See CODE_AUDIT §5.1.
             tableMoveLastTranslation = translation
         }
         let delta = CGSize(
@@ -987,7 +964,7 @@ private struct GameTableRealityContent: View {
             height: translation.height - tableMoveLastTranslation.height
         )
         tableMoveLastTranslation = translation
-        tableMoveLastUpdate = .now
+        tableMoveTracker.recordUpdate()
         game.renderer.root.position.x += Float(delta.width) * Self.tableMoveScale
         game.renderer.root.position.z += Float(delta.height) * Self.tableMoveScale
     }

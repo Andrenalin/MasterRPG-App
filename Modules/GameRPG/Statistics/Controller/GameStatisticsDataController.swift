@@ -32,13 +32,13 @@ struct GameStatisticsDataController: Sendable {
             session.startedAt = draft.startedAt
             session.lastActivityAt = draft.startedAt
             session.roleRaw = draft.role.rawValue
-            session.localParticipantID = draft.localParticipantID
+            session.localParticipantID = draft.localParticipantId
             session.localName = draft.localName
-            session.characterID = draft.characterID
+            session.characterID = draft.characterId
             session.characterName = draft.characterName
-            session.adventureID = draft.adventureID
+            session.adventureID = draft.adventureId
             session.adventureTitle = draft.adventureTitle
-            session.masterID = draft.masterID
+            session.masterID = draft.masterId
             session.masterName = draft.masterName
             session.isDemo = draft.isDemo
             session.isComplete = false
@@ -91,7 +91,7 @@ struct GameStatisticsDataController: Sendable {
 
     func participantLeft(
         sessionID: UUID,
-        participantID: UUID,
+        participantId: UUID,
         at date: Date,
         in context: NSManagedObjectContext
     ) async throws {
@@ -100,7 +100,7 @@ struct GameStatisticsDataController: Sendable {
             request.predicate = NSPredicate(
                 format: "sessionID == %@ AND participantID == %@",
                 sessionID as NSUUID,
-                participantID as NSUUID
+                participantId as NSUUID
             )
             request.fetchLimit = 1
             guard let participant = try context.fetch(request).first else { return }
@@ -140,10 +140,10 @@ struct GameStatisticsDataController: Sendable {
             event.kindRaw = draft.kind.rawValue
             event.directionRaw = draft.direction.rawValue
             event.originRaw = draft.origin.rawValue
-            event.actorID = draft.actorID
-            event.actorCharacterID = draft.actorCharacterID
+            event.actorID = draft.actorId
+            event.actorCharacterID = draft.actorCharacterId
             event.actorName = draft.actorName
-            event.targetID = draft.targetID
+            event.targetID = draft.targetId
             event.itemID = draft.itemId
             event.itemName = draft.itemName
             event.moduleRaw = Int16(clamping: draft.module.rawValue)
@@ -256,7 +256,7 @@ struct GameStatisticsDataController: Sendable {
         in context: NSManagedObjectContext
     ) throws {
         guard !drafts.isEmpty else { return }
-        let participantIDs = drafts.map { $0.participantID as NSUUID }
+        let participantIDs = drafts.map { $0.participantId as NSUUID }
         let request = NSFetchRequest<RPGGameStatisticParticipant>(entityName: "RPGGameStatisticParticipant")
         request.predicate = NSPredicate(
             format: "sessionID == %@ AND participantID IN %@",
@@ -265,13 +265,13 @@ struct GameStatisticsDataController: Sendable {
         )
         var existing: [UUID: RPGGameStatisticParticipant] = [:]
         for participant in try context.fetch(request) {
-            if let participantID = participant.participantID, existing[participantID] == nil {
-                existing[participantID] = participant
+            if let participantId = participant.participantID, existing[participantId] == nil {
+                existing[participantId] = participant
             }
         }
 
         for draft in drafts {
-            if let participant = existing[draft.participantID] {
+            if let participant = existing[draft.participantId] {
                 let previousActivity = participant.lastSeenAt ?? participant.lastJoinedAt
                 guard previousActivity.map({ date >= $0 }) ?? true else {
                     continue
@@ -289,7 +289,7 @@ struct GameStatisticsDataController: Sendable {
                 }
                 participant.lastSeenAt = date
                 participant.name = draft.name
-                participant.characterID = draft.characterID
+                participant.characterID = draft.characterId
                 participant.characterName = draft.characterName
                 participant.roleRaw = draft.role.rawValue
                 participant.isLocal = draft.isLocal
@@ -311,8 +311,8 @@ struct GameStatisticsDataController: Sendable {
         let participant = RPGGameStatisticParticipant(context: context)
         participant.uuid = UUID()
         participant.sessionID = sessionID
-        participant.participantID = draft.participantID
-        participant.characterID = draft.characterID
+        participant.participantID = draft.participantId
+        participant.characterID = draft.characterId
         participant.name = draft.name
         participant.characterName = draft.characterName
         participant.roleRaw = draft.role.rawValue
@@ -362,9 +362,9 @@ struct GameStatisticsDataController: Sendable {
             duration: session.durationSeconds,
             role: GameStatisticRole(rawValue: session.roleRaw) ?? .unknown,
             localName: session.localName ?? "",
-            characterID: session.characterID,
+            characterId: session.characterID,
             characterName: session.characterName ?? "",
-            adventureID: session.adventureID,
+            adventureId: session.adventureID,
             adventureTitle: session.adventureTitle ?? "",
             masterName: session.masterName ?? "",
             maxParticipantCount: Int(session.maxParticipantCount)
@@ -374,13 +374,13 @@ struct GameStatisticsDataController: Sendable {
     private static func participantSnapshot(_ participant: RPGGameStatisticParticipant) -> GameStatisticParticipantSnapshot? {
         guard let id = participant.uuid,
               let sessionId = participant.sessionID,
-              let participantID = participant.participantID
+              let participantId = participant.participantID
         else { return nil }
         return GameStatisticParticipantSnapshot(
             id: id,
             sessionId: sessionId,
-            participantID: participantID,
-            characterID: participant.characterID,
+            participantId: participantId,
+            characterId: participant.characterID,
             name: participant.name ?? "",
             characterName: participant.characterName ?? "",
             role: GameStatisticRole(rawValue: participant.roleRaw) ?? .unknown,

@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: View {
     let root: any ItemRootControllable
     let model: any ItemDataAccessable
-    let configuration: ItemDetailRootView<Editor, LinkTypes>.Configuration
+    let configuration: ItemDetailConfiguration
     let editor: Editor
     let headerModel: HeaderScrollModel
     let folderListController: FolderListControllable

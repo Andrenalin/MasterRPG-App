@@ -241,21 +241,21 @@ struct GameStatisticSessionDraft: Sendable {
     let id: UUID
     let startedAt: Date
     let role: GameStatisticRole
-    let localParticipantID: UUID
+    let localParticipantId: UUID
     let localName: String
-    let characterID: UUID?
+    let characterId: UUID?
     let characterName: String
-    let adventureID: UUID?
+    let adventureId: UUID?
     let adventureTitle: String
-    let masterID: UUID?
+    let masterId: UUID?
     let masterName: String
     let isDemo: Bool
     let participants: [GameStatisticParticipantDraft]
 }
 
 struct GameStatisticParticipantDraft: Sendable {
-    let participantID: UUID
-    let characterID: UUID?
+    let participantId: UUID
+    let characterId: UUID?
     let name: String
     let characterName: String
     let role: GameStatisticRole
@@ -270,10 +270,10 @@ struct GameStatisticEventDraft: Sendable {
     let kind: GameStatisticEventKind
     let direction: GameStatisticDirection
     let origin: GameStatisticOrigin
-    let actorID: UUID?
-    let actorCharacterID: UUID?
+    let actorId: UUID?
+    let actorCharacterId: UUID?
     let actorName: String
-    let targetID: UUID?
+    let targetId: UUID?
     let itemId: UUID?
     let itemName: String
     let module: NetworkModules
@@ -301,9 +301,9 @@ struct GameStatisticSessionSnapshot: Identifiable, Hashable, Sendable {
     let duration: TimeInterval
     let role: GameStatisticRole
     let localName: String
-    let characterID: UUID?
+    let characterId: UUID?
     let characterName: String
-    let adventureID: UUID?
+    let adventureId: UUID?
     let adventureTitle: String
     let masterName: String
     let maxParticipantCount: Int
@@ -312,8 +312,8 @@ struct GameStatisticSessionSnapshot: Identifiable, Hashable, Sendable {
 struct GameStatisticParticipantSnapshot: Identifiable, Hashable, Sendable {
     let id: UUID
     let sessionId: UUID
-    let participantID: UUID
-    let characterID: UUID?
+    let participantId: UUID
+    let characterId: UUID?
     let name: String
     let characterName: String
     let role: GameStatisticRole
@@ -438,10 +438,10 @@ struct GameStatisticsSummary: Sendable {
 #if DEBUG
 private enum GameStatisticsFixture {
     static let sessionId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
-    static let participantID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
-    static let characterID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3))
-    static let adventureID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4))
-    static let eventID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5))
+    static let participantId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
+    static let characterId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3))
+    static let adventureId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4))
+    static let eventId = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5))
     static let date = Date(timeIntervalSince1970: 1_704_067_200)
 }
 
@@ -450,20 +450,20 @@ extension GameStatisticSessionDraft {
         id: UUID = GameStatisticsFixture.sessionId,
         startedAt: Date = GameStatisticsFixture.date,
         role: GameStatisticRole = .player,
-        localParticipantID: UUID = GameStatisticsFixture.participantID,
+        localParticipantId: UUID = GameStatisticsFixture.participantId,
         participants: [GameStatisticParticipantDraft] = [.fixture()]
     ) -> Self {
         Self(
             id: id,
             startedAt: startedAt,
             role: role,
-            localParticipantID: localParticipantID,
+            localParticipantId: localParticipantId,
             localName: "Test Player",
-            characterID: GameStatisticsFixture.characterID,
+            characterId: GameStatisticsFixture.characterId,
             characterName: "Test Hero",
-            adventureID: GameStatisticsFixture.adventureID,
+            adventureId: GameStatisticsFixture.adventureId,
             adventureTitle: "Test Adventure",
-            masterID: nil,
+            masterId: nil,
             masterName: "Test Game Master",
             isDemo: false,
             participants: participants
@@ -473,8 +473,8 @@ extension GameStatisticSessionDraft {
 
 extension GameStatisticParticipantDraft {
     static func fixture(
-        participantID: UUID = GameStatisticsFixture.participantID,
-        characterID: UUID? = GameStatisticsFixture.characterID,
+        participantId: UUID = GameStatisticsFixture.participantId,
+        characterId: UUID? = GameStatisticsFixture.characterId,
         name: String = "Test Player",
         characterName: String = "Test Hero",
         role: GameStatisticRole = .player,
@@ -482,8 +482,8 @@ extension GameStatisticParticipantDraft {
         isGameMaster: Bool = false
     ) -> Self {
         Self(
-            participantID: participantID,
-            characterID: characterID,
+            participantId: participantId,
+            characterId: characterId,
             name: name,
             characterName: characterName,
             role: role,
@@ -495,7 +495,7 @@ extension GameStatisticParticipantDraft {
 
 extension GameStatisticEventDraft {
     static func fixture(
-        id: UUID = GameStatisticsFixture.eventID,
+        id: UUID = GameStatisticsFixture.eventId,
         sessionId: UUID = GameStatisticsFixture.sessionId,
         occurredAt: Date = GameStatisticsFixture.date.addingTimeInterval(60),
         kind: GameStatisticEventKind = .diceRolled,
@@ -509,10 +509,10 @@ extension GameStatisticEventDraft {
             kind: kind,
             direction: .outgoing,
             origin: .localNetwork,
-            actorID: GameStatisticsFixture.participantID,
-            actorCharacterID: GameStatisticsFixture.characterID,
+            actorId: GameStatisticsFixture.participantId,
+            actorCharacterId: GameStatisticsFixture.characterId,
             actorName: "Test Hero",
-            targetID: nil,
+            targetId: nil,
             itemId: nil,
             itemName: "",
             module: .dice,
@@ -539,9 +539,9 @@ extension GameStatisticSessionSnapshot {
         startedAt: Date = GameStatisticsFixture.date,
         duration: TimeInterval = 3_600,
         role: GameStatisticRole = .player,
-        characterID: UUID? = GameStatisticsFixture.characterID,
+        characterId: UUID? = GameStatisticsFixture.characterId,
         characterName: String = "Test Hero",
-        adventureID: UUID? = GameStatisticsFixture.adventureID,
+        adventureId: UUID? = GameStatisticsFixture.adventureId,
         adventureTitle: String = "Test Adventure",
         maxParticipantCount: Int = 4
     ) -> Self {
@@ -552,9 +552,9 @@ extension GameStatisticSessionSnapshot {
             duration: duration,
             role: role,
             localName: "Test Player",
-            characterID: characterID,
+            characterId: characterId,
             characterName: characterName,
-            adventureID: adventureID,
+            adventureId: adventureId,
             adventureTitle: adventureTitle,
             masterName: "Test Game Master",
             maxParticipantCount: maxParticipantCount
@@ -564,10 +564,10 @@ extension GameStatisticSessionSnapshot {
 
 extension GameStatisticParticipantSnapshot {
     static func fixture(
-        id: UUID = GameStatisticsFixture.participantID,
+        id: UUID = GameStatisticsFixture.participantId,
         sessionId: UUID = GameStatisticsFixture.sessionId,
-        participantID: UUID = GameStatisticsFixture.participantID,
-        characterID: UUID? = GameStatisticsFixture.characterID,
+        participantId: UUID = GameStatisticsFixture.participantId,
+        characterId: UUID? = GameStatisticsFixture.characterId,
         name: String = "Remote Player",
         characterName: String = "Remote Hero",
         connectedDuration: TimeInterval = 3_600,
@@ -576,8 +576,8 @@ extension GameStatisticParticipantSnapshot {
         Self(
             id: id,
             sessionId: sessionId,
-            participantID: participantID,
-            characterID: characterID,
+            participantId: participantId,
+            characterId: characterId,
             name: name,
             characterName: characterName,
             role: .player,
@@ -590,7 +590,7 @@ extension GameStatisticParticipantSnapshot {
 
 extension GameStatisticEventSnapshot {
     static func fixture(
-        id: UUID = GameStatisticsFixture.eventID,
+        id: UUID = GameStatisticsFixture.eventId,
         sessionId: UUID = GameStatisticsFixture.sessionId,
         kind: GameStatisticEventKind = .diceRolled,
         direction: GameStatisticDirection = .outgoing,

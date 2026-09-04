@@ -119,6 +119,7 @@ If CoreData is configured to use CloudKit:
 - SpaceRPG: Module Space manage and manipulate the 3d objects for a game. It manages the files in iCloud.
 - TableRPG: Module Table manage and manipulate the tables for a game. It can link to dice, pdf and tables.
 - WeatherRPG: Module Weather manage and manipulate the weather for a game. It can link to photo.
+- RuleRPG: Module Rule manages an editable, importable rules/compendium hierarchy normalized from sources like Foundry VTT system packages; linked from AdventureRPG, GameRPG search/logging, and RolePlayGameKit navigation.
 
 ### Other Modules
 - CoreRPG: It is the shared code for the modules and has core views, models and controller.

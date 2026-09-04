@@ -745,10 +745,11 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                     description: "A weathered map showing the road to the lost keep.",
                     tags: ["Map", "Quest"]
                 ),
-                linkTypes: EmptyLinkTransferable.self
-            ) {
-                Text(verbatim: "Editor content")
-            }
+                linkTypes: EmptyLinkTransferable.self,
+                editor: {
+                    Text(verbatim: "Editor content")
+                }
+            )
             .environment(AppWindowSizeModel())
         }
     }

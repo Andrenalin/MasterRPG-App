@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Role
 You are a **Senior iOS Engineer**, specializing in SwiftUI, CoreData, and related frameworks. Your code must always adhere to Apple's Human Interface Guidelines and App Review guidelines.
 ## About MasterRPG
-MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Characters, Maps, Photos, Audios, PDFs, 3D Objects, Tables, Weathers. It has a game mode there players can join via Shareplay or local network. Platforms: iOS, macOS, tvOS, visionOS.
+MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Characters, Maps, Photos, Audios, PDFs, 3D Objects, Tables, Weathers. It has a game mode where players can join via Shareplay or local network. Platforms: iOS, macOS, tvOS, visionOS.
 
 ## Build Commands
 ```bash
@@ -24,7 +24,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 
 ## Tech Stack
 - **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
-- **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift conurrency)
+- **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift concurrency)
 - **SDK**: iOS26, iPadOS26, tvOS26, visionOS26, macOS26 or later
 - Swift 6.3 or later, using modern Swift concurrency. Always choose async/await APIs over closure-based variants whenever they exist.
 - SwiftUI backed up by `@Observable` classes for shared data.
@@ -46,6 +46,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 - Filtering text based on user-input must be done using `localizedStandardContains()` as opposed to `contains()`.
 - Avoid force unwraps and force `try` unless it is unrecoverable.
 - Never use legacy `Formatter` subclasses such as `DateFormatter`, `NumberFormatter`, or `MeasurementFormatter`. Always use the modern `FormatStyle` API instead. For example, to format a date, use `myDate.formatted(date: .abbreviated, time: .shortened)`. To parse a date from a string, use `Date(inputString, strategy: .iso8601)`. For numbers, use `myNumber.formatted(.number)` or custom format styles.
+- Naming convention: use `Id`/`Url` casing (e.g. `itemId`, `fileUrl`), not `ID`/`URL` (e.g. `itemID`, `fileURL`) — this matches the existing, dominant convention across the codebase. Don't drift to Swift API Design Guidelines casing for these two suffixes specifically, even in new code.
 
 ## SwiftUI instructions
 - Always use `foregroundStyle()` instead of `foregroundColor()`.
@@ -77,7 +78,7 @@ If CoreData is configured to use CloudKit:
 - All relationships must be marked optional.
 
 ## Architecture
-- MVC: Model @Observable classes, Controller stateless structs, View swiftUI structs
+- MVC: Model @Observable classes, Controller stateless structs, View SwiftUI structs
 - RootModel for each module, that holds the controller hierarchy as ItemRootController
 - RootManager hold the root models for the modules
 - Module Factory builds the root model and root views
@@ -94,7 +95,7 @@ If CoreData is configured to use CloudKit:
 - **EditController** manipulate the item model and entry model
 - **DataController** is the mapper between domain model and database model
 - **SyncDataController** merges the cloudkit core data updates into the ItemController.
-- **CacheController** is the cache for the imsges and thumbnails
+- **CacheController** is the cache for the images and thumbnails
 - **ImportController** handles the import from file or network
 - **ExportController** exports the item model into streamable json / binary data
 - **FolderListController** handles the list / folder display, selection state
@@ -102,28 +103,29 @@ If CoreData is configured to use CloudKit:
 - **GameController** has the logic during the game runs
 - **SearchController** handles how to search / filter
 - **SheetController** generates a sheet representation of the item / entries
-
+   
 ### Key Patterns
 **State Management**: Uses modern `@Observable` macro (iOS 26+) instead of `ObservableObject`. Views use `@Environment(Type.self)` for dependency injection, not `@EnvironmentObject`.
 **Data Persistence**: Core Data with CloudKit sync (`NSPersistentCloudKitContainer`). Saved rpg data across all devices in  iCloud or stores only locally
 
 ### Key Modules
-- AdventureRPG: Module Adventure manage and manipluate the adventure for a game. It is the story and link all other modules
-- AudioRPG: Module Audio manage and manipluate the music for a game, It manages the files in iCloud.
-- CharacterRPG: Module Character manage and manipluate the character (player), NPC and monster for a game. It link tables, dice, photo and pdf into the values. It groupes values.
-- DiceRPG: Module Dice manage and manipluate the dice for a game. It rolls a dice and feed the dice widget
-- MapRPG: Module Map manage and manipluate the maps for a game. A map is photo with layers to hide content from the players. It has a own MapEditor to create these layers (rooms). It can link to charactere, maps, dice, tables, audio, pdf and photo. 
-- PdfRPG: Module Pdf manage and manipluate the pdf for a game. It manages the files in iCloud.
-- PhotoRPG: Module Photo manage and manipluate the photo for a game. It manages the files in iCloud.
-- SpaceRPG: Module Space manage and manipluate the 3d objects for a game. It manages the files in iCloud.
-- TableRPG: Module Table manage and manipluate the tables for a game. It can link to dice, pdf and tables.
-- WeatherRPG: Module Weather manage and manipluate the weather for a game. It can link to photo.
+- AdventureRPG: Module Adventure manage and manipulate the adventure for a game. It is the story and link all other modules
+- AudioRPG: Module Audio manage and manipulate the music for a game, It manages the files in iCloud.
+- CharacterRPG: Module Character manage and manipulate the character (player), NPC and monster for a game. It link tables, dice, photo and pdf into the values. It groups values.
+- DiceRPG: Module Dice manage and manipulate the dice for a game. It rolls a dice and feed the dice widget
+- MapRPG: Module Map manage and manipulate the maps for a game. A map is photo with layers to hide content from the players. It has a own MapEditor to create these layers (rooms). It can link to character, maps, dice, tables, audio, pdf and photo. 
+- PdfRPG: Module Pdf manage and manipulate the pdf for a game. It manages the files in iCloud.
+- PhotoRPG: Module Photo manage and manipulate the photo for a game. It manages the files in iCloud.
+- SpaceRPG: Module Space manage and manipulate the 3d objects for a game. It manages the files in iCloud.
+- TableRPG: Module Table manage and manipulate the tables for a game. It can link to dice, pdf and tables.
+- WeatherRPG: Module Weather manage and manipulate the weather for a game. It can link to photo.
+- RuleRPG: Module Rule manages an editable, importable rules/compendium hierarchy normalized from sources like Foundry VTT system packages; linked from AdventureRPG, GameRPG search/logging, and RolePlayGameKit navigation.
 
 ### Other Modules
 - CoreRPG: It is the shared code for the modules and has core views, models and controller.
 - GeneratorRPG: FoundationModel and Views used in Pdf, Adventure. Planned in Character.
-- GameRPG: All Game Views, Shareplay, Network, Bonjour and MasterController, PlayerController to send the gamestate. GameTableView uses TableTopKit for visionOS
-- RolePlayGameKit: Merges all Moduls and provide navigation / layoput views for all apps.  
+- GameRPG: All Game Views, Shareplay, Network, Bonjour and MasterController, PlayerController to send the gamestate. GameTableView uses TabletopKit for visionOS
+- RolePlayGameKit: Merges all Modules and provide navigation / layout views for all apps.  
 
 ### Dependencies (SPM)
 - **RPGTabletopGameContent**: visionOS 3D content
@@ -136,24 +138,23 @@ If CoreData is configured to use CloudKit:
 - **Tests** Tests for modules
 - **TestPlans** Test plan for MasterRPG and modules
 
-#### Module Folder Sturcture
+#### Module Folder Structure
 - **Controller** for the different controllers
-- **Intent** for App-Intentm, Siri, Shrotcuts and Widgets
+- **Intent** for App-Intents, Siri, Shortcuts and Widgets
 - **Menu** for Menu on mac / iPad command
 - **Model** Domain Model and Database Model
-- **Module** Module specific code
-- **Resources** Database file, LOcalaizations
+- **Resources** Database file, Localizations
 - **Root** Root View, Models and entry of the module
 - **Route** Routes for the Navigator
 - **View** Other views
-
+ 
 ## Platform Conditionals
 Use `#if os(iOS)`, `#if os(macOS)`, `#if os(tvOS)`, `#if os(visionOS)` for platform-specific code. Widget extension code uses `#if !WIDGET_EXTENSION` to exclude unavailable APIs.
 All modules using the bundle version of SwiftUI views for example `Text("Editor Window", bundle: .module)` for the correct Localizations.
 
 ## App Groups & Entitlements
 - App Group: `group.de.andretrettin.MasterRPG` (shared data between app and widgets)
-- iCloud Container: `iCloud.de.andretrettin.MasterRPG`
+- iCloud Container: `iCloud.de.andretrettin.gamemaster`
 - Background Modes: audio, airplay, remote-notification, fetch
 
 ## Xcode MCP

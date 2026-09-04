@@ -101,6 +101,28 @@ extension ImageCacheControllable {
         await thumbnailCacheController.setObject(thumbnail, for: itemId)
     }
 
+    /// Shared by file-backed modules whose thumbnail is just a QuickLook
+    /// preview of the on-disk file at a fixed canvas size — PdfRPG's and
+    /// SpaceRPG's `CacheController`s previously each hand-duplicated this
+    /// exact `createThumbnail(for:item:)` body, differing only in
+    /// `size`/`removeWhiteBackground`. Not a default for the protocol
+    /// requirement itself, since other modules' thumbnails aren't
+    /// QuickLook-generated at all — conformers that are call this directly.
+    /// See CODE_AUDIT_10 §9.12.
+    @MainActor
+    public func createQuickLookThumbnail(
+        for itemId: UUID,
+        item: any ItemDataAccessable,
+        size: CGSize,
+        removeWhiteBackground: Bool = false
+    ) async {
+        guard let fileUrlDataController, let fileUrl = item.fileUrl else { return }
+        let thumbnail = await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
+            await AKImage.quickLookThumbnail(for: url, size: size, removeWhiteBackground: removeWhiteBackground)
+        }
+        await cacheThumbnail(thumbnail, for: itemId)
+    }
+
     public func remove(itemId: UUID, includeImage: Bool = true) async {
         if includeImage {
             await imageCacheController.removeObject(for: itemId)

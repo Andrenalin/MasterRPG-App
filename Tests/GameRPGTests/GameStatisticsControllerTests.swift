@@ -16,17 +16,17 @@ struct GameStatisticsControllerTests {
         calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
         let firstStart = Date(timeIntervalSince1970: 1_704_151_800) // 2024-01-01 23:30 UTC
         let secondStart = Date(timeIntervalSince1970: 1_704_276_000) // 2024-01-03 10:00 UTC
-        let adventureID = deterministicUUID(40)
-        let characterID = deterministicUUID(30)
+        let adventureId = deterministicUUID(40)
+        let characterId = deterministicUUID(30)
         let sessions: [GameStatisticSessionSnapshot] = [
             .fixture(
                 id: deterministicUUID(1),
                 startedAt: firstStart,
                 duration: 7_200,
                 role: .gameMaster,
-                characterID: nil,
+                characterId: nil,
                 characterName: "",
-                adventureID: adventureID,
+                adventureId: adventureId,
                 adventureTitle: "The Long Night"
             ),
             .fixture(
@@ -34,9 +34,9 @@ struct GameStatisticsControllerTests {
                 startedAt: secondStart,
                 duration: 3_600,
                 role: .player,
-                characterID: characterID,
+                characterId: characterId,
                 characterName: "Aria",
-                adventureID: adventureID,
+                adventureId: adventureId,
                 adventureTitle: "The Long Night",
                 maxParticipantCount: 5
             )
@@ -112,9 +112,9 @@ struct GameStatisticsControllerTests {
                 startedAt: Date(timeIntervalSince1970: 1_704_067_200 + Double(index * 86_400)),
                 duration: index == 0 ? 8 * 3_600 : 4 * 3_600,
                 role: .gameMaster,
-                characterID: deterministicUUID(30),
+                characterId: deterministicUUID(30),
                 characterName: "Aria",
-                adventureID: deterministicUUID(UInt8(40 + adventureIndex)),
+                adventureId: deterministicUUID(UInt8(40 + adventureIndex)),
                 adventureTitle: "Adventure \(adventureIndex + 1)",
                 maxParticipantCount: index == 0 ? 6 : 4
             )
@@ -301,7 +301,7 @@ struct GameStatisticsControllerTests {
             return controller.eventDraft(
                 for: message,
                 sessionId: UUID(),
-                localParticipantID: masterId,
+                localParticipantId: masterId,
                 direction: .outgoing,
                 origin: .local
             )

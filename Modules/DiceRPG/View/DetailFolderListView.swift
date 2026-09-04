@@ -21,12 +21,9 @@ struct DetailFolderListView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        // Deliberately does NOT use the shared `DetailFolderList` (CoreRPG,
-        // see CODE_AUDIT §9.3): `DiceOverlayView`'s `safeAreaInset`/`overlay`
-        // must sit *between* the editor content and `.openFileWindowOverlay`
-        // so the file viewer still renders above it — wrapping them the
-        // other way around (chained onto `DetailFolderList`'s already-
-        // composed result) would swap that stacking order.
+        // See `ItemDetailRootView.bottomOverlayBar`'s own doc for why this
+        // is a parameter on it rather than chained on here — CODE_AUDIT_10
+        // §9.11.
         ItemDetailRootView(
             root: root.rootController,
             detailListController: folderListController,
@@ -34,16 +31,9 @@ struct DetailFolderListView: View {
             configuration: .init(disableHideHeader: true, isSubFolder: isSubFolder),
             linkTypes: EmptyLinkTransferable.self
         ) {
+            DiceOverlayView(model: model)
+        } editor: {
             DetailEditorView(model: model)
-        }
-        .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-            DiceOverlayView(model: model)
-                .opacity(0)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
-        }
-        .overlay(alignment: .bottom) {
-            DiceOverlayView(model: model)
         }
         .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
             root.viewController.viewer(

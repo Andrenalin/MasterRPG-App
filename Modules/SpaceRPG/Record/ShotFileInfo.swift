@@ -18,11 +18,11 @@ struct ShotFileInfo {
 
     @MainActor init?(url: URL) {
         fileURL = url
-        guard let shotID = CaptureFolderManager.parseShotId(url: url) else {
+        guard let shotId = CaptureFolderManager.parseShotId(url: url) else {
             return nil
         }
 
-        id = shotID
+        id = shotId
     }
 }
 

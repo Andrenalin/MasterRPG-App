@@ -22,30 +22,21 @@ struct DetailFolderListView: View {
     @Binding var animate: Bool
 
     var body: some View {
-        // Deliberately does NOT use the shared `DetailFolderList` (CoreRPG,
-        // see CODE_AUDIT §9.3): `OverlayViewer`'s `safeAreaInset`/`overlay`
-        // must sit *between* the editor content and `.openFileWindowOverlay`
-        // so the file viewer still renders above it — wrapping them the
-        // other way around (chained onto `DetailFolderList`'s already-
-        // composed result) would swap that stacking order.
+        // See `ItemDetailRootView.bottomOverlayBar`'s own doc for why this
+        // is a parameter on it rather than chained on here — CODE_AUDIT_10
+        // §9.11.
         ItemDetailRootView(
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
             configuration: .init(isSubFolder: isSubFolder),
-            linkTypes: EmptyLinkTransferable.self) {
-                WeatherEditor(model: model)
-            }
-            .safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                OverlayViewer(model: model, animate: $animate)
-                    .opacity(0)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-            .overlay(alignment: .bottom) {
-                OverlayViewer(model: model, animate: $animate)
-                    .allowsHitTesting(false)
-            }
+            linkTypes: EmptyLinkTransferable.self
+        ) {
+            OverlayViewer(model: model, animate: $animate)
+                .allowsHitTesting(false)
+        } editor: {
+            WeatherEditor(model: model)
+        }
         .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
             root.viewController.viewer(
                 root: root,

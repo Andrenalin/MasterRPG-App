@@ -17,31 +17,22 @@ struct DetailFolderListView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        // Deliberately does NOT use the shared `DetailFolderList` (CoreRPG,
-        // see CODE_AUDIT §9.3): the audio bar's `safeAreaInset`/`overlay`
-        // must sit *between* the editor content and `.openFileWindowOverlay`
-        // so the file viewer still renders above the audio bar — wrapping
-        // them the other way around (chained onto `DetailFolderList`'s
-        // already-composed result) would swap that stacking order.
+        // See `ItemDetailRootView.bottomOverlayBar`'s own doc for why this
+        // is a parameter on it rather than chained on here — CODE_AUDIT_10
+        // §9.11.
         ItemDetailRootView(
             root: root.rootController,
             detailListController: folderListController,
             selectedModel: model,
             configuration: .init(isSubFolder: isSubFolder),
-            linkTypes: EmptyLinkTransferable.self
+            linkTypes: EmptyLinkTransferable.self,
+            showsBottomOverlayBar: !usesPhoneTabAccessory,
+            bottomOverlayBarHeight: 80
         ) {
+            AudioPlayerBarView()
+                .padding()
+        } editor: {
             DetailEditorView(root: root, model: model)
-        }
-        .applyIf(!usesPhoneTabAccessory) {
-            $0.safeAreaInset(edge: .bottom, alignment: .center, spacing: 12) {
-                Color.clear
-                    .frame(height: 80)
-                    .allowsHitTesting(false)
-            }
-            .overlay(alignment: .bottom) {
-                AudioPlayerBarView()
-                    .padding()
-            }
         }
         .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
             root.viewController.viewer(

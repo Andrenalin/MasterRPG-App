@@ -67,7 +67,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     public var isGeneratedSelected: Bool = false
     public var isGeneratedAccepted: Bool = false
     public var isGeneratedHidden: Bool = false
-    public var generatedBatchID: String?
+    public var generatedBatchId: String?
 
     // MARK: Selection
     /// Exclusive row selection across the SheetModel tree, managed by SheetRootModel.setSelected(_:parent:).
@@ -204,27 +204,27 @@ public struct SheetContentSnapshot: Identifiable, Equatable, Hashable, Sendable 
 
 public struct SheetGenerationFocus: Equatable, Hashable, Sendable {
     public init(
-        rootItemID: UUID,
-        parentModelID: UUID,
+        rootItemId: UUID,
+        parentModelId: UUID,
         parentSource: ItemRowModel,
-        selectedModelID: UUID?,
+        selectedModelId: UUID?,
         selectedSource: ItemRowModel?,
         position: SheetInsertionPosition,
         module: NetworkModules
     ) {
-        self.rootItemID = rootItemID
-        self.parentModelID = parentModelID
+        self.rootItemId = rootItemId
+        self.parentModelId = parentModelId
         self.parentSource = parentSource
-        self.selectedModelID = selectedModelID
+        self.selectedModelId = selectedModelId
         self.selectedSource = selectedSource
         self.position = position
         self.module = module
     }
 
-    public let rootItemID: UUID
-    public let parentModelID: UUID
+    public let rootItemId: UUID
+    public let parentModelId: UUID
     public let parentSource: ItemRowModel
-    public let selectedModelID: UUID?
+    public let selectedModelId: UUID?
     public let selectedSource: ItemRowModel?
     public let position: SheetInsertionPosition
     public let module: NetworkModules
@@ -270,18 +270,18 @@ public struct SheetGeneratedBatch: Identifiable {
         id: String,
         focus: SheetGenerationFocus,
         entries: [SheetModel],
-        lastAcceptedEntryID: UUID? = nil
+        lastAcceptedEntryId: UUID? = nil
     ) {
         self.id = id
         self.focus = focus
         self.entries = entries
-        self.lastAcceptedEntryID = lastAcceptedEntryID
+        self.lastAcceptedEntryId = lastAcceptedEntryId
     }
 
     public let id: String
     public let focus: SheetGenerationFocus
     public var entries: [SheetModel]
-    public var lastAcceptedEntryID: UUID?
+    public var lastAcceptedEntryId: UUID?
 }
 
 public extension SheetModel {

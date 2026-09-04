@@ -11,38 +11,10 @@ final class SpaceGameModel {
 
     var openSpace: Bool = false
 
-    /// Reported file versions keyed by Space and participant. The game master's
-    /// entry is the canonical baseline for availability decisions.
-    var playerVersions: [UUID: [UUID: Int]] = [:]
-
     /// Latest master-sequenced placement for each Space and asset version. A
     /// delayed transform for an older file must not replace the retained pose
     /// of the version that is currently being presented.
     var transformStates: [UUID: [Int: SpaceTransformState]] = [:]
-
-    func replaceVersions(with versions: [UUID: [UUID: Int]]) {
-        playerVersions = versions
-    }
-
-    func applyVersions(_ versions: [UUID: Int], for playerId: UUID) {
-        for itemId in Set(playerVersions.keys) {
-            playerVersions[itemId]?[playerId] = nil
-            if playerVersions[itemId]?.isEmpty == true {
-                playerVersions[itemId] = nil
-            }
-        }
-        for (itemId, version) in versions {
-            playerVersions[itemId, default: [:]][playerId] = version
-        }
-    }
-
-    func remove(playerId: UUID) {
-        applyVersions([:], for: playerId)
-    }
-
-    func version(for itemId: UUID, playerId: UUID) -> Int? {
-        playerVersions[itemId]?[playerId]
-    }
 
     @discardableResult
     func applyTransform(
@@ -134,7 +106,6 @@ final class SpaceGameModel {
 
     func reset() {
         openSpace = false
-        playerVersions.removeAll()
         resetTransforms()
     }
 }
@@ -188,6 +159,45 @@ public protocol SpaceGameControllable: Sendable {
     @MainActor func resetSpaceTransforms()
 }
 
+/// Default implementations forwarding to `FileVersionGameControllable` —
+/// SpaceRPG previously hand-duplicated all of this (the version-tracking
+/// half of `SpaceGameModel`, and every method below except the
+/// transform-specific ones) verbatim from PdfRPG/PhotoRPG's own
+/// identically-shaped copies, differing only in type/method names. See
+/// CODE_AUDIT_10 §9.2.
+@MainActor
+public extension SpaceGameControllable where Self: FileVersionGameControllable, ListRequest == SpaceListRequest {
+    func spaceList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType {
+        await fileList(allPlayers: allPlayers, with: masterId)
+    }
+
+    @discardableResult
+    func applySpaceList(
+        data: NetworkCodableDataType,
+        for playerId: UUID,
+        with masterId: UUID,
+        authoritative: Bool
+    ) async -> Bool {
+        await applyFileList(data: data, for: playerId, with: masterId, authoritative: authoritative)
+    }
+
+    func isSpaceAvailable(itemId: UUID, for playerId: UUID, masterId: UUID) -> Bool {
+        isFileAvailable(itemId: itemId, for: playerId, masterId: masterId)
+    }
+
+    func markSpaceAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID) {
+        markFileAvailable(itemId: itemId, version: version, for: playerIds, masterId: masterId)
+    }
+
+    func markSpaceAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID) {
+        markFileAvailableToCurrentPlayers(itemId: itemId, version: version, masterId: masterId)
+    }
+
+    func removeSpaceReports(for playerId: UUID) {
+        removeFileReports(for: playerId)
+    }
+}
+
 struct GameController: Sendable {
     @MainActor init(itemController: ItemController, exportController: ExportController) {
         self.itemController = itemController
@@ -195,6 +205,7 @@ struct GameController: Sendable {
 
         self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.spaceGameModel = SpaceGameModel()
+        self.versionLedger = PlayerVersionLedger()
     }
 
     let itemController: ItemController
@@ -202,7 +213,7 @@ struct GameController: Sendable {
 
     let gameModel: ItemGameModel
     let spaceGameModel: SpaceGameModel
-
+    let versionLedger: PlayerVersionLedger
 }
 
 // gameItem(for:)/setGame(item:itemId:)/currentItem() come from
@@ -214,93 +225,26 @@ extension GameController: GameControllable {
     var exportControllable: any ExportControllable { exportController as ExportControllable }
 
     @MainActor func resetGameState() {
+        versionLedger.reset()
         spaceGameModel.reset()
     }
 }
 
+extension GameController: FileVersionGameControllable {
+    typealias ListRequest = SpaceListRequest
+    static var fileModuleType: NetworkModules { .space }
+}
+
 extension GameController: SpaceGameControllable {
-    @MainActor
-    func spaceList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType {
-        let localVersions = await localSpaceVersions()
-        let request: SpaceListRequest
-        if allPlayers {
-            spaceGameModel.applyVersions(localVersions, for: masterId)
-            rebuildPlayerReports(masterVersions: localVersions, masterId: masterId)
-            request = SpaceListRequest(list: localVersions, players: spaceGameModel.playerVersions)
-        } else {
-            request = SpaceListRequest(list: localVersions, players: [:])
-        }
-        return NetworkCodableDataType(id: UUID(), type: .space, version: 0, data: request.encodeData())
-    }
-
-    @MainActor
-    @discardableResult
-    func applySpaceList(
-        data: NetworkCodableDataType,
-        for playerId: UUID,
-        with masterId: UUID,
-        authoritative: Bool
-    ) async -> Bool {
-        guard let request = SpaceListRequest.decodeData(of: data.data) else { return false }
-
-        if authoritative {
-            var versions = request.players
-            for (itemId, version) in request.list {
-                versions[itemId, default: [:]][masterId] = version
-            }
-            spaceGameModel.replaceVersions(with: versions)
-            rebuildPlayerReports(masterVersions: request.list, masterId: masterId)
-        } else {
-            let masterVersions = await localSpaceVersions()
-            spaceGameModel.applyVersions(masterVersions, for: masterId)
-            spaceGameModel.applyVersions(request.list, for: playerId)
-            rebuildPlayerReports(masterVersions: masterVersions, masterId: masterId)
-        }
-        return true
-    }
-
-    @MainActor
-    func masterVersion(for itemId: UUID, masterId: UUID) -> Int? {
-        spaceGameModel.version(for: itemId, playerId: masterId)
-    }
-
-    @MainActor
-    func reportedVersion(for itemId: UUID, playerId: UUID) -> Int? {
-        spaceGameModel.version(for: itemId, playerId: playerId)
-    }
-
+    // `setMasterVersion` additionally prunes stale transforms — not shared
+    // with PdfRPG/PhotoRPG, so this is the one method this module keeps its
+    // own override of rather than picking up `FileVersionGameControllable`'s
+    // default.
     @MainActor
     func setMasterVersion(itemId: UUID, version: Int, masterId: UUID) {
         spaceGameModel.removeTransforms(for: itemId, exceptVersion: version)
-        spaceGameModel.playerVersions[itemId, default: [:]][masterId] = version
-        rebuildPlayerReports(masterVersions: [itemId: version], masterId: masterId, only: itemId)
-    }
-
-    @MainActor
-    func isSpaceAvailable(itemId: UUID, for playerId: UUID, masterId: UUID) -> Bool {
-        guard let baseline = masterVersion(for: itemId, masterId: masterId) else { return false }
-        return reportedVersion(for: itemId, playerId: playerId) == baseline
-    }
-
-    @MainActor
-    func markSpaceAvailable(itemId: UUID, version: Int, for playerIds: [UUID], masterId: UUID) {
-        guard masterVersion(for: itemId, masterId: masterId) == version else { return }
-        for playerId in playerIds {
-            spaceGameModel.playerVersions[itemId, default: [:]][playerId] = version
-        }
-        rebuildPlayerReports(masterVersions: [itemId: version], masterId: masterId, only: itemId)
-    }
-
-    @MainActor
-    func markSpaceAvailableToCurrentPlayers(itemId: UUID, version: Int, masterId: UUID) {
-        let players = Set(gameModel.currentPlayers).union([masterId])
-        markSpaceAvailable(itemId: itemId, version: version, for: Array(players), masterId: masterId)
-    }
-
-    @MainActor
-    func removeSpaceReports(for playerId: UUID) {
-        spaceGameModel.remove(playerId: playerId)
-        gameModel.removePlayerReport(for: playerId)
+        versionLedger.playerVersions[itemId, default: [:]][masterId] = version
+        rebuildFileReports(masterVersions: [itemId: version], masterId: masterId, only: itemId)
     }
 
     @MainActor
@@ -367,49 +311,40 @@ extension GameController: SpaceGameControllable {
         spaceGameModel.resetTransforms()
     }
 
+    /// Not shared with PdfRPG/PhotoRPG: also prunes every transform pose
+    /// that isn't the newly-agreed baseline once that baseline is
+    /// determined, matching this module's own `setMasterVersion` override
+    /// above.
     @MainActor
-    private func localSpaceVersions() async -> [UUID: Int] {
-        var versions: [UUID: Int] = [:]
-        for itemId in itemController.itemDataModel.items {
-            guard await hasLocalDatabaseSpaceData(for: itemId) else { continue }
-            versions[itemId] = await networkVersion(for: itemId)
-        }
-        return versions
-    }
-
-    @MainActor
-    private func hasLocalDatabaseSpaceData(for itemId: UUID) async -> Bool {
-        guard let item = itemController.itemSync(for: itemId, noGame: true) else { return false }
-        guard let fileUrl = item.fileUrl else { return true }
-        guard let fileUrlDataController = itemController.fileUrlDataController else { return false }
-        return await fileUrlDataController.hasLocalData(for: fileUrl)
-    }
-
-    @MainActor
-    private func rebuildPlayerReports(masterVersions: [UUID: Int], masterId: UUID, only itemId: UUID? = nil) {
+    func rebuildFileReports(masterVersions: [UUID: Int], masterId: UUID, only itemId: UUID? = nil) {
         let itemIds: Set<UUID>
         if let itemId {
             itemIds = [itemId]
         } else {
             itemIds = Set(masterVersions.keys)
-                .union(spaceGameModel.playerVersions.keys)
+                .union(versionLedger.playerVersions.keys)
                 .union(gameModel.playerReports.keys)
         }
 
         for itemId in itemIds {
-            guard let baseline = masterVersions[itemId] ?? spaceGameModel.version(for: itemId, playerId: masterId) else {
+            guard let baseline = masterVersions[itemId] ?? versionLedger.version(for: itemId, playerId: masterId) else {
                 gameModel.playerReports[itemId] = []
                 continue
             }
             spaceGameModel.removeTransforms(for: itemId, exceptVersion: baseline)
-            gameModel.playerReports[itemId] = (spaceGameModel.playerVersions[itemId] ?? [:])
+            gameModel.playerReports[itemId] = (versionLedger.playerVersions[itemId] ?? [:])
                 .compactMap { playerId, version in version == baseline ? playerId : nil }
                 .sorted()
         }
     }
 }
 
-struct SpaceListRequest: Codable, Sendable, Equatable, MessageMapper {
-    let list: [UUID: Int]
-    let players: [UUID: [UUID: Int]]
+public struct SpaceListRequest: FileListRequest {
+    public let list: [UUID: Int]
+    public let players: [UUID: [UUID: Int]]
+
+    public init(list: [UUID: Int], players: [UUID: [UUID: Int]]) {
+        self.list = list
+        self.players = players
+    }
 }

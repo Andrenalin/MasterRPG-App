@@ -17,10 +17,11 @@ struct ItemDetailPreview: View {
             root: fixture.root,
             detailListController: fixture.folderListController,
             selectedModel: model,
-            linkTypes: EmptyLinkTransferable.self
-        ) {
-            Text(verbatim: "Editor content")
-        }
+            linkTypes: EmptyLinkTransferable.self,
+            editor: {
+                Text(verbatim: "Editor content")
+            }
+        )
     }
 }
 

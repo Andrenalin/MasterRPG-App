@@ -40,14 +40,14 @@ public struct CRDT<T: Codable> {
     /// JSON. See CODE_AUDIT_9 §5.6.
     public mutating func restore(from string: String) {
         guard let data = string.data(using: .utf8),
-              let value = try? JSONDecoder().decode(LWWRegister<String, T>.self, from: data) else {
+              let value = try? JSONCoding.decoder.decode(LWWRegister<String, T>.self, from: data) else {
             return
         }
         _crdtValue = value
     }
 
     private static func converter(initialValue: String, defaultValue: T) -> LWWRegister<String, T> {
-        if let data = initialValue.data(using: .utf8), let value = try? JSONDecoder().decode(LWWRegister<String, T>.self, from: data) {
+        if let data = initialValue.data(using: .utf8), let value = try? JSONCoding.decoder.decode(LWWRegister<String, T>.self, from: data) {
             return value
         }
         return LWWRegister(defaultValue, actorID: UUID().uuidString)
@@ -58,7 +58,7 @@ public struct CRDT<T: Codable> {
     }
 
     public var rawValue: String {
-        guard let data = try? JSONEncoder().encode(_crdtValue), let text = String(data: data, encoding: .utf8) else { return "" }
+        guard let data = try? JSONCoding.encoder.encode(_crdtValue), let text = String(data: data, encoding: .utf8) else { return "" }
         return text
     }
 

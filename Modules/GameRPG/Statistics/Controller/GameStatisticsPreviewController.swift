@@ -207,9 +207,9 @@ struct GameStatisticsPreviewController: Sendable {
             duration: duration,
             role: role,
             localName: "Alex",
-            characterID: characterName.isEmpty ? nil : identifier(UInt8(daysBefore)),
+            characterId: characterName.isEmpty ? nil : identifier(UInt8(daysBefore)),
             characterName: characterName,
-            adventureID: identifier(UInt8(daysBefore + 32)),
+            adventureId: identifier(UInt8(daysBefore + 32)),
             adventureTitle: adventureTitle,
             masterName: "Morgan",
             maxParticipantCount: participantCount

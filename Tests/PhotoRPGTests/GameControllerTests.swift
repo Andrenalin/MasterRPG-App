@@ -190,7 +190,7 @@ struct GameControllerTests {
         let playerId = UUID()
         sut.setMasterVersion(itemId: photoId, version: 6, masterId: masterId)
         sut.markPhotoAvailable(itemId: photoId, version: 6, for: [playerId], masterId: masterId)
-        let originalVersions = sut.photoGameModel.playerVersions
+        let originalVersions = sut.versionLedger.playerVersions
         let malformedData = NetworkCodableDataType(
             id: UUID(),
             type: .photo,
@@ -219,7 +219,7 @@ struct GameControllerTests {
 
         #expect(!appliedMalformed)
         #expect(!appliedMissing)
-        #expect(sut.photoGameModel.playerVersions == originalVersions)
+        #expect(sut.versionLedger.playerVersions == originalVersions)
         #expect(sut.isPhotoAvailable(itemId: photoId, for: playerId, masterId: masterId))
     }
 

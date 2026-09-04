@@ -12,12 +12,12 @@ extension GameRoot {
     }
 
     func beginStatisticsSession(for gameType: GameType, at date: Date = .now) async {
-        let localParticipantID = gameModel.gameConfig.id
+        let localParticipantId = gameModel.gameConfig.id
         let localPlayer = gameModel.gamePlayer
-        let characterID = gameType == .master ? nil : (localPlayer.characterId ?? gameModel.selectedCharacter)
+        let characterId = gameType == .master ? nil : (localPlayer.characterId ?? gameModel.selectedCharacter)
         let characterName: String
-        if let characterID {
-            characterName = characterRoot.linkControllable.name(for: characterID)
+        if let characterId {
+            characterName = characterRoot.linkControllable.name(for: characterId)
         } else {
             characterName = ""
         }
@@ -27,25 +27,25 @@ extension GameRoot {
         if !players.contains(where: { $0.id == master.id }) {
             players.append(PlayerGameModel(id: master.id, type: .master, name: master.name))
         }
-        if !players.contains(where: { $0.id == localParticipantID }) {
+        if !players.contains(where: { $0.id == localParticipantId }) {
             players.append(
                 PlayerGameModel(
-                    id: localParticipantID,
+                    id: localParticipantId,
                     type: gameType,
                     name: gameType == .master ? master.name : gameModel.gameName,
-                    characterId: characterID
+                    characterId: characterId
                 )
             )
         }
 
         let participants = players.map { player in
             GameStatisticParticipantDraft(
-                participantID: player.id,
-                characterID: player.characterId,
+                participantId: player.id,
+                characterId: player.characterId,
                 name: player.name,
                 characterName: player.characterId == nil ? "" : player.name,
                 role: GameStatisticRole(gameType: player.type),
-                isLocal: player.id == localParticipantID,
+                isLocal: player.id == localParticipantId,
                 isGameMaster: player.type == .master
             )
         }
@@ -55,13 +55,13 @@ extension GameRoot {
                 id: UUID(),
                 startedAt: date,
                 role: GameStatisticRole(gameType: gameType),
-                localParticipantID: localParticipantID,
+                localParticipantId: localParticipantId,
                 localName: gameType == .master ? master.name : gameModel.gameName,
-                characterID: characterID,
+                characterId: characterId,
                 characterName: characterName,
-                adventureID: master.adventureId ?? gameModel.selectedAdventure,
+                adventureId: master.adventureId ?? gameModel.selectedAdventure,
                 adventureTitle: master.adventureTitle ?? "",
-                masterID: master.id,
+                masterId: master.id,
                 masterName: master.name,
                 isDemo: gameType == .demo,
                 participants: participants
@@ -70,7 +70,7 @@ extension GameRoot {
     }
 
     func currentStatisticParticipants() -> [GameStatisticParticipantDraft] {
-        let localParticipantID = gameModel.gameConfig.id
+        let localParticipantId = gameModel.gameConfig.id
         var players = gameModel.gameRoster.players
         let master = gameModel.gameConfig.master
         if !players.contains(where: { $0.id == master.id }) {
@@ -78,12 +78,12 @@ extension GameRoot {
         }
         return players.map { player in
             GameStatisticParticipantDraft(
-                participantID: player.id,
-                characterID: player.characterId,
+                participantId: player.id,
+                characterId: player.characterId,
                 name: player.name,
                 characterName: player.characterId == nil ? "" : player.name,
                 role: GameStatisticRole(gameType: player.type),
-                isLocal: player.id == localParticipantID,
+                isLocal: player.id == localParticipantId,
                 isGameMaster: player.type == .master
             )
         }

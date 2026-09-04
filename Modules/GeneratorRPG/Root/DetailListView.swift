@@ -36,11 +36,12 @@ struct DetailListView: View {
             detailListController: listController,
             selectedModel: model,
             configuration: .init(),
-            linkTypes: EmptyLinkTransferable.self
-        ) {
-            Text("Add a reference character", bundle: .module)
-            detailEditorView(model: model)
-        }
+            linkTypes: EmptyLinkTransferable.self,
+            editor: {
+                Text("Add a reference character", bundle: .module)
+                detailEditorView(model: model)
+            }
+        )
         .overlay {
             if root.openFileWindowModel.showItem {
                 root.viewController.viewer(

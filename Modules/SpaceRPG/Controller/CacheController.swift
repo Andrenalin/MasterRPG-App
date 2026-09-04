@@ -16,14 +16,6 @@ extension CacheController: ImageCacheControllable {
     private static let thumbnailSize = CGSize(width: 393, height: 350)
 
     @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
-        guard let fileUrlDataController, let fileUrl = item.fileUrl else { return }
-        let thumbnail = await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
-            await AKImage.quickLookThumbnail(
-                for: url,
-                size: Self.thumbnailSize,
-                removeWhiteBackground: true
-            )
-        }
-        await cacheThumbnail(thumbnail, for: itemId)
+        await createQuickLookThumbnail(for: itemId, item: item, size: Self.thumbnailSize, removeWhiteBackground: true)
     }
 }
