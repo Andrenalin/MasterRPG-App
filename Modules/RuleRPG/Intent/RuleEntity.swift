@@ -63,52 +63,31 @@ extension RuleEntity: Transferable {
     }
 }
 
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3. Rule is one
+// of the two modules that needs real overrides: `include(model:)` excludes
+// `specialCategory` items everywhere (`entities(for:)` included — a
+// `specialCategory` item is never a valid Siri/Shortcuts/Spotlight result),
+// and `suggestedEntities()` keeps its own control flow, which — unlike
+// every other module — prefixes to the limit *after* filtering rather than
+// before, so a `specialCategory` item earlier in `itemDataModel.items`
+// doesn't itself count against the limit.
 @MainActor
-struct RuleEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct RuleEntityQuery: ItemEntityQuery {
+    typealias Entity = RuleEntity
     @Dependency var root: RuleRootModel
-    private static let suggestedLimit = 20
-    private static let matchingLimit = 25
+
+    func makeEntity(root: RuleRootModel, model: RuleModel) -> RuleEntity { RuleEntity(root: root, model: model) }
+    func allIds(root: RuleRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    func model(root: RuleRootModel, id: UUID) -> RuleModel? { root.itemController.itemSync(for: id) }
+    func include(model: RuleModel) -> Bool { !model.specialCategory }
 
     func suggestedEntities() async throws -> [RuleEntity] {
-        let entities: [RuleEntity] = root.itemController.itemDataModel.items.compactMap { id -> RuleEntity? in
-            guard let model = root.itemController.itemSync(for: id), !model.specialCategory else {
-                return nil
-            }
-            return RuleEntity(root: root, model: model)
+        let entities: [RuleEntity] = allIds(root: root).compactMap { id -> RuleEntity? in
+            guard let model = model(root: root, id: id), include(model: model) else { return nil }
+            return makeEntity(root: root, model: model)
         }
         return Array(entities.prefix(Self.suggestedLimit))
-    }
-
-    func entities(for identifiers: [UUID]) async throws -> [RuleEntity] {
-        identifiers.compactMap { id -> RuleEntity? in
-            guard let model = root.itemController.itemSync(for: id), !model.specialCategory else {
-                return nil
-            }
-            return RuleEntity(root: root, model: model)
-        }
-    }
-
-    func entities(matching text: String) async throws -> [RuleEntity] {
-        guard !text.isEmpty else { return try await suggestedEntities() }
-        var results: [RuleEntity] = []
-        for id in root.itemController.itemDataModel.items {
-            guard let model = root.itemController.itemSync(for: id),
-                  !model.specialCategory,
-                  model.name.localizedStandardContains(text) ||
-                    model.description.localizedStandardContains(text) else { continue }
-            results.append(RuleEntity(root: root, model: model))
-            if results.count >= Self.matchingLimit { break }
-        }
-        return results
-    }
-
-    func allEntities() async throws -> [RuleEntity] {
-        root.itemController.itemDataModel.items.compactMap { id -> RuleEntity? in
-            guard let model = root.itemController.itemSync(for: id), !model.specialCategory else {
-                return nil
-            }
-            return RuleEntity(root: root, model: model)
-        }
     }
 }
 

@@ -103,77 +103,54 @@ extension DiceEntity: URLRepresentableEntity {
     }
 }
 
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3. Dice is one
+// of the two modules that needs real overrides: `suggestedEntities()` keeps
+// its own 60s result cache (a protocol *requirement*'s own witness always
+// wins over `ItemEntityQuery`'s extension default, so this override is
+// still honored from every call site, including `entities(matching:)`'s
+// empty-string fallback below), and `matches(model:text:)` widens the
+// shared name/description predicate to also search tags.
 @MainActor
-struct DiceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct DiceEntityQuery: ItemEntityQuery {
+    typealias Entity = DiceEntity
     @Dependency var root: DiceRootModel
-    
+
     // iOS 18+: Cache for better performance
     private static var cachedEntities: [DiceEntity] = []
     private static var lastCacheUpdate: Date = .distantPast
     private static let cacheValidityDuration: TimeInterval = 60 // 1 minute
-    private static let suggestedEntityLimit = 20
-    private static let matchingEntityLimit = 25
+
+    func makeEntity(root: DiceRootModel, model: DiceModel) -> DiceEntity { DiceEntity(root: root, model: model) }
+    func allIds(root: DiceRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    func model(root: DiceRootModel, id: UUID) -> DiceModel? { root.itemController.itemSync(for: id) }
+
+    func matches(model: DiceModel, text: String) -> Bool {
+        model.name.localizedStandardContains(text) ||
+            model.description.localizedStandardContains(text) ||
+            model.tags.contains(where: { $0.localizedStandardContains(text) })
+    }
 
     func suggestedEntities() async throws -> [DiceEntity] {
         // Return cached entities if still valid
         if Date().timeIntervalSince(Self.lastCacheUpdate) < Self.cacheValidityDuration {
             return Self.cachedEntities
         }
-        
+
         // Fetch fresh entities
-        let entities = await fetchEntities(limit: Self.suggestedEntityLimit)
-        
+        var entities: [DiceEntity] = []
+        for id in allIds(root: root).prefix(Self.suggestedLimit) {
+            guard let model = model(root: root, id: id) else { continue }
+            entities.append(makeEntity(root: root, model: model))
+        }
+
         // Update cache
         Self.cachedEntities = entities
         Self.lastCacheUpdate = Date()
-        
+
         return entities
     }
-    
-    private func fetchEntities(limit: Int? = nil) async -> [DiceEntity] {
-        let ids = root.itemController.itemDataModel.items
-        let selectedIds = ids.prefix(limit ?? ids.count)
-        var results: [DiceEntity] = []
-        for id in selectedIds {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
 
-    func entities(for identifiers: [DiceEntity.ID]) async throws -> [DiceEntity] {
-        var results: [DiceEntity] = []
-        for id in identifiers {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(matching string: String) async throws -> [DiceEntity] {
-        guard !string.isEmpty else { return try await suggestedEntities() }
-        let ids = root.itemController.itemDataModel.items
-        var results: [DiceEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = DiceEntity(root: root, model: model)
-            guard entity.name.localizedStandardContains(string) ||
-                    entity.description.localizedStandardContains(string) ||
-                    model.tags.contains(where: { $0.localizedStandardContains(string) }) else {
-                continue
-            }
-            results.append(entity)
-            guard results.count < Self.matchingEntityLimit else { break }
-        }
-        return results
-    }
-
-    func allEntities() async throws -> [DiceEntity] {
-        await fetchEntities()
-    }
-    
     // iOS 18+: Invalidate cache when data changes
     static func invalidateCache() {
         cachedEntities = []

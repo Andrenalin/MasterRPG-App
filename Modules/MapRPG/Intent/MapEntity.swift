@@ -91,57 +91,16 @@ extension MapEntity: Transferable {
     }
 }
 
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3.
 @MainActor
-struct MapEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct MapEntityQuery: ItemEntityQuery {
+    typealias Entity = MapEntity
     @Dependency var root: MapRootModel
-    private static let suggestedEntityLimit = 20
-    private static let matchingEntityLimit = 25
 
-    func suggestedEntities() async throws -> [MapEntity] {
-        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
-        var results: [MapEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = MapEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(for identifiers: [MapEntity.ID]) async throws -> [MapEntity] {
-        var results: [MapEntity] = []
-        for id in identifiers {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = MapEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(matching: String) async throws -> [MapEntity] {
-        guard !matching.isEmpty else { return try await suggestedEntities() }
-        let ids = root.itemController.itemDataModel.items
-        var results: [MapEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
-            let entity = MapEntity(root: root, model: model)
-            results.append(entity)
-            guard results.count < Self.matchingEntityLimit else { break }
-        }
-        return results
-    }
-
-    func allEntities() async throws -> [MapEntity] {
-        let ids = root.itemController.itemDataModel.items
-        var results: [MapEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = MapEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
+    func makeEntity(root: MapRootModel, model: MapModel) -> MapEntity { MapEntity(root: root, model: model) }
+    func allIds(root: MapRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    func model(root: MapRootModel, id: UUID) -> MapModel? { root.itemController.itemSync(for: id) }
 }
 
 #if compiler(>=6.4)

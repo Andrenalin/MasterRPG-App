@@ -93,57 +93,16 @@ extension WeatherEntity: Transferable {
     }
 }
 
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3.
 @MainActor
-struct WeatherEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct WeatherEntityQuery: ItemEntityQuery {
+    typealias Entity = WeatherEntity
     @Dependency var root: WeatherRootModel
-    private static let suggestedEntityLimit = 20
-    private static let matchingEntityLimit = 25
 
-    func suggestedEntities() async throws -> [WeatherEntity] {
-        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
-        var results: [WeatherEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = WeatherEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(for identifiers: [WeatherEntity.ID]) async throws -> [WeatherEntity] {
-        var results: [WeatherEntity] = []
-        for id in identifiers {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = WeatherEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(matching: String) async throws -> [WeatherEntity] {
-        guard !matching.isEmpty else { return try await suggestedEntities() }
-        let ids = root.itemController.itemDataModel.items
-        var results: [WeatherEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
-            let entity = WeatherEntity(root: root, model: model)
-            results.append(entity)
-            guard results.count < Self.matchingEntityLimit else { break }
-        }
-        return results
-    }
-
-    func allEntities() async throws -> [WeatherEntity] {
-        let ids = root.itemController.itemDataModel.items
-        var results: [WeatherEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = WeatherEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
+    func makeEntity(root: WeatherRootModel, model: WeatherModel) -> WeatherEntity { WeatherEntity(root: root, model: model) }
+    func allIds(root: WeatherRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    func model(root: WeatherRootModel, id: UUID) -> WeatherModel? { root.itemController.itemSync(for: id) }
 }
 
 #if compiler(>=6.4)

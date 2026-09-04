@@ -87,57 +87,16 @@ extension PdfEntity: Transferable {
     }
 }
 
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3.
 @MainActor
-struct PdfEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct PdfEntityQuery: ItemEntityQuery {
+    typealias Entity = PdfEntity
     @Dependency var root: PdfRootModel
-    private static let suggestedEntityLimit = 20
-    private static let matchingEntityLimit = 25
 
-    func suggestedEntities() async throws -> [PdfEntity] {
-        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
-        var results: [PdfEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = PdfEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(for identifiers: [PdfEntity.ID]) async throws -> [PdfEntity] {
-        var results: [PdfEntity] = []
-        for id in identifiers {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = PdfEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(matching: String) async throws -> [PdfEntity] {
-        guard !matching.isEmpty else { return try await suggestedEntities() }
-        let ids = root.itemController.itemDataModel.items
-        var results: [PdfEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
-            let entity = PdfEntity(root: root, model: model)
-            results.append(entity)
-            guard results.count < Self.matchingEntityLimit else { break }
-        }
-        return results
-    }
-
-    func allEntities() async throws -> [PdfEntity] {
-        let ids = root.itemController.itemDataModel.items
-        var results: [PdfEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = PdfEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
+    func makeEntity(root: PdfRootModel, model: PdfModel) -> PdfEntity { PdfEntity(root: root, model: model) }
+    func allIds(root: PdfRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    func model(root: PdfRootModel, id: UUID) -> PdfModel? { root.itemController.itemSync(for: id) }
 }
 
 #if compiler(>=6.4)

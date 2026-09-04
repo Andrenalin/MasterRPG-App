@@ -87,57 +87,16 @@ extension SpaceEntity: Transferable {
     }
 }
 
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3.
 @MainActor
-struct SpaceEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery {
+struct SpaceEntityQuery: ItemEntityQuery {
+    typealias Entity = SpaceEntity
     @Dependency var root: SpaceRootModel
-    private static let suggestedEntityLimit = 20
-    private static let matchingEntityLimit = 25
 
-    func suggestedEntities() async throws -> [SpaceEntity] {
-        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
-        var results: [SpaceEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = SpaceEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(for identifiers: [SpaceEntity.ID]) async throws -> [SpaceEntity] {
-        var results: [SpaceEntity] = []
-        for id in identifiers {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = SpaceEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    func entities(matching: String) async throws -> [SpaceEntity] {
-        guard !matching.isEmpty else { return try await suggestedEntities() }
-        let ids = root.itemController.itemDataModel.items
-        var results: [SpaceEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
-            let entity = SpaceEntity(root: root, model: model)
-            results.append(entity)
-            guard results.count < Self.matchingEntityLimit else { break }
-        }
-        return results
-    }
-
-    func allEntities() async throws -> [SpaceEntity] {
-        let ids = root.itemController.itemDataModel.items
-        var results: [SpaceEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = SpaceEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
+    func makeEntity(root: SpaceRootModel, model: SpaceModel) -> SpaceEntity { SpaceEntity(root: root, model: model) }
+    func allIds(root: SpaceRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    func model(root: SpaceRootModel, id: UUID) -> SpaceModel? { root.itemController.itemSync(for: id) }
 }
 
 #if compiler(>=6.4)

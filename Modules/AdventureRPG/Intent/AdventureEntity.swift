@@ -91,62 +91,19 @@ extension AdventureEntity: Transferable {
     }
 }
 
-public struct AdventureEntityQuery: @preconcurrency EntityQuery, @preconcurrency EntityStringQuery, @preconcurrency EnumerableEntityQuery {
-    @Dependency var root: AdventureRootModel
-    private static let suggestedEntityLimit = 20
-    private static let matchingEntityLimit = 25
+// See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3.
+public struct AdventureEntityQuery: @preconcurrency ItemEntityQuery {
+    public typealias Entity = AdventureEntity
+    @Dependency public var root: AdventureRootModel
 
-    public init() {}
+    nonisolated public init() {}
 
-    @MainActor
-    public func suggestedEntities() async throws -> [AdventureEntity] {
-        let ids = root.itemController.itemDataModel.items.prefix(Self.suggestedEntityLimit)
-        var results: [AdventureEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = AdventureEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
+    public func makeEntity(root: AdventureRootModel, model: AdventureModel) -> AdventureEntity {
+        AdventureEntity(root: root, model: model)
     }
-
-    @MainActor
-    public func entities(for identifiers: [AdventureEntity.ID]) async throws -> [AdventureEntity] {
-        var results: [AdventureEntity] = []
-        for id in identifiers {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = AdventureEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
-
-    @MainActor
-    public func entities(matching: String) async throws -> [AdventureEntity] {
-        guard !matching.isEmpty else { return try await suggestedEntities() }
-        let ids = root.itemController.itemDataModel.items
-        var results: [AdventureEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            guard model.name.localizedStandardContains(matching) || model.description.localizedStandardContains(matching) else { continue }
-            let entity = AdventureEntity(root: root, model: model)
-            results.append(entity)
-            guard results.count < Self.matchingEntityLimit else { break }
-        }
-        return results
-    }
-
-    @MainActor
-    public func allEntities() async throws -> [AdventureEntity] {
-        let ids = root.itemController.itemDataModel.items
-        var results: [AdventureEntity] = []
-        for id in ids {
-            guard let model = root.itemController.itemSync(for: id) else { continue }
-            let entity = AdventureEntity(root: root, model: model)
-            results.append(entity)
-        }
-        return results
-    }
+    public func allIds(root: AdventureRootModel) -> [UUID] { root.itemController.itemDataModel.items }
+    public func model(root: AdventureRootModel, id: UUID) -> AdventureModel? { root.itemController.itemSync(for: id) }
 }
 
 #if compiler(>=6.4)
@@ -156,7 +113,7 @@ extension AdventureEntity: SyncableEntity, OwnershipProvidingEntity {
 }
 
 @available(iOS 27, macOS 27, visionOS 27, *)
-extension AdventureEntityQuery: IndexedEntityQuery {
+extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
     public func reindexEntities(
         for identifiers: [AdventureEntity.ID],
         indexDescription: CSSearchableIndexDescription
@@ -165,7 +122,6 @@ extension AdventureEntityQuery: IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(entities)
     }
 
-    @available(iOS 27, macOS 27, visionOS 27, *)
     public func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
         let all = try await allEntities()
         try await CSSearchableIndex.default().indexAppEntities(all)
