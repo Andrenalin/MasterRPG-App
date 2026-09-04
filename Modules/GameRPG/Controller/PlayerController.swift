@@ -213,99 +213,48 @@ extension PlayerController {
         await send(type: .update, subType: actionType, updated: message)
     }
 
-    private func sharePhoto(_ fullData: NetworkCodableDataType) async {
+    /// Shared `.reveal` relay skeleton for the three file-backed modules
+    /// (Pdf, Photo, Space) — `sharePdf`/`sharePhoto`/`shareSpace` below
+    /// previously hand-duplicated this exact control flow, differing only
+    /// in which module's accessors they called and the `NetworkModules`
+    /// case passed to `setGameUpdateType`. Every other module-specific
+    /// concern (Space's `spaceSharing` feature gate) stays in that module's
+    /// own thin wrapper. See CODE_AUDIT_10 §9.2.
+    private func shareFileItem(
+        _ fullData: NetworkCodableDataType,
+        updateType: NetworkModules,
+        masterVersion: (_ itemId: UUID, _ masterId: UUID) -> Int?,
+        isAvailable: (_ itemId: UUID, _ playerId: UUID, _ masterId: UUID) -> Bool,
+        allPlayersReported: (_ itemId: UUID) -> Bool,
+        setCurrent: (_ itemId: UUID) async -> Bool,
+        markAvailableToCurrentPlayers: (_ itemId: UUID, _ version: Int, _ masterId: UUID) -> Void
+    ) async {
         // `PlayerController` is itself `@MainActor`, so this is already a
         // same-actor synchronous read — no actor hop needed.
         let (playerId, masterId) = (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
-        let baseline = root.photoRoot.photoGameControllable.masterVersion(
-            for: fullData.id,
-            masterId: masterId
-        )
-        let senderIsAvailable = root.photoRoot.photoGameControllable.isPhotoAvailable(
-            itemId: fullData.id,
-            for: playerId,
-            masterId: masterId
-        )
+        let baseline = masterVersion(fullData.id, masterId)
+        let senderIsAvailable = isAvailable(fullData.id, playerId, masterId)
         let matchesBaseline = baseline == fullData.effectiveAssetVersion
 
         let outgoing: NetworkCodableDataType
         if senderIsAvailable, matchesBaseline {
-            let allPlayersHavePhoto = root.photoRoot.gameControllable.allPlayersReported(for: fullData.id)
+            let allPlayersHaveIt = allPlayersReported(fullData.id)
             outgoing = NetworkCodableDataType(
                 id: fullData.id,
                 type: fullData.type,
                 version: fullData.version,
-                data: allPlayersHavePhoto ? nil : fullData.data,
+                data: allPlayersHaveIt ? nil : fullData.data,
                 assetVersion: fullData.assetVersion,
                 contentVersion: fullData.contentVersion
             )
-            if await root.photoRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                gameModel.setGameUpdateType(.photo)
+            if await setCurrent(fullData.id) {
+                gameModel.setGameUpdateType(updateType)
             }
         } else if baseline == nil {
             // The master has no copy at all — unlike a mismatched/competing
             // edit of an item the master already owns, there is no canonical
             // baseline to defer to. Attach the full bytes so the master can
-            // adopt them as its own copy (mirrors MasterController.handlePhoto's
-            // `.itemMissing` import fallback, which otherwise has nothing to
-            // import and silently drops the reveal).
-            outgoing = fullData
-        } else {
-            // The master owns the canonical version. A player whose report is
-            // absent or mismatched sends only that baseline reference; the
-            // master answers by publishing its own bytes.
-            outgoing = NetworkCodableDataType(
-                id: fullData.id,
-                type: fullData.type,
-                version: baseline ?? fullData.effectiveAssetVersion
-            )
-        }
-
-        await send(type: .reveal, subType: .show, updated: outgoing)
-
-        if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(
-                itemId: fullData.id,
-                version: baseline,
-                masterId: masterId
-            )
-        }
-    }
-
-    private func sharePdf(_ fullData: NetworkCodableDataType) async {
-        // `PlayerController` is itself `@MainActor`, so this is already a
-        // same-actor synchronous read — no actor hop needed.
-        let (playerId, masterId) = (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
-        let baseline = root.pdfRoot.pdfGameControllable.masterVersion(
-            for: fullData.id,
-            masterId: masterId
-        )
-        let senderIsAvailable = root.pdfRoot.pdfGameControllable.isPdfAvailable(
-            itemId: fullData.id,
-            for: playerId,
-            masterId: masterId
-        )
-        let matchesBaseline = baseline == fullData.effectiveAssetVersion
-
-        let outgoing: NetworkCodableDataType
-        if senderIsAvailable, matchesBaseline {
-            let allPlayersHavePdf = root.pdfRoot.gameControllable.allPlayersReported(for: fullData.id)
-            outgoing = NetworkCodableDataType(
-                id: fullData.id,
-                type: fullData.type,
-                version: fullData.version,
-                data: allPlayersHavePdf ? nil : fullData.data,
-                assetVersion: fullData.assetVersion,
-                contentVersion: fullData.contentVersion
-            )
-            if await root.pdfRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                gameModel.setGameUpdateType(.pdf)
-            }
-        } else if baseline == nil {
-            // The master has no copy at all — unlike a mismatched/competing
-            // edit of an item the master already owns, there is no canonical
-            // baseline to defer to. Attach the full bytes so the master can
-            // adopt them as its own copy (mirrors MasterController.handlePdf's
+            // adopt them as its own copy (mirrors MasterController's
             // `.itemMissing` import fallback, which otherwise has nothing to
             // import and silently drops the reveal).
             outgoing = fullData
@@ -322,71 +271,51 @@ extension PlayerController {
         await send(type: .reveal, subType: .show, updated: outgoing)
 
         if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(
-                itemId: fullData.id,
-                version: baseline,
-                masterId: masterId
-            )
+            markAvailableToCurrentPlayers(fullData.id, baseline, masterId)
         }
+    }
+
+    private func sharePhoto(_ fullData: NetworkCodableDataType) async {
+        await shareFileItem(
+            fullData,
+            updateType: .photo,
+            masterVersion: { root.photoRoot.photoGameControllable.masterVersion(for: $0, masterId: $1) },
+            isAvailable: { root.photoRoot.photoGameControllable.isPhotoAvailable(itemId: $0, for: $1, masterId: $2) },
+            allPlayersReported: { root.photoRoot.gameControllable.allPlayersReported(for: $0) },
+            setCurrent: { await root.photoRoot.gameControllable.setCurrent(itemId: $0) },
+            markAvailableToCurrentPlayers: {
+                root.photoRoot.photoGameControllable.markPhotoAvailableToCurrentPlayers(itemId: $0, version: $1, masterId: $2)
+            }
+        )
+    }
+
+    private func sharePdf(_ fullData: NetworkCodableDataType) async {
+        await shareFileItem(
+            fullData,
+            updateType: .pdf,
+            masterVersion: { root.pdfRoot.pdfGameControllable.masterVersion(for: $0, masterId: $1) },
+            isAvailable: { root.pdfRoot.pdfGameControllable.isPdfAvailable(itemId: $0, for: $1, masterId: $2) },
+            allPlayersReported: { root.pdfRoot.gameControllable.allPlayersReported(for: $0) },
+            setCurrent: { await root.pdfRoot.gameControllable.setCurrent(itemId: $0) },
+            markAvailableToCurrentPlayers: {
+                root.pdfRoot.pdfGameControllable.markPdfAvailableToCurrentPlayers(itemId: $0, version: $1, masterId: $2)
+            }
+        )
     }
 
     private func shareSpace(_ fullData: NetworkCodableDataType) async {
         guard root.gameModel.gameControl.features.spaceSharing else { return }
-        // `PlayerController` is itself `@MainActor`, so this is already a
-        // same-actor synchronous read — no actor hop needed.
-        let (playerId, masterId) = (root.gameModel.gameConfig.id, root.gameModel.gameConfig.master.id)
-        let baseline = root.spaceRoot.spaceGameControllable.masterVersion(
-            for: fullData.id,
-            masterId: masterId
-        )
-        let senderIsAvailable = root.spaceRoot.spaceGameControllable.isSpaceAvailable(
-            itemId: fullData.id,
-            for: playerId,
-            masterId: masterId
-        )
-        let matchesBaseline = baseline == fullData.effectiveAssetVersion
-
-        let outgoing: NetworkCodableDataType
-        if senderIsAvailable, matchesBaseline {
-            let allPlayersHaveSpace = root.spaceRoot.gameControllable.allPlayersReported(for: fullData.id)
-            outgoing = NetworkCodableDataType(
-                id: fullData.id,
-                type: fullData.type,
-                version: fullData.version,
-                data: allPlayersHaveSpace ? nil : fullData.data,
-                assetVersion: fullData.assetVersion,
-                contentVersion: fullData.contentVersion
-            )
-            if await root.spaceRoot.gameControllable.setCurrent(itemId: fullData.id) {
-                gameModel.setGameUpdateType(.space)
+        await shareFileItem(
+            fullData,
+            updateType: .space,
+            masterVersion: { root.spaceRoot.spaceGameControllable.masterVersion(for: $0, masterId: $1) },
+            isAvailable: { root.spaceRoot.spaceGameControllable.isSpaceAvailable(itemId: $0, for: $1, masterId: $2) },
+            allPlayersReported: { root.spaceRoot.gameControllable.allPlayersReported(for: $0) },
+            setCurrent: { await root.spaceRoot.gameControllable.setCurrent(itemId: $0) },
+            markAvailableToCurrentPlayers: {
+                root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(itemId: $0, version: $1, masterId: $2)
             }
-        } else if baseline == nil {
-            // The master has no copy at all — unlike a mismatched/competing
-            // edit of an item the master already owns, there is no canonical
-            // baseline to defer to. Attach the full bytes so the master can
-            // adopt them as its own copy (mirrors MasterController.handleSpace's
-            // `.itemMissing` import fallback, which otherwise has nothing to
-            // import and silently drops the reveal).
-            outgoing = fullData
-        } else {
-            // A peer never establishes a competing baseline. A missing or stale
-            // report becomes a request for the game master's canonical asset.
-            outgoing = NetworkCodableDataType(
-                id: fullData.id,
-                type: fullData.type,
-                version: baseline ?? fullData.effectiveAssetVersion
-            )
-        }
-
-        await send(type: .reveal, subType: .show, updated: outgoing)
-
-        if senderIsAvailable, matchesBaseline, outgoing.data != nil, let baseline {
-            root.spaceRoot.spaceGameControllable.markSpaceAvailableToCurrentPlayers(
-                itemId: fullData.id,
-                version: baseline,
-                masterId: masterId
-            )
-        }
+        )
     }
 
     func send(
