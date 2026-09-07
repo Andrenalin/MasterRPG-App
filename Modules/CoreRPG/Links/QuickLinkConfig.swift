@@ -12,15 +12,3 @@ public struct LinkEntryModel {
     public let markdownUrl: String
 }
 
-public struct QuickLinkConfig {
-    public init(module: NetworkModules, title: LocalizedStringKey, name: @escaping ([UUID]) -> String) {
-        self.module = module
-        self.title = title
-        self.name = name
-    }
-
-    public let module: NetworkModules
-    public let title: LocalizedStringKey
-    public let name: ([UUID]) -> String
-}
-

@@ -41,6 +41,16 @@ public struct SharingControlModel: Identifiable, Equatable, Codable, Sendable {
     public var show: Bool
 }
 
+public extension [SharingControlModel] {
+    /// The subset of players a share/send control should list — visible, name-sorted.
+    /// Was hand-duplicated verbatim across `GameShareView`, `TableGenerationOccurrenceHeaderView`,
+    /// and `TableGenerationSaveSendButton`. See CODE_AUDIT §8.3.
+    var visibleSortedByName: [SharingControlModel] {
+        filter(\.show)
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+    }
+}
+
 public struct ControlSharingView: View {
     public init(alignment: Alignment, embeddedInGlass: Bool = false, action: @escaping () -> Void) {
         self.alignment = alignment

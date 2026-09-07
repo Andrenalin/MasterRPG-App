@@ -62,9 +62,12 @@ extension CacheController: ImageCacheControllable {
             source = await downsampledSource(for: itemId, item: item)
         }
         guard let source else { return }
-        let thumbnail = await source.resize(to: CGSize(width: 64, height: 64), topAligned: true)
+        let thumbnail = await source.resize(to: Self.thumbnailTargetSize, topAligned: true)
         await cacheThumbnail(thumbnail, for: itemId)
     }
+
+    /// The rendered thumbnail's target point size.
+    private static let thumbnailTargetSize = CGSize(width: 64, height: 64)
 
     /// ImageIO thumbnail max pixel size: comfortably above the 64pt target at the
     /// highest device scale (`resize(to:)` renders up to 3x on iOS).

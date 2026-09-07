@@ -121,20 +121,11 @@ public struct GameTableView: View {
     @State private var gameScreenModel = GameScreenModel()
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
-    @State private var roomActionTask: Task<Void, Never>?
+    @State private var roomActionCoordinator = RoomActionCoordinator()
 
     public init(root: GameRoot) {
         self.root = root
     }
-
-    /// Cancels any in-flight room toggle/focus request before starting a new one — mirrors
-    /// `GameTableModel.fogOfWarTask`'s own cancel-then-replace pattern instead of firing
-    /// detached, untracked `Task`s per tap. See CODE_AUDIT §5.5.
-    private func performRoomAction(_ action: @escaping @MainActor @Sendable () async -> Void) {
-        replaceTask(in: &roomActionTask, with: action)
-    }
-
-    private static let staleGestureTimeout: TimeInterval = 3
 
     public var body: some View {
         GeometryReader3D { proxy in
@@ -148,7 +139,7 @@ public struct GameTableView: View {
                             if let pinId = event.entity.components[PinComponent.self]?.pinId {
                                 loadedGame.pinTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                                performRoomAction { await loadedGame.toggleRoomVisibility(roomId) }
+                                roomActionCoordinator.perform { await loadedGame.toggleRoomVisibility(roomId) }
                             } else if let dice = event.entity.components[DiceComponent.self] {
                                 loadedGame.tossDieForAccessibility(dieId: dice.dieId, sides: dice.sides)
                             }
@@ -158,7 +149,7 @@ public struct GameTableView: View {
                             if let pinId = event.entity.components[PinComponent.self]?.pinId {
                                 loadedGame.pinDoubleTapped(pinId: pinId)
                             } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                                performRoomAction { await loadedGame.toggleRoomFocus(roomId) }
+                                roomActionCoordinator.perform { await loadedGame.toggleRoomFocus(roomId) }
                             }
                         }
                         accessibilitySubscriptions.append(zoomSubscription)
@@ -209,7 +200,7 @@ public struct GameTableView: View {
                 // those in place. Proof that a frame has actually rendered this scene is
                 // a stronger signal than any fixed number of Task turns.
                 .task {
-                    await waitForFirstRenderedFrame(of: loadedGame)
+                    await loadedGame.waitForFirstRenderedFrame()
                     setUpSharePlayCoordinationIfNeeded(for: loadedGame)
                 }
                 // Pin drag: the handlers guard permissions — the master moves
@@ -247,7 +238,7 @@ public struct GameTableView: View {
                         .targetedToEntity(where: .has(BoardSurfaceComponent.self))
                         .onChanged { value in
                             guard let parent = value.entity.parent else { return }
-                            if viewportPanStart == nil || viewportPanTracker.isStale(after: Self.staleGestureTimeout) {
+                            if viewportPanStart == nil || viewportPanTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
                                 viewportPanStart = value.convert(value.location3D, from: .local, to: parent)
                                 viewportPanRoomId = loadedGame.focusedRoomId
                             }
@@ -294,10 +285,10 @@ public struct GameTableView: View {
                                 loadedGame.pinTapped(pinId: pinId)
                             case .second(.first(let roomLongPress)):
                                 guard let roomId = roomLongPress.entity.components[RoomComponent.self]?.roomId else { return }
-                                performRoomAction { await loadedGame.toggleRoomFocus(roomId) }
+                                roomActionCoordinator.perform { await loadedGame.toggleRoomFocus(roomId) }
                             case .second(.second(let roomDoubleTap)):
                                 guard let roomId = roomDoubleTap.entity.components[RoomComponent.self]?.roomId else { return }
-                                performRoomAction { await loadedGame.toggleRoomVisibility(roomId) }
+                                roomActionCoordinator.perform { await loadedGame.toggleRoomVisibility(roomId) }
                             }
                         }
                 )
@@ -403,7 +394,7 @@ public struct GameTableView: View {
             await scaleController.start()
         }
         .onDisappear {
-            roomActionTask?.cancel()
+            roomActionCoordinator.cancel()
             accessibilitySubscriptions.removeAll()
             // `game`/`renderer.root` are retained across this volumetric window
             // disappearing (see `initializeGameIfNeeded()`'s "if let game"
@@ -531,23 +522,6 @@ public struct GameTableView: View {
             gameTableModel: game,
             sharePlayController: root.networkStore.sharePlayStore
         )
-    }
-
-    /// Awaits one `SceneEvents.Update` from `game`'s scene — see this
-    /// method's call site (the `.task` right above the `.tabletopGame(_:
-    /// parent:)` modifier) for why proof of an actual rendered frame is
-    /// needed before triggering SharePlay coordination, not just being
-    /// chained onto the mounted view. A no-op (returns immediately) if the
-    /// scene somehow isn't attached yet, rather than hanging forever.
-    private func waitForFirstRenderedFrame(of game: GameTableModel) async {
-        guard let scene = game.renderer.root.scene else { return }
-        await withCheckedContinuation { continuation in
-            var subscription: (any Cancellable)?
-            subscription = scene.subscribe(to: SceneEvents.Update.self) { _ in
-                subscription?.cancel()
-                continuation.resume()
-            }
-        }
     }
 
     /// Applies the locally focused dice set to `game`'s own seat, or clears
@@ -777,16 +751,7 @@ private struct GameTableRealityContent: View {
     @State private var boardDragPansViewport: Bool?
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
-    @State private var roomActionTask: Task<Void, Never>?
-
-    /// Cancels any in-flight room toggle/focus request before starting a new one — mirrors
-    /// `GameTableModel.fogOfWarTask`'s own cancel-then-replace pattern instead of firing
-    /// detached, untracked `Task`s per tap. See CODE_AUDIT §5.5.
-    private func performRoomAction(_ action: @escaping @MainActor @Sendable () async -> Void) {
-        replaceTask(in: &roomActionTask, with: action)
-    }
-
-    private static let staleGestureTimeout: TimeInterval = 3
+    @State private var roomActionCoordinator = RoomActionCoordinator()
 
     var body: some View {
         RealityView { content in
@@ -854,7 +819,7 @@ private struct GameTableRealityContent: View {
                 .padding()
         }
         .onDisappear {
-            roomActionTask?.cancel()
+            roomActionCoordinator.cancel()
         }
     }
 
@@ -896,7 +861,7 @@ private struct GameTableRealityContent: View {
 
                 if pansViewport {
                     guard let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
-                    if viewportPanStart == nil || viewportPanTracker.isStale(after: Self.staleGestureTimeout) {
+                    if viewportPanStart == nil || viewportPanTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
                         viewportPanStart = position
                         viewportPanRoomId = game.focusedRoomId
                     }
@@ -952,7 +917,7 @@ private struct GameTableRealityContent: View {
     /// type (`DragGesture.Value` or `EntityTargetValue<DragGesture.Value>`
     /// both expose it as `CGSize`), so only the value itself needs passing.
     private func applyTableMoveDelta(translation: CGSize) {
-        if tableMoveTracker.isStale(after: Self.staleGestureTimeout) {
+        if tableMoveTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
             // The previous drag's `.onEnded` was likely never delivered (system
             // interruption, window backgrounding mid-drag) — re-arm from this call's
             // value instead of computing a delta against the stale one, mirroring
@@ -1011,10 +976,10 @@ private struct GameTableRealityContent: View {
                 switch value {
                 case .first(let longPress):
                     guard let roomId = longPress.entity.components[RoomComponent.self]?.roomId else { return }
-                    performRoomAction { await game.toggleRoomFocus(roomId) }
+                    roomActionCoordinator.perform { await game.toggleRoomFocus(roomId) }
                 case .second(let doubleTap):
                     guard let roomId = doubleTap.entity.components[RoomComponent.self]?.roomId else { return }
-                    performRoomAction { await game.toggleRoomVisibility(roomId) }
+                    roomActionCoordinator.perform { await game.toggleRoomVisibility(roomId) }
                 }
             }
     }
@@ -1028,7 +993,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    performRoomAction { await game.toggleRoomVisibility(roomId) }
+                    roomActionCoordinator.perform { await game.toggleRoomVisibility(roomId) }
                 }
             }
         }
@@ -1037,7 +1002,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinDoubleTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    performRoomAction { await game.toggleRoomFocus(roomId) }
+                    roomActionCoordinator.perform { await game.toggleRoomFocus(roomId) }
                 }
             }
         }

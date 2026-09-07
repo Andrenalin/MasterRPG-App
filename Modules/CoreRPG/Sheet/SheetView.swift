@@ -3,14 +3,12 @@
 import SwiftUI
 
 /// Leading indent applied per nesting level when a sub-entry's own linked sheet is
-/// rendered recursively (see `SheetView.row(entry:)`) — deliberately smaller than any
+/// rendered recursively (see `SheetEntryRowsView.row(entry:)`) — deliberately smaller than any
 /// system spacing token, so it's kept as a named constant instead of a magic literal.
 /// See CODE_AUDIT_Sheet §8.1.
 private let nestedSheetLeadingInset: CGFloat = 2
 
 struct SheetView<LinkType: LinkDataTransferable>: View {
-    @Environment(\.appTheme) private var theme
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.networkActions) private var networkActions
     @Environment(\.itemGenerationAction) private var itemGenerationAction
     @Environment(AppGameStateModel.self) private var appGameStateModel
@@ -42,26 +40,26 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
+
         if sheetModel.showHeader || isEditor {
             GameShareView(root: root, itemId: sheetModel.source.itemId) {
-                nameRow
+                SheetNameRowView(rootModel: rootModel, sheetModel: sheetModel, isEditor: isEditor, focusedEntryId: focusedEntryId, shareResult: shareResult)
             }
             .sheetBorderColor(level: sheetModel.level)
-            
+
             if !sheetModel.isFolded {
-                inlineRows
-                
-                secondaryRow
+                SheetInlineRowsView(sheetModel: sheetModel, rootModel: rootModel)
+
+                SheetSecondaryRowView(rootModel: rootModel, sheetModel: sheetModel, shareResult: shareResult)
                     .sheetBorderColor(level: sheetModel.level)
             }
         }
-        
+
         if !sheetModel.isFolded {
-            entryRows
+            SheetEntryRowsView(rootModel: rootModel, sheetModel: sheetModel, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId, dropTargetEntryId: $dropTargetEntryId)
         }
-        
-        endRow
+
+        SheetEndRowView()
             .onChange(of: rootModel.editorModel.entryId) { previousEntryId, currentEntryId in
                 guard previousEntryId != currentEntryId else { return }
                 rootModel.update(sheetModel: sheetModel, previousEntryId: previousEntryId, currentEntryId: currentEntryId)
@@ -70,9 +68,31 @@ struct SheetView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension SheetView {
-    /// A `Button` wrapping the row content directly, not an invisible `.background()` button
-    /// behind it — see `SheetEntryView` for the full rationale (same fix, same root cause).
-    var nameRow: some View {
+    var shareResult: ShareValueResult {
+        ShareValueResult(
+            networkActions: networkActions,
+            resultCategory: ResultCategory(source: sheetModel.source),
+            showGame: appGameStateModel.isGameRunning,
+            gameModus: appGameStateModel.gameModus,
+            generationAction: itemGenerationAction
+        )
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.2)
+
+/// A `Button` wrapping the row content directly, not an invisible `.background()` button
+/// behind it — see `SheetEntryView` for the full rationale (same fix, same root cause).
+private struct SheetNameRowView: View {
+    let rootModel: SheetRootModel
+    let sheetModel: SheetModel
+    let isEditor: Bool
+    let focusedEntryId: FocusState<UUID?>.Binding
+    let shareResult: ShareValueResult
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
         Button {
             rootModel.setSelected(sheetModel, parent: sheetModel)
         } label: {
@@ -108,7 +128,7 @@ private extension SheetView {
         }
         .accessibilityLabel(Text("Select \(sheetModel.name.withoutLink())", bundle: .module))
         .overlay {
-            selectionBorder
+            SheetSelectionBorderView(sheetModel: sheetModel)
                 .allowsHitTesting(false)
         }
         .animation(accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2), value: sheetModel.isSelected)
@@ -120,8 +140,14 @@ private extension SheetView {
             }
         }
     }
+}
 
-    @ViewBuilder var selectionBorder: some View {
+private struct SheetSelectionBorderView: View {
+    let sheetModel: SheetModel
+
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
         if sheetModel.isSelected {
             let tint = theme.tint(for: sheetModel.source.typeId)
             ZStack {
@@ -136,8 +162,13 @@ private extension SheetView {
             .shadow(color: tint.opacity(0.35), radius: 6)
         }
     }
-    
-    var inlineRows: some View {
+}
+
+private struct SheetInlineRowsView: View {
+    let sheetModel: SheetModel
+    let rootModel: SheetRootModel
+
+    var body: some View {
         ForEach(sheetModel.inlineEntries) { inlineEntry in
             // Display inline entries directly without SheetEntryView wrapper
             // to avoid triggering beforeInline/afterInline recursion
@@ -159,8 +190,8 @@ private extension SheetView {
             }
         }
     }
-    
-    func viewController(for source: ItemRowModel) -> ViewControllable? {
+
+    private func viewController(for source: ItemRowModel) -> ViewControllable? {
         rootModel.rootController(for: source.typeId)?.viewControllable
     }
 
@@ -169,22 +200,17 @@ private extension SheetView {
     /// about additions/removals), so doing the read here instead of inside
     /// `rowViewer`'s per-row leaf keeps that one, expected subscription at
     /// the list boundary. See CODE_AUDIT_10 §8.1.
-    func resolvedModel(for row: ItemRowModel, rootManager: RootManager) -> (any ModelType)? {
+    private func resolvedModel(for row: ItemRowModel, rootManager: RootManager) -> (any ModelType)? {
         rootManager.itemRootController(for: row.typeId)?.itemControllable.itemSync(for: row.itemId)
     }
-    
-    var shareResult: ShareValueResult {
-        ShareValueResult(
-            networkActions: networkActions,
-            resultCategory: ResultCategory(source: sheetModel.source),
-            showGame: appGameStateModel.isGameRunning,
-            gameModus: appGameStateModel.gameModus,
-            generationAction: itemGenerationAction
-        )
-    }
-    
-    @ViewBuilder
-    var secondaryRow: some View {
+}
+
+private struct SheetSecondaryRowView: View {
+    let rootModel: SheetRootModel
+    let sheetModel: SheetModel
+    let shareResult: ShareValueResult
+
+    var body: some View {
         if let description = rootModel.description(for: sheetModel), !description.isEmpty {
             LinkHighlightTextView(
                 model: rootModel.linkTextModel(
@@ -197,15 +223,24 @@ private extension SheetView {
             .font(.subheadline)
         }
     }
-    
-    @ViewBuilder var entryRows: some View {
+}
+
+private struct SheetEntryRowsView<LinkType: LinkDataTransferable>: View {
+    let rootModel: SheetRootModel
+    let sheetModel: SheetModel
+    let isEditor: Bool
+    let linkTypes: LinkType.Type
+    let focusedEntryId: FocusState<UUID?>.Binding
+    @Binding var dropTargetEntryId: UUID?
+
+    var body: some View {
         ForEach(sheetModel.entries) { entry in
             if !entry.isHidden {
                 row(entry: entry)
                     .transition(.persistedSheetEntry)
             }
         }
-        
+
         ForEach(sheetModel.aiGeneratedEntries) { entry in
             row(entry: entry)
                 .transition(.generatedSheetEntry)
@@ -215,8 +250,8 @@ private extension SheetView {
                 .transition(.generatedSheetEntry)
         }
     }
-    
-    @ViewBuilder func row(entry: SheetModel) -> some View {
+
+    @ViewBuilder private func row(entry: SheetModel) -> some View {
         SheetEntryView(rootModel: rootModel, parentModel: sheetModel, entryModel: entry, isEditor: isEditor, linkTypes: linkTypes, focusedEntryId: focusedEntryId)
             .frame(maxWidth: .infinity, alignment: .leading)
 #if !os(tvOS)
@@ -244,12 +279,14 @@ private extension SheetView {
             }
         }
     }
-    
-    func handleDrop(items: [LinkType], targetEntry: SheetModel) -> Bool {
+
+    private func handleDrop(items: [LinkType], targetEntry: SheetModel) -> Bool {
         rootModel.handleDrop(items: items, targetEntry: targetEntry, parentModel: sheetModel)
     }
-    
-    var endRow: some View {
+}
+
+private struct SheetEndRowView: View {
+    var body: some View {
         Color.accentColor.opacity(0.3)
             .frame(height: 8)
     }

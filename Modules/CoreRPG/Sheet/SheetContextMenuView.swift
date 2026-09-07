@@ -8,26 +8,24 @@ struct SheetContextMenuView: View {
     let entryModel: SheetModel
     let isEditor: Bool
 
-    @Environment(\.navigator) private var navigator
-
     var body: some View {
         if isEditor {
             SheetEntryQuickEditButton(rootModel: rootModel, entryModel: entryModel, parentModel: parentModel, onlyIcon: false)
             Divider()
             SheetEntryAddButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
-            addGroupButton
-            convertToGroupButton
+            SheetContextMenuAddGroupButton(rootModel: rootModel, parentModel: parentModel)
+            SheetContextMenuConvertToGroupButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
         }
         Divider()
-        moveIntoButton
-        moveOutOfGroupButton
-        moveUpButton
-        moveDownButton
+        SheetContextMenuMoveIntoButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
+        SheetContextMenuMoveOutOfGroupButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
+        SheetContextMenuMoveUpButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
+        SheetContextMenuMoveDownButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
         Divider()
-        duplicateButton
+        SheetContextMenuDuplicateButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel)
 #if os(iOS)
         if isEditor {
-            linkButton
+            SheetContextMenuLinkButton(rootModel: rootModel, entryModel: entryModel)
         }
 #endif
         Divider()
@@ -39,22 +37,39 @@ struct SheetContextMenuView: View {
         .padding()
 }
 
-private extension SheetContextMenuView {
-    @ViewBuilder var addGroupButton: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.2)
+
+private struct SheetContextMenuAddGroupButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+
+    var body: some View {
         if let editable = rootModel.entryDataEditable(for: parentModel.source), editable.canAddGroups {
             SheetEntryAddGroupButton(rootModel: rootModel, parentModel: parentModel, onlyIcon: false)
         }
     }
+}
 
-    @ViewBuilder var convertToGroupButton: some View {
+private struct SheetContextMenuConvertToGroupButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+
+    var body: some View {
 #if !os(tvOS)
         if entryModel.source.entryId != nil, let editable = rootModel.entryDataEditable(for: entryModel.source), editable.canConvertGroups {
             SheetEntryConvertToGroupButton(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, onlyIcon: false)
         }
 #endif
     }
+}
 
-    var duplicateButton: some View {
+private struct SheetContextMenuDuplicateButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+
+    var body: some View {
         Button {
             withAnimation {
                 rootModel.duplicateEntry(entryModel: entryModel, in: parentModel)
@@ -68,8 +83,15 @@ private extension SheetContextMenuView {
         }
         .keyboardShortcutAll("d", modifiers: .shift)
     }
+}
 
-    var linkButton: some View {
+private struct SheetContextMenuLinkButton: View {
+    let rootModel: SheetRootModel
+    let entryModel: SheetModel
+
+    @Environment(\.navigator) private var navigator
+
+    var body: some View {
         Button {
             guard let entryId = entryModel.source.entryId,
                   let editable = rootModel.entryDataEditable(for: entryModel.source) else { return }
@@ -82,8 +104,14 @@ private extension SheetContextMenuView {
             }
         }
     }
+}
 
-    @ViewBuilder var moveIntoButton: some View {
+private struct SheetContextMenuMoveIntoButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+
+    var body: some View {
         let groups = rootModel.groupFolders(for: entryModel)
         if !groups.isEmpty {
             Menu {
@@ -107,8 +135,14 @@ private extension SheetContextMenuView {
             }
         }
     }
+}
 
-    @ViewBuilder var moveOutOfGroupButton: some View {
+private struct SheetContextMenuMoveOutOfGroupButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+
+    var body: some View {
         if let parent = rootModel.parentGroup(for: entryModel) {
             Button {
                 rootModel.moveEntryOutOfGroup(entryModel, in: parentModel, parent: parent)
@@ -127,8 +161,14 @@ private extension SheetContextMenuView {
             .disabled(!rootModel.canMoveOutOfGroup(for: entryModel))
         }
     }
+}
 
-    var moveUpButton: some View {
+private struct SheetContextMenuMoveUpButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+
+    var body: some View {
         Button {
             withAnimation {
                 rootModel.moveEntry(entryModel: entryModel, in: parentModel, up: true)
@@ -143,8 +183,14 @@ private extension SheetContextMenuView {
         .disabled(parentModel.entries.first?.id == entryModel.id)
         .keyboardShortcutAll(.upArrow, modifiers: [.command, .option])
     }
+}
 
-    var moveDownButton: some View {
+private struct SheetContextMenuMoveDownButton: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+
+    var body: some View {
         Button {
             withAnimation {
                 rootModel.moveEntry(entryModel: entryModel, in: parentModel, up: false)

@@ -20,7 +20,7 @@ struct TabSidebar: View {
     var body: some View {
         @Bindable var appModel = appModel
         List(selection: $appModel.selectedModule) {
-            allTabs
+            TabSidebarAllTabsView()
         }
         .themedListSurface()
         // macOS only: the sidebar competing for keyboard focus alongside the list/detail
@@ -42,8 +42,10 @@ struct TabSidebar: View {
             $0.modifier(TabSidebarRestorationModifier(appModel: appModel))
         }
     }
+}
 
-    @ViewBuilder var allTabs: some View {
+private struct TabSidebarAllTabsView: View {
+    var body: some View {
         Section {
             tabView(tab: .adventures)
             tabView(tab: .values)
@@ -71,7 +73,7 @@ struct TabSidebar: View {
         }
     }
 
-    @ViewBuilder func tabView(tab: RootRoute) -> some View {
+    @ViewBuilder private func tabView(tab: RootRoute) -> some View {
         NavigationLink(to: tab) {
             ModuleTabLabel(route: tab)
         }

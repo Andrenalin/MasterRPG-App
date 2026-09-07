@@ -27,7 +27,7 @@ struct InlineRowViewer: View, Equatable {
     var body: some View {
         GameShareView(root: root.rootController, itemId: source.itemId) {
             HStack {
-                photoContent
+                InlineRowPhotoContentView(source: source, sourceModel: sourceModel)
                     .background {
                         RoundedRectangle(cornerRadius: 24, style: .continuous).fill(theme.background(for: root.config.module))
                     }
@@ -63,14 +63,6 @@ struct InlineRowViewer: View, Equatable {
         String(localized: "Open Photo", bundle: .module)
     }
 
-    @ViewBuilder private var photoContent: some View {
-        if let cacheController = root.cacheController {
-            if let model = (sourceModel as? PhotoModel) ?? root.itemController.itemSync(for: source.itemId) {
-                CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
-            }
-        }
-    }
-
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.source == rhs.source
     }
@@ -85,6 +77,21 @@ struct InlineRowViewer: View, Equatable {
 #else
         navigator.navigate(to: DetailRoute.viewer(source.itemId), method: .managedSheet)
 #endif
+    }
+}
+
+private struct InlineRowPhotoContentView: View {
+    let source: ItemRowModel
+    let sourceModel: (any ModelType)?
+
+    @Environment(PhotoRootModel.self) private var root
+
+    var body: some View {
+        if let cacheController = root.cacheController {
+            if let model = (sourceModel as? PhotoModel) ?? root.itemController.itemSync(for: source.itemId) {
+                CachePhotoView(cacheController: cacheController, model: model, highResolution: true)
+            }
+        }
     }
 }
 

@@ -7,8 +7,6 @@ struct TableSheetView: View {
     let model: SheetRootModel
     var addSearchable: Bool = true
 
-    @Environment(\.appTheme) private var theme
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(SearchBarVisibleModel.self) private var searchBarVisibleModel
 
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
@@ -18,15 +16,23 @@ struct TableSheetView: View {
 
         @Bindable var model = model
 
-        listContentView
+        TableSheetListContentView(root: root, model: model, scrollPosition: $scrollPosition)
             .applyIf(addSearchable && searchBarVisibleModel.isVisible) {
                 $0.searchable(text: $model.searchText, placement: .automatic, prompt: Text("Find in", bundle: .module))
             }
     }
 }
 
-private extension TableSheetView {
-    var listContentView: some View {
+/// The scrollable recursive sheet body plus its scroll-to-entry handling.
+private struct TableSheetListContentView: View {
+    let root: ItemRootController
+    let model: SheetRootModel
+    @Binding var scrollPosition: ScrollPosition
+
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
         ScrollView {
             LazyVStack(spacing: 4) {
                 SheetRootView(root: root, rootModel: model)

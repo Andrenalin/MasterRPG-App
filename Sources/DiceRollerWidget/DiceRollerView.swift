@@ -16,7 +16,7 @@ struct DiceRollerView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let loadsStoredHistory: Bool
-    
+
     @Namespace private var glassNamespace
 
     init(
@@ -30,25 +30,43 @@ struct DiceRollerView: View {
         _rollHistory = State(initialValue: rollHistory)
         self.loadsStoredHistory = loadsStoredHistory
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
 #if os(visionOS)
-                contentView
+                DiceRollerContentView(
+                    currentRoll: currentRoll,
+                    selectedDie: selectedDie,
+                    isRolling: isRolling,
+                    glassNamespace: glassNamespace,
+                    rollAction: rollDice
+                )
 #else
                 // Main dice display with Liquid Glass
                 GlassEffectContainer(spacing: 40) {
-                    contentView
+                    DiceRollerContentView(
+                        currentRoll: currentRoll,
+                        selectedDie: selectedDie,
+                        isRolling: isRolling,
+                        glassNamespace: glassNamespace,
+                        rollAction: rollDice
+                    )
                 }
 #endif
-                
+
                 // Dice type selector with Liquid Glass
-                diceTypeSelector
-                
+                DiceTypeSelectorView(selectedDie: $selectedDie, currentRoll: $currentRoll)
+
                 // Roll history
                 if !rollHistory.isEmpty {
-                    rollHistoryView
+                    RollHistoryView(
+                        rollHistory: rollHistory,
+                        clearAction: {
+                            rollHistory.removeAll()
+                            saveHistory()
+                        }
+                    )
                 }
             }
             .padding()
@@ -72,206 +90,9 @@ struct DiceRollerView: View {
             loadHistory()
         }
     }
-    
-    var contentView: some View {
-        VStack(spacing: 16) {
-            if let roll = currentRoll {
-                resultDisplay(roll)
-#if !os(visionOS)
-                    .glassEffectID("result", in: glassNamespace)
-#endif
-            } else {
-                diceSelection
-#if !os(visionOS)
-                    .glassEffectID("selection", in: glassNamespace)
-#endif
-            }
-            
-            // Roll button with Liquid Glass
-            Button(action: rollDice) {
-                HStack {
-                    Image(systemName: "dice")
-                    Text("Roll D\(selectedDie.die.max)", bundle: .main)
-                }
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding()
-            }
-#if !os(visionOS)
-            .buttonStyle(.glassProminent)
-#endif
-            .disabled(isRolling)
-        }
-        .padding()
-    }
-    
-    // MARK: - Views
-    
-    private var diceSelection: some View {
-        VStack(spacing: 12) {
-            selectedDie.diceImage(for: selectedDie.die.max)
-                .resizable()
-                .frame(width: 80, height: 80)
-                .foregroundStyle(.primary)
-                .accessibilityHidden(true)
-            
-            Text(verbatim: "D\(selectedDie.die.max)")
-                .font(.title)
-                .bold()
-            
-            Text("Tap to roll", bundle: .main)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-#if !os(visionOS)
-        .glassEffect(.regular.interactive())
-#endif
-    }
-    
-    private func resultDisplay(_ result: DiceResultModel) -> some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(resultColor(for: result.result).opacity(0.2))
-                    .frame(width: 120, height: 120)
-                
-                Text(verbatim: "\(result.sum)")
-                    .font(.largeTitle)
-                    .bold()
-                    .foregroundStyle(resultColor(for: result.result))
-            }
-#if !os(visionOS)
-            .glassEffect(.regular.tint(resultColor(for: result.result)).interactive())
-#endif
-            Text(verbatim: result.diceModel.name)
-                .font(.title2)
-                .bold()
-            
-            if result.result == .coup {
-                Text("Critical Success!", bundle: .main)
-                    .font(.headline)
-                    .foregroundStyle(.green)
-            } else if result.result == .fumble {
-                Text("Critical Failure!", bundle: .main)
-                    .font(.headline)
-                    .foregroundStyle(.red)
-            }
-        }
-        .rotation3DEffect(
-            .degrees(isRolling && !reduceMotion ? 720 : 0),
-            axis: (x: 1, y: 1, z: 0)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: result.diceModel.name))
-        .accessibilityValue(Text(verbatim: "\(result.sum)"))
-    }
-    
-    private var diceTypeSelector: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Select Dice", bundle: .main)
-                .font(.headline)
-                .padding(.horizontal)
-            
-#if os(visionOS)
-            gridView
-#else
-            GlassEffectContainer(spacing: 16) {
-                gridView
-            }
-#endif
-        }
-    }
-    
-    var gridView: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
-            ForEach([DieModel.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]) { die in
-                Button {
-                    withAnimation(reduceMotion ? nil : .spring()) {
-                        selectedDie = die
-                        currentRoll = nil
-                    }
-                } label: {
-                    VStack(spacing: 8) {
-                        die.diceImage(for: die.die.max)
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .accessibilityHidden(true)
-                        Text(verbatim: "D\(die.die.max)")
-                            .font(.caption)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                }
-#if !os(visionOS)
-                .buttonStyle(.glass)
-#endif
-                .overlay {
-                    if selectedDie.die == die.die {
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(.blue, lineWidth: 3)
-                    }
-                }
-                .accessibilityValue(
-                    selectedDie.die == die.die
-                        ? Text("Selected", bundle: .main)
-                        : Text("Not selected", bundle: .main)
-                )
-            }
-        }
-        .padding()
-    }
-    
-    private var rollHistoryView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("History", bundle: .main)
-                    .font(.headline)
-                
-                Spacer()
-                
-                Button(role: .destructive) {
-                    withAnimation(reduceMotion ? nil : .default) {
-                        rollHistory.removeAll()
-                        saveHistory()
-                    }
-                } label: {
-                    Text("Clear", bundle: .main)
-                }
-                .font(.caption)
-            }
-            .padding(.horizontal)
-            
-            ScrollView(.horizontal) {
-                HStack(spacing: 12) {
-                    ForEach(rollHistory.reversed()) { roll in
-                        VStack(spacing: 4) {
-                            ZStack {
-                                Circle()
-                                    .fill(resultColor(for: roll.result).opacity(0.2))
-                                    .frame(width: 50, height: 50)
-                                
-                                Text(verbatim: "\(roll.sum)")
-                                    .font(.title3)
-                                    .bold()
-                                    .foregroundStyle(resultColor(for: roll.result))
-                            }
-                            
-                            Text(verbatim: roll.diceModel.name)
-                                .font(.caption2)
-                        }
-#if !os(visionOS)
-                        .glassEffect(.regular)
-#endif
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .scrollIndicators(.hidden)
-        }
-    }
-    
+
     // MARK: - Actions
-    
+
     private func rollDice() {
         withAnimation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.7)) {
             isRolling = true
@@ -313,7 +134,7 @@ struct DiceRollerView: View {
             }
         }
     }
-    
+
     private func loadHistory() {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         if let data = defaults?.data(forKey: UserDefaults.DiceKeys.rollHistory),
@@ -321,25 +142,254 @@ struct DiceRollerView: View {
             rollHistory = history
         }
     }
-    
+
     private func saveHistory() {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         if let data = try? JSONEncoder().encode(rollHistory) {
             defaults?.set(data, forKey: UserDefaults.DiceKeys.rollHistory)
         }
     }
-    
-    private func resultColor(for result: DiceResultModel.DiceResult) -> Color {
-        switch result {
-        case .coup:
-            return .green
-        case .fumble:
-            return .red
-        case .rolled:
-            return .blue
-        case .notRolled:
-            return .secondary
+}
+
+// MARK: - Views
+
+struct DiceRollerContentView: View {
+    let currentRoll: DiceResultModel?
+    let selectedDie: DieModel
+    let isRolling: Bool
+    let glassNamespace: Namespace.ID
+    let rollAction: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(spacing: 16) {
+            if let roll = currentRoll {
+                resultDisplay(roll)
+#if !os(visionOS)
+                    .glassEffectID("result", in: glassNamespace)
+#endif
+            } else {
+                DiceSelectionView(selectedDie: selectedDie)
+#if !os(visionOS)
+                    .glassEffectID("selection", in: glassNamespace)
+#endif
+            }
+
+            // Roll button with Liquid Glass
+            Button(action: rollAction) {
+                HStack {
+                    Image(systemName: "dice")
+                    Text("Roll D\(selectedDie.die.max)", bundle: .main)
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding()
+            }
+#if !os(visionOS)
+            .buttonStyle(.glassProminent)
+#endif
+            .disabled(isRolling)
         }
+        .padding()
+    }
+
+    private func resultDisplay(_ result: DiceResultModel) -> some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(resultColor(for: result.result).opacity(0.2))
+                    .frame(width: 120, height: 120)
+
+                Text(verbatim: "\(result.sum)")
+                    .font(.largeTitle)
+                    .bold()
+                    .foregroundStyle(resultColor(for: result.result))
+            }
+#if !os(visionOS)
+            .glassEffect(.regular.tint(resultColor(for: result.result)).interactive())
+#endif
+            Text(verbatim: result.diceModel.name)
+                .font(.title2)
+                .bold()
+
+            if result.result == .coup {
+                Text("Critical Success!", bundle: .main)
+                    .font(.headline)
+                    .foregroundStyle(.green)
+            } else if result.result == .fumble {
+                Text("Critical Failure!", bundle: .main)
+                    .font(.headline)
+                    .foregroundStyle(.red)
+            }
+        }
+        .rotation3DEffect(
+            .degrees(isRolling && !reduceMotion ? 720 : 0),
+            axis: (x: 1, y: 1, z: 0)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: result.diceModel.name))
+        .accessibilityValue(Text(verbatim: "\(result.sum)"))
+    }
+}
+
+private struct DiceSelectionView: View {
+    let selectedDie: DieModel
+
+    var body: some View {
+        VStack(spacing: 12) {
+            selectedDie.diceImage(for: selectedDie.die.max)
+                .resizable()
+                .frame(width: 80, height: 80)
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
+
+            Text(verbatim: "D\(selectedDie.die.max)")
+                .font(.title)
+                .bold()
+
+            Text("Tap to roll", bundle: .main)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+#if !os(visionOS)
+        .glassEffect(.regular.interactive())
+#endif
+    }
+}
+
+private struct DiceTypeSelectorView: View {
+    @Binding var selectedDie: DieModel
+    @Binding var currentRoll: DiceResultModel?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Select Dice", bundle: .main)
+                .font(.headline)
+                .padding(.horizontal)
+
+#if os(visionOS)
+            DiceRollerGridView(selectedDie: $selectedDie, currentRoll: $currentRoll)
+#else
+            GlassEffectContainer(spacing: 16) {
+                DiceRollerGridView(selectedDie: $selectedDie, currentRoll: $currentRoll)
+            }
+#endif
+        }
+    }
+}
+
+struct DiceRollerGridView: View {
+    @Binding var selectedDie: DieModel
+    @Binding var currentRoll: DiceResultModel?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
+            ForEach([DieModel.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]) { die in
+                Button {
+                    withAnimation(reduceMotion ? nil : .spring()) {
+                        selectedDie = die
+                        currentRoll = nil
+                    }
+                } label: {
+                    VStack(spacing: 8) {
+                        die.diceImage(for: die.die.max)
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                            .accessibilityHidden(true)
+                        Text(verbatim: "D\(die.die.max)")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                }
+#if !os(visionOS)
+                .buttonStyle(.glass)
+#endif
+                .overlay {
+                    if selectedDie.die == die.die {
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.blue, lineWidth: 3)
+                    }
+                }
+                .accessibilityValue(
+                    selectedDie.die == die.die
+                        ? Text("Selected", bundle: .main)
+                        : Text("Not selected", bundle: .main)
+                )
+            }
+        }
+        .padding()
+    }
+}
+
+private struct RollHistoryView: View {
+    let rollHistory: [DiceResultModel]
+    let clearAction: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("History", bundle: .main)
+                    .font(.headline)
+
+                Spacer()
+
+                Button(role: .destructive) {
+                    withAnimation(reduceMotion ? nil : .default) {
+                        clearAction()
+                    }
+                } label: {
+                    Text("Clear", bundle: .main)
+                }
+                .font(.caption)
+            }
+            .padding(.horizontal)
+
+            ScrollView(.horizontal) {
+                HStack(spacing: 12) {
+                    ForEach(rollHistory.reversed()) { roll in
+                        VStack(spacing: 4) {
+                            ZStack {
+                                Circle()
+                                    .fill(resultColor(for: roll.result).opacity(0.2))
+                                    .frame(width: 50, height: 50)
+
+                                Text(verbatim: "\(roll.sum)")
+                                    .font(.title3)
+                                    .bold()
+                                    .foregroundStyle(resultColor(for: roll.result))
+                            }
+
+                            Text(verbatim: roll.diceModel.name)
+                                .font(.caption2)
+                        }
+#if !os(visionOS)
+                        .glassEffect(.regular)
+#endif
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .scrollIndicators(.hidden)
+        }
+    }
+}
+
+private func resultColor(for result: DiceResultModel.DiceResult) -> Color {
+    switch result {
+    case .coup:
+        return .green
+    case .fumble:
+        return .red
+    case .rolled:
+        return .blue
+    case .notRolled:
+        return .secondary
     }
 }
 

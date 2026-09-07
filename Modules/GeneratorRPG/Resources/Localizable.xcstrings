@@ -408,6 +408,7 @@
       }
     },
     "Adventure Block %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3690,6 +3691,7 @@
       }
     },
     "Untitled" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

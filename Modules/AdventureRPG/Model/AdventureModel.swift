@@ -211,8 +211,8 @@ extension AdventureModel: nonisolated ItemDiffComparable {
 extension AdventureModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? AdventureModel)?.photoId) },
-            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(diceId: ($0 as? AdventureModel)?.diceId) }
+            ReviewCustomProperty(displayName: String(localized: "Photo", bundle: .module)) { ReviewPropertyValue(photoId: ($0 as? AdventureModel)?.photoId) },
+            ReviewCustomProperty(displayName: String(localized: "Dice", bundle: .module)) { ReviewPropertyValue(diceId: ($0 as? AdventureModel)?.diceId) }
         ]
     }
 }

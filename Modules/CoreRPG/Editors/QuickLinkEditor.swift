@@ -33,10 +33,15 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
     
     public var body: some View {
         NavigationStack {
-            contentView
-                .overlay(alignment: .top) {
+            QuickLinkContentView(
+                linkController: linkController,
+                comparisonPairs: comparisonPairs,
+                actionView: actionView,
+                afterEntries: $afterEntries
+            )
+            .overlay(alignment: .top) {
                     VStack {
-                        Text("The quick link editor allows you to select another table to scan the references. It will add links into the entries by searching for the same text and replace the occurences.", bundle: .module)
+                        Text("The quick link editor allows you to select another table to scan the references. It will add links into the entries by searching for the same text and replace the occurrences.", bundle: .module)
                             .padding()
                     }
                     .rowEditColor()
@@ -92,6 +97,35 @@ public struct QuickLinkEditor<EntryViewModel: ItemLinkEditable, ActionView: View
     }
 }
 
+private struct QuickLinkContentView<EntryViewModel: ItemLinkEditable, ActionView: View>: View {
+    let linkController: LinkControllable
+    let comparisonPairs: [QuickLinkComparisonPair<EntryViewModel>]
+    let actionView: (Binding<[EntryViewModel]>) -> ActionView
+
+    @Binding var afterEntries: [EntryViewModel]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            actionView($afterEntries)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(comparisonPairs) { pair in
+                        VStack(alignment: .leading, spacing: 4) {
+                            QuickLinkTextRow(linkControllable: linkController, model: pair.before, original: true)
+
+                            if let after = pair.after {
+                                QuickLinkTextRow(linkControllable: linkController, model: after, original: false)
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+}
+
 /// Pairs a `beforeEntries` row with its (possibly not-yet-scanned) `afterEntries`
 /// counterpart at the same position, so `ForEach` below yields exactly one view
 /// per iteration instead of a variable 1-or-2 view count. `beforeEntries` is only
@@ -111,27 +145,6 @@ private extension QuickLinkEditor {
                 before: beforeEntries[index],
                 after: index < afterEntries.count ? afterEntries[index] : nil
             )
-        }
-    }
-
-    var contentView: some View {
-        VStack(spacing: 0) {
-            actionView($afterEntries)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(comparisonPairs) { pair in
-                        VStack(alignment: .leading, spacing: 4) {
-                            QuickLinkTextRow(linkControllable: linkController, model: pair.before, original: true)
-
-                            if let after = pair.after {
-                                QuickLinkTextRow(linkControllable: linkController, model: after, original: false)
-                            }
-                        }
-                    }
-                }
-            }
-
         }
     }
 }

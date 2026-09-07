@@ -52,16 +52,28 @@ private struct ContentWidgetView: View {
     var body: some View {
         Group {
             if family == .systemSmall {
-                smallContent
+                ContentWidgetSmallContentView(entry: entry)
             } else {
-                mediumContent
+                ContentWidgetMediumContentView(entry: entry)
             }
         }
         .containerBackground(.background, for: .widget)
         .widgetURL(smallDestination)
     }
 
-    private var smallContent: some View {
+    private var smallDestination: URL? {
+        guard family == .systemSmall else { return nil }
+        if let first = entry.snapshot.items.first {
+            return entry.snapshot.itemURL(for: first)
+        }
+        return entry.snapshot.rootURL
+    }
+}
+
+private struct ContentWidgetSmallContentView: View {
+    let entry: ContentWidgetEntry
+
+    var body: some View {
         VStack(alignment: .leading) {
             Image(systemName: moduleIcon)
                 .font(.title)
@@ -82,7 +94,23 @@ private struct ContentWidgetView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var mediumContent: some View {
+    private var moduleTitle: LocalizedStringKey {
+        entry.snapshot.module == .value ? "Characters" : "Adventures"
+    }
+
+    private var moduleIcon: String {
+        entry.snapshot.module == .value ? "person.crop.circle" : "book.closed"
+    }
+
+    private var countLabel: LocalizedStringKey {
+        entry.snapshot.module == .value ? "characters" : "adventures"
+    }
+}
+
+private struct ContentWidgetMediumContentView: View {
+    let entry: ContentWidgetEntry
+
+    var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 Label(moduleTitle, systemImage: moduleIcon)
@@ -137,14 +165,6 @@ private struct ContentWidgetView: View {
 
     private var countLabel: LocalizedStringKey {
         entry.snapshot.module == .value ? "characters" : "adventures"
-    }
-
-    private var smallDestination: URL? {
-        guard family == .systemSmall else { return nil }
-        if let first = entry.snapshot.items.first {
-            return entry.snapshot.itemURL(for: first)
-        }
-        return entry.snapshot.rootURL
     }
 }
 

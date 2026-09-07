@@ -31,8 +31,8 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     
     public var body: some View {
         HStack(alignment: .center, spacing: 4) {
-            specialCategoryIcon
-            
+            SpecialCategoryIconView(model: model, isSpecialCategory: isSpecialCategory)
+
             VStack(alignment: .leading, spacing: 4) {
                 NameItemNewRow(itemId: model.id, name: model.name, cacheItemListModel: cacheItemListModel, listDisplayModel: listDisplayModel, searchModel: searchModel)
                     .font(.headline)
@@ -59,9 +59,9 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
             .frame(minHeight: listDisplayModel.imageHeight, alignment: .center)
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            thumbView
-            
-            specialAddIcon
+            ThumbView(thumbnail: thumbnail, isSpecialCategory: isSpecialCategory)
+
+            SpecialAddIconView(model: model)
         }
         .fixedSize(horizontal: false, vertical: true)
         .animation(accessibilityReduceMotion ? nil : .smooth, value: listDisplayModel.displayMode)
@@ -72,9 +72,17 @@ private extension ItemRowView {
     var isSpecialCategory: Bool {
         model.category == .folder || model.category == .drop || model.category ==  root.itemControllable.collectionCategory
     }
-    
-    @ViewBuilder
-    var specialCategoryIcon: some View {
+}
+
+private struct SpecialCategoryIconView: View {
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    let model: any ItemDataAccessable
+    let isSpecialCategory: Bool
+
+    var body: some View {
         if isSpecialCategory {
             #if os(iOS)
             if model.category == .drop {
@@ -94,8 +102,12 @@ private extension ItemRowView {
             #endif
         }
     }
-    @ViewBuilder
-    var specialAddIcon: some View {
+}
+
+private struct SpecialAddIconView: View {
+    let model: any ItemDataAccessable
+
+    var body: some View {
         if model.category == .drop {
             Image(systemName: "checkmark.circle")
                 .font(.title)
@@ -103,9 +115,13 @@ private extension ItemRowView {
                 .accessibilityHidden(true)
         }
     }
+}
 
-    @ViewBuilder
-    var thumbView: some View {
+private struct ThumbView<Thumbnail: View>: View {
+    let thumbnail: Thumbnail
+    let isSpecialCategory: Bool
+
+    var body: some View {
         if !isSpecialCategory {
             thumbnail
         }

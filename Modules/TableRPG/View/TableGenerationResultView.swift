@@ -11,21 +11,26 @@ import SwiftUI
 struct TableGenerationResultView: View {
     let model: TableGenerationModel
 
-    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
             if model.isFullyDecided {
-                expandedOutcome
+                TableGenerationExpandedOutcomeView(model: model)
             } else {
-                compactOutcome
+                TableGenerationCompactOutcomeView(model: model)
             }
         }
         .animation(reduceMotion ? nil : .smooth, value: model.isFullyDecided)
     }
+}
 
-    private var compactOutcome: some View {
+private struct TableGenerationCompactOutcomeView: View {
+    let model: TableGenerationModel
+
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "wand.and.stars")
                 .foregroundStyle(theme.tint(for: .table))
@@ -50,8 +55,14 @@ struct TableGenerationResultView: View {
             Text("Outcome: \(model.currentOutcome ?? "")", bundle: .module)
         )
     }
+}
 
-    private var expandedOutcome: some View {
+private struct TableGenerationExpandedOutcomeView: View {
+    let model: TableGenerationModel
+
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Label {
                 Text("Outcome", bundle: .module)

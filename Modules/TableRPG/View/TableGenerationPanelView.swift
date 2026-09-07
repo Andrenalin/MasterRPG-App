@@ -35,7 +35,7 @@ struct TableGenerationPanelView: View {
             if model.isEditingOutcomeSheet, let session = model.outcomeEditingSession {
                 outcomeSheetEditor(session: session)
             } else {
-                occurrenceList
+                TableGenerationOccurrenceListView(model: model, controller: controller)
             }
 
             Divider()
@@ -49,39 +49,15 @@ struct TableGenerationPanelView: View {
         }
         .frame(maxWidth: 760, maxHeight: 820)
         .themedSurface()
+        // `.shadow()` must precede `.clipShape()` — applied after, the shadow gets clipped away
+        // at the same rect boundary it's meant to extend past and never renders. See CODE_AUDIT §8.1.
+        .shadow(radius: 24)
         .clipShape(.rect(cornerRadius: 28, style: .continuous))
 #if os(visionOS)
         .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
 #else
         .glassEffectAll(.regular, in: .rect(cornerRadius: 28, style: .continuous))
 #endif
-        .shadow(radius: 24)
-    }
-
-    private var occurrenceList: some View {
-        VStack {
-            ScrollView {
-                LazyVStack(alignment: .leading) {
-                    TableGenerationOccurrenceView(
-                        model: model,
-                        occurrence: model.root,
-                        controller: controller
-                    )
-                }
-            }
-            .scrollIndicators(.hidden)
-
-            if let errorMessage = model.errorMessage {
-                Label {
-                    Text(errorMessage)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                }
-                .foregroundStyle(.red)
-                .padding(.horizontal)
-            }
-        }
-        .transition(.opacity.combined(with: .move(edge: .leading)))
     }
 
     private func outcomeSheetEditor(session: SimpleSheetEditingSession) -> some View {
@@ -111,6 +87,37 @@ struct TableGenerationPanelView: View {
             }
         }
         .transition(.opacity.combined(with: .move(edge: .trailing)))
+    }
+}
+
+private struct TableGenerationOccurrenceListView: View {
+    let model: TableGenerationModel
+    let controller: TableGenerationController
+
+    var body: some View {
+        VStack {
+            ScrollView {
+                LazyVStack(alignment: .leading) {
+                    TableGenerationOccurrenceView(
+                        model: model,
+                        occurrence: model.root,
+                        controller: controller
+                    )
+                }
+            }
+            .scrollIndicators(.hidden)
+
+            if let errorMessage = model.errorMessage {
+                Label {
+                    Text(errorMessage)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                }
+                .foregroundStyle(.red)
+                .padding(.horizontal)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .leading)))
     }
 }
 

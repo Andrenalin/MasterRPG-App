@@ -49,7 +49,7 @@ public struct TextSummaryExtractionView: View {
     }
 
     public var body: some View {
-        contentView
+        ContentView(module: module, entriesText: entriesText, viewState: $viewState, propertySelection: $propertySelection)
             .navigationTitle(navigationTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -86,18 +86,6 @@ public struct TextSummaryExtractionView: View {
 
     // MARK: - Content
 
-    @ViewBuilder
-    private var contentView: some View {
-        switch viewState {
-        case .extracting:
-            TableSummaryAnalysisView(entriesText: entriesText) { content in
-                viewState = .extracted(content)
-            }
-        case .extracted(let content):
-            TextSummaryUpdateView(content: content, module: module, selectedProperties: $propertySelection)
-        }
-    }
-
     private var navigationTitle: String {
         String(
             localized: "\(String(localized: module.localizedTitle)) Analysis",
@@ -116,9 +104,27 @@ public struct TextSummaryExtractionView: View {
 
     // MARK: - States
 
-    private enum ViewState {
+    fileprivate enum ViewState {
         case extracting
         case extracted(TableSummaryAnalysis)
+    }
+}
+
+private struct ContentView: View {
+    let module: NetworkModules
+    let entriesText: String
+    @Binding var viewState: TextSummaryExtractionView.ViewState
+    @Binding var propertySelection: TextSummaryPropertySelection
+
+    var body: some View {
+        switch viewState {
+        case .extracting:
+            TableSummaryAnalysisView(entriesText: entriesText) { content in
+                viewState = .extracted(content)
+            }
+        case .extracted(let content):
+            TextSummaryUpdateView(content: content, module: module, selectedProperties: $propertySelection)
+        }
     }
 }
 

@@ -137,9 +137,7 @@ struct TableGenerationOccurrenceHeaderView: View {
     }
 
     private var visiblePlayers: [SharingControlModel] {
-        (sharingControlActions.control?() ?? [])
-            .filter(\.show)
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        (sharingControlActions.control?() ?? []).visibleSortedByName
     }
 
     private var canShareDice: Bool {

@@ -2,13 +2,22 @@
 
 import SwiftUI
 
-struct DescriptionItemNewRow: View {
+struct DescriptionItemNewRow: View, Equatable {
     let itemId: UUID
     let description: String
     let cacheItemListModel: CacheItemListModel
     let searchModel: SearchModel
-    
-    var body: some View {    
+
+    /// `cacheItemListModel` is a shared cache reference passed down unchanged across redraws,
+    /// not row content, so it's excluded — see `NameItemNewRow`'s matching conformance and
+    /// CODE_AUDIT §8.6.
+    static func == (lhs: DescriptionItemNewRow, rhs: DescriptionItemNewRow) -> Bool {
+        lhs.itemId == rhs.itemId
+            && lhs.description == rhs.description
+            && lhs.searchModel.searchText == rhs.searchModel.searchText
+    }
+
+    var body: some View {
         Group {
             if !description.isEmpty {
                 LinkHighlightTextView(model: linkTextModel)

@@ -2,13 +2,24 @@
 
 import SwiftUI
 
-struct NameItemNewRow: View {
+struct NameItemNewRow: View, Equatable {
     let itemId: UUID
     let name: String
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
-    
+
+    /// `cacheItemListModel` is a shared cache reference passed down unchanged across redraws,
+    /// not row content, so it's excluded — what actually determines this row's rendered output
+    /// is the item shown, its name, the active display mode (line limit), and any active search
+    /// highlight. See CODE_AUDIT §8.6.
+    static func == (lhs: NameItemNewRow, rhs: NameItemNewRow) -> Bool {
+        lhs.itemId == rhs.itemId
+            && lhs.name == rhs.name
+            && lhs.listDisplayModel.displayMode == rhs.listDisplayModel.displayMode
+            && lhs.searchModel.searchText == rhs.searchModel.searchText
+    }
+
     var body: some View {
         LinkHighlightTextView(model: linkTextModel)
             .foregroundStyle(name.isEmpty ? .secondary : .primary)

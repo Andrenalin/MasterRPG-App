@@ -18,12 +18,24 @@ public struct AddTagsEditor: View {
     @State private var currentTag: String = ""
 
     public var body: some View {
-        addTagView
+        AddTagInputView(
+            currentTag: $currentTag,
+            focusState: $focusState,
+            prompt: prompt,
+            addCurrentTag: addCurrentTag
+        )
     }
 }
 
-private extension AddTagsEditor {
-    var addTagView: some View {
+private struct AddTagInputView: View {
+    @Environment(\.appTheme) private var theme
+
+    @Binding var currentTag: String
+    var focusState: FocusState<Bool>.Binding
+    let prompt: LocalizedStringKey
+    let addCurrentTag: () -> Void
+
+    var body: some View {
         GlassEffectContainerAll {
             HStack(spacing: 12) {
                 TextField(text: $currentTag, prompt: Text(prompt, bundle: .module)) {
@@ -34,7 +46,7 @@ private extension AddTagsEditor {
                 .textContentType(.name)
 #endif
                 .disableAutocorrection(true)
-                .focused($focusState)
+                .focused(focusState)
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 14)
                 .frame(minHeight: 44)
@@ -45,7 +57,7 @@ private extension AddTagsEditor {
                 .addTagInputGlass()
                 .onSubmit {
                     addCurrentTag()
-                    focusState = true
+                    focusState.wrappedValue = true
                 }
 
                 GlassButton(isProminent: true, action: addCurrentTag) {
@@ -63,7 +75,9 @@ private extension AddTagsEditor {
             }
         }
     }
+}
 
+private extension AddTagsEditor {
     func addCurrentTag() {
         let tag = currentTag.localizedUppercase
         guard !tags.contains(where: { $0 == tag }) else { return }

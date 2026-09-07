@@ -38,7 +38,7 @@ struct SheetEntryConvertToGroupModalView: View {
 
     var body: some View {
         ManagedNavigationStack(name: "Convert2Group") {
-            content
+            SheetEntryConvertToGroupContentView(step: step, isConverting: isConverting, convert: convert)
                 .navigationTitle(Text("Convert to Group", bundle: .module))
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -58,10 +58,30 @@ struct SheetEntryConvertToGroupModalView: View {
         }
     }
 
-    @ViewBuilder private var content: some View {
+    @MainActor private func convert(existingItemId: UUID?) async {
+        isConverting = true
+        defer { isConverting = false }
+        guard let group = await rootModel.convertEntryToGroup(source: source, existingItemId: existingItemId) else {
+            navigator.back()
+            return
+        }
+        step = .result(name: group.name, description: group.description)
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.2)
+
+private struct SheetEntryConvertToGroupContentView: View {
+    let step: SheetEntryConvertToGroupModalView.Step
+    let isConverting: Bool
+    let convert: (UUID?) async -> Void
+
+    @Environment(\.navigator) private var navigator
+
+    var body: some View {
         switch step {
         case .alreadyGroup:
-            alreadyGroupView
+            SheetEntryConvertToGroupAlreadyGroupView()
         case .choosing(let candidates):
             if isConverting {
                 ProgressView()
@@ -74,29 +94,13 @@ struct SheetEntryConvertToGroupModalView: View {
         }
     }
 
-    private var alreadyGroupView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            let name = "Not yet found" // entryModel.name.withoutLink()
-            Text("\(name) is already a group.", bundle: .module)
-            Spacer()
-            Button {
-                navigator.back()
-            } label: {
-                Text("OK", bundle: .module)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
-    }
-
     private func choosingView(candidates: [FolderRepresentable]) -> some View {
         List {
             if !candidates.isEmpty {
                 Section {
                     ForEach(candidates) { candidate in
                         Button {
-                            Task { await convert(existingItemId: candidate.id) }
+                            Task { await convert(candidate.id) }
                         } label: {
                             Label {
                                 Text(candidate.name)
@@ -111,7 +115,7 @@ struct SheetEntryConvertToGroupModalView: View {
             }
             Section {
                 Button {
-                    Task { await convert(existingItemId: nil) }
+                    Task { await convert(nil) }
                 } label: {
                     Label {
                         Text("Create New Group", bundle: .module)
@@ -148,15 +152,25 @@ struct SheetEntryConvertToGroupModalView: View {
         }
         .padding()
     }
+}
 
-    @MainActor private func convert(existingItemId: UUID?) async {
-        isConverting = true
-        defer { isConverting = false }
-        guard let group = await rootModel.convertEntryToGroup(source: source, existingItemId: existingItemId) else {
-            navigator.back()
-            return
+private struct SheetEntryConvertToGroupAlreadyGroupView: View {
+    @Environment(\.navigator) private var navigator
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            let name = "Not yet found" // entryModel.name.withoutLink()
+            Text("\(name) is already a group.", bundle: .module)
+            Spacer()
+            Button {
+                navigator.back()
+            } label: {
+                Text("OK", bundle: .module)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
         }
-        step = .result(name: group.name, description: group.description)
+        .padding()
     }
 }
 

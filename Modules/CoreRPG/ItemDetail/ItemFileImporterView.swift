@@ -12,38 +12,56 @@ struct ItemFileImporterView: View {
     var body: some View {
         Group {
             if isInitial {
-                initialStyle
+                InitialStyleView(root: root, model: model, fileTypes: fileTypes, isInitial: isInitial)
             } else {
-                overlayStyle
+                OverlayStyleView(root: root, model: model, fileTypes: fileTypes, isInitial: isInitial)
             }
         }
     }
-    
-    @ViewBuilder
-    private var initialStyle: some View {
+}
+
+private struct InitialStyleView: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let fileTypes: [UTType]
+    let isInitial: Bool
+
+    var body: some View {
         HStack {
-            fileImporterContent
+            FileImporterContentView(root: root, model: model, fileTypes: fileTypes, isInitial: isInitial)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .opacity(1)
         .transition(.scale)
     }
-    
-    @ViewBuilder
-    private var overlayStyle: some View {
+}
+
+private struct OverlayStyleView: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let fileTypes: [UTType]
+    let isInitial: Bool
+
+    var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            filePathDisplay
+            FilePathDisplayView(model: model, isInitial: isInitial)
                 .zIndex(0)
 
             Spacer(minLength: 20)
 
-            fileImporterContent
+            FileImporterContentView(root: root, model: model, fileTypes: fileTypes, isInitial: isInitial)
                 .zIndex(100)
         }
     }
-    
-    @ViewBuilder
-    private var fileImporterContent: some View {
+}
+
+private struct FileImporterContentView: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let fileTypes: [UTType]
+    let isInitial: Bool
+
+    var body: some View {
         if root.viewControllable.fileImporterViewType == .file {
             FileImporterView(
                 editControllable: root.editControllable,
@@ -66,9 +84,13 @@ struct ItemFileImporterView: View {
             )
         }
     }
-    
-    @ViewBuilder
-    private var filePathDisplay: some View {
+}
+
+private struct FilePathDisplayView: View {
+    let model: any ItemDataAccessable
+    let isInitial: Bool
+
+    var body: some View {
         if !isInitial {
             HStack {
                 Text(displayedFileURL ??

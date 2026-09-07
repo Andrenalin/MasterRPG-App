@@ -37,7 +37,6 @@ extension NavigationLink where Destination == Never {
     }
 }
 
-@available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
 extension NavigationLink where Destination == Never, Label == Text {
     /// Creates a navigation link that presents a string title and pushes a
     /// ``NavigationDestination`` onto the current stack.
@@ -99,7 +98,6 @@ extension NavigationLink where Destination == Never, Label == Text {
     ///     }
     /// }
     /// ```
-    @available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
     @MainActor
     public init<D: NavigationDestination>(_ titleResource: LocalizedStringResource, to destination: D) {
         self.init(titleResource, value: AnyNavigationDestination(destination))

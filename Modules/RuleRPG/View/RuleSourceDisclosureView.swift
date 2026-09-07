@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-struct RuleSourceDisclosureView: View {
+struct RuleSourceDisclosureView: View, Equatable {
     let metadata: RuleSourceMetadata
 
     var body: some View {

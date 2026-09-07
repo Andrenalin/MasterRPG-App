@@ -13,8 +13,7 @@ struct ViewerRootView: View {
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismiss) private var dismiss
-    
+
     @State private var isAnimating: Bool = false
     @State private var containerSize: CGSize = .zero
 
@@ -57,20 +56,27 @@ private extension ViewerRootView {
     var toolbarContent: some ToolbarContent {
         if shouldShowCloseButton {
             ToolbarItem(placement: .cancellationAction) {
-                closeButton
+                WeatherCloseButtonView(dismissAction: dismissAction)
             }
         }
-        
+
         ToolbarItem(placement: .primaryAction) {
-            animateButton
+            WeatherAnimateButtonView(isAnimating: $isAnimating)
         }
     }
-    
+
     var shouldShowCloseButton: Bool {
         valueFor(iOS: appSizeModel.mode == .compact || dismissAction != nil, macOS: false, tvOS: dismissAction != nil, visionOS: dismissAction != nil)
     }
+}
 
-    var animateButton: some View {
+private struct WeatherAnimateButtonView: View {
+    @Binding var isAnimating: Bool
+
+    @Environment(WeatherRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
         Button {
             withAnimation(accessibilityReduceMotion ? nil : .default) {
                 isAnimating.toggle()
@@ -93,8 +99,15 @@ private extension ViewerRootView {
                 .moduleTint(root.config.module)
 #endif
     }
-    
-    var closeButton: some View {
+}
+
+private struct WeatherCloseButtonView: View {
+    var dismissAction: (() -> Void)?
+
+    @Environment(WeatherRootModel.self) private var root
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
         Button {
             if let dismissAction {
                 dismissAction()

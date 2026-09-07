@@ -12,8 +12,8 @@ struct GameRootView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
-        gameView
+
+        GameView(root: root)
             .onChange(of: root.gameModel.gameConfig.state, initial: true) { _, newState in
                 let isRunning = newState == .started
                 if appGameStateModel.isGameRunning != isRunning {
@@ -27,8 +27,12 @@ struct GameRootView: View {
                 }
             }
     }
+}
 
-    private var gameView: some View {
+private struct GameView: View {
+    let root: GameRoot
+
+    var body: some View {
         Group {
             if let playerController = root.gameModel.playerController {
                 if root.gameModel.gameConfig.isMaster {

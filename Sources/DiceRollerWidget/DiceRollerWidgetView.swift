@@ -9,31 +9,34 @@ import WidgetKit
 /// Main view for the dice roller widget with Liquid Glass design
 struct DiceRollerWidgetView: View {
     @Environment(\.widgetFamily) var family
-    @Environment(\.widgetRenderingMode) var renderingMode
-    
+
     let entry: DiceRollerEntry
-    
+
     var body: some View {
         switch family {
         case .systemSmall:
-            smallWidgetView
+            SmallWidgetView(entry: entry)
         case .systemMedium:
-            mediumWidgetView
+            MediumWidgetView(entry: entry)
         case .systemLarge:
-            largeWidgetView
+            LargeWidgetView(entry: entry)
         default:
-            smallWidgetView
+            SmallWidgetView(entry: entry)
         }
     }
-    
-    // MARK: - Small Widget
+}
 
-    private var smallWidgetView: some View {
+// MARK: - Small Widget
+
+private struct SmallWidgetView: View {
+    let entry: DiceRollerEntry
+
+    var body: some View {
         VStack(spacing: 8) {
             // Dice icon with result
             if let lastRoll = entry.snapshot.lastRoll {
                 // Show last roll result
-                diceResultView(lastRoll)
+                DiceResultView(result: lastRoll)
             } else {
                 // Show dice type icon
                 dieImageView(entry.snapshot.selectedDice, size: 40)
@@ -47,15 +50,19 @@ struct DiceRollerWidgetView: View {
         .padding()
         .accessibilityElement(children: .combine)
     }
-    
-    // MARK: - Medium Widget
+}
 
-    private var mediumWidgetView: some View {
+// MARK: - Medium Widget
+
+private struct MediumWidgetView: View {
+    let entry: DiceRollerEntry
+
+    var body: some View {
         HStack(spacing: 16) {
             // Left side - Current dice and result
             VStack(spacing: 8) {
                 if let lastRoll = entry.snapshot.lastRoll {
-                    diceResultView(lastRoll)
+                    DiceResultView(result: lastRoll)
 
                     if let timestamp = lastRoll.timestamp {
                         Text(timestamp, style: .relative)
@@ -79,16 +86,20 @@ struct DiceRollerWidgetView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                quickDiceGrid
+                QuickDiceGridView()
             }
             .frame(maxWidth: .infinity)
         }
         .padding()
     }
-    
-    // MARK: - Large Widget
+}
 
-    private var largeWidgetView: some View {
+// MARK: - Large Widget
+
+private struct LargeWidgetView: View {
+    let entry: DiceRollerEntry
+
+    var body: some View {
         VStack(spacing: 16) {
             // Header
             HStack {
@@ -107,7 +118,7 @@ struct DiceRollerWidgetView: View {
 
             // Main dice display
             if let lastRoll = entry.snapshot.lastRoll {
-                diceResultView(lastRoll)
+                DiceResultView(result: lastRoll)
 
                 Text("Last Roll", bundle: .main)
                     .font(.caption)
@@ -127,26 +138,32 @@ struct DiceRollerWidgetView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            quickDiceGrid
+            QuickDiceGridView()
         }
         .padding()
     }
-    
-    // MARK: - Components
+}
 
-    /// Renders a die image that works correctly in both full color and tinted modes
-    @ViewBuilder
-    private func dieImageView(_ dice: DiceWidgetDice, size: CGFloat) -> some View {
-        dice.dieModel.diceImage(for: dice.displayFace)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: size, height: size)
-            // Don't apply widgetAccentable to images - they should stay in full color
-            .unredacted() // Ensure images always render
-            .accessibilityHidden(true)
-    }
+// MARK: - Components
 
-    private func diceResultView(_ result: DiceWidgetRoll) -> some View {
+/// Renders a die image that works correctly in both full color and tinted modes
+@ViewBuilder
+private func dieImageView(_ dice: DiceWidgetDice, size: CGFloat) -> some View {
+    dice.dieModel.diceImage(for: dice.displayFace)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: size, height: size)
+        // Don't apply widgetAccentable to images - they should stay in full color
+        .unredacted() // Ensure images always render
+        .accessibilityHidden(true)
+}
+
+private struct DiceResultView: View {
+    let result: DiceWidgetRoll
+
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
+    var body: some View {
         VStack(spacing: 4) {
             ZStack {
                 // Background circle - only show in full color mode
@@ -167,8 +184,10 @@ struct DiceRollerWidgetView: View {
         .accessibilityLabel(Text(verbatim: result.dice.name))
         .accessibilityValue(Text(verbatim: "\(result.sum)"))
     }
+}
 
-    private var quickDiceGrid: some View {
+private struct QuickDiceGridView: View {
+    var body: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
             ForEach([IntentDiceType.d4, .d6, .d8, .d10, .d12, .d20], id: \.self) { diceType in
                 Button(intent: RollDiceIntent(diceType: diceType)) {
@@ -193,18 +212,18 @@ struct DiceRollerWidgetView: View {
             }
         }
     }
-    
-    private func resultColor(for result: DiceWidgetRoll) -> Color {
-        switch result.result {
-        case .coup:
-            return .green
-        case .fumble:
-            return .red
-        case .rolled:
-            return .blue
-        case .notRolled:
-            return .gray
-        }
+}
+
+private func resultColor(for result: DiceWidgetRoll) -> Color {
+    switch result.result {
+    case .coup:
+        return .green
+    case .fumble:
+        return .red
+    case .rolled:
+        return .blue
+    case .notRolled:
+        return .gray
     }
 }
 

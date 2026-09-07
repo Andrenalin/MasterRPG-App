@@ -11,11 +11,8 @@ struct CacheController: Sendable {
     let cacheStorage: ImageCacheControllableStorage
 }
 
-extension CacheController: ImageCacheControllable {
+extension CacheController: QuickLookThumbnailProviding {
     /// QuickLook's default 3D-object preview canvas proportions.
-    private static let thumbnailSize = CGSize(width: 393, height: 350)
-
-    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
-        await createQuickLookThumbnail(for: itemId, item: item, size: Self.thumbnailSize, removeWhiteBackground: true)
-    }
+    public static let quickLookThumbnailSize = CGSize(width: 393, height: 350)
+    public static let removesWhiteBackgroundInThumbnail = true
 }

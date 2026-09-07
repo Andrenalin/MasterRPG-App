@@ -33,12 +33,7 @@ extension LinkController: LinkControllable {
             return text
         } else {
             let item = itemController.itemOrEmpty(for: itemId)
-            let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId) : ""
-            let showAction = toggler != nil ? "\(specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
-            let removeAction = autoToggleAndRemoveAction(linkNumber: linkNumber, itemId: itemId, entryId: entryId, toggler: toggler, editAction: editAction)
-            let result = "\(sendAction)\(showAction) \(item.description)\(removeAction)"
-            let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
-            return text.toggleLink(url: url, with: result)
+            return standardToggleResult(linkNumber: linkNumber, itemId: itemId, entryId: entryId, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction, description: item.description)
         }
     }
 

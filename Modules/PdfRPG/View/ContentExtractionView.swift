@@ -27,7 +27,7 @@ struct ContentExtractionView: View {
     @State private var viewState: ViewState = .loading
 
     var body: some View {
-        contentView
+        ContentView(viewState: $viewState)
             .navigationTitle(Text("PDF Extractor", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -65,51 +65,6 @@ struct ContentExtractionView: View {
             }
     }
 
-    // MARK: - View Components
-
-    @ViewBuilder
-    private var contentView: some View {
-        switch viewState {
-        case .loading:
-            loadingView
-        case .extracting(let document):
-            PdfContentExtractionView(pdfDocument: document) { content in
-                viewState = .extracted(content)
-            }
-        case .extracted(let content):
-            ContentBlocksView(content: content)
-        case .unavailable:
-            unavailableView
-        }
-    }
-
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.5)
-            Text("Loading PDF...", bundle: .module)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Loading PDF document", bundle: .module))
-    }
-
-    private var unavailableView: some View {
-        ContentUnavailableView {
-            Label {
-                Text("PDF Not Available", bundle: .module)
-            } icon: {
-                Image(systemName: "doc.questionmark")
-            }
-        } description: {
-            Text("The PDF file could not be loaded.", bundle: .module)
-        }
-        .accessibilityLabel(Text("PDF unavailable", bundle: .module))
-        .accessibilityHint(Text("The PDF file could not be loaded", bundle: .module))
-    }
-
     // MARK: - Actions
 
     private func loadPDF() async {
@@ -143,11 +98,61 @@ struct ContentExtractionView: View {
 
     // MARK: - ViewState
 
-    private enum ViewState {
+    fileprivate enum ViewState {
         case loading
         case extracting(PDFDocument)
         case extracted([BlockEntryGenModel])
         case unavailable
+    }
+}
+
+private struct ContentView: View {
+    @Binding var viewState: ContentExtractionView.ViewState
+
+    var body: some View {
+        switch viewState {
+        case .loading:
+            LoadingView()
+        case .extracting(let document):
+            PdfContentExtractionView(pdfDocument: document) { content in
+                viewState = .extracted(content)
+            }
+        case .extracted(let content):
+            ContentBlocksView(content: content)
+        case .unavailable:
+            UnavailableView()
+        }
+    }
+}
+
+private struct LoadingView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Loading PDF...", bundle: .module)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Loading PDF document", bundle: .module))
+    }
+}
+
+private struct UnavailableView: View {
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                Text("PDF Not Available", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.questionmark")
+            }
+        } description: {
+            Text("The PDF file could not be loaded.", bundle: .module)
+        }
+        .accessibilityLabel(Text("PDF unavailable", bundle: .module))
+        .accessibilityHint(Text("The PDF file could not be loaded", bundle: .module))
     }
 }
 #endif

@@ -12,19 +12,22 @@ public struct RemoveTagsEditor: View {
     @Binding var tags: [String]
     
     public var body: some View {
-        tagsView
+        RemoveTagsListView(tags: $tags, remove: remove(tag:))
     }
 }
 
-private extension RemoveTagsEditor {
-    var tagsView: some View {
+private struct RemoveTagsListView: View {
+    @Binding var tags: [String]
+    let remove: (String) -> Void
+
+    var body: some View {
         ScrollView(.horizontal) {
             HStack {
                 ForEach(tags, id: \.self) { tag in
                     Text(verbatim: tag)
                         .rowColoredTag(backgroundColor: Color.accentColor)
                         .removeItemImage {
-                            remove(tag: tag)
+                            remove(tag)
                         }
                         .padding(.top, 8)
                 }
@@ -33,7 +36,9 @@ private extension RemoveTagsEditor {
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
     }
+}
 
+private extension RemoveTagsEditor {
     func remove(tag: String) {
         withAnimation(accessibilityReduceMotion ? nil : .bouncy) { tags.removeAll(where: { $0 == tag }) }
     }

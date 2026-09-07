@@ -583,12 +583,12 @@ extension MapModel: nonisolated ItemDiffComparable {
 extension MapModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? MapModel)?.photoId) },
-            ReviewCustomProperty(displayName: "Pins") { ReviewPropertyValue(($0 as? MapModel)?.mapPins.count ?? 0) },
-            ReviewCustomProperty(displayName: "Walls") { ReviewPropertyValue(($0 as? MapModel)?.walls.count ?? 0) },
-            ReviewCustomProperty(displayName: "Pin Scale") { ReviewPropertyValue(($0 as? MapModel)?.pinScale ?? 1) },
-            ReviewCustomProperty(displayName: "Hex Scale") { ReviewPropertyValue(($0 as? MapModel)?.hexMapScale ?? 0) },
-            ReviewCustomProperty(displayName: "Rotation") { ReviewPropertyValue(($0 as? MapModel)?.degrees ?? 0) }
+            ReviewCustomProperty(displayName: String(localized: "Photo", bundle: .module)) { ReviewPropertyValue(photoId: ($0 as? MapModel)?.photoId) },
+            ReviewCustomProperty(displayName: String(localized: "Pins", bundle: .module)) { ReviewPropertyValue(($0 as? MapModel)?.mapPins.count ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Walls", bundle: .module)) { ReviewPropertyValue(($0 as? MapModel)?.walls.count ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Pin Scale", bundle: .module)) { ReviewPropertyValue(($0 as? MapModel)?.pinScale ?? 1) },
+            ReviewCustomProperty(displayName: String(localized: "Hex Scale", bundle: .module)) { ReviewPropertyValue(($0 as? MapModel)?.hexMapScale ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Rotation", bundle: .module)) { ReviewPropertyValue(($0 as? MapModel)?.degrees ?? 0) }
         ]
     }
 }

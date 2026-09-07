@@ -3,6 +3,8 @@
 import CryptoKit
 import Foundation
 
+// MARK: - Public API
+
 /// Reads Foundry VTT system, module, world, compendium, and exported-document artifacts.
 ///
 /// This is a data transport only: JavaScript is never evaluated and HTML is retained as text.
@@ -237,6 +239,8 @@ public struct FoundryVTTImportReader: Sendable {
     }
 }
 
+// MARK: - Package Mutation Helpers
+
 private extension FoundryVTTImportPackage {
     func with(rulePackage: FoundryRulePackage) -> Self {
         Self(
@@ -270,6 +274,8 @@ private extension FoundryVTTImportPackage {
         )
     }
 }
+
+// MARK: - Package Decode Orchestration
 
 private struct FoundryVTTDecoder {
     let limits: FoundryImportLimits
@@ -382,6 +388,8 @@ private struct FoundryVTTDecoder {
     }
 }
 
+// MARK: - Manifest Selection & Decoding
+
 private extension FoundryVTTDecoder {
     struct ManifestSelection {
         let path: String
@@ -443,6 +451,8 @@ private extension FoundryVTTDecoder {
         )
     }
 }
+
+// MARK: - Collection Discovery
 
 private struct FoundryVTTCollectionSpec {
     let id: String
@@ -633,6 +643,8 @@ private extension FoundryVTTDecoder {
     }
 }
 
+// MARK: - Read Budget Tracking
+
 private struct FoundryVTTReadBudget {
     var encodedBytes = 0
     var decodedBytes = 0
@@ -662,6 +674,8 @@ private struct FoundryVTTReadBudget {
         recordCount = next
     }
 }
+
+// MARK: - LevelDB Collection Decoding
 
 private struct FoundryLevelDBLiveFiles {
     let tables: [String]
@@ -822,6 +836,8 @@ private extension FoundryVTTDecoder {
         return result
     }
 
+    // MARK: - Legacy NeDB Database Decoding
+
     func decodeLegacyDatabase(
         _ spec: FoundryVTTCollectionSpec,
         packageKind: FoundryVTTPackageKind,
@@ -890,6 +906,8 @@ private extension FoundryVTTDecoder {
         return (decoded.collection, diagnostics + decoded.diagnostics)
     }
 
+    // MARK: - JSON Collection Decoding
+
     func decodeJSONCollection(
         _ spec: FoundryVTTCollectionSpec,
         packageKind: FoundryVTTPackageKind,
@@ -935,6 +953,8 @@ private extension FoundryVTTDecoder {
     }
 }
 
+// MARK: - LevelDB Record Merging
+
 struct FoundryLevelDBRecordMerger {
     static func currentRecords(_ records: [FoundryLevelDBRecord]) throws -> [FoundryLevelDBRecord] {
         var current: [String: FoundryLevelDBRecord] = [:]
@@ -967,6 +987,8 @@ struct FoundryLevelDBRecordMerger {
             .sorted { $0.key < $1.key }
     }
 }
+
+// MARK: - Document Tree Assembly
 
 private struct FoundryVTTRecordComponent: Hashable {
     let collection: String
@@ -1201,6 +1223,8 @@ private extension FoundryVTTDocumentDecoder {
     }
 }
 
+// MARK: - LevelDB Key Parsing
+
 private enum FoundryVTTLevelDBKey {
     static func parse(_ key: String) -> [FoundryVTTRecordComponent]? {
         guard key.hasPrefix("!"),
@@ -1233,6 +1257,8 @@ private enum FoundryVTTLevelDBKey {
         return left < right
     }
 }
+
+// MARK: - Document Type Inference
 
 private extension FoundryDocumentType {
     static func inferred(from value: String?) -> Self {
@@ -1323,6 +1349,8 @@ private extension FoundryDocumentType {
     ], uniquingKeysWith: { _, new in new })
 }
 
+// MARK: - Embedded Document Extraction
+
 private enum FoundryVTTEmbeddedExtractor {
     struct Candidate {
         let type: FoundryDocumentType
@@ -1374,6 +1402,8 @@ private enum FoundryVTTEmbeddedExtractor {
     ]
 }
 
+// MARK: - Known Field Tracking
+
 private enum FoundryVTTKnownFields {
     static let base = Set([
         "_id", "id", "_key", "_stats", "name", "type", "documentName", "documentType",
@@ -1416,6 +1446,8 @@ private enum FoundryVTTKnownFields {
     ]
 }
 
+// MARK: - Description Extraction
+
 private enum FoundryVTTDescriptionFinder {
     static func description(in raw: FoundryJSONValue) -> String? {
         let candidates = [
@@ -1427,6 +1459,8 @@ private enum FoundryVTTDescriptionFinder {
     }
 }
 
+// MARK: - Document Sorting
+
 private extension FoundryDocument {
     static func foundrySort(_ lhs: Self, _ rhs: Self) -> Bool {
         let leftSort = lhs.sort ?? 0
@@ -1436,6 +1470,8 @@ private extension FoundryDocument {
         return lhs.id < rhs.id
     }
 }
+
+// MARK: - Data Source Abstraction (ZIP / Directory)
 
 private enum FoundryVTTDataSource: Sendable {
     case archive(FoundryZIPArchive, sourceSHA256: String)
@@ -1571,6 +1607,8 @@ private extension FoundryVTTDataSource {
     }
 }
 
+// MARK: - Package Path Utilities
+
 private enum FoundryVTTPath {
     static func normalized(_ path: String) throws -> String {
         let replacedPrefix = path.hasPrefix("./") ? String(path.dropFirst(2)) : path
@@ -1607,6 +1645,8 @@ private enum FoundryVTTPath {
     }
 }
 
+// MARK: - JSON Decoding
+
 private enum FoundryVTTRawJSON {
     static func decode(_ data: Data, context: String) throws -> FoundryJSONValue {
         let decoder = JSONDecoder()
@@ -1619,6 +1659,8 @@ private enum FoundryVTTRawJSON {
         }
     }
 }
+
+// MARK: - JSON Value & Data Helpers
 
 private extension FoundryJSONValue {
     var foundryScalarString: String? {
@@ -1650,6 +1692,8 @@ private extension Data.SubSequence {
     }
 }
 
+// MARK: - Line-Oriented Reading
+
 /// Iterates mapped or in-memory input without materializing an array containing every line.
 private struct FoundryVTTLineSequence: Sequence, IteratorProtocol {
     private let data: Data
@@ -1680,6 +1724,8 @@ private struct FoundryVTTLineSequence: Sequence, IteratorProtocol {
     }
 }
 
+// MARK: - Document Identity Validation
+
 private enum FoundryVTTDocumentIdentityValidator {
     static func validate(_ collections: [FoundryDocumentCollection]) throws {
         var sourceByCanonicalID: [String: String] = [:]
@@ -1705,6 +1751,8 @@ private enum FoundryVTTDocumentIdentityValidator {
     }
 }
 
+// MARK: - Import Statistics
+
 private enum FoundryVTTStatisticsBuilder {
     static func build(_ collections: [FoundryDocumentCollection]) -> FoundryVTTImportStatistics {
         var embeddedCount = 0
@@ -1727,6 +1775,8 @@ private enum FoundryVTTStatisticsBuilder {
         )
     }
 }
+
+// MARK: - Asset Path Collection
 
 private enum FoundryVTTAssetCollector {
     static let pathExtensions = Set([
@@ -1842,6 +1892,8 @@ private enum FoundryVTTAssetCollector {
     }
 }
 
+// MARK: - Package Resource Resolution
+
 private enum FoundryVTTResourceResolver {
     static func resolve(
         assetPaths: [String],
@@ -1941,6 +1993,8 @@ private enum FoundryVTTResourceResolver {
 /// byte just to extract one file — for a world/module with N packaged assets (images, audio),
 /// mapper attachment closures requesting resources one at a time turned into N full re-parses of
 /// an archive that can be up to 1GiB, instead of one. See CODE_AUDIT §7.1.
+// MARK: - Source & Resource Caching
+
 private actor FoundryZIPDataSourceCache {
     let limits: FoundryImportLimits
     private var sourcePath: String?
@@ -2011,6 +2065,8 @@ private actor FoundryBridgeResourceCache {
         return result
     }
 }
+
+// MARK: - Foundry Bridge Decoding
 
 private struct FoundryBridgeDecoder {
     let limits: FoundryImportLimits
@@ -2446,6 +2502,8 @@ private extension FoundryBridgeDecoder {
         return try FoundryVTTPath.normalized(path)
     }
 }
+
+// MARK: - Bridge Decode Models
 
 private struct FoundryBridgeDocumentRecord {
     let collection: String

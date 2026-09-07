@@ -19,11 +19,11 @@ public struct PdfContentExtractionView: View {
         FoundationBasicView {
             VStack(spacing: 20) {
                 if model.isExtracting {
-                    extractingView
+                    ExtractingView(model: model)
                 } else {
-                    extractButton
+                    ExtractButtonView(action: analyze)
                 }
-                
+
                 if let error = model.lastError {
                     errorView(error)
                 }
@@ -34,9 +34,45 @@ public struct PdfContentExtractionView: View {
 
     // MARK: - Subviews
 
-    private var extractButton: some View {
+    private func analyze() {
+        guard !model.isExtracting else { return }
+        Task {
+            let content = await model.extractWithProgress(from: pdfDocument)
+            onContentExtracted(content)
+        }
+    }
+
+    private func errorView(_ error: String) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
+
+            Text(verbatim: error)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Button {
+                model.clearError()
+            } label: {
+                Text("Dismiss", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct ExtractButtonView: View {
+    let action: () -> Void
+
+    var body: some View {
         Button {
-            analyze()
+            action()
         } label: {
             Label {
                 Text("Extract PDF Text", bundle: .module)
@@ -48,17 +84,12 @@ public struct PdfContentExtractionView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
     }
+}
 
-    private func analyze() {
-        guard !model.isExtracting else { return }
-        Task {
-            let content = await model.extractWithProgress(from: pdfDocument)
-            onContentExtracted(content)
-        }
-    }
+private struct ExtractingView: View {
+    let model: PdfContentExtractionModel
 
-
-    private var extractingView: some View {
+    var body: some View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.5)
@@ -110,30 +141,6 @@ public struct PdfContentExtractionView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-    }
-
-    private func errorView(_ error: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-
-            Text(verbatim: error)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            Button {
-                model.clearError()
-            } label: {
-                Text("Dismiss", bundle: .module)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(Color.red.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

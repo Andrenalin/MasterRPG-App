@@ -14,18 +14,27 @@ struct TableGenerationSaveSendButton: View {
     let sendAction: (UUID?) -> Void
 
     @Environment(\.networkActions) private var networkActions
-    @Environment(\.sharingControlActions) private var sharingControlActions
     @Environment(AppGameStateModel.self) private var gameState
 
     var body: some View {
         if isGameSendMode {
-            saveAndShareMenu
+            TableGenerationSaveAndShareMenuView(saveAction: saveAction, sendAction: sendAction)
         } else {
-            saveButton
+            TableGenerationSaveButtonView(saveAction: saveAction)
         }
     }
 
-    private var saveButton: some View {
+    private var isGameSendMode: Bool {
+        gameState.isGameRunning
+            && gameState.gameModus == .master
+            && networkActions != nil
+    }
+}
+
+private struct TableGenerationSaveButtonView: View {
+    let saveAction: () -> Void
+
+    var body: some View {
         Button(action: saveAction) {
             Image(systemName: "square.and.arrow.down")
         }
@@ -35,8 +44,15 @@ struct TableGenerationSaveSendButton: View {
             isSelected: false
         )
     }
+}
 
-    private var saveAndShareMenu: some View {
+private struct TableGenerationSaveAndShareMenuView: View {
+    let saveAction: () -> Void
+    let sendAction: (UUID?) -> Void
+
+    @Environment(\.sharingControlActions) private var sharingControlActions
+
+    var body: some View {
         Menu {
             Button(action: saveAction) {
                 Label {
@@ -81,16 +97,8 @@ struct TableGenerationSaveSendButton: View {
         )
     }
 
-    private var isGameSendMode: Bool {
-        gameState.isGameRunning
-            && gameState.gameModus == .master
-            && networkActions != nil
-    }
-
     private var visiblePlayers: [SharingControlModel] {
-        (sharingControlActions.control?() ?? [])
-            .filter(\.show)
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        (sharingControlActions.control?() ?? []).visibleSortedByName
     }
 }
 

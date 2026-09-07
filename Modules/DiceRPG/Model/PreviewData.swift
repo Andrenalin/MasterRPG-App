@@ -48,7 +48,7 @@ public extension DiceRootModel {
         Task(priority: .userInitiated) {
             let bundle = RPGResources.Resources.bundle
             guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("url nil ")
+                print("Preview fixture resource URL was nil")
                 return
             }
             let task = importController.importUrl(from: url)

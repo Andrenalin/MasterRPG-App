@@ -50,10 +50,10 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                headerView
+                HeaderView(model: model, header: header, backgroundColor: backgroundColor)
             }
     }
-    
+
     @inline(__always)
     private func handleScrollChange(oldValue: CGFloat, newValue: CGFloat) {
         // If disableHideHeader is enabled, don't process scroll changes
@@ -83,8 +83,14 @@ struct HeaderContentScrollView<Header: View, Content: View>: View {
         }
     }
 
-    @ViewBuilder
-    private var headerView: some View {
+}
+
+private struct HeaderView<Header: View>: View {
+    let model: HeaderScrollModel
+    let header: Header
+    let backgroundColor: Color
+
+    var body: some View {
         header
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.height

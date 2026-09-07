@@ -221,6 +221,34 @@ public extension LinkControllable {
         let editLine = editAction?(ItemRowModel(itemId: itemId, entryId: entryId, typeId: itemControllable.config.module)) ?? false
         return editLine ? "\(removeActionSpacing)\(specialLink(linkType: .remove, linkNumber: linkNumber, itemId: itemId, entryId: entryId))" : ""
     }
+
+    /// The share/show/description/remove-action assembly shared by every module's
+    /// `toggleTextLink` no-command branch — only the description text and its exact spacing
+    /// vary per module (Photo/Space share this verbatim; Pdf/Dice/Weather diverge enough,
+    /// e.g. entry-content lookup or a roll link, to keep their own inline assembly rather
+    /// than adopt this). `descriptionSpacing`/`removeActionSpacing` default to the majority
+    /// modules' leading space; pass `""` for the modules that render without one, so adopting
+    /// this changes zero modules' rendered output. See CODE_AUDIT §9.2.
+    @MainActor
+    func standardToggleResult(
+        linkNumber: Int,
+        itemId: UUID,
+        entryId: UUID?,
+        in text: String,
+        shareResult: ShareValueResult?,
+        toggler: ((UUID, NetworkModules) async -> Void)?,
+        editAction: ((ItemRowModel) -> Bool)?,
+        description: String,
+        descriptionSpacing: String = " ",
+        removeActionSpacing: String = " "
+    ) -> String {
+        let sendAction = ((shareResult?.showGame ?? false) && shareResult?.networkActions != nil) ? specialLink(linkType: .share, linkNumber: linkNumber, itemId: itemId, entryId: entryId) : ""
+        let showAction = toggler != nil ? specialLink(linkType: .show, linkNumber: linkNumber, itemId: itemId, entryId: entryId) : ""
+        let removeAction = autoToggleAndRemoveAction(linkNumber: linkNumber, itemId: itemId, entryId: entryId, toggler: toggler, editAction: editAction, removeActionSpacing: removeActionSpacing)
+        let result = "\(sendAction)\(showAction)\(descriptionSpacing)\(description)\(removeAction)"
+        let url = generateLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId)
+        return text.toggleLink(url: url, with: result)
+    }
 }
 
 // MARK: - Repair Links

@@ -126,10 +126,10 @@ struct GroupEditorView: View {
         
         NavigationStack {
             VStack(alignment: .leading, spacing: 4) {
-                nameSection
-                descriptionSection
-                categoryTagsSection
-                
+                NameSectionView(groupEditorController: groupEditorController, currentFocus: $currentFocus)
+                DescriptionSectionView(groupEditorController: groupEditorController, currentFocus: $currentFocus)
+                CategoryTagsSectionView(groupEditorController: groupEditorController)
+
                 AddTagsEditor(tags: $model.tags)
             }
             .padding()
@@ -167,20 +167,25 @@ struct GroupEditorView: View {
     )
 }
 
-private extension GroupEditorView {
-    @ViewBuilder private var nameSection: some View {
+private struct NameSectionView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let groupEditorController: GroupEditorController
+    var currentFocus: FocusState<GroupEditorView.FocusField?>.Binding
+
+    var body: some View {
         @Bindable var model = groupEditorController.model
-        
+
         Text("Name", bundle: .module)
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-        
+
         HStack {
             TextField(text: $model.name, prompt: Text(model.namePlaceHolder)) {
                 Text("Name", bundle: .module)
             }
-            .focused($currentFocus, equals: .name)
+            .focused(currentFocus, equals: .name)
 
             Button {
                 withAnimation(accessibilityReduceMotion ? nil : .default) { model.name = "" }
@@ -197,10 +202,15 @@ private extension GroupEditorView {
         }
         .padding(.bottom, 6)
     }
-    
-    @ViewBuilder var descriptionSection: some View {
+}
+
+private struct DescriptionSectionView: View {
+    let groupEditorController: GroupEditorController
+    var currentFocus: FocusState<GroupEditorView.FocusField?>.Binding
+
+    var body: some View {
         @Bindable var model = groupEditorController.model
-        
+
         Text("Description", bundle: .module)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -210,7 +220,7 @@ private extension GroupEditorView {
         }
         .frame(minHeight: 120, maxHeight: 200)
         .overlay {
-            if model.description.isEmpty && currentFocus != .information {
+            if model.description.isEmpty && currentFocus.wrappedValue != .information {
                 Text(model.descriptionPlaceHolder)
                     .foregroundStyle(.secondary)
             }
@@ -218,12 +228,12 @@ private extension GroupEditorView {
         .padding(4)
         .border(Color.accentColor.secondary)
         .padding(.bottom, 6)
-        .focused($currentFocus, equals: .information)
+        .focused(currentFocus, equals: .information)
 #else
         TextEditor(text: $model.description)
             .frame(minHeight: 120, maxHeight: 200)
             .overlay {
-                if model.description.isEmpty && currentFocus != .information {
+                if model.description.isEmpty && currentFocus.wrappedValue != .information {
                     Text(model.descriptionPlaceHolder)
                         .foregroundStyle(.secondary)
                 }
@@ -231,11 +241,15 @@ private extension GroupEditorView {
             .padding(4)
             .border(Color.accentColor.secondary)
             .padding(.bottom, 6)
-            .focused($currentFocus, equals: .information)
+            .focused(currentFocus, equals: .information)
 #endif
     }
-    
-    @ViewBuilder var categoryTagsSection: some View {
+}
+
+private struct CategoryTagsSectionView: View {
+    let groupEditorController: GroupEditorController
+
+    var body: some View {
         @Bindable var model = groupEditorController.model
 
         VStack(alignment: .leading) {

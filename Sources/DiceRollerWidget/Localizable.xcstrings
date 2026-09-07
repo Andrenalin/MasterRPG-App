@@ -382,6 +382,7 @@
       }
     },
     "Clear dice roll history" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -398,6 +399,7 @@
       }
     },
     "Clear History" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

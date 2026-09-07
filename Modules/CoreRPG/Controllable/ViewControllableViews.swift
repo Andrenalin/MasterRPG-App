@@ -3,10 +3,14 @@
 import Foundation
 import SwiftUI
 
-/// Wrapper views that avoid AnyView type erasure while maintaining protocol flexibility
-/// These views cache and optimize the view rendering from ViewControllable
+/// Wrapper views that avoid dispatching through `any ViewControllable` existentials while
+/// maintaining protocol flexibility. `ViewControllable.fileImporterView(...)` still returns
+/// `AnyView` (a protocol requirement can't return `some View`), so this wrapper only avoids the
+/// existential-dispatch overhead of calling through `any ViewControllable` directly — it does
+/// not eliminate the `AnyView` boxing itself. See CODE_AUDIT §8.5.
 
-/// Optimized wrapper for file importer views - eliminates AnyView overhead
+/// Generic wrapper for a concrete `Controller: ViewControllable` — avoids `any ViewControllable`
+/// existential dispatch when the concrete type is statically known.
 public struct FileImporterViewWrapper<Controller: ViewControllable>: View {
     let controller: Controller
     let itemId: UUID

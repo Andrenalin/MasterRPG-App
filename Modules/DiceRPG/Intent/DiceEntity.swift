@@ -151,7 +151,9 @@ struct DiceEntityQuery: ItemEntityQuery {
         return entities
     }
 
-    // iOS 18+: Invalidate cache when data changes
+    // iOS 18+: Invalidate cache when data changes. Called from ItemController
+    // whenever a dice set is added, renamed, or deleted, so Siri/Shortcuts/Spotlight
+    // suggestions never serve stale entities for the full 60s TTL. See CODE_AUDIT §5.2.
     static func invalidateCache() {
         cachedEntities = []
         lastCacheUpdate = .distantPast

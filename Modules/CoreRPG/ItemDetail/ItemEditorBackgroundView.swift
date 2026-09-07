@@ -22,7 +22,7 @@ struct ItemEditorBackgroundView<Editor: View>: View {
     var body: some View {
         Group {
             if editorOnTop {
-                overlaysBase
+                OverlaysBaseView(model: model, root: root, folderListController: folderListController, fileTypes: fileTypes)
                     .overlay(alignment: .top) {
                         editor
                             .id(model.id)
@@ -31,8 +31,12 @@ struct ItemEditorBackgroundView<Editor: View>: View {
             } else {
                 editor
                     .id(model.id)
-                    .overlay(alignment: .bottom) { descriptionOverlay }
-                    .overlay(alignment: .top) { fileImporterOverlay }
+                    .overlay(alignment: .bottom) {
+                        DescriptionOverlayView(model: model, root: root, folderListController: folderListController)
+                    }
+                    .overlay(alignment: .top) {
+                        FileImporterOverlayView(root: root, model: model, fileTypes: fileTypes)
+                    }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
@@ -43,16 +47,31 @@ struct ItemEditorBackgroundView<Editor: View>: View {
     }
 
     private var editorTopInset: CGFloat { 96 }
+}
 
-    @ViewBuilder
-    private var overlaysBase: some View {
+private struct OverlaysBaseView: View {
+    let model: any ItemDataAccessable
+    let root: any ItemRootControllable
+    let folderListController: FolderListControllable
+    let fileTypes: [UTType]
+
+    var body: some View {
         Color.clear
-            .overlay(alignment: .bottom) { descriptionOverlay }
-            .overlay(alignment: .top) { fileImporterOverlay }
+            .overlay(alignment: .bottom) {
+                DescriptionOverlayView(model: model, root: root, folderListController: folderListController)
+            }
+            .overlay(alignment: .top) {
+                FileImporterOverlayView(root: root, model: model, fileTypes: fileTypes)
+            }
     }
+}
 
-    @ViewBuilder
-    private var descriptionOverlay: some View {
+private struct DescriptionOverlayView: View {
+    let model: any ItemDataAccessable
+    let root: any ItemRootControllable
+    let folderListController: FolderListControllable
+
+    var body: some View {
         if !model.description.isEmpty {
             GlassEffectContainerAll {
                 ItemDetailOverlayView(
@@ -73,9 +92,14 @@ struct ItemEditorBackgroundView<Editor: View>: View {
             .padding()
         }
     }
+}
 
-    @ViewBuilder
-    private var fileImporterOverlay: some View {
+private struct FileImporterOverlayView: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let fileTypes: [UTType]
+
+    var body: some View {
         if !model.specialCategory {
             ItemFileImporterView(
                 root: root,

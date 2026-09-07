@@ -11,10 +11,6 @@ public extension NetworkModules {
     }
 }
 
-public enum LogScreenCategory: String {
-    case listScreen
-}
-
 public extension Logger {
     static let subsystem = Bundle.main.bundleIdentifier!
 

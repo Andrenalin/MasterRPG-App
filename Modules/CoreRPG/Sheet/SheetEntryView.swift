@@ -39,7 +39,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
         Group {
             // Review placeholders have no tap-to-select behavior — same as before.
             if entryModel.isReviewPlaceholder {
-                rowContent
+                SheetEntryRowContentView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult, isEditTypePickerPresented: $isEditTypePickerPresented)
             } else {
                 // A `Button` wrapping the row content directly, not an invisible
                 // `.background()` button behind it — a background button never reliably
@@ -49,7 +49,7 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
                 // delete/take-over buttons) keep working independently — SwiftUI resolves
                 // a tap to whichever button is topmost/most specific at that point.
                 Button(action: performPrimaryAction) {
-                    rowContent
+                    SheetEntryRowContentView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult, isEditTypePickerPresented: $isEditTypePickerPresented)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -161,109 +161,6 @@ private func resolvedRowViewer(
 }
 
 private extension SheetEntryView {
-    func viewController(for source: ItemRowModel) -> ViewControllable? {
-        resolvedViewController(for: source, rootModel: rootModel)
-    }
-
-    func rowViewer(viewController: ViewControllable?, source: ItemRowModel, destination: ItemRowModel) -> AnyView? {
-        resolvedRowViewer(for: viewController, source: source, destination: destination, rootModel: rootModel)
-    }
-
-    @ViewBuilder var rowContent: some View {
-        VStack(alignment: .leading) {
-            if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
-                SheetEntryReviewPlaceholderView(
-                    entryModel: entryModel,
-                    reviewModel: reviewModel
-                )
-            } else {
-                beforeInline
-
-                SheetEntryMainRowView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult)
-
-                SheetEntryContentRowView(
-                    rootModel: rootModel,
-                    parentModel: parentModel,
-                    entryModel: entryModel,
-                    isEditor: isEditor,
-                    shareResult: shareResult,
-                    isEditTypePickerPresented: $isEditTypePickerPresented
-                )
-                .allowsHitTesting(!entryModel.isGeneratedAnswer)
-
-                inlineEditorRow
-
-                afterInline
-            }
-
-            if let reviewModel = entryModel.entryReviewModel, reviewModel.hasDifferences {
-                SheetEntryReviewAlternativesView(reviewModel: reviewModel)
-            }
-        }
-    }
-
-    @ViewBuilder var beforeInline: some View {
-        if entryModel.entryReviewModel != nil {
-            ForEach(entryModel.inlineEntries) { inlineSheet in
-                SheetEntryReviewInlineSnapshotView(sheetModel: inlineSheet)
-            }
-        } else {
-            ForEach(entryModel.inlineEntries) { inlineSheet in
-                switch inlineSheet.sheetType {
-                case .photo:
-                    // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
-                    rowViewer(viewController: viewController(for: inlineSheet.source), source: inlineSheet.source, destination: inlineSheet.destination)
-                        .frame(height: 96)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .clipShape(.rect(cornerRadius: 16))
-                default:
-                    EmptyView()
-                }
-            }
-        }
-    }
-
-    @ViewBuilder var afterInline: some View {
-        if entryModel.entryReviewModel == nil {
-            ForEach(entryModel.inlineEntries) { inlineSheet in
-                switch inlineSheet.sheetType {
-                case .dice:
-                    // Use inlineSheet.source for both viewController lookup and rowViewer
-                    rowViewer(
-                        viewController: viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source),
-                        source: inlineSheet.source,
-                        destination: inlineSheet.destination
-                    )
-                case .pdf:
-                    // Use inlineSheet.source for both viewController lookup and rowViewer
-                    rowViewer(viewController: viewController(for: inlineSheet.source), source: inlineSheet.source, destination: inlineSheet.destination)
-                default:
-                    EmptyView()
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder var inlineEditorRow: some View {
-        if !isEditor && entryModel.isEditing && entryModel.editType != .none,
-           let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
-            // Observe the row's own state so the quick controls are inserted in the
-            // same update as the edit-button tap on both iOS and macOS.
-            InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
-                rootModel.updateSheetModel(entryModel: entryModel, parentModel: parentModel, updatedText: text)
-                guard appGameStateModel.isGameRunning,
-                      appGameStateModel.gameModus == .player,
-                      let update = entryDataEditable.gameValueEntryUpdate(
-                          itemId: entryModel.source.itemId,
-                          entryId: entryModel.source.entryId
-                      ) else {
-                    return
-                }
-                networkActions?.game(update, .valueUpdate, nil)
-            }, entry: entryModel)
-        }
-    }
-    
     func rowColor(for level: Int) -> Color {
 #if os(macOS) || os(visionOS)
         .clear
@@ -325,6 +222,138 @@ private extension SheetEntryView {
 // Each gives SwiftUI its own diffing boundary, instead of the previous computed
 // `some View` properties on `SheetEntryView` itself that all re-evaluated whenever any part
 // of `SheetEntryView`'s body did.
+
+/// Wraps the row's content in its outer `VStack`, choosing between review-placeholder
+/// content and the ordinary before-inline/main-row/description/inline-editor/after-inline
+/// arrangement.
+private struct SheetEntryRowContentView: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+    let isEditor: Bool
+    let shareResult: ShareValueResult
+    @Binding var isEditTypePickerPresented: Bool
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
+                SheetEntryReviewPlaceholderView(
+                    entryModel: entryModel,
+                    reviewModel: reviewModel
+                )
+            } else {
+                SheetEntryBeforeInlineView(entryModel: entryModel, rootModel: rootModel)
+
+                SheetEntryMainRowView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor, shareResult: shareResult)
+
+                SheetEntryContentRowView(
+                    rootModel: rootModel,
+                    parentModel: parentModel,
+                    entryModel: entryModel,
+                    isEditor: isEditor,
+                    shareResult: shareResult,
+                    isEditTypePickerPresented: $isEditTypePickerPresented
+                )
+                .allowsHitTesting(!entryModel.isGeneratedAnswer)
+
+                SheetEntryInlineEditorRowView(rootModel: rootModel, parentModel: parentModel, entryModel: entryModel, isEditor: isEditor)
+
+                SheetEntryAfterInlineView(entryModel: entryModel, rootModel: rootModel)
+            }
+
+            if let reviewModel = entryModel.entryReviewModel, reviewModel.hasDifferences {
+                SheetEntryReviewAlternativesView(reviewModel: reviewModel)
+            }
+        }
+    }
+}
+
+/// Inline media shown before the main row: review snapshots when reviewing, otherwise the
+/// resolved photo row viewer for photo entries.
+private struct SheetEntryBeforeInlineView: View {
+    let entryModel: SheetModel
+    let rootModel: SheetRootModel
+
+    var body: some View {
+        if entryModel.entryReviewModel != nil {
+            ForEach(entryModel.inlineEntries) { inlineSheet in
+                SheetEntryReviewInlineSnapshotView(sheetModel: inlineSheet)
+            }
+        } else {
+            ForEach(entryModel.inlineEntries) { inlineSheet in
+                switch inlineSheet.sheetType {
+                case .photo:
+                    // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
+                    resolvedRowViewer(for: resolvedViewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel)
+                        .frame(height: 96)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .clipShape(.rect(cornerRadius: 16))
+                default:
+                    EmptyView()
+                }
+            }
+        }
+    }
+}
+
+/// Inline media shown after the main row: resolved dice and pdf row viewers.
+private struct SheetEntryAfterInlineView: View {
+    let entryModel: SheetModel
+    let rootModel: SheetRootModel
+
+    var body: some View {
+        if entryModel.entryReviewModel == nil {
+            ForEach(entryModel.inlineEntries) { inlineSheet in
+                switch inlineSheet.sheetType {
+                case .dice:
+                    // Use inlineSheet.source for both viewController lookup and rowViewer
+                    resolvedRowViewer(
+                        for: resolvedViewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source, rootModel: rootModel),
+                        source: inlineSheet.source,
+                        destination: inlineSheet.destination,
+                        rootModel: rootModel
+                    )
+                case .pdf:
+                    // Use inlineSheet.source for both viewController lookup and rowViewer
+                    resolvedRowViewer(for: resolvedViewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel)
+                default:
+                    EmptyView()
+                }
+            }
+        }
+    }
+}
+
+/// The inline value quick-editor shown in viewer mode while `entryModel.isEditing`.
+private struct SheetEntryInlineEditorRowView: View {
+    let rootModel: SheetRootModel
+    let parentModel: SheetModel
+    let entryModel: SheetModel
+    let isEditor: Bool
+
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
+
+    var body: some View {
+        if !isEditor && entryModel.isEditing && entryModel.editType != .none,
+           let entryDataEditable = rootModel.entryDataEditable(for: entryModel.source) {
+            // Observe the row's own state so the quick controls are inserted in the
+            // same update as the edit-button tap on both iOS and macOS.
+            InlineEditorView(entryDataEditable: entryDataEditable, updateHandler: { text in
+                rootModel.updateSheetModel(entryModel: entryModel, parentModel: parentModel, updatedText: text)
+                guard appGameStateModel.isGameRunning,
+                      appGameStateModel.gameModus == .player,
+                      let update = entryDataEditable.gameValueEntryUpdate(
+                          itemId: entryModel.source.itemId,
+                          entryId: entryModel.source.entryId
+                      ) else {
+                    return
+                }
+                networkActions?.game(update, .valueUpdate, nil)
+            }, entry: entryModel)
+        }
+    }
+}
 
 /// The row's primary content: name/preview viewer, edit/delete/take-over/AI-assist buttons.
 private struct SheetEntryMainRowView: View {

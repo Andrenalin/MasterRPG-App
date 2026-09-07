@@ -3,8 +3,6 @@
 import SwiftUI
 
 struct ItemEditorForegroundView<Editor: View>: View {
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-
     let editor: Editor
     let model: any ItemDataAccessable
     let root: any ItemRootControllable
@@ -12,16 +10,14 @@ struct ItemEditorForegroundView<Editor: View>: View {
     let shouldShowContent: Bool
     let isSubFolder: Bool
 
-    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
-    
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        
+
         Group {
             if model.specialCategory {
-                specialCategoryContent
+                SpecialCategoryContentView(model: model, root: root, folderListController: folderListController, isSubFolder: isSubFolder)
             } else {
-                formEditorContent
+                FormEditorContentView(model: model, root: root, folderListController: folderListController, editor: editor)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
@@ -30,9 +26,15 @@ struct ItemEditorForegroundView<Editor: View>: View {
         .accessibilityHidden(!shouldShowContent)
         .transition(.scale)
     }
-    
-    @ViewBuilder
-    private var specialCategoryContent: some View {
+}
+
+private struct SpecialCategoryContentView: View {
+    let model: any ItemDataAccessable
+    let root: any ItemRootControllable
+    let folderListController: FolderListControllable
+    let isSubFolder: Bool
+
+    var body: some View {
         ItemDetailOverlayView(
             model: model,
             cacheItemListModel: root.editControllable.cacheItemListModel,
@@ -42,7 +44,7 @@ struct ItemEditorForegroundView<Editor: View>: View {
             onlyDescription: true
         )
         .padding()
-        
+
         ListRootView(
             root: root,
             listController: folderListController,
@@ -50,8 +52,19 @@ struct ItemEditorForegroundView<Editor: View>: View {
             isSubFolder: isSubFolder
         )
     }
-    
-    private var formEditorContent: some View {
+}
+
+private struct FormEditorContentView<Editor: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let model: any ItemDataAccessable
+    let root: any ItemRootControllable
+    let folderListController: FolderListControllable
+    let editor: Editor
+
+    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
+
+    var body: some View {
         ScrollView {
             LazyVStack(spacing: 4) {
                 if !model.description.isEmpty {

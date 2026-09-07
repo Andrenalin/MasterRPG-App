@@ -1687,6 +1687,9 @@
         }
       }
     },
+    "Photo" : {
+
+    },
     "Pin Scale" : {
       "localizations" : {
         "de" : {
@@ -1702,6 +1705,9 @@
           }
         }
       }
+    },
+    "Pins" : {
+
     },
     "Player" : {
       "localizations" : {
@@ -2000,6 +2006,9 @@
           }
         }
       }
+    },
+    "Rotation" : {
+
     },
     "Round %lld" : {
       "extractionState" : "stale",
@@ -2495,6 +2504,9 @@
           }
         }
       }
+    },
+    "Walls" : {
+
     },
     "What should the map be called?" : {
       "comment" : "Request value dialog for the name of a new map.",

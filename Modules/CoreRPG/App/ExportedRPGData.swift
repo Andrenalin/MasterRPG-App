@@ -123,7 +123,7 @@ public extension UTType {
         }
 
         public init(configuration: ReadConfiguration) throws {
-            if let endcoded = configuration.file.regularFileContents, let dataLoaded = try? JSONDecoder().decode(ExportedRPGData.self, from: endcoded) {
+            if let endcoded = configuration.file.regularFileContents, let dataLoaded = try? JSONCoding.decoder.decode(ExportedRPGData.self, from: endcoded) {
                 data = dataLoaded
             } else {
                 data = ExportedRPGData()
@@ -131,9 +131,8 @@ public extension UTType {
         }
 
         public func fileWrapper(configuration _: WriteConfiguration) throws -> FileWrapper {
-            let encoder = JSONEncoder()
             do {
-                let encodedData = try encoder.encode(data)
+                let encodedData = try JSONCoding.encoder.encode(data)
                 return FileWrapper(regularFileWithContents: encodedData)
             } catch {
                 Logger.exportController.error("Failed to encode exported RPG data file wrapper: \(error.localizedDescription, privacy: .public)")

@@ -53,25 +53,3 @@ public final class CacheItemListModel: Sendable {
 
     public static let preview: CacheItemListModel = CacheItemListModel()
 }
-
-public final class CacheItemList {
-    public init() {}
-    
-    var cache: [UUID: CacheItemListModel] = [:]
-    
-    @MainActor
-    public func itemCache(for itemId: UUID) -> CacheItemListModel {
-        guard let model = cache[itemId] else {
-            let model = CacheItemListModel()
-            cache[itemId] = model
-            return model
-        }
-        return model
-    }
-    
-    @MainActor
-    func reset(search: String) {
-        cache.values.forEach { $0.reset(search: search) }
-    }
-
-}

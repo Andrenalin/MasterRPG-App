@@ -21,11 +21,11 @@ public struct TableSummaryAnalysisView: View {
         FoundationBasicView {
             VStack(spacing: 20) {
                 if model.isAnalyzing {
-                    analyzingView
+                    AnalyzingView(model: model)
                 } else {
                     OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
                         .padding(.horizontal, 4)
-                    analyzeButton
+                    AnalyzeButtonView(action: analyze)
                 }
 
                 if let error = model.lastError {
@@ -38,9 +38,45 @@ public struct TableSummaryAnalysisView: View {
 
     // MARK: - Subviews
 
-    private var analyzeButton: some View {
+    private func errorView(_ error: String) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
+            Text(verbatim: error)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button {
+                model.clearError()
+            } label: {
+                Text("Dismiss", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    // MARK: - Actions
+
+    private func analyze() {
+        guard !model.isAnalyzing else { return }
+        Task {
+            if let content = await model.analyze(entriesText: entriesText, outputLanguage: selectedLanguage.englishName) {
+                onAnalysisCompleted(content)
+            }
+        }
+    }
+}
+
+private struct AnalyzeButtonView: View {
+    let action: () -> Void
+
+    var body: some View {
         Button {
-            analyze()
+            action()
         } label: {
             Label {
                 Text("Analyze Text Entries", bundle: .module)
@@ -52,8 +88,12 @@ public struct TableSummaryAnalysisView: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
     }
+}
 
-    private var analyzingView: some View {
+private struct AnalyzingView: View {
+    let model: TableSummaryAnalysisModel
+
+    var body: some View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.5)
@@ -103,38 +143,6 @@ public struct TableSummaryAnalysisView: View {
                 .contentTransition(.symbolEffect(.automatic))
             Text(label)
                 .font(.subheadline)
-        }
-    }
-
-    private func errorView(_ error: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-            Text(verbatim: error)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button {
-                model.clearError()
-            } label: {
-                Text("Dismiss", bundle: .module)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(Color.red.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    // MARK: - Actions
-
-    private func analyze() {
-        guard !model.isAnalyzing else { return }
-        Task {
-            if let content = await model.analyze(entriesText: entriesText, outputLanguage: selectedLanguage.englishName) {
-                onAnalysisCompleted(content)
-            }
         }
     }
 }

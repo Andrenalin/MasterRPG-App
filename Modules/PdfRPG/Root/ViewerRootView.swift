@@ -62,13 +62,13 @@ struct ViewerRootView: View {
         .toolbar {
             if configuration.closeButton {
                 ToolbarItem(placement: .cancellationAction) {
-                    closeButton
+                    CloseButtonView(dismissAction: dismissAction)
                 }
             }
 
 #if !os(tvOS)
             ToolbarItem(placement: .automatic) {
-                extractionButton
+                ExtractionButtonView(model: model)
             }
 #endif
         }
@@ -117,7 +117,15 @@ private extension ViewerRootView {
         return model[entryId]
     }
     
-    var closeButton: some View {
+}
+
+private struct CloseButtonView: View {
+    let dismissAction: (() -> Void)?
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(PdfRootModel.self) private var root
+
+    var body: some View {
         Button {
             if let dismissAction {
                 dismissAction()
@@ -138,9 +146,16 @@ private extension ViewerRootView {
                 .moduleTint(root.config.module)
 #endif
     }
+}
 
 #if !os(tvOS)
-    var extractionButton: some View {
+private struct ExtractionButtonView: View {
+    let model: PdfModel
+
+    @Environment(\.navigator) private var navigator
+    @Environment(PdfRootModel.self) private var root
+
+    var body: some View {
         Button {
             navigator.navigate(to: PdfDetailRoute.pdfBlockExtraction(model.id), method: .managedSheet)
         } label: {
@@ -156,9 +171,8 @@ private extension ViewerRootView {
                 .moduleTint(root.config.module)
 #endif
     }
-#endif
-    
 }
+#endif
 
 #Preview(traits: .mockData) {
     

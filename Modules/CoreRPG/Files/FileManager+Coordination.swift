@@ -113,8 +113,15 @@ extension FileManager {
         coordinator.coordinate(readingItemAt: url, options: options, error: &coordinatorError) { url in
             result = Result { try execute(block, onSecurityScopedResource: url) }
         }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        return try result!.get()
+        if let coordinatorError { throw coordinatorError }
+        guard let result else {
+            // `NSFileCoordinator` reliably invokes the block (setting `result`) or sets
+            // `coordinatorError` on every real-world path — this is a last-resort guard
+            // against a future contract violation degrading to a caught error instead of
+            // a crash. See CODE_AUDIT §5.3.
+            throw CocoaError(.fileReadUnknown)
+        }
+        return try result.get()
     }
     
     private static func coordinate<T>(writingItemAt url: URL, options: NSFileCoordinator.WritingOptions = [], with block: (URL) throws -> T) throws -> T {
@@ -124,8 +131,15 @@ extension FileManager {
         coordinator.coordinate(writingItemAt: url, options: options, error: &coordinatorError) { url in
             result = Result { try execute(block, onSecurityScopedResource: url) }
         }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        return try result!.get()
+        if let coordinatorError { throw coordinatorError }
+        guard let result else {
+            // `NSFileCoordinator` reliably invokes the block (setting `result`) or sets
+            // `coordinatorError` on every real-world path — this is a last-resort guard
+            // against a future contract violation degrading to a caught error instead of
+            // a crash. See CODE_AUDIT §5.3.
+            throw CocoaError(.fileReadUnknown)
+        }
+        return try result.get()
     }
     
     private static func coordinate<T>(readingItemAt readURL: URL, readOptions: NSFileCoordinator.ReadingOptions = [], writingItemAt writeURL: URL, writeOptions: NSFileCoordinator.WritingOptions = [], with block: (_ readURL: URL, _ writeURL: URL) throws -> T) throws -> T {
@@ -137,8 +151,15 @@ extension FileManager {
                 try execute(onSecurityScopedResource: read, and: write, with: block)
             }
         }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        return try result!.get()
+        if let coordinatorError { throw coordinatorError }
+        guard let result else {
+            // `NSFileCoordinator` reliably invokes the block (setting `result`) or sets
+            // `coordinatorError` on every real-world path — this is a last-resort guard
+            // against a future contract violation degrading to a caught error instead of
+            // a crash. See CODE_AUDIT §5.3.
+            throw CocoaError(.fileReadUnknown)
+        }
+        return try result.get()
     }
 
     private static func coordinate<T>(writingItemAt sourceURL: URL, writingItemAt destinationURL: URL, with block: (_ sourceURL: URL, _ destinationURL: URL) throws -> T) throws -> T {
@@ -150,8 +171,15 @@ extension FileManager {
                 try execute(onSecurityScopedResource: read, and: write, with: block)
             }
         }
-        guard coordinatorError == nil else { throw coordinatorError! }
-        return try result!.get()
+        if let coordinatorError { throw coordinatorError }
+        guard let result else {
+            // `NSFileCoordinator` reliably invokes the block (setting `result`) or sets
+            // `coordinatorError` on every real-world path — this is a last-resort guard
+            // against a future contract violation degrading to a caught error instead of
+            // a crash. See CODE_AUDIT §5.3.
+            throw CocoaError(.fileReadUnknown)
+        }
+        return try result.get()
     }
 
     private static func execute<T>(onSecurityScopedResource firstURL: URL, and secondURL: URL, with block: (_ firstURL: URL, _ secondURL: URL) throws -> T) throws -> T {

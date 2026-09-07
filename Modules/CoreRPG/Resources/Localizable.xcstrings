@@ -6755,6 +6755,7 @@
       }
     },
     "The quick link editor allows you to select another table to scan the references. It will add links into the entries by searching for the same text and replace the occurences." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6769,6 +6770,9 @@
           }
         }
       }
+    },
+    "The quick link editor allows you to select another table to scan the references. It will add links into the entries by searching for the same text and replace the occurrences." : {
+
     },
     "Theme" : {
       "localizations" : {

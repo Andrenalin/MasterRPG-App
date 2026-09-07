@@ -53,9 +53,7 @@ public struct TableRootSheet: View {
     @Environment(AppWindowSizeModel.self) private var appSizeModel
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
-    @Environment(\.dismiss) var dismiss
-
-    @State private var sheetRootModel: SheetRootModel    
+    @State private var sheetRootModel: SheetRootModel
     @State private var generationSelection: WindowItemSelection?
     
     public var body: some View {
@@ -90,12 +88,18 @@ private extension TableRootSheet {
     var toolbarContent: some ToolbarContent {
         if configuration.closeButton {
             ToolbarItem(placement: .cancellationAction) {
-                closeButton
+                TableRootSheetCloseButton(dismissAction: dismissAction)
             }
         }
     }
+}
 
-    var closeButton: some View {
+private struct TableRootSheetCloseButton: View {
+    let dismissAction: (() -> Void)?
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
         Button {
             if let dismissAction {
                 dismissAction()

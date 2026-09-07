@@ -23,32 +23,32 @@ struct ListRootContextMenu: View {
     
     var body: some View {
         let parent = self.parent
-        editItemView
-        duplicateItemView
+        EditItemView(root: root, title: title)
+        DuplicateItemView(controller: controller, currentSelected: currentSelected, title: title)
         if !listDisplayModel.isListMode {
             Divider()
-            addItemView
-            moveItemView
+            AddItemView(controller: controller, currentSelected: currentSelected, listController: listController, title: title)
+            MoveItemView(controller: controller, currentSelected: currentSelected, listController: listController, title: title)
         }
         removeActions(parent: parent)
         Divider()
-        openFolderView
-        closeParentFolderView
+        OpenFolderView(listController: listController, currentSelected: currentSelected, title: title)
+        CloseParentFolderView(listController: listController, currentSelected: currentSelected)
         Divider()
-        exportItemView
-        groupEditView
+        ExportItemView(controller: controller, currentSelected: currentSelected, title: title)
+        GroupEditView(controller: controller, currentSelected: currentSelected, title: title)
         if canGenerate {
-            generateItemView
+            GenerateItemView(currentSelected: currentSelected, title: title)
         }
         #if !os(tvOS)
         if root.viewControllable.supportsBatchExtraction {
-            batchExtractionView
+            BatchExtractionView(controller: controller, currentSelected: currentSelected, title: title)
         }
         #endif
         Divider()
-        spaceActionView
+        SpaceActionView(root: root, currentSelected: currentSelected, title: title)
         Divider()
-        deleteItemView
+        DeleteItemView(root: root, controller: controller, currentSelected: currentSelected, parentItem: parentItem, title: title)
     }
 }
 
@@ -84,234 +84,6 @@ private extension ListRootContextMenu {
         return root.configurable.module == .table && !item.specialCategory
     }
 
-    var generateItemView: some View {
-        Button {
-            guard let currentSelected else { return }
-            itemGenerationAction(currentSelected)
-        } label: {
-            Label {
-                Text("Generate from \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "gear")
-            }
-        }
-    }
-    
-    var spaceActionView: some View {
-        Button {
-            ItemPrimaryAction.perform(
-                root: root,
-                scenesManager: scenesManager,
-                itemId: currentSelected
-            )
-        } label: {
-            let isCustom = root.viewControllable.hasCustomSpaceAction
-            Label {
-                Text(isCustom ? "Play/Roll \(title)" : "View \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: isCustom ? "play.fill" : "eye")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut(.return, modifiers: [])
-        #endif
-        .disabled(!ItemPrimaryAction.canPerform(root: root, itemId: currentSelected))
-    }
-
-    var editItemView: some View {
-        Button {
-            root.navigationModel.openHeaderEditor = true
-        } label: {
-            Label {
-                Text("Edit \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "pencil")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("e", modifiers: [.command, .shift])
-        #endif
-    }
-
-    var openFolderView: some View {
-        Button {
-            withAnimation {
-                _ = listController?.toggleFolder(itemId: currentSelected)
-            }
-        } label: {
-            Label {
-                Text(
-                    (listController?.isFolderOpen(itemId: currentSelected) ?? false)
-                        ? "Close \(title)"
-                        : "Open \(title)",
-                    bundle: .module
-                )
-            } icon: {
-                Image(
-                    systemName: (listController?.isFolderOpen(itemId: currentSelected) ?? false)
-                        ? "chevron.up"
-                        : "chevron.down"
-                )
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut(.space, modifiers: [])
-        #endif
-        .disabled(!(listController?.canToggleFolder(itemId: currentSelected) ?? false))
-    }
-
-    var closeParentFolderView: some View {
-        Button {
-            withAnimation { listController?.closeParentFolder(of: currentSelected ?? UUID()) }
-        } label: {
-            Label {
-                Text("Close parent folder", bundle: .module)
-            } icon: {
-                Image(systemName: "chevron.up")
-            }
-        }
-        .disabled(!(listController?.hasParentFolder(itemId: currentSelected) ?? false))
-    }
-
-    var duplicateItemView: some View {
-        Button {
-            Task {
-                await controller.duplicateItem(currentSelected: currentSelected)
-            }
-        } label: {
-            Label {
-                Text("Duplicate \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "doc.on.doc")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("D", modifiers: [.command, .shift])
-        #endif
-    }
-
-    var deleteItemView: some View {
-        Button(role: .destructive) {
-            withAnimation {
-                let removingItems = controller.deleteItem(currentSelected: currentSelected)
-                guard !removingItems.isEmpty else { return }
-                root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
-            }
-            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
-        } label: {
-            Label {
-                Text("Delete \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "trash")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut(.delete, modifiers: .command)
-        #endif
-        .disabled((parentItem?.category ?? .entry) == .collection)
-    }
-
-    var exportItemView: some View {
-        Button {
-            let route = controller.exportItem(currentSelected: currentSelected)
-            navigator.navigate(to: route, method: .sheet)
-        } label: {
-            Label {
-                Text("Export \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "square.and.arrow.up")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("e", modifiers: [.command, .control])
-        #endif
-    }
-
-    var groupEditView: some View {
-        Button {
-            let route = controller.groupEditor(currentSelected: currentSelected)
-            navigator.navigate(to: route, method: .sheet)
-        } label: {
-            Label {
-                Text("Group editor for \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "long.text.page.and.pencil")
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("g", modifiers: [.command, .control])
-        #endif
-    }
-
-    #if !os(tvOS)
-    var batchExtractionView: some View {
-        Button {
-            let ids = controller.selection(currentSelected: currentSelected)
-            navigator.navigate(to: InternalRoute.batchExtraction(ids: ids), method: .sheet)
-        } label: {
-            Label {
-                Text("Extract information for \(title)", bundle: .module)
-            } icon: {
-                Image(systemName: "sparkles")
-            }
-        }
-        .accessibilityHint(Text("Analyzes selected items with AI", bundle: .module))
-    }
-    #endif
-    
-    var moveItemView: some View {
-        Menu {
-            ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
-                Button {
-                    controller.moveItem(currentSelected: currentSelected, to: folder)
-                    Task {
-                        listController?.update(debounce: false)
-                    }
-                } label: {
-                    Label {
-                        Text(folder.name)
-                    } icon: {
-                        Image(systemName: "folder")
-                    }
-                }
-            }
-        } label: {
-            Label {
-                Text("Move \(title) into", bundle: .module)
-            } icon: {
-                Image(systemName: "folder")
-            }
-        }
-    }
-
-    var addItemView: some View {
-        Menu {
-            ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
-                Button {
-                    controller.addItem(currentSelected: currentSelected, to: folder)
-                    Task {
-                        listController?.update(debounce: false)
-                    }
-                } label: {
-                    Label {
-                        Text(folder.name)
-                    } icon: {
-                        Image(systemName: controller.collectionIcon)
-                    }
-                }
-            }
-        } label: {
-            Label {
-                Text("Add \(title) into", bundle: .module)
-            } icon: {
-                Image(systemName: controller.collectionIcon)
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("a", modifiers: [.command, .shift])
-        #endif
-    }
-    
     func removeEntryTitle(oneUp: Bool) -> String {
         guard let parent else { return String(localized: "Unknown", bundle: .module).localizedString }
         if parent.isFolder {
@@ -340,6 +112,319 @@ private extension ListRootContextMenu {
         }
     }
 
+}
+
+private struct GenerateItemView: View {
+    @Environment(\.itemGenerationAction) private var itemGenerationAction
+
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            guard let currentSelected else { return }
+            itemGenerationAction(currentSelected)
+        } label: {
+            Label {
+                Text("Generate from \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "gear")
+            }
+        }
+    }
+}
+
+private struct SpaceActionView: View {
+    @Environment(ScenesManager.self) private var scenesManager
+
+    let root: any ItemRootControllable
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            ItemPrimaryAction.perform(
+                root: root,
+                scenesManager: scenesManager,
+                itemId: currentSelected
+            )
+        } label: {
+            let isCustom = root.viewControllable.hasCustomSpaceAction
+            Label {
+                Text(isCustom ? "Play/Roll \(title)" : "View \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: isCustom ? "play.fill" : "eye")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut(.return, modifiers: [])
+        #endif
+        .disabled(!ItemPrimaryAction.canPerform(root: root, itemId: currentSelected))
+    }
+}
+
+private struct EditItemView: View {
+    let root: any ItemRootControllable
+    let title: String
+
+    var body: some View {
+        Button {
+            root.navigationModel.openHeaderEditor = true
+        } label: {
+            Label {
+                Text("Edit \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "pencil")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut("e", modifiers: [.command, .shift])
+        #endif
+    }
+}
+
+private struct OpenFolderView: View {
+    let listController: (any FolderListControllable)?
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            withAnimation {
+                _ = listController?.toggleFolder(itemId: currentSelected)
+            }
+        } label: {
+            Label {
+                Text(
+                    (listController?.isFolderOpen(itemId: currentSelected) ?? false)
+                        ? "Close \(title)"
+                        : "Open \(title)",
+                    bundle: .module
+                )
+            } icon: {
+                Image(
+                    systemName: (listController?.isFolderOpen(itemId: currentSelected) ?? false)
+                        ? "chevron.up"
+                        : "chevron.down"
+                )
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut(.space, modifiers: [])
+        #endif
+        .disabled(!(listController?.canToggleFolder(itemId: currentSelected) ?? false))
+    }
+}
+
+private struct CloseParentFolderView: View {
+    let listController: (any FolderListControllable)?
+    let currentSelected: UUID?
+
+    var body: some View {
+        Button {
+            withAnimation { listController?.closeParentFolder(of: currentSelected ?? UUID()) }
+        } label: {
+            Label {
+                Text("Close parent folder", bundle: .module)
+            } icon: {
+                Image(systemName: "chevron.up")
+            }
+        }
+        .disabled(!(listController?.hasParentFolder(itemId: currentSelected) ?? false))
+    }
+}
+
+private struct DuplicateItemView: View {
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            Task {
+                await controller.duplicateItem(currentSelected: currentSelected)
+            }
+        } label: {
+            Label {
+                Text("Duplicate \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "doc.on.doc")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut("D", modifiers: [.command, .shift])
+        #endif
+    }
+}
+
+private struct DeleteItemView: View {
+    @Environment(\.navigator) private var navigator
+
+    let root: any ItemRootControllable
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let parentItem: (any ItemDataAccessable)?
+    let title: String
+
+    var body: some View {
+        Button(role: .destructive) {
+            withAnimation {
+                let removingItems = controller.deleteItem(currentSelected: currentSelected)
+                guard !removingItems.isEmpty else { return }
+                root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
+            }
+            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
+        } label: {
+            Label {
+                Text("Delete \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "trash")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut(.delete, modifiers: .command)
+        #endif
+        .disabled((parentItem?.category ?? .entry) == .collection)
+    }
+}
+
+private struct ExportItemView: View {
+    @Environment(\.navigator) private var navigator
+
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            let route = controller.exportItem(currentSelected: currentSelected)
+            navigator.navigate(to: route, method: .sheet)
+        } label: {
+            Label {
+                Text("Export \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.arrow.up")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut("e", modifiers: [.command, .control])
+        #endif
+    }
+}
+
+private struct GroupEditView: View {
+    @Environment(\.navigator) private var navigator
+
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            let route = controller.groupEditor(currentSelected: currentSelected)
+            navigator.navigate(to: route, method: .sheet)
+        } label: {
+            Label {
+                Text("Group editor for \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "long.text.page.and.pencil")
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut("g", modifiers: [.command, .control])
+        #endif
+    }
+}
+
+#if !os(tvOS)
+private struct BatchExtractionView: View {
+    @Environment(\.navigator) private var navigator
+
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let title: String
+
+    var body: some View {
+        Button {
+            let ids = controller.selection(currentSelected: currentSelected)
+            navigator.navigate(to: InternalRoute.batchExtraction(ids: ids), method: .sheet)
+        } label: {
+            Label {
+                Text("Extract information for \(title)", bundle: .module)
+            } icon: {
+                Image(systemName: "sparkles")
+            }
+        }
+        .accessibilityHint(Text("Analyzes selected items with AI", bundle: .module))
+    }
+}
+#endif
+
+private struct MoveItemView: View {
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let listController: (any FolderListControllable)?
+    let title: String
+
+    var body: some View {
+        Menu {
+            ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
+                Button {
+                    controller.moveItem(currentSelected: currentSelected, to: folder)
+                    Task {
+                        listController?.update(debounce: false)
+                    }
+                } label: {
+                    Label {
+                        Text(folder.name)
+                    } icon: {
+                        Image(systemName: "folder")
+                    }
+                }
+            }
+        } label: {
+            Label {
+                Text("Move \(title) into", bundle: .module)
+            } icon: {
+                Image(systemName: "folder")
+            }
+        }
+    }
+}
+
+private struct AddItemView: View {
+    let controller: ContextMenuMultiController
+    let currentSelected: UUID?
+    let listController: (any FolderListControllable)?
+    let title: String
+
+    var body: some View {
+        Menu {
+            ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
+                Button {
+                    controller.addItem(currentSelected: currentSelected, to: folder)
+                    Task {
+                        listController?.update(debounce: false)
+                    }
+                } label: {
+                    Label {
+                        Text(folder.name)
+                    } icon: {
+                        Image(systemName: controller.collectionIcon)
+                    }
+                }
+            }
+        } label: {
+            Label {
+                Text("Add \(title) into", bundle: .module)
+            } icon: {
+                Image(systemName: controller.collectionIcon)
+            }
+        }
+        #if !os(tvOS)
+        .keyboardShortcut("a", modifiers: [.command, .shift])
+        #endif
+    }
 }
 
 #Preview {

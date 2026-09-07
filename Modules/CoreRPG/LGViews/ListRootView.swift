@@ -32,7 +32,15 @@ struct ListRootView: View {
         UnavailableGlassOverlay(isUnavailable: shouldShowNoResults
                                 && !listController.searchModel.searchText.starts(with: "@")) {
             
-            listView
+            ListView(
+                root: root,
+                listController: listController,
+                parentModel: parentModel,
+                listModel: listModel,
+                menuController: menuController,
+                focusedRowId: $focusedRowId,
+                scrollPosition: $scrollPosition
+            )
                 .animation(accessibilityReduceMotion ? nil : .smooth, value: listModel.list.count)
                 .frame(minWidth: 200, idealWidth: 350)
                 .scrollIndicatorsFlash(onAppear: true)
@@ -166,12 +174,63 @@ private extension ListRootView {
     func updateFile(url: URL) {
         listController.add(type: .item, url: url, root: root)
     }
+
+    /// Replaces the row-to-row up/down arrow navigation `List` gave for free. Ignored while
+    /// `isSelectionMode` is active so keyboard navigation never collapses a multi-selection.
+    func moveSelection(by offset: Int) -> KeyPress.Result {
+        guard !listController.listDisplayModel.isSelectionMode else { return .ignored }
+        let ids = listModel.list.map(\.id)
+        guard !ids.isEmpty else { return .ignored }
+        let nextIndex: Int
+        if let selected = listModel.selected, let currentIndex = ids.firstIndex(of: selected) {
+            nextIndex = min(max(currentIndex + offset, 0), ids.count - 1)
+        } else {
+            nextIndex = offset > 0 ? 0 : ids.count - 1
+        }
+        let target = ids[nextIndex]
+        listModel.selected = target
+        listModel.scrollId = target
+        listModel.recordVisibleScrollPosition(target)
+        focusedRowId = target
+        withAnimation(accessibilityReduceMotion ? nil : .default) {
+            scrollPosition = ScrollPosition(id: target)
+        }
+        return .handled
+    }
     
-    @ViewBuilder
-    var listView: some View {
+    /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
+    func deleteItems(offsets: IndexSet) {
+        if let parentModel {
+            root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
+            listModel.deleteItems(offsets: offsets)
+        } else {
+            let removingItems = listController.delete(offsets: offsets)
+            guard !removingItems.isEmpty else { return }
+            root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
+            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
+        }
+    }
+}
+
+// MARK: - List content
+
+private struct ListView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(AppFocusModel.self) private var appFocusModel
+
+    let root: any ItemRootControllable
+    let listController: any FolderListControllable
+    let parentModel: (any ItemDataAccessable)?
+    let listModel: FolderListModel
+    let menuController: ContextMenuMultiController
+    var focusedRowId: FocusState<UUID?>.Binding
+
+    @Binding var scrollPosition: ScrollPosition
+
+    var body: some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: []) {
-                ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController, focusedRowId: $focusedRowId)
+                ItemRowsView(root: root, listController: listController, parentModel: parentModel, listModel: listModel, menuController: menuController, focusedRowId: focusedRowId)
             }
             .frame(maxWidth: .infinity)
             .scrollTargetLayout()
@@ -254,7 +313,7 @@ private extension ListRootView {
         }
     }
 
-    func focusPreferredListRow() {
+    private func focusPreferredListRow() {
         let target = listModel.selected.flatMap { selected in
             listModel.list.first(where: { $0.id == selected })?.id
         } ?? listModel.list.first?.id
@@ -268,43 +327,7 @@ private extension ListRootView {
         // assigning @FocusState synchronously in that case is silently dropped. One runloop
         // tick gives the scroll and layout time to settle first.
         Task { @MainActor in
-            focusedRowId = target
-        }
-    }
-
-    /// Replaces the row-to-row up/down arrow navigation `List` gave for free. Ignored while
-    /// `isSelectionMode` is active so keyboard navigation never collapses a multi-selection.
-    func moveSelection(by offset: Int) -> KeyPress.Result {
-        guard !listController.listDisplayModel.isSelectionMode else { return .ignored }
-        let ids = listModel.list.map(\.id)
-        guard !ids.isEmpty else { return .ignored }
-        let nextIndex: Int
-        if let selected = listModel.selected, let currentIndex = ids.firstIndex(of: selected) {
-            nextIndex = min(max(currentIndex + offset, 0), ids.count - 1)
-        } else {
-            nextIndex = offset > 0 ? 0 : ids.count - 1
-        }
-        let target = ids[nextIndex]
-        listModel.selected = target
-        listModel.scrollId = target
-        listModel.recordVisibleScrollPosition(target)
-        focusedRowId = target
-        withAnimation(accessibilityReduceMotion ? nil : .default) {
-            scrollPosition = ScrollPosition(id: target)
-        }
-        return .handled
-    }
-    
-    /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
-    func deleteItems(offsets: IndexSet) {
-        if let parentModel {
-            root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
-            listModel.deleteItems(offsets: offsets)
-        } else {
-            let removingItems = listController.delete(offsets: offsets)
-            guard !removingItems.isEmpty else { return }
-            root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
-            navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
+            focusedRowId.wrappedValue = target
         }
     }
 }

@@ -18,7 +18,6 @@ struct DetailListView: View {
     let folderListController: any FolderListControllable
 
     @State private var animate: Bool = false
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -44,12 +43,18 @@ struct DetailListView: View {
     var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .secondaryActionAll) {
             if !model.specialCategory {
-                animateButton
+                WeatherDetailAnimateButtonView(animate: $animate)
             }
         }
     }
-    
-    var animateButton: some View {
+}
+
+private struct WeatherDetailAnimateButtonView: View {
+    @Binding var animate: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
         ControlGroup {
             Button {
                 withAnimation(accessibilityReduceMotion ? nil : .default) {

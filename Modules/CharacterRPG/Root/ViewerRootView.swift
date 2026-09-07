@@ -26,26 +26,34 @@ struct ViewerRootView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 #if os(tvOS)
-        readerSheet
+        ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
 #else
         if configuration.isGame {
-            readerSheet
+            ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
                 .characterAddEntryOverlay(root: root, itemId: model.id)
         } else {
-            readerSheet
+            ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
         }
 #endif
     }
+}
 
-    @ViewBuilder
-    private var readerSheet: some View {
-        // The live game view reuses its module's persistent counterpart to the
-        // standalone editor's `sheetRootModel` (see `SheetRootModel.syncCounterpart()`)
-        // instead of building a throwaway `SheetRootModel` per character —
-        // that's what lets an editor edit reach this view (and vice versa)
-        // through a direct link rather than a registry, so it's deliberately
-        // not `.id(model.id)`-scoped: tearing the view identity down on every
-        // character switch would discard that reuse.
+@MainActor
+private struct ReaderSheetView: View {
+    let model: ValueModel
+    let configuration: ViewerConfiguration
+    let dismissAction: (() -> Void)?
+
+    @Environment(CharacterRootModel.self) private var root
+
+    // The live game view reuses its module's persistent counterpart to the
+    // standalone editor's `sheetRootModel` (see `SheetRootModel.syncCounterpart()`)
+    // instead of building a throwaway `SheetRootModel` per character —
+    // that's what lets an editor edit reach this view (and vice versa)
+    // through a direct link rather than a registry, so it's deliberately
+    // not `.id(model.id)`-scoped: tearing the view identity down on every
+    // character switch would discard that reuse.
+    var body: some View {
         if configuration.isGame {
             TableRootSheet(
                 root: root.rootController,

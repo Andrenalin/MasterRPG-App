@@ -17,17 +17,22 @@ struct SplitTabContentView: View {
     var body: some View {
         if tab.hasDetailView {
             NavigationSplitView(columnVisibility: $column, preferredCompactColumn: $preferredCompactColumn) {
-                contentView
+                SplitTabPresentedContentView(tab: tab, appModel: appModel)
             } detail: {
                 SplitDetailView(module: tab.module)
                     .environment(appModel.itemRootController(for: tab.module))
             }
         } else {
-            contentView
+            SplitTabPresentedContentView(tab: tab, appModel: appModel)
         }
     }
+}
 
-    private var contentView: some View {
+private struct SplitTabPresentedContentView: View {
+    let tab: RootRoute
+    let appModel: AppModel
+
+    var body: some View {
         ManagedPresentationView {
             tab
         }

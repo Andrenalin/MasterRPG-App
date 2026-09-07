@@ -22,7 +22,13 @@ public struct ValuePickerEditor<Value: Hashable, Content: View>: View where Valu
     
     public var body: some View {
         LabeledContent {
-            pickerView
+            ValuePickerContentView(
+                allCategories: allCategories,
+                title: title,
+                bundle: bundle,
+                contentView: contentView,
+                selection: $selection
+            )
         } label: {
             Text(title, bundle: bundle)
         }
@@ -34,8 +40,17 @@ public struct ValuePickerEditor<Value: Hashable, Content: View>: View where Valu
             model.save()
         }
     }
+}
 
-    private var pickerView: some View {
+private struct ValuePickerContentView<Value: Hashable, Content: View>: View where Value: Identifiable {
+    let allCategories: [Value]
+    let title: LocalizedStringKey
+    let bundle: Bundle?
+    let contentView: (Value) -> Content
+
+    @Binding var selection: Value
+
+    var body: some View {
         Picker(selection: $selection) {
             ForEach(allCategories) { value in
                 contentView(value)

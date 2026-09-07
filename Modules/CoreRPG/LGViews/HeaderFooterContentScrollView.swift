@@ -54,15 +54,20 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                headerView
+                HeaderView(model: model, header: header, background: background)
             }
             .safeAreaInset(edge: .bottom, spacing: -model.footerOffset) {
-                footerView
+                FooterView(model: model, footer: footer, background: background)
             }
     }
-    
-    @ViewBuilder
-    private var headerView: some View {
+}
+
+private struct HeaderView<Header: View, Background: View>: View {
+    let model: HeaderFooterScrollModel
+    let header: Header
+    let background: Background
+
+    var body: some View {
         VStack(spacing: 0) {
             header
                 .onGeometryChange(for: CGFloat.self) {
@@ -79,9 +84,14 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
                 .offset(y: -model.headerOffset)
         }
     }
-    
-    @ViewBuilder
-    private var footerView: some View {
+}
+
+private struct FooterView<Footer: View, Background: View>: View {
+    let model: HeaderFooterScrollModel
+    let footer: Footer
+    let background: Background
+
+    var body: some View {
         VStack(spacing: 0) {
             footer
                 .onGeometryChange(for: CGFloat.self) {

@@ -9,9 +9,8 @@ struct ViewerRootView: View {
     var dismissAction: (() -> Void)? = nil
 
     @Environment(SpaceRootModel.self) private var root
-    
+
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack {
@@ -44,12 +43,19 @@ private extension ViewerRootView {
     var toolbarContent: some ToolbarContent {
         if configuration.closeButton {
             ToolbarItem(placement: .cancellationAction) {
-                closeButton
+                SpaceCloseButtonView(dismissAction: dismissAction)
             }
         }
     }
+}
 
-    var closeButton: some View {
+private struct SpaceCloseButtonView: View {
+    var dismissAction: (() -> Void)?
+
+    @Environment(SpaceRootModel.self) private var root
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
         Button {
             if let dismissAction {
                 dismissAction()

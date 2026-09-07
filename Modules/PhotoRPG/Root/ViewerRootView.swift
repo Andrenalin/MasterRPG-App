@@ -9,11 +9,6 @@ struct ViewerRootView: View {
     var dismissAction: (() -> Void)? = nil
     var trailingViewportReservation: CGFloat = 0
 
-    @Environment(PhotoRootModel.self) private var root
-    @Environment(\.appTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
     @State private var toolBarModel: GameToolBarModel = GameToolBarModel()
     @State private var cacheItemListModel = CacheItemListModel()
     @State private var containerSize: CGSize = .zero
@@ -21,19 +16,34 @@ struct ViewerRootView: View {
     var body: some View {
         Group {
             if configuration.addToolbar && !configuration.isGame {
-                contentView
+                PhotoContentView(
+                    model: model,
+                    trailingViewportReservation: trailingViewportReservation,
+                    toolBarModel: toolBarModel,
+                    containerSize: $containerSize
+                )
                     .toolbar { toolbarContent }
                     .navigationTitle(model.name)
                     .navigationBarTitleDisplayModeAll(.inline)
             } else if configuration.isGame {
-                contentView
+                PhotoContentView(
+                    model: model,
+                    trailingViewportReservation: trailingViewportReservation,
+                    toolBarModel: toolBarModel,
+                    containerSize: $containerSize
+                )
                     .overlay(alignment: .bottomLeading) {
-                        rotateButton
+                        PhotoRotateButtonView(model: model, toolBarModel: toolBarModel)
                             .selectedRoundButton(title: String(localized: "Rotate image", bundle: .module), module: .photo, isSelected: false)
                             .padding()
                     }
             } else {
-                contentView
+                PhotoContentView(
+                    model: model,
+                    trailingViewportReservation: trailingViewportReservation,
+                    toolBarModel: toolBarModel,
+                    containerSize: $containerSize
+                )
             }
         }
         .ignoresSafeArea(.container, edges: ignoredSafeAreaEdges)
@@ -60,8 +70,13 @@ struct ViewerRootView: View {
 
 // MARK: - Content
 
-private extension ViewerRootView {
-    var contentView: some View {
+private struct PhotoContentView: View {
+    let model: PhotoModel
+    let trailingViewportReservation: CGFloat
+    let toolBarModel: GameToolBarModel
+    @Binding var containerSize: CGSize
+
+    var body: some View {
         let viewportSize = PhotoViewportReservation.effectiveContainerSize(
             measuredSize: containerSize,
             trailingReservation: trailingViewportReservation
@@ -117,20 +132,26 @@ private extension ViewerRootView {
     var toolbarContent: some ToolbarContent {
         if configuration.closeButton {
             ToolbarItem(placement: .cancellationAction) {
-                closeButton
+                PhotoCloseButtonView(dismissAction: dismissAction)
             }
         }
-        
+
         ToolbarItem(placement: .primaryAction) {
-            rotateButton
+            PhotoRotateButtonView(model: model, toolBarModel: toolBarModel)
         }
     }
 }
 
 // MARK: - Buttons
 
-private extension ViewerRootView {
-    var closeButton: some View {
+private struct PhotoCloseButtonView: View {
+    var dismissAction: (() -> Void)?
+
+    @Environment(PhotoRootModel.self) private var root
+    @Environment(\.appTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
         let tintColor = theme.tint(for: root.config.module)
         return Button {
             if let dismissAction {
@@ -152,8 +173,17 @@ private extension ViewerRootView {
         .tint(tintColor)
 #endif
     }
-    
-    var rotateButton: some View {
+}
+
+private struct PhotoRotateButtonView: View {
+    let model: PhotoModel
+    let toolBarModel: GameToolBarModel
+
+    @Environment(PhotoRootModel.self) private var root
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
         let tintColor = theme.tint(for: root.config.module)
         return Button {
             withAnimation(reduceMotion ? nil : .default) {

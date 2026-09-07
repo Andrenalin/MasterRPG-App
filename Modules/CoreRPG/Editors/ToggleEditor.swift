@@ -26,7 +26,7 @@ public struct ToggleEditor: View {
     let icon: String
 
     public var body: some View {
-        toggleEditorView
+        ToggleEditorContentView(model: model, title: title, bundle: bundle, icon: icon)
             .disabled(!canToggle)
             .onChange(of: model.value) {
                 model.save()
@@ -34,8 +34,13 @@ public struct ToggleEditor: View {
     }
 }
 
-private extension ToggleEditor {
-    @ViewBuilder var toggleEditorView: some View {
+private struct ToggleEditorContentView: View {
+    let model: EditIdentifierModel<Bool>
+    let title: LocalizedStringKey
+    let bundle: Bundle?
+    let icon: String
+
+    var body: some View {
         @Bindable var model = model
         LabeledContent {
             Toggle(isOn: $model.value) {

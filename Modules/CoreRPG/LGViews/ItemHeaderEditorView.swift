@@ -29,9 +29,7 @@ public struct ItemHeaderEditorView: View {
     let module: NetworkModules
     let dismissAction: () -> Void
 
-    @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
 
     enum FocusField {
         case name
@@ -50,7 +48,16 @@ public struct ItemHeaderEditorView: View {
 
     public var body: some View {
         GlassEffectContainerAll {
-            editorCard
+            ItemHeaderEditorCard(
+                module: module,
+                dismissAction: dismissAction,
+                saveAction: saveChanges,
+                isSaveEnabled: isNameValid,
+                attributedName: $attributedName,
+                attributedInformation: $attributedInformation,
+                tags: $tags,
+                currentFocus: $currentFocus
+            )
         }
         .frame(maxWidth: 800)
         .padding()
@@ -79,27 +86,6 @@ public struct ItemHeaderEditorView: View {
             return .handled
         }
 #endif
-    }
-
-    private var editorCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ItemHeaderEditorHeaderRow(dismissAction: dismissAction, saveAction: saveChanges, isSaveEnabled: isNameValid)
-            ItemHeaderEditorNameSection(attributedName: $attributedName, currentFocus: $currentFocus)
-            ItemHeaderEditorDescriptionSection(attributedInformation: $attributedInformation, currentFocus: $currentFocus)
-            ItemHeaderEditorTagsSection(tags: $tags)
-        }
-        .padding(20)
-        .background {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(theme.panelColor.opacity(accessibilityReduceTransparency ? 1 : 0.58))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(theme.tint(for: module).opacity(0.45), lineWidth: 1)
-        }
-        .itemHeaderEditorGlass(tint: theme.background(for: module))
-        .shadow(color: .black.opacity(0.24), radius: 24, y: 12)
-        .containerShape(.rect(cornerRadius: 28, style: .continuous))
     }
 
     private func saveChanges() {
@@ -142,6 +128,42 @@ private extension View {
 //
 // Each gives SwiftUI its own diffing boundary, instead of the previous computed `some View`
 // properties on `ItemHeaderEditorView` itself.
+
+private struct ItemHeaderEditorCard: View {
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceTransparency) private var accessibilityReduceTransparency
+
+    let module: NetworkModules
+    let dismissAction: () -> Void
+    let saveAction: () -> Void
+    let isSaveEnabled: Bool
+
+    @Binding var attributedName: AttributedString
+    @Binding var attributedInformation: AttributedString
+    @Binding var tags: [String]
+    var currentFocus: FocusState<ItemHeaderEditorView.FocusField?>.Binding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ItemHeaderEditorHeaderRow(dismissAction: dismissAction, saveAction: saveAction, isSaveEnabled: isSaveEnabled)
+            ItemHeaderEditorNameSection(attributedName: $attributedName, currentFocus: currentFocus)
+            ItemHeaderEditorDescriptionSection(attributedInformation: $attributedInformation, currentFocus: currentFocus)
+            ItemHeaderEditorTagsSection(tags: $tags)
+        }
+        .padding(20)
+        .background {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(theme.panelColor.opacity(accessibilityReduceTransparency ? 1 : 0.58))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(theme.tint(for: module).opacity(0.45), lineWidth: 1)
+        }
+        .itemHeaderEditorGlass(tint: theme.background(for: module))
+        .shadow(color: .black.opacity(0.24), radius: 24, y: 12)
+        .containerShape(.rect(cornerRadius: 28, style: .continuous))
+    }
+}
 
 private struct ItemHeaderEditorHeaderRow: View {
     let dismissAction: () -> Void

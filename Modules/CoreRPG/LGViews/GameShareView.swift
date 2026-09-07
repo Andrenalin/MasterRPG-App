@@ -85,9 +85,8 @@ private extension GameShareView {
         guard appGameStateModel.gameModus == .master else { return [] }
         let reported = Set(root.gameControllable.gameModel.playerReport(for: itemId))
         return (sharingControlActions.control?() ?? [])
-            .filter(\.show)
+            .visibleSortedByName
             .map { PlayerReportStatus(id: $0.id, name: $0.name, reported: reported.contains($0.id)) }
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
     }
 
     func playerReportRow(for statuses: [PlayerReportStatus]) -> some View {

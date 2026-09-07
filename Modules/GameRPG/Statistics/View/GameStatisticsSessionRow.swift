@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-struct GameStatisticsSessionRow: View {
+struct GameStatisticsSessionRow: View, Equatable {
     let session: GameStatisticSessionSnapshot
     let showsDisclosureIndicator: Bool
 

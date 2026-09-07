@@ -28,8 +28,8 @@ public struct EditorLinkView: View {
                 TipView(MasterRPGTips.linkContent)
             }
 #endif
-            pickerAll
-            
+            PickerAllView(editorLinkModel: editorLinkModel)
+
             ManagedNavigationStack(name: "EditorLink") {
                 linkLinkView(module: editorLinkModel.selection)
             }
@@ -96,17 +96,21 @@ private extension EditorLinkView {
             itemRootController.viewControllable.linkListView(rootController: itemRootController, type: selectionMode ? .selectionInline : .inspector, itemSelectionModel: editorLinkModel.selectionModel(for: module))
         }
     }
-    
-    @ViewBuilder var pickerAll: some View {
+}
+
+private struct PickerAllView: View {
+    let editorLinkModel: EditorLinkModel
+
+    var body: some View {
         @Bindable var editorLinkModel = editorLinkModel
-        
+
         pickerRow(selectionRow: $editorLinkModel.selectionFirstRow, modules: editorLinkModel.firstRow)
         if !editorLinkModel.secondRow.isEmpty {
             pickerRow(selectionRow: $editorLinkModel.selectionSecondRow, modules: editorLinkModel.secondRow)
         }
     }
-    
-    func pickerRow(selectionRow: Binding<NetworkModules?>, modules: [NetworkModules]) -> some View {
+
+    private func pickerRow(selectionRow: Binding<NetworkModules?>, modules: [NetworkModules]) -> some View {
         Picker(selection: selectionRow) {
             ForEach(modules, id: \.self) { module in
                 buttonPicker(module: module)
@@ -118,8 +122,8 @@ private extension EditorLinkView {
         .pickerStyle(.segmented)
         .padding(.horizontal)
     }
-    
-    func buttonPicker(module: NetworkModules) -> some View {
+
+    private func buttonPicker(module: NetworkModules) -> some View {
         Image(systemName: module.icon)
             .tag(module)
     }

@@ -369,9 +369,9 @@ private struct CanonicalValueEntry: Codable, Sendable {
 extension ValueModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Photo") { ReviewPropertyValue(photoId: ($0 as? ValueModel)?.photoId) },
-            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(diceId: ($0 as? ValueModel)?.diceId) },
-            ReviewCustomProperty(displayName: "Photos") { ReviewPropertyValue(($0 as? ValueModel)?.photos.count ?? 0) }
+            ReviewCustomProperty(displayName: String(localized: "Photo", bundle: .module)) { ReviewPropertyValue(photoId: ($0 as? ValueModel)?.photoId) },
+            ReviewCustomProperty(displayName: String(localized: "Dice", bundle: .module)) { ReviewPropertyValue(diceId: ($0 as? ValueModel)?.diceId) },
+            ReviewCustomProperty(displayName: String(localized: "Photos", bundle: .module)) { ReviewPropertyValue(($0 as? ValueModel)?.photos.count ?? 0) }
         ]
     }
 }

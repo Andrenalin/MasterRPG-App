@@ -30,18 +30,26 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                 searchModel: folderListController.searchModel
             )
         } content: {
-            contentBody
-                .overlay {
-                    subFolderDetail
-                }
+            ContentBodyView(
+                root: root,
+                model: model,
+                configuration: configuration,
+                editor: editor,
+                folderListController: folderListController,
+                fileTypes: fileTypes,
+                shouldShowContent: shouldShowContent
+            )
+            .overlay {
+                SubFolderDetailView(folderListController: folderListController)
+            }
         }
         .allowsHitTesting(!isEntryEditorPresented && editingItem == nil)
         .accessibilityHidden(isEntryEditorPresented || editingItem != nil)
         .overlay(alignment: .center) {
-            entryEditor
+            EntryEditorContentView<LinkTypes>(root: root)
         }
         .overlay(alignment: .center) {
-            itemHeaderEditor
+            ItemHeaderEditorContentView(root: root, editingItem: $editingItem)
         }
         .animation(accessibilityReduceMotion ? nil : .easeInOut, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -63,7 +71,37 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
         }
     }
     
-    @ViewBuilder private var subFolderDetail: some View {
+    private var fileTypes: [UTType] {
+        root.editControllable.fileUrlDataController?.fileTypes ?? []
+    }
+    
+    private var shouldShowContent: Bool {
+        model.url != nil || fileTypes.isEmpty || model.specialCategory
+    }
+
+    private var isEntryEditorPresented: Bool {
+        guard let editController = root.editControllable as? any EntryDataEditable else {
+            return false
+        }
+        let editorModel = editController.editorModel.sheetEditorModel
+        return editorModel.itemId != nil &&
+            editorModel.entryId != nil &&
+            !editController.editorModel.deactivateEntryEditor
+    }
+    
+    private func openEditingSheet() {
+        withAnimation(accessibilityReduceMotion ? nil : .easeInOut) {
+            editingItem = EditingItem(model)
+        }
+    }
+}
+
+private struct SubFolderDetailView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let folderListController: FolderListControllable
+
+    var body: some View {
         if let itemId = folderListController.listModel.detailListModel?.subFolderRoute {
             folderListController.folderInlineDestination(for: itemId).asAnyView()
                 .overlay(alignment: .topTrailing) {
@@ -85,9 +123,18 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                 .transition(.move(edge: .bottom))
         }
     }
-    
-    @ViewBuilder
-    private var contentBody: some View {
+}
+
+private struct ContentBodyView<Editor: View>: View {
+    let root: any ItemRootControllable
+    let model: any ItemDataAccessable
+    let configuration: ItemDetailConfiguration
+    let editor: Editor
+    let folderListController: FolderListControllable
+    let fileTypes: [UTType]
+    let shouldShowContent: Bool
+
+    var body: some View {
         ZStack {
             if !shouldShowContent {
                 ItemFileImporterView(
@@ -97,7 +144,7 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
                     isInitial: true
                 )
             }
-            
+
             if configuration.editorAsBackground && !model.specialCategory {
                 ItemEditorBackgroundView(
                     editor: editor,
@@ -120,9 +167,12 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
             }
         }
     }
-    
-    @ViewBuilder
-    private var entryEditor: some View {
+}
+
+private struct EntryEditorContentView<LinkTypes: LinkDataTransferable>: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
         if root.editControllable as? (any EntryDataEditable) != nil, let rootManager = root.rootManager {
             EntryEditorView(
                 rootManager: rootManager,
@@ -131,9 +181,15 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
             )
         }
     }
+}
 
-    @ViewBuilder
-    private var itemHeaderEditor: some View {
+private struct ItemHeaderEditorContentView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let root: any ItemRootControllable
+    @Binding var editingItem: EditingItem?
+
+    var body: some View {
         if let editingItem {
             ItemHeaderEditorView(
                 editControllable: root.editControllable,
@@ -165,30 +221,6 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
 #else
         .scale
 #endif
-    }
-
-    private var fileTypes: [UTType] {
-        root.editControllable.fileUrlDataController?.fileTypes ?? []
-    }
-    
-    private var shouldShowContent: Bool {
-        model.url != nil || fileTypes.isEmpty || model.specialCategory
-    }
-
-    private var isEntryEditorPresented: Bool {
-        guard let editController = root.editControllable as? any EntryDataEditable else {
-            return false
-        }
-        let editorModel = editController.editorModel.sheetEditorModel
-        return editorModel.itemId != nil &&
-            editorModel.entryId != nil &&
-            !editController.editorModel.deactivateEntryEditor
-    }
-    
-    private func openEditingSheet() {
-        withAnimation(accessibilityReduceMotion ? nil : .easeInOut) {
-            editingItem = EditingItem(model) 
-        }
     }
 }
 

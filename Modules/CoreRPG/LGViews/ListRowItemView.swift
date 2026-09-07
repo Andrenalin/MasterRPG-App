@@ -38,7 +38,7 @@ struct ListRowItemView: View, Equatable {
         // trailing folder chevron nested inside still receives its own taps independently
         // because `.buttonStyle(.plain)` lets the innermost tapped control win.
         Button(action: selectRow) {
-            rowContent
+            RowContentView(root: root, item: item, listController: listController, model: model, isSelected: isSelected)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -84,36 +84,6 @@ private extension ListRowItemView {
     // Falls back to itemOrEmpty only for items not yet through the search pipeline.
     var model: any ItemDataAccessable {
         item.model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
-    }
-
-    var rowContent: some View {
-        HStack(alignment: .bottom) {
-            ItemRowView(
-                root: root,
-                model: model,
-                cacheItemListModel: listController.cacheListItemModel,
-                listDisplayModel: listController.listDisplayModel,
-                searchModel: listController.searchModel,
-                isSelected: isSelected
-            ) {
-                if root.viewControllable.thumbnailRowViewType == .custom {
-                    root.viewControllable.thumbnailRowView(for: item.source.itemId)
-                } else if root.viewControllable.thumbnailRowViewType == .photo,
-                          let cacheController = root.cacheControllable {
-                    ThumbnailRowPhotoView(
-                        cacheController: cacheController,
-                        model: model,
-                        listDisplayModel: listController.listDisplayModel
-                    )
-                }
-            }
-
-            SpecialCategoryFolderIndicator(
-                item: item,
-                listController: listController
-            )
-        }
-        .environment(listController.listDisplayModel)
     }
 
     var isSelected: Bool {
@@ -169,6 +139,44 @@ private extension ListRowItemView {
                 await MasterRPGTips.donateContentOrganized()
             }
         }
+    }
+}
+
+private struct RowContentView: View {
+    let root: any ItemRootControllable
+    let item: FolderListItemModel
+    let listController: any FolderListControllable
+    let model: any ItemDataAccessable
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(alignment: .bottom) {
+            ItemRowView(
+                root: root,
+                model: model,
+                cacheItemListModel: listController.cacheListItemModel,
+                listDisplayModel: listController.listDisplayModel,
+                searchModel: listController.searchModel,
+                isSelected: isSelected
+            ) {
+                if root.viewControllable.thumbnailRowViewType == .custom {
+                    root.viewControllable.thumbnailRowView(for: item.source.itemId)
+                } else if root.viewControllable.thumbnailRowViewType == .photo,
+                          let cacheController = root.cacheControllable {
+                    ThumbnailRowPhotoView(
+                        cacheController: cacheController,
+                        model: model,
+                        listDisplayModel: listController.listDisplayModel
+                    )
+                }
+            }
+
+            SpecialCategoryFolderIndicator(
+                item: item,
+                listController: listController
+            )
+        }
+        .environment(listController.listDisplayModel)
     }
 }
 

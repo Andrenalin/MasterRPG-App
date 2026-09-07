@@ -15,7 +15,7 @@ struct InlineSheetSearchControl: View {
         GlassEffectContainerAll {
             HStack(spacing: 4) {
                 if isExpanded {
-                    searchField
+                    InlineSheetSearchField(searchText: $searchText, isSearchFocused: $isSearchFocused)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
 
@@ -54,7 +54,21 @@ struct InlineSheetSearchControl: View {
         }
     }
 
-    private var searchField: some View {
+    private func toggleSearch() {
+        withAnimation(accessibilityReduceMotion ? nil : .smooth) {
+            isExpanded.toggle()
+            if !isExpanded {
+                searchText.removeAll()
+            }
+        }
+    }
+}
+
+private struct InlineSheetSearchField: View {
+    @Binding var searchText: String
+    let isSearchFocused: FocusState<Bool>.Binding
+
+    var body: some View {
         HStack(spacing: 4) {
             TextField(
                 text: $searchText,
@@ -63,7 +77,7 @@ struct InlineSheetSearchControl: View {
                 Text("Search", bundle: .module)
             }
             .textFieldStyle(.plain)
-            .focused($isSearchFocused)
+            .focused(isSearchFocused)
 #if os(iOS)
             .submitLabel(.search)
 #endif
@@ -81,15 +95,6 @@ struct InlineSheetSearchControl: View {
             }
         }
         .frame(minWidth: 160, idealWidth: 220, maxWidth: 280)
-    }
-
-    private func toggleSearch() {
-        withAnimation(accessibilityReduceMotion ? nil : .smooth) {
-            isExpanded.toggle()
-            if !isExpanded {
-                searchText.removeAll()
-            }
-        }
     }
 }
 

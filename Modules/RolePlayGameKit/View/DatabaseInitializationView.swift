@@ -7,7 +7,6 @@ struct DatabaseInitializationView: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.rolePlayDatabaseInitializationEnabled) private var databaseInitializationEnabled
 
-    @State private var showDeleteAlert = false
     @State private var showAccountAlert = false
 
     private let performsInitialization: Bool
@@ -23,7 +22,7 @@ struct DatabaseInitializationView: View {
                 .font(.largeTitle)
 
             if appModel.databaseModel.hasError {
-                errorView
+                DatabaseInitializationErrorView()
             } else {
                 // Fix #4: ProgressView with a label provides automatic
                 // accessibility description — no separate Text needed.
@@ -49,8 +48,36 @@ struct DatabaseInitializationView: View {
         }
     }
 
-    @ViewBuilder
-    private var errorView: some View {
+    private func initializeDatabase() async {
+        // Fix #2: iCloudAccount demoted to a local variable — it was @State
+        // but never read in body, so it had no effect on rendering.
+        if appModel.settingsModel.useCloudKit {
+            let iCloudAccount = await CloudKitAccountController.checkAccountStatus()
+            if iCloudAccount != .available {
+                showAccountAlert = true
+                return
+            }
+        }
+        appModel.databaseModel.setup()
+    }
+
+    private func setupRootModels() async {
+        guard let context = appModel.databaseModel.context else { return }
+        appModel.setupRootModels(
+            context: context,
+            batchContext: appModel.databaseModel.batchContext,
+            spotlightIndexer: appModel.databaseModel.spotlightIndexer,
+            coreDataInitModel: appModel.databaseModel.coreDataInitModel
+        )
+    }
+}
+
+private struct DatabaseInitializationErrorView: View {
+    @Environment(AppModel.self) private var appModel
+
+    @State private var showDeleteAlert = false
+
+    var body: some View {
         // Fix #3: alert is now on the VStack container instead of the Button.
         VStack(spacing: 16) {
             // Fix #4: explicit accessibility label for the decorative SF Symbol.
@@ -78,29 +105,6 @@ struct DatabaseInitializationView: View {
         } message: {
             Text("This will permanently delete the database. This action cannot be undone.", bundle: .module)
         }
-    }
-
-    private func initializeDatabase() async {
-        // Fix #2: iCloudAccount demoted to a local variable — it was @State
-        // but never read in body, so it had no effect on rendering.
-        if appModel.settingsModel.useCloudKit {
-            let iCloudAccount = await CloudKitAccountController.checkAccountStatus()
-            if iCloudAccount != .available {
-                showAccountAlert = true
-                return
-            }
-        }
-        appModel.databaseModel.setup()
-    }
-
-    private func setupRootModels() async {
-        guard let context = appModel.databaseModel.context else { return }
-        appModel.setupRootModels(
-            context: context,
-            batchContext: appModel.databaseModel.batchContext,
-            spotlightIndexer: appModel.databaseModel.spotlightIndexer,
-            coreDataInitModel: appModel.databaseModel.coreDataInitModel
-        )
     }
 }
 

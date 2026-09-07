@@ -19,7 +19,14 @@ struct SheetAIAssistantOverlayView: View {
     @State private var messageText = ""
 
     public var body: some View {
-        standardAssistant
+        StandardAssistantView(
+            generatorController: generatorController,
+            rootModel: rootModel,
+            messageText: $messageText,
+            isTextFieldFocused: $isTextFieldFocused,
+            submitAction: submitPrompt,
+            toggleAction: toggleAIMode
+        )
         // Bound directly to the controller's own error state (rather than a separate local
         // flag the request/extract failure paths never actually wrote to) so an on-device
         // generation failure — model unavailable, guardrail violation, decoding failure,
@@ -72,19 +79,6 @@ struct SheetAIAssistantOverlayView: View {
             // indefinitely after the user navigated away. See CODE_AUDIT §5.6.
             generatorController.tearDown()
         }
-    }
-
-    @ViewBuilder
-    private var standardAssistant: some View {
-        SheetAIAssistantStandardControl(
-            generatorController: generatorController,
-            module: rootModel.sheetModel.source.typeId,
-            messageText: $messageText,
-            isExpanded: rootModel.isAIModeActive,
-            isTextFieldFocused: $isTextFieldFocused,
-            submitAction: submitPrompt,
-            toggleAction: toggleAIMode
-        )
     }
 
     private var isErrorPresented: Binding<Bool> {
@@ -151,6 +145,27 @@ struct SheetAIAssistantOverlayView: View {
             generatorController.model.dismissError()
         }
         isTextFieldFocused = true
+    }
+}
+
+private struct StandardAssistantView: View {
+    let generatorController: GeneratorController
+    let rootModel: SheetRootModel
+    @Binding var messageText: String
+    @FocusState.Binding var isTextFieldFocused: Bool
+    let submitAction: () -> Void
+    let toggleAction: () -> Void
+
+    var body: some View {
+        SheetAIAssistantStandardControl(
+            generatorController: generatorController,
+            module: rootModel.sheetModel.source.typeId,
+            messageText: $messageText,
+            isExpanded: rootModel.isAIModeActive,
+            isTextFieldFocused: $isTextFieldFocused,
+            submitAction: submitAction,
+            toggleAction: toggleAction
+        )
     }
 }
 

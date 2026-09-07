@@ -23,7 +23,7 @@ struct SplitNavigation: View {
         let _ = Self.printViewChangesOnlyInDebug()
         @Bindable var appModel = appModel
 
-        allTabs
+        SplitNavigationAllTabsView(column: $column, preferredCompactColumn: $preferredCompactColumn)
             .applyIf(restoresState) {
                 $0.modifier(SplitNavigationRestorationModifier(appModel: appModel))
             }
@@ -86,17 +86,22 @@ private struct SplitNavigationRestorationModifier: ViewModifier {
     }
 }
 
-private extension SplitNavigation {
-    @ViewBuilder var allTabs: some View {
+private struct SplitNavigationAllTabsView: View {
+    @Environment(AppModel.self) private var appModel
+
+    @Binding var column: NavigationSplitViewVisibility
+    @Binding var preferredCompactColumn: NavigationSplitViewColumn
+
+    var body: some View {
         @Bindable var appModel = appModel
-        
+
         TabView(selection: $appModel.selectedModule) {
             pageTab(for: .game)
                 .customizationID("Tab.\(NetworkModules.game.token)")
 #if !os(macOS)
                 .customizationBehavior(.disabled, for: .sidebar, .tabBar)
 #endif
-            
+
             TabSection {
                 pageTab(for: .search)
                     .customizationID("Tab.\(NetworkModules.search.token)")
@@ -105,7 +110,7 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.Special")
             .defaultVisibility(.hidden, for: .tabBar)
-            
+
             TabSection {
                 pageTab(for: .adventures)
                     .customizationID("Tab.\(NetworkModules.adventure.token)")
@@ -120,8 +125,8 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.Libaray")
             .defaultVisibility(.hidden, for: .tabBar)
-            
-            
+
+
             TabSection {
                 pageTab(for: .rules)
                     .customizationID("Tab.\(NetworkModules.rule.token)")
@@ -134,7 +139,7 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.References")
             .defaultVisibility(.hidden, for: .tabBar)
-            
+
             TabSection {
                 pageTab(for: .audios)
                     .customizationID("Tab.\(NetworkModules.audio.token)")
@@ -149,7 +154,7 @@ private extension SplitNavigation {
             }
             .customizationID("Tab.Material")
             .defaultVisibility(.hidden, for: .tabBar)
-            
+
             TabSection {
                 pageTab(for: .settings)
                     .customizationID("Tab.\(NetworkModules.setting.token)")
@@ -157,12 +162,12 @@ private extension SplitNavigation {
                 Text("Setting", bundle: .module)
             }
             .customizationID("Tab.Util")
-            
+
         }
         .tabViewStyle(.sidebarAdaptable)
     }
-    
-    func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {
+
+    private func pageTab(for tab: RootRoute) -> some TabContent<RootRoute?> {
         Tab(value: tab, role: tab.tabRole) {
             tabView(tab: tab)
                 .moduleTint(tab.module)
@@ -171,22 +176,22 @@ private extension SplitNavigation {
             ModuleTabLabel(route: tab)
         }
     }
-    
-    @ViewBuilder func tabView(tab: RootRoute) -> some View {
+
+    @ViewBuilder private func tabView(tab: RootRoute) -> some View {
         if tab.hasDetailView {
             splitWithDetail(tab: tab)
         } else {
             contentView(tab: tab)
         }
     }
-    
-    @ViewBuilder func contentView(tab: RootRoute) -> some View {
+
+    @ViewBuilder private func contentView(tab: RootRoute) -> some View {
         ManagedPresentationView(name: tab.title) {
             tab
         }
     }
-    
-    func splitWithDetail(tab: RootRoute) -> some View {
+
+    private func splitWithDetail(tab: RootRoute) -> some View {
         SplitWithDetailView(
             tab: tab,
             column: $column,

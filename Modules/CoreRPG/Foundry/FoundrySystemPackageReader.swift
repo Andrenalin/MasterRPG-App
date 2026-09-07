@@ -3,6 +3,8 @@
 import CryptoKit
 import Foundation
 
+// MARK: - Public API
+
 /// Reads a Foundry VTT game-system package into a stable interchange model for supported rules.
 ///
 /// The result is deliberately independent of Core Data and the app's current RPG modules. A
@@ -134,6 +136,8 @@ public struct FoundrySystemPackageReader: Sendable {
         return data
     }
 }
+
+// MARK: - Package Assembly Orchestration
 
 private extension FoundrySystemPackageReader {
     static func readSynchronously(source: FoundryPackageDataSource, limits: FoundryImportLimits) throws -> FoundryRulePackage {
@@ -309,6 +313,8 @@ private extension FoundrySystemPackageReader {
     }
 }
 
+// MARK: - Package Data Source Abstraction
+
 private enum FoundryPackageDataSource: Sendable {
     case archive(FoundryZIPArchive, sourceSHA256: String)
     case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits)
@@ -390,6 +396,8 @@ private enum FoundryPackageDataSource: Sendable {
     }
 }
 
+// MARK: - Localization Decoding
+
 private struct FoundryLocalizationDecoder {
     func decode(
         manifest: FoundrySystemManifest,
@@ -424,6 +432,8 @@ private struct FoundryLocalizationDecoder {
     }
 }
 
+// MARK: - Directory Enumeration
+
 private extension FoundryPackageDataSource {
     static func directoryPaths(at root: URL, limits: FoundryImportLimits) throws -> [String] {
         let canonicalRoot = root.standardizedFileURL.resolvingSymlinksInPath()
@@ -456,6 +466,8 @@ private extension FoundryPackageDataSource {
     }
 }
 
+// MARK: - Package Path Utilities
+
 private enum FoundryPackagePath {
     static func join(_ base: String, _ relative: String) throws -> String {
         let cleanedRelative = relative.hasPrefix("./") ? String(relative.dropFirst(2)) : relative
@@ -485,6 +497,8 @@ private enum FoundryPackagePath {
         return lowercased.contains("license") || lowercased.contains("attribution") || lowercased.contains("copying")
     }
 }
+
+// MARK: - Manifest Decoding
 
 private struct FoundryManifestDecoder {
     func decode(_ data: Data) throws -> FoundrySystemManifest {
@@ -552,6 +566,8 @@ private struct FoundryManifestDecoder {
     }
 }
 
+// MARK: - JSON Decoding
+
 private enum FoundryJSONDecoder {
     static func decodeSource(_ data: Data) throws -> FoundryJSONValue {
         let decoder = JSONDecoder()
@@ -571,6 +587,8 @@ private enum FoundryJSONDecoder {
         }
     }
 }
+
+// MARK: - Template Decoding
 
 private struct FoundryTemplateDecoder {
     func decode(_ template: FoundryJSONValue) throws -> [FoundryRuleSchema] {
@@ -647,6 +665,8 @@ private extension FoundryTemplateDecoder {
         return result
     }
 }
+
+// MARK: - LevelDB Compendium Decoding
 
 private struct FoundryCompendiumDecoder {
     struct Result {
@@ -892,6 +912,8 @@ private extension FoundryCompendiumDecoder {
     }
 }
 
+// MARK: - Canonical Identifiers
+
 private enum FoundryCanonicalKey {
     static func topLevel(systemID: String, packName: String, documentType: String, documentID: String) -> String {
         "foundry://system/\(component(systemID))/pack/\(component(packName))/\(component(documentType))/\(component(documentID))"
@@ -906,6 +928,8 @@ private enum FoundryCanonicalKey {
         return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 }
+
+// MARK: - Reference Decoding
 
 enum FoundryReferenceDecoder {
     static func decode(in raw: FoundryJSONValue) -> [FoundryRuleReference] {
@@ -1008,6 +1032,8 @@ enum FoundryReferenceDecoder {
     }
 }
 
+// MARK: - Asset Path Collection
+
 private enum FoundryAssetCollector {
     private static let extensions = Set([
         "aac", "aif", "aiff", "apng", "avif", "bmp", "caf", "flac", "gif", "glb", "gltf",
@@ -1056,6 +1082,8 @@ private enum FoundryAssetCollector {
         }
     }
 }
+
+// MARK: - Package Resource Resolution
 
 private enum FoundryPackageResourceResolver {
     static func resolve(
@@ -1150,6 +1178,8 @@ private enum FoundryPackageResourceResolver {
         ["icons/", "modules/", "systems/", "ui/", "worlds/"].contains { path.hasPrefix($0) }
     }
 }
+
+// MARK: - Shared Utilities
 
 private func flatten(_ value: FoundryJSONValue, path: [String]) -> [FoundryRuleValue] {
     switch value {

@@ -21,11 +21,11 @@ public struct PdfSummaryAnalysisView: View {
         FoundationBasicView {
             VStack(spacing: 20) {
                 if model.isAnalyzing {
-                    analyzingView
+                    AnalyzingView(model: model)
                 } else {
                     OutputLanguagePickerView(selectedLanguage: $selectedLanguage)
                         .padding(.horizontal, 4)
-                    analyzeButton
+                    AnalyzeButtonView(action: analyze)
                 }
 
                 if let error = model.lastError {
@@ -38,9 +38,46 @@ public struct PdfSummaryAnalysisView: View {
 
     // MARK: - Subviews
 
-    private var analyzeButton: some View {
+    private func analyze() {
+        guard !model.isAnalyzing else { return }
+        Task {
+            if let content = await model.analyzeWithProgress(from: pdfDocument, outputLanguage: selectedLanguage.englishName) {
+                onAnalysisCompleted(content)
+            }
+        }
+    }
+
+    private func errorView(_ error: String) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.red)
+
+            Text(verbatim: error)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Button {
+                model.clearError()
+            } label: {
+                Text("Dismiss", bundle: .module)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct AnalyzeButtonView: View {
+    let action: () -> Void
+
+    var body: some View {
         Button {
-            analyze()
+            action()
         } label: {
             Label {
                 Text("Analyze PDF Summary", bundle: .module)
@@ -53,17 +90,12 @@ public struct PdfSummaryAnalysisView: View {
         .controlSize(.large)
         .keyboardShortcut(.defaultAction)
     }
+}
 
-    private func analyze() {
-        guard !model.isAnalyzing else { return }
-        Task {
-            if let content = await model.analyzeWithProgress(from: pdfDocument, outputLanguage: selectedLanguage.englishName) {
-                onAnalysisCompleted(content)
-            }
-        }
-    }
+private struct AnalyzingView: View {
+    let model: PdfSummaryAnalysisModel
 
-    private var analyzingView: some View {
+    var body: some View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.5)
@@ -133,30 +165,6 @@ public struct PdfSummaryAnalysisView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
-    }
-
-    private func errorView(_ error: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.circle.fill")
-                .foregroundStyle(.red)
-
-            Text(verbatim: error)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-            Button {
-                model.clearError()
-            } label: {
-                Text("Dismiss", bundle: .module)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding()
-        .background(Color.red.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

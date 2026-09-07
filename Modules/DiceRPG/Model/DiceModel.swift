@@ -485,17 +485,17 @@ extension DiceModel: nonisolated ItemDiffComparable {
 extension DiceModel {
     @MainActor public var reviewProperties: [ReviewCustomProperty] {
         [
-            ReviewCustomProperty(displayName: "Dice") { ReviewPropertyValue(($0 as? DiceModel)?.dice.count ?? 0) },
-            ReviewCustomProperty(displayName: "Sum Up") { ReviewPropertyValue(($0 as? DiceModel)?.sumUp ?? true) },
-            ReviewCustomProperty(displayName: "Modifier") { ReviewPropertyValue(($0 as? DiceModel)?.modifier ?? 0) },
-            ReviewCustomProperty(displayName: "Percent Dice") { ReviewPropertyValue(($0 as? DiceModel)?.percentDice ?? false) },
-            ReviewCustomProperty(displayName: "Compare") { .option(($0 as? DiceModel)?.compareOption.rawText ?? "Off") },
-            ReviewCustomProperty(displayName: "Compare Value") { ReviewPropertyValue(($0 as? DiceModel)?.compareValue ?? 0) },
-            ReviewCustomProperty(displayName: "Reorder Dice") { ReviewPropertyValue(($0 as? DiceModel)?.reorderDice ?? false) },
-            ReviewCustomProperty(displayName: "Add Dice Every") { ReviewPropertyValue(($0 as? DiceModel)?.addDiceEvery ?? 0) },
-            ReviewCustomProperty(displayName: "Rerolls") { ReviewPropertyValue(($0 as? DiceModel)?.rerollOptions.count ?? 0) },
-            ReviewCustomProperty(displayName: "Coup Values") { ReviewPropertyValue(($0 as? DiceModel)?.coupValues.count ?? 0) },
-            ReviewCustomProperty(displayName: "Fumble Values") { ReviewPropertyValue(($0 as? DiceModel)?.fumbleValues.count ?? 0) }
+            ReviewCustomProperty(displayName: String(localized: "Dice", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.dice.count ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Sum Up", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.sumUp ?? true) },
+            ReviewCustomProperty(displayName: String(localized: "Modifier", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.modifier ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Percent Dice", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.percentDice ?? false) },
+            ReviewCustomProperty(displayName: String(localized: "Compare", bundle: .module)) { .option(($0 as? DiceModel)?.compareOption.rawText ?? "Off") },
+            ReviewCustomProperty(displayName: String(localized: "Compare Value", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.compareValue ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Reorder Dice", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.reorderDice ?? false) },
+            ReviewCustomProperty(displayName: String(localized: "Add Dice Every", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.addDiceEvery ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Rerolls", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.rerollOptions.count ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Coup Values", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.coupValues.count ?? 0) },
+            ReviewCustomProperty(displayName: String(localized: "Fumble Values", bundle: .module)) { ReviewPropertyValue(($0 as? DiceModel)?.fumbleValues.count ?? 0) }
         ]
     }
 }

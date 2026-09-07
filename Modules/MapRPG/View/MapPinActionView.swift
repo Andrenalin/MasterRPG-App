@@ -178,14 +178,14 @@ struct MapPinExpandedMenu: View {
 
         Group {
 #if os(visionOS)
-            actionButtons
+            ActionButtonsView(model: model, context: context, placement: placement, glassNamespace: glassNamespace, photoSpace: photoSpace, usesGlassEffects: usesGlassEffects)
 #else
             if usesGlassEffects {
                 GlassEffectContainer(spacing: 12) {
-                    actionButtons
+                    ActionButtonsView(model: model, context: context, placement: placement, glassNamespace: glassNamespace, photoSpace: photoSpace, usesGlassEffects: usesGlassEffects)
                 }
             } else {
-                actionButtons
+                ActionButtonsView(model: model, context: context, placement: placement, glassNamespace: glassNamespace, photoSpace: photoSpace, usesGlassEffects: usesGlassEffects)
             }
 #endif
         }
@@ -218,8 +218,17 @@ struct MapPinExpandedMenu: View {
 #endif
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
+}
 
-    private var actionButtons: some View {
+private struct ActionButtonsView: View {
+    let model: MapPinNode
+    let context: MapPinActionContext
+    let placement: MapAdaptiveFanPlacement
+    let glassNamespace: Namespace.ID
+    let photoSpace: Namespace.ID
+    let usesGlassEffects: Bool
+
+    var body: some View {
         MapPinActionButtons(
             model: model,
             context: context,

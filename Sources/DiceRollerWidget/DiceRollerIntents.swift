@@ -57,23 +57,6 @@ private enum DiceIntentPerformer {
     }
 }
 
-/// App Intent for clearing dice history
-struct ClearDiceHistoryIntent: AppIntent {
-    static let title: LocalizedStringResource = "Clear History"
-    static let description = IntentDescription("Clear dice roll history")
-    static let isDiscoverable = false
-    
-    func perform() async throws -> some IntentResult {
-        var config = DiceConfiguration.loadFromUserDefaults()
-        config.lastRoll = nil
-        config.save()
-
-        DiceWidgetReloader.reloadDiceWidgets()
-        
-        return .result()
-    }
-}
-
 // MARK: - Dice Type for Intents
 
 /// Simple dice type enum that conforms to AppEnum for use in intents

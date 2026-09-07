@@ -22,7 +22,7 @@ struct ExtendedSplitBar: View {
     }
     
     var body: some View {
-        allCustomTabs
+        ExtendedSplitBarAllCustomTabsView(column: $column, preferredCompactColumn: $preferredCompactColumn)
             .navigationAutoReceive(ExtendedTabRoute.self)
             .focusedSceneValue(\.selectedModule, $tabSelectedModule)
             .applyIf(restoresState) {
@@ -64,7 +64,21 @@ private struct ExtendedSplitBarRestorationModifier: ViewModifier {
 }
 
 private extension ExtendedSplitBar {
-    var allCustomTabs: some View {
+    func contentView(tab: ExtendedTabRoute) -> some View {
+        ManagedPresentationView {
+            tab
+        }
+        .environment(appModel.itemRootController(for: tab.module))
+    }
+}
+
+private struct ExtendedSplitBarAllCustomTabsView: View {
+    @Environment(AppModel.self) private var appModel
+
+    @Binding var column: NavigationSplitViewVisibility
+    @Binding var preferredCompactColumn: NavigationSplitViewColumn
+
+    var body: some View {
         ZStack {
             ForEach(ExtendedTabRoute.limitedTabs) { tab in
                 let isActive = appModel.selectedExtendedModule == tab
@@ -81,21 +95,14 @@ private extension ExtendedSplitBar {
         }
 #endif
     }
-    
-    func tabView(tab: ExtendedTabRoute) -> some View {
+
+    private func tabView(tab: ExtendedTabRoute) -> some View {
         ExtendedSplitWithDetailView(
             tab: tab,
             column: $column,
             preferredCompactColumn: $preferredCompactColumn,
             appModel: appModel
         )
-    }
-
-    func contentView(tab: ExtendedTabRoute) -> some View {
-        ManagedPresentationView {
-            tab
-        }
-        .environment(appModel.itemRootController(for: tab.module))
     }
 }
 

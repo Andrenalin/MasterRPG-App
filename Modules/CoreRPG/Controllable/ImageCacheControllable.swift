@@ -102,13 +102,11 @@ extension ImageCacheControllable {
     }
 
     /// Shared by file-backed modules whose thumbnail is just a QuickLook
-    /// preview of the on-disk file at a fixed canvas size — PdfRPG's and
-    /// SpaceRPG's `CacheController`s previously each hand-duplicated this
-    /// exact `createThumbnail(for:item:)` body, differing only in
-    /// `size`/`removeWhiteBackground`. Not a default for the protocol
-    /// requirement itself, since other modules' thumbnails aren't
-    /// QuickLook-generated at all — conformers that are call this directly.
-    /// See CODE_AUDIT_10 §9.12.
+    /// preview of the on-disk file at a fixed canvas size. Not a default for
+    /// the base protocol requirement itself, since other modules' thumbnails
+    /// aren't QuickLook-generated at all — `QuickLookThumbnailProviding`
+    /// below builds the actual `createThumbnail(for:item:)` default on top
+    /// of this for the conformers that are. See CODE_AUDIT_10 §9.12.
     @MainActor
     public func createQuickLookThumbnail(
         for itemId: UUID,
@@ -122,7 +120,27 @@ extension ImageCacheControllable {
         }
         await cacheThumbnail(thumbnail, for: itemId)
     }
+}
 
+/// Opt-in sub-protocol for conformers whose thumbnail is a QuickLook preview render at a
+/// fixed canvas size — PdfRPG's and SpaceRPG's `CacheController`s previously each
+/// hand-duplicated an identical `createThumbnail(for:item:)` body, differing only in
+/// `quickLookThumbnailSize`/`removesWhiteBackgroundInThumbnail`. See CODE_AUDIT §9.6.
+public protocol QuickLookThumbnailProviding: ImageCacheControllable {
+    static var quickLookThumbnailSize: CGSize { get }
+    static var removesWhiteBackgroundInThumbnail: Bool { get }
+}
+
+public extension QuickLookThumbnailProviding {
+    static var removesWhiteBackgroundInThumbnail: Bool { false }
+
+    @MainActor
+    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+        await createQuickLookThumbnail(for: itemId, item: item, size: Self.quickLookThumbnailSize, removeWhiteBackground: Self.removesWhiteBackgroundInThumbnail)
+    }
+}
+
+extension ImageCacheControllable {
     public func remove(itemId: UUID, includeImage: Bool = true) async {
         if includeImage {
             await imageCacheController.removeObject(for: itemId)

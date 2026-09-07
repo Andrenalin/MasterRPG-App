@@ -4,13 +4,21 @@ import CoreRPG
 import SwiftUI
 import DiceRPG
 
-struct EntryListDiceRow: View {
+struct EntryListDiceRow: View, Equatable {
     let itemId: UUID
     let entryId: UUID
     /// Pre-resolved by the caller where available — see `ViewControllable`'s
     /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
     /// nil, so this stays correct for any call site not yet updated.
     var resolvedModel: ValueModel? = nil
+
+    /// Compares `resolvedModel` by identity (its `id`) rather than deep value equality —
+    /// it's a resolved reference, not owned row content. See CODE_AUDIT §8.6.
+    static func == (lhs: EntryListDiceRow, rhs: EntryListDiceRow) -> Bool {
+        lhs.itemId == rhs.itemId
+            && lhs.entryId == rhs.entryId
+            && lhs.resolvedModel?.id == rhs.resolvedModel?.id
+    }
 
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

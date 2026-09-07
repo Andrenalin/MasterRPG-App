@@ -75,41 +75,59 @@ struct InlineImporterView: View, Equatable {
         self.itemId = itemId
         self.preopen = preopen
         self.layoutDown = layoutDown
-        self._isExpanded = State(wrappedValue: preopen)
     }
-    
+
     let itemId: UUID
     let preopen: Bool
     let layoutDown: Bool
-    
-    @Environment(SpaceRootModel.self) private var root
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var canScan: Bool = false
-    
+
     @Namespace var glassNamespace
-    
-    @State private var isExpanded: Bool
-    
-    @State private var showImporter = false
-    @State private var showRemoteURLImporter = false
-    @State private var showScanner = false
-    
+
     var body: some View {
 #if os(visionOS)
-        content
+        InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
 #else
         GlassEffectContainer {
-            content
+            InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
         }
 #endif
     }
-    
-    var content: some View {
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
+        // uses this to decide whether to skip re-rendering, and both drive stored state
+        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
+        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
+        lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
+    }
+}
+
+private struct InlineImporterContentView: View {
+    init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
+        self.itemId = itemId
+        self.layoutDown = layoutDown
+        self._isExpanded = State(wrappedValue: preopen)
+    }
+
+    let itemId: UUID
+    let layoutDown: Bool
+
+    @Environment(SpaceRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var canScan: Bool = false
+
+    @State private var isExpanded: Bool
+
+    @State private var showImporter = false
+    @State private var showRemoteURLImporter = false
+    @State private var showScanner = false
+
+    var body: some View {
         ZStack {
             button(type: .file)
             button(type: .url)
             button(type: .scanner)
-            
+
             Button {
                 withAnimation(reduceMotion ? nil : .default) {
                     isExpanded.toggle()
@@ -166,11 +184,11 @@ struct InlineImporterView: View, Equatable {
         }
 #endif
     }
-    
+
     private var importerTitle: String {
         String(localized: "Importer", bundle: .module)
     }
-    
+
     private func button(type: ImporterButtonType) -> some View {
         return Button {
             switch type {
@@ -198,14 +216,6 @@ struct InlineImporterView: View, Equatable {
             reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
             value: isExpanded
         )
-    }
-    
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
-        // uses this to decide whether to skip re-rendering, and both drive stored state
-        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
-        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
-        lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
     }
 }
 

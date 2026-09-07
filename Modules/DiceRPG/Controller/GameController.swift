@@ -16,7 +16,12 @@ final class DiceGameModel {
     var playerDice: [DiceModel] = []
     var playerSupporterTiers: [UUID: SupporterTier] = [:]
     var masterDiceName: String?
-    
+
+    /// Cancelled and replaced on every roll so a rapid sequence of rolls can't queue up
+    /// out-of-order widget updates. See CODE_AUDIT §3.3.
+    @ObservationIgnored
+    fileprivate var diceUpdateWidgetTask: Task<Void, Never>?
+
     func reset() {
         hiddenPlayers = []
         playerDice = []
@@ -593,7 +598,8 @@ extension GameController {
         // is itself @MainActor) and handed in by value.
         // See CODE_AUDIT_Game §3.6.
         let diceResult = result(itemId: itemId)
-        Task.detached(priority: .utility) { [self] in
+        diceGameModel.diceUpdateWidgetTask?.cancel()
+        diceGameModel.diceUpdateWidgetTask = Task.detached(priority: .utility) { [self] in
             await diceUpdateWidget(diceResult: diceResult)
         }
     }
