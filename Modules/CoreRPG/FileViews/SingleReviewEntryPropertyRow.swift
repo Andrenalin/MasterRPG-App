@@ -100,7 +100,7 @@ struct SingleReviewEntryPropertyRow: View {
                         ForEach(alternatives) { decision in
                             SingleReviewAlternativeBlock(decision: decision, kind: property.kind, value: value(for: decision)) {
                                 withAnimation(accessibilityReduceMotion ? nil : .spring(duration: 0.3)) {
-                                    entry.setPropertyDecision(decision, propertyID: property.id)
+                                    entry.setPropertyDecision(decision, propertyId: property.id)
                                     isExpanded = false
                                 }
                             }

@@ -306,10 +306,10 @@ final class SingleItemImportModel {
         }
     }
 
-    func setPropertyDecision(_ newDecision: SingleReviewDecision, propertyID: UUID) {
-        seek(in: properties, id: propertyID, to: newDecision)
+    func setPropertyDecision(_ newDecision: SingleReviewDecision, propertyId: UUID) {
+        seek(in: properties, id: propertyId, to: newDecision)
         entries.forEach {
-            $0.setPropertyDecision(newDecision, propertyID: propertyID)
+            $0.setPropertyDecision(newDecision, propertyId: propertyId)
         }
     }
 
@@ -387,8 +387,8 @@ final class SingleEntryImportModel: Identifiable {
         }
     }
 
-    func setPropertyDecision(_ newDecision: SingleReviewDecision, propertyID: UUID) {
-        seek(in: properties, id: propertyID, to: newDecision)
+    func setPropertyDecision(_ newDecision: SingleReviewDecision, propertyId: UUID) {
+        seek(in: properties, id: propertyId, to: newDecision)
     }
 
     var hasPropertyOverrides: Bool {

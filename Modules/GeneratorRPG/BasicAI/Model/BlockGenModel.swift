@@ -12,7 +12,7 @@ public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
     public let title: String
     public let content: String
 
-    public var stableID: String {
+    public var stableId: String {
         "\(title)-\(content)"
     }
 
@@ -23,7 +23,7 @@ public struct BlockEntryGenModel: Equatable, Identifiable, Sendable {
 }
 
 extension BlockEntryGenModel.PartiallyGenerated {
-    var stableID: String {
+    var stableId: String {
         let value = [title, content]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }

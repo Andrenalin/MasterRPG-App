@@ -295,8 +295,8 @@ public extension EntryDataEditable {
         switch position {
         case .end:
             insertionIndex = item.entries.count
-        case .after(let anchorEntryID):
-            insertionIndex = item.entries.firstIndex(where: { $0.id == anchorEntryID })
+        case .after(let anchorEntryId):
+            insertionIndex = item.entries.firstIndex(where: { $0.id == anchorEntryId })
                 .map { $0 + 1 } ?? item.entries.count
         }
 

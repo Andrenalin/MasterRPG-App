@@ -42,7 +42,7 @@ struct ExtendedTabBar: View {
         .navigationModifier { destination in
             if let extened = destination as? ExtendedTabRoute {
                 destination()
-                    .modifier(ZoomTransitionViewModifier(sourceID: extened.module.token, namespace: zoomNamespace))
+                    .modifier(ZoomTransitionViewModifier(sourceId: extened.module.token, namespace: zoomNamespace))
             } else {
                 destination()
             }
@@ -92,7 +92,7 @@ private extension ExtendedTabBar {
             GridLabelView(value: route.module, color: theme.tint(for: route.module))
         }
         .accessibilityIdentifier("module.editor.\(route.module.token)")
-        .modifier(ZoomDestinationViewModifier(sourceID: route.module.token, namespace: zoomNamespace))
+        .modifier(ZoomDestinationViewModifier(sourceId: route.module.token, namespace: zoomNamespace))
     }
 
     var doubleColumnTabs: [(ExtendedTabRoute, ExtendedTabRoute?)] {

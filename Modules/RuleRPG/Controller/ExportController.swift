@@ -49,22 +49,22 @@ extension ExportController: ExportModelBacked {
     @MainActor
     func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
         var pending = itemIds.ids[.rule, default: []]
-        var pendingIDs = Set(pending)
+        var pendingIds = Set(pending)
         var exported: Set<UUID> = []
-        var linkedIDs: [NetworkModules: Set<UUID>] = [:]
+        var linkedIds: [NetworkModules: Set<UUID>] = [:]
         let rootManager = resolvedRootManager
 
         while let id = pending.popLast() {
-            pendingIDs.remove(id)
+            pendingIds.remove(id)
             guard !exported.contains(id), let item = itemController.itemSync(for: id) else { continue }
             exported.insert(id)
 
             if item.specialCategory {
-                for childID in item.entries.map(\.childId) {
-                    guard !exported.contains(childID),
-                          itemController.itemSync(for: childID) != nil,
-                          pendingIDs.insert(childID).inserted else { continue }
-                    pending.append(childID)
+                for childId in item.entries.map(\.childId) {
+                    guard !exported.contains(childId),
+                          itemController.itemSync(for: childId) != nil,
+                          pendingIds.insert(childId).inserted else { continue }
+                    pending.append(childId)
                 }
             }
 
@@ -84,10 +84,10 @@ extension ExportController: ExportModelBacked {
                 switch link.module {
                 case .rule:
                     guard !exported.contains(link.itemId),
-                          pendingIDs.insert(link.itemId).inserted else { continue }
+                          pendingIds.insert(link.itemId).inserted else { continue }
                     pending.append(link.itemId)
                 case .adventure, .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather:
-                    linkedIDs[link.module, default: []].insert(link.itemId)
+                    linkedIds[link.module, default: []].insert(link.itemId)
                 case .editor, .game, .generator, .none, .search, .setting:
                     continue
                 }
@@ -101,15 +101,15 @@ extension ExportController: ExportModelBacked {
 
         // Adventure owns the aggregate export graph and can itself reference Rules. Keep
         // direct Adventure destinations without recursing back through its exporter.
-        if let adventureIDs = linkedIDs[.adventure], !adventureIDs.isEmpty {
-            var fullAdventureIDs = adventureIDs
+        if let adventureIds = linkedIds[.adventure], !adventureIds.isEmpty {
+            var fullAdventureIds = adventureIds
             if let adventureRoot = rootManager.rootModel(for: .adventure) {
-                let partialAdventureIDs = adventureRoot.exportControllable.exportingFolder(
-                    results: &fullAdventureIDs
+                let partialAdventureIds = adventureRoot.exportControllable.exportingFolder(
+                    results: &fullAdventureIds
                 )
-                result.mergePartial(ids: Array(partialAdventureIDs), for: .adventure)
+                result.mergePartial(ids: Array(partialAdventureIds), for: .adventure)
             }
-            result.merge(ids: Array(fullAdventureIDs), for: .adventure)
+            result.merge(ids: Array(fullAdventureIds), for: .adventure)
         }
 
         // The remaining supported destinations form the acyclic side of the export graph.
@@ -118,7 +118,7 @@ extension ExportController: ExportModelBacked {
             .audio, .value, .dice, .map, .pdf, .photo, .space, .table, .weather,
         ]
         for module in expandableModules {
-            let ids = linkedIDs[module, default: []]
+            let ids = linkedIds[module, default: []]
             guard !ids.isEmpty,
                   let destinationRoot = rootManager.rootModel(for: module) else { continue }
             result.merge(other: destinationRoot.exportControllable.exporting(ids: ids))

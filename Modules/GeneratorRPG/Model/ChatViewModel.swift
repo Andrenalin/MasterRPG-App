@@ -123,13 +123,13 @@ final class ChatViewModel {
         }
     }
 
-    func submitFeedback(for entryID: Transcript.Entry.ID, sentiment: LanguageModelFeedback.Sentiment) {
-        feedbackState[entryID] = sentiment
+    func submitFeedback(for entryId: Transcript.Entry.ID, sentiment: LanguageModelFeedback.Sentiment) {
+        feedbackState[entryId] = sentiment
         _ = session.logFeedbackAttachment(sentiment: sentiment)
     }
 
-    func getFeedback(for entryID: Transcript.Entry.ID) -> LanguageModelFeedback.Sentiment? {
-        feedbackState[entryID]
+    func getFeedback(for entryId: Transcript.Entry.ID) -> LanguageModelFeedback.Sentiment? {
+        feedbackState[entryId]
     }
 
     func clearChat() {

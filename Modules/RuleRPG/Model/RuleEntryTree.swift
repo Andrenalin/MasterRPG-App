@@ -23,43 +23,43 @@ struct RuleEntryTree: Sendable {
             indexedEntries[entry.id] = entry
         }
 
-        let cyclicEntryIDs = Self.cyclicEntryIDs(in: indexedEntries)
+        let cyclicEntryIds = Self.cyclicEntryIDs(in: indexedEntries)
         var resolvedParents: [UUID: UUID] = [:]
         for entry in entries {
             guard
-                !cyclicEntryIDs.contains(entry.id),
-                let parentID = entry.parentId,
-                let parent = indexedEntries[parentID],
+                !cyclicEntryIds.contains(entry.id),
+                let parentId = entry.parentId,
+                let parent = indexedEntries[parentId],
                 parent.kind == .group
             else {
                 continue
             }
-            resolvedParents[entry.id] = parentID
+            resolvedParents[entry.id] = parentId
         }
-        parentByEntryID = resolvedParents
+        parentByEntryId = resolvedParents
 
         var groupedChildren: [UUID?: [RuleEntryModel]] = [:]
         for entry in entries {
             groupedChildren[resolvedParents[entry.id], default: []].append(entry)
         }
-        childrenByParentID = groupedChildren
+        childrenByParentId = groupedChildren
     }
 
     let entries: [RuleEntryModel]
 
-    private let parentByEntryID: [UUID: UUID]
+    private let parentByEntryId: [UUID: UUID]
     /// `entries` grouped by resolved parent id (`nil` for roots), computed
-    /// once here instead of `nodes(parentID:visited:)` re-scanning the full
+    /// once here instead of `nodes(parentId:visited:)` re-scanning the full
     /// `entries` array at every level of every branch — O(n²) for a large
     /// imported rule/compendium hierarchy. See CODE_AUDIT_10 §7.3.
-    private let childrenByParentID: [UUID?: [RuleEntryModel]]
+    private let childrenByParentId: [UUID?: [RuleEntryModel]]
 
     var roots: [Node] {
-        nodes(parentID: nil, visited: [])
+        nodes(parentId: nil, visited: [])
     }
 
-    func parentID(for entryID: UUID) -> UUID? {
-        parentByEntryID[entryID]
+    func parentID(for entryId: UUID) -> UUID? {
+        parentByEntryId[entryId]
     }
 
     static func normalized(_ entries: [RuleEntryModel]) -> [RuleEntryModel] {
@@ -72,40 +72,40 @@ struct RuleEntryTree: Sendable {
     }
 
     static func validParentGroups(
-        for entryID: UUID,
+        for entryId: UUID,
         in entries: [RuleEntryModel]
     ) -> [RuleEntryModel] {
-        let excludedIDs = descendantIDs(of: entryID, in: entries).union([entryID])
+        let excludedIds = descendantIDs(of: entryId, in: entries).union([entryId])
         return entries.filter { entry in
-            entry.kind == .group && !excludedIDs.contains(entry.id)
+            entry.kind == .group && !excludedIds.contains(entry.id)
         }
     }
 
     static func settingParent(
-        _ parentID: UUID?,
-        for entryID: UUID,
+        _ parentId: UUID?,
+        for entryId: UUID,
         in entries: [RuleEntryModel]
     ) -> [RuleEntryModel] {
-        guard let index = entries.firstIndex(where: { $0.id == entryID }) else {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }) else {
             return entries
         }
 
-        if let parentID {
-            let validIDs = Set(validParentGroups(for: entryID, in: entries).map(\.id))
-            guard validIDs.contains(parentID) else { return entries }
+        if let parentId {
+            let validIds = Set(validParentGroups(for: entryId, in: entries).map(\.id))
+            guard validIds.contains(parentId) else { return entries }
         }
 
         var updated = entries
-        updated[index].parentId = parentID
+        updated[index].parentId = parentId
         return normalized(updated)
     }
 
     static func settingKind(
         _ kind: RuleEntryKind,
-        for entryID: UUID,
+        for entryId: UUID,
         in entries: [RuleEntryModel]
     ) -> [RuleEntryModel] {
-        guard let index = entries.firstIndex(where: { $0.id == entryID }) else {
+        guard let index = entries.firstIndex(where: { $0.id == entryId }) else {
             return entries
         }
 
@@ -113,17 +113,17 @@ struct RuleEntryTree: Sendable {
         let current = updated[index]
         guard current.kind != kind else { return updated }
 
-        let validParentIDs = Set(validParentGroups(for: entryID, in: updated).map(\.id))
-        let fallbackParentID = current.parentId.flatMap { parentID in
-            validParentIDs.contains(parentID) ? parentID : nil
+        let validParentIds = Set(validParentGroups(for: entryId, in: updated).map(\.id))
+        let fallbackParentId = current.parentId.flatMap { parentId in
+            validParentIds.contains(parentId) ? parentId : nil
         }
 
         updated[index].kind = kind
         if current.kind == .group && kind != .group {
             for childIndex in updated.indices
-            where updated[childIndex].id != entryID
-                && updated[childIndex].parentId == entryID {
-                updated[childIndex].parentId = fallbackParentID
+            where updated[childIndex].id != entryId
+                && updated[childIndex].parentId == entryId {
+                updated[childIndex].parentId = fallbackParentId
             }
         }
 
@@ -137,22 +137,22 @@ struct RuleEntryTree: Sendable {
         let requestedEntries = offsets.compactMap { offset in
             entries.indices.contains(offset) ? entries[offset] : nil
         }
-        var removedIDs = Set(requestedEntries.map(\.id))
+        var removedIds = Set(requestedEntries.map(\.id))
         for entry in requestedEntries where entry.kind == .group {
-            removedIDs.formUnion(descendantIDs(of: entry.id, in: entries))
+            removedIds.formUnion(descendantIDs(of: entry.id, in: entries))
         }
 
-        var remaining = entries.filter { !removedIDs.contains($0.id) }
+        var remaining = entries.filter { !removedIds.contains($0.id) }
         for index in remaining.indices {
-            if let parentID = remaining[index].parentId, removedIDs.contains(parentID) {
+            if let parentId = remaining[index].parentId, removedIds.contains(parentId) {
                 remaining[index].parentId = nil
             }
         }
         return normalized(remaining)
     }
 
-    private func nodes(parentID: UUID?, visited: Set<UUID>) -> [Node] {
-        let children = childrenByParentID[parentID] ?? []
+    private func nodes(parentId: UUID?, visited: Set<UUID>) -> [Node] {
+        let children = childrenByParentId[parentId] ?? []
         return children.compactMap { entry in
             guard !visited.contains(entry.id) else {
                 return nil
@@ -160,59 +160,59 @@ struct RuleEntryTree: Sendable {
             let nextVisited = visited.union([entry.id])
             return Node(
                 entry: entry,
-                children: nodes(parentID: entry.id, visited: nextVisited)
+                children: nodes(parentId: entry.id, visited: nextVisited)
             )
         }
     }
 
     private static func descendantIDs(
-        of entryID: UUID,
+        of entryId: UUID,
         in entries: [RuleEntryModel]
     ) -> Set<UUID> {
-        var childIDsByParent: [UUID: [UUID]] = [:]
+        var childIdsByParent: [UUID: [UUID]] = [:]
         for entry in entries {
-            guard let parentID = entry.parentId else { continue }
-            childIDsByParent[parentID, default: []].append(entry.id)
+            guard let parentId = entry.parentId else { continue }
+            childIdsByParent[parentId, default: []].append(entry.id)
         }
 
         var descendants: Set<UUID> = []
-        var pending = childIDsByParent[entryID, default: []]
-        while let currentID = pending.popLast() {
-            guard currentID != entryID, descendants.insert(currentID).inserted else {
+        var pending = childIdsByParent[entryId, default: []]
+        while let currentId = pending.popLast() {
+            guard currentId != entryId, descendants.insert(currentId).inserted else {
                 continue
             }
-            pending.append(contentsOf: childIDsByParent[currentID, default: []])
+            pending.append(contentsOf: childIdsByParent[currentId, default: []])
         }
         return descendants
     }
 
     private static func cyclicEntryIDs(
-        in entriesByID: [UUID: RuleEntryModel]
+        in entriesById: [UUID: RuleEntryModel]
     ) -> Set<UUID> {
         var processed: Set<UUID> = []
-        var cyclicEntryIDs: Set<UUID> = []
+        var cyclicEntryIds: Set<UUID> = []
 
-        for startID in entriesByID.keys where !processed.contains(startID) {
+        for startId in entriesById.keys where !processed.contains(startId) {
             var path: [UUID] = []
-            var pathIndexByID: [UUID: Int] = [:]
-            var currentID: UUID? = startID
+            var pathIndexById: [UUID: Int] = [:]
+            var currentId: UUID? = startId
 
             while
-                let candidateID = currentID,
-                entriesByID[candidateID] != nil,
-                !processed.contains(candidateID)
+                let candidateId = currentId,
+                entriesById[candidateId] != nil,
+                !processed.contains(candidateId)
             {
-                if let cycleStartIndex = pathIndexByID[candidateID] {
-                    cyclicEntryIDs.formUnion(path[cycleStartIndex...])
+                if let cycleStartIndex = pathIndexById[candidateId] {
+                    cyclicEntryIds.formUnion(path[cycleStartIndex...])
                     break
                 }
 
-                pathIndexByID[candidateID] = path.count
-                path.append(candidateID)
-                currentID = entriesByID[candidateID]?.parentId
+                pathIndexById[candidateId] = path.count
+                path.append(candidateId)
+                currentId = entriesById[candidateId]?.parentId
             }
             processed.formUnion(path)
         }
-        return cyclicEntryIDs
+        return cyclicEntryIds
     }
 }

@@ -58,6 +58,6 @@ private struct RuleRouteDestinationView: View {
 
 #Preview("Rule detail route", traits: .mockData) {
     ManagedNavigationStack {
-        RuleRoute.detail(RuleModel.previewID).body
+        RuleRoute.detail(RuleModel.previewId).body
     }
 }

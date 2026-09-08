@@ -53,10 +53,10 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
             indexingTask = Task {
                 for await notification in NotificationCenter.default.notifications(named: NSCoreDataCoreSpotlightDelegate.indexDidUpdateNotification) {
                     let userInfo = notification.userInfo
-                    let storeID = userInfo?[NSStoreUUIDKey] as? String
+                    let storeId = userInfo?[NSStoreUUIDKey] as? String
                     let token = userInfo?[NSPersistentHistoryTokenKey] as? NSPersistentHistoryToken
-                    if let storeID = storeID, let token = token {
-                        model.reset(message: "Store with identifier \(storeID) has completed indexing and has processed history token up through \(String(describing: token)).")
+                    if let storeId = storeId, let token = token {
+                        model.reset(message: "Store with identifier \(storeId) has completed indexing and has processed history token up through \(String(describing: token)).")
                     }
                 }
             }

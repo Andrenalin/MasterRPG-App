@@ -128,7 +128,7 @@ public enum MasterRPGTips {
     public static let openAnotherWindow = OpenAnotherWindowTip()
     public static let showJoinCode = ShowJoinCodeTip()
 
-    public static let importCampaignActionID = "import-campaign"
+    public static let importCampaignActionId = "import-campaign"
     public static let importCampaignRequested = Notification.Name(
         "de.andretrettin.MasterRPG.importCampaignRequested"
     )

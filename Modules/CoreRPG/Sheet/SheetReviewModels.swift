@@ -99,11 +99,11 @@ enum SheetReviewTreeBuilder {
             guard versions.contains(where: \.isAvailable) else { return nil }
             return ReviewCandidate(entryModel: entryModel, versions: versions)
         }
-        let candidatesByID = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0) })
+        let candidatesById = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0) })
         let candidateOrder = Dictionary(
             uniqueKeysWithValues: candidates.enumerated().map { ($0.element.id, $0.offset) }
         )
-        var consumedEntryIDs: Set<UUID> = []
+        var consumedEntryIds: Set<UUID> = []
         var decoratedRows = sheetModel.entries
 
         // Decorate existing rows in place so the currently materialized sheet remains the
@@ -111,16 +111,16 @@ enum SheetReviewTreeBuilder {
         // the reviewed item's direct entries.
         for row in decoratedRows {
             guard row.source.itemId == itemId,
-                  let entryID = row.source.entryId,
-                  let candidate = candidatesByID[entryID] else { continue }
+                  let entryId = row.source.entryId,
+                  let candidate = candidatesById[entryId] else { continue }
 
             decorate(row, with: candidate, itemId: itemId)
-            consumedEntryIDs.insert(entryID)
+            consumedEntryIds.insert(entryId)
         }
 
         // Insert only rows omitted by the selected version. Their position follows the
         // stable union order without changing the relative order of any current rows.
-        for candidate in candidates where !consumedEntryIDs.contains(candidate.id) {
+        for candidate in candidates where !consumedEntryIds.contains(candidate.id) {
             guard let visibleSheetModel = candidate.visibleSheetModel else { continue }
             let row = placeholder(from: visibleSheetModel)
             row.isReviewPlaceholder = true
@@ -134,7 +134,7 @@ enum SheetReviewTreeBuilder {
                 order: order
             )
             decoratedRows.insert(row, at: insertionIndex)
-            consumedEntryIDs.insert(candidate.id)
+            consumedEntryIds.insert(candidate.id)
         }
 
         sheetModel.entries = decoratedRows
@@ -164,8 +164,8 @@ enum SheetReviewTreeBuilder {
     ) -> Int {
         if let succeedingIndex = rows.firstIndex(where: { row in
             guard row.source.itemId == itemId,
-                  let entryID = row.source.entryId,
-                  let rowOrder = candidateOrder[entryID] else { return false }
+                  let entryId = row.source.entryId,
+                  let rowOrder = candidateOrder[entryId] else { return false }
             return rowOrder > order
         }) {
             return succeedingIndex
@@ -173,8 +173,8 @@ enum SheetReviewTreeBuilder {
 
         if let precedingIndex = rows.lastIndex(where: { row in
             guard row.source.itemId == itemId,
-                  let entryID = row.source.entryId,
-                  let rowOrder = candidateOrder[entryID] else { return false }
+                  let entryId = row.source.entryId,
+                  let rowOrder = candidateOrder[entryId] else { return false }
             return rowOrder < order
         }) {
             return precedingIndex + 1
@@ -186,8 +186,8 @@ enum SheetReviewTreeBuilder {
     @MainActor
     private static func directRows(in sheetModel: SheetModel, itemId: UUID) -> [UUID: SheetModel] {
         sheetModel.entries.reduce(into: [:]) { result, row in
-            guard row.source.itemId == itemId, let entryID = row.source.entryId else { return }
-            result[entryID] = row
+            guard row.source.itemId == itemId, let entryId = row.source.entryId else { return }
+            result[entryId] = row
         }
     }
 

@@ -53,5 +53,5 @@ private struct RuleEditorRouteDestinationView: View {
 }
 
 #Preview("Rule quick editor route", traits: .mockData) {
-    RuleEditorRoute.quickEditor(RuleModel.previewID).body
+    RuleEditorRoute.quickEditor(RuleModel.previewId).body
 }

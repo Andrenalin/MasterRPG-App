@@ -60,14 +60,14 @@ public extension BattleRoundModel {
             return cache.value
         }
 
-        var combatantsByID: [UUID: BattleCombatant] = [:]
-        combatantsByID.reserveCapacity(combatants.count)
+        var combatantsById: [UUID: BattleCombatant] = [:]
+        combatantsById.reserveCapacity(combatants.count)
         for combatant in combatants {
-            combatantsByID[combatant.id] = combatant
+            combatantsById[combatant.id] = combatant
         }
 
         let value = entries.enumerated().compactMap { index, entry -> BattleRoundCardPresentation? in
-            guard let attacker = combatantsByID[entry.attackerId] else { return nil }
+            guard let attacker = combatantsById[entry.attackerId] else { return nil }
             let isActive = activeAttackerId == attacker.id
             let rollsByCombatant = Dictionary(grouping: entry.rolls, by: \.combatantId)
 
@@ -79,7 +79,7 @@ public extension BattleRoundModel {
             )
             let defenderPresentations: [BattleRoundParticipantPresentation] =
                 entry.defenderIds.compactMap { defenderId -> BattleRoundParticipantPresentation? in
-                    guard let defender = combatantsByID[defenderId] else { return nil }
+                    guard let defender = combatantsById[defenderId] else { return nil }
                     return BattleRoundParticipantPresentation(
                         combatant: defender,
                         rolls: rollsByCombatant[defender.id] ?? [],

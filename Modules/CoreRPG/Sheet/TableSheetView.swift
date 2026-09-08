@@ -40,10 +40,10 @@ private struct TableSheetListContentView: View {
             }
         }
         .scrollPosition($scrollPosition, anchor: .center)
-        .onChange(of: model.editorModel.scrollEntryId) { _, entryID in
-            guard let entryID else { return }
+        .onChange(of: model.editorModel.scrollEntryId) { _, entryId in
+            guard let entryId else { return }
             withAnimation(accessibilityReduceMotion ? nil : .smooth, completionCriteria: .logicallyComplete) {
-                scrollPosition.scrollTo(id: entryID, anchor: .center)
+                scrollPosition.scrollTo(id: entryId, anchor: .center)
             } completion: {
                 // See ItemEditorForegroundView's matching comment: `.scrollPosition(_:anchor:)`
                 // keeps re-centering on this id for any later layout change unless released.

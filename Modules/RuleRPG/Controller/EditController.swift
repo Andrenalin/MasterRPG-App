@@ -92,12 +92,12 @@ extension EditController: EntryDataEditable {
         imported: [RuleEntryModel]
     ) -> [RuleEntryModel] {
         var matchedExistingIndices: Set<Int> = []
-        var importedToExistingIDs: [UUID: UUID] = [:]
+        var importedToExistingIds: [UUID: UUID] = [:]
 
         return imported.map { sourceEntry in
             var importedEntry = sourceEntry
             if let parentId = importedEntry.parentId,
-               let remappedParentId = importedToExistingIDs[parentId] {
+               let remappedParentId = importedToExistingIds[parentId] {
                 importedEntry.parentId = remappedParentId
             }
 
@@ -114,13 +114,13 @@ extension EditController: EntryDataEditable {
                 hierarchyFallbackIndices.count == 1 ? hierarchyFallbackIndices[0] : nil
             )
             guard let matchedIndex else {
-                importedToExistingIDs[sourceEntry.id] = importedEntry.id
+                importedToExistingIds[sourceEntry.id] = importedEntry.id
                 return importedEntry
             }
 
             matchedExistingIndices.insert(matchedIndex)
             var mergedEntry = existing[matchedIndex]
-            importedToExistingIDs[sourceEntry.id] = mergedEntry.id
+            importedToExistingIds[sourceEntry.id] = mergedEntry.id
             mergedEntry.name = importedEntry.name
             mergedEntry.content = importedEntry.content
             mergedEntry.kind = importedEntry.kind

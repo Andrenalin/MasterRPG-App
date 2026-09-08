@@ -22,7 +22,7 @@ struct RuleQuickEntryEditor: View {
             List {
                 ForEach(entries) { entry in
                     RuleQuickEntrySectionEditor(
-                        entryID: entry.id,
+                        entryId: entry.id,
                         entries: $entries
                     )
                 }
@@ -126,14 +126,14 @@ struct RuleQuickEntryEditor: View {
 }
 
 private struct RuleQuickEntrySectionEditor: View {
-    let entryID: UUID
+    let entryId: UUID
     @Binding var entries: [RuleEntryModel]
 
     var body: some View {
-        if let index = entries.firstIndex(where: { $0.id == entryID }) {
+        if let index = entries.firstIndex(where: { $0.id == entryId }) {
             let entry = $entries[index]
             let parentGroups = RuleEntryTree.validParentGroups(
-                for: entryID,
+                for: entryId,
                 in: entries
             )
 
@@ -187,12 +187,12 @@ private struct RuleQuickEntrySectionEditor: View {
     private var kindSelection: Binding<RuleEntryKind> {
         Binding(
             get: {
-                entries.first(where: { $0.id == entryID })?.kind ?? .text
+                entries.first(where: { $0.id == entryId })?.kind ?? .text
             },
             set: { kind in
                 entries = RuleEntryTree.settingKind(
                     kind,
-                    for: entryID,
+                    for: entryId,
                     in: entries
                 )
             }
@@ -202,12 +202,12 @@ private struct RuleQuickEntrySectionEditor: View {
     private var parentSelection: Binding<UUID?> {
         Binding(
             get: {
-                entries.first(where: { $0.id == entryID })?.parentId
+                entries.first(where: { $0.id == entryId })?.parentId
             },
-            set: { parentID in
+            set: { parentId in
                 entries = RuleEntryTree.settingParent(
-                    parentID,
-                    for: entryID,
+                    parentId,
+                    for: entryId,
                     in: entries
                 )
             }

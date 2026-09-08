@@ -15,7 +15,7 @@ struct ImportReviewSplitView: View {
             ImportReviewModuleListView(model: model)
         } content: {
             if let module = model.selectedModule {
-                ImportReviewItemListView(module: module, selectedID: $model.selectedItemID)
+                ImportReviewItemListView(module: module, selectedID: $model.selectedItemId)
                     .navigationTitle(module.name)
                     .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 380)
             } else {

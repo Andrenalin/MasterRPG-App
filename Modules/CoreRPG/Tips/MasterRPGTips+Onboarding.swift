@@ -27,7 +27,7 @@ public struct FirstItemTip: Tip {
 
     public var actions: [Action] {
         Action(
-            id: MasterRPGTips.importCampaignActionID,
+            id: MasterRPGTips.importCampaignActionId,
             title: String(localized: "Import Campaign", bundle: .module)
         ) {
             MasterRPGTips.requestImportCampaign()

@@ -135,7 +135,7 @@ extension SheetController: SheetControllable {
 
         let existingEntries = entrySheetsByID(
             in: sheetModel.entries,
-            ownerID: model.id
+            ownerId: model.id
         )
         let projectedEntries = sheetEntries(
             root: root,
@@ -147,7 +147,7 @@ extension SheetController: SheetControllable {
         sheetModel.entries = reconciledEntrySheets(
             projectedEntries,
             existingEntries: existingEntries,
-            ownerID: model.id,
+            ownerId: model.id,
             root: root,
             isEditor: isEditor
         )
@@ -157,14 +157,14 @@ extension SheetController: SheetControllable {
     private func reconciledEntrySheets(
         _ projectedEntries: [SheetModel],
         existingEntries: [UUID: SheetModel],
-        ownerID: UUID,
+        ownerId: UUID,
         root: RootManager,
         isEditor: Bool
     ) -> [SheetModel] {
         projectedEntries.map { projected in
             guard
-                let entryID = projected.source.entryId,
-                let existing = existingEntries[entryID]
+                let entryId = projected.source.entryId,
+                let existing = existingEntries[entryId]
             else {
                 return projected
             }
@@ -183,18 +183,18 @@ extension SheetController: SheetControllable {
             existing.showHeader = projected.showHeader
 
             let projectedChildren = projected.entries.filter {
-                isEntrySheet($0, ownedBy: ownerID)
+                isEntrySheet($0, ownedBy: ownerId)
             }
             let projectedLinks = projected.entries.filter {
-                !isEntrySheet($0, ownedBy: ownerID)
+                !isEntrySheet($0, ownedBy: ownerId)
             }
             let existingLinks = existing.entries.filter {
-                !isEntrySheet($0, ownedBy: ownerID)
+                !isEntrySheet($0, ownedBy: ownerId)
             }
             let childSheets = reconciledEntrySheets(
                 projectedChildren,
                 existingEntries: existingEntries,
-                ownerID: ownerID,
+                ownerId: ownerId,
                 root: root,
                 isEditor: isEditor
             )
@@ -218,13 +218,13 @@ extension SheetController: SheetControllable {
         root: RootManager,
         isEditor: Bool
     ) -> [SheetModel] {
-        var existingByID: [UUID: SheetModel] = [:]
-        for link in existingLinks where existingByID[link.id] == nil {
-            existingByID[link.id] = link
+        var existingById: [UUID: SheetModel] = [:]
+        for link in existingLinks where existingById[link.id] == nil {
+            existingById[link.id] = link
         }
 
         return projectedLinks.map { projected in
-            guard let existing = existingByID[projected.id] else {
+            guard let existing = existingById[projected.id] else {
                 return projected
             }
             root.rootModel(for: existing.source.typeId)?.sheetControllable.update(
@@ -239,7 +239,7 @@ extension SheetController: SheetControllable {
     @MainActor
     private func entrySheetsByID(
         in sheets: [SheetModel],
-        ownerID: UUID
+        ownerId: UUID
     ) -> [UUID: SheetModel] {
         var result: [UUID: SheetModel] = [:]
         var pending = sheets
@@ -248,11 +248,11 @@ extension SheetController: SheetControllable {
         while let sheet = pending.popLast() {
             guard visited.insert(ObjectIdentifier(sheet)).inserted else { continue }
             if
-                isEntrySheet(sheet, ownedBy: ownerID),
-                let entryID = sheet.source.entryId,
-                result[entryID] == nil
+                isEntrySheet(sheet, ownedBy: ownerId),
+                let entryId = sheet.source.entryId,
+                result[entryId] == nil
             {
-                result[entryID] = sheet
+                result[entryId] = sheet
             }
             pending.append(contentsOf: sheet.entries)
         }
@@ -260,9 +260,9 @@ extension SheetController: SheetControllable {
     }
 
     @MainActor
-    private func isEntrySheet(_ sheet: SheetModel, ownedBy ownerID: UUID) -> Bool {
+    private func isEntrySheet(_ sheet: SheetModel, ownedBy ownerId: UUID) -> Bool {
         sheet.source.typeId == .rule
-            && sheet.source.itemId == ownerID
+            && sheet.source.itemId == ownerId
             && sheet.source.entryId != nil
     }
 }

@@ -50,19 +50,19 @@ public extension RuleRootModel {
 }
 
 public extension RuleModel {
-    nonisolated static let previewID = UUID(
+    nonisolated static let previewId = UUID(
         uuidString: "D1B63D74-354B-49B9-A654-CF6F1B7F8E12"
     ) ?? UUID()
-    nonisolated static let previewFolderID = UUID(
+    nonisolated static let previewFolderId = UUID(
         uuidString: "575E4D7A-8727-4CE0-B2DE-6B1132E5AD44"
     ) ?? UUID()
-    nonisolated static let previewChildID = UUID(
+    nonisolated static let previewChildId = UUID(
         uuidString: "F4C37B4A-C9EC-49E1-9BFD-F76E8DBA53EF"
     ) ?? UUID()
 
     @MainActor
     static let preview = RuleModel(
-        id: previewID,
+        id: previewId,
         name: "Arcane Shield",
         description: "A defensive spell that surrounds its target with protective force.",
         tags: ["Foundry VTT", "Spell", "DS4"],
@@ -97,7 +97,7 @@ public extension RuleModel {
 
     @MainActor
     static let previewFolder = RuleModel(
-        id: previewFolderID,
+        id: previewFolderId,
         name: "Spell Compendium",
         description: "Preview folder containing related rules.",
         category: .folder
@@ -105,9 +105,9 @@ public extension RuleModel {
 
     @MainActor
     static let previewChild = RuleModel(
-        id: previewChildID,
+        id: previewChildId,
         name: "Protective Magic",
         description: "A preview rule nested inside the spell compendium.",
-        parentId: previewFolderID
+        parentId: previewFolderId
     )
 }

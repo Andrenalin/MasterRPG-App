@@ -83,21 +83,21 @@ import SwiftUI
 
 @MainActor @Observable final class ImportReviewModel {
     var modules: [ImportReviewModule]
-    var selectedModuleID: ImportReviewModule.ID?
-    var selectedItemID: ImportReviewItemModel.ID?
+    var selectedModuleId: ImportReviewModule.ID?
+    var selectedItemId: ImportReviewItemModel.ID?
 
     init(modules: [ImportReviewModule]) {
         self.modules = modules
-        self.selectedModuleID = modules.first?.id
-        self.selectedItemID = modules.first?.reviewItems.first?.id
+        self.selectedModuleId = modules.first?.id
+        self.selectedItemId = modules.first?.reviewItems.first?.id
     }
 
     var selectedModule: ImportReviewModule? {
-        modules.first { $0.id == selectedModuleID }
+        modules.first { $0.id == selectedModuleId }
     }
 
     var selectedItem: ImportReviewItemModel? {
-        selectedModule?.reviewItems.first { $0.id == selectedItemID }
+        selectedModule?.reviewItems.first { $0.id == selectedItemId }
     }
 
     var sheetMemorySignature: String {
@@ -109,20 +109,20 @@ import SwiftUI
         .joined(separator: "|")
     }
 
-    func select(moduleID: ImportReviewModule.ID) {
-        selectedModuleID = moduleID
-        selectedItemID = modules.first { $0.id == moduleID }?.reviewItems.first?.id
+    func select(moduleId: ImportReviewModule.ID) {
+        selectedModuleId = moduleId
+        selectedItemId = modules.first { $0.id == moduleId }?.reviewItems.first?.id
     }
 
     func select(itemId: ImportReviewItemModel.ID) {
-        selectedItemID = itemId
+        selectedItemId = itemId
     }
 
     func selectDependency(_ reference: SingleReviewReference) {
         for module in modules {
             if let item = module.reviewItems.first(where: { $0.id == reference.destination.itemId }) {
-                selectedModuleID = module.id
-                selectedItemID = item.id
+                selectedModuleId = module.id
+                selectedItemId = item.id
                 return
             }
         }
@@ -222,8 +222,8 @@ import SwiftUI
         itemModel(for: itemId)?.applyItemDecision(decision)
     }
 
-    func setPropertyDecision(_ decision: SingleReviewDecision, propertyID: UUID, itemId: ImportReviewItemModel.ID) {
-        itemModel(for: itemId)?.setPropertyDecision(decision, propertyID: propertyID)
+    func setPropertyDecision(_ decision: SingleReviewDecision, propertyId: UUID, itemId: ImportReviewItemModel.ID) {
+        itemModel(for: itemId)?.setPropertyDecision(decision, propertyId: propertyId)
     }
 
     private func itemModel(for itemId: ImportReviewItemModel.ID) -> SingleItemImportModel? {

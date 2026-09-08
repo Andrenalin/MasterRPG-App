@@ -13,7 +13,7 @@ public extension DiceRootModel {
     @MainActor
     internal static func previewFixture(
         models: [DiceModel] = DiceModel.previewFixtures,
-        focusedID: UUID? = DiceModel.previewId
+        focusedId: UUID? = DiceModel.previewId
     ) -> DiceRootModel {
         let root = DiceRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
@@ -25,16 +25,16 @@ public extension DiceRootModel {
         }
         root.itemController.diceBag.dice = DieModel.previewBagDice
         root.editController.setCurrentItem(to: .preview)
-        if let focusedID, let focusedModel = models.first(where: { $0.id == focusedID }) {
-            root.gameController.setGame(item: focusedModel.copy(), itemId: focusedID)
-            root.gameController.gameModel.focusItemIds = [focusedID]
+        if let focusedId, let focusedModel = models.first(where: { $0.id == focusedId }) {
+            root.gameController.setGame(item: focusedModel.copy(), itemId: focusedId)
+            root.gameController.gameModel.focusItemIds = [focusedId]
         }
         return root
     }
-    
+
     @MainActor
     static func preview(id: UUID) -> DiceRootModel {
-        previewFixture(focusedID: id)
+        previewFixture(focusedId: id)
     }
     
     @MainActor

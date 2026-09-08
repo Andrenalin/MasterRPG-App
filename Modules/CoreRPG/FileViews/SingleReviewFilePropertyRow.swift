@@ -72,7 +72,7 @@ struct SingleReviewFilePropertyRow: View {
                                 thumbnail(for: decision)
                             } onSelect: {
                                 withAnimation(accessibilityReduceMotion ? nil : .spring(duration: 0.3)) {
-                                    model.setPropertyDecision(decision, propertyID: property.id)
+                                    model.setPropertyDecision(decision, propertyId: property.id)
                                     isExpanded = false
                                 }
                             }

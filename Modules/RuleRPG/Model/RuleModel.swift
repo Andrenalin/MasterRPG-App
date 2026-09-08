@@ -522,10 +522,10 @@ extension RuleModel: ItemLinkRegistable {
     public func changedLinkRegisterModels(
         oldValue: RuleModel
     ) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
-        let oldByID = Dictionary(uniqueKeysWithValues: oldValue.entries.map { ($0.id, $0) })
-        let newByID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
-        let oldIDs = Set(oldByID.keys)
-        let newIDs = Set(newByID.keys)
+        let oldById = Dictionary(uniqueKeysWithValues: oldValue.entries.map { ($0.id, $0) })
+        let newById = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        let oldIds = Set(oldById.keys)
+        let newIds = Set(newById.keys)
 
         var added: [LinkRegisterModel] = []
         var removed: [LinkRegisterModel] = []
@@ -534,15 +534,15 @@ extension RuleModel: ItemLinkRegistable {
             added.append(contentsOf: linkRegisterModels(description: description))
         }
 
-        added.append(contentsOf: newIDs.subtracting(oldIDs).flatMap { id in
-            newByID[id].map(linkRegisterModels(entry:)) ?? []
+        added.append(contentsOf: newIds.subtracting(oldIds).flatMap { id in
+            newById[id].map(linkRegisterModels(entry:)) ?? []
         })
-        removed.append(contentsOf: oldIDs.subtracting(newIDs).flatMap { id in
-            oldByID[id].map(oldValue.linkRegisterModels(entry:)) ?? []
+        removed.append(contentsOf: oldIds.subtracting(newIds).flatMap { id in
+            oldById[id].map(oldValue.linkRegisterModels(entry:)) ?? []
         })
 
-        for id in oldIDs.intersection(newIDs) {
-            guard let oldEntry = oldByID[id], let newEntry = newByID[id], oldEntry != newEntry else { continue }
+        for id in oldIds.intersection(newIds) {
+            guard let oldEntry = oldById[id], let newEntry = newById[id], oldEntry != newEntry else { continue }
             removed.append(contentsOf: oldValue.linkRegisterModels(entry: oldEntry))
             added.append(contentsOf: linkRegisterModels(entry: newEntry))
         }
@@ -610,17 +610,17 @@ extension RuleModel: ItemDiffComparable {
 
 extension RuleModel: ItemDuplicatable {
     public func duplicate() -> RuleModel {
-        var duplicatedEntryIDs: [UUID: UUID] = [:]
+        var duplicatedEntryIds: [UUID: UUID] = [:]
         for entry in entries {
-            if duplicatedEntryIDs[entry.id] == nil {
-                duplicatedEntryIDs[entry.id] = UUID()
+            if duplicatedEntryIds[entry.id] == nil {
+                duplicatedEntryIds[entry.id] = UUID()
             }
         }
         let duplicatedEntries = entries.compactMap { entry -> RuleEntryModel? in
-            guard let duplicatedID = duplicatedEntryIDs[entry.id] else { return nil }
+            guard let duplicatedId = duplicatedEntryIds[entry.id] else { return nil }
             return entry.duplicate(
-                id: duplicatedID,
-                parentId: entry.parentId.flatMap { duplicatedEntryIDs[$0] }
+                id: duplicatedId,
+                parentId: entry.parentId.flatMap { duplicatedEntryIds[$0] }
             )
         }
         return RuleModel(

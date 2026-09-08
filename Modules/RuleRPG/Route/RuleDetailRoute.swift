@@ -88,9 +88,9 @@ private struct RuleDetailRouteDestinationView: View {
 }
 
 #Preview("Rule folder route", traits: .mockData) {
-    RuleDetailRoute.folder(RuleModel.previewChildID).body
+    RuleDetailRoute.folder(RuleModel.previewChildId).body
 }
 
 #Preview("Rule inline folder route", traits: .mockData) {
-    RuleDetailRoute.folderInline(RuleModel.previewChildID).body
+    RuleDetailRoute.folderInline(RuleModel.previewChildId).body
 }

@@ -47,5 +47,5 @@ private struct RuleViewerRouteDestinationView: View {
 }
 
 #Preview("Rule viewer route", traits: .mockData) {
-    RuleViewerRoute.viewer(RuleModel.previewID).body
+    RuleViewerRoute.viewer(RuleModel.previewId).body
 }

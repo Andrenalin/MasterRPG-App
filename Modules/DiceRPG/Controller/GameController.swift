@@ -98,8 +98,8 @@ extension GameController: DiceGameStorable {
         dice.applyResult(text: diceResult.values)
         
         if let index = diceGameModel.playerDice.firstIndex(where: { $0.id == dice.id || $0.name == name }) {
-            let replacedID = diceGameModel.playerDice[index].id
-            diceGameModel.playerSupporterTiers[replacedID] = nil
+            let replacedId = diceGameModel.playerDice[index].id
+            diceGameModel.playerSupporterTiers[replacedId] = nil
             diceGameModel.playerDice[index] = dice
         } else {
             diceGameModel.playerDice.insert(dice, at: 0)
