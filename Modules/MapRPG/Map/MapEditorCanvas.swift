@@ -20,6 +20,15 @@ struct MapEditorCanvas: View {
         interactionTransform ?? session.viewport.transform
     }
 
+    /// The room/fog/active-room Canvas layers render into this — the visible
+    /// viewport — rather than the (often huge) logical map size, applying
+    /// pan/zoom inside their own `GraphicsContext` instead of inheriting it
+    /// from an ancestor `.scaleEffect`. See `MapPassiveRoomCanvas`'s
+    /// `viewportSize` doc comment for why.
+    private var viewportSize: CGSize {
+        session.viewport.configuration.containerSize
+    }
+
     var body: some View {
         // Only this transparent window plane participates in layout. The
         // logical map has a fixed (often very large) size and must not be
@@ -36,19 +45,74 @@ struct MapEditorCanvas: View {
                 )
             }
             .overlay(alignment: .topLeading) {
-                MapLogicalCanvas(
+                MapLogicalCanvasBaseLayer(
                     session: session,
                     image: image,
                     degrees: degrees,
+                    interactionTransform: $interactionTransform
+                )
+                .modifier(MapLogicalTransformModifier(transform: displayedTransform))
+            }
+            .overlay(alignment: .topLeading) {
+                // The GM boundary/dim overlay (.master/.reader). Rendered in
+                // viewport space, not inside the scaled layer above — see
+                // MapPassiveRoomCanvas.
+                MapRoomOverlayCanvas(
+                    session: session,
                     map: map,
+                    image: image,
+                    degrees: degrees,
+                    phase: .base,
+                    transform: displayedTransform,
+                    viewportSize: viewportSize
+                )
+            }
+            .overlay(alignment: .topLeading) {
+                MapLogicalCanvasHitAndOrdinaryPins(
+                    session: session,
                     viewportScale: displayedTransform.scale,
                     interactionTransform: $interactionTransform
                 )
-                .scaleEffect(displayedTransform.scale, anchor: .topLeading)
-                .offset(
-                    x: displayedTransform.offset.x,
-                    y: displayedTransform.offset.y
+                .modifier(MapLogicalTransformModifier(transform: displayedTransform))
+            }
+            .overlay(alignment: .topLeading) {
+                // The player's fog-of-war. Sits above ordinary pins (hiding
+                // them when their room is unrevealed) but below the pointer
+                // and zoomed pins layered in next, matching the original
+                // single-ZStack ordering.
+                MapRoomOverlayCanvas(
+                    session: session,
+                    map: map,
+                    image: image,
+                    degrees: degrees,
+                    phase: .fog,
+                    transform: displayedTransform,
+                    viewportSize: viewportSize
                 )
+            }
+            .overlay(alignment: .topLeading) {
+                MapLogicalCanvasPointerAndZoomedPins(
+                    session: session,
+                    viewportScale: displayedTransform.scale
+                )
+                .modifier(MapLogicalTransformModifier(transform: displayedTransform))
+            }
+            .overlay(alignment: .topLeading) {
+                MapActiveRoomOverlayCanvas(
+                    session: session,
+                    map: map,
+                    image: image,
+                    degrees: degrees,
+                    transform: displayedTransform,
+                    viewportSize: viewportSize
+                )
+            }
+            .overlay(alignment: .topLeading) {
+                MapLogicalCanvasNeedleLayer(
+                    session: session,
+                    viewportScale: displayedTransform.scale
+                )
+                .modifier(MapLogicalTransformModifier(transform: displayedTransform))
             }
             .overlay(alignment: .topLeading) {
                 MapViewportOverlayLayer(
@@ -73,6 +137,19 @@ struct MapEditorCanvas: View {
                 safeAreaInsets = metrics.safeAreaInsets
                 session.updateContainerSize(metrics.size)
             }
+    }
+}
+
+/// Applies the shared pan/zoom to the (non-Canvas) logical-canvas layers —
+/// the same `.scaleEffect` + `.offset` pair, factored out since it now
+/// applies separately to several sibling layers instead of one ZStack.
+private struct MapLogicalTransformModifier: ViewModifier {
+    let transform: ViewportTransform
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(transform.scale, anchor: .topLeading)
+            .offset(x: transform.offset.x, y: transform.offset.y)
     }
 }
 
@@ -262,19 +339,16 @@ enum MapViewportGestureSurface {
     }
 }
 
-private struct MapLogicalCanvas: View {
+/// Image and the invisible interaction surface — vector/texture content that
+/// scales cleanly through an ancestor `.scaleEffect`, unlike the room/fog
+/// Canvas layers (see `MapRoomOverlayCanvas`).
+private struct MapLogicalCanvasBaseLayer: View {
     let session: MapEditorSession
     let image: AKImage
     let degrees: Double
-    let map: MapModel
-    let viewportScale: CGFloat
     let interactionTransform: GestureState<ViewportTransform?>
 
     private var canvasSize: CGSize { session.mapCanvasSize }
-    private var activeEntryId: UUID? { session.editEntries.entries.first?.id }
-    private var displayConfig: DisplayConfigModel {
-        session.workingCopy?.displayConfig ?? map.displayConfig
-    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -292,19 +366,24 @@ private struct MapLogicalCanvas: View {
                 interactionTransform: interactionTransform,
                 surface: .content(canvasSize)
             )
+        }
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+    }
+}
 
+/// Room hit targets and ordinary pins — sits below the fog-of-war overlay so
+/// fog can hide an ordinary pin whose room is unrevealed.
+private struct MapLogicalCanvasHitAndOrdinaryPins: View {
+    let session: MapEditorSession
+    let viewportScale: CGFloat
+    let interactionTransform: GestureState<ViewportTransform?>
+
+    private var canvasSize: CGSize { session.mapCanvasSize }
+    private var activeEntryId: UUID? { session.editEntries.entries.first?.id }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
             if !session.configuration.isTileEditor {
-                MapPassiveRoomCanvas(
-                    rooms: session.entries,
-                    displayMode: session.displayMode,
-                    displayConfig: displayConfig,
-                    phase: .base,
-                    mapImage: image,
-                    degrees: degrees,
-                    canvasSize: canvasSize,
-                    excludingEntryId: activeEntryId
-                )
-
                 MapRoomHitLayer(
                     rooms: session.entries,
                     session: session,
@@ -322,18 +401,23 @@ private struct MapLogicalCanvas: View {
                     pinScale: session.pinScale,
                     viewportScale: viewportScale
                 )
+            }
+        }
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+    }
+}
 
-                MapPassiveRoomCanvas(
-                    rooms: session.entries,
-                    displayMode: session.displayMode,
-                    displayConfig: displayConfig,
-                    phase: .fog,
-                    mapImage: image,
-                    degrees: degrees,
-                    canvasSize: canvasSize,
-                    excludingEntryId: activeEntryId
-                )
+/// The pointer and zoomed pins — sit above the fog-of-war overlay so they
+/// stay visible even in an unrevealed room.
+private struct MapLogicalCanvasPointerAndZoomedPins: View {
+    let session: MapEditorSession
+    let viewportScale: CGFloat
 
+    private var canvasSize: CGSize { session.mapCanvasSize }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if !session.configuration.isTileEditor {
                 MapPinLayer(
                     pins: session.pins,
                     kind: .pointer,
@@ -354,31 +438,103 @@ private struct MapLogicalCanvas: View {
                     viewportScale: viewportScale
                 )
             }
+        }
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+    }
+}
 
-            if session.mapMode == .edit {
-                MapActiveRoomLayer(
-                    rooms: session.editEntries,
-                    displayMode: session.displayMode,
-                    displayConfig: displayConfig,
-                    mapImage: image,
-                    degrees: degrees,
-                    canvasSize: canvasSize
+/// The selected room's needle-editing handles (edit mode only).
+private struct MapLogicalCanvasNeedleLayer: View {
+    let session: MapEditorSession
+    let viewportScale: CGFloat
+
+    private var canvasSize: CGSize { session.mapCanvasSize }
+    private var activeEntryId: UUID? { session.editEntries.entries.first?.id }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if session.mapMode == .edit,
+               session.displayMode == .master || session.displayMode == .reader,
+               let entryId = activeEntryId {
+                MapNeedleLayer(
+                    entries: session.editEntries,
+                    entryId: entryId,
+                    session: session,
+                    viewportScale: viewportScale
                 )
-
-                if session.displayMode == .master || session.displayMode == .reader,
-                   let entryId = activeEntryId {
-                    MapNeedleLayer(
-                        entries: session.editEntries,
-                        entryId: entryId,
-                        session: session,
-                        viewportScale: viewportScale
-                    )
-                }
             }
         }
         .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
     }
+}
 
+/// The GM boundary/dim overlay (`.base`) or the player's fog-of-war
+/// (`.fog`). Unlike the layers above, this renders in viewport space and
+/// applies pan/zoom inside its own `GraphicsContext` — see
+/// `MapPassiveRoomCanvas`'s `viewportSize` doc comment for why that matters
+/// for a large map fitted far below its native scale.
+private struct MapRoomOverlayCanvas: View {
+    let session: MapEditorSession
+    let map: MapModel
+    let image: AKImage
+    let degrees: Double
+    let phase: MapRoomCanvasPhase
+    let transform: ViewportTransform
+    let viewportSize: CGSize
+
+    private var canvasSize: CGSize { session.mapCanvasSize }
+    private var activeEntryId: UUID? { session.editEntries.entries.first?.id }
+    private var displayConfig: DisplayConfigModel {
+        session.workingCopy?.displayConfig ?? map.displayConfig
+    }
+
+    var body: some View {
+        if !session.configuration.isTileEditor {
+            MapPassiveRoomCanvas(
+                rooms: session.entries,
+                displayMode: session.displayMode,
+                displayConfig: displayConfig,
+                phase: phase,
+                mapImage: image,
+                degrees: degrees,
+                canvasSize: canvasSize,
+                transform: transform,
+                viewportSize: viewportSize,
+                excludingEntryId: activeEntryId
+            )
+        }
+    }
+}
+
+/// The currently-edited room's own boundary/fog preview (edit mode only),
+/// in the same viewport-space style as `MapRoomOverlayCanvas`.
+private struct MapActiveRoomOverlayCanvas: View {
+    let session: MapEditorSession
+    let map: MapModel
+    let image: AKImage
+    let degrees: Double
+    let transform: ViewportTransform
+    let viewportSize: CGSize
+
+    private var canvasSize: CGSize { session.mapCanvasSize }
+    private var displayConfig: DisplayConfigModel {
+        session.workingCopy?.displayConfig ?? map.displayConfig
+    }
+
+    var body: some View {
+        if session.mapMode == .edit {
+            MapActiveRoomLayer(
+                rooms: session.editEntries,
+                displayMode: session.displayMode,
+                displayConfig: displayConfig,
+                mapImage: image,
+                degrees: degrees,
+                canvasSize: canvasSize,
+                transform: transform,
+                viewportSize: viewportSize
+            )
+        }
+    }
 }
 
 private enum MapPinLayerKind {

@@ -801,6 +801,48 @@ struct MapEditorViewportTransformTests {
         // Then
         #expect(resolvedSize == persistedMapSize)
     }
+
+    @Test("A very large map fitted to a small iPhone viewport clamps to a tiny minimum scale")
+    func largeMapOnSmallPhoneViewportHasExtremeMinimumScale() {
+        // Given — a real-world large dungeon map (4480×5740, portrait) fitted
+        // into a phone-size container, as opposed to a much larger iPad one.
+        let mapSize = CGSize(width: 4_480, height: 5_740)
+        let map = makeMap(name: "Very large map", size: mapSize)
+        let iPhoneContainer = CGSize(width: 393, height: 808)
+        let iPadContainer = CGSize(width: 1_024, height: 1_366)
+
+        // When
+        let phoneSession = makeSession(map: map, containerSize: .zero, mode: .player)
+        phoneSession.updateContainerSize(iPhoneContainer)
+        let padSession = makeSession(map: map, containerSize: .zero, mode: .player)
+        padSession.updateContainerSize(iPadContainer)
+
+        let phoneGeometry = phoneSession.viewport.geometry
+        let padGeometry = padSession.viewport.geometry
+
+        // Then — the phone's fit scale is far smaller than the iPad's: it
+        // must shrink ~5740 logical points of content down to ~808 points,
+        // roughly an order of magnitude more aggressive than the iPad. Any
+        // rendering step whose effective precision degrades with the
+        // *composited/on-screen* size (rather than staying purely a function
+        // of content-space coordinates) is far more likely to visibly break
+        // at this ratio — see the fog/room-overlay report this documents.
+        #expect(phoneGeometry.fitScale > 0)
+        #expect(phoneGeometry.fitScale < 0.1)
+        #expect(padGeometry.fitScale > phoneGeometry.fitScale)
+
+        // The 8x maximumScaleMultiplier (see makeViewportConfiguration) still
+        // never lets a phone reach 1:1 content scale for a map this size —
+        // the whole usable zoom range sits well under real scale.
+        #expect(phoneGeometry.maximumScale < 1)
+        #expect(phoneGeometry.clampedScale(1) == phoneGeometry.maximumScale)
+
+        // The content, rendered at fitScale, is compressed by roughly this
+        // factor on screen — record it so a future investigation has the
+        // concrete number without re-deriving it.
+        let compressionFactor = 1 / phoneGeometry.fitScale
+        #expect(compressionFactor > 10)
+    }
 }
 
 private extension MapEditorViewportTransformTests {

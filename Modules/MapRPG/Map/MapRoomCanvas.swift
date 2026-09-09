@@ -15,7 +15,23 @@ struct MapPassiveRoomCanvas: View {
     let phase: MapRoomCanvasPhase
     let mapImage: AKImage
     let degrees: Double
+    /// The logical map's full content size — only used for content-space math
+    /// (room bounds, the fog tile sample). Never the frame this view draws
+    /// into; see `viewportSize`.
     let canvasSize: CGSize
+    /// The current pan/zoom, applied inside this view's own `GraphicsContext`
+    /// instead of relying on an ancestor `.scaleEffect`.
+    let transform: ViewportTransform
+    /// This view's own on-screen frame — the visible viewport, not the full
+    /// (possibly huge) logical map. Keeping the Canvas framed and rasterized
+    /// at this size, rather than at `canvasSize` and then shrunk by an
+    /// ancestor `.scaleEffect`, is what keeps room/fog boundaries crisp when
+    /// a large map is fitted far below its native scale (e.g. a big dungeon
+    /// map on a phone). A `Canvas` is immediate-mode/bitmap content, unlike
+    /// the vector-backed `Image`/`Shape` layers elsewhere in this canvas, so
+    /// it is the one piece that visibly degrades under an extreme ancestor
+    /// downscale — see MapEditorViewportTransformTests for the actual ratio.
+    let viewportSize: CGSize
     var excludingEntryId: UUID? = nil
 
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
@@ -23,7 +39,21 @@ struct MapPassiveRoomCanvas: View {
 
     var body: some View {
         let snapshots = orderedSnapshots
-        Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: true) { context, _ in
+        // Synchronous on purpose: an async-rendered Canvas here can skip its
+        // first draw pass entirely (nothing appears until an unrelated
+        // Core Animation transaction — such as the one a pinch gesture
+        // produces — forces the backing layer to flush). Room visibility/fog
+        // is gameplay-critical (a GM overlay or, worse, a player's
+        // fog-of-war) so it must never depend on an incidental relayout to
+        // draw correctly. The content here (a handful of room paths plus one
+        // resolved tile symbol) is cheap enough that synchronous drawing
+        // costs nothing measurable.
+        Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: false) { context, _ in
+            // Translate then scale, matching ViewportGeometry.viewportPoint's
+            // `content * scale + offset` — everything drawn below stays in
+            // logical map-content coordinates.
+            context.translateBy(x: transform.offset.x, y: transform.offset.y)
+            context.scaleBy(x: transform.scale, y: transform.scale)
             draw(snapshots: snapshots, in: &context)
         } symbols: {
             if phase == .fog,
@@ -38,7 +68,7 @@ struct MapPassiveRoomCanvas: View {
                 .tag(MapRoomCanvasSymbol.fogTile)
             }
         }
-        .frame(width: canvasSize.width, height: canvasSize.height)
+        .frame(width: viewportSize.width, height: viewportSize.height)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
@@ -177,6 +207,8 @@ struct MapActiveRoomLayer: View {
     let mapImage: AKImage
     let degrees: Double
     let canvasSize: CGSize
+    let transform: ViewportTransform
+    let viewportSize: CGSize
 
     var body: some View {
         if !rooms.roomNodes.isEmpty {
@@ -188,6 +220,8 @@ struct MapActiveRoomLayer: View {
                 mapImage: mapImage,
                 degrees: degrees,
                 canvasSize: canvasSize,
+                transform: transform,
+                viewportSize: viewportSize,
                 excludingEntryId: nil
             )
         }
@@ -415,6 +449,7 @@ private struct MapFogTileSymbol: View {
 
 #Preview("Master room canvas") {
     let image = AKImage()
+    let viewportSize = CGSize(width: MapModel.preview.width / 2, height: MapModel.preview.height / 2)
 
     MapPassiveRoomCanvas(
         rooms: MapEntryViewerModel(
@@ -426,15 +461,17 @@ private struct MapFogTileSymbol: View {
         phase: .base,
         mapImage: image,
         degrees: 0,
-        canvasSize: CGSize(width: MapModel.preview.width, height: MapModel.preview.height)
+        canvasSize: CGSize(width: MapModel.preview.width, height: MapModel.preview.height),
+        transform: ViewportTransform(scale: 0.5),
+        viewportSize: viewportSize
     )
-    .scaleEffect(0.5, anchor: .topLeading)
-    .frame(width: MapModel.preview.width / 2, height: MapModel.preview.height / 2)
+    .frame(width: viewportSize.width, height: viewportSize.height)
     .clipped()
 }
 
 #Preview("Player fog canvas") {
     let image = AKImage()
+    let viewportSize = CGSize(width: MapModel.preview.width / 2, height: MapModel.preview.height / 2)
 
     MapActiveRoomLayer(
         rooms: MapEntryViewerModel(
@@ -445,9 +482,10 @@ private struct MapFogTileSymbol: View {
         displayConfig: MapModel.preview.displayConfig,
         mapImage: image,
         degrees: 0,
-        canvasSize: CGSize(width: MapModel.preview.width, height: MapModel.preview.height)
+        canvasSize: CGSize(width: MapModel.preview.width, height: MapModel.preview.height),
+        transform: ViewportTransform(scale: 0.5),
+        viewportSize: viewportSize
     )
-    .scaleEffect(0.5, anchor: .topLeading)
-    .frame(width: MapModel.preview.width / 2, height: MapModel.preview.height / 2)
+    .frame(width: viewportSize.width, height: viewportSize.height)
     .clipped()
 }
