@@ -61,7 +61,15 @@ final class GameProtocol: NWProtocolFramerImplementation {
         do {
             try framer.writeOutputNoCopy(length: messageLength)
         } catch {
+            // A body-write failure after the header already went out would
+            // otherwise leave the receiver expecting `header.length` bytes
+            // for a frame whose body never arrived (or arrived short),
+            // desyncing framing for every subsequent frame on this
+            // connection. `markFailed` fails the connection cleanly instead
+            // — the same idiom already used just below for a
+            // declared-length violation. See CODE_AUDIT_Network §5.10.
             Logger.networking.error("Hit error writing: \(error.localizedDescription, privacy: .public)")
+            framer.markFailed(error: .posix(.EIO))
         }
     }
 

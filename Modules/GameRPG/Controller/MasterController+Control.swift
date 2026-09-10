@@ -34,6 +34,10 @@ extension MasterController {
         await messagePipeline.cancelAll()
         resetPlayersTask?.cancel()
         resetPlayersTask = nil
+        for task in audioPlayRetryTasks.values {
+            task.cancel()
+        }
+        audioPlayRetryTasks.removeAll()
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
         gameModel.sentGameItems.removeAll()

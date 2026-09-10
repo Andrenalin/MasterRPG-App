@@ -20,11 +20,26 @@ struct GameRelayAdmissionKey: Hashable, Sendable {
 /// distinct admissions.
 actor GameRelayAdmission {
     private let limit: Int
+    /// `GroupSessionMessenger` can redeliver the same logical message well
+    /// after the fact — e.g. following a participant reconnecting after
+    /// being briefly unreachable. A purely count-capped window could evict
+    /// that message's admission key long before such a legitimately-delayed
+    /// retry arrives (during any long, active session with frequent relay
+    /// traffic), causing the retry to be treated as new and relayed a
+    /// second time. Age-based eviction keeps a key recognized for at least
+    /// this long regardless of how much unrelated traffic passed through in
+    /// between; `limit` remains a hard memory backstop for a burst that
+    /// arrives within the window. See CODE_AUDIT_Network §5.7.
+    private let retentionWindow: Duration
+    private let clock: ContinuousClock
     private var order: [GameRelayAdmissionKey] = []
     private var keys: Set<GameRelayAdmissionKey> = []
+    private var admittedAt: [GameRelayAdmissionKey: ContinuousClock.Instant] = [:]
 
-    init(limit: Int = 512) {
+    init(limit: Int = 512, retentionWindow: Duration = .seconds(120), clock: ContinuousClock = ContinuousClock()) {
         self.limit = limit
+        self.retentionWindow = retentionWindow
+        self.clock = clock
     }
 
     func admit(_ model: GameNetworkModel) -> Bool {
@@ -33,6 +48,9 @@ actor GameRelayAdmission {
             // still deduplicates positive counters; do not guess for counter zero.
             return true
         }
+        let now = clock.now
+        pruneExpired(before: now)
+
         let key = GameRelayAdmissionKey(
             senderID: model.sender.id,
             messageID: messageID,
@@ -40,15 +58,32 @@ actor GameRelayAdmission {
         )
         guard keys.insert(key).inserted else { return false }
         order.append(key)
+        admittedAt[key] = now
         while order.count > limit {
-            keys.remove(order.removeFirst())
+            let evicted = order.removeFirst()
+            keys.remove(evicted)
+            admittedAt[evicted] = nil
         }
         return true
+    }
+
+    /// `order` is chronological (append-only, evicted from the front), so
+    /// this stops at the first still-fresh entry rather than scanning the
+    /// whole window.
+    private func pruneExpired(before now: ContinuousClock.Instant) {
+        while let oldest = order.first,
+              let admittedTime = admittedAt[oldest],
+              now - admittedTime > retentionWindow {
+            order.removeFirst()
+            keys.remove(oldest)
+            admittedAt[oldest] = nil
+        }
     }
 
     func reset() {
         order.removeAll()
         keys.removeAll()
+        admittedAt.removeAll()
     }
 }
 

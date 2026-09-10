@@ -1132,12 +1132,18 @@ struct SharePlayPackageTransportTests {
             transportSucceeded: true,
             at: sentAt
         )
+        // Distinct participants isolate the time-boundary behavior under
+        // test from the separate once-per-participant behavior covered by
+        // `mapRecoverySuppressionIsScopedToParticipant` below. See
+        // CODE_AUDIT_Network §5.4.
         let suppressesBeforeBoundary = tracker.shouldSuppressRecoveryRequest(
             request,
+            from: UUID(),
             at: sentAt.advanced(by: .milliseconds(29_999))
         )
         let suppressesAtBoundary = tracker.shouldSuppressRecoveryRequest(
             request,
+            from: UUID(),
             at: sentAt.advanced(by: .seconds(30))
         )
 
@@ -1155,24 +1161,32 @@ struct SharePlayPackageTransportTests {
             transportSucceeded: true,
             at: now
         )
+        // Each scenario uses its own participant so one call's suppression
+        // doesn't consume the once-per-participant slot another scenario in
+        // this test needs to observe. See CODE_AUDIT_Network §5.4.
         let suppressesDifferentMap = tracker.shouldSuppressRecoveryRequest(
             Self.playerMapRecoveryRequest(mapId: UUID(), version: 3),
+            from: UUID(),
             at: now
         )
         let suppressesDifferentVersion = tracker.shouldSuppressRecoveryRequest(
             Self.playerMapRecoveryRequest(mapId: mapId, version: 4),
+            from: UUID(),
             at: now
         )
         let suppressesLegacyRequest = tracker.shouldSuppressRecoveryRequest(
             Self.playerMapRecoveryRequest(mapId: mapId, version: 0),
+            from: UUID(),
             at: now
         )
         let suppressesMatchingAsset = tracker.shouldSuppressRecoveryRequest(
             Self.playerMapRecoveryRequest(mapId: mapId, version: 99, assetVersion: 300),
+            from: UUID(),
             at: now
         )
         let suppressesDifferentAsset = tracker.shouldSuppressRecoveryRequest(
             Self.playerMapRecoveryRequest(mapId: mapId, version: 3, assetVersion: 301),
+            from: UUID(),
             at: now
         )
 
@@ -1185,9 +1199,41 @@ struct SharePlayPackageTransportTests {
         tracker.reset()
         let suppressesAfterReset = tracker.shouldSuppressRecoveryRequest(
             Self.playerMapRecoveryRequest(mapId: mapId, version: 0),
+            from: UUID(),
             at: now
         )
         #expect(!suppressesAfterReset)
+    }
+
+    @Test("map recovery suppression is scoped to the requesting participant")
+    func mapRecoverySuppressionIsScopedToParticipant() {
+        let now = ContinuousClock().now
+        let mapId = UUID()
+        var tracker = SharePlayMapRecoveryTracker()
+        tracker.recordFullMapPresentation(
+            Self.masterMapPresentation(mapId: mapId, version: 5, assetVersion: 500),
+            transportSucceeded: true,
+            at: now
+        )
+        let request = Self.playerMapRecoveryRequest(mapId: mapId, version: 5)
+        let stuckParticipant = UUID()
+        let otherParticipant = UUID()
+
+        // A participant's first request within the window is suppressed —
+        // presumed to be the original broadcast still arriving.
+        let suppressesFirstRequest = tracker.shouldSuppressRecoveryRequest(request, from: stuckParticipant, at: now)
+        // That same participant asking again is treated as a genuine
+        // escalation (their reassembly likely did fail), not more presumed
+        // in-flight chatter, and is no longer suppressed. See
+        // CODE_AUDIT_Network §5.4.
+        let suppressesSecondRequest = tracker.shouldSuppressRecoveryRequest(request, from: stuckParticipant, at: now)
+        // An unrelated participant's own first request is independently
+        // suppressed — one participant's escalation must not mask another's.
+        let suppressesOtherParticipant = tracker.shouldSuppressRecoveryRequest(request, from: otherParticipant, at: now)
+
+        #expect(suppressesFirstRequest)
+        #expect(!suppressesSecondRequest)
+        #expect(suppressesOtherParticipant)
     }
 
     @Test("explicit map transfer failure repair is never suppressed")
@@ -1205,6 +1251,7 @@ struct SharePlayPackageTransportTests {
         explicitRepair.subType = .store
         let suppressesExplicitRepair = tracker.shouldSuppressRecoveryRequest(
             explicitRepair,
+            from: UUID(),
             at: now
         )
 
@@ -1218,6 +1265,7 @@ struct SharePlayPackageTransportTests {
         let mapId = UUID()
         let presentation = Self.masterMapPresentation(mapId: mapId, version: 6)
         let request = Self.playerMapRecoveryRequest(mapId: mapId, version: 6)
+        let participantId = UUID()
         var tracker = SharePlayMapRecoveryTracker()
 
         // When
@@ -1228,7 +1276,7 @@ struct SharePlayPackageTransportTests {
         )
 
         // Then
-        let suppressesAfterFailure = tracker.shouldSuppressRecoveryRequest(request, at: now)
+        let suppressesAfterFailure = tracker.shouldSuppressRecoveryRequest(request, from: participantId, at: now)
         #expect(!suppressesAfterFailure)
 
         tracker.recordFullMapPresentation(
@@ -1236,7 +1284,7 @@ struct SharePlayPackageTransportTests {
             transportSucceeded: true,
             at: now
         )
-        let suppressesAfterSuccess = tracker.shouldSuppressRecoveryRequest(request, at: now)
+        let suppressesAfterSuccess = tracker.shouldSuppressRecoveryRequest(request, from: participantId, at: now)
         #expect(suppressesAfterSuccess)
     }
 

@@ -11,6 +11,22 @@ extension PlayerController {
         if model.subType == .addItem {
             return await handleAddItem(model)
         }
+        if model.sender.isMaster,
+           model.type == .update,
+           model.subType == .failed,
+           model.data.type == .value,
+           let characterId = root.gameModel.gamePlayer.characterId,
+           characterId == model.data.id {
+            // The master failed to import this player's Character package
+            // (see MasterController+ValueMessages.swift). `hasSendPlayer` was
+            // already latched true when the original reference went out;
+            // clear it so the existing `scheduleSendCharacter()` triggers
+            // retry `sendCharacter()` instead of the handshake staying wedged
+            // for the rest of the session. See CODE_AUDIT_Network §5.24.
+            Logger.networking.error("PlayerController: Master failed to import Character \(characterId, privacy: .private); will retry")
+            gameModel.reset(sendPlayer: false)
+            return nil
+        }
         // A normal player accepts only the master's targeted response to the
         // join announcement. No Value reveal, result, loot, or live update is
         // processed during the game.

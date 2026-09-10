@@ -94,7 +94,7 @@ extension ConnectionController: ConnectionControllable {
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send request")
         let message = NWProtocolFramer.Message(gameMessageType: type)
         let context = NWConnection.ContentContext(identifier: "PlayerRequest", metadata: [message])
-        connection.send(content: encodedContent, contentContext: context, isComplete: true, completion: .idempotent)
+        send(content: encodedContent, context: context)
     }
 
     func response(type: GameMessageType, encodedContent: Data?) {
@@ -102,7 +102,35 @@ extension ConnectionController: ConnectionControllable {
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send response")
         let message = NWProtocolFramer.Message(gameMessageType: type)
         let context = NWConnection.ContentContext(identifier: "MasterResponse", metadata: [message])
-        connection.send(content: encodedContent, contentContext: context, isComplete: true, completion: .idempotent)
+        send(content: encodedContent, context: context)
+    }
+
+    /// `.idempotent` completion never invokes its handler at all, so the app
+    /// was never told whether a write actually reached the peer — a
+    /// mid-flight failure (a Wi-Fi drop, backgrounding, a peer going out of
+    /// range) silently lost that specific message with no signal to retry
+    /// it and no way to select which in-flight message(s) were affected.
+    /// `.contentProcessed` surfaces a failure through the same
+    /// `connectionFailed` path a receive-side error already uses, so the
+    /// delegate learns the connection is dead instead of nothing ever
+    /// finding out. See CODE_AUDIT_Network §5.5.
+    private func send(content: Data?, context: NWConnection.ContentContext) {
+        connection.send(
+            content: content,
+            contentContext: context,
+            isComplete: true,
+            completion: .contentProcessed { [weak self] error in
+                guard let error else { return }
+                Task { await self?.sendFailed(error: error) }
+            }
+        )
+    }
+
+    private func sendFailed(error: NWError) async {
+        let uuid = id.uuidString
+        Logger.connectionController.error("Connection: \(uuid, privacy: .public) Send failed \(error.localizedDescription, privacy: .public)")
+        cancel()
+        await connectionFailed(message: error.localizedDescription)
     }
 }
 
@@ -167,6 +195,13 @@ private extension ConnectionController {
 
         case .cancelled:
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Cancelled")
+            // Mirrors `cancel()`: without this, a receive callback still
+            // pending inside `receiveLoop` fires once more with a
+            // cancellation error after teardown was already reported,
+            // re-entering `process()`/`connectionFailed()` for the same
+            // underlying event. See CODE_AUDIT_Network §5.9.
+            receiveTask?.cancel()
+            receiveTask = nil
             await lostConnection()
 
         default:
@@ -201,15 +236,33 @@ private extension ConnectionController {
     }
 
     func process(content: Data?, context: NWConnection.ContentContext?, error: Error?) async {
-        guard error == nil,
-              let gameMessage = context?.protocolMetadata(definition: GameProtocol.definition) as? NWProtocolFramer.Message
-        else {
+        guard error == nil else {
             let uuid = id.uuidString
-            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "Message is not from MasterRPG", privacy: .public)")
-            if error != nil {
-                cancel()
-                await connectionFailed(message: error?.localizedDescription ?? "Message is not from MasterRPG")
-            }
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "", privacy: .public)")
+            cancel()
+            await connectionFailed(message: error?.localizedDescription ?? "")
+            return
+        }
+        guard content != nil else {
+            // No error, but no content either: the standard `NWConnection`
+            // idiom for a graceful peer half-close (EOF), not an ordinary
+            // unrecognized message — a routine occurrence on every clean
+            // disconnect (player quits, master stops a player, app
+            // backgrounds). Previously this fell into the same
+            // log-and-continue branch as a genuinely foreign/garbage
+            // message, so the delegate was never told the connection died,
+            // and `receiveLoop` re-armed `receiveMessage` in a tight,
+            // non-yielding cycle since a closed stream's completion replays
+            // instantly. See CODE_AUDIT_Network §5.6.
+            let uuid = id.uuidString
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Peer closed the connection")
+            cancel()
+            await connectionFailed(message: "Peer closed the connection")
+            return
+        }
+        guard let gameMessage = context?.protocolMetadata(definition: GameProtocol.definition) as? NWProtocolFramer.Message else {
+            let uuid = id.uuidString
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Message is not from MasterRPG")
             return
         }
         await receivedMessage(content: content, message: gameMessage)

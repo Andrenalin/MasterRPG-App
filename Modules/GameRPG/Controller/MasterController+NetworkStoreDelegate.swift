@@ -179,24 +179,44 @@ extension MasterController {
 
         guard await accepts(model, origin: origin) else { return }
 
-        let event = GameMessageEvent(model: model, origin: origin)
-        guard await messagePipeline.enqueue(event) else {
-            Logger.networking.debug("MasterController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
-            return
+        if model.isPlayerJournalAdmissionMetadata,
+           let pendingFile = gameModel.takeDeferredPlayerJournalFile(senderId: model.sender.id, messageId: model.messageID) {
+            // This admission metadata is exactly what an earlier file event
+            // was waiting to be correlated against — replay it now instead
+            // of leaving it lost. See CODE_AUDIT_Network §5.16.
+            await receivedFile(pendingFile)
         }
-        await processMessages()
+
+        let event = GameMessageEvent(model: model, origin: origin)
+        switch await messagePipeline.enqueue(event) {
+        case .enqueued:
+            await processMessages()
+        case .duplicate:
+            Logger.networking.debug("MasterController: Duplicate ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        case .queueFull:
+            // Distinct from an ordinary duplicate: a genuinely new message
+            // was discarded only because the pipeline is momentarily
+            // saturated, not because it was already seen. See
+            // CODE_AUDIT_Network §5.14.
+            Logger.networking.error("MasterController: Message queue full, message lost \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        case .pipelineStopped:
+            Logger.networking.debug("MasterController: Message pipeline stopped, ignoring \(model.counter, privacy: .public)")
+        }
     }
 
     private func processMessages() async {
         while let event = await messagePipeline.next() {
-            // Matches PlayerController.processMessages' policy: stop
-            // draining on cancellation rather than continuing to process
-            // (or silently drop) the remaining backlog — the pipeline
-            // retains any still-queued events for the next real trigger to
-            // resume, instead of the two controllers disagreeing about what
-            // cancellation means. See CODE_AUDIT_Game §3.8.
+            // Bail out before any processing is attempted, so the one
+            // message `next()` already dequeued isn't lost: `processed(success:)`
+            // only clears bookkeeping, it never restores the event to the
+            // queue. `requeueCurrentOnCancellation()` puts it back at the
+            // front so the next real trigger resumes the backlog, matching
+            // PlayerController.processMessages' policy. See
+            // CODE_AUDIT_Network §5.15 (superseding CODE_AUDIT_Game §3.8's
+            // inaccurate claim that the old `processed(success: false)` call
+            // already preserved the in-hand event).
             guard !Task.isCancelled else {
-                await messagePipeline.processed(success: false)
+                await messagePipeline.requeueCurrentOnCancellation()
                 return
             }
             let success = await process(event)
@@ -424,11 +444,30 @@ extension MasterController {
     func receivedFile(_ model: GameNetworkModel) async {
         Logger.networking.debug("MasterController: FILE Received \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public) id: \(model.data.id, privacy: .public)")
         guard root.gameModel.gameConfig.isMaster != model.sender.isMaster else { return }
-        guard await accepts(model, origin: .file) else { return }
-        guard await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) else {
-            Logger.networking.debug("MasterController: Duplicate file ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        guard await accepts(model, origin: .file) else {
+            // GroupSessionJournal attachments and GroupSessionMessenger
+            // messages are independent channels with no cross-channel
+            // ordering guarantee: this file's matching admission metadata
+            // may simply not have been processed yet. Hold it and replay it
+            // once that admission lands (see `receivedProcess`'s replay
+            // hook) instead of losing this Photo/Pdf/Space permanently.
+            // See CODE_AUDIT_Network §5.16.
+            if model.isPlayerFilePresentationEvent,
+               model.messageID != nil,
+               !gameModel.acceptsPlayerJournal(model) {
+                gameModel.deferUnmatchedPlayerJournalFile(model)
+            }
             return
         }
-        await processMessages()
+        switch await messagePipeline.enqueue(GameMessageEvent(model: model, origin: .file)) {
+        case .enqueued:
+            await processMessages()
+        case .duplicate:
+            Logger.networking.debug("MasterController: Duplicate file ignored \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        case .queueFull:
+            Logger.networking.error("MasterController: Message queue full, file message lost \(model.counter, privacy: .public): \(model.type.debugDescription, privacy: .public) - \(model.subType.debugDescription, privacy: .public), \(model.data.type.token, privacy: .public)")
+        case .pipelineStopped:
+            Logger.networking.debug("MasterController: Message pipeline stopped, ignoring file \(model.counter, privacy: .public)")
+        }
     }
 }

@@ -678,7 +678,7 @@ struct GameMessageCorrectnessRegressionTests {
         let event = GameMessageEvent(model: message, origin: .direct(UUID()))
 
         // When
-        #expect(await pipeline.enqueue(event))
+        #expect(await pipeline.enqueue(event) == .enqueued)
         _ = try #require(await pipeline.next())
         await pipeline.processed(success: false)
         let retryAccepted = await pipeline.enqueue(event)
@@ -687,8 +687,8 @@ struct GameMessageCorrectnessRegressionTests {
         let completedDuplicateAccepted = await pipeline.enqueue(event)
 
         // Then
-        #expect(retryAccepted)
-        #expect(!completedDuplicateAccepted)
+        #expect(retryAccepted == .enqueued)
+        #expect(completedDuplicateAccepted == .duplicate)
     }
 }
 

@@ -43,9 +43,14 @@ final class GameRootModel: Sendable {
     var generatedValueEntry: ValueEntryModel?
     var attachments: [NetworkModules: GroupSessionJournal.Attachment] = [:]
     var metaDataAttachments: [NetworkModules: UUID] = [:]
-    private var latestValueUpdateTimestamps: [ValueUpdateKey: TimeInterval] = [:]
+    // Keyed off `counter` (monotonic per sender), not wall-clock `timestamp`:
+    // two legitimate, back-to-back edits from the same player can share an
+    // identical or non-increasing `Date.now` timestamp (clock coalescing, or
+    // a system clock adjustment), which previously made the second one fail
+    // this gate and be silently dropped. See CODE_AUDIT_Network §5.17.
+    private var latestValueUpdateCounters: [ValueUpdateKey: Int] = [:]
     private var latestValueUpdateOrder: [ValueUpdateKey] = []
-    private static let maximumRetainedValueUpdateTimestamps = 512
+    private static let maximumRetainedValueUpdateCounters = 512
 
     var masterController: MasterController?
     var playerController: PlayerController?
@@ -120,7 +125,7 @@ final class GameRootModel: Sendable {
         self.gameConfig = gameConfig
         self.gameRoster = gameRoster
         self.gameControl = gameControl
-        latestValueUpdateTimestamps = [:]
+        latestValueUpdateCounters = [:]
     }
 
     func reset(master: MasterGameModel) {
@@ -253,11 +258,18 @@ final class GameRootModel: Sendable {
         }
     }
 
+    /// `timestamp` is validated only as a freshness/anti-replay sanity bound
+    /// (finite, positive, not implausibly far in the future); ordering itself
+    /// is decided by `counter`, matching every sibling per-item sequencing
+    /// gate (`canApplyAudioList`/`canApplyPhotoList`/`canApplyPdfList`/
+    /// `canApplySpaceList`/`canApplySpaceTransform`). See
+    /// CODE_AUDIT_Network §5.17.
     func canApplyValueUpdate(
         senderId: UUID,
         characterId: UUID,
         entryId: UUID,
-        timestamp: TimeInterval
+        timestamp: TimeInterval,
+        counter: Int
     ) -> Bool {
         guard timestamp.isFinite,
               timestamp > 0,
@@ -265,35 +277,38 @@ final class GameRootModel: Sendable {
                 + GameNetworkModel.maximumFutureEventTimestampSkew else {
             return false
         }
+        guard counter >= 0 else { return false }
+        guard counter > 0 else { return true }
         let key = ValueUpdateKey(
             senderId: senderId,
             characterId: characterId,
             entryId: entryId
         )
-        return timestamp > (latestValueUpdateTimestamps[key] ?? 0)
+        return counter > (latestValueUpdateCounters[key] ?? 0)
     }
 
     func recordValueUpdate(
         senderId: UUID,
         characterId: UUID,
         entryId: UUID,
-        timestamp: TimeInterval
+        counter: Int
     ) {
+        guard counter > 0 else { return }
         let key = ValueUpdateKey(
             senderId: senderId,
             characterId: characterId,
             entryId: entryId
         )
-        if latestValueUpdateTimestamps[key] == nil {
+        if latestValueUpdateCounters[key] == nil {
             latestValueUpdateOrder.append(key)
             // Growable by a peer sending many distinct entryIds — bounded
             // the same way `deliveryMessagesByWireID` is.
             // See CODE_AUDIT_Game §7.5.
-            while latestValueUpdateOrder.count > Self.maximumRetainedValueUpdateTimestamps {
-                latestValueUpdateTimestamps[latestValueUpdateOrder.removeFirst()] = nil
+            while latestValueUpdateOrder.count > Self.maximumRetainedValueUpdateCounters {
+                latestValueUpdateCounters[latestValueUpdateOrder.removeFirst()] = nil
             }
         }
-        latestValueUpdateTimestamps[key] = timestamp
+        latestValueUpdateCounters[key] = counter
     }
 }
 

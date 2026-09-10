@@ -119,10 +119,37 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
             itemId: UUID,
             assetVersion: Int
         )
+        /// An ordinary game-state message (dice roll, value/health update,
+        /// table change, map pin, etc.) — anything that is neither a
+        /// targeted audio/weather repair nor a file-backed presentation.
+        /// Unlike `.presentation`, these do not coalesce to "only the
+        /// latest matters": an earlier dice roll or value update is not
+        /// superseded by a later unrelated one, so each distinct message
+        /// (identified by its own outgoing `counter`) keeps its own slot.
+        /// Before this case existed, `key(for:)` returned `nil` for every
+        /// message of this shape, so `enqueue` always answered
+        /// `.rejectedSaturated` regardless of actual capacity — these
+        /// messages had no path into the retry queue at all and were
+        /// silently, permanently dropped under send-queue pressure or a
+        /// single transient relay failure. See CODE_AUDIT_Network §5.1.
+        case event(
+            sessionId: UUID,
+            participantId: UUID?,
+            module: NetworkModules,
+            counter: Int
+        )
     }
 
+    /// `maxCount` is deliberately larger than the historical default of 8:
+    /// this queue previously served only occasional file/repair retries,
+    /// but now also admits ordinary game-state events (see `.event` above),
+    /// which are far more frequent during active play (a busy combat round
+    /// can produce many dice rolls / value updates in quick succession).
+    /// The byte budget is unaffected — ordinary event payloads are tiny
+    /// compared to the file transfers this queue was originally sized for.
+    /// See CODE_AUDIT_Network §5.1.
     init(
-        maxCount: Int = 8,
+        maxCount: Int = 32,
         maxBytes: Int = SharePlayMessengerPayloadBudget.maximumOutstandingRawPayloadByteCount,
         maxEntryBytes: Int = SharePlayMessengerPayloadBudget.maximumRawPayloadByteCount
     ) {
@@ -159,11 +186,11 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         deliveryAttempt: Int = 0,
         retryNotBefore: ContinuousClock.Instant? = nil
     ) -> SharePlayDeferredDeliveryAdmission {
-        guard let key = Self.key(
+        let key = Self.key(
             for: model,
             sessionId: sessionId,
             participantId: participantId
-        ) else { return .rejectedSaturated }
+        )
 
         let newByteCount = model.data.data?.count ?? 0
         guard newByteCount <= maxEntryBytes else { return .rejectedTooLarge }
@@ -186,9 +213,12 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         var prospectiveByteCount = byteCount - existingByteCount + newByteCount
         var evictedPresentationKeys: [Key] = []
 
-        // Repairs answer an explicit participant request. Under pressure they
-        // may displace coalescible presentation intent, never another repair.
-        if Self.isRepair(key) {
+        // Repairs answer an explicit participant request, and events are
+        // discrete occurrences that must not be silently dropped either
+        // (see `.event`'s doc comment) — both may displace coalescible
+        // presentation intent under pressure, never another repair/event.
+        // See CODE_AUDIT_Network §5.1.
+        if Self.isRepair(key) || Self.isEvent(key) {
             for candidate in order where
                 (prospectiveCount > maxCount || prospectiveByteCount > maxBytes) &&
                 candidate != key && Self.isPresentation(candidate) {
@@ -245,7 +275,7 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         for model: GameNetworkModel,
         sessionId: UUID,
         participantId: UUID?
-    ) -> Key? {
+    ) -> Key {
         if let targetId = model.targetId,
            (model.data.type == .audio || model.data.type == .weather) {
             return .repair(
@@ -258,13 +288,21 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
             )
         }
 
-        guard model.isFileBackedPresentation || model.isPlayerFilePresentationEvent else {
-            return nil
+        if model.isFileBackedPresentation || model.isPlayerFilePresentationEvent {
+            return .presentation(
+                sessionId: sessionId,
+                participantId: participantId,
+                module: model.data.type
+            )
         }
-        return .presentation(
+
+        // Every other message shape — see `.event`'s doc comment above.
+        // See CODE_AUDIT_Network §5.1.
+        return .event(
             sessionId: sessionId,
             participantId: participantId,
-            module: model.data.type
+            module: model.data.type,
+            counter: model.counter
         )
     }
 
@@ -275,6 +313,11 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
 
     private static func isPresentation(_ key: Key) -> Bool {
         if case .presentation = key { return true }
+        return false
+    }
+
+    private static func isEvent(_ key: Key) -> Bool {
+        if case .event = key { return true }
         return false
     }
 

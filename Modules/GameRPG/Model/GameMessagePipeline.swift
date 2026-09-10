@@ -109,6 +109,22 @@ struct GameMessageEvent: Sendable {
     }
 }
 
+/// Distinguishes *why* `GameMessagePipeline.enqueue(_:)` did not admit an
+/// event. Before this type existed, "already seen" and "queue at capacity"
+/// both answered `false`, so a genuinely new message dropped under load was
+/// logged and treated identically to an ordinary duplicate, with no signal
+/// that anything was actually lost. See CODE_AUDIT_Network §5.14.
+enum GameMessageEnqueueResult: Sendable, Equatable {
+    case enqueued
+    case duplicate
+    case queueFull
+    case pipelineStopped
+
+    var isAccepted: Bool {
+        self == .enqueued
+    }
+}
+
 actor GameMessagePipeline {
     private let recentLimit: Int
     /// Unlike `recentKeys`, `messages` itself had no cap — each element
@@ -124,20 +140,26 @@ actor GameMessagePipeline {
     private var recentKeySet: Set<GameMessageKey> = []
     private var pendingKeySet: Set<GameMessageKey> = []
     private var currentKey: GameMessageKey?
+    /// The full event `next()` most recently dequeued, retained only so a
+    /// cancelled drain (`requeueCurrentOnCancellation()`) can restore it
+    /// instead of losing it. Cleared by every `processed`/requeue path.
+    private var currentEvent: GameMessageEvent?
 
     init(recentLimit: Int = 256, maximumQueuedMessages: Int = 128) {
         self.recentLimit = recentLimit
         self.maximumQueuedMessages = maximumQueuedMessages
     }
 
-    func enqueue(_ event: GameMessageEvent) -> Bool {
-        guard !isCancelled, messages.count < maximumQueuedMessages else { return false }
+    @discardableResult
+    func enqueue(_ event: GameMessageEvent) -> GameMessageEnqueueResult {
+        guard !isCancelled else { return .pipelineStopped }
+        guard messages.count < maximumQueuedMessages else { return .queueFull }
         if let key = event.deduplicationKey {
-            guard !recentKeySet.contains(key), !pendingKeySet.contains(key) else { return false }
+            guard !recentKeySet.contains(key), !pendingKeySet.contains(key) else { return .duplicate }
             pendingKeySet.insert(key)
         }
         messages.append(event)
-        return true
+        return .enqueued
     }
 
     func next() -> GameMessageEvent? {
@@ -145,6 +167,7 @@ actor GameMessagePipeline {
         processing = true
         let event = messages.removeFirst()
         currentKey = event.deduplicationKey
+        currentEvent = event
         return event
     }
 
@@ -156,6 +179,27 @@ actor GameMessagePipeline {
             }
         }
         currentKey = nil
+        currentEvent = nil
+        processing = false
+    }
+
+    /// Call instead of `processed(success:)` when the ambient `Task` driving
+    /// the drain loop was found cancelled immediately after dequeuing, before
+    /// any processing was attempted — restores the event to the front of the
+    /// queue so the next real trigger retries it, rather than discarding the
+    /// one message that was already pulled off `messages`. Not safe to use
+    /// once processing has actually begun (e.g. after side effects like a
+    /// proxy forward), since a requeue there would risk re-applying them.
+    /// See CODE_AUDIT_Network §5.15.
+    func requeueCurrentOnCancellation() {
+        if let currentEvent {
+            messages.insert(currentEvent, at: 0)
+        }
+        if let currentKey {
+            pendingKeySet.remove(currentKey)
+        }
+        currentKey = nil
+        currentEvent = nil
         processing = false
     }
 
@@ -167,6 +211,7 @@ actor GameMessagePipeline {
         recentKeySet.removeAll()
         pendingKeySet.removeAll()
         currentKey = nil
+        currentEvent = nil
     }
 
     func reset() {
@@ -177,6 +222,7 @@ actor GameMessagePipeline {
         recentKeySet.removeAll()
         pendingKeySet.removeAll()
         currentKey = nil
+        currentEvent = nil
     }
 
     private func remember(_ key: GameMessageKey) {

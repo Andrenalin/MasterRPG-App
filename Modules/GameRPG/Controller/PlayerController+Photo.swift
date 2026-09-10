@@ -189,9 +189,16 @@ extension PlayerController {
                         await sendUpstream(model: response)
                     }
                 } catch {
-                    // The original network event was already accepted. A bad
-                    // deferred payload must not make the photo-list update fail.
+                    // The original network event was already accepted, and
+                    // this item was already removed from the deferred queue
+                    // above — a bad deferred payload must not make the
+                    // photo-list update loop fail, but silently dropping it
+                    // here left no ack and no way back. Ask the master to
+                    // resend instead of only logging. See
+                    // CODE_AUDIT_Network §5.23.
                     Logger.networking.error("PlayerController: Deferred photo reveal failed: \(error.localizedDescription, privacy: .public)")
+                    let request = await response(for: model, isSuccess: true, requestData: true)
+                    await sendUpstream(model: request)
                 }
             }
         }

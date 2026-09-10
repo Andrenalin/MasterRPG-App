@@ -100,26 +100,31 @@ extension PlayerController {
                     // the background may have changed without the legacy scale
                     // version changing, or its structural snapshot may be newer
                     // even though the background still matches.
-                    do {
-                        // The master is unconditionally authoritative for map
-                        // state — `.overwrite` skips the default CRDT
-                        // last-writer-wins merge, which is keyed on each
-                        // device's own local wall clock and can otherwise let
-                        // this player's own stale, previously-persisted copy
-                        // of the map silently win over what the master just
-                        // broadcast (discarding e.g. a just-updated pin
-                        // healthPercent with no error). See
-                        // player-character-sync-gaps memory note.
-                        try await root.mapRoot.gameControllable.updateGame(
-                            data: model.data,
-                            hide: true,
-                            deep: false,
-                            importMode: .overwrite
-                        )
-                    } catch {
-                        Logger.networking.error("PlayerController: Failed to import full map payload \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        return nil
-                    }
+                    // The master is unconditionally authoritative for map
+                    // state — `.overwrite` skips the default CRDT
+                    // last-writer-wins merge, which is keyed on each
+                    // device's own local wall clock and can otherwise let
+                    // this player's own stale, previously-persisted copy
+                    // of the map silently win over what the master just
+                    // broadcast (discarding e.g. a just-updated pin
+                    // healthPercent with no error). See
+                    // player-character-sync-gaps memory note.
+                    //
+                    // Let a throw here propagate to `processMessages()`'s own
+                    // catch instead of swallowing it locally: that's the one
+                    // path that sends a `.failed` ack upstream and keeps the
+                    // message retry-eligible, exactly like every other module
+                    // (Photo/Pdf/Space/Audio/Weather/Table) already does. A
+                    // local catch-and-return-nil here left no ack, no repair
+                    // request, and permanently marked the enclosing message
+                    // handled even though the import never completed. See
+                    // CODE_AUDIT_Network §5.19.
+                    try await root.mapRoot.gameControllable.updateGame(
+                        data: model.data,
+                        hide: true,
+                        deep: false,
+                        importMode: .overwrite
+                    )
                     // Importing the map package establishes the advertised
                     // generation even when its background bytes are not locally
                     // readable. Background readiness is checked independently
@@ -137,16 +142,12 @@ extension PlayerController {
                 // `version` still matches the local MapModel.
                 revealed = hasMatchingAsset
             } else {
-                do {
-                    revealed = try await root.mapRoot.gameControllable.reveal(
-                        itemId: model.data.id,
-                        data: model.data,
-                        save: false
-                    )
-                } catch {
-                    Logger.networking.error("PlayerController: Failed to reveal map \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                    return nil
-                }
+                // Propagate rather than swallow — see CODE_AUDIT_Network §5.19.
+                revealed = try await root.mapRoot.gameControllable.reveal(
+                    itemId: model.data.id,
+                    data: model.data,
+                    save: false
+                )
                 if revealed, model.data.data != nil {
                     await recordImportedFullMapGeneration(model)
                 }
@@ -212,20 +213,16 @@ extension PlayerController {
             )
             var importedFullPayload = false
             if !hasBaseMap || shouldImport {
-                do {
-                    // See the matching comment on the `.reveal` branch above —
-                    // the master is unconditionally authoritative for map
-                    // state, so this skips the default CRDT merge too.
-                    try await root.mapRoot.gameControllable.updateGame(
-                        data: model.data,
-                        hide: true,
-                        deep: true,
-                        importMode: .overwrite
-                    )
-                } catch {
-                    Logger.networking.error("PlayerController: Failed to import full map payload \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                    return nil
-                }
+                // See the matching comment on the `.reveal` branch above —
+                // the master is unconditionally authoritative for map
+                // state, so this skips the default CRDT merge too. Propagate
+                // rather than swallow — see CODE_AUDIT_Network §5.19.
+                try await root.mapRoot.gameControllable.updateGame(
+                    data: model.data,
+                    hide: true,
+                    deep: true,
+                    importMode: .overwrite
+                )
                 importedFullPayload = true
                 root.mapRoot.mapGameControllable.recordAuthoritativeMapGeneration(
                     model.data

@@ -23,29 +23,23 @@ extension MasterController {
                   model.purpose == .event,
                   model.effectiveAudience == .master,
                   let characterId = model.sender.characterId,
-                  characterId == model.data.id,
-                  // sender.characterId is otherwise self-declared, untrusted
-                  // network input — every peer already sees every pin's
-                  // characterId. See CODE_AUDIT_Game §6.1.
-                  gameModel.isCharacterOwnershipAuthorized(senderId: model.sender.id, characterId: characterId),
-                  let update = GameValueEntryUpdate.decodeData(of: model.data.data),
-                  update.characterId == characterId,
-                  root.gameModel.canApplyValueUpdate(
-                      senderId: model.sender.id,
-                      characterId: characterId,
-                      entryId: update.entryId,
-                      timestamp: model.timestamp
-                  ),
-                  root.characterRoot.valueGameControllable
-                    .applyGameValueEntryUpdate(update) else {
+                  characterId == model.data.id
+            else { return nil }
+
+            // sender.characterId is otherwise self-declared, untrusted
+            // network input — every peer already sees every pin's
+            // characterId. See CODE_AUDIT_Game §6.1.
+            guard gameModel.isCharacterOwnershipAuthorized(senderId: model.sender.id, characterId: characterId) else {
+                // The update can legitimately race this same sender's own
+                // join handshake (`.store`, below) across a mixed
+                // proxy/SharePlay/LAN transport with no cross-message
+                // ordering guarantee. Hold it so the handshake can replay it
+                // once the binding lands, instead of silently dropping a
+                // valid edit. See CODE_AUDIT_Network §5.18.
+                gameModel.deferValueUpdateAwaitingOwnership(model)
                 return nil
             }
-            root.gameModel.recordValueUpdate(
-                senderId: model.sender.id,
-                characterId: characterId,
-                entryId: update.entryId,
-                timestamp: model.timestamp
-            )
+            applyValueUpdate(model, characterId: characterId)
             return nil
         }
 
@@ -62,6 +56,13 @@ extension MasterController {
               // confirms an existing binding). See CODE_AUDIT_Game §6.1.
               gameModel.bindCharacterOwnership(senderId: model.sender.id, characterId: characterId)
         else { return nil }
+
+        // The binding just landed — replay any `.valueUpdate` this same
+        // sender sent before it, which was held rather than dropped. See
+        // CODE_AUDIT_Network §5.18.
+        if let pendingUpdate = gameModel.takePendingValueUpdate(senderId: model.sender.id) {
+            applyValueUpdate(pendingUpdate, characterId: characterId)
+        }
 
         if model.data.data == nil {
             let localVersion = await root.characterRoot.gameControllable.networkVersion(for: characterId)
@@ -80,7 +81,24 @@ extension MasterController {
             return model.data
         }
 
-        try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
+        do {
+            try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
+        } catch {
+            // Previously this throw only reached the generic catch-all in
+            // `process(_:)`, which logs and sends nothing back — the player
+            // was left waiting with `hasSendPlayer` already latched true and
+            // no way to learn the import failed. Tell the player explicitly
+            // so it can clear that flag and retry `sendCharacter()`. See
+            // CODE_AUDIT_Network §5.24.
+            Logger.networking.error("MasterController: Failed to import Character package \(characterId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            await send(
+                type: .update,
+                subtype: .failed,
+                updated: NetworkCodableDataType(id: characterId, type: .value, version: model.data.version, data: nil),
+                playerId: model.sender.id
+            )
+            return nil
+        }
         root.mapRoot.mapGameControllable.setPlayerPin(
             for: model.sender.id,
             name: model.senderName,
@@ -88,6 +106,32 @@ extension MasterController {
         )
         await publishCurrentMapAfterPlayerPinChange()
         return nil
+    }
+
+    /// Decodes, version-checks, and applies a `.valueUpdate` payload from a
+    /// sender already known to be ownership-authorized for `characterId` —
+    /// shared by the immediate receive path and the deferred-replay path
+    /// triggered once a race with the join handshake resolves. See
+    /// CODE_AUDIT_Network §5.18.
+    private func applyValueUpdate(_ model: GameNetworkModel, characterId: UUID) {
+        guard let update = GameValueEntryUpdate.decodeData(of: model.data.data),
+              update.characterId == characterId,
+              root.gameModel.canApplyValueUpdate(
+                  senderId: model.sender.id,
+                  characterId: characterId,
+                  entryId: update.entryId,
+                  timestamp: model.timestamp,
+                  counter: model.counter
+              ),
+              root.characterRoot.valueGameControllable
+                .applyGameValueEntryUpdate(update)
+        else { return }
+        root.gameModel.recordValueUpdate(
+            senderId: model.sender.id,
+            characterId: characterId,
+            entryId: update.entryId,
+            counter: model.counter
+        )
     }
 
     /// Character synchronization can finish after resetPlayers() created and

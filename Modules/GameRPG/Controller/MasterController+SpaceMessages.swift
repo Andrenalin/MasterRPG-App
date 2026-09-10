@@ -119,7 +119,19 @@ extension MasterController {
                 )
                 return nil
             } catch {
+                // Previously this only logged, leaving the requester waiting
+                // indefinitely whenever the master's local copy isn't
+                // actually materialized yet (e.g. an undownloaded iCloud
+                // placeholder) rather than genuinely missing. See
+                // CODE_AUDIT_Network §5.12.
                 Logger.networking.error("MasterController: Failed to import shared space \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
+                await send(
+                    type: .reveal,
+                    subtype: .failed,
+                    updated: NetworkCodableDataType(id: model.data.id, type: .space, version: model.data.version, data: nil),
+                    replyToMessageID: model.messageID,
+                    playerId: model.sender.id
+                )
                 return nil
             }
         case .store:

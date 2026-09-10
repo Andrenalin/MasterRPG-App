@@ -62,7 +62,7 @@ extension MasterController {
 
         switch model.type {
         case .reveal:
-            let recovery = try await stableMapRecoveryBundle(for: model.data.id)
+            guard let recovery = try await recoverMapBundleOrFail(for: model, origin: origin) else { return nil }
             guard mapGeneration(of: recovery.full, matches: model.data) else {
                 // The requested generation disappeared while the player was
                 // asking for it. A proxy must defer to the real master; the
@@ -137,10 +137,8 @@ extension MasterController {
                 )
                 guard mapGeneration(of: update, matches: model.data) else {
                     guard !asProxy else { throw MapRecoveryError.generationChanged }
-                    await sendFreshMapRecovery(
-                        try await stableMapRecoveryBundle(for: model.data.id),
-                        origin: origin
-                    )
+                    guard let bundle = try await recoverMapBundleOrFail(for: model, origin: origin) else { return nil }
+                    await sendFreshMapRecovery(bundle, origin: origin)
                     return nil
                 }
                 return update
@@ -197,6 +195,36 @@ extension MasterController {
             }
         }
         return nil
+    }
+
+    /// Wraps `stableMapRecoveryBundle`, converting an exhausted-retries
+    /// failure into an explicit `.failed` response sent to the requester
+    /// instead of letting it propagate to the generic catch-all in
+    /// `process(_:)`, which only logs and sends nothing back — leaving the
+    /// requester waiting indefinitely on a persistent (not merely transient
+    /// capture-window) export failure, e.g. an undownloaded iCloud
+    /// background image. `CancellationError` still propagates so callers'
+    /// own cancellation handling is unaffected. See CODE_AUDIT_Network §5.11.
+    private func recoverMapBundleOrFail(
+        for model: GameNetworkModel,
+        origin: GameMessageOrigin?
+    ) async throws -> MapRecoveryBundle? {
+        do {
+            return try await stableMapRecoveryBundle(for: model.data.id)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            Logger.networking.error("MasterController: Map recovery failed for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            await send(
+                type: model.type,
+                subtype: .failed,
+                updated: NetworkCodableDataType(id: model.data.id, type: .map, version: model.data.version, data: nil),
+                origin: origin,
+                playerId: model.sender.id,
+                authoritativeMaster: true
+            )
+            return nil
+        }
     }
 
     /// Captures the full package, structural snapshot, and live state from one

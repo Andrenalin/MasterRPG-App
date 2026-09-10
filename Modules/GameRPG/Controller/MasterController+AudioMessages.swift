@@ -52,7 +52,22 @@ extension MasterController {
                     try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                     await send(type: .reveal, subtype: .show, updated: model.data)
                 } catch {
+                    // Previously this only logged, leaving the contributing
+                    // player waiting indefinitely whenever the master's
+                    // local copy isn't actually materialized yet (e.g. an
+                    // undownloaded iCloud placeholder) rather than genuinely
+                    // missing. Targeted at the sender only — unlike the
+                    // broadcast `.show` sends in the success paths above,
+                    // this failure is specific to this one contribution.
+                    // See CODE_AUDIT_Network §5.12.
                     Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
+                    await send(
+                        type: .reveal,
+                        subtype: .failed,
+                        updated: NetworkCodableDataType(id: model.data.id, type: .audio, version: model.data.version, data: nil),
+                        replyToMessageID: model.messageID,
+                        playerId: model.sender.id
+                    )
                 }
             case .playAudio:
                 guard root.gameModel.gameControl.features.audioSharing else { return nil }
@@ -139,6 +154,24 @@ extension MasterController {
         } catch {
             gameModel.audioTransferPlayers[id]?.subtract(newPlayers)
             Logger.networking.error("MasterController: Cannot prepare pending audio \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            scheduleAudioPlayRetry(id: id)
+        }
+    }
+
+    private static let audioPlayRetryDelay: Duration = .seconds(5)
+
+    /// Schedules one bounded retry of `fulfillPendingAudioPlay(id:data:)`
+    /// after `audioPlayRetryDelay`, replacing any retry already scheduled
+    /// for this item — so a persistently failing export doesn't pile up
+    /// concurrent attempts. See CODE_AUDIT_Network §5.13.
+    private func scheduleAudioPlayRetry(id: UUID) {
+        audioPlayRetryTasks[id]?.cancel()
+        audioPlayRetryTasks[id] = Task { [weak self] in
+            try? await Task.sleep(for: Self.audioPlayRetryDelay)
+            guard !Task.isCancelled, let self else { return }
+            self.audioPlayRetryTasks[id] = nil
+            guard let data = self.gameModel.pendingAudioPlays[id] else { return }
+            await self.fulfillPendingAudioPlay(id: id, data: data)
         }
     }
 

@@ -238,8 +238,13 @@ extension PlayerController {
                     }
                 } catch {
                     // The list itself is valid. A bad deferred file must not make
-                    // availability sequencing fail or reserve a later counter.
+                    // availability sequencing fail or reserve a later counter —
+                    // but this item was already removed from the deferred
+                    // queue above, so ask the master to resend instead of
+                    // only logging. See CODE_AUDIT_Network §5.23.
                     Logger.networking.error("PlayerController: Deferred Space reveal failed: \(error.localizedDescription, privacy: .public)")
+                    let request = await response(for: model, isSuccess: true, requestData: true)
+                    await sendUpstream(model: request)
                 }
             }
         }

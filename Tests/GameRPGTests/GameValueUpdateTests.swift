@@ -120,35 +120,42 @@ struct GameValueUpdateTests {
         #expect(!model.isCharacterOwnershipAuthorized(senderId: ownerId, characterId: characterId))
     }
 
-    @Test("Timestamp ledger rejects stale, duplicate, and far-future updates")
-    func timestampLedgerRejectsStaleUpdates() {
+    @Test("Update ledger rejects stale/duplicate counters and far-future timestamps")
+    func updateLedgerRejectsStaleUpdates() {
         let root = GameRootModel()
         let senderId = UUID()
         let characterId = UUID()
         let entryId = UUID()
         let timestamp = Date.now.timeIntervalSince1970 - 1
 
+        // First update at counter 5 is accepted and recorded.
         #expect(
             root.canApplyValueUpdate(
                 senderId: senderId,
                 characterId: characterId,
                 entryId: entryId,
-                timestamp: timestamp
+                timestamp: timestamp,
+                counter: 5
             )
         )
         root.recordValueUpdate(
             senderId: senderId,
             characterId: characterId,
             entryId: entryId,
-            timestamp: timestamp
+            counter: 5
         )
 
+        // A retry at the exact same counter is a duplicate and rejected,
+        // even with a later timestamp — two legitimate back-to-back edits
+        // can share (or regress) a wall-clock timestamp, so ordering must
+        // not depend on it. See CODE_AUDIT_Network §5.17.
         #expect(
             !root.canApplyValueUpdate(
                 senderId: senderId,
                 characterId: characterId,
                 entryId: entryId,
-                timestamp: timestamp
+                timestamp: timestamp,
+                counter: 5
             )
         )
         #expect(
@@ -156,17 +163,36 @@ struct GameValueUpdateTests {
                 senderId: senderId,
                 characterId: characterId,
                 entryId: entryId,
-                timestamp: timestamp - 1
+                timestamp: timestamp + 10,
+                counter: 5
             )
         )
+
+        // A lower counter is stale and rejected.
+        #expect(
+            !root.canApplyValueUpdate(
+                senderId: senderId,
+                characterId: characterId,
+                entryId: entryId,
+                timestamp: timestamp,
+                counter: 4
+            )
+        )
+
+        // A higher counter is accepted, even with an identical or
+        // non-increasing timestamp.
         #expect(
             root.canApplyValueUpdate(
                 senderId: senderId,
                 characterId: characterId,
                 entryId: entryId,
-                timestamp: timestamp + 0.5
+                timestamp: timestamp,
+                counter: 6
             )
         )
+
+        // A far-future timestamp is rejected regardless of counter — the
+        // sanity bound is independent of ordering.
         #expect(
             !root.canApplyValueUpdate(
                 senderId: senderId,
@@ -174,7 +200,8 @@ struct GameValueUpdateTests {
                 entryId: entryId,
                 timestamp: Date.now.timeIntervalSince1970
                     + GameNetworkModel.maximumFutureEventTimestampSkew
-                    + 1
+                    + 1,
+                counter: 100
             )
         )
     }

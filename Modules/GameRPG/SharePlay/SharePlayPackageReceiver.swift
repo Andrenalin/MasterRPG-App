@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
+import os.log
 
 struct SharePlayCompletedPackage: Sendable {
     let id: UUID
@@ -173,7 +175,20 @@ final class SharePlayPackageReceiver {
             let age = receivedAt.duration(to: instant)
             return age >= expirationInterval ? id : nil
         }
-        expiredIds.forEach { removeStream(key: $0) }
+        for key in expiredIds {
+            if let list = receivedPackages[key] {
+                // No delivery acknowledgment exists for chunked Messenger
+                // transport — a successful local `send()` doesn't mean the
+                // relay actually delivered every package to this
+                // participant, and there is no NACK/re-request for a
+                // specific missing chunk. An incomplete stream previously
+                // vanished here with zero evidence it ever happened; at
+                // minimum, surface it so a real support/debug session can
+                // see it occurred. See CODE_AUDIT_Network §5.2.
+                Logger.sharePlay.warning("Chunked ✕: package \(list.id, privacy: .public) from \(key.sourceParticipantId, privacy: .public) expired incomplete: \(list.packageCounter, privacy: .public)/\(list.total, privacy: .public) packages, \(list.receivedByteCount, privacy: .public) bytes received")
+            }
+            removeStream(key: key)
+        }
         return expiredIds.count
     }
 

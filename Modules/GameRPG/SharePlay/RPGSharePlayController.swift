@@ -546,7 +546,21 @@ struct SharePlayMapRecoveryTracker: Sendable {
         let sentAt: ContinuousClock.Instant
     }
 
+    private struct SuppressedRequestKey: Hashable, Sendable {
+        let itemId: UUID
+        let participantId: UUID
+    }
+
     private var publications: [UUID: Publication] = [:]
+    /// Which participants already had exactly one recovery request
+    /// suppressed for a given publication. Unlike the publication record
+    /// itself (map-scoped, since it answers "did the master just broadcast
+    /// this"), this is participant-scoped: a participant whose own
+    /// reassembly genuinely failed and who asks again within the window
+    /// gets served on their second request rather than being ignored for
+    /// the full 30 seconds regardless of how many times they ask. See
+    /// CODE_AUDIT_Network §5.4.
+    private var suppressedOnceFor: Set<SuppressedRequestKey> = []
 
     mutating func recordFullMapPresentation(
         _ model: GameNetworkModel,
@@ -573,6 +587,7 @@ struct SharePlayMapRecoveryTracker: Sendable {
 
     mutating func shouldSuppressRecoveryRequest(
         _ model: GameNetworkModel,
+        from participantId: UUID,
         at now: ContinuousClock.Instant? = nil
     ) -> Bool {
         guard !model.sender.isMaster,
@@ -589,14 +604,27 @@ struct SharePlayMapRecoveryTracker: Sendable {
         // A mapState normally has no asset fingerprint, so current players
         // preserve its model version in the request. Structural updates include
         // an asset fingerprint and use the stronger comparison when available.
+        let matchesPublication: Bool
         if let requestedAssetVersion = model.data.assetVersion {
-            return requestedAssetVersion == publication.assetVersion
+            matchesPublication = requestedAssetVersion == publication.assetVersion
+        } else {
+            matchesPublication = model.data.version == 0 || model.data.version == publication.version
         }
-        return model.data.version == 0 || model.data.version == publication.version
+        guard matchesPublication else { return false }
+
+        // Suppress only this participant's *first* request for this
+        // publication — a second request within the window means their
+        // reassembly likely did fail, not that they're still catching up.
+        // See CODE_AUDIT_Network §5.4.
+        let key = SuppressedRequestKey(itemId: model.data.id, participantId: participantId)
+        guard !suppressedOnceFor.contains(key) else { return false }
+        suppressedOnceFor.insert(key)
+        return true
     }
 
     mutating func reset() {
         publications = [:]
+        suppressedOnceFor = []
     }
 
     private mutating func removeExpired(at now: ContinuousClock.Instant) {
@@ -604,6 +632,8 @@ struct SharePlayMapRecoveryTracker: Sendable {
             let age = publication.sentAt.duration(to: now)
             return age >= .zero && age < Self.suppressionInterval
         }
+        let activeItemIds = Set(publications.keys)
+        suppressedOnceFor = suppressedOnceFor.filter { activeItemIds.contains($0.itemId) }
     }
 }
 
@@ -1531,7 +1561,17 @@ extension RPGSharePlayController {
                 participantId: delivery.participantId,
                 allowDeferral: false,
                 deliveryAttempt: delivery.deliveryAttempt
-            ) else { return }
+            ) else {
+                // Symmetry with the "not ready yet" branch above: if
+                // capacity is still exhausted right now, schedule a timed
+                // re-check as defense in depth instead of relying solely on
+                // the next unrelated send's completion to trigger another
+                // promotion attempt. A no-op when the head entry has no
+                // `retryNotBefore` (nothing to schedule against). See
+                // CODE_AUDIT_Network §5.3.
+                scheduleDeferredPromotionIfNeeded()
+                return
+            }
             deferredDeliveryQueue.removeFirst()
         }
     }
@@ -2076,7 +2116,7 @@ extension RPGSharePlayController {
                           self.sessionLifecycle.isCurrent(sessionId: groupSession.id)
                     else { return }
                     let gameModel = decodedMessage.model
-                    if self.mapRecoveryTracker.shouldSuppressRecoveryRequest(gameModel) {
+                    if self.mapRecoveryTracker.shouldSuppressRecoveryRequest(gameModel, from: context.source.id) {
                         Logger.sharePlay.debug("Ignored recent map recovery request for \(gameModel.data.id, privacy: .public) from \(context.source.id, privacy: .public)")
                         continue
                     }

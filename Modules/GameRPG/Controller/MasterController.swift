@@ -174,6 +174,25 @@ final class MasterControllerModel {
     /// (encoded in `.mapState`). See CODE_AUDIT_Game §6.1.
     private var characterOwnership: [UUID: UUID] = [:]
 
+    /// A `.valueUpdate` that arrived before its sender's ownership binding
+    /// was established — held so `bindCharacterOwnership`'s caller can
+    /// replay it once the join handshake lands, instead of the edit being
+    /// silently dropped by a message-ordering race. One slot per sender: a
+    /// later update superseding an unreplayed one only needs the latest
+    /// replayed. See CODE_AUDIT_Network §5.18.
+    private var pendingValueUpdatesAwaitingOwnership: [UUID: GameNetworkModel] = [:]
+
+    func deferValueUpdateAwaitingOwnership(_ model: GameNetworkModel) {
+        pendingValueUpdatesAwaitingOwnership[model.sender.id] = model
+    }
+
+    /// Removes and returns a deferred `.valueUpdate` for `senderId`, if any.
+    /// Call once `bindCharacterOwnership` succeeds for that sender.
+    @discardableResult
+    func takePendingValueUpdate(senderId: UUID) -> GameNetworkModel? {
+        pendingValueUpdatesAwaitingOwnership.removeValue(forKey: senderId)
+    }
+
     /// Binds `senderId` to `characterId` if this is their first claim, or
     /// confirms it matches their existing binding. Rejects the claim if a
     /// *different* sender already owns this Character. Call only from the
@@ -200,6 +219,7 @@ final class MasterControllerModel {
 
     func resetCharacterOwnership() {
         characterOwnership.removeAll()
+        pendingValueUpdatesAwaitingOwnership.removeAll()
     }
 
     func hasSentGameItem(type: NetworkModules, id: UUID, version: Int) -> Bool {
@@ -338,6 +358,8 @@ final class MasterControllerModel {
     func resetPlayerJournalAdmissions() {
         playerJournalAdmissions.removeAll()
         playerJournalAdmissionOrder.removeAll()
+        deferredPlayerJournalFiles.removeAll()
+        deferredPlayerJournalFileOrder.removeAll()
     }
 
     private func removePlayerJournalAdmissions(for playerId: UUID) {
@@ -345,6 +367,44 @@ final class MasterControllerModel {
             $0.key.senderId != playerId
         }
         playerJournalAdmissionOrder.removeAll { $0.senderId == playerId }
+        deferredPlayerJournalFiles = deferredPlayerJournalFiles.filter {
+            $0.key.senderId != playerId
+        }
+        deferredPlayerJournalFileOrder.removeAll { $0.senderId == playerId }
+    }
+
+    /// A player Journal file event whose admission couldn't yet be confirmed
+    /// — the matching Messenger admission metadata (see
+    /// `admitPlayerJournalMetadata`) hadn't arrived yet. GroupSessionJournal
+    /// attachments and GroupSessionMessenger messages are independent
+    /// channels with no cross-channel ordering guarantee, so this is held
+    /// and replayed once the matching admission lands, instead of the file
+    /// being lost permanently. See CODE_AUDIT_Network §5.16.
+    private var deferredPlayerJournalFiles: [PlayerJournalAdmissionKey: GameNetworkModel] = [:]
+    private var deferredPlayerJournalFileOrder: [PlayerJournalAdmissionKey] = []
+    private static let maximumDeferredPlayerJournalFiles = 64
+
+    func deferUnmatchedPlayerJournalFile(_ model: GameNetworkModel) {
+        guard let messageId = model.messageID else { return }
+        let key = PlayerJournalAdmissionKey(senderId: model.sender.id, messageId: messageId)
+        if deferredPlayerJournalFiles[key] == nil {
+            deferredPlayerJournalFileOrder.append(key)
+            while deferredPlayerJournalFileOrder.count > Self.maximumDeferredPlayerJournalFiles {
+                deferredPlayerJournalFiles[deferredPlayerJournalFileOrder.removeFirst()] = nil
+            }
+        }
+        deferredPlayerJournalFiles[key] = model
+    }
+
+    /// Removes and returns a deferred player Journal file event matching
+    /// `senderId`/`messageId`, if any. Call once `admitPlayerJournalMetadata`
+    /// newly records a matching admission.
+    func takeDeferredPlayerJournalFile(senderId: UUID, messageId: UUID?) -> GameNetworkModel? {
+        guard let messageId else { return nil }
+        let key = PlayerJournalAdmissionKey(senderId: senderId, messageId: messageId)
+        guard let model = deferredPlayerJournalFiles.removeValue(forKey: key) else { return nil }
+        deferredPlayerJournalFileOrder.removeAll { $0 == key }
+        return model
     }
 
     func trackDelivery(wireID: UUID, counter: Int) -> GameDeliveryMessageID {
@@ -522,6 +582,18 @@ final class MasterController {
     /// `MasterController+Control.swift`'s `resetPlayers()`/`stop()`, a
     /// different file from this declaration.
     var resetPlayersTask: Task<Void, Never>?
+
+    /// Bounded per-item retry after `fulfillPendingAudioPlay` fails to
+    /// prepare a missing player's copy (e.g. a transient export error).
+    /// Without this, nothing schedules another attempt unless an unrelated
+    /// event (another player's ack, a roster reset) happens to call
+    /// `continuePendingAudioPlays()` again, and the queued play could
+    /// otherwise never reach that player for the rest of the session.
+    /// Declared here (not `private`) because it is read and written only
+    /// from `MasterController+AudioMessages.swift`, a different file from
+    /// this declaration — same rationale as `resetPlayersTask`. See
+    /// CODE_AUDIT_Network §5.13.
+    var audioPlayRetryTasks: [UUID: Task<Void, Never>] = [:]
 
     init(root: GameRoot, asProxy: Bool) {
         self.root = root

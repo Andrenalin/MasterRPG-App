@@ -174,6 +174,23 @@ struct GameNetworkModel: Codable, Sendable {
         self.data = data
     }
 
+    /// Thrown from `init(from:)` when a wire envelope matches none of the
+    /// three known shapes it tries in order (current v2 with a `sender`
+    /// key, the V1 shim, or the unreleased dev layout) — distinct from a
+    /// plain `DecodingError` so the catch site (`decodeData(of:)`) can log
+    /// something actionable ("unrecognized envelope shape") instead of
+    /// whichever nested attempt's raw, often-generic error happened to
+    /// surface last. See CODE_AUDIT_Network §5.8.
+    struct DecodeError: LocalizedError {
+        let declaredVersion: Int?
+        let underlyingError: Error
+
+        var errorDescription: String? {
+            "GameNetworkModel envelope matches no known shape (declared version: " +
+                "\(declaredVersion.map(String.init) ?? "none")): \(underlyingError)"
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case version
         case messageID
@@ -236,7 +253,22 @@ struct GameNetworkModel: Codable, Sendable {
         }
 
         // Unreleased dev layouts: slim gameConfig plus gameRoster [+ gameControl].
-        let config = try container.decode(GameConfigModel.self, forKey: .gameConfig)
+        let config: GameConfigModel
+        do {
+            config = try container.decode(GameConfigModel.self, forKey: .gameConfig)
+        } catch {
+            // None of the three known envelope shapes (current v2 with a
+            // `sender` key, the `try?`-guarded V1 shim just above, or this
+            // dev layout) matched. Without this, the caller only ever saw
+            // whichever nested `DecodingError` this last attempt happened to
+            // throw — often a generic "keyNotFound", with no indication the
+            // envelope was actually unrecognized rather than merely
+            // malformed. See CODE_AUDIT_Network §5.8.
+            throw DecodeError(
+                declaredVersion: try? container.decodeIfPresent(Int.self, forKey: .version),
+                underlyingError: error
+            )
+        }
         let roster = try container.decodeIfPresent(GameRosterModel.self, forKey: .gameRoster) ?? .empty
         let control = try container.decodeIfPresent(GameControlModel.self, forKey: .gameControl)
             ?? container.decodeIfPresent(LegacyGameControlModel.self, forKey: .gameRoster)?.gameControl

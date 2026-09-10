@@ -196,8 +196,8 @@ struct GameMessagePipelineTests {
         let first = await pipeline.enqueue(event)
         let duplicate = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
 
-        #expect(first)
-        #expect(!duplicate)
+        #expect(first == .enqueued)
+        #expect(duplicate == .duplicate)
     }
 
     @Test("same counter from different senders is accepted")
@@ -209,8 +209,8 @@ struct GameMessagePipelineTests {
         let firstQueued = await pipeline.enqueue(GameMessageEvent(model: first, origin: .direct(UUID())))
         let secondQueued = await pipeline.enqueue(GameMessageEvent(model: second, origin: .direct(UUID())))
 
-        #expect(firstQueued)
-        #expect(secondQueued)
+        #expect(firstQueued == .enqueued)
+        #expect(secondQueued == .enqueued)
     }
 
     @Test("counter zero messages are not deduplicated")
@@ -222,8 +222,8 @@ struct GameMessagePipelineTests {
         let first = await pipeline.enqueue(GameMessageEvent(model: message, origin: .direct(UUID())))
         let second = await pipeline.enqueue(GameMessageEvent(model: message, origin: .sharePlay(UUID())))
 
-        #expect(first)
-        #expect(second)
+        #expect(first == .enqueued)
+        #expect(second == .enqueued)
     }
 
     @Test("message identity deduplicates current counter-zero retries")
@@ -238,8 +238,8 @@ struct GameMessagePipelineTests {
             GameMessageEvent(model: message, origin: .sharePlay(UUID()))
         )
 
-        #expect(first)
-        #expect(!duplicate)
+        #expect(first == .enqueued)
+        #expect(duplicate == .duplicate)
     }
 
     @Test("cancelled pipeline rejects new messages")
@@ -249,7 +249,42 @@ struct GameMessagePipelineTests {
 
         let queued = await pipeline.enqueue(GameMessageEvent(model: Self.message(counter: 1, senderId: UUID()), origin: .direct(UUID())))
 
-        #expect(!queued)
+        #expect(queued == .pipelineStopped)
+    }
+
+    @Test("queue-full rejection is distinct from a duplicate rejection")
+    func queueFullRejectionIsDistinctFromDuplicate() async {
+        let pipeline = GameMessagePipeline(maximumQueuedMessages: 2)
+        let senderId = UUID()
+        for counter in 1...2 {
+            let result = await pipeline.enqueue(
+                GameMessageEvent(model: Self.message(counter: counter, senderId: senderId), origin: .direct(UUID()))
+            )
+            #expect(result == .enqueued)
+        }
+
+        let overflow = await pipeline.enqueue(
+            GameMessageEvent(model: Self.message(counter: 3, senderId: senderId), origin: .direct(UUID()))
+        )
+
+        #expect(overflow == .queueFull)
+        #expect(overflow != .duplicate)
+    }
+
+    @Test("cancelling a drain in flight requeues the in-hand event instead of losing it")
+    func requeueCurrentOnCancellationRestoresTheDequeuedEvent() async {
+        let pipeline = GameMessagePipeline()
+        let message = Self.message(counter: 9, senderId: UUID())
+        let event = GameMessageEvent(model: message, origin: .direct(UUID()))
+        #expect(await pipeline.enqueue(event) == .enqueued)
+
+        let dequeued = await pipeline.next()
+        #expect(dequeued != nil)
+
+        await pipeline.requeueCurrentOnCancellation()
+
+        let redelivered = await pipeline.next()
+        #expect(redelivered?.model.counter == message.counter)
     }
 
     private static func message(counter: Int, senderId: UUID, dataId: UUID = UUID()) -> GameNetworkModel {
