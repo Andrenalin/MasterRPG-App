@@ -3,6 +3,7 @@
 import CoreRPG
 import DiceRPG
 import Foundation
+import os.log
 
 extension PlayerController {
     func handleDice(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
@@ -10,12 +11,16 @@ extension PlayerController {
         guard (root.gameModel.gameConfig.id != model.sender.id) &&
                 (features.diceMaster || !model.sender.isMaster) &&
                 (features.dicePlayers || model.sender.isMaster)
-        else { return await response(for: model, isSuccess: false, requestData: false) }
+        else {
+            Logger.networking.debug("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — self message or feature gate (diceMaster: \(features.diceMaster, privacy: .public), dicePlayers: \(features.dicePlayers, privacy: .public), senderIsMaster: \(model.sender.isMaster, privacy: .public))")
+            return await response(for: model, isSuccess: false, requestData: false)
+        }
 
         // Peers may contribute only a complete roll. Dice focus/visibility and
         // package commands remain master-authoritative even if a player stamps
         // the envelope with a group audience.
         guard model.sender.isMaster || model.isPlayerDiceGroupEvent else {
+            Logger.networking.debug("PlayerController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), purpose: \(String(describing: model.purpose), privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
             return nil
         }
 

@@ -31,8 +31,14 @@ extension MasterController {
         case .reveal, .store:
             return try await root.diceRoot.gameControllable.createGameData(for: model.data.id)
         case .update:
-            guard root.gameModel.gameControl.features.dicePlayers else { return nil }
-            guard model.sender.isMaster || model.isPlayerDiceGroupEvent else { return nil }
+            guard root.gameModel.gameControl.features.dicePlayers else {
+                Logger.networking.debug("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — dicePlayers feature is off")
+                return nil
+            }
+            guard model.sender.isMaster || model.isPlayerDiceGroupEvent else {
+                Logger.networking.debug("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), purpose: \(String(describing: model.purpose), privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
+                return nil
+            }
             if let diceResult = DiceResultModel.decodeData(of: model.data.data) {
                 root.battleRoundController.recordDiceResult(
                     diceResult,
