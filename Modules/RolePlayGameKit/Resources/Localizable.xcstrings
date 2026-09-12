@@ -868,6 +868,12 @@
         }
       }
     },
+    "Game Join Codes" : {
+
+    },
+    "Generates new codes for hosting and joining this device's game over the local network, and forgets the last code used to join another Game Master. Anyone using the old codes will need the new ones to connect." : {
+
+    },
     "Generator" : {
       "localizations" : {
         "de" : {
@@ -1139,6 +1145,9 @@
           }
         }
       }
+    },
+    "Join codes have been reset." : {
+
     },
     "Library" : {
       "localizations" : {
@@ -1990,6 +1999,12 @@
         }
       }
     },
+    "Reset Join Codes" : {
+
+    },
+    "Reset Join Codes?" : {
+
+    },
     "Restore Purchases" : {
       "localizations" : {
         "de" : {
@@ -2596,6 +2611,9 @@
           }
         }
       }
+    },
+    "These codes are stored in the Keychain on this device only and are never synced with iCloud." : {
+
     },
     "This is the first launch and there is no data in the database. Do you want to initialize the database with example data? No download is required — the example data is pre-bundled." : {
       "localizations" : {

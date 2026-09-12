@@ -71,12 +71,15 @@ struct CharacterAddEntryControl: View {
             if isExpanded {
                 TextField(
                     String(localized: "Name: content", bundle: .module),
-                    text: $text,
-                    axis: .vertical
+                    text: $text
                 )
                 .textFieldStyle(.plain)
                 .focused($isTextFieldFocused)
                 .onSubmit(submit)
+                .onKeyPress(.return) {
+                    submit()
+                    return .handled
+                }
 #if os(iOS)
                 .submitLabel(.send)
 #endif

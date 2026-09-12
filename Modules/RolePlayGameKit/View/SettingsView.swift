@@ -4,6 +4,7 @@ import CoreRPG
 import SwiftUI
 import AdventureRPG
 import AudioRPG
+import GameRPG
 import PdfRPG
 import PhotoRPG
 import SpaceRPG
@@ -33,6 +34,9 @@ public struct SettingsView: View {
     
     @State private var showResetAlert = false
     @State private var isThemePickerPresented = false
+
+    @State private var showResetJoinCodesAlert = false
+    @State private var didResetJoinCodes = false
     
     public var body: some View {
         List {
@@ -125,6 +129,48 @@ public struct SettingsView: View {
                 }
             }
             
+            SectionGroupEditorView {
+                Button(role: .destructive) {
+                    withAnimation { showResetJoinCodesAlert.toggle() }
+                } label: {
+                    Label {
+                        Text("Reset Join Codes", bundle: .module)
+                    } icon: {
+                        Image(systemName: "key.slash")
+                    }
+                }
+                .alert(Text("Reset Join Codes?", bundle: .module), isPresented: $showResetJoinCodesAlert) {
+                    Button(role: .cancel) {
+                    } label: {
+                        Text("Cancel", bundle: .module)
+                    }
+                    Button(role: .destructive) {
+                        store.gameRoot.resetJoinCodes()
+                        withAnimation { didResetJoinCodes = true }
+                    } label: {
+                        Text("Reset", bundle: .module)
+                    }
+                } message: {
+                    Text(
+                        "Generates new codes for hosting and joining this device's game over the local network, and forgets the last code used to join another Game Master. Anyone using the old codes will need the new ones to connect.",
+                        bundle: .module
+                    )
+                }
+            } header: {
+                Text("Game Join Codes", bundle: .module)
+            } footer: {
+                if didResetJoinCodes {
+                    Label {
+                        Text("Join codes have been reset.", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checkmark.circle.fill")
+                    }
+                    .foregroundStyle(.green)
+                } else {
+                    Text("These codes are stored in the Keychain on this device only and are never synced with iCloud.", bundle: .module)
+                }
+            }
+
             SectionGroupEditorView {
                 Button(role: .destructive) {
                     withAnimation { showResetAlert.toggle() }

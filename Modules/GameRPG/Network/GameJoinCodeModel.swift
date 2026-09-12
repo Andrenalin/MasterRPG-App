@@ -102,6 +102,18 @@ public final class GameJoinCodeModel: Sendable {
         return String(repeating: "0", count: Self.codeLength - digits.count) + digits
     }
 
+    /// Regenerates `masterCode` and `playerCode` and clears `lastUsedMasterJoinCode`,
+    /// replacing every code this device has stored in the Keychain. Each property's
+    /// own `didSet` handles the actual Keychain write/removal — see their doc
+    /// comments — so this only needs to assign new values. Exposed from
+    /// Settings so a user can invalidate codes they suspect were shared too
+    /// widely, without waiting for the per-code shuffle on the setup screens.
+    public func reset() {
+        masterCode = Self.randomCode()
+        playerCode = Self.randomCode()
+        lastUsedMasterJoinCode = nil
+    }
+
     private static func loadOrGenerate(key: String, storage: any JoinCodeStorage, legacyDefaults: UserDefaults?) -> String {
         if let stored = storage.string(forKey: key), isValidCode(stored) {
             return stored

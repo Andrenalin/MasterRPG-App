@@ -399,6 +399,12 @@ public final class GameRoot {
     func ownJoinCode(isMaster: Bool) -> String? {
         isMaster ? gameJoinCodeModel.masterCode : gameJoinCodeModel.playerCode
     }
+
+    /// Replaces every join code this device has stored in the Keychain with a
+    /// freshly generated one. Surfaced from [[SettingsView]]'s Reset section.
+    public func resetJoinCodes() {
+        gameJoinCodeModel.reset()
+    }
     
     lazy var searchController: SearchGlobalController = {
         SearchGlobalController(root: self)
