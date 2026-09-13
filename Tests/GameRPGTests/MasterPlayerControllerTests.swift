@@ -2220,7 +2220,7 @@ private final class InMemoryPlayerNetworkStore: PlayerNetworkControllable, @unch
         self.browserManager = browserManager
     }
 
-    @MainActor func toggleConnection(to _: BrowserGameModel, passcode: String) async {}
+    @MainActor func toggleConnection(to _: BrowserGameModel, passcode: String) async -> Bool { true }
     @MainActor func stop() async {}
 
     func request(with content: MessageMapper?) async {

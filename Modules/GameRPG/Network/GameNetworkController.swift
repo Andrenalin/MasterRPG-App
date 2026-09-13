@@ -147,8 +147,11 @@ extension GameNetworkController {
         let name = self.model.name
         Logger.networking.debug("GameNetworkController: start player game \(name, privacy: .public)")
         if let model {
-            await self.model.playerStore?.toggleConnection(to: model, passcode: passcode)
-            return true
+            // Waits for the actual handshake outcome — a caller receiving
+            // `true` here relies on it to mean "connected", since it goes on
+            // to flip the game state to `.started` and navigate into the
+            // game screen. See `toggleConnection(to:passcode:)`.
+            return await self.model.playerStore?.toggleConnection(to: model, passcode: passcode) ?? false
         }
         if !proxy && sharePlayStore.canActivateSharePlay {
             sharePlayStore.joinGame()

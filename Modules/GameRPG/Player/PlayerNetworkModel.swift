@@ -15,7 +15,11 @@ protocol PlayerNetworkControllable: Sendable & AnyObject {
     var networkModel: PlayerNetworkModel { get }
     var browserManager: BrowserManager { get }
 
-    @MainActor func toggleConnection(to model: BrowserGameModel, passcode: String) async
+    /// Returns whether the join actually succeeded (the handshake completed
+    /// and the passcode was accepted) — not merely whether the attempt was
+    /// dialed. Callers must not treat a `true` return as immediate; it only
+    /// resolves once the outcome is known.
+    @MainActor func toggleConnection(to model: BrowserGameModel, passcode: String) async -> Bool
     @MainActor func stop() async
 
     func request(with content: MessageMapper?) async
@@ -116,6 +120,11 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
     /// Last message mapper passed to `request(with:)`
     public var lastRequestData: MessageMapper?
 
+    /// Value `toggleConnection(to:passcode:)` returns — configure to
+    /// simulate a rejected join code (`false`) or a successful one (`true`,
+    /// the default).
+    public var stubToggleConnectionResult = true
+
     // MARK: - Initialization
 
     @MainActor
@@ -130,10 +139,11 @@ final class PlayerNetworkControllableSpyingStub: PlayerNetworkControllable, @unc
     // MARK: - Protocol Methods
 
     @MainActor
-    func toggleConnection(to model: BrowserGameModel, passcode: String) async {
+    func toggleConnection(to model: BrowserGameModel, passcode: String) async -> Bool {
         calledToggleConnection += 1
         lastToggledGame = model
         lastPasscode = passcode
+        return stubToggleConnectionResult
     }
 
     @MainActor

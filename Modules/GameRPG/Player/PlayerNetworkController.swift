@@ -41,6 +41,17 @@ final class PlayerNetworkController: Sendable {
     // rather than a hand-rolled throttle + pending-sources dictionary here.
     private let connectionThrottle = ConnectionThrottleTracker()
 
+    /// Resolved by `readyConnection(for:)` (true) or by the first-attempt
+    /// branch of `failed(with:for:)` (false), and drained defensively by
+    /// `stop()` for every other teardown path — so `toggleConnection(to:passcode:)`
+    /// reports the *actual* handshake outcome instead of returning as soon as
+    /// the attempt is merely dialed. Without this, a wrong join code (e.g. a
+    /// stale `lastUsedMasterJoinCode`) let the caller believe the game had
+    /// already started before the TLS/passcode handshake even completed,
+    /// navigating into the game screen instead of back to the code-entry
+    /// sheet. See CODE_AUDIT_Network.
+    private var pendingJoinContinuation: CheckedContinuation<Bool, Never>?
+
     /// Bonjour role advertised after the outbound connection is lost. Direct
     /// players wait for the game master to reconnect, while proxy clients wait
     /// for their private proxy host.
@@ -62,11 +73,11 @@ final class PlayerNetworkController: Sendable {
 }
 
 extension PlayerNetworkController: PlayerNetworkControllable {
-    func toggleConnection(to model: BrowserGameModel, passcode: String) async {
+    func toggleConnection(to model: BrowserGameModel, passcode: String) async -> Bool {
         Logger.networking.debug("PlayerNetworkController: Start")
         guard networkModel.playerConnectionId == nil else {
             await stop()
-            return
+            return false
         }
 
         let endpoint = browserManager.nwEndpoint(for: model)
@@ -77,10 +88,23 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         await start(model: playerModel)
 
         observeRemovedConnection()
+
+        return await withCheckedContinuation { continuation in
+            pendingJoinContinuation = continuation
+        }
+    }
+
+    /// No-op if there is no attempt in flight. Guarantees `toggleConnection(to:passcode:)`
+    /// never hangs waiting on a handshake outcome that a teardown elsewhere
+    /// (an explicit `stop()`, a superseded attempt) already made moot.
+    private func resolvePendingConnection(success: Bool) {
+        pendingJoinContinuation?.resume(returning: success)
+        pendingJoinContinuation = nil
     }
 
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
+        resolvePendingConnection(success: false)
         let connectionController = networkModel.connectionController
         networkModel.observeRemovalTask?.cancel()
         networkModel.observeRemovalTask = nil
@@ -152,6 +176,11 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             // throttle tracks. Outbound `start(model:)` attempts never appear
             // here, since only `restart(connection:)` registers a pending source.
             await connectionThrottle.resolve(id: id, succeeded: false)
+            // Also covers an outbound `start(model:)` attempt made with a bad
+            // join code: the TLS/passcode handshake fails right here, so the
+            // caller waiting in `toggleConnection(to:passcode:)` must be told
+            // it did not connect, not left assuming the earlier dial succeeded.
+            resolvePendingConnection(success: false)
             await stop(connection: id)
         }
     }
@@ -160,6 +189,22 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
     func lostConnection(for id: ConnectionController.ID) async {
         Logger.networking.debug("PlayerNetworkController: Lost connection")
         await connectionThrottle.clear(id: id)
+
+        if isCurrentConnection(id), networkModel.connectionState == .notReady {
+            // The connection was torn down (e.g. the underlying `NWConnection`
+            // reporting `.cancelled` for a rejected handshake instead of
+            // `.failed`) before ever reaching `.ready`. This is an initial-join
+            // failure, not a previously-established session dropping, so it
+            // must resolve the pending `toggleConnection(to:passcode:)` call
+            // the same way `failed(with:for:)` does — otherwise that call
+            // hangs forever (nothing else ever resolves it), leaving the
+            // caller stuck believing the join is still in flight instead of
+            // prompting for a fresh code. The "lost master, become a fallback
+            // listener" recovery below assumes a session that never existed.
+            resolvePendingConnection(success: false)
+            await stop(connection: id)
+            return
+        }
 
         guard markLostIfCurrent(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore stale or duplicate loss \(id.uuidString, privacy: .public)")
@@ -177,6 +222,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             return
         }
         await connectionThrottle.resolve(id: id, succeeded: true)
+        resolvePendingConnection(success: true)
         await delegate.playerReady()
     }
 

@@ -24,10 +24,12 @@ final class PlayerStoreAbstractionMock: PlayerNetworkControllable, @unchecked Se
     var calledRequest = 0
 
     var lastPasscode: String?
+    var toggleConnectionResult = true
 
-    func toggleConnection(to _: BrowserGameModel, passcode: String) {
+    func toggleConnection(to _: BrowserGameModel, passcode: String) -> Bool {
         calledToggleConnection += 1
         lastPasscode = passcode
+        return toggleConnectionResult
     }
 
     func stop() {

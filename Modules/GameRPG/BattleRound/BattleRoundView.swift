@@ -69,7 +69,6 @@ struct BattleRoundView: View {
                 .focusSection()
 #endif
             }
-            .environment(\.battleRoundCardLayout, screenModel.cardLayout)
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleInlineNavigationTitle()
         }

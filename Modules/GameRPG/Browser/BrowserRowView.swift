@@ -67,16 +67,6 @@ struct BrowserRowView: View {
                 }
                 self.attemptedCode = nil
             }
-            .onChange(of: playerNetworkControllable.networkModel.playerConnectionId) { _, newId in
-                // The attempt this row made (with either the saved or a
-                // freshly entered code) was torn down without ever reporting
-                // connected — a bad/expired code, most likely. Prompt for a
-                // fresh one instead of failing silently.
-                guard attemptedCode != nil, newId == nil else { return }
-                attemptedCode = nil
-                enteredCode = ""
-                isEnteringCode = true
-            }
         }
     }
 
@@ -98,8 +88,17 @@ struct BrowserRowView: View {
             supporterTier: supporterTier,
             joinCode: joinCode
         )
-        if !wasConnected && root.gameModel.gameConfig.state == .started {
+        guard !wasConnected else { return }
+        if root.gameModel.gameConfig.state == .started {
             await MasterRPGTips.donateGameStartedOrJoined()
+        } else if !joinCode.isEmpty {
+            // `startGame` now awaits the actual handshake outcome, so landing
+            // back here not started means the join code (saved or freshly
+            // entered) was rejected. Prompt for a fresh one instead of
+            // silently sitting back on the button.
+            attemptedCode = nil
+            enteredCode = ""
+            isEnteringCode = true
         }
     }
 

@@ -21,10 +21,6 @@ final class BattleRoundCardState {
     }
 }
 
-extension EnvironmentValues {
-    @Entry var battleRoundCardLayout: BattleRoundCardLayout = .wide
-}
-
 /// The properties `BattleRoundWideCardLayout` and `BattleRoundCompactCardLayout`
 /// both need, bundled into one struct so a future added field only needs
 /// declaring once instead of twice — the two layouts' own `body` arrangements
@@ -45,12 +41,12 @@ extension BattleCombatant {
 struct BattleRoundCard: View {
     let presentation: BattleRoundCardPresentation
     let controller: BattleRoundController
+    let cardLayout: BattleRoundCardLayout
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
     let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @Environment(\.battleRoundCardLayout) private var cardLayout
     @State private var cardState = BattleRoundCardState()
 
     var body: some View {
@@ -144,6 +140,12 @@ extension BattleRoundCard: Equatable {
     /// excluded: they're never `Equatable`, and — once hoisted to stable method
     /// references at the call site (see `BattleRoundView`) — always behave the
     /// same regardless of which render's instance gets kept.
+    ///
+    /// `cardLayout` must be a plain stored property, not `@Environment`:
+    /// `.equatable()` invokes this `==` on struct copies that were never
+    /// installed into the view tree, and reading an `@Environment`-wrapped
+    /// property outside that installation always silently returns its
+    /// default value (with a runtime diagnostic) instead of the real one.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.presentation == rhs.presentation
             && lhs.controller.root === rhs.controller.root
@@ -159,6 +161,7 @@ extension BattleRoundCard: Equatable {
         BattleRoundCard(
             presentation: card,
             controller: controller,
+            cardLayout: .wide,
             showCharacter: { _ in },
             selectHitPoints: { _ in },
             selectInitiative: { _ in }

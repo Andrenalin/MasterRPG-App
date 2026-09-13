@@ -39,6 +39,7 @@ struct BattleRoundList: View {
             BattleRoundCard(
                 presentation: card,
                 controller: controller,
+                cardLayout: screenModel.cardLayout,
                 showCharacter: showCharacter,
                 selectHitPoints: selectHitPoints,
                 selectInitiative: selectInitiative
