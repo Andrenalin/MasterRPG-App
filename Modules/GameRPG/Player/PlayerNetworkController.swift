@@ -52,6 +52,27 @@ final class PlayerNetworkController: Sendable {
     /// sheet. See CODE_AUDIT_Network.
     private var pendingJoinContinuation: CheckedContinuation<Bool, Never>?
 
+    /// Identifies the in-flight `toggleConnection(to:passcode:)` attempt, if
+    /// any. Set *synchronously* before the first `await` in `toggleConnection`
+    /// so a second call arriving while the first is still mid-setup (e.g. a
+    /// double-tap on "Join", or a caller racing `toggleConnection` against
+    /// itself) is detectable even though `pendingJoinContinuation` hasn't
+    /// been parked yet. `stop()` clears this, so the first call can tell —
+    /// once it resumes past its own `await`s — that its attempt was
+    /// superseded and must resolve to `false` immediately instead of parking
+    /// a continuation nothing will ever resume. See CODE_AUDIT_13 §3.1.
+    private var joinAttemptToken: UUID?
+
+    /// Forces a stalled join to resolve after `joinTimeout` instead of
+    /// hanging forever, covering `NWConnection.State.waiting` (Local Network
+    /// permission not yet granted, an unreachable/firewalled peer, no usable
+    /// path) — a state `ConnectionController.stateChanged(_:)` never reports
+    /// to this delegate, since it isn't a terminal `.failed`/`.cancelled`.
+    /// Cancelled by `resolvePendingConnection(success:)` on every real
+    /// resolution path. See CODE_AUDIT_13 §3.1.
+    private var joinTimeoutTask: Task<Void, Never>?
+    private static let joinTimeout: Duration = .seconds(12)
+
     /// Bonjour role advertised after the outbound connection is lost. Direct
     /// players wait for the game master to reconnect, while proxy clients wait
     /// for their private proxy host.
@@ -80,6 +101,15 @@ extension PlayerNetworkController: PlayerNetworkControllable {
             return false
         }
 
+        // Recorded synchronously, before the first `await` below, so a
+        // second call that arrives while this one is still mid-setup sees
+        // `playerConnectionId` already set (via the guard above), tears this
+        // attempt down via `stop()`, and clears this token — letting this
+        // call detect the supersession once it resumes and bail out instead
+        // of parking a continuation `stop()` already made unresolvable.
+        let token = UUID()
+        joinAttemptToken = token
+
         let endpoint = browserManager.nwEndpoint(for: model)
         let playerModel = PlayerBrowserModel(name: model.deviceName, endpoint: endpoint, interface: nil)
         networkModel.model = playerModel
@@ -87,7 +117,24 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         networkModel.passcode = passcode
         await start(model: playerModel)
 
+        guard joinAttemptToken == token else {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Join attempt superseded before continuation was parked")
+            return false
+        }
+
         observeRemovedConnection()
+
+        joinTimeoutTask?.cancel()
+        joinTimeoutTask = Task { @MainActor [weak self, timeout = Self.joinTimeout] in
+            try? await Task.sleep(for: timeout)
+            guard !Task.isCancelled, let self, self.joinAttemptToken == token else { return }
+            // Covers `NWConnection.State.waiting` (Local Network permission
+            // not yet granted, unreachable/firewalled peer, no usable
+            // path), which never reaches `.failed`/`.cancelled` and so
+            // never calls back into this delegate on its own.
+            Logger.playerNetworkController.debug("PlayerNetworkController: Join timed out waiting for a terminal connection state")
+            await self.stop()
+        }
 
         return await withCheckedContinuation { continuation in
             pendingJoinContinuation = continuation
@@ -98,6 +145,9 @@ extension PlayerNetworkController: PlayerNetworkControllable {
     /// never hangs waiting on a handshake outcome that a teardown elsewhere
     /// (an explicit `stop()`, a superseded attempt) already made moot.
     private func resolvePendingConnection(success: Bool) {
+        joinAttemptToken = nil
+        joinTimeoutTask?.cancel()
+        joinTimeoutTask = nil
         pendingJoinContinuation?.resume(returning: success)
         pendingJoinContinuation = nil
     }

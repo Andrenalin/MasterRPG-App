@@ -42,6 +42,7 @@ struct SearchProxyView: View {
                 if let observerController = root.networkStore.model.playerStore {
                     ForEach(observerController.browserManager.games) { browser in
                         BrowserRowView(root: root, playerNetworkControllable: observerController, model: browser)
+                            .equatable()
                             .environment(\.browserMode, .observer)
                     }
                 }
@@ -49,6 +50,7 @@ struct SearchProxyView: View {
                 if let proxyController = root.networkProxyStore.model.playerStore {
                     ForEach(visibleProxyBrowsers(for: proxyController)) { browser in
                         BrowserRowView(root: root, playerNetworkControllable: proxyController, model: browser)
+                            .equatable()
                             .environment(\.browserMode, .proxy)
                     }
                 }

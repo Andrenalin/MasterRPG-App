@@ -68,7 +68,7 @@ public struct PdfSummaryAnalysisView: View {
         }
         .padding()
         .background(Color.red.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(.rect(cornerRadius: 8))
     }
 }
 
@@ -162,7 +162,7 @@ private struct AnalyzingView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
                 .background(Color.secondary.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(.rect(cornerRadius: 8))
             }
         }
     }

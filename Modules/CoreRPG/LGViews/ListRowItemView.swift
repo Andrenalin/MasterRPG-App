@@ -170,6 +170,7 @@ private struct RowContentView: View {
                     )
                 }
             }
+            .equatable()
 
             SpecialCategoryFolderIndicator(
                 item: item,

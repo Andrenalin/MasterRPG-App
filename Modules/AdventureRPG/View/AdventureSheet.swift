@@ -32,44 +32,13 @@ struct AdventureSheet: View {
             ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
                 .sheetAIAssistant(
                     generatorRoot: root.generatorRoot,
-                    rootModel: gameSheetRootModel,
+                    rootModel: root.gameSheetRootModel(for: model.id),
                     module: root.configurable.module
                 )
         } else {
             ReaderSheetView(model: model, configuration: configuration, dismissAction: dismissAction)
         }
 #endif
-    }
-
-    /// The live game view's persistent sheet slot (`ItemEditorModel.gameSheetRootModel`)
-    /// — only ever needed, and so only ever created, while an actual game view
-    /// is on screen. Reuses the stored instance (moving it to `model.id` if the
-    /// player switched selection) or creates it here, seeded with the real
-    /// `model.id` directly rather than a throwaway placeholder, and stores it
-    /// back for the next selection/reappearance to reuse. Cleared again in
-    /// `GameController.resetGameState()` when the game ends.
-    ///
-    /// `isGameEditor: true` — unlike a typical live game view, Adventure edits
-    /// made here are meant to persist just like the standalone editor's, not
-    /// stay memory-only for the session; see `SheetRootModel.persistsEdits`.
-    private var gameSheetRootModel: SheetRootModel {
-        if let existing = root.editController.editorModel.gameSheetRootModel {
-            existing.reset(itemId: model.id)
-            return existing
-        }
-        guard let rootManager = root.rootManager else {
-            preconditionFailure("AdventureSheet requires ItemRootController.rootManager to be set before presentation.")
-        }
-        let created = SheetRootModel(
-            rootManager: rootManager,
-            linkControllable: root.rootController.linkControllable,
-            sheetControllable: root.rootController.sheetControllable,
-            itemId: model.id,
-            isEditor: false,
-            isGameEditor: true
-        )
-        root.editController.editorModel.gameSheetRootModel = created
-        return created
     }
 }
 
@@ -95,7 +64,7 @@ private struct ReaderSheetView: View {
                 module: root.config.module,
                 configuration: configuration,
                 dismissAction: dismissAction,
-                externalSheetRootModel: gameSheetRootModel
+                externalSheetRootModel: root.gameSheetRootModel(for: model.id)
             )
         } else {
             TableRootSheet(
@@ -108,35 +77,40 @@ private struct ReaderSheetView: View {
             .id(model.id)
         }
     }
+}
 
+private extension AdventureRootModel {
     /// The live game view's persistent sheet slot (`ItemEditorModel.gameSheetRootModel`)
     /// — only ever needed, and so only ever created, while an actual game view
-    /// is on screen. Reuses the stored instance (moving it to `model.id` if the
+    /// is on screen. Reuses the stored instance (moving it to `itemId` if the
     /// player switched selection) or creates it here, seeded with the real
-    /// `model.id` directly rather than a throwaway placeholder, and stores it
+    /// `itemId` directly rather than a throwaway placeholder, and stores it
     /// back for the next selection/reappearance to reuse. Cleared again in
     /// `GameController.resetGameState()` when the game ends.
     ///
     /// `isGameEditor: true` — unlike a typical live game view, Adventure edits
     /// made here are meant to persist just like the standalone editor's, not
     /// stay memory-only for the session; see `SheetRootModel.persistsEdits`.
-    private var gameSheetRootModel: SheetRootModel {
-        if let existing = root.editController.editorModel.gameSheetRootModel {
-            existing.reset(itemId: model.id)
+    ///
+    /// Was duplicated verbatim between `AdventureSheet` and `ReaderSheetView`
+    /// — see CODE_AUDIT_13 §9.5.
+    func gameSheetRootModel(for itemId: UUID) -> SheetRootModel {
+        if let existing = editController.editorModel.gameSheetRootModel {
+            existing.reset(itemId: itemId)
             return existing
         }
-        guard let rootManager = root.rootManager else {
+        guard let rootManager else {
             preconditionFailure("AdventureSheet requires ItemRootController.rootManager to be set before presentation.")
         }
         let created = SheetRootModel(
             rootManager: rootManager,
-            linkControllable: root.rootController.linkControllable,
-            sheetControllable: root.rootController.sheetControllable,
-            itemId: model.id,
+            linkControllable: rootController.linkControllable,
+            sheetControllable: rootController.sheetControllable,
+            itemId: itemId,
             isEditor: false,
             isGameEditor: true
         )
-        root.editController.editorModel.gameSheetRootModel = created
+        editController.editorModel.gameSheetRootModel = created
         return created
     }
 }

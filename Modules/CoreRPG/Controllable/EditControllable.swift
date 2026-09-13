@@ -700,7 +700,7 @@ public extension EditControllable {
     }
 }
 
-// MARK: - controller mantainence
+// MARK: - Controller Maintenance
 
 public extension EditControllable {
     @MainActor func editModel(for itemId: UUID) -> Model? {

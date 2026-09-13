@@ -17,15 +17,6 @@ public extension View {
         #endif
     }
 
-    @ViewBuilder func printViewChanges<Content: View>(@ViewBuilder content: @escaping () -> Content) -> some View {
-        #if DEBUG
-            let _ = Self._printChanges()
-            content()
-        #else
-            content()
-        #endif
-    }
-    
     static func printViewChangesOnlyInDebug() {
         #if DEBUG
             let _ = Self._printChanges()

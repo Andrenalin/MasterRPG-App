@@ -170,7 +170,7 @@ private struct TileCoordinatesView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: 120, maxHeight: 80)
                         .background(Color.secondary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(.rect(cornerRadius: 8))
                         .accessibilityLabel(Text("Cover tile", bundle: .module))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)

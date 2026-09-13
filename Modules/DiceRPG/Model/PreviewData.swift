@@ -45,14 +45,9 @@ public extension DiceRootModel {
         let gameController = root.gameController
         let itemController = root.itemController
 #if DEBUG
+        let url = RPGResources.Resources.bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz")
         Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("Preview fixture resource URL was nil")
-                return
-            }
-            let task = importController.importUrl(from: url)
-            let _ = try? await task.value
+            guard await PreviewFixtureLoader.importFirstExample(url: url, into: importController) else { return }
             let saveTask = Task { @MainActor in
                 editController.setCurrentItem(to: .previewWithData)
                 await gameController.setFocusDice(on: itemController.itemDataModel.items[0])

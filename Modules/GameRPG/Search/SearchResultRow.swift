@@ -13,14 +13,29 @@ import PhotoRPG
 import WeatherRPG
 import SpaceRPG
 
-struct SearchResultRow: View {
+struct SearchResultRow: View, Equatable {
     let result: SearchResult
     let root: GameRoot
+    /// Hoisted out of `body` — search results re-render on every keystroke,
+    /// so resolving the module/controller lookup fresh on every `body`
+    /// evaluation of every visible row (rather than once per instance) did
+    /// real, avoidable work per keystroke. See CODE_AUDIT_13 §8.5.
+    private let module: NetworkModules
+
+    init(result: SearchResult, root: GameRoot) {
+        self.result = result
+        self.root = root
+        self.module = root.rootController(for: result.module).configurable.module
+    }
+
+    /// `root` is reference-identity-compared (it's a shared `@Observable`
+    /// owner, not row content); `module` is derived from `result.module` and
+    /// included for completeness.
+    static func == (lhs: SearchResultRow, rhs: SearchResultRow) -> Bool {
+        lhs.result == rhs.result && lhs.root === rhs.root && lhs.module == rhs.module
+    }
 
     var body: some View {
-        let controller = root.rootController(for: result.module)
-        let module = controller.configurable.module
-
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: module.icon)

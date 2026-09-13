@@ -81,7 +81,11 @@ struct MapModelTests {
         #expect(m1.width == a.width)
         #expect(m1.height == a.height)
         #expect(m1.mapPins != a.mapPins)
-        #expect(m1.pinScale == a.pinScale)
+        // Fixed in CODE_AUDIT_13 §5.3: `pinScale` used to always keep the
+        // receiver's own value, silently dropping the peer's change on every
+        // merge conflict. It's now arbitrated like its sibling `scale`/
+        // `degrees` fields (always take `other`'s value).
+        #expect(m1.pinScale == sut.pinScale)
         #expect(m1.scale == sut.scale)
         #expect(m1.degrees == sut.degrees)
 
@@ -98,7 +102,8 @@ struct MapModelTests {
         #expect(m2.width == a.width)
         #expect(m2.height == a.height)
         #expect(m2.mapPins != a.mapPins)
-        #expect(m2.pinScale != a.pinScale)
+        // See the matching note on `m1.pinScale` above.
+        #expect(m2.pinScale == a.pinScale)
         #expect(m2.scale == a.scale)
         #expect(m2.degrees == a.degrees)
 

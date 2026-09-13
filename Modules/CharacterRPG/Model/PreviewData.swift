@@ -39,14 +39,9 @@ public extension CharacterRootModel {
         let root = CharacterRootModel.preview
         let importController = root.importController
 #if DEBUG
+        let url = RPGResources.Resources.bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz")
         Task(priority: .userInitiated) {
-            let bundle = RPGResources.Resources.bundle
-            guard let url = bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz") else {
-                print("Preview fixture resource URL was nil")
-                return
-            }
-            let task = importController.importUrl(from: url)
-            let _ = try? await task.value
+            _ = await PreviewFixtureLoader.importFirstExample(url: url, into: importController)
         }
 #endif
         return root

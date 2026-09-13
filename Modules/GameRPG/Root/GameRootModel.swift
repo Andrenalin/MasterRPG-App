@@ -610,7 +610,7 @@ extension GameRoot {
         await beginStatisticsSession(for: .master, at: gameModel.startGameTime)
 
         await gameModel.masterController?.start()
-        await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: gameModel.selectedAdventure!))
+        await diceRoot.diceGameControllable.setFocusDice(on: adventureRoot.adventureGameControllable.focusDice(for: id))
         
 #if !os(macOS)
         UIApplication.shared.isIdleTimerDisabled = true

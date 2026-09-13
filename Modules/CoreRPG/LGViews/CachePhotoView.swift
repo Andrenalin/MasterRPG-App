@@ -44,7 +44,7 @@ private extension CachePhotoView {
         Image(akImage: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .clipShape(.rect(cornerRadius: 24, style: .continuous))
             .frame(minWidth: 0, minHeight: 0, maxHeight: .infinity)
     }
 

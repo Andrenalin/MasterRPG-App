@@ -510,7 +510,11 @@ extension MapModel: nonisolated ItemDiffComparable {
                 height: mergedPhotoId.update == photoId_.update ? height : other.height,
                 mapPins: mergedMapPins,
                 walls: mergedWalls,
-                pinScale: pinScale,
+                // Was always `pinScale` (self), silently discarding the
+                // peer's incoming change on every merge conflict — every
+                // other persisted scalar field here is arbitrated one way
+                // or another, this one wasn't. See CODE_AUDIT_13 §5.3.
+                pinScale: other.pinScale,
                 hexMapScale: hexMapScale_.merged(other: other.hexMapScale_),
                 scale: other.scale,
                 degrees: other.degrees,

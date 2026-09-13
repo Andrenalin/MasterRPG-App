@@ -1859,7 +1859,7 @@ extension RPGSharePlayController {
         // Store in joinTask (not tasks) so reset() does not cancel it.
         // The for-await loop stays alive across session invalidations and picks
         // up the next session automatically when the player re-joins the call.
-        joinTask = Task { [weak self] in
+        joinTask = Task { @MainActor [weak self] in
             for await session in RPGActivity.sessions() {
                 guard let self else { return }
                 guard self.sessionObserverLifecycle.isCurrent(
@@ -2000,7 +2000,7 @@ extension RPGSharePlayController {
         #if os(visionOS)
         gameModel?.shareState.isSharePlayActive = false
         #endif
-        let stateTask = Task { [weak self] in
+        let stateTask = Task { @MainActor [weak self] in
             for await state in groupSession.$state.values {
                 guard let self else { return }
                 guard !Task.isCancelled,
@@ -2059,7 +2059,7 @@ extension RPGSharePlayController {
         // Track transport identities directly. An initial participant snapshot
         // may arrive before `.joined`; the tracker retains it and the state loop
         // replays those participants exactly once after Messenger is ready.
-        let participantTask = Task { [weak self] in
+        let participantTask = Task { @MainActor [weak self] in
             guard let self else { return }
             for await _ in groupSession.$activeParticipants.values {
                 guard !Task.isCancelled,
@@ -2098,7 +2098,7 @@ extension RPGSharePlayController {
         }
         tasks[UUID()] = participantTask
 
-        let messageTask = Task { [weak self] in
+        let messageTask = Task { @MainActor [weak self] in
             for await (message, context) in messenger.messages(of: PackageMessage.self) {
                 guard let self else { return }
                 guard !Task.isCancelled,
@@ -2130,7 +2130,7 @@ extension RPGSharePlayController {
             }
         }
         tasks[UUID()] = messageTask
-        let journalTask = Task { [weak self] in
+        let journalTask = Task { @MainActor [weak self] in
             for await attachment in journal.attachments {
                 guard let self else { return }
                 guard !Task.isCancelled,

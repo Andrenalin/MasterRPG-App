@@ -34,6 +34,7 @@ struct BrowserView: View {
             } else {
                 ForEach(playerNetworkControllable.browserManager.games) { browser in
                     BrowserRowView(root: root, playerNetworkControllable: playerNetworkControllable, model: browser)
+                        .equatable()
                 }
             }
         }

@@ -38,6 +38,14 @@ struct CarouselPhotoItemView: View {
                         itemControllable: root.itemControllable,
                         model: nil
                     )
+                } else {
+                    // Reachable whenever the cache controller isn't set up
+                    // yet — without this, the carousel showed a blank
+                    // tappable capsule with no visual affordance. See
+                    // CODE_AUDIT_13 §8.13.
+                    Image(systemName: "photo")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
                 }
             }
             .environment(itemSelectionModel)

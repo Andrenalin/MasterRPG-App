@@ -79,7 +79,7 @@ struct CardGroupBoxStyle: GroupBoxStyle {
         }
         .padding(4)
         .background(Color.black.opacity(0.25))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(.rect(cornerRadius: 8, style: .continuous))
     }
 }
 

@@ -26,14 +26,7 @@ struct DiceInline: View {
                     }
                     roleAndShareDiceResult()
                 } label: {
-                    HStack {
-                        Text(verbatim: root.gameController.gameItem(for: itemId).inlineText)
-                    }
-                    .padding(4)
-                    .foregroundStyle(.white)
-                    .background {
-                        RoundedRectangle(cornerRadius: 8).fill(Color.accentColor)
-                    }
+                    DiceInlineLabel(text: root.gameController.gameItem(for: itemId).inlineText)
                 }
                 .frame(minHeight: 44)
                 .borderLessTVBottonStyle()
@@ -86,14 +79,7 @@ struct DiceInline: View {
                         Label { Text("Reset", bundle: .module) } icon: { Image(systemName: "trash.circle") }
                     }
                 } label: {
-                    HStack {
-                        Text(verbatim: root.gameController.gameItem(for: itemId).inlineText)
-                    }
-                    .padding(4)
-                    .foregroundStyle(.white)
-                    .background {
-                        RoundedRectangle(cornerRadius: 8).fill(Color.accentColor)
-                    }
+                    DiceInlineLabel(text: root.gameController.gameItem(for: itemId).inlineText)
                 }
                 .frame(minHeight: 44)
                 #if !os(tvOS)
@@ -126,6 +112,23 @@ struct DiceInline: View {
         withAnimation(reduceMotion ? nil : .default) {
             root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategopry: resultCategory)
             showResult <=> true
+        }
+    }
+}
+
+/// Shared label style for `DiceInline`'s plain-button and menu-button
+/// branches — was duplicated verbatim between the two; see CODE_AUDIT_13 §8.11.
+private struct DiceInlineLabel: View {
+    let text: String
+
+    var body: some View {
+        HStack {
+            Text(verbatim: text)
+        }
+        .padding(4)
+        .foregroundStyle(.white)
+        .background {
+            Color.accentColor.clipShape(.rect(cornerRadius: 8))
         }
     }
 }

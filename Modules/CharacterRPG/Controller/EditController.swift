@@ -308,15 +308,24 @@ extension EditController {
     /// Recursively duplicates every folder-membership child of `originalFolderId`,
     /// reparenting each copy under `newParentId`, and recursing into any child that is
     /// itself a folder. See CODE_AUDIT_EditItem §5.4.
-    @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID) async -> [Model.Entry] {
-        guard let originalFolder = editModel(for: originalFolderId) else { return [] }
+    ///
+    /// `visited` guards against a cycle in the folder-membership graph (a
+    /// plausible outcome of a merge/import bug, or two devices concurrently
+    /// editing folder membership via CloudKit sync) recursing indefinitely
+    /// and crashing with a stack overflow; `RecursionLimits.maxValueLinkDepth`
+    /// bounds legitimately-deep-but-acyclic nesting the same way the
+    /// sibling walk in `gameValueEntryUpdate` does. See CODE_AUDIT_13 §5.2.
+    @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID, visited: Set<UUID> = []) async -> [Model.Entry] {
+        guard !visited.contains(originalFolderId), visited.count < RecursionLimits.maxValueLinkDepth,
+              let originalFolder = editModel(for: originalFolderId) else { return [] }
+        let visited = visited.union([originalFolderId])
         var newEntries: [Model.Entry] = []
         for entry in originalFolder.entries {
             let childCopyId = await duplicate(itemId: entry.childId, withCopy: false)
             if let childCopy = editModel(for: childCopyId) {
                 childCopy.parentId = newParentId
                 if let originalChild = itemController.itemSync(for: entry.childId), originalChild.isFolder {
-                    childCopy.entries = await duplicateFolderEntries(of: entry.childId, newParentId: childCopyId)
+                    childCopy.entries = await duplicateFolderEntries(of: entry.childId, newParentId: childCopyId, visited: visited)
                 }
                 save(updated: childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString)
             }
@@ -335,18 +344,23 @@ extension EditController {
         return copyId
     }
 
+    /// `visited` guards against a cycle in the item/value graph recursing
+    /// indefinitely and crashing with a stack overflow; `RecursionLimits.maxValueLinkDepth`
+    /// bounds legitimately-deep-but-acyclic nesting. See CODE_AUDIT_13 §5.2.
     @MainActor
-    private func duplicateSubValue(id: UUID, withCopy: Bool) -> ([ValueModel], UUID, [UUID: UUID]) {
-        guard let item = itemController.itemSync(for: id) else { return ([], id, [:]) }
-        
+    private func duplicateSubValue(id: UUID, withCopy: Bool, visited: Set<UUID> = []) -> ([ValueModel], UUID, [UUID: UUID]) {
+        guard !visited.contains(id), visited.count < RecursionLimits.maxValueLinkDepth,
+              let item = itemController.itemSync(for: id) else { return ([], id, [:]) }
+        let visited = visited.union([id])
+
         var duplicates: [ValueModel] = []
         let copyItem: ValueModel = withCopy ? item.duplicate() : item.duplicateWithoutCopy()
         duplicates.append(copyItem)
-        
+
         var mapper: [UUID: UUID] = [id: copyItem.id]
         let subValueIds = item.duplicateSubValueIds()
         subValueIds.forEach {
-            let (newDuplicates, newCopyId, newMapper) = duplicateSubValue(id: $0, withCopy: false)
+            let (newDuplicates, newCopyId, newMapper) = duplicateSubValue(id: $0, withCopy: false, visited: visited)
             mapper[$0] = newCopyId
             mapper.merge(newMapper) { first, _ in return first }
             duplicates.append(contentsOf: newDuplicates)

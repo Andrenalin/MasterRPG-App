@@ -428,7 +428,11 @@ extension DiceModel: nonisolated ItemDiffComparable {
                 rerollOptions: isLeftDice ? rerollOptions : other.rerollOptions,
                 reorderDice: isLeftDice ? reorderDice : other.reorderDice,
                 addDiceEvery: isLeftDice ? addDiceEvery : other.addDiceEvery,
-                resultCategory: resultCategory,
+                // Was always `resultCategory` (self), silently discarding the
+                // peer's incoming change on every merge conflict — the only
+                // scalar field in this initializer that wasn't arbitrated
+                // like its siblings. See CODE_AUDIT_13 §5.3.
+                resultCategory: isLeftDice ? resultCategory : other.resultCategory,
                 entries: entries_.merged(other: other.entries_),
                 parentId: other.parentId
             )

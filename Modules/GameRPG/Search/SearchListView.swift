@@ -88,6 +88,7 @@ private extension SearchListView {
                         
                         ForEach(displayedResults) { result in
                             SearchResultRow(result: result, root: root)
+                                .equatable()
                                 .tag(result)
                         }
                         

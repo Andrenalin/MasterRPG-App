@@ -606,6 +606,13 @@ extension GameController {
 
     nonisolated private func diceUpdateWidget(diceResult: DiceResultModel) async {
 #if !os(tvOS)
+        // A newer roll's task cancels the previous one (see the call site),
+        // but without this check the previous roll's write below would still
+        // run to completion and could overwrite the newer roll's saved
+        // result, leaving the Home Screen/Lock Screen widget showing a stale
+        // dice result. See CODE_AUDIT_13 §3.2.
+        guard !Task.isCancelled else { return }
+
         // Update widget
         var config = DiceConfiguration.loadFromUserDefaults()
         config.lastRoll = diceResult

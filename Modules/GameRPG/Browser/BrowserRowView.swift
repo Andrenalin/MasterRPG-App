@@ -3,7 +3,7 @@
 import CoreRPG
 import SwiftUI
 
-struct BrowserRowView: View {
+struct BrowserRowView: View, Equatable {
     let root: GameRoot
     let playerNetworkControllable: any PlayerNetworkControllable
     let model: BrowserGameModel
@@ -125,6 +125,19 @@ struct BrowserRowView: View {
         case .player: .player
         case .proxy: .proxy
         }
+    }
+}
+
+extension BrowserRowView {
+    /// `playerNetworkControllable` itself isn't compared — like `root`, it's
+    /// a shared controller reference, not row content; what actually
+    /// changes this row's rendered output is which device `model` is, and
+    /// its two derived connection-state booleans. See CODE_AUDIT_13 §8.7.
+    static func == (lhs: BrowserRowView, rhs: BrowserRowView) -> Bool {
+        lhs.model.id == rhs.model.id
+            && lhs.root === rhs.root
+            && lhs.isConnected == rhs.isConnected
+            && lhs.isDeactivate == rhs.isDeactivate
     }
 }
 

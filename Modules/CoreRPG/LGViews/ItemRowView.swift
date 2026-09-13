@@ -74,6 +74,25 @@ private extension ItemRowView {
     }
 }
 
+extension ItemRowView: Equatable {
+    /// This is the row rendered by every module's item list, so without an
+    /// `Equatable` conformance it re-diffed its full body (icon, name, tag,
+    /// share, description) on every unrelated state change the parent list
+    /// observes. Compares the specific fields `body` actually reads —
+    /// `thumbnail`/`actionBar` aren't compared, the same trade-off
+    /// `NameItemNewRow`/`DescriptionItemNewRow` already make by excluding
+    /// their own non-content parameters. See CODE_AUDIT_13 §8.4.
+    public static func == (lhs: ItemRowView, rhs: ItemRowView) -> Bool {
+        lhs.model.id == rhs.model.id
+            && lhs.model.name == rhs.model.name
+            && lhs.model.description == rhs.model.description
+            && lhs.model.tags == rhs.model.tags
+            && lhs.model.category == rhs.model.category
+            && lhs.isSelected == rhs.isSelected
+            && lhs.listDisplayModel.displayMode == rhs.listDisplayModel.displayMode
+    }
+}
+
 private struct SpecialCategoryIconView: View {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
