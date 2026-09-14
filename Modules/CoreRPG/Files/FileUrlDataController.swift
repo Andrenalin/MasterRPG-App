@@ -337,7 +337,12 @@ public extension FileUrlDataController {
         do {
             let values = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             if values.ubiquitousItemDownloadingStatus != .current {
-                try? FileManager.default.startDownloadingUbiquitousItem(at: url)
+                // Routed through the file-coordinated helper (not a direct, uncoordinated
+                // `FileManager.default.startDownloadingUbiquitousItem` call) to avoid racing
+                // CloudKit sync's own coordinator-protected access to this URL, and logged on
+                // failure like the neighboring `resourceValues` failure path below instead of
+                // being silently discarded. See CODE_AUDIT §9.6.
+                try await FileManager.default.download(coordinatingAccessAt: url)
             }
         } catch {
             Logger.fileStore.error("Cannot get the download status of url \(url.absoluteString, privacy: .private)")

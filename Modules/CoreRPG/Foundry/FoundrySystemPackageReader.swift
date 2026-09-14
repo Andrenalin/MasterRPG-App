@@ -151,7 +151,7 @@ private extension FoundrySystemPackageReader {
         let proposedTemplatePath = try FoundryPackagePath.join(basePath, "template.json")
         let templatePath = source.contains(path: proposedTemplatePath) ? proposedTemplatePath : nil
         let templateData = try templatePath.flatMap { try source.data(forPath: $0) }
-        let decodedTemplate = try templateData.map { try FoundryJSONDecoder.decode($0, context: "template.json") }
+        let decodedTemplate = try templateData.map { try FoundryJSONDecoding.decode($0, context: "template.json") }
         let schemas = try decodedTemplate.map(FoundryTemplateDecoder().decode) ?? []
 
         var diagnostics: [FoundryImportDiagnostic] = []
@@ -252,12 +252,14 @@ private extension FoundrySystemPackageReader {
             message: "Decoded \(totalDocuments) top-level rules from \(compendiums.count) compendiums."
         ))
 
-        let assetPaths = FoundryAssetCollector.paths(in: compendiums).sorted()
+        let assetPaths = FoundryAssetPathCollector.paths(in: foundrySystemPackageRawValues(in: compendiums)).sorted()
         let resources = try FoundryPackageResourceResolver.resolve(
             assetPaths: assetPaths,
-            systemID: manifest.id,
+            packageDirectory: "systems",
+            packageID: manifest.id,
             basePath: basePath,
-            source: source,
+            contains: { source.contains(path: $0) },
+            data: { try source.data(forPath: $0) },
             limits: limits
         )
         let licensePaths = source.paths
@@ -420,7 +422,7 @@ private struct FoundryLocalizationDecoder {
                 total: &totalTextResourceBytes,
                 maximum: maximumTextResourceBytes
             )
-            let translations = try FoundryJSONDecoder.decode(data, context: path)
+            let translations = try FoundryJSONDecoding.decode(data, context: path)
             catalogs.append(FoundryLocalizationCatalog(
                 languageCode: languageCode,
                 name: object["name"]?.stringValue ?? languageCode,
@@ -466,43 +468,14 @@ private extension FoundryPackageDataSource {
     }
 }
 
-// MARK: - Package Path Utilities
-
-private enum FoundryPackagePath {
-    static func join(_ base: String, _ relative: String) throws -> String {
-        let cleanedRelative = relative.hasPrefix("./") ? String(relative.dropFirst(2)) : relative
-        return try normalized(base + cleanedRelative)
-    }
-
-    static func normalized(_ path: String) throws -> String {
-        guard !path.isEmpty, !path.hasPrefix("/"), !path.hasPrefix("\\"), !path.contains("\\"), !path.contains("\0") else {
-            throw FoundryImportError.invalidArchive("The package contains an unsafe path.")
-        }
-        var result: [Substring] = []
-        for component in path.split(separator: "/", omittingEmptySubsequences: true) {
-            switch component {
-            case ".": continue
-            case "..": throw FoundryImportError.invalidArchive("The package contains a path traversal component.")
-            default: result.append(component)
-            }
-        }
-        guard !result.isEmpty else {
-            throw FoundryImportError.invalidArchive("The package contains an empty path.")
-        }
-        return result.joined(separator: "/")
-    }
-
-    static func isLicensePath(_ path: String) -> Bool {
-        let lowercased = path.lowercased()
-        return lowercased.contains("license") || lowercased.contains("attribution") || lowercased.contains("copying")
-    }
-}
+// `FoundryPackagePath` (path utilities) now lives in the shared `FoundryPackageResolution.swift`,
+// used by both this reader and `FoundryVTTImportReader`. See CODE_AUDIT §9.2, §9.5.
 
 // MARK: - Manifest Decoding
 
 private struct FoundryManifestDecoder {
     func decode(_ data: Data) throws -> FoundrySystemManifest {
-        let raw = try FoundryJSONDecoder.decode(data, context: "system.json")
+        let raw = try FoundryJSONDecoding.decode(data, context: "system.json", isManifestContext: true)
         guard let object = raw.objectValue else {
             throw FoundryImportError.invalidManifest("The top-level value is not an object.")
         }
@@ -566,27 +539,9 @@ private struct FoundryManifestDecoder {
     }
 }
 
-// MARK: - JSON Decoding
-
-private enum FoundryJSONDecoder {
-    static func decodeSource(_ data: Data) throws -> FoundryJSONValue {
-        let decoder = JSONDecoder()
-        decoder.userInfo[.masterRPGFoundrySourceJSON] = true
-        decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
-        return try decoder.decode(FoundryJSONValue.self, from: data)
-    }
-
-    static func decode(_ data: Data, context: String) throws -> FoundryJSONValue {
-        do {
-            return try decodeSource(data)
-        } catch {
-            if context == "system.json" {
-                throw FoundryImportError.invalidManifest(error.localizedDescription)
-            }
-            throw FoundryImportError.invalidArchive("\(context) is not valid JSON.")
-        }
-    }
-}
+// `FoundryJSONDecoder` now lives in the shared `FoundryPackageResolution.swift` as
+// `FoundryJSONDecoding`, used by both this reader and `FoundryVTTImportReader`. See
+// CODE_AUDIT §9.3.
 
 // MARK: - Template Decoding
 
@@ -666,268 +621,8 @@ private extension FoundryTemplateDecoder {
     }
 }
 
-// MARK: - LevelDB Compendium Decoding
-
-private struct FoundryCompendiumDecoder {
-    struct Result {
-        let compendium: FoundryCompendium
-        let diagnostics: [FoundryImportDiagnostic]
-    }
-
-    let systemID: String
-    let pack: FoundryPackManifest
-    let maximumDocumentCount: Int
-
-    func decode(_ records: [FoundryLevelDBRecord]) throws -> Result {
-        var latest: [String: FoundryLevelDBRecord] = [:]
-        for record in records {
-            if let current = latest[record.key] {
-                if current.sequence > record.sequence { continue }
-                if current.sequence == record.sequence {
-                    guard current.operation == record.operation, current.value == record.value else {
-                        throw FoundryImportError.corruptLevelDB("A key has conflicting records at the same sequence number.")
-                    }
-                    continue
-                }
-            }
-            latest[record.key] = record
-        }
-        let activeRecords = latest.values
-            .filter { $0.operation == .value }
-            .sorted { $0.key < $1.key }
-        guard activeRecords.count <= maximumDocumentCount else {
-            throw FoundryImportError.tooManyDocuments(activeRecords.count)
-        }
-
-        var topDocuments: [String: (type: String, raw: FoundryJSONValue)] = [:]
-        var embeddedItems: [String: [String: FoundryJSONValue]] = [:]
-        var actorEffects: [String: [String: FoundryJSONValue]] = [:]
-        var itemEffects: [String: [String: FoundryJSONValue]] = [:]
-        var embeddedItemEffects: [String: [String: [String: FoundryJSONValue]]] = [:]
-        var folders: [FoundryFolder] = []
-        var unknownKeys: [String] = []
-
-        for record in activeRecords {
-            let raw: FoundryJSONValue
-            do {
-                raw = try FoundryJSONDecoder.decodeSource(record.value)
-            } catch {
-                throw FoundryImportError.invalidDocument(pack: pack.name, key: record.key)
-            }
-            if let id = record.key.suffix(after: "!items!") {
-                topDocuments[id] = ("Item", raw)
-            } else if let id = record.key.suffix(after: "!actors!") {
-                topDocuments[id] = ("Actor", raw)
-            } else if let suffix = record.key.suffix(after: "!actors.items.effects!"),
-                      let parts = suffix.foundryIDComponents(expectedCount: 3) {
-                embeddedItemEffects[parts[0], default: [:]][parts[1], default: [:]][parts[2]] = raw
-            } else if let suffix = record.key.suffix(after: "!actors.items!"),
-                      let parts = suffix.foundryIDComponents(expectedCount: 2) {
-                embeddedItems[parts[0], default: [:]][parts[1]] = raw
-            } else if let suffix = record.key.suffix(after: "!actors.effects!"),
-                      let parts = suffix.foundryIDComponents(expectedCount: 2) {
-                actorEffects[parts[0], default: [:]][parts[1]] = raw
-            } else if let suffix = record.key.suffix(after: "!items.effects!"),
-                      let parts = suffix.foundryIDComponents(expectedCount: 2) {
-                itemEffects[parts[0], default: [:]][parts[1]] = raw
-            } else if let id = record.key.suffix(after: "!folders!") {
-                folders.append(decodeFolder(id: id, raw: raw))
-            } else {
-                unknownKeys.append(record.key)
-            }
-        }
-
-        let rules = topDocuments.map { documentID, document in
-            let canonicalID = FoundryCanonicalKey.topLevel(
-                systemID: systemID,
-                packName: pack.name,
-                documentType: document.type,
-                documentID: documentID
-            )
-            let actorEmbeddedEffects: [String: [String: FoundryJSONValue]] = embeddedItemEffects[documentID] ?? [:]
-            var embedded: [FoundryEmbeddedRule] = []
-            for (itemId, raw) in embeddedItems[documentID, default: [:]] {
-                let embeddedID = FoundryCanonicalKey.embedded(parent: canonicalID, documentType: "Item", documentID: itemId)
-                let rawItemEffects: [String: FoundryJSONValue] = actorEmbeddedEffects[itemId] ?? [:]
-                let effects = decodeEffects(
-                    rawItemEffects,
-                    ownerCanonicalID: embeddedID
-                )
-                embedded.append(decodeEmbeddedRule(id: embeddedID, fallbackID: itemId, raw: raw, effects: effects))
-            }
-            embedded.sort { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
-            let rawEffects = document.type == "Actor"
-                ? actorEffects[documentID, default: [:]]
-                : itemEffects[documentID, default: [:]]
-            let effects = decodeEffects(rawEffects, ownerCanonicalID: canonicalID)
-            return decodeRule(
-                canonicalID: canonicalID,
-                fallbackID: documentID,
-                documentType: document.type,
-                raw: document.raw,
-                embeddedRules: embedded,
-                effects: effects
-            )
-        }.sorted { lhs, rhs in
-            let lhsSort = lhs.rawData["sort"]?.integerValue ?? 0
-            let rhsSort = rhs.rawData["sort"]?.integerValue ?? 0
-            if lhsSort != rhsSort { return lhsSort < rhsSort }
-            if lhs.name != rhs.name { return lhs.name < rhs.name }
-            return lhs.id < rhs.id
-        }
-
-        var diagnostics: [FoundryImportDiagnostic] = []
-        if !unknownKeys.isEmpty {
-            diagnostics.append(FoundryImportDiagnostic(
-                severity: .warning,
-                code: "unknown-leveldb-records",
-                message: "Preserved the supported rules but skipped \(unknownKeys.count) unrecognized LevelDB records.",
-                packName: pack.name
-            ))
-        }
-        return Result(
-            compendium: FoundryCompendium(
-                manifest: pack,
-                rules: rules,
-                folders: folders.sorted { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
-            ),
-            diagnostics: diagnostics
-        )
-    }
-}
-
-private extension FoundryCompendiumDecoder {
-    func decodeRule(
-        canonicalID: String,
-        fallbackID: String,
-        documentType: String,
-        raw: FoundryJSONValue,
-        embeddedRules: [FoundryEmbeddedRule],
-        effects: [FoundryRuleEffect]
-    ) -> FoundryRuleDefinition {
-        let documentID = raw["_id"]?.stringValue ?? fallbackID
-        let subtype = raw["type"]?.stringValue ?? documentType.lowercased()
-        let system = raw["system"] ?? .object([:])
-        let description = system["description"]?.stringValue
-        return FoundryRuleDefinition(
-            id: canonicalID,
-            documentID: documentID,
-            packName: pack.name,
-            documentType: documentType,
-            subtype: subtype,
-            category: FoundryRuleCategory.category(systemID: systemID, documentType: documentType, subtype: subtype),
-            name: raw["name"]?.stringValue ?? documentID,
-            descriptionHTML: description,
-            imagePath: raw["img"]?.stringValue,
-            folderID: raw["folder"]?.stringValue,
-            values: flatten(system, path: ["system"]),
-            tags: tags(documentType: documentType, subtype: subtype, system: system),
-            references: FoundryReferenceDecoder.decode(in: raw),
-            embeddedRules: embeddedRules,
-            effects: effects,
-            rawData: raw
-        )
-    }
-
-    func decodeEmbeddedRule(
-        id: String,
-        fallbackID: String,
-        raw: FoundryJSONValue,
-        effects: [FoundryRuleEffect]
-    ) -> FoundryEmbeddedRule {
-        let documentID = raw["_id"]?.stringValue ?? fallbackID
-        let subtype = raw["type"]?.stringValue ?? "item"
-        return FoundryEmbeddedRule(
-            id: id,
-            name: raw["name"]?.stringValue ?? documentID,
-            subtype: subtype,
-            category: FoundryRuleCategory.category(systemID: systemID, documentType: "Item", subtype: subtype),
-            descriptionHTML: raw.value(at: "system.description")?.stringValue,
-            imagePath: raw["img"]?.stringValue,
-            values: flatten(raw["system"] ?? .object([:]), path: ["system"]),
-            references: FoundryReferenceDecoder.decode(in: raw),
-            effects: effects,
-            rawData: raw
-        )
-    }
-
-    func decodeEffects(
-        _ rawEffects: [String: FoundryJSONValue],
-        ownerCanonicalID: String
-    ) -> [FoundryRuleEffect] {
-        rawEffects.map { fallbackID, raw in
-            let effectID = raw["_id"]?.stringValue ?? fallbackID
-            let canonicalID = FoundryCanonicalKey.embedded(
-                parent: ownerCanonicalID,
-                documentType: "ActiveEffect",
-                documentID: effectID
-            )
-            let statuses = raw["statuses"]?.arrayValue?.compactMap(\.stringValue) ?? []
-            let changes = raw["changes"]?.arrayValue?.compactMap { change -> FoundryRuleEffectChange? in
-                guard let object = change.objectValue, let path = object["key"]?.stringValue else { return nil }
-                return FoundryRuleEffectChange(
-                    path: path,
-                    mode: object["mode"]?.integerValue ?? 0,
-                    operand: object["value"] ?? .null,
-                    priority: object["priority"]?.integerValue
-                )
-            } ?? []
-            return FoundryRuleEffect(
-                id: canonicalID,
-                name: raw["name"]?.stringValue ?? effectID,
-                isDisabled: raw["disabled"]?.boolValue ?? false,
-                transfersToActor: raw["transfer"]?.boolValue ?? false,
-                statuses: statuses,
-                changes: changes,
-                duration: raw["duration"],
-                rawData: raw
-            )
-        }.sorted { $0.name == $1.name ? $0.id < $1.id : $0.name < $1.name }
-    }
-
-    func decodeFolder(id: String, raw: FoundryJSONValue) -> FoundryFolder {
-        FoundryFolder(
-            id: raw["_id"]?.stringValue ?? id,
-            name: raw["name"]?.stringValue ?? id,
-            parentID: raw["folder"]?.stringValue,
-            sort: raw["sort"]?.integerValue
-        )
-    }
-
-    func tags(documentType: String, subtype: String, system: FoundryJSONValue) -> [String] {
-        guard systemID == "ds4" else { return [] }
-        var tags: [String] = []
-        if subtype == "spell", let groups = system["spellGroups"]?.objectValue {
-            tags.append(contentsOf: groups.compactMap { $0.value.boolValue == true ? $0.key : nil })
-        }
-        if documentType == "Actor" {
-            if let type = system.value(at: "baseInfo.creatureType")?.stringValue, !type.isEmpty {
-                tags.append("creatureType:\(type)")
-            }
-            if let size = system.value(at: "baseInfo.sizeCategory")?.stringValue, !size.isEmpty {
-                tags.append("size:\(size)")
-            }
-        }
-        return Array(Set(tags)).sorted()
-    }
-}
-
-// MARK: - Canonical Identifiers
-
-private enum FoundryCanonicalKey {
-    static func topLevel(systemID: String, packName: String, documentType: String, documentID: String) -> String {
-        "foundry://system/\(component(systemID))/pack/\(component(packName))/\(component(documentType))/\(component(documentID))"
-    }
-
-    static func embedded(parent: String, documentType: String, documentID: String) -> String {
-        "\(parent)/\(component(documentType))/\(component(documentID))"
-    }
-
-    private static func component(_ value: String) -> String {
-        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
-        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
-    }
-}
+// `FoundryCompendiumDecoder` and `FoundryCanonicalKey` now live in
+// `FoundrySystemCompendiumDecoding.swift`. See CODE_AUDIT §9.8.
 
 // MARK: - Reference Decoding
 
@@ -1032,162 +727,31 @@ enum FoundryReferenceDecoder {
     }
 }
 
-// MARK: - Asset Path Collection
+// `FoundryAssetCollector` and `FoundryPackageResourceResolver` now live in the shared
+// `FoundryPackageResolution.swift` (as `FoundryAssetPathCollector` and
+// `FoundryPackageResourceResolver`), used by both this reader and `FoundryVTTImportReader`.
+// See CODE_AUDIT §9.1, §9.4, §6.1.
 
-private enum FoundryAssetCollector {
-    private static let extensions = Set([
-        "aac", "aif", "aiff", "apng", "avif", "bmp", "caf", "flac", "gif", "glb", "gltf",
-        "heic", "heif", "jpeg", "jpg", "m4a", "mp3", "mp4", "oga", "ogg", "opus", "pdf",
-        "png", "svg", "tif", "tiff", "usdz", "wav", "webm", "webp"
-    ])
-
-    static func paths(in compendiums: [FoundryCompendium]) -> Set<String> {
-        var result = Set<String>()
-        for rule in compendiums.flatMap(\.rules) {
-            collect(rule.rawData, into: &result)
-            for effect in rule.effects {
-                collect(effect.rawData, into: &result)
-            }
-            for embedded in rule.embeddedRules {
-                collect(embedded.rawData, into: &result)
-                for effect in embedded.effects {
-                    collect(effect.rawData, into: &result)
-                }
-            }
-        }
-        return result
-    }
-
-    private static func collect(_ value: FoundryJSONValue, into result: inout Set<String>) {
-        switch value {
-        case .object(let object):
-            for child in object.values { collect(child, into: &result) }
-        case .array(let values):
-            for child in values { collect(child, into: &result) }
-        case .string(let string):
-            let pathWithoutFragment = string.split(
-                separator: "#",
-                maxSplits: 1,
-                omittingEmptySubsequences: false
-            )[0]
-            let pathWithoutQuery = pathWithoutFragment.split(
-                separator: "?",
-                maxSplits: 1,
-                omittingEmptySubsequences: false
-            )[0]
-            let pathExtension = URL(filePath: String(pathWithoutQuery)).pathExtension.lowercased()
-            if extensions.contains(pathExtension) { result.insert(string) }
-        default:
-            break
+/// Gathers every raw JSON value under a system package's compendiums (rules, their effects,
+/// and embedded rules with their own effects) for `FoundryAssetPathCollector` to walk —
+/// specific to this reader's `FoundryCompendium`/`FoundryRuleDefinition` document model, unlike
+/// the shared collector itself.
+private func foundrySystemPackageRawValues(in compendiums: [FoundryCompendium]) -> [FoundryJSONValue] {
+    var values: [FoundryJSONValue] = []
+    for rule in compendiums.flatMap(\.rules) {
+        values.append(rule.rawData)
+        values.append(contentsOf: rule.effects.map(\.rawData))
+        for embedded in rule.embeddedRules {
+            values.append(embedded.rawData)
+            values.append(contentsOf: embedded.effects.map(\.rawData))
         }
     }
-}
-
-// MARK: - Package Resource Resolution
-
-private enum FoundryPackageResourceResolver {
-    static func resolve(
-        assetPaths: [String],
-        systemID: String,
-        basePath: String,
-        source: FoundryPackageDataSource,
-        limits: FoundryImportLimits
-    ) throws -> [FoundryPackageResource] {
-        var totalPackagedBytes = 0
-        return try assetPaths.map { logicalPath in
-            if isRemote(logicalPath) {
-                return FoundryPackageResource(
-                    logicalPath: logicalPath,
-                    packagePath: nil,
-                    location: .remote,
-                    byteCount: nil,
-                    sha256: nil
-                )
-            }
-
-            for candidate in packageCandidates(
-                for: logicalPath,
-                systemID: systemID,
-                basePath: basePath
-            ) where source.contains(path: candidate) {
-                guard let data = try source.data(forPath: candidate) else { continue }
-                let (nextPackagedBytes, overflow) = totalPackagedBytes.addingReportingOverflow(data.count)
-                guard !overflow, nextPackagedBytes <= limits.maximumResourceBatchSize else {
-                    throw FoundryImportError.fileTooLarge(overflow ? Int.max : nextPackagedBytes)
-                }
-                totalPackagedBytes = nextPackagedBytes
-                return FoundryPackageResource(
-                    logicalPath: logicalPath,
-                    packagePath: candidate,
-                    location: .packaged,
-                    byteCount: data.count,
-                    sha256: foundrySHA256(data)
-                )
-            }
-
-            let location: FoundryPackageResource.Location = isFoundryInstallationPath(logicalPath)
-                ? .foundryInstallation
-                : .unresolved
-            return FoundryPackageResource(
-                logicalPath: logicalPath,
-                packagePath: nil,
-                location: location,
-                byteCount: nil,
-                sha256: nil
-            )
-        }
-    }
-
-    private static func packageCandidates(
-        for logicalPath: String,
-        systemID: String,
-        basePath: String
-    ) -> [String] {
-        let path = logicalPath
-            .split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
-            .split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)[0]
-        let cleanedPath = String(path)
-        var candidates: [String] = []
-
-        let systemPrefix = "systems/\(systemID)/"
-        if cleanedPath.hasPrefix(systemPrefix) {
-            let relative = String(cleanedPath.dropFirst(systemPrefix.count))
-            if let mapped = try? FoundryPackagePath.join(basePath, relative) {
-                candidates.append(mapped)
-            }
-            if let normalized = try? FoundryPackagePath.normalized(cleanedPath) {
-                candidates.append(normalized)
-            }
-        } else if basePath.isEmpty {
-            if let normalized = try? FoundryPackagePath.normalized(cleanedPath) {
-                candidates.append(normalized)
-            }
-        } else if let mapped = try? FoundryPackagePath.join(basePath, cleanedPath) {
-            candidates.append(mapped)
-        }
-        var seen = Set<String>()
-        return candidates.filter { seen.insert($0).inserted }
-    }
-
-    private static func isRemote(_ path: String) -> Bool {
-        // Must stay in sync with `FoundryVTTResourceResolver.isRemote` in
-        // FoundryVTTImportReader.swift — the two were found to have drifted
-        // (this copy was missing the `data:` case), which let a data-URI
-        // asset reference in a system-package import be misclassified as a
-        // local path lookup instead of being skipped as remote. See
-        // CODE_AUDIT §6.1/§9.1.
-        let lowercased = path.lowercased()
-        return lowercased.hasPrefix("https://") || lowercased.hasPrefix("http://") || lowercased.hasPrefix("data:")
-    }
-
-    private static func isFoundryInstallationPath(_ path: String) -> Bool {
-        ["icons/", "modules/", "systems/", "ui/", "worlds/"].contains { path.hasPrefix($0) }
-    }
+    return values
 }
 
 // MARK: - Shared Utilities
 
-private func flatten(_ value: FoundryJSONValue, path: [String]) -> [FoundryRuleValue] {
+func flatten(_ value: FoundryJSONValue, path: [String]) -> [FoundryRuleValue] {
     switch value {
     case .object(let object) where !object.isEmpty:
         return object.keys.sorted().flatMap { key in
@@ -1229,7 +793,7 @@ private extension FoundryJSONValue {
     }
 }
 
-private extension FoundryRuleCategory {
+extension FoundryRuleCategory {
     static func category(systemID: String, documentType: String, subtype: String) -> Self {
         guard systemID == "ds4" else { return Self(rawValue: subtype) }
         return switch subtype {
@@ -1251,7 +815,7 @@ private extension FoundryRuleCategory {
     }
 }
 
-private extension String {
+extension String {
     func suffix(after prefix: String) -> String? {
         guard hasPrefix(prefix) else { return nil }
         return String(dropFirst(prefix.count))

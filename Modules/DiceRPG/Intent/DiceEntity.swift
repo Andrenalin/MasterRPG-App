@@ -98,6 +98,15 @@ extension DiceEntity: Transferable {
 }
 
 extension DiceEntity: URLRepresentableEntity {
+    // Cannot compose this from `URL.appScheme`/`NetworkModules.dice.token` as CODE_AUDIT §9.13
+    // suggested: `URLRepresentation`'s string-interpolation literal is a compile-time template
+    // (its `StringInterpolation.Token` only accepts KeyPath-based placeholders like `.id`, which
+    // the framework resolves per-entity later) — it does not support interpolating an arbitrary
+    // runtime `String` value the way a normal Swift string does. Confirmed by trying it: the
+    // build fails with "cannot convert value of type 'String' to expected argument type
+    // 'EntityURLRepresentation<DiceEntity>.StringInterpolation.Token'". The literal below must
+    // stay hand-kept in sync with `URL.appScheme` ("RPG") and `NetworkModules.dice.token`
+    // ("DICE") — verified in `DiceEntityURLRepresentationTests`.
     static var urlRepresentation: URLRepresentation {
         "RPG://DICE/0/\(.id)"
     }

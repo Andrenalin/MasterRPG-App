@@ -96,7 +96,7 @@ public extension ViewController {
 }
 
 extension ViewController {
-    @MainActor public func gameGiceHeight(root: DiceRootModel) -> CGFloat {
+    @MainActor public func gameDiceHeight(root: DiceRootModel) -> CGFloat {
         guard let itemId = root.gameController.gameModel.currentItemId else { return 82.0 }
         let dice = root.gameController.gameItem(for: itemId)
         return height(for: dice)
