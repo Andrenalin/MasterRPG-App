@@ -17,7 +17,7 @@ struct PdfContentView: View {
     var body: some View {
         HStack(spacing: 0) {
             if showThumbnail && !horizontal {
-                thumbnails
+                PdfContentViewThumbnailsView(searchModel: searchModel, horizontal: horizontal)
             }
             VStack(spacing: 0) {
                 if let pdfDoc = searchModel.pdfDoc {
@@ -33,7 +33,7 @@ struct PdfContentView: View {
                 }
                 
                 if showThumbnail && horizontal {
-                    thumbnails
+                    PdfContentViewThumbnailsView(searchModel: searchModel, horizontal: horizontal)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .PDFViewSelectionChanged)) { notification in
@@ -75,7 +75,14 @@ struct PdfContentView: View {
             }
         }
     }
-    
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct PdfContentViewThumbnailsView: View {
+    let searchModel: PdfSearchModel
+    let horizontal: Bool
+
     private var horizontalThumbnailSize: CGSize {
         CGSize(width: 54, height: 75)
     }
@@ -85,7 +92,7 @@ struct PdfContentView: View {
     }
 
     @ViewBuilder
-    private var thumbnails: some View {
+    var body: some View {
         if let pdfView = searchModel.pdfView, let pdfDoc = searchModel.pdfDoc {
             // Both the thumbnail size and the scroll axis/frame need to
             // follow `horizontal` — a horizontal filmstrip scrolls along
@@ -105,7 +112,6 @@ struct PdfContentView: View {
         }
     }
 }
-
 
 #Preview {
     @Previewable @State var searchModel: PdfSearchModel = PdfSearchModel(pdfDoc: {

@@ -44,11 +44,11 @@ struct GameJoinCodeSetupButton: View {
         .accessibilityValue(Text(code))
 #if os(tvOS)
         .sheet(isPresented: $isPresented, onDismiss: commitDraftIfValid) {
-            presentedContent
+            GameJoinCodeSetupButtonPresentedContentView(title: title, draftCode: $draftCode, isPresented: $isPresented, onRandomize: randomizeDraft)
         }
 #else
         .popover(isPresented: $isPresented) {
-            presentedContent
+            GameJoinCodeSetupButtonPresentedContentView(title: title, draftCode: $draftCode, isPresented: $isPresented, onRandomize: randomizeDraft)
         }
         // `.popover` has no `onDismiss` callback (unlike `.sheet`), so the
         // draft is committed by watching presentation itself end instead.
@@ -59,18 +59,6 @@ struct GameJoinCodeSetupButton: View {
 #endif
     }
 
-    private var presentedContent: some View {
-        VStack(spacing: 16) {
-            Text(title, bundle: .module)
-                .font(.headline)
-            GameJoinCodeField(title: title, code: $draftCode, onRandomize: randomizeDraft) {
-                isPresented = false
-            }
-        }
-        .padding()
-        .frame(minWidth: 220)
-    }
-
     private func randomizeDraft() {
         draftCode = GameJoinCodeModel.randomCode()
     }
@@ -78,6 +66,27 @@ struct GameJoinCodeSetupButton: View {
     private func commitDraftIfValid() {
         guard GameJoinCodeModel.isValidCode(draftCode) else { return }
         code = draftCode
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct GameJoinCodeSetupButtonPresentedContentView: View {
+    let title: LocalizedStringKey
+    @Binding var draftCode: String
+    @Binding var isPresented: Bool
+    let onRandomize: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text(title, bundle: .module)
+                .font(.headline)
+            GameJoinCodeField(title: title, code: $draftCode, onRandomize: onRandomize) {
+                isPresented = false
+            }
+        }
+        .padding()
+        .frame(minWidth: 220)
     }
 }
 

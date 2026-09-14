@@ -17,14 +17,18 @@ public struct ModuleInspectorView: View {
             } else if let editorLinkModel = rootController.inspectorEditorLinkModel, !editorLinkModel.firstRow.isEmpty {
                 EditorLinkView(root: rootController, model: item, editorLinkModel: editorLinkModel)
             } else {
-                noContent
+                ModuleInspectorNoContentView()
             }
         } else {
-            noContent
+            ModuleInspectorNoContentView()
         }
     }
-    
-    var noContent: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct ModuleInspectorNoContentView: View {
+    var body: some View {
         ContentUnavailableView {
             Label {
                 Text("No Inspector for this item", bundle: .module)

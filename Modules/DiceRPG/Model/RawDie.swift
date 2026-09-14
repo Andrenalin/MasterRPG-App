@@ -13,6 +13,10 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
         Double.random(in: 0 ... 100)
     }
 
+    public static var two: RawDie {
+        RawDie(.two)
+    }
+
     public static var four: RawDie {
         RawDie(.four)
     }
@@ -72,6 +76,7 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
     }
 
     public enum Sides: Equatable, Hashable, Codable, Sendable {
+        case two
         case four
         case six
         case eight
@@ -82,6 +87,8 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
 
         func number() -> Int {
             switch self {
+            case .two:
+                return 2
             case .four:
                 return 4
             case .six:
@@ -110,6 +117,8 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
 
         static func sides(_ number: Int) -> Sides {
             switch number {
+            case 2:
+                return .two
             case 4:
                 return .four
             case 6:

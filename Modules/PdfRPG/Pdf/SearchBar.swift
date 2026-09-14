@@ -16,7 +16,7 @@ struct SearchBar: View {
     
     var body: some View {
         if !searchModel.matches.isEmpty {
-            searchResults
+            SearchBarResultsView(searchModel: searchModel)
                 .padding()
                 .onChange(of: isSearching) {
                     guard !isSearching else { return }
@@ -28,9 +28,14 @@ struct SearchBar: View {
     }
 }
 
-private extension SearchBar {
-    @ViewBuilder
-    var searchResults: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SearchBarResultsView: View {
+    let searchModel: PdfSearchModel
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
         HStack(spacing: 12) {
             Button {
                 withAnimation(reduceMotion ? nil : .default) {
@@ -50,7 +55,7 @@ private extension SearchBar {
 #if !os(visionOS)
             .glassEffect(.regular.interactive())
 #endif
-            
+
             Text("\(searchModel.currentIndex + 1)/\(searchModel.matches.count)", bundle: .module)
                 .font(.headline)
                 .foregroundStyle(Color.accentColor)
@@ -58,7 +63,7 @@ private extension SearchBar {
 #if !os(visionOS)
                 .glassEffect(.regular)
 #endif
-            
+
             Button {
                 withAnimation(reduceMotion ? nil : .default) {
                     searchModel.nextMatch()

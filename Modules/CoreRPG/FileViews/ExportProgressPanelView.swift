@@ -34,9 +34,9 @@ public struct ExportProgressPanelView: View {
     public var body: some View {
         NavigationStack {
             VStack {
-                progressView
-                
-                statusView
+                ExportProgressPanelProgressView(exportModel: exportModel)
+
+                ExportProgressPanelStatusView(outcome: $outcome, exportModel: exportModel, startExport: startExport)
             }
             .padding()
             .navigationTitle(Text("Exporting", bundle: .module))
@@ -80,7 +80,10 @@ public struct ExportProgressPanelView: View {
         }
     }
 
-    private enum ExportOutcome: Equatable {
+    // `private` would hide this from the sibling extracted subview structs below (private
+    // nested-type access only extends to this declaration and same-file extensions of it,
+    // not to unrelated top-level types) — `fileprivate` keeps it scoped to this file only.
+    fileprivate enum ExportOutcome: Equatable {
         case notStarted
         case running
         case finished
@@ -119,8 +122,14 @@ private extension ExportProgressPanelView {
             outcome = .failed(error.localizedDescription)
         }
     }
-    
-    @ViewBuilder var progressView: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct ExportProgressPanelProgressView: View {
+    let exportModel: ItemDataExportModel
+
+    @ViewBuilder var body: some View {
         if exportModel.isExportRunning && exportModel.totalExportingItems > 0 {
             ProgressView(
                 value: Double(exportModel.exportedItems),
@@ -130,12 +139,18 @@ private extension ExportProgressPanelView {
             .accessibilityLabel(Text("Export progress", bundle: .module))
         }
     }
-    
-    var statusView: some View {
+}
+
+private struct ExportProgressPanelStatusView: View {
+    @Binding var outcome: ExportProgressPanelView.ExportOutcome
+    let exportModel: ItemDataExportModel
+    let startExport: () async -> Void
+
+    var body: some View {
         VStack {
             switch outcome {
             case .notStarted:
-                optionView
+                ExportProgressPanelOptionView(outcome: $outcome, exportModel: exportModel, startExport: startExport)
             case .running:
                 Text("Exporting \(exportModel.exportedItems) of \(exportModel.totalExportingItems)", bundle: .module)
             case .finished:
@@ -147,8 +162,14 @@ private extension ExportProgressPanelView {
             }
         }
     }
-    
-    var optionView: some View {
+}
+
+private struct ExportProgressPanelOptionView: View {
+    @Binding var outcome: ExportProgressPanelView.ExportOutcome
+    @Bindable var exportModel: ItemDataExportModel
+    let startExport: () async -> Void
+
+    var body: some View {
         VStack(spacing: 20) {
             Button {
                 outcome = .running
@@ -158,7 +179,7 @@ private extension ExportProgressPanelView {
             } label: {
                 Text("Start export", bundle: .module)
             }
-            
+
             Toggle(isOn: $exportModel.exportWithoutFileData) {
                 Label {
                     Text("Export only data not the files", bundle: .module)
@@ -166,7 +187,7 @@ private extension ExportProgressPanelView {
                     Image(systemName: "exclamationmark.triangle")
                 }
             }
-            
+
             Text("This option let you export only the database data without the files included in the export. If you store your file in iCloud but don't want to use CloudKit for sync the database. Use this option with care you might losing the file data and you cannot exchange it with other users.", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)

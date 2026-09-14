@@ -25,7 +25,7 @@ struct DiceOverlay: View {
 
     var body: some View {
         AnyLayout(diceLayout) {
-            diceViews
+            DiceOverlayDiceViewsView(alignIsVertical: alignIsVertical, itemId: itemId, showFocusButton: showFocusButton, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice)
         }
         .animation(reduceMotion ? nil : .spring(), value: diceDisplayModel.showDiceValueEditor)
         .onChange(of: diceDisplayModel.isEditing) {
@@ -39,24 +39,50 @@ struct DiceOverlay: View {
     var diceLayout: any Layout {
         alignIsVertical ? VStackLayout(alignment: .leading, spacing: 8) : HStackLayout(alignment: .top, spacing: 8)
     }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct DiceOverlayDiceViewsView: View {
+    let alignIsVertical: Bool
+    let itemId: UUID
+    let showFocusButton: Bool
+    let canShowPlayer: Bool
+    let hideOwnDice: Bool
 
     @ViewBuilder
-    var diceViews: some View {
+    var body: some View {
         if alignIsVertical {
-            actionBarView
+            DiceOverlayActionBarView(itemId: itemId, showFocusButton: showFocusButton, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice)
         }
 
-        ownDiceView
+        DiceOverlayOwnDiceView(itemId: itemId, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice, alignIsVertical: alignIsVertical)
 
-        playerDiceView
+        DiceOverlayPlayerDiceView(itemId: itemId, canShowPlayer: canShowPlayer)
     }
+}
 
-    private var actionBarView: some View {
+private struct DiceOverlayActionBarView: View {
+    let itemId: UUID
+    let showFocusButton: Bool
+    let canShowPlayer: Bool
+    let hideOwnDice: Bool
+
+    var body: some View {
         DiceGameActionBar(itemId: itemId, showFocusButton: showFocusButton, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice)
     }
+}
+
+private struct DiceOverlayOwnDiceView: View {
+    let itemId: UUID
+    let canShowPlayer: Bool
+    let hideOwnDice: Bool
+    let alignIsVertical: Bool
+
+    @Environment(DiceDisplayModel.self) var diceDisplayModel
 
     @ViewBuilder
-    private var ownDiceView: some View {
+    var body: some View {
         if !hideOwnDice {
             if alignIsVertical {
                 DiceGameResult(itemId: itemId, canShowPlayer: canShowPlayer, isTrailing: false)
@@ -71,9 +97,16 @@ struct DiceOverlay: View {
             }
         }
     }
+}
+
+private struct DiceOverlayPlayerDiceView: View {
+    let itemId: UUID
+    let canShowPlayer: Bool
+
+    @Environment(DiceDisplayModel.self) var diceDisplayModel
 
     @ViewBuilder
-    private var playerDiceView: some View {
+    var body: some View {
         if canShowPlayer && diceDisplayModel.showPlayerDice {
             DicePlayer(filterout: itemId, alignment: .leading)
         }

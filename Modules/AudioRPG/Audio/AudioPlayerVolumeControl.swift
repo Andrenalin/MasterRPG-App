@@ -63,7 +63,7 @@ struct AudioPlayerVolumeControl: View {
         .padding(.vertical, 6)
         .frame(height: Constants.height)
         .background {
-            volumeControlBackground
+            AudioPlayerVolumeControlBackgroundView()
         }
         .contentShape(Rectangle())
         .volumeControlInteraction(
@@ -76,32 +76,6 @@ struct AudioPlayerVolumeControl: View {
                 isSliderVisible = false
             }
         }
-    }
-
-    private var volumeControlBackground: some View {
-        Capsule()
-            .fill(.ultraThinMaterial.opacity(0.8))
-            .background {
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.12),
-                                .white.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-#if !os(visionOS)
-                    .glassEffect(.regular.tint(.white.opacity(0.03)).interactive())
-#endif
-            }
-            .overlay {
-                Capsule()
-                    .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
-            }
-            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
     }
 
     private var volumeIcon: String {
@@ -140,6 +114,36 @@ struct AudioPlayerVolumeControl: View {
             }
         }
 #endif
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct AudioPlayerVolumeControlBackgroundView: View {
+    var body: some View {
+        Capsule()
+            .fill(.ultraThinMaterial.opacity(0.8))
+            .background {
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.12),
+                                .white.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+#if !os(visionOS)
+                    .glassEffect(.regular.tint(.white.opacity(0.03)).interactive())
+#endif
+            }
+            .overlay {
+                Capsule()
+                    .strokeBorder(.white.opacity(0.15), lineWidth: 0.5)
+            }
+            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
     }
 }
 

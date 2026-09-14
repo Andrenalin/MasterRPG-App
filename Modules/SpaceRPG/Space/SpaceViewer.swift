@@ -89,21 +89,49 @@ struct SpaceViewer: View {
         ZStack(alignment: .bottomLeading) {
 #if os(visionOS)
             if handedOffToImmersive {
-                movedToImmersiveSpaceView
+                SpaceViewerMovedToImmersiveSpaceView()
             } else if let loadError {
                 errorView(message: loadError)
             } else {
-                progressView
+                SpaceViewerProgressView(hasLoaded: hasLoaded)
 
-                contentView
+                SpaceViewerContentView(
+                    root: root,
+                    id: id,
+                    isImmersiveSpace: isImmersiveSpace,
+                    loadedItemId: loadedItemId,
+                    objectEntity: $objectEntity,
+                    yaw: yaw,
+                    pitch: pitch,
+                    spaceAccessibilityLabel: spaceAccessibilityLabel,
+                    rotate: { rotate(yawDelta: $0, pitchDelta: $1) },
+                    moveObject: { moveObject(x: $0, y: $1, z: $2) },
+                    nameEntity: $nameEntity,
+                    showCloseButton: $showCloseButton,
+                    loadEntity: { content in await loadEntity(into: content) },
+                    attachCloseButtonIfNeeded: { attachments, content in attachCloseButtonIfNeeded(attachments, content: content) },
+                    updateCloseButtonPosition: updateCloseButtonPosition
+                )
             }
 #else
             if let loadError {
                 errorView(message: loadError)
             } else {
-                progressView
+                SpaceViewerProgressView(hasLoaded: hasLoaded)
 
-                contentView
+                SpaceViewerContentView(
+                    root: root,
+                    id: id,
+                    isImmersiveSpace: isImmersiveSpace,
+                    loadedItemId: loadedItemId,
+                    objectEntity: $objectEntity,
+                    yaw: yaw,
+                    pitch: pitch,
+                    spaceAccessibilityLabel: spaceAccessibilityLabel,
+                    rotate: { rotate(yawDelta: $0, pitchDelta: $1) },
+                    moveObject: { moveObject(x: $0, y: $1, z: $2) },
+                    loadEntity: { content in await loadEntity(into: content) }
+                )
             }
 #endif
         }
@@ -434,15 +462,6 @@ private extension SpaceViewer {
 #endif
 
 private extension SpaceViewer {
-    var progressView: some View {
-        ProgressView()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .progressViewStyle(.circular)
-            .opacity(hasLoaded ? 0 : 1)
-            .allowsHitTesting(!hasLoaded)
-            .accessibilityHidden(hasLoaded)
-    }
-
     func errorView(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
@@ -457,142 +476,6 @@ private extension SpaceViewer {
                 .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-#if os(visionOS)
-    var movedToImmersiveSpaceView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "arrow.up.right.and.arrow.down.left.rectangle")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-            Text("Moved to Immersive Space", bundle: .module)
-                .font(.headline)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-    }
-#endif
-
-    // Split out from `contentView`: the multiple-trailing-closure `RealityView`
-    // initializer (three trailing closures on visionOS, once attachments were
-    // added) combined with the long `.accessibilityElement`/`.accessibilityAction`
-    // chain in one expression was too much for the type checker to solve as a
-    // single unit — it reported a spurious "cannot infer contextual base" on
-    // `.accessibilityElement` instead of pointing at the real expression.
-    // Isolating the `RealityView` construction into its own small `@ViewBuilder`
-    // property lets each half type-check independently.
-    @ViewBuilder
-    private var platformRealityView: some View {
-#if os(visionOS)
-        RealityView { content, attachments in
-            await loadEntity(into: content)
-            if isImmersiveSpace {
-                attachCloseButtonIfNeeded(attachments, content: content)
-            }
-        } update: { content, attachments in
-            // Only update if entity is loaded and valid
-            guard let objectEntity, loadedItemId == id else { return }
-
-            // No manual rotation here: `ManipulationComponent` owns and drives
-            // `objectEntity.transform` directly during a gesture (translate,
-            // rotate, and scale together) — reapplying a yaw/pitch-derived
-            // rotation every frame from here would fight it.
-
-            // Belt-and-suspenders: `loadEntity` can finish (and set `rootEntity`)
-            // after `make` already ran when loading is slow, so retry here too.
-            // Only the real ImmersiveSpace instance gets a close button — every
-            // other SpaceViewer on screen is a plain 2D-embedded preview (detail
-            // view, inline row, etc.) with its own dismiss affordance.
-            if isImmersiveSpace {
-                attachCloseButtonIfNeeded(attachments, content: content)
-                nameEntity?.isEnabled = showCloseButton
-                updateCloseButtonPosition()
-            }
-        } attachments: {
-            if isImmersiveSpace {
-                Attachment(id: "NameBarView") {
-                    closeButton
-                }
-            }
-        }
-        // No `.gesture()`/`.simultaneousGesture()` for drag, rotate, or zoom
-        // here: `ManipulationComponent` (set on the entity in `loadEntity`)
-        // handles all three natively — it's a self-contained RealityKit
-        // component, not something wired up from the SwiftUI view side. See
-        // Apple's "ManipulationComponent" documentation.
-        .applyIf(isImmersiveSpace) {
-            // Tap directly on the object to reveal the close button; tap again
-            // to hide it. `.targetedToAnyEntity()` only fires when the tap
-            // actually hits an entity with InputTargetComponent — i.e. the
-            // model itself — so taps elsewhere in the space don't toggle it.
-            $0.simultaneousGesture(
-                SpatialTapGesture()
-                    .targetedToAnyEntity()
-                    .onEnded { _ in
-                        withAnimation(reduceMotion ? nil : .default) {
-                            showCloseButton.toggle()
-                        }
-                    }
-            )
-        }
-#else
-        RealityView { content in
-            await loadEntity(into: content)
-            // content here is RealityViewContent (concrete), which exposes cameraTarget.
-            // loadEntity receives only RealityViewContentProtocol so it can't set this.
-            if let entity = objectEntity {
-                content.cameraTarget = entity
-            }
-        } update: { content in
-            // Only update if entity is loaded and valid
-            guard let objectEntity, loadedItemId == id else { return }
-        }
-        // installGestures is visionOS-only: its DragGesture/MagnifyGesture targeted to
-        // entities steal from .orbit — orbit handles both rotation and zoom natively.
-        .realityViewCameraControls(.orbit)
-#endif
-    }
-
-    var contentView: some View {
-        platformRealityView
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spaceAccessibilityLabel)
-        .accessibilityValue(
-            Text(
-                "Yaw \(Angle.radians(Double(yaw)).degrees, format: .number.precision(.fractionLength(0))) degrees, pitch \(Angle.radians(Double(pitch)).degrees, format: .number.precision(.fractionLength(0))) degrees",
-                bundle: .module
-            )
-        )
-        .accessibilityAction(named: Text("Rotate Left", bundle: .module)) {
-            rotate(yawDelta: -.pi / 6)
-        }
-        .accessibilityAction(named: Text("Rotate Right", bundle: .module)) {
-            rotate(yawDelta: .pi / 6)
-        }
-        .accessibilityAction(named: Text("Tilt Up", bundle: .module)) {
-            rotate(pitchDelta: .pi / 12)
-        }
-        .accessibilityAction(named: Text("Tilt Down", bundle: .module)) {
-            rotate(pitchDelta: -.pi / 12)
-        }
-        .accessibilityAction(named: Text("Move Left", bundle: .module)) {
-            moveObject(x: -0.1)
-        }
-        .accessibilityAction(named: Text("Move Right", bundle: .module)) {
-            moveObject(x: 0.1)
-        }
-        .accessibilityAction(named: Text("Move Up", bundle: .module)) {
-            moveObject(y: 0.1)
-        }
-        .accessibilityAction(named: Text("Move Down", bundle: .module)) {
-            moveObject(y: -0.1)
-        }
-        .accessibilityAction(named: Text("Move Forward", bundle: .module)) {
-            moveObject(z: 0.1)
-        }
-        .accessibilityAction(named: Text("Move Backward", bundle: .module)) {
-            moveObject(z: -0.1)
-        }
     }
 
     @MainActor
@@ -655,7 +538,7 @@ private extension SpaceViewer {
 #if os(visionOS)
             // `ManipulationComponent` (visionOS 26+) is Apple's own built-in
             // drag/rotate/scale component: no SwiftUI `.gesture()` is
-            // wired up anywhere for it (see `platformRealityView`). It sets
+            // wired up anywhere for it (see `SpaceViewerPlatformRealityView`). It sets
             // its own InputTargetComponent/CollisionComponent/HoverEffectComponent,
             // generating the collision shape from the entity's bounding box as
             // a placeholder until the more accurate recursive shape below lands.
@@ -721,7 +604,7 @@ private extension SpaceViewer {
             }
 #else
             // No SwiftUI `.gesture()` is wired up for this platform either — see the `#else`
-            // branch of `platformRealityView`, which drives whole-scene orbit/zoom via
+            // branch of `SpaceViewerPlatformRealityView`, which drives whole-scene orbit/zoom via
             // `.realityViewCameraControls(.orbit)` instead of per-entity drag. These two
             // components are still worth setting on their own: `HoverEffectComponent` alone
             // drives RealityKit's built-in trackpad/pointer hover highlight, independent of any
@@ -896,29 +779,6 @@ private extension SpaceViewer {
         nameEntity.position = SIMD3(bounds.center.x, bounds.max.y + 0.08, bounds.center.z)
     }
 
-    var closeButton: some View {
-        Button {
-            Task {
-                // Marks this item as explicitly dismissed so a GM reveal
-                // resync of the same item doesn't reopen it — see
-                // `ScenesManager.explicitlyDismissedSpaceItemId`.
-                await scenesManager.userDismissedSpaceViewer(itemId: id)
-            }
-        } label: {
-            Label {
-                Text(
-                    "Close \(root.itemController.nameSync(itemId: id))",
-                    bundle: .module
-                )
-            } icon: {
-                Image(systemName: "xmark")
-            }
-            .labelStyle(.iconOnly)
-        }
-        .frame(width: 44, height: 44)
-        .glassBackgroundEffect()
-        .accessibilityLabel(Text("Close \(root.itemController.nameSync(itemId: id))", bundle: .module))
-    }
 #endif
 
     var spaceAccessibilityLabel: Text {
@@ -950,6 +810,267 @@ private extension SpaceViewer {
         objectEntity.position += SIMD3(x, y, z)
     }
 }
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` properties on `SpaceViewer` itself that all re-evaluated whenever any part
+// of `SpaceViewer`'s body did.
+
+private struct SpaceViewerProgressView: View {
+    let hasLoaded: Bool
+
+    var body: some View {
+        ProgressView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .progressViewStyle(.circular)
+            .opacity(hasLoaded ? 0 : 1)
+            .allowsHitTesting(!hasLoaded)
+            .accessibilityHidden(hasLoaded)
+    }
+}
+
+#if os(visionOS)
+private struct SpaceViewerMovedToImmersiveSpaceView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "arrow.up.right.and.arrow.down.left.rectangle")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("Moved to Immersive Space", bundle: .module)
+                .font(.headline)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+}
+#endif
+
+/// Wraps the platform reality view in the shared accessibility scaffolding
+/// (label/value/rotate/move actions). Split out from `SpaceViewer` itself:
+/// the multiple-trailing-closure `RealityView` initializer (three trailing
+/// closures on visionOS, once attachments were added) combined with the long
+/// `.accessibilityElement`/`.accessibilityAction` chain in one expression was
+/// too much for the type checker to solve as a single unit — it reported a
+/// spurious "cannot infer contextual base" on `.accessibilityElement` instead
+/// of pointing at the real expression. Isolating the `RealityView`
+/// construction into its own small view lets each half type-check
+/// independently.
+private struct SpaceViewerContentView: View {
+    let root: SpaceRootModel
+    let id: UUID
+    let isImmersiveSpace: Bool
+    let loadedItemId: UUID?
+    @Binding var objectEntity: Entity?
+    let yaw: Float
+    let pitch: Float
+    let spaceAccessibilityLabel: Text
+    let rotate: (Float, Float) -> Void
+    let moveObject: (Float, Float, Float) -> Void
+#if os(visionOS)
+    @Binding var nameEntity: Entity?
+    @Binding var showCloseButton: Bool
+    let loadEntity: (RealityViewContent) async -> Void
+    let attachCloseButtonIfNeeded: (RealityViewAttachments, RealityViewContent) -> Void
+    let updateCloseButtonPosition: () -> Void
+#else
+    let loadEntity: (RealityViewCameraContent) async -> Void
+#endif
+
+    var body: some View {
+        Group {
+#if os(visionOS)
+            SpaceViewerPlatformRealityView(
+                loadedItemId: loadedItemId,
+                id: id,
+                objectEntity: $objectEntity,
+                root: root,
+                isImmersiveSpace: isImmersiveSpace,
+                nameEntity: $nameEntity,
+                showCloseButton: $showCloseButton,
+                loadEntity: loadEntity,
+                attachCloseButtonIfNeeded: attachCloseButtonIfNeeded,
+                updateCloseButtonPosition: updateCloseButtonPosition
+            )
+#else
+            SpaceViewerPlatformRealityView(
+                loadedItemId: loadedItemId,
+                id: id,
+                objectEntity: $objectEntity,
+                loadEntity: loadEntity
+            )
+#endif
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spaceAccessibilityLabel)
+        .accessibilityValue(
+            Text(
+                "Yaw \(Angle.radians(Double(yaw)).degrees, format: .number.precision(.fractionLength(0))) degrees, pitch \(Angle.radians(Double(pitch)).degrees, format: .number.precision(.fractionLength(0))) degrees",
+                bundle: .module
+            )
+        )
+        .accessibilityAction(named: Text("Rotate Left", bundle: .module)) {
+            rotate(-.pi / 6, 0)
+        }
+        .accessibilityAction(named: Text("Rotate Right", bundle: .module)) {
+            rotate(.pi / 6, 0)
+        }
+        .accessibilityAction(named: Text("Tilt Up", bundle: .module)) {
+            rotate(0, .pi / 12)
+        }
+        .accessibilityAction(named: Text("Tilt Down", bundle: .module)) {
+            rotate(0, -.pi / 12)
+        }
+        .accessibilityAction(named: Text("Move Left", bundle: .module)) {
+            moveObject(-0.1, 0, 0)
+        }
+        .accessibilityAction(named: Text("Move Right", bundle: .module)) {
+            moveObject(0.1, 0, 0)
+        }
+        .accessibilityAction(named: Text("Move Up", bundle: .module)) {
+            moveObject(0, 0.1, 0)
+        }
+        .accessibilityAction(named: Text("Move Down", bundle: .module)) {
+            moveObject(0, -0.1, 0)
+        }
+        .accessibilityAction(named: Text("Move Forward", bundle: .module)) {
+            moveObject(0, 0, 0.1)
+        }
+        .accessibilityAction(named: Text("Move Backward", bundle: .module)) {
+            moveObject(0, 0, -0.1)
+        }
+    }
+}
+
+/// The actual `RealityView` construction: with attachments and
+/// `ManipulationComponent`-driven gestures on visionOS, orbit camera controls
+/// elsewhere. See `SpaceViewerContentView`'s doc comment for why this is
+/// split out on its own.
+private struct SpaceViewerPlatformRealityView: View {
+    let loadedItemId: UUID?
+    let id: UUID
+    @Binding var objectEntity: Entity?
+#if os(visionOS)
+    let root: SpaceRootModel
+    let isImmersiveSpace: Bool
+    @Binding var nameEntity: Entity?
+    @Binding var showCloseButton: Bool
+    let loadEntity: (RealityViewContent) async -> Void
+    let attachCloseButtonIfNeeded: (RealityViewAttachments, RealityViewContent) -> Void
+    let updateCloseButtonPosition: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+#else
+    let loadEntity: (RealityViewCameraContent) async -> Void
+#endif
+
+    @ViewBuilder
+    var body: some View {
+#if os(visionOS)
+        RealityView { content, attachments in
+            await loadEntity(content)
+            if isImmersiveSpace {
+                attachCloseButtonIfNeeded(attachments, content)
+            }
+        } update: { content, attachments in
+            // Only update if entity is loaded and valid
+            guard let objectEntity, loadedItemId == id else { return }
+
+            // No manual rotation here: `ManipulationComponent` owns and drives
+            // `objectEntity.transform` directly during a gesture (translate,
+            // rotate, and scale together) — reapplying a yaw/pitch-derived
+            // rotation every frame from here would fight it.
+
+            // Belt-and-suspenders: `loadEntity` can finish (and set `rootEntity`)
+            // after `make` already ran when loading is slow, so retry here too.
+            // Only the real ImmersiveSpace instance gets a close button — every
+            // other SpaceViewer on screen is a plain 2D-embedded preview (detail
+            // view, inline row, etc.) with its own dismiss affordance.
+            if isImmersiveSpace {
+                attachCloseButtonIfNeeded(attachments, content)
+                nameEntity?.isEnabled = showCloseButton
+                updateCloseButtonPosition()
+            }
+        } attachments: {
+            if isImmersiveSpace {
+                Attachment(id: "NameBarView") {
+                    SpaceViewerCloseButtonView(root: root, id: id)
+                }
+            }
+        }
+        // No `.gesture()`/`.simultaneousGesture()` for drag, rotate, or zoom
+        // here: `ManipulationComponent` (set on the entity in `loadEntity`)
+        // handles all three natively — it's a self-contained RealityKit
+        // component, not something wired up from the SwiftUI view side. See
+        // Apple's "ManipulationComponent" documentation.
+        .applyIf(isImmersiveSpace) {
+            // Tap directly on the object to reveal the close button; tap again
+            // to hide it. `.targetedToAnyEntity()` only fires when the tap
+            // actually hits an entity with InputTargetComponent — i.e. the
+            // model itself — so taps elsewhere in the space don't toggle it.
+            $0.simultaneousGesture(
+                SpatialTapGesture()
+                    .targetedToAnyEntity()
+                    .onEnded { _ in
+                        withAnimation(reduceMotion ? nil : .default) {
+                            showCloseButton.toggle()
+                        }
+                    }
+            )
+        }
+#else
+        RealityView { content in
+            await loadEntity(content)
+            // content here is RealityViewCameraContent, which exposes cameraTarget.
+            // loadEntity receives only RealityViewContentProtocol so it can't set this.
+            if let entity = objectEntity {
+                content.cameraTarget = entity
+            }
+        } update: { content in
+            // Only update if entity is loaded and valid
+            guard let objectEntity, loadedItemId == id else { return }
+        }
+        // installGestures is visionOS-only: its DragGesture/MagnifyGesture targeted to
+        // entities steal from .orbit — orbit handles both rotation and zoom natively.
+        .realityViewCameraControls(.orbit)
+#endif
+    }
+}
+
+#if os(visionOS)
+/// The small floating close button attached above the object in the
+/// immersive space. See `SpaceViewer.attachCloseButtonIfNeeded`.
+private struct SpaceViewerCloseButtonView: View {
+    let root: SpaceRootModel
+    let id: UUID
+
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
+        Button {
+            Task {
+                // Marks this item as explicitly dismissed so a GM reveal
+                // resync of the same item doesn't reopen it — see
+                // `ScenesManager.explicitlyDismissedSpaceItemId`.
+                await scenesManager.userDismissedSpaceViewer(itemId: id)
+            }
+        } label: {
+            Label {
+                Text(
+                    "Close \(root.itemController.nameSync(itemId: id))",
+                    bundle: .module
+                )
+            } icon: {
+                Image(systemName: "xmark")
+            }
+            .labelStyle(.iconOnly)
+        }
+        .frame(width: 44, height: 44)
+        .glassBackgroundEffect()
+        .accessibilityLabel(Text("Close \(root.itemController.nameSync(itemId: id))", bundle: .module))
+    }
+}
+#endif
 
 #if os(visionOS)
 // Note: SharePlay synchronization is handled at the GameRPG layer when opening

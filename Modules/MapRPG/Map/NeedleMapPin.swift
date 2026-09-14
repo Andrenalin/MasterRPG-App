@@ -51,8 +51,24 @@ struct NeedleMapPin: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
-            needleHeader
+#if !os(tvOS)
+            NeedleMapPinHeaderView(
+                point: point,
+                gesture: combinedGesture,
+                coordinateAccessibilityValue: coordinateAccessibilityValue,
+                toggleSelection: toggleSelection,
+                movePointBy: movePointBy
+            )
                 .frame(width: 44, height: 44)
+#else
+            NeedleMapPinHeaderView(
+                point: point,
+                gesture: combinedGesture,
+                coordinateAccessibilityValue: coordinateAccessibilityValue,
+                toggleSelection: toggleSelection
+            )
+                .frame(width: 44, height: 44)
+#endif
 
             Self.needlePath
                 .stroke(Color.black, lineWidth: 1, antialiased: true)
@@ -68,46 +84,6 @@ struct NeedleMapPin: View {
         }
         .shadow(radius: 4)
         .offset(previewOffset)
-    }
-
-    private var needleHeader: some View {
-        ZStack {
-            MapSelectionHalo(contentDiameter: 44, isVisible: point.isSelected)
-            needleHead
-        }
-        .frame(width: 44, height: 44)
-    }
-
-    private var needleHead: some View {
-        Circle()
-            .fill(.teal)
-            .stroke(Color.blue, lineWidth: 2, antialiased: true)
-            .frame(width: 44, height: 44)
-            .contentShape(.circle)
-            .highPriorityGesture(combinedGesture)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(
-                Text("Map Area Point \(point.coordinateIndex + 1)", bundle: .module)
-            )
-            .accessibilityValue(coordinateAccessibilityValue)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction {
-                toggleSelection()
-            }
-#if !os(tvOS)
-            .accessibilityAction(named: Text("Move Left", bundle: .module)) {
-                movePointBy(x: -10, y: 0)
-            }
-            .accessibilityAction(named: Text("Move Right", bundle: .module)) {
-                movePointBy(x: 10, y: 0)
-            }
-            .accessibilityAction(named: Text("Move Up", bundle: .module)) {
-                movePointBy(x: 0, y: -10)
-            }
-            .accessibilityAction(named: Text("Move Down", bundle: .module)) {
-                movePointBy(x: 0, y: 10)
-            }
-#endif
     }
 
     private var combinedGesture: some Gesture {
@@ -231,6 +207,88 @@ struct NeedleMapPin: View {
         path.closeSubpath()
         return path
     }()
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` properties on `NeedleMapPin` itself that all re-evaluated whenever any part
+// of `NeedleMapPin`'s body did. The gesture is threaded through generically since
+// `combinedGesture`'s `some Gesture` still has to be built where `previewCoordinate`
+// (a `@GestureState`) lives.
+private struct NeedleMapPinHeaderView<G: Gesture>: View {
+    let point: MapNeedlePointModel
+    let gesture: G
+    let coordinateAccessibilityValue: Text
+    let toggleSelection: () -> Void
+#if !os(tvOS)
+    let movePointBy: (_ x: CGFloat, _ y: CGFloat) -> Void
+#endif
+
+    var body: some View {
+        ZStack {
+            MapSelectionHalo(contentDiameter: 44, isVisible: point.isSelected)
+#if !os(tvOS)
+            NeedleMapPinHeadView(
+                point: point,
+                gesture: gesture,
+                coordinateAccessibilityValue: coordinateAccessibilityValue,
+                toggleSelection: toggleSelection,
+                movePointBy: movePointBy
+            )
+#else
+            NeedleMapPinHeadView(
+                point: point,
+                gesture: gesture,
+                coordinateAccessibilityValue: coordinateAccessibilityValue,
+                toggleSelection: toggleSelection
+            )
+#endif
+        }
+        .frame(width: 44, height: 44)
+    }
+}
+
+private struct NeedleMapPinHeadView<G: Gesture>: View {
+    let point: MapNeedlePointModel
+    let gesture: G
+    let coordinateAccessibilityValue: Text
+    let toggleSelection: () -> Void
+#if !os(tvOS)
+    let movePointBy: (_ x: CGFloat, _ y: CGFloat) -> Void
+#endif
+
+    var body: some View {
+        Circle()
+            .fill(.teal)
+            .stroke(Color.blue, lineWidth: 2, antialiased: true)
+            .frame(width: 44, height: 44)
+            .contentShape(.circle)
+            .highPriorityGesture(gesture)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                Text("Map Area Point \(point.coordinateIndex + 1)", bundle: .module)
+            )
+            .accessibilityValue(coordinateAccessibilityValue)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                toggleSelection()
+            }
+#if !os(tvOS)
+            .accessibilityAction(named: Text("Move Left", bundle: .module)) {
+                movePointBy(-10, 0)
+            }
+            .accessibilityAction(named: Text("Move Right", bundle: .module)) {
+                movePointBy(10, 0)
+            }
+            .accessibilityAction(named: Text("Move Up", bundle: .module)) {
+                movePointBy(0, -10)
+            }
+            .accessibilityAction(named: Text("Move Down", bundle: .module)) {
+                movePointBy(0, 10)
+            }
+#endif
+    }
 }
 
 /// Shared selection halo for needles and map pins. It draws outside the

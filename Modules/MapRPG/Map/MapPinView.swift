@@ -367,6 +367,76 @@ struct MapPinView: View {
     let actionContext: MapPinActionContext
     let doubleTapAccessibilityLabel: LocalizedStringResource
 
+    var body: some View {
+        MapPinContentView(
+            model: model,
+            pinSize: pinSize,
+            canMove: canMove,
+            actionContext: actionContext,
+            doubleTapAccessibilityLabel: doubleTapAccessibilityLabel
+        )
+    }
+}
+
+private struct MapPinTapGestureModifier: ViewModifier {
+    let model: MapPinNode
+    let actionContext: MapPinActionContext
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        switch actionContext {
+        case .none:
+            // Player/viewer taps have separate model actions, so preserve exact
+            // single-versus-double semantics even though single tap waits.
+            content.highPriorityGesture(
+                doubleTapGesture.exclusively(before: singleTapGesture)
+            )
+        case .editor:
+            // Editor action menus toggle immediately. The simultaneous
+            // double-tap action still closes an open menu before emitting its
+            // domain action.
+            content
+                .highPriorityGesture(singleTapGesture)
+                .simultaneousGesture(doubleTapGesture)
+        case .gameMaster:
+            // A master's tap either joins battle prep or opens the pin
+            // action menu — see `MapEditorActionRouter.handlePinSingleTap`.
+            // Long press is no longer used for pins.
+            content.highPriorityGesture(
+                doubleTapGesture.exclusively(before: singleTapGesture)
+            )
+        }
+    }
+
+    private var singleTapGesture: some Gesture {
+        TapGesture().onEnded {
+            withAnimation(reduceMotion ? nil : .default) {
+                model.handleTap(context: actionContext)
+            }
+        }
+    }
+
+    private var doubleTapGesture: some Gesture {
+        TapGesture(count: 2).onEnded {
+            withAnimation(reduceMotion ? nil : .default) {
+                model.handleDoubleTap()
+            }
+        }
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` property on `MapPinView` itself.
+
+private struct MapPinContentView: View {
+    let model: MapPinNode
+    let pinSize: CGSize
+    let canMove: Bool
+    let actionContext: MapPinActionContext
+    let doubleTapAccessibilityLabel: LocalizedStringResource
+
     @Environment(MapRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -392,10 +462,6 @@ struct MapPinView: View {
     }
 
     var body: some View {
-        pinView
-    }
-
-    private var pinView: some View {
         root.photoRoot.viewController.mapImage(
             root: root.photoRoot,
             for: pin.photoId,
@@ -549,53 +615,6 @@ struct MapPinView: View {
     private func handleTap() {
         withAnimation(reduceMotion ? nil : .default) {
             model.handleTap(context: actionContext)
-        }
-    }
-}
-
-private struct MapPinTapGestureModifier: ViewModifier {
-    let model: MapPinNode
-    let actionContext: MapPinActionContext
-    let reduceMotion: Bool
-
-    func body(content: Content) -> some View {
-        switch actionContext {
-        case .none:
-            // Player/viewer taps have separate model actions, so preserve exact
-            // single-versus-double semantics even though single tap waits.
-            content.highPriorityGesture(
-                doubleTapGesture.exclusively(before: singleTapGesture)
-            )
-        case .editor:
-            // Editor action menus toggle immediately. The simultaneous
-            // double-tap action still closes an open menu before emitting its
-            // domain action.
-            content
-                .highPriorityGesture(singleTapGesture)
-                .simultaneousGesture(doubleTapGesture)
-        case .gameMaster:
-            // A master's tap either joins battle prep or opens the pin
-            // action menu — see `MapEditorActionRouter.handlePinSingleTap`.
-            // Long press is no longer used for pins.
-            content.highPriorityGesture(
-                doubleTapGesture.exclusively(before: singleTapGesture)
-            )
-        }
-    }
-
-    private var singleTapGesture: some Gesture {
-        TapGesture().onEnded {
-            withAnimation(reduceMotion ? nil : .default) {
-                model.handleTap(context: actionContext)
-            }
-        }
-    }
-
-    private var doubleTapGesture: some Gesture {
-        TapGesture(count: 2).onEnded {
-            withAnimation(reduceMotion ? nil : .default) {
-                model.handleDoubleTap()
-            }
         }
     }
 }

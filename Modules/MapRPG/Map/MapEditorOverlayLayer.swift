@@ -188,66 +188,14 @@ private struct MapNeedleViewportMenu: View {
     var body: some View {
         Group {
 #if os(visionOS)
-            buttons
+            MapNeedleViewportMenuButtonsView(session: session, entryId: entryId, point: point, placement: placement, glassNamespace: glassNamespace)
 #else
             GlassEffectContainer(spacing: 12) {
-                buttons
+                MapNeedleViewportMenuButtonsView(session: session, entryId: entryId, point: point, placement: placement, glassNamespace: glassNamespace)
             }
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var buttons: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(NeedleMapPinButtonType.allCases.enumerated(), id: \.element) { index, type in
-                Button {
-                    perform(type)
-                } label: {
-                    Label {
-                        Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
-                    } icon: {
-                        Image(systemName: type.systemImage)
-                    }
-                    .labelStyle(.iconOnly)
-                    .frame(
-                        width: MapAdaptiveFanGeometry.buttonSize.width,
-                        height: MapAdaptiveFanGeometry.buttonSize.height
-                    )
-                }
-                .borderLessTVBottonStyle()
-                .contentShape(.circle)
-                .foregroundStyle(.white)
-                .background(type == .remove ? Color.red.opacity(0.8) : Color.teal.opacity(0.8), in: .circle)
-                .help(
-                    Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
-                )
-#if !os(visionOS)
-                .glassEffect(
-                    .regular.tint(
-                        type == .remove ? Color.red.opacity(0.8) : Color.teal.opacity(0.8)
-                    ).interactive()
-                )
-                .glassEffectID(type.label, in: glassNamespace)
-#endif
-                .contentShape(.circle)
-                // Keep the Liquid Glass and hit shape on the fixed 48-point
-                // leaf, then move that complete leaf into viewport space.
-                .position(placement.center(at: index) ?? placement.sourceAnchor)
-                .zIndex(Double(index + 1))
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func perform(_ type: NeedleMapPinButtonType) {
-        switch type {
-        case .remove:
-            session.editEntries.removeNeedle(point, entryId: entryId)
-        case .add:
-            session.editEntries.insertNeedle(after: point, entryId: entryId)
-        }
-        session.route(.needleCoordinatesChanged(entryId))
     }
 }
 
@@ -352,6 +300,71 @@ private struct MapLoupeCrosshair: Shape {
         path.move(to: CGPoint(x: rect.midX, y: rect.midY + verticalGap))
         path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
         return path
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` property on `MapNeedleViewportMenu` itself.
+
+private struct MapNeedleViewportMenuButtonsView: View {
+    let session: MapEditorSession
+    let entryId: UUID
+    let point: MapNeedlePointModel
+    let placement: MapAdaptiveFanPlacement
+    let glassNamespace: Namespace.ID
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(NeedleMapPinButtonType.allCases.enumerated(), id: \.element) { index, type in
+                Button {
+                    perform(type)
+                } label: {
+                    Label {
+                        Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
+                    } icon: {
+                        Image(systemName: type.systemImage)
+                    }
+                    .labelStyle(.iconOnly)
+                    .frame(
+                        width: MapAdaptiveFanGeometry.buttonSize.width,
+                        height: MapAdaptiveFanGeometry.buttonSize.height
+                    )
+                }
+                .borderLessTVBottonStyle()
+                .contentShape(.circle)
+                .foregroundStyle(.white)
+                .background(type == .remove ? Color.red.opacity(0.8) : Color.teal.opacity(0.8), in: .circle)
+                .help(
+                    Text(type == .remove ? "Remove Point" : "Add Point", bundle: .module)
+                )
+#if !os(visionOS)
+                .glassEffect(
+                    .regular.tint(
+                        type == .remove ? Color.red.opacity(0.8) : Color.teal.opacity(0.8)
+                    ).interactive()
+                )
+                .glassEffectID(type.label, in: glassNamespace)
+#endif
+                .contentShape(.circle)
+                // Keep the Liquid Glass and hit shape on the fixed 48-point
+                // leaf, then move that complete leaf into viewport space.
+                .position(placement.center(at: index) ?? placement.sourceAnchor)
+                .zIndex(Double(index + 1))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func perform(_ type: NeedleMapPinButtonType) {
+        switch type {
+        case .remove:
+            session.editEntries.removeNeedle(point, entryId: entryId)
+        case .add:
+            session.editEntries.insertNeedle(after: point, entryId: entryId)
+        }
+        session.route(.needleCoordinatesChanged(entryId))
     }
 }
 

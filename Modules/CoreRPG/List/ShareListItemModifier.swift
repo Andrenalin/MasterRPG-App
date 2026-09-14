@@ -19,7 +19,7 @@ struct ShareItemViewModifier: ViewModifier {
                 if feedBackEnabled {
                     SendFeedbackButton(allReported: allReported, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction)
                 } else {
-                    buttonView
+                    ShareItemViewModifierButtonView(allReported: allReported, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction)
                 }
             }
 
@@ -28,8 +28,24 @@ struct ShareItemViewModifier: ViewModifier {
         }
         .animation(accessibilityReduceMotion ? nil : .default, value: isActive)
     }
-    
-    private var buttonView: some View {
+}
+
+public extension View {
+    func shareListItem(isActive: Bool = false, allReported: Bool = false, feedBackEnabled: Bool = false, module: NetworkModules, secondActionIcon: String? = nil, action: @escaping () -> Void, secondAction: (() -> Void)? = nil) -> some View {
+        modifier(ShareItemViewModifier(isActive: isActive, allReported: allReported, feedBackEnabled: feedBackEnabled, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction))
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct ShareItemViewModifierButtonView: View {
+    let allReported: Bool
+    let module: NetworkModules
+    let secondActionIcon: String?
+    let action: () -> Void
+    let secondAction: (() -> Void)?
+
+    var body: some View {
         Button {
             if let secondAction, allReported == true {
                 secondAction()
@@ -50,11 +66,5 @@ struct ShareItemViewModifier: ViewModifier {
                 ? Text("Perform follow-up action", bundle: .module)
                 : Text("Share", bundle: .module)
         )
-    }
-}
-
-public extension View {
-    func shareListItem(isActive: Bool = false, allReported: Bool = false, feedBackEnabled: Bool = false, module: NetworkModules, secondActionIcon: String? = nil, action: @escaping () -> Void, secondAction: (() -> Void)? = nil) -> some View {
-        modifier(ShareItemViewModifier(isActive: isActive, allReported: allReported, feedBackEnabled: feedBackEnabled, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction))
     }
 }

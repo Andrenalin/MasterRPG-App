@@ -7,7 +7,7 @@ struct DiceBag: View {
     let model: DiceModel
 
     let diceBagA: [DieModel] = [.die4(color: .A), .die20(color: .A)]
-    let diceBagG: [DieModel] = [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
+    let diceBagG: [DieModel] = [.die2(color: .G), .die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
 
     @Environment(DiceRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

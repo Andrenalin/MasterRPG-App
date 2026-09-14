@@ -81,6 +81,7 @@ extension DieModel {
             code = ColorCode.G.rawValue
         }
         return switch die.sides {
+        case .two: "D2\(code)-\(number)"
         case .four: "D4\(code)-\(number)"
         case .six: "D6\(code)-\(number)"
         case .eight: "D8\(code)-\(number)"
@@ -156,6 +157,14 @@ extension DieModel {
         return DieModel(id: id, die: die, rotation: (1800 + RawDie.rollPercent() * 360), result: updatedResult)
     }
 
+    public static var die2: DieModel {
+        die2(color: .Random)
+    }
+
+    public static func die2(color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie.two, color: color.rawValue)
+    }
+    
     public static var die4: DieModel {
         die4(color: .Random)
     }

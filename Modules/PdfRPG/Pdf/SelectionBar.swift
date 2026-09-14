@@ -20,7 +20,7 @@ struct SelectionBar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
-        textSelection
+        SelectionBarTextSelectionView(editController: editController, model: model, searchModel: searchModel, withoutBookmark: withoutBookmark)
             .opacity(showsSelection ? 1 : 0)
             .allowsHitTesting(showsSelection)
             .accessibilityHidden(!showsSelection)
@@ -32,26 +32,36 @@ struct SelectionBar: View {
     }
 }
 
-private extension SelectionBar {
-    @ViewBuilder
-    var textSelection: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SelectionBarTextSelectionView: View {
+    let editController: EditController
+    let model: PdfModel
+    let searchModel: PdfSearchModel
+    let withoutBookmark: Bool
+
+    var body: some View {
         HStack {
             HStack {
-                textContent
+                SelectionBarTextContentView(searchModel: searchModel)
             }
             .padding(.horizontal)
 #if !os(visionOS)
             .glassEffect(.regular)
 #endif
             if !withoutBookmark && searchModel.selectedEntry != nil {
-                bookmarkButton
+                SelectionBarBookmarkButtonView(editController: editController, model: model, searchModel: searchModel)
             }
         }
         .padding(8)
     }
-    
+}
+
+private struct SelectionBarTextContentView: View {
+    let searchModel: PdfSearchModel
+
     @ViewBuilder
-    var textContent: some View {
+    var body: some View {
         if let currentPage = searchModel.selectedEntry?.pageLabel {
             Text(verbatim: currentPage)
                 .font(.title)
@@ -64,8 +74,16 @@ private extension SelectionBar {
                 .foregroundStyle(Color.accentColor)
         }
     }
-    
-    var bookmarkButton: some View {
+}
+
+private struct SelectionBarBookmarkButtonView: View {
+    let editController: EditController
+    let model: PdfModel
+    let searchModel: PdfSearchModel
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
         Button {
             if let selectedEntry = searchModel.selectedEntry {
                 editController.addBookmark(itemId: model.id, entry: selectedEntry)

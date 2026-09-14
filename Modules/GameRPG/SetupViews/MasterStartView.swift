@@ -36,7 +36,7 @@ struct MasterStartView: View {
             }
             .borderLessTVBottonStyle()
             .overlay {
-                overlayAnimation
+                MasterStartViewOverlayAnimationView(startSharePlayAnimation: startSharePlayAnimation, accessibilityReduceMotion: accessibilityReduceMotion)
             }
             .animation(
                 accessibilityReduceMotion ? nil : .easeOut(duration: 0.6).delay(1).repeatForever(autoreverses: false),
@@ -51,14 +51,6 @@ struct MasterStartView: View {
         }
     }
 
-    private var overlayAnimation: some View {
-        Capsule()
-            .stroke(Color.accentColor, lineWidth: 4)
-            .scaleEffect(startSharePlayAnimation && !accessibilityReduceMotion ? 2 : 1)
-            .opacity(startSharePlayAnimation && !accessibilityReduceMotion ? 0 : 1)
-            .accessibilityHidden(true)
-    }
-    
     @MainActor
     func title() -> LocalizedStringKey {
         if sharePlayStore.canActivateSharePlay {
@@ -77,6 +69,21 @@ struct MasterStartView: View {
         }
         appGameStateModel.gameModus = .master
         await MasterRPGTips.donateGameStartedOrJoined()
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct MasterStartViewOverlayAnimationView: View {
+    let startSharePlayAnimation: Bool
+    let accessibilityReduceMotion: Bool
+
+    var body: some View {
+        Capsule()
+            .stroke(Color.accentColor, lineWidth: 4)
+            .scaleEffect(startSharePlayAnimation && !accessibilityReduceMotion ? 2 : 1)
+            .opacity(startSharePlayAnimation && !accessibilityReduceMotion ? 0 : 1)
+            .accessibilityHidden(true)
     }
 }
 

@@ -16,7 +16,7 @@ struct ItemController: Sendable {
     let collectionCategory: ItemListCategory
     let itemDataModel: ItemDataModel
 
-    let diceBag = DiceModel(id: UUID(), dice: [.die4, .die6, .die8, .die10, .die12, .die20])
+    let diceBag = DiceModel(id: UUID(), dice: [.die2, .die4, .die6, .die8, .die10, .die12, .die20])
 }
 
 extension ItemController: ItemControllable {

@@ -41,14 +41,14 @@ public struct ImageOverlayButton: View {
     
     public var body: some View {
         if withoutButton {
-            buttonImage
+            ImageOverlayButtonImageView(icon: icon, disabled: disabled)
                 .accessibilityLabel(Text(accessibilityLabel))
         } else {
             Button(action: action) {
                 Label {
                     Text(accessibilityLabel)
                 } icon: {
-                    buttonImage
+                    ImageOverlayButtonImageView(icon: icon, disabled: disabled)
                 }
                 .labelStyle(.iconOnly)
             }
@@ -66,8 +66,15 @@ public struct ImageOverlayButton: View {
 #endif
         }
     }
-    
-    private var buttonImage: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct ImageOverlayButtonImageView: View {
+    let icon: String
+    let disabled: Bool
+
+    var body: some View {
         Image(systemName: icon)
 #if os(iOS) || os(visionOS)
             .imageScale(.medium)

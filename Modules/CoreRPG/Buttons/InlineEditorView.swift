@@ -33,7 +33,7 @@ struct InlineEditorView: View {
                 textFieldEditor()
                 QuickEditorDoubleView(number: $doubleValue)
             case .selection:
-                selectionEditor
+                InlineEditorViewSelectionEditorView(selectedValue: $selectedValue, entryDataEditable: entryDataEditable)
             case .text:
                 textFieldEditor()
             }
@@ -136,16 +136,6 @@ private extension InlineEditorView {
         }
     }
 
-    var selectionEditor: some View {
-        Toggle(isOn: $selectedValue) {
-            Label { Text("Selected", bundle: .module) } icon: { Image(systemName: "checkmark.square") }
-        }
-        .labelsHidden()
-        .moduleTint(entryDataEditable.itemControllable.config.module)
-        .toggleStyle(.automatic)
-        .fixedSize(horizontal: true, vertical: true)
-    }
-
     /// Uses the same attributed-string editor as the full entry editor
     /// (`EntryNameEditor`/`TextEditModel`) instead of a plain `TextField`, so
     /// a markdown link typed into a live value gets rendered specially
@@ -158,6 +148,23 @@ private extension InlineEditorView {
                 content.keyboardType(.numbersAndPunctuation)
             }
 #endif
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct InlineEditorViewSelectionEditorView: View {
+    @Binding var selectedValue: Bool
+    let entryDataEditable: any EntryDataEditable
+
+    var body: some View {
+        Toggle(isOn: $selectedValue) {
+            Label { Text("Selected", bundle: .module) } icon: { Image(systemName: "checkmark.square") }
+        }
+        .labelsHidden()
+        .moduleTint(entryDataEditable.itemControllable.config.module)
+        .toggleStyle(.automatic)
+        .fixedSize(horizontal: true, vertical: true)
     }
 }
 

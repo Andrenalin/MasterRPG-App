@@ -35,7 +35,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     
     var body: some View {
         GlassEffectContainerAll {
-            editorCard
+            EntryEditorContentEditorCardView(editController: editController, editorModel: editorModel, itemId: itemId, editModel: editModel, entry: entry, linkTypes: linkTypes, currentFocus: $currentFocus)
         }
         .frame(maxWidth: 800)
         .padding()
@@ -81,38 +81,6 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
         }
     }
     
-    private var editorCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            EntryEditorHeaderView(
-                editController: editController,
-                editorModel: editorModel,
-                itemId: itemId,
-                editModel: editModel,
-                entry: entry,
-                linkTypes: linkTypes
-            )
-            
-            EntryNameEditor(editModel: editModel, currentFocus: $currentFocus)
-            
-            EntryContentEditor(editModel: editModel, currentFocus: $currentFocus)
-        }
-        .padding(20)
-        .background {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(theme.panelColor.opacity(reduceTransparency ? 1 : 0.58))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(
-                    theme.tint(for: editorModel.module).opacity(0.45),
-                    lineWidth: 1
-                )
-        }
-        .entryEditorGlass(tint: theme.background(for: editorModel.module))
-        .shadow(color: .black.opacity(0.24), radius: 24, y: 12)
-        .containerShape(.rect(cornerRadius: 28, style: .continuous))
-    }
-    
     private func updateEditModel(entry: any EntryDataAccessable, itemId: UUID) {
         editModel.reset(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
     }
@@ -145,4 +113,51 @@ enum EntryEditorFocusField {
         entry: FakeEntryModel.empty,
         linkTypes: EmptyLinkTransferable.self
     )
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct EntryEditorContentEditorCardView<LinkType: LinkDataTransferable>: View {
+    let editController: any EntryDataEditable
+    let editorModel: SheetEditorModel
+    let itemId: UUID
+    let editModel: TextEditModel
+    let entry: any EntryDataAccessable
+    let linkTypes: LinkType.Type
+    let currentFocus: FocusState<EntryEditorFocusField?>.Binding
+
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            EntryEditorHeaderView(
+                editController: editController,
+                editorModel: editorModel,
+                itemId: itemId,
+                editModel: editModel,
+                entry: entry,
+                linkTypes: linkTypes
+            )
+
+            EntryNameEditor(editModel: editModel, currentFocus: currentFocus)
+
+            EntryContentEditor(editModel: editModel, currentFocus: currentFocus)
+        }
+        .padding(20)
+        .background {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(theme.panelColor.opacity(reduceTransparency ? 1 : 0.58))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(
+                    theme.tint(for: editorModel.module).opacity(0.45),
+                    lineWidth: 1
+                )
+        }
+        .entryEditorGlass(tint: theme.background(for: editorModel.module))
+        .shadow(color: .black.opacity(0.24), radius: 24, y: 12)
+        .containerShape(.rect(cornerRadius: 28, style: .continuous))
+    }
 }

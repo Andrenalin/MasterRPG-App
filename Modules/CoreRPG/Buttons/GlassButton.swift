@@ -35,19 +35,26 @@ public struct GlassButton<Content: View>: View {
     
     public var body: some View {
         if isProminet {
-            button
+            GlassButtonInnerButtonView(label: label, action: action)
 #if !os(visionOS)
                 .buttonStyle(.glassProminent)
 #endif
         } else {
-            button
+            GlassButtonInnerButtonView(label: label, action: action)
 #if !os(visionOS)
                 .buttonStyle(.glass)
 #endif
         }
     }
-    
-    private var button: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct GlassButtonInnerButtonView<Content: View>: View {
+    let label: Content
+    let action: () -> Void
+
+    var body: some View {
         Button {
             action()
         } label: {

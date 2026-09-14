@@ -13,22 +13,32 @@ struct QuickEditorIntView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            rowMinusButtonsView
-            rowPlusButtonsView
+            QuickEditorIntViewMinusButtonsView(number: $number)
+            QuickEditorIntViewPlusButtonsView(number: $number)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(maxWidth: .infinity)
     }
+}
 
-    private var rowMinusButtonsView: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct QuickEditorIntViewMinusButtonsView: View {
+    @Binding var number: Int
+
+    var body: some View {
         HStack(spacing: 12) {
             ForEach([10, 5, 2, 1], id: \.self) { value in
                 QuickEditorButtonView(number: $number, value: value, title: "\(value)", isAddition: false)
             }
         }
     }
+}
 
-    private var rowPlusButtonsView: some View {
+private struct QuickEditorIntViewPlusButtonsView: View {
+    @Binding var number: Int
+
+    var body: some View {
         HStack(spacing: 12) {
             ForEach([1, 2, 5, 10], id: \.self) { value in
                 QuickEditorButtonView(number: $number, value: value, title: "\(value)", isAddition: true)

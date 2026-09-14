@@ -42,10 +42,10 @@ struct PortalGateStartGameView: View {
                 GameSetupRoleContent(root: root, selection: role)
                 
                 if appSizeModel.mode == .compact {
-                    afterContent
+                    PortalGateStartGameViewAfterContentView(root: root, openStatistics: openStatistics)
                 } else {
                     HStack {
-                        afterContent
+                        PortalGateStartGameViewAfterContentView(root: root, openStatistics: openStatistics)
                     }
                 }
                                 
@@ -58,9 +58,16 @@ struct PortalGateStartGameView: View {
         .background { GameSetupBackdrop() }
         .moduleTint(.game)
     }
-    
-    
-    @ViewBuilder private var afterContent: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct PortalGateStartGameViewAfterContentView: View {
+    let root: GameRoot
+    let openStatistics: @MainActor () -> Void
+
+    @ViewBuilder
+    var body: some View {
         GameSetupStatisticsCard(
             sessionCount: root.statisticsModel.summary.sessionCount,
             openStatistics: openStatistics

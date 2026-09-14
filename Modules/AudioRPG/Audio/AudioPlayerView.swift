@@ -17,10 +17,10 @@ struct AudioPlayerView: View {
     var body: some View {
         @Bindable var model = root.audioController.model
         VStack {
-            playerControls
-            
+            AudioPlayerViewControlsView(currentTime: $currentTime, isEditingCurrentTime: $isEditingCurrentTime)
+
             Divider()
-            
+
             PlayListView(root: root)
         }
         .onChange(of: model.playerTime) {
@@ -37,46 +37,64 @@ struct AudioPlayerView: View {
     AudioPlayerView()
 }
 
-extension AudioPlayerView {
-    var playerControls: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` properties on `AudioPlayerView` itself that all re-evaluated whenever any
+// part of `AudioPlayerView`'s body did.
+
+private struct AudioPlayerViewControlsView: View {
+    @Binding var currentTime: Double
+    @Binding var isEditingCurrentTime: Bool
+
+    @Environment(AudioRootModel.self) private var root
+
+    var body: some View {
         VStack {
 #if os(macOS)
-            volumeView
+            AudioPlayerViewVolumeView()
 #else
             HStack {
 #if os(iOS) || os(visionOS)
-                volumeView
+                AudioPlayerViewVolumeView()
 #else
                 Spacer()
 #endif
-                
+
                 RoutePickerView()
                     .frame(maxWidth: 64)
             }
             .tint(Color.accentColor)
 #endif
-            
+
             Text(currentName)
                 .font(.title2)
                 .lineLimit(1)
-            
-            playSkipControlView
-            
-            playTimeControlView
+
+            AudioPlayerViewPlaySkipControlView()
+
+            AudioPlayerViewPlayTimeControlView(currentTime: $currentTime, isEditingCurrentTime: $isEditingCurrentTime)
         }
     }
-    
-    var playPauseIcon: String {
-        "\(root.audioController.model.isPlaying ? "pause" : "play").circle.fill"
+
+    private var currentName: String {
+        guard let id = root.audioController.model.currentId else {
+            return String(localized: "No song currently loaded", bundle: .module)
+        }
+        return root.gameController.gameItem(for: id).name
     }
-    
+}
+
+private struct AudioPlayerViewVolumeView: View {
+    @Environment(AudioRootModel.self) private var root
+
     @ViewBuilder
-    var volumeView: some View {
+    var body: some View {
 #if os(tvOS)
         EmptyView()
 #else
         @Bindable var item = root.audioController.model
-        
+
         Slider(value: $item.volume, in: 0.0 ... 1.0) {
             Text("Volume", bundle: .module)
         } minimumValueLabel: {
@@ -88,8 +106,15 @@ extension AudioPlayerView {
         .tint(Color.accentColor)
 #endif
     }
-    
-    var playSkipControlView: some View {
+}
+
+private struct AudioPlayerViewPlaySkipControlView: View {
+    @Environment(AudioRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
         HStack(spacing: 32) {
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut) {
@@ -106,7 +131,7 @@ extension AudioPlayerView {
                 .foregroundStyle((root.audioController.model.currentIndex ?? 0) > 0 ? Color.teal : Color.secondary)
             }
             .frame(minWidth: 44, minHeight: 44)
-            
+
             Button {
                 if let currentId = root.audioController.model.currentId, appGameStateModel.isGameRunning {
                     networkActions?.game(root.gameController.requestPlay(id: currentId), .generic, nil)
@@ -130,7 +155,7 @@ extension AudioPlayerView {
             }
             .disabled(root.audioController.model.currentId == nil)
             .frame(minWidth: 44, minHeight: 44)
-            
+
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut) {
                     root.audioController.skipToCurrentItem(offsetBy: 1)
@@ -146,7 +171,7 @@ extension AudioPlayerView {
                 .foregroundStyle((root.audioController.model.currentIndex ?? 0 < root.audioController.model.playList.count - 1) ? Color.teal : Color.secondary)
             }
             .frame(minWidth: 44, minHeight: 44)
-            
+
             Button {
                 root.audioController.model.repeatPlayList.toggle()
             } label: {
@@ -169,23 +194,34 @@ extension AudioPlayerView {
         .borderLessTVBottonStyle()
         .padding(.bottom, 8)
     }
-    
-    var playTimeControlView: some View {
+
+    private var playPauseIcon: String {
+        "\(root.audioController.model.isPlaying ? "pause" : "play").circle.fill"
+    }
+}
+
+private struct AudioPlayerViewPlayTimeControlView: View {
+    @Binding var currentTime: Double
+    @Binding var isEditingCurrentTime: Bool
+
+    @Environment(AudioRootModel.self) private var root
+
+    var body: some View {
         VStack {
             HStack {
                 Text(verbatim: root.audioController.model.playerTime.elapsedText)
                     .font(.caption)
                     .bold()
                     .monospaced()
-                
+
                 Spacer()
-                
+
                 Text(verbatim: root.audioController.model.playerTime.remainingText)
                     .font(.caption)
                     .bold()
                     .monospaced()
             }
-            
+
 #if os(tvOS)
             ProgressView(value: currentTime, total: totalTime)
 #else
@@ -208,15 +244,8 @@ extension AudioPlayerView {
 #endif
         }
     }
-    
-    var totalTime: Double {
-        root.audioController.model.currentItem?.duration.seconds ?? 0
-    }
 
-    var currentName: String {
-        guard let id = root.audioController.model.currentId else {
-            return String(localized: "No song currently loaded", bundle: .module)
-        }
-        return root.gameController.gameItem(for: id).name
+    private var totalTime: Double {
+        root.audioController.model.currentItem?.duration.seconds ?? 0
     }
 }

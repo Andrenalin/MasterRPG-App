@@ -54,7 +54,7 @@ struct SingleReviewFilePropertyRow: View {
                         HStack(alignment: .top, spacing: 10) {
                             thumbnail
                             VStack(alignment: .leading, spacing: 4) {
-                                fileNames
+                                SingleReviewFilePropertyRowFileNamesView(wasName: wasName, newName: newName)
                             }
                         }
                     }
@@ -113,8 +113,15 @@ struct SingleReviewFilePropertyRow: View {
         }
     }
 
-    @ViewBuilder
-    private var fileNames: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SingleReviewFilePropertyRowFileNamesView: View {
+    let wasName: String
+    let newName: String
+
+    @ViewBuilder var body: some View {
         if wasName == newName {
             HStack(spacing: 4) {
                 Text("Both:", bundle: .module)

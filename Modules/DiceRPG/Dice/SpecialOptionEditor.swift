@@ -17,7 +17,7 @@ struct SpecialOptionEditor: View {
             ToggleDiceValue(model: model, toggleKeyPath: \.addDiceActivate, title: "Add dice", bundle: .module, icon: "dice", saveMessage: String(localized: "change add dice", bundle: .module).localizedString)
 
             if model.addDiceActivate {
-                addDiceEditorView
+                SpecialOptionEditorAddDiceEditorView(model: model, addValueModel: addValueModel)
             }
         } header: {
 #if os(macOS)
@@ -44,10 +44,13 @@ struct SpecialOptionEditor: View {
     }
 }
 
-private extension SpecialOptionEditor {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
-    @ViewBuilder
-    var addDiceEditorView: some View {
+private struct SpecialOptionEditorAddDiceEditorView: View {
+    let model: DiceModel
+    let addValueModel: EditIdentifierModel<Double>
+
+    var body: some View {
         LabeledContent {
             TextIntEditor(model: addValueModel, title: "Add Dice each Value", icon: "plus", prompt: "value", bundle: .module, range: model.minFirstValue...model.maxFirstValue)
         } label: {

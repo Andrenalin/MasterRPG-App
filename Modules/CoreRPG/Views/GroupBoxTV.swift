@@ -17,48 +17,16 @@ public struct GroupBoxTV<Label: View, Content: View>: View {
 
     public var body: some View {
 #if os(tvOS)
-            withoutGroupView
+            GroupBoxTVWithoutGroupView(content: content, label: label)
 #elseif os(macOS)
         if withoutGroup {
-            withoutGroupView
+            GroupBoxTVWithoutGroupView(content: content, label: label)
         } else {
-            macView
+            GroupBoxTVMacView(isCard: isCard, content: content, label: label)
         }
 #else
-            iosView
+            GroupBoxTVIosView(content: content, label: label)
 #endif
-    }
-    
-    private var withoutGroupView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            label()
-                .font(.headline)
-            
-            content()
-            
-            Divider()
-        }
-    }
-    
-#if !os(tvOS)
-    @ViewBuilder
-    private var macView: some View {
-        if isCard {
-            GroupBox(content: content, label: label)
-                .groupBoxStyle(CardGroupBoxStyle())
-        } else {
-            GroupBox(content: content, label: label)
-        }
-    }
-    
-    private var iosView: some View {
-        GroupBox(content: { contentInsettedView }, label: label)
-    }
-    
-#endif
-    
-    private var contentInsettedView: some View {
-        content().padding(-8)
     }
 }
 
@@ -83,4 +51,56 @@ struct CardGroupBoxStyle: GroupBoxStyle {
     }
 }
 
+#endif
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct GroupBoxTVWithoutGroupView<Label: View, Content: View>: View {
+    let content: () -> Content
+    let label: () -> Label
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            label()
+                .font(.headline)
+
+            content()
+
+            Divider()
+        }
+    }
+}
+
+#if !os(tvOS)
+private struct GroupBoxTVMacView<Label: View, Content: View>: View {
+    let isCard: Bool
+    let content: () -> Content
+    let label: () -> Label
+
+    @ViewBuilder var body: some View {
+        if isCard {
+            GroupBox(content: content, label: label)
+                .groupBoxStyle(CardGroupBoxStyle())
+        } else {
+            GroupBox(content: content, label: label)
+        }
+    }
+}
+
+private struct GroupBoxTVIosView<Label: View, Content: View>: View {
+    let content: () -> Content
+    let label: () -> Label
+
+    var body: some View {
+        GroupBox(content: { GroupBoxTVContentInsettedView(content: content) }, label: label)
+    }
+}
+
+private struct GroupBoxTVContentInsettedView<Content: View>: View {
+    let content: () -> Content
+
+    var body: some View {
+        content().padding(-8)
+    }
+}
 #endif

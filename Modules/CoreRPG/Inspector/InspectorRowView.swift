@@ -55,7 +55,7 @@ struct InspectorRowView: View {
     private func entryRow(model: (any ItemDataAccessable)?, entryId: UUID) -> some View {
         HStack {
             LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
-            folderChevron
+            InspectorRowViewFolderChevronView(root: root, item: item)
         }
         .contextMenu { rowContextMenu(model: model) }
         .accessibilityAction(named: Text("Open Details", bundle: .module)) {
@@ -112,28 +112,7 @@ struct InspectorRowView: View {
             entryId: nil,
             name: resolved.name.withoutLink()
         )
-        .overlay(alignment: .trailing) { folderChevron }
-    }
-
-    @ViewBuilder
-    private var folderChevron: some View {
-        if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
-            Button {
-                root.folderLinkControllable.toggleFolder(item: item)
-            } label: {
-                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
-                    .imageScale(.small)
-                    .foregroundStyle(.red)
-                    .contentShape(.circle)
-                    .frame(minWidth: 44, minHeight: 44)
-#if !os(visionOS)
-                    .glassEffect(.clear.interactive())
-#endif
-            }
-            .borderLessTVBottonStyle()
-            .accessibilityLabel(Text("Toggle Folder", bundle: .module))
-            .padding(.trailing, 4)
-        }
+        .overlay(alignment: .trailing) { InspectorRowViewFolderChevronView(root: root, item: item) }
     }
 
     private func isSelectionActive(model: (any ItemDataAccessable)?) -> Bool {
@@ -225,6 +204,34 @@ struct InspectorRowView: View {
             } icon: {
                 Image(systemName: "gear")
             }
+        }
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct InspectorRowViewFolderChevronView: View {
+    let root: any ItemRootControllable
+    let item: FolderListItemModel
+
+    @ViewBuilder
+    var body: some View {
+        if item.canOpen || item.isOpen || item.wasExplicitlyClosed {
+            Button {
+                root.folderLinkControllable.toggleFolder(item: item)
+            } label: {
+                Image(systemName: item.isOpen ? "chevron.down" : "chevron.right")
+                    .imageScale(.small)
+                    .foregroundStyle(.red)
+                    .contentShape(.circle)
+                    .frame(minWidth: 44, minHeight: 44)
+#if !os(visionOS)
+                    .glassEffect(.clear.interactive())
+#endif
+            }
+            .borderLessTVBottonStyle()
+            .accessibilityLabel(Text("Toggle Folder", bundle: .module))
+            .padding(.trailing, 4)
         }
     }
 }

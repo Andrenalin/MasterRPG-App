@@ -26,14 +26,14 @@ struct AsyncThumbnail: View {
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     } else {
-                        placeholderView
+                        AsyncThumbnailPlaceholderView(isLoading: isLoading, color: color)
                     }
                 }
                 .task(id: key) {
                     await initImage(for: model, key: key)
                 }
             } else {
-                placeholderView
+                AsyncThumbnailPlaceholderView(isLoading: isLoading, color: color)
             }
         }
         .onChange(of: itemId) { _, newItemId in
@@ -88,16 +88,6 @@ private extension AsyncThumbnail {
             usesFullImage: usesFullImage,
             version: model.version
         )
-    }
-    
-    @ViewBuilder
-    var placeholderView: some View {
-        if isLoading {
-            ProgressView()
-                .tint(color)
-        } else {
-            color
-        }
     }
     
     /// Initialize image loading with deduplication
@@ -161,6 +151,26 @@ private extension AsyncThumbnail {
         renderedImage = newImage
         renderedImageKey = newImage == nil ? nil : key
         isLoading = false
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` property on `AsyncThumbnail` itself.
+
+private struct AsyncThumbnailPlaceholderView: View {
+    let isLoading: Bool
+    let color: Color
+
+    @ViewBuilder
+    var body: some View {
+        if isLoading {
+            ProgressView()
+                .tint(color)
+        } else {
+            color
+        }
     }
 }
 

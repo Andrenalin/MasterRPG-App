@@ -10,14 +10,13 @@ struct DiceGameResult: View {
 
     @Environment(DiceRootModel.self) private var root
 
-    @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(DiceDisplayModel.self) var diceDisplayModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: isTrailing ? .trailing : .leading) {
-            resultView
+            DiceGameResultResultView(itemId: itemId)
             if diceDisplayModel.showDiceValueEditor {
                 DiceQuickEditor(itemId: itemId) { newValue in
                     await root.gameController.resetCompareValue(of: itemId, value: newValue)
@@ -34,9 +33,19 @@ struct DiceGameResult: View {
             }
         }
     }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct DiceGameResultResultView: View {
+    let itemId: UUID
+
+    @Environment(DiceRootModel.self) private var root
+    @Environment(AppGameStateModel.self) private var appGameStateModel
+    @Environment(DiceDisplayModel.self) var diceDisplayModel
 
     @ViewBuilder
-    private var resultView: some View {
+    var body: some View {
         if root.gameController.gameItem(for: itemId).sumUp || root.gameController.gameItem(for: itemId).compareOption != .off {
             Button {
                 if canEditResult {

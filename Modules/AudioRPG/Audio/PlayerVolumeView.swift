@@ -16,38 +16,15 @@ struct PlayerVolumeView: View {
         VStack(alignment: .trailing) {
             volumeChangeView()
 
-            volumeButtonView
+            PlayerVolumeButtonView(root: root, showVolume: $showVolume)
         }
         #else
-        volumeButtonView
+        PlayerVolumeButtonView(root: root, showVolume: $showVolume)
         .overlay(alignment: alignment) {
             volumeChangeView()
                 .offset(y: offsetY)
         }
 #endif
-    }
-
-    var volumeButtonView: some View {
-        Button {
-            showVolume.toggle()
-        } label: {
-            Label {
-                Text("Volume", bundle: .module)
-            } icon: {
-                Image(systemName: "volume.3", variableValue: Double(root.audioController.model.volume))
-                    .symbolRenderingMode(.hierarchical)
-                    .symbolEffect(.bounce, value: root.audioController.model.volume)
-            }
-            .labelStyle(.iconOnly)
-            .tint(Color.accentColor)
-        }
-        .frame(minWidth: 44, minHeight: 44)
-        .accessibilityValue(Text(root.audioController.model.volume, format: .percent))
-        .transaction { transaction in
-            if reduceMotion {
-                transaction.animation = nil
-            }
-        }
     }
 
     @ViewBuilder
@@ -89,4 +66,36 @@ struct PlayerVolumeView: View {
 
 #Preview {
     PlayerVolumeView(root: .preview, alignment: .bottomLeading)
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct PlayerVolumeButtonView: View {
+    let root: AudioRootModel
+    @Binding var showVolume: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button {
+            showVolume.toggle()
+        } label: {
+            Label {
+                Text("Volume", bundle: .module)
+            } icon: {
+                Image(systemName: "volume.3", variableValue: Double(root.audioController.model.volume))
+                    .symbolRenderingMode(.hierarchical)
+                    .symbolEffect(.bounce, value: root.audioController.model.volume)
+            }
+            .labelStyle(.iconOnly)
+            .tint(Color.accentColor)
+        }
+        .frame(minWidth: 44, minHeight: 44)
+        .accessibilityValue(Text(root.audioController.model.volume, format: .percent))
+        .transaction { transaction in
+            if reduceMotion {
+                transaction.animation = nil
+            }
+        }
+    }
 }

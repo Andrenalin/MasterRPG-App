@@ -22,24 +22,37 @@ struct AudioPlayerBarView: View {
             .allowsHitTesting(true) // Ensure touches are registered
         } else {
             GlassEffectContainerView {
-                barContent
+                AudioPlayerBarContentView(viewModel: viewModel)
                     .glassEffect(.clear)
             }
             .allowsHitTesting(true) // Ensure touches are registered
         }
 #elseif os(visionOS)
-        barContent
+        AudioPlayerBarContentView(viewModel: viewModel)
             .allowsHitTesting(true)
 #else
         GlassEffectContainerAll {
-            barContent
+            AudioPlayerBarContentView(viewModel: viewModel)
                 .glassEffectAll(.clear)
         }
         .allowsHitTesting(true)
 #endif
     }
 
-    private var barContent: some View {
+}
+
+#Preview(traits: .mockData) {
+    AudioPlayerBarView()
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct AudioPlayerBarContentView: View {
+    @Bindable var viewModel: AudioPlayerBarViewModel
+
+    @Environment(AudioRootModel.self) private var root
+
+    var body: some View {
         HStack(alignment: .center, spacing: 8) {
             AudioPlayerPlaybackControls(
                 audioController: root.audioController,
@@ -67,8 +80,4 @@ struct AudioPlayerBarView: View {
         .padding(.vertical, 8)
         .contentShape(.rect) // Ensure the entire bar area is interactive
     }
-}
-
-#Preview(traits: .mockData) {
-    AudioPlayerBarView()
 }

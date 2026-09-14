@@ -2,6 +2,16 @@
 
 import SwiftUI
 
+// Hoisted out of `QuickEntryEditorView` (rather than nested, as it was before) because a
+// `@FocusState`'s field type must be nameable from the extracted subview structs below —
+// and a type nested inside a *generic* type can't be referenced from unrelated top-level
+// declarations in the same file without fully specializing the outer type's generic
+// parameters. `fileprivate` keeps it scoped to this file only, matching its previous
+// `private` intent.
+fileprivate enum QuickEntryEditorFocusField: Hashable {
+    case editor
+}
+
 public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector: View, PDFOverlay: View>: View {
     public init(root: any ItemRootControllable, editController: EditController, model: EditController.Model, referenceText: DebouncerModel<String>, pdfEditorRoute: any NavigationDestination, @ViewBuilder inspector: () -> Inspector, @ViewBuilder pdfOverlay: () -> PDFOverlay) {
         self.root = root
@@ -26,10 +36,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
-    private enum Field: Hashable {
-        case editor
-    }
-    @FocusState private var focusedField: Field?
+    @FocusState private var focusedField: QuickEntryEditorFocusField?
 
     @State private var textEditModel: TextEditModel
 
@@ -44,7 +51,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     
     public var body: some View {
         ManagedNavigationStack(name: "QuickEntryEditor") {
-            contentView
+            QuickEntryEditorContentView(root: root, editController: editController, referenceText: referenceText, inspector: inspector, pdfOverlay: pdfOverlay, model: model, textEditModel: textEditModel, initialText: initialText, focusedField: $focusedField, createMultiLineEntries: createMultiLineEntries, showResult: $showResult, showInspector: $showInspector)
                 .overlay(alignment: .top) {
                     VStack {
                         Text("The quick editor allows you to add all entries for the table at once. The first line is the title and the next text represents the content of the entry. An empty line is used to separate entries.", bundle: .module)
@@ -96,75 +103,6 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
 }
 
 private extension QuickEntryEditorView {
-    private var contentView: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 8) {
-                if showResult {
-                    entryListView
-                }
-
-                editorView
-            }
-            .animation(accessibilityReduceMotion ? nil : .bouncy, value: showResult)
-            
-            #if !os(iOS) && !os(macOS)
-            if showInspector {
-                inspector
-                    .frame(width: 300)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                    .navigationVisibility(true)
-
-            }
-            #endif
-        }
-        .animation(accessibilityReduceMotion ? nil : .bouncy, value: showInspector)
-#if os(iOS) || os(macOS)
-        .inspector(isPresented: $showInspector) {
-            inspector
-                .inspectorColumnWidth(min: 260, ideal: 300, max: 420)
-        }
-#endif
-        .onAppear {
-            referenceText.input = initialText
-            focusedField = .editor
-            textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
-        }
-        .onChange(of: referenceText.output) {
-            let parsedEntries = createMultiLineEntries(referenceText.output)
-            let entries = editController.merge(itemId: model.id, entries: parsedEntries)
-            model.entries <=> entries
-        }
-    }
-
-    private var entryListView: some View {
-        List {
-            ForEach(model.entries, id: \.id) { entry in
-                EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.folderListControllable.listDisplayModel, searchModel: root.searchModel, resolvedModel: model)
-            }
-        }
-        .themedListSurface()
-        .environment(SearchModel.preview())
-        .overlay {
-            pdfOverlay
-        }
-    }
-    
-    private var editorView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-#if !os(tvOS)
-            TextEditorLinkView(model: textEditModel, maxHeight: .infinity)
-                .focused($focusedField, equals: .editor)
-                .onChange(of: textEditModel.attributedText) {
-                    textEditModel.updateLinks()
-                }
-                .onChange(of: textEditModel.text) {
-                    referenceText.input = textEditModel.text
-                }
-                .padding(.horizontal, 4)
-#endif
-        }
-    }
-    
     private var initialText: String {
         parser.format(model.entries.map { (name: $0.name, content: $0.content) })
     }
@@ -217,19 +155,19 @@ private extension QuickEntryEditorView {
 
 #if os(macOS)
         ToolbarItemGroup(placement: .automatic) {
-            showHelpButton
+            QuickEntryEditorShowHelpButtonView(showHelp: $showHelp)
             Divider()
-            removeLineBreak
-            showResultButton
+            QuickEntryEditorRemoveLineBreakButtonView(referenceText: referenceText, removeLineBreak: removeLineBreak)
+            QuickEntryEditorShowResultButtonView(showResult: $showResult)
             Divider()
-            pdfButton
+            QuickEntryEditorPdfButtonView(pdfEditorRoute: pdfEditorRoute, showResult: $showResult)
             if canShowInspector {
-                showInspectorButton
+                QuickEntryEditorShowInspectorButtonView(showInspector: $showInspector)
             }
         }
 #else
         ToolbarItem(placement: .secondaryActionAll) {
-            secondaryActionMenu
+            QuickEntryEditorSecondaryActionMenuView(pdfEditorRoute: pdfEditorRoute, canShowInspector: canShowInspector, referenceText: referenceText, removeLineBreak: removeLineBreak, showHelp: $showHelp, showResult: $showResult, showInspector: $showInspector)
         }
 #endif
 
@@ -258,29 +196,148 @@ private extension QuickEntryEditorView {
         }
     }
     
-    @ViewBuilder var secondaryActionMenu: some View {
-        ControlGroup {
-            showHelpButton
-        }
-        
-        ControlGroup {
-            removeLineBreak
-            showResultButton
-        }
-        
-        ControlGroup {
-            pdfButton
-            if canShowInspector {
-                showInspectorButton
-            }
-        }
-    }
-    
     var canShowInspector: Bool {
         valueFor(iOS: appSizeModel.mode == .regular, macOS: true, tvOS: true, visionOS: false)
     }
-        
-    var pdfButton: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct QuickEntryEditorContentView<EditController: EntryDataEditable, Inspector: View, PDFOverlay: View>: View {
+    let root: any ItemRootControllable
+    let editController: EditController
+    let referenceText: DebouncerModel<String>
+    let inspector: Inspector
+    let pdfOverlay: PDFOverlay
+    let model: EditController.Model
+    let textEditModel: TextEditModel
+    let initialText: String
+    let focusedField: FocusState<QuickEntryEditorFocusField?>.Binding
+    let createMultiLineEntries: (String) -> [EditController.Model.Entry]
+    @Binding var showResult: Bool
+    @Binding var showInspector: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    var body: some View {
+        HStack(spacing: 0) {
+            HStack(spacing: 8) {
+                if showResult {
+                    QuickEntryEditorEntryListView(root: root, editController: editController, model: model, pdfOverlay: pdfOverlay)
+                }
+
+                QuickEntryEditorEditorView(textEditModel: textEditModel, referenceText: referenceText, focusedField: focusedField)
+            }
+            .animation(accessibilityReduceMotion ? nil : .bouncy, value: showResult)
+
+            #if !os(iOS) && !os(macOS)
+            if showInspector {
+                inspector
+                    .frame(width: 300)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    .navigationVisibility(true)
+
+            }
+            #endif
+        }
+        .animation(accessibilityReduceMotion ? nil : .bouncy, value: showInspector)
+#if os(iOS) || os(macOS)
+        .inspector(isPresented: $showInspector) {
+            inspector
+                .inspectorColumnWidth(min: 260, ideal: 300, max: 420)
+        }
+#endif
+        .onAppear {
+            referenceText.input = initialText
+            focusedField.wrappedValue = .editor
+            textEditModel.reset(text: referenceText.input, source: ItemRowModel(itemId: model.id, typeId: editController.itemControllable.config.module))
+        }
+        .onChange(of: referenceText.output) {
+            let parsedEntries = createMultiLineEntries(referenceText.output)
+            let entries = editController.merge(itemId: model.id, entries: parsedEntries)
+            model.entries <=> entries
+        }
+    }
+}
+
+private struct QuickEntryEditorEntryListView<EditController: EntryDataEditable, PDFOverlay: View>: View {
+    let root: any ItemRootControllable
+    let editController: EditController
+    let model: EditController.Model
+    let pdfOverlay: PDFOverlay
+
+    var body: some View {
+        List {
+            ForEach(model.entries, id: \.id) { entry in
+                EntryEditRow(root: root, editController: editController, itemId: model.id, entry: entry, cacheItemListModel: editController.cacheItemListModel, listDisplayModel: root.folderListControllable.listDisplayModel, searchModel: root.searchModel, resolvedModel: model)
+            }
+        }
+        .themedListSurface()
+        .environment(SearchModel.preview())
+        .overlay {
+            pdfOverlay
+        }
+    }
+}
+
+private struct QuickEntryEditorEditorView: View {
+    let textEditModel: TextEditModel
+    let referenceText: DebouncerModel<String>
+    let focusedField: FocusState<QuickEntryEditorFocusField?>.Binding
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+#if !os(tvOS)
+            TextEditorLinkView(model: textEditModel, maxHeight: .infinity)
+                .focused(focusedField, equals: .editor)
+                .onChange(of: textEditModel.attributedText) {
+                    textEditModel.updateLinks()
+                }
+                .onChange(of: textEditModel.text) {
+                    referenceText.input = textEditModel.text
+                }
+                .padding(.horizontal, 4)
+#endif
+        }
+    }
+}
+
+private struct QuickEntryEditorSecondaryActionMenuView: View {
+    let pdfEditorRoute: any NavigationDestination
+    let canShowInspector: Bool
+    let referenceText: DebouncerModel<String>
+    let removeLineBreak: (String) -> String
+    @Binding var showHelp: Bool
+    @Binding var showResult: Bool
+    @Binding var showInspector: Bool
+
+    @ViewBuilder var body: some View {
+        ControlGroup {
+            QuickEntryEditorShowHelpButtonView(showHelp: $showHelp)
+        }
+
+        ControlGroup {
+            QuickEntryEditorRemoveLineBreakButtonView(referenceText: referenceText, removeLineBreak: removeLineBreak)
+            QuickEntryEditorShowResultButtonView(showResult: $showResult)
+        }
+
+        ControlGroup {
+            QuickEntryEditorPdfButtonView(pdfEditorRoute: pdfEditorRoute, showResult: $showResult)
+            if canShowInspector {
+                QuickEntryEditorShowInspectorButtonView(showInspector: $showInspector)
+            }
+        }
+    }
+}
+
+private struct QuickEntryEditorPdfButtonView: View {
+    let pdfEditorRoute: any NavigationDestination
+    @Binding var showResult: Bool
+
+    @Environment(\.navigator) private var navigator
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
         Button {
 #if os(macOS) || os(visionOS)
             scenesManager.openWindow(SceneId(rawValue: NetworkModules.pdf.linkWindowId))
@@ -293,8 +350,13 @@ private extension QuickEntryEditorView {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
-    var removeLineBreak: some View {
+}
+
+private struct QuickEntryEditorRemoveLineBreakButtonView: View {
+    let referenceText: DebouncerModel<String>
+    let removeLineBreak: (String) -> String
+
+    var body: some View {
         Button {
             withAnimation {
                 referenceText.input = removeLineBreak(referenceText.output)
@@ -307,8 +369,12 @@ private extension QuickEntryEditorView {
             }
         }
     }
+}
 
-    var showInspectorButton: some View {
+private struct QuickEntryEditorShowInspectorButtonView: View {
+    @Binding var showInspector: Bool
+
+    var body: some View {
         Button {
             withAnimation { showInspector.toggle() }
         } label: {
@@ -319,8 +385,12 @@ private extension QuickEntryEditorView {
             }
         }
     }
+}
 
-    var showHelpButton: some View {
+private struct QuickEntryEditorShowHelpButtonView: View {
+    @Binding var showHelp: Bool
+
+    var body: some View {
         Button {
             withAnimation { showHelp.toggle() }
         } label: {
@@ -331,8 +401,12 @@ private extension QuickEntryEditorView {
             }
         }
     }
-    
-    var showResultButton: some View {
+}
+
+private struct QuickEntryEditorShowResultButtonView: View {
+    @Binding var showResult: Bool
+
+    var body: some View {
         Toggle(isOn: $showResult) {
             Label {
                 Text("Show Result", bundle: .module)
@@ -342,5 +416,4 @@ private extension QuickEntryEditorView {
             }
         }
     }
-    
 }

@@ -23,5 +23,13 @@ public struct RouteActions: Sendable, Equatable {
 }
 
 public extension EnvironmentValues {
-    @Entry var routeActions: RouteActions = RouteActions { _, _, _ in }
+    // Explicitly passes the stable `.unconfigured` identity rather than
+    // relying on `init`'s `.fresh()` default — `@Entry`'s generated default
+    // is re-evaluated on every environment read that hasn't been overridden
+    // by a real writer, so a fresh token here would make every such read
+    // compare unequal to the last, defeating SwiftUI's diffing before any
+    // writer even exists. Real writers elsewhere still get `.fresh()`'s
+    // always-distinct behavior by omitting `id`, unaffected by this change.
+    // See CODE_AUDIT §8.1.
+    @Entry var routeActions: RouteActions = RouteActions(id: .unconfigured) { _, _, _ in }
 }

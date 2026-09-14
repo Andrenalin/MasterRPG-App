@@ -13,14 +13,8 @@ struct SelectedAdventureView: View {
     private var lastAdventureUUID: String = ""
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel
-    @Environment(\.navigator) private var navigator
-
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()
-
-    private var sharePlayStore: RPGSharePlayController {
-        root.networkStore.sharePlayStore
-    }
 
     private var isCompactLayout: Bool {
         appSizeModel.mode == .compact
@@ -31,21 +25,21 @@ struct SelectedAdventureView: View {
 #if os(tvOS)
             VStack {
                 TipView(MasterRPGTips.chooseAdventure)
-                adventureSelection
+                SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
             }
 #else
             Group {
                 if isCompactLayout {
                     VStack(alignment: .leading, spacing: 12) {
-                        adventureSelection
-                        optionView
+                        SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
+                        SelectedAdventureViewOptionView(root: root, isCompactLayout: isCompactLayout)
                     }
                 } else {
                     HStack(alignment: .top, spacing: 12) {
-                        adventureSelection
+                        SelectedAdventureViewAdventureSelectionView(root: root, selection: selection)
                     }
                     .overlay(alignment: .trailing) {
-                        optionView
+                        SelectedAdventureViewOptionView(root: root, isCompactLayout: isCompactLayout)
                     }
                 }
             }
@@ -84,14 +78,6 @@ struct SelectedAdventureView: View {
         }
     }
     
-    private var adventureSelection: some View {
-        root.adventureRoot.viewController.dropChooseView(model: selection)
-            .frame(maxWidth: .infinity)
-#if os(macOS)
-            .padding()
-#endif
-    }
-
     private func updateTipSelection(_ adventureID: UUID?) {
         MasterRPGTips.setSelectedAdventure(adventureID != nil)
         guard adventureID != nil else { return }
@@ -99,26 +85,46 @@ struct SelectedAdventureView: View {
             await MasterRPGTips.donateAdventureSelected()
         }
     }
-    
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SelectedAdventureViewAdventureSelectionView: View {
+    let root: GameRoot
+    let selection: ItemSelectionModel
+
+    var body: some View {
+        root.adventureRoot.viewController.dropChooseView(model: selection)
+            .frame(maxWidth: .infinity)
+#if os(macOS)
+            .padding()
+#endif
+    }
+}
+
+private struct SelectedAdventureViewOptionView: View {
+    let root: GameRoot
+    let isCompactLayout: Bool
+
     @ViewBuilder
-    var optionView: some View {
+    var body: some View {
         if isCompactLayout {
             // Phone width: Import/Play stack together as one leading
             // column, a spacer opens up the row, and the code button forms
             // its own trailing column, bottom-aligned against the column.
             HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 12) {
-                    importOrClearButton
+                    SelectedAdventureViewImportOrClearButtonView(root: root)
 #if !os(tvOS)
                     if root.gameModel.selectedAdventure != nil {
-                        sharePlayButton
+                        SelectedAdventureViewSharePlayButtonView(root: root)
                     }
 #endif
                 }
 #if !os(tvOS)
                 if root.gameModel.selectedAdventure != nil {
                     Spacer()
-                    masterJoinCodeButton
+                    SelectedAdventureViewMasterJoinCodeButtonView(root: root)
                 }
 #endif
             }
@@ -129,20 +135,26 @@ struct SelectedAdventureView: View {
             // above), so its own options align trailing too instead of
             // hugging the block's leading edge.
             VStack(alignment: .trailing, spacing: 12) {
-                importOrClearButton
+                SelectedAdventureViewImportOrClearButtonView(root: root)
 #if !os(tvOS)
                 if root.gameModel.selectedAdventure != nil {
-                    sharePlayButton
-                    masterJoinCodeButton
+                    SelectedAdventureViewSharePlayButtonView(root: root)
+                    SelectedAdventureViewMasterJoinCodeButtonView(root: root)
                 }
 #endif
             }
             .padding(12)
         }
     }
+}
+
+private struct SelectedAdventureViewImportOrClearButtonView: View {
+    let root: GameRoot
+
+    @Environment(\.navigator) private var navigator
 
     @ViewBuilder
-    private var importOrClearButton: some View {
+    var body: some View {
         if hasMapGameItems {
             Button {
                 clearMapGameItems()
@@ -158,20 +170,6 @@ struct SelectedAdventureView: View {
         }
     }
 
-#if !os(tvOS)
-    private var sharePlayButton: some View {
-        SharePlayButton("Play RPG Online", activity: RPGActivity())
-            .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
-            .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
-            .accessibilityHidden(sharePlayStore.canActivateSharePlay)
-    }
-
-    private var masterJoinCodeButton: some View {
-        @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
-        return GameJoinCodeSetupButton(title: "Game Master Code", code: $gameJoinCodeModel.masterCode)
-    }
-#endif
-
     private var hasMapGameItems: Bool {
         !root.mapRoot.gameControllable.gameModel.items.isEmpty
     }
@@ -183,6 +181,32 @@ struct SelectedAdventureView: View {
         }
     }
 }
+
+#if !os(tvOS)
+private struct SelectedAdventureViewSharePlayButtonView: View {
+    let root: GameRoot
+
+    private var sharePlayStore: RPGSharePlayController {
+        root.networkStore.sharePlayStore
+    }
+
+    var body: some View {
+        SharePlayButton("Play RPG Online", activity: RPGActivity())
+            .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+            .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+            .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+    }
+}
+
+private struct SelectedAdventureViewMasterJoinCodeButtonView: View {
+    let root: GameRoot
+
+    var body: some View {
+        @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
+        return GameJoinCodeSetupButton(title: "Game Master Code", code: $gameJoinCodeModel.masterCode)
+    }
+}
+#endif
 
 #Preview(traits: .mockData) {
     SelectedAdventureView(root: .preview)

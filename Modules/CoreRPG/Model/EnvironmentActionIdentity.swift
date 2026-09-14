@@ -22,5 +22,19 @@ public enum EnvironmentActionIdentity: Hashable, Sendable {
     /// worse than before).
     case token(UUID)
 
+    /// A genuinely fresh, always-distinct token — the right choice whenever
+    /// a real writer is being constructed with no natural stable identity of
+    /// its own. Do **not** use this as the default for an `@Entry`
+    /// environment value itself: `@Entry`'s generated default is
+    /// re-evaluated on every environment read that hasn't been overridden by
+    /// a real writer, so a fresh token here would make every such read
+    /// compare unequal to the last — defeating SwiftUI's diffing before any
+    /// writer even exists. Use `.unconfigured` for that case instead. See
+    /// CODE_AUDIT §8.1.
     public static func fresh() -> Self { .token(UUID()) }
+
+    /// A fixed identity reserved for `@Entry` environment defaults with no
+    /// writer configured yet. Unlike `.fresh()`, this value must never
+    /// change across evaluations — see the warning on `.fresh()` above.
+    public static let unconfigured: Self = .token(UUID(uuidString: "00000000-0000-0000-0000-000000000000")!)
 }

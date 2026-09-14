@@ -44,14 +44,24 @@ struct EditToolBarViewModifier: ViewModifier {
                     }
 #endif
                     ToolbarItem(placement: bottomBarPlacement) {
-                        confirmTileButtonView
+                        EditToolBarViewModifierConfirmTileButtonView(
+                            mapEditController: mapEditController,
+                            editorModel: editorModel,
+                            isTileEditor: isTileEditor,
+                            exitReady: $exitReady
+                        )
                     }
                     ToolbarItemGroup(placement: bottomBarPlacement) {
-                        undoButton
-                        redoButton
+                        EditToolBarViewModifierUndoButtonView(mapEditController: mapEditController, editorModel: editorModel)
+                        EditToolBarViewModifierRedoButtonView(mapEditController: mapEditController, editorModel: editorModel)
                     }
                     ToolbarItem(placement: bottomBarPlacement) {
-                        cancelButtonView
+                        EditToolBarViewModifierCancelButtonView(
+                            mapEditController: mapEditController,
+                            editorModel: editorModel,
+                            isTileEditor: isTileEditor,
+                            exitReady: $exitReady
+                        )
                     }
                 }
 #if os(macOS)
@@ -68,9 +78,9 @@ struct EditToolBarViewModifier: ViewModifier {
                             if appSizeModel.mode == .compact {
                                 HStack(spacing: 24) {
                                     Spacer()
-                                    undoButton
+                                    EditToolBarViewModifierUndoButtonView(mapEditController: mapEditController, editorModel: editorModel)
                                         .frame(width: 24, height: 24)
-                                    redoButton
+                                    EditToolBarViewModifierRedoButtonView(mapEditController: mapEditController, editorModel: editorModel)
                                         .frame(width: 24, height: 24)
                                     Spacer()
                                 }
@@ -150,10 +160,14 @@ struct EditToolBarViewModifier: ViewModifier {
             .toolbar {
                 Group {
                     ToolbarItem(placement: .cancellationAction) {
-                        previousEntryButton
+                        EditToolBarViewModifierPreviousEntryButtonView(isTileEditor: isTileEditor) {
+                            resetSelectedIndex(shouldIncrease: false)
+                        }
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        nextEntryButton
+                        EditToolBarViewModifierNextEntryButtonView(isTileEditor: isTileEditor, canIncrease: canIncrease) {
+                            resetSelectedIndex(shouldIncrease: true)
+                        }
                     }
                 }
 #if os(macOS)
@@ -173,7 +187,11 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
 
                 ToolbarItem(placement: bottomBarPlacement) {
-                    closeButtonView
+                    EditToolBarViewModifierCloseButtonView(
+                        mapEditController: mapEditController,
+                        editorModel: editorModel,
+                        exitReady: $exitReady
+                    )
                 }
 
 #if !os(visionOS) && !os(tvOS)
@@ -182,11 +200,16 @@ struct EditToolBarViewModifier: ViewModifier {
 
                 Group {
                     ToolbarItem(placement: bottomBarPlacement) {
-                        hideScaleButton
+                        EditToolBarViewModifierHideScaleButtonView(hideCloseButton: editorModel.hideCloseButton, hideScales: $hideScales)
                     }
-                    
+
                     ToolbarItem(placement: bottomBarPlacement) {
-                        refreshSharedMapButton
+                        EditToolBarViewModifierRefreshSharedMapButtonView(
+                            mapEditController: mapEditController,
+                            editorModel: editorModel,
+                            isSharedMap: isSharedMap,
+                            sharedMapHasChanges: sharedMapHasChanges
+                        )
                     }
                 }
 #if !os(visionOS) && !os(tvOS)
@@ -195,13 +218,16 @@ struct EditToolBarViewModifier: ViewModifier {
 
                 ToolbarItemGroup(placement: bottomBarPlacement) {
                     if appSizeModel.mode != .compact {
-                        undoButton
-                        redoButton
+                        EditToolBarViewModifierUndoButtonView(mapEditController: mapEditController, editorModel: editorModel)
+                        EditToolBarViewModifierRedoButtonView(mapEditController: mapEditController, editorModel: editorModel)
                     }
 
-                    toggleDisplayModeButton
+                    EditToolBarViewModifierToggleDisplayModeButtonView(
+                        editorModel: editorModel,
+                        displayModeAccessibilityValue: displayModeAccessibilityValue
+                    )
 
-                    showPinSelectionButton
+                    EditToolBarViewModifierShowPinSelectionButtonView(showPinSelection: $showPinSelection)
                         .matchedTransitionSource(id: "pin", in: pinSpace)
                 }
 
@@ -210,7 +236,12 @@ struct EditToolBarViewModifier: ViewModifier {
 #endif
 
                 ToolbarItem(placement: bottomBarPlacement) {
-                    cancelButtonView
+                    EditToolBarViewModifierCancelButtonView(
+                        mapEditController: mapEditController,
+                        editorModel: editorModel,
+                        isTileEditor: isTileEditor,
+                        exitReady: $exitReady
+                    )
                 }
             }
 #if os(macOS)
@@ -252,149 +283,6 @@ private extension EditToolBarViewModifier {
         return "\(mapModel[entryId].name) \(current)\(entries.count)"
     }
 
-    @ViewBuilder var nextEntryButton: some View {
-        Button {
-            resetSelectedIndex(shouldIncrease: true)
-        } label: {
-            let symbolName = canIncrease ? "forward" : "plus"
-            Image(systemName: symbolName)
-                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
-                .accessibilityLabel(Text("Next Entry", bundle: .module))
-        }
-        .disabled(isTileEditor)
-    }
-
-    @ViewBuilder var previousEntryButton: some View {
-        Button {
-            resetSelectedIndex(shouldIncrease: false)
-        } label: {
-            let symbolName = "backward"
-            Image(systemName: symbolName)
-                .accessibilityLabel(Text("Previous Entry", bundle: .module))
-        }
-        .disabled(isTileEditor)
-    }
-
-    @ViewBuilder var closeButtonView: some View {
-        if !editorModel.hideCloseButton {
-            Button {
-                exitReady = true
-                mapEditController.commitChanges(editorModel: editorModel)
-#if os(macOS) || os(visionOS)
-                scenesManager.dismissWindow(.mapEditor)
-#else
-                dismiss()
-#endif
-            } label: {
-                let symbolName = "checkmark"
-                Image(systemName: symbolName)
-                    .accessibilityLabel(Text("Save", bundle: .module))
-            }
-        }
-    }
-    
-    @ViewBuilder var confirmTileButtonView: some View {
-        if !editorModel.hideCloseButton {
-            Button {
-                exitReady = true
-                // Commit changes (tile coordinates are on the working copy's displayConfig)
-                mapEditController.commitChanges(editorModel: editorModel)
-#if os(macOS) || os(visionOS)
-                scenesManager.dismissWindow(isTileEditor ? .mapTileEditor : .mapEditor)
-#else
-                dismiss()
-#endif
-            } label: {
-                let symbolName = "checkmark"
-                Image(systemName: symbolName)
-                    .accessibilityLabel(Text("Confirm", bundle: .module))
-            }
-        }
-    }
-
-    @ViewBuilder var cancelButtonView: some View {
-        if !editorModel.hideCloseButton {
-            Button(role: .destructive) {
-                exitReady = true
-                mapEditController.discardChanges(editorModel: editorModel)
-#if os(macOS) || os(visionOS)
-                scenesManager.dismissWindow(isTileEditor ? .mapTileEditor : .mapEditor)
-#else
-                dismiss()
-#endif
-            } label: {
-                let symbolName = "xmark"
-                Image(systemName: symbolName)
-                    .accessibilityLabel(Text("Cancel", bundle: .module))
-            }
-        }
-    }
-
-    @ViewBuilder var showPinSelectionButton: some View {
-        Button {
-#if os(macOS)
-            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
-#else
-            showPinSelection.toggle()
-#endif
-            MasterRPGTips.recordMapToolUsed()
-        } label: {
-            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
-            Image(systemName: symbolName)
-                .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .accessibilityLabel(Text("Choose Map Pins", bundle: .module))
-        }
-        .popoverTip(MasterRPGTips.useMapTools)
-    }
-
-    @ViewBuilder var toggleDisplayModeButton: some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .default) { editorModel.toggleDisplayMode() }
-            MasterRPGTips.recordMapToolUsed()
-        } label: {
-            Image(systemName: editorModel.iconDisplayMode)
-                .contentTransition(.symbolEffect(.replace.byLayer))
-                .accessibilityLabel(Text("Display Mode", bundle: .module))
-                .accessibilityValue(displayModeAccessibilityValue)
-        }
-    }
-
-    @ViewBuilder var hideScaleButton: some View {
-        if !editorModel.hideCloseButton {
-            Button {
-                hideScales.toggle()
-            } label: {
-                let symbolName = (hideScales == true) ? ("square.bottomhalf.filled") : ("square.split.1x2.fill")
-                Image(systemName: symbolName)
-                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .accessibilityLabel(Text("Toggle Scale Controls", bundle: .module))
-            }
-        }
-    }
-
-    @ViewBuilder var refreshSharedMapButton: some View {
-        if isSharedMap {
-            Button {
-                guard let editedMap = editorModel.workingCopy,
-                      networkActions != nil else { return }
-                mapEditController.commitChanges(editorModel: editorModel)
-                guard root.gameController.refreshSharedMap(from: editedMap) else { return }
-                Task {
-                    let update = await root.gameController.networkMapContentUpdate(for: editedMap.id)
-                    networkActions?.game(update, .generic, nil)
-                }
-            } label: {
-                let symbolName = "arrow.clockwise"
-                Image(systemName: symbolName)
-                    .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
-            }
-            .disabled(!sharedMapHasChanges)
-            .opacity(sharedMapHasChanges ? 1 : 0)
-            .allowsHitTesting(sharedMapHasChanges)
-            .accessibilityHidden(!sharedMapHasChanges)
-        }
-    }
-
     var isSharedMap: Bool {
         guard let mapId = editorModel.workingCopy?.id else { return false }
         return root.gameController.gameModel.itemData[mapId] is MapModel
@@ -406,32 +294,6 @@ private extension EditToolBarViewModifier {
         return !editedMap.isSame(savedMap)
             || editorModel.pinScale != savedMap.pinScale
             || editorModel.hexScale != savedMap.hexMapScale
-    }
-
-    @ViewBuilder var undoButton: some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .default) {
-                _ = mapEditController.undo(editorModel: editorModel)
-            }
-        } label: {
-            let symbolName = "arrow.uturn.backward"
-            Image(systemName: symbolName)
-                .accessibilityLabel(Text("Undo", bundle: .module))
-        }
-        .disabled(!editorModel.history.canUndo)
-    }
-
-    @ViewBuilder var redoButton: some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .default) {
-                _ = mapEditController.redo(editorModel: editorModel)
-            }
-        } label: {
-            let symbolName = "arrow.uturn.forward"
-            Image(systemName: symbolName)
-                .accessibilityLabel(Text("Redo", bundle: .module))
-        }
-        .disabled(!editorModel.history.canRedo)
     }
 
     func resetSelectedIndex(shouldIncrease: Bool) {
@@ -515,6 +377,268 @@ private extension EditToolBarViewModifier {
 #else
         .automatic
 #endif
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` properties on `EditToolBarViewModifier` itself that all re-evaluated whenever
+// any part of the modifier's body did.
+
+private struct EditToolBarViewModifierNextEntryButtonView: View {
+    let isTileEditor: Bool
+    let canIncrease: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            let symbolName = canIncrease ? "forward" : "plus"
+            Image(systemName: symbolName)
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
+                .accessibilityLabel(Text("Next Entry", bundle: .module))
+        }
+        .disabled(isTileEditor)
+    }
+}
+
+private struct EditToolBarViewModifierPreviousEntryButtonView: View {
+    let isTileEditor: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            let symbolName = "backward"
+            Image(systemName: symbolName)
+                .accessibilityLabel(Text("Previous Entry", bundle: .module))
+        }
+        .disabled(isTileEditor)
+    }
+}
+
+private struct EditToolBarViewModifierCloseButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+    @Binding var exitReady: Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ScenesManager.self) private var scenesManager
+
+    @ViewBuilder
+    var body: some View {
+        if !editorModel.hideCloseButton {
+            Button {
+                exitReady = true
+                mapEditController.commitChanges(editorModel: editorModel)
+#if os(macOS) || os(visionOS)
+                scenesManager.dismissWindow(.mapEditor)
+#else
+                dismiss()
+#endif
+            } label: {
+                let symbolName = "checkmark"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(Text("Save", bundle: .module))
+            }
+        }
+    }
+}
+
+private struct EditToolBarViewModifierConfirmTileButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+    let isTileEditor: Bool
+    @Binding var exitReady: Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ScenesManager.self) private var scenesManager
+
+    @ViewBuilder
+    var body: some View {
+        if !editorModel.hideCloseButton {
+            Button {
+                exitReady = true
+                // Commit changes (tile coordinates are on the working copy's displayConfig)
+                mapEditController.commitChanges(editorModel: editorModel)
+#if os(macOS) || os(visionOS)
+                scenesManager.dismissWindow(isTileEditor ? .mapTileEditor : .mapEditor)
+#else
+                dismiss()
+#endif
+            } label: {
+                let symbolName = "checkmark"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(Text("Confirm", bundle: .module))
+            }
+        }
+    }
+}
+
+private struct EditToolBarViewModifierCancelButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+    let isTileEditor: Bool
+    @Binding var exitReady: Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ScenesManager.self) private var scenesManager
+
+    @ViewBuilder
+    var body: some View {
+        if !editorModel.hideCloseButton {
+            Button(role: .destructive) {
+                exitReady = true
+                mapEditController.discardChanges(editorModel: editorModel)
+#if os(macOS) || os(visionOS)
+                scenesManager.dismissWindow(isTileEditor ? .mapTileEditor : .mapEditor)
+#else
+                dismiss()
+#endif
+            } label: {
+                let symbolName = "xmark"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(Text("Cancel", bundle: .module))
+            }
+        }
+    }
+}
+
+private struct EditToolBarViewModifierShowPinSelectionButtonView: View {
+    @Binding var showPinSelection: Bool
+
+    @Environment(ScenesManager.self) private var scenesManager
+
+    var body: some View {
+        Button {
+#if os(macOS)
+            scenesManager.openWindow(SceneId(rawValue: NetworkModules.value.linkWindowId))
+#else
+            showPinSelection.toggle()
+#endif
+            MasterRPGTips.recordMapToolUsed()
+        } label: {
+            let symbolName = "mappin\(showPinSelection ? ".and.ellipse" : "")"
+            Image(systemName: symbolName)
+                .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                .accessibilityLabel(Text("Choose Map Pins", bundle: .module))
+        }
+        .popoverTip(MasterRPGTips.useMapTools)
+    }
+}
+
+private struct EditToolBarViewModifierToggleDisplayModeButtonView: View {
+    let editorModel: MapEditorSession
+    let displayModeAccessibilityValue: Text
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .default) { editorModel.toggleDisplayMode() }
+            MasterRPGTips.recordMapToolUsed()
+        } label: {
+            Image(systemName: editorModel.iconDisplayMode)
+                .contentTransition(.symbolEffect(.replace.byLayer))
+                .accessibilityLabel(Text("Display Mode", bundle: .module))
+                .accessibilityValue(displayModeAccessibilityValue)
+        }
+    }
+}
+
+private struct EditToolBarViewModifierHideScaleButtonView: View {
+    let hideCloseButton: Bool
+    @Binding var hideScales: Bool
+
+    @ViewBuilder
+    var body: some View {
+        if !hideCloseButton {
+            Button {
+                hideScales.toggle()
+            } label: {
+                let symbolName = (hideScales == true) ? ("square.bottomhalf.filled") : ("square.split.1x2.fill")
+                Image(systemName: symbolName)
+                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
+                    .accessibilityLabel(Text("Toggle Scale Controls", bundle: .module))
+            }
+        }
+    }
+}
+
+private struct EditToolBarViewModifierRefreshSharedMapButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+    let isSharedMap: Bool
+    let sharedMapHasChanges: Bool
+
+    @Environment(MapRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+
+    @ViewBuilder
+    var body: some View {
+        if isSharedMap {
+            Button {
+                guard let editedMap = editorModel.workingCopy,
+                      networkActions != nil else { return }
+                mapEditController.commitChanges(editorModel: editorModel)
+                guard root.gameController.refreshSharedMap(from: editedMap) else { return }
+                Task {
+                    let update = await root.gameController.networkMapContentUpdate(for: editedMap.id)
+                    networkActions?.game(update, .generic, nil)
+                }
+            } label: {
+                let symbolName = "arrow.clockwise"
+                Image(systemName: symbolName)
+                    .accessibilityLabel(Text("Refresh Shared Map", bundle: .module))
+            }
+            .disabled(!sharedMapHasChanges)
+            .opacity(sharedMapHasChanges ? 1 : 0)
+            .allowsHitTesting(sharedMapHasChanges)
+            .accessibilityHidden(!sharedMapHasChanges)
+        }
+    }
+}
+
+private struct EditToolBarViewModifierUndoButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .default) {
+                _ = mapEditController.undo(editorModel: editorModel)
+            }
+        } label: {
+            let symbolName = "arrow.uturn.backward"
+            Image(systemName: symbolName)
+                .accessibilityLabel(Text("Undo", bundle: .module))
+        }
+        .disabled(!editorModel.history.canUndo)
+    }
+}
+
+private struct EditToolBarViewModifierRedoButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .default) {
+                _ = mapEditController.redo(editorModel: editorModel)
+            }
+        } label: {
+            let symbolName = "arrow.uturn.forward"
+            Image(systemName: symbolName)
+                .accessibilityLabel(Text("Redo", bundle: .module))
+        }
+        .disabled(!editorModel.history.canRedo)
     }
 }
 

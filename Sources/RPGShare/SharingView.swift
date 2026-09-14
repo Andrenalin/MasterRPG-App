@@ -73,7 +73,7 @@ struct SharingView: View {
     var body: some View {
         Group {
             if isLoading {
-                loadingView
+                SharingLoadingView()
             } else if let errorMessage {
                 errorView(message: errorMessage)
             } else {
@@ -93,18 +93,7 @@ struct SharingView: View {
     }
     
     // MARK: - Views
-    
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .accessibilityLabel(Text("Loading…", bundle: .main))
-            Text("Loading…", bundle: .main)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
+
     private func errorView(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
@@ -143,9 +132,9 @@ struct SharingView: View {
                 PhotoSection(imageList: imageListModel, size: size)
                 
                 SharingInput(model: inputModel)
-                
-                saveButton
-                
+
+                SharingSaveButtonView(inputModel: inputModel, saveContent: saveContent)
+
                 Spacer(minLength: 0)
             }
             .animation(reduceMotion ? nil : .bouncy, value: moduleChooserModel.showPhotoWarning)
@@ -157,45 +146,11 @@ struct SharingView: View {
         .accessibilityHidden(isSaving)
         .overlay {
             if isSaving {
-                savingOverlay
+                SharingSavingOverlayView()
             }
         }
     }
-    
-    private var saveButton: some View {
-        Button {
-            Task {
-                await saveContent()
-            }
-        } label: {
-            HStack {
-                Image(systemName: "square.and.arrow.down")
-                Text("Save", bundle: .main)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(inputModel.name.isEmpty)
-    }
-    
-    private var savingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
-            
-            VStack(spacing: 16) {
-                ProgressView()
-                    .accessibilityLabel(Text("Saving…", bundle: .main))
-                Text("Saving…", bundle: .main)
-                    .foregroundStyle(.white)
-                    .accessibilityHidden(true)
-            }
-            .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-        }
-    }
-    
+
     // MARK: - Initialization
     
     @MainActor
@@ -274,6 +229,62 @@ struct SharingView: View {
     
     private func close() {
         extensionContext?.completeRequest(returningItems: [])
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SharingLoadingView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .accessibilityLabel(Text("Loading…", bundle: .main))
+            Text("Loading…", bundle: .main)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct SharingSaveButtonView: View {
+    let inputModel: InputModel
+    let saveContent: () async -> Void
+
+    var body: some View {
+        Button {
+            Task {
+                await saveContent()
+            }
+        } label: {
+            HStack {
+                Image(systemName: "square.and.arrow.down")
+                Text("Save", bundle: .main)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(inputModel.name.isEmpty)
+    }
+}
+
+private struct SharingSavingOverlayView: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
+
+            VStack(spacing: 16) {
+                ProgressView()
+                    .accessibilityLabel(Text("Saving…", bundle: .main))
+                Text("Saving…", bundle: .main)
+                    .foregroundStyle(.white)
+                    .accessibilityHidden(true)
+            }
+            .padding()
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 }
 

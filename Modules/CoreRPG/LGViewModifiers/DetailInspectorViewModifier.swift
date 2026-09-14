@@ -19,13 +19,19 @@ struct DetailInspectorViewModifier: ViewModifier {
             .toolbar {
                 if appNavigationModel.canShowInspector(appSizeModel: appWindowSizeModel) {
                     ToolbarItemGroup(placement: .secondaryActionAll) {
-                        inspectorButton
+                        DetailInspectorViewModifierInspectorButtonView(root: root)
                     }
                 }
             }
     }
-    
-    var inspectorButton: some View {
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct DetailInspectorViewModifierInspectorButtonView: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
         Button {
             withAnimation { root.navigationModel.showInspector.toggle() }
         } label: {

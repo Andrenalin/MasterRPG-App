@@ -15,14 +15,16 @@ struct RerollEditor: View {
 
     var body: some View {
         Section {
-            rerollValueView
+            RerollEditorRerollValueView(rerollOptions: model.rerollOptions, reduceMotion: reduceMotion, onRemove: { reroll in
+                root.editController.remove(reroll: reroll, itemId: model.id)
+            })
 
-            rerollEditorView
+            RerollEditorRerollEditorView(model: model, isMaxDiceValue: isMaxDiceValue, rerollValue: $rerollValue, onAddReroll: addCurrentReroll)
 
             ToggleEditor(value: $isMaxDiceValue, title: isMaxDiceTitle, bundle: .module, icon: "123.rectangle")
 
             if !isMaxDiceValue {
-                rerollReplaceEditorView
+                RerollEditorRerollReplaceEditorView(model: model, rerollValue: rerollValue, replaceValue: $replaceValue, onAddReplacement: addCurrentReroll)
             }
         } header: {
 #if os(macOS)
@@ -41,15 +43,30 @@ private extension RerollEditor {
         isMaxDiceValue ? "On: replace with max value" : "Off: replace with value"
     }
 
-    @ViewBuilder
-    var rerollValueView: some View {
+    func addCurrentReroll() {
+        withAnimation(reduceMotion ? nil : .easeInOut) {
+            root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
+            rerollValue = 0.0
+            replaceValue = 0.0
+        }
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct RerollEditorRerollValueView: View {
+    let rerollOptions: [DiceModel.RerollOption]
+    let reduceMotion: Bool
+    let onRemove: (DiceModel.RerollOption) -> Void
+
+    var body: some View {
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
-                    ForEach(model.rerollOptions) { reroll in
+                    ForEach(rerollOptions) { reroll in
                         Button {
                             withAnimation(reduceMotion ? nil : .easeInOut) {
-                                root.editController.remove(reroll: reroll, itemId: model.id)
+                                onRemove(reroll)
                             }
                         } label: {
                             HStack(spacing: 4) {
@@ -79,13 +96,19 @@ private extension RerollEditor {
         }
         return "\(reroll.number) → \(reroll.value)"
     }
+}
 
-    @ViewBuilder
-    var rerollEditorView: some View {
+private struct RerollEditorRerollEditorView: View {
+    let model: DiceModel
+    let isMaxDiceValue: Bool
+    @Binding var rerollValue: Double
+    let onAddReroll: () -> Void
+
+    var body: some View {
         LabeledContent {
             HStack {
                 Button {
-                    addCurrentReroll()
+                    onAddReroll()
                 } label: {
                     Label {
                         Text("Add reroll", bundle: .module)
@@ -105,21 +128,19 @@ private extension RerollEditor {
             Text("Add", bundle: .module)
         }
     }
+}
 
-    func addCurrentReroll() {
-        withAnimation(reduceMotion ? nil : .easeInOut) {
-            root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
-            rerollValue = 0.0
-            replaceValue = 0.0
-        }
-    }
+private struct RerollEditorRerollReplaceEditorView: View {
+    let model: DiceModel
+    let rerollValue: Double
+    @Binding var replaceValue: Double
+    let onAddReplacement: () -> Void
 
-    @ViewBuilder
-    var rerollReplaceEditorView: some View {
+    var body: some View {
         LabeledContent {
             HStack {
                 Button {
-                    addCurrentReroll()
+                    onAddReplacement()
                 } label: {
                     Label {
                         Text("Add replacement", bundle: .module)

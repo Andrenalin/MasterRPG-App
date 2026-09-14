@@ -126,22 +126,86 @@ struct InlineImporterView: View, Equatable {
     
     var body: some View {
 #if os(visionOS)
-        content
+        InlineImporterContentView(
+            itemId: itemId,
+            layoutDown: layoutDown,
+            isExpanded: $isExpanded,
+            showImporter: $showImporter,
+            showRemoteURLImporter: $showRemoteURLImporter,
+            showCamera: $showCamera,
+            showLibrary: $showLibrary,
+            showImagePlayground: $showImagePlayground,
+            selectedItem: $selectedItem
+        )
+#elseif os(tvOS)
+        GlassEffectContainer {
+            InlineImporterContentView(
+                itemId: itemId,
+                layoutDown: layoutDown,
+                isExpanded: $isExpanded,
+                showImporter: $showImporter,
+                showRemoteURLImporter: $showRemoteURLImporter,
+                showCamera: $showCamera,
+                showLibrary: $showLibrary,
+                showImagePlayground: $showImagePlayground
+            )
+        }
 #else
         GlassEffectContainer {
-            content
+            InlineImporterContentView(
+                itemId: itemId,
+                layoutDown: layoutDown,
+                isExpanded: $isExpanded,
+                showImporter: $showImporter,
+                showRemoteURLImporter: $showRemoteURLImporter,
+                showCamera: $showCamera,
+                showLibrary: $showLibrary,
+                showImagePlayground: $showImagePlayground,
+                selectedItem: $selectedItem
+            )
         }
 #endif
     }
-    
-    var content: some View {
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
+        // uses this to decide whether to skip re-rendering, and both drive stored state
+        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
+        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
+        lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` property on `InlineImporterView` itself.
+
+private struct InlineImporterContentView: View {
+    let itemId: UUID
+    let layoutDown: Bool
+
+    @Environment(PhotoRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @Binding var isExpanded: Bool
+    @Binding var showImporter: Bool
+    @Binding var showRemoteURLImporter: Bool
+    @Binding var showCamera: Bool
+    @Binding var showLibrary: Bool
+    @Binding var showImagePlayground: Bool
+#if !os(tvOS)
+    @Binding var selectedItem: PhotosPickerItem?
+#endif
+
+    var body: some View {
         ZStack {
             button(type: .file)
             button(type: .url)
             button(type: .library)
             button(type: .camera)
             button(type: .playground)
-            
+
             Button {
                 withAnimation(reduceMotion ? nil : .default) {
                     isExpanded.toggle()
@@ -206,15 +270,15 @@ struct InlineImporterView: View, Equatable {
         }
 #endif
     }
-    
+
     private var importerTitle: String {
         String(localized: "Importer", bundle: .module)
     }
-    
+
     private func update(id: UUID, image: AKImage?) async {
         await root.editController.resetPhoto(image: image, itemId: id)
     }
-    
+
     private func button(type: PhotoImporterButtonType) -> some View {
         return Button {
             switch type {
@@ -246,14 +310,6 @@ struct InlineImporterView: View, Equatable {
             reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
             value: isExpanded
         )
-    }
-    
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
-        // uses this to decide whether to skip re-rendering, and both drive stored state
-        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
-        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
-        lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
     }
 }
 

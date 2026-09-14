@@ -75,7 +75,7 @@ struct RollResultSnippetView: View {
         VStack(spacing: 12) {
             // Result type indicator
             HStack {
-                resultIcon
+                RollResultSnippetResultIconView(result: result.result)
                 Text(result.result.localizedTitle)
                     .font(.headline)
             }
@@ -107,10 +107,16 @@ struct RollResultSnippetView: View {
         .foregroundStyle(.white)
         .padding()
     }
-    
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct RollResultSnippetResultIconView: View {
+    let result: DiceResultModel.DiceResult
+
     @ViewBuilder
-    private var resultIcon: some View {
-        switch result.result {
+    var body: some View {
+        switch result {
         case .coup:
             Image(systemName: "star.fill")
                 .foregroundStyle(.yellow)

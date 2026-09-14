@@ -32,8 +32,8 @@ struct DiceQuickEditor: View {
     var body: some View {
         VStack {
             VStack {
-                rowMinusButtonsView
-                rowPlusButtonsView
+                DiceQuickEditorRowMinusButtonsView(numberBinding: valueIntBinding)
+                DiceQuickEditorRowPlusButtonsView(numberBinding: valueIntBinding)
             }
             .rowEditColor()
 
@@ -82,19 +82,29 @@ struct DiceQuickEditor: View {
 #endif
         }
     }
+}
 
-    private var rowMinusButtonsView: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct DiceQuickEditorRowMinusButtonsView: View {
+    let numberBinding: Binding<Int>
+
+    var body: some View {
         HStack {
             ForEach([10, 5, 2, 1], id: \.self) { value in
-                QuickEditorButtonView(number: valueIntBinding, value: value, title: "\(value)", isAddition: false)
+                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: false)
             }
         }
     }
+}
 
-    private var rowPlusButtonsView: some View {
+private struct DiceQuickEditorRowPlusButtonsView: View {
+    let numberBinding: Binding<Int>
+
+    var body: some View {
         HStack {
             ForEach([1, 2, 5, 10], id: \.self) { value in
-                QuickEditorButtonView(number: valueIntBinding, value: value, title: "\(value)", isAddition: true)
+                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: true)
             }
         }
     }

@@ -57,7 +57,15 @@ public struct LinkItemListView: View {
                 }
 
                 UnavailableGlassOverlay(isUnavailable: shouldShowNoResults) {
-                    contentView
+                    LinkItemListViewContentView(
+                        root: root,
+                        type: type,
+                        selectionModel: selectionModel,
+                        parentModel: parentModel,
+                        scrollPosition: $scrollPosition,
+                        showDetails: $showDetails,
+                        showDetailsView: $showDetailsView
+                    )
                 }
                 .moduleTint(root.configurable.module)
                     // When parentModel changes: create/reset detailListModel (with deep-copied cache
@@ -145,9 +153,31 @@ private extension LinkItemListView {
     var shouldShowNoResults: Bool {
         root.folderLinkControllable.shouldShowNoResults
     }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct LinkItemListViewContentView: View {
+    let root: any ItemRootControllable
+    let type: LinkRootType
+    let selectionModel: ItemSelectionModel
+    let parentModel: (any ItemDataAccessable)?
+
+    @Binding var scrollPosition: UUID?
+    @Binding var showDetails: Bool
+    @Binding var showDetailsView: (any NavigationDestination)?
+
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    /// Routes to `detailListModel` when a parent scope is active. This keeps the scoped
+    /// inspector state (entries, open/close, scroll) independent from the unscoped inspector
+    /// so switching back doesn't reset the main list.
+    private var listModel: FolderListModel {
+        root.folderLinkControllable.scopedListModel(parentModel: parentModel)
+    }
 
     @ViewBuilder
-    var contentView: some View {
+    var body: some View {
         let items = listModel.list
 
         listView(items: items)
@@ -159,7 +189,7 @@ private extension LinkItemListView {
 #endif
     }
 
-    func listView(items: [FolderListItemModel]) -> some View {
+    private func listView(items: [FolderListItemModel]) -> some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: []) {
                 ForEach(items) { item in

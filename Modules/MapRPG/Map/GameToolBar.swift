@@ -27,12 +27,12 @@ struct GameToolBar<Session: GameToolBarSession>: View {
             VStack(alignment: .leading, spacing: 8) {
             if appWindowSizeModel.mode == .compact {
                 VStack(spacing: 8) {
-                    pinScaleView
+                    GameToolBarPinScaleView(model: model)
                         .padding(.horizontal)
 
                     HStack(spacing: 8) {
-                        reshareButtonView
-                        hexMapScaleView
+                        GameToolBarReshareButtonView(model: model)
+                        GameToolBarHexMapScaleView(model: model)
                     }
                     .padding([.horizontal, .bottom])
                 }
@@ -84,22 +84,22 @@ struct GameToolBar<Session: GameToolBarSession>: View {
                                 isSelected: model.displayMode != .master
                             )
 
-                            barButtonViews
+                            GameToolBarBarButtonsView(model: model)
 
                             if appWindowSizeModel.mode == .regular {
-                                hideScaleButtonView
+                                GameToolBarHideScaleButtonView(hideScales: $hideScales)
 
                                 if !hideScales {
                                     HStack(spacing: 8) {
-                                        reshareButtonView
-                                        hexMapScaleView
+                                        GameToolBarReshareButtonView(model: model)
+                                        GameToolBarHexMapScaleView(model: model)
                                     }
-                                    pinScaleView
+                                    GameToolBarPinScaleView(model: model)
                                 }
                             }
                             Spacer()
                             if appWindowSizeModel.mode == .compact {
-                                hideScaleButtonView
+                                GameToolBarHideScaleButtonView(hideScales: $hideScales)
                             }
                         }
                     }
@@ -125,8 +125,32 @@ struct GameToolBar<Session: GameToolBarSession>: View {
             : LocalizedStringResource("Show Toolbar", bundle: .module)
     }
 
+    private var displayModeAccessibilityValue: Text {
+        switch model.displayMode {
+        case .master:
+            Text("Master", bundle: .module)
+        case .player:
+            Text("Player", bundle: .module)
+        case .reader:
+            Text("Reader", bundle: .module)
+        }
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Each gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` properties on `GameToolBar` itself that all re-evaluated whenever any part
+// of `GameToolBar`'s body did.
+
+private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
+    let model: Session
+
+    @Environment(MapRootModel.self) private var root
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @ViewBuilder
-    var barButtonViews: some View {
+    var body: some View {
         Button {
             withAnimation(reduceMotion ? nil : .default) {
                 model.isStreaming.toggle()
@@ -197,9 +221,13 @@ struct GameToolBar<Session: GameToolBarSession>: View {
         }
         if model.isStreaming { model.sendMapUpdates() }
     }
+}
+
+private struct GameToolBarPinScaleView<Session: GameToolBarSession>: View {
+    let model: Session
 
     @ViewBuilder
-    var pinScaleView: some View {
+    var body: some View {
         @Bindable var model = model
         HStack {
 #if !os(tvOS)
@@ -217,9 +245,15 @@ struct GameToolBar<Session: GameToolBarSession>: View {
 #endif
         }
     }
+}
+
+private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
+    let model: Session
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
-    var hexMapScaleView: some View {
+    var body: some View {
         @Bindable var model = model
         HStack {
 #if !os(tvOS)
@@ -253,9 +287,15 @@ struct GameToolBar<Session: GameToolBarSession>: View {
 #endif
         }
     }
+}
+
+private struct GameToolBarHideScaleButtonView: View {
+    @Binding var hideScales: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
-    var hideScaleButtonView: some View {
+    var body: some View {
         Button {
             withAnimation(reduceMotion ? nil : .default) { hideScales.toggle() }
         } label: {
@@ -269,9 +309,17 @@ struct GameToolBar<Session: GameToolBarSession>: View {
             isSelected: !hideScales
         )
     }
+}
+
+private struct GameToolBarReshareButtonView<Session: GameToolBarSession>: View {
+    let model: Session
+
+    @Environment(MapRootModel.self) private var root
+    @Environment(\.networkActions) private var networkActions
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
-    var reshareButtonView: some View {
+    var body: some View {
         Button {
             guard let mapId = model.currentMapId else { return }
             Task {
@@ -295,17 +343,6 @@ struct GameToolBar<Session: GameToolBarSession>: View {
             module: .map,
             isSelected: false
         )
-    }
-
-    private var displayModeAccessibilityValue: Text {
-        switch model.displayMode {
-        case .master:
-            Text("Master", bundle: .module)
-        case .player:
-            Text("Player", bundle: .module)
-        case .reader:
-            Text("Reader", bundle: .module)
-        }
     }
 }
 

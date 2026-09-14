@@ -23,9 +23,9 @@ struct ShowItemViewModifier: ViewModifier {
             if isActive {
                 Group {
                     if isShown {
-                        showButton.buttonStyle(.borderedProminent)
+                        ShowItemViewModifierShowButtonView(isShown: isShown, action: action).buttonStyle(.borderedProminent)
                     } else {
-                        showButton.buttonStyle(.bordered)
+                        ShowItemViewModifierShowButtonView(isShown: isShown, action: action).buttonStyle(.bordered)
                     }
                 }
                 .contentShape(Rectangle())
@@ -35,8 +35,21 @@ struct ShowItemViewModifier: ViewModifier {
         }
         .animation(accessibilityReduceMotion ? nil : .default, value: isActive)
     }
+}
 
-    var showButton: some View {
+public extension View {
+    func showListItem(isActive: Bool = false, isShown: Bool, action: @escaping () -> Void) -> some View {
+        modifier(ShowItemViewModifier(isActive: isActive, isShown: isShown, action: action))
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct ShowItemViewModifierShowButtonView: View {
+    let isShown: Bool
+    let action: () -> Void
+
+    var body: some View {
         Button(action: action) {
             Image(systemName: "eye\(isShown ? "" : ".slash")")
                 .imageScale(.large)
@@ -47,11 +60,5 @@ struct ShowItemViewModifier: ViewModifier {
                 ? Text("Hide", bundle: .module)
                 : Text("Show", bundle: .module)
         )
-    }
-}
-
-public extension View {
-    func showListItem(isActive: Bool = false, isShown: Bool, action: @escaping () -> Void) -> some View {
-        modifier(ShowItemViewModifier(isActive: isActive, isShown: isShown, action: action))
     }
 }

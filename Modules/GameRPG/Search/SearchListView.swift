@@ -33,7 +33,7 @@ struct SearchListView: View {
                 }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if model.searchText.isEmpty {
-                unavailableSearch
+                SearchListUnavailableSearchView()
             } else if model.results.isEmpty {
                 ContentUnavailableView.search(text: model.searchText)
             } else {
@@ -64,18 +64,6 @@ struct SearchListView: View {
 }
 
 private extension SearchListView {
-    var unavailableSearch: some View {
-        ContentUnavailableView {
-            Label {
-                Text("Search", bundle: .module)
-            } icon: {
-                Image(systemName: "magnifyingglass")
-            }
-        } description: {
-            Text("Enter text to search across all items and entries", bundle: .module)
-        }
-    }
-    
     @ViewBuilder
     func listView(model: Bindable<GlobalSearchModel>) -> some View {
         List(selection: model.selection) {
@@ -143,6 +131,25 @@ private extension SearchListView {
             .buttonStyle(.plain)
         }
         
+    }
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+//
+// Gives SwiftUI its own diffing boundary, instead of the previous computed
+// `some View` property on `SearchListView` itself.
+
+private struct SearchListUnavailableSearchView: View {
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                Text("Search", bundle: .module)
+            } icon: {
+                Image(systemName: "magnifyingglass")
+            }
+        } description: {
+            Text("Enter text to search across all items and entries", bundle: .module)
+        }
     }
 }
 

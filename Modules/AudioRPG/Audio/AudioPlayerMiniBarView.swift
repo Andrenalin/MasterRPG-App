@@ -15,12 +15,12 @@ public struct AudioPlayerMiniBarView: View {
     public var body: some View {
         HStack(spacing: 8) {
             if showsMetadata {
-                musicArtTitleTimeline
+                AudioPlayerMiniBarMusicArtTitleTimelineView()
 
                 Spacer(minLength: 8)
             }
 
-            playbackControls
+            AudioPlayerMiniBarPlaybackControlsView()
         }
         .padding(4)
         .padding(.horizontal)
@@ -28,8 +28,13 @@ public struct AudioPlayerMiniBarView: View {
     }
 }
 
-private extension AudioPlayerMiniBarView {
-    var playbackControls: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct AudioPlayerMiniBarPlaybackControlsView: View {
+    @Environment(AudioRootModel.self) private var root
+    @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
+
+    var body: some View {
         HStack(spacing: 12) {
             Button {
                 withAnimation { root.audioController.togglePlay() }
@@ -69,9 +74,14 @@ private extension AudioPlayerMiniBarView {
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
     }
-    
+}
+
+private struct AudioPlayerMiniBarMusicArtTitleTimelineView: View {
+    @Environment(AudioRootModel.self) private var root
+    @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
+
     @ViewBuilder
-    var musicArtTitleTimeline: some View {
+    var body: some View {
         HStack {
             if tabViewBottomAccessoryPlacement != .inline {
                 Button {
@@ -95,7 +105,7 @@ private extension AudioPlayerMiniBarView {
                 Text(currentItem?.title ?? "")
                     .font(.headline).bold()
                     .lineLimit(1)
-                
+
                 Text(currentItem?.artist ?? "")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -104,8 +114,8 @@ private extension AudioPlayerMiniBarView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
-    var currentItem: PlaylistItem? {
+
+    private var currentItem: PlaylistItem? {
         root.audioPlayerModel.currentItem
     }
 }

@@ -24,19 +24,17 @@ struct SpecialValueEditor: View {
     let onRemove: (DiceModel.CoupFumbleOption) -> Void
     let onAdd: (Int, Bool) -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     @State private var isDiceValueMatch = false
     @State private var value = 0.0
 
     var body: some View {
         Section {
-            valuesView
+            SpecialValueEditorValuesView(values: values, valuesLabel: valuesLabel, removeAnimation: removeAnimation, onRemove: onRemove)
 
             ToggleDiceValue(model: model, toggleKeyPath: toggleKeyPath, title: toggleTitle, bundle: .module, icon: "dice", saveMessage: toggleSaveMessage)
                 .disabled(values.contains(where: { $0.isResult }))
 
-            editorView
+            SpecialValueEditorEditorView(model: model, addLabel: addLabel, valueFieldTitle: valueFieldTitle, valueFieldPrompt: valueFieldPrompt, addAnimation: addAnimation, isDiceValueMatch: isDiceValueMatch, onAdd: onAdd, value: $value)
 
             ToggleEditor(value: $isDiceValueMatch, title: matchTitle, bundle: .module, icon: "123.rectangle")
         } header: {
@@ -53,9 +51,19 @@ struct SpecialValueEditor: View {
     private var matchTitle: LocalizedStringKey {
         isDiceValueMatch ? "On: match with one die" : "Off: match value with all dice"
     }
+}
 
-    @ViewBuilder
-    private var valuesView: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SpecialValueEditorValuesView: View {
+    let values: [DiceModel.CoupFumbleOption]
+    let valuesLabel: Text
+    let removeAnimation: Animation?
+    let onRemove: (DiceModel.CoupFumbleOption) -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
         LabeledContent {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
@@ -81,9 +89,21 @@ struct SpecialValueEditor: View {
             valuesLabel
         }
     }
+}
 
-    @ViewBuilder
-    private var editorView: some View {
+private struct SpecialValueEditorEditorView: View {
+    let model: DiceModel
+    let addLabel: Text
+    let valueFieldTitle: LocalizedStringKey
+    let valueFieldPrompt: LocalizedStringKey
+    let addAnimation: Animation?
+    let isDiceValueMatch: Bool
+    let onAdd: (Int, Bool) -> Void
+    @Binding var value: Double
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
         LabeledContent {
             HStack {
                 Button {

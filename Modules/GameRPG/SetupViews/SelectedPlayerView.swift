@@ -17,10 +17,6 @@ struct SelectedPlayerView: View {
     
     @Environment(\.navigator) private var navigator
 
-    private var sharePlayStore: RPGSharePlayController {
-        root.networkStore.sharePlayStore
-    }
-
     private var isCompactLayout: Bool {
         appSizeModel.mode == .compact
     }
@@ -30,25 +26,25 @@ struct SelectedPlayerView: View {
 #if os(tvOS)
             VStack {
                 TipView(MasterRPGTips.chooseCharacter)
-                characterSelection
+                SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
             }
 #else
             Group {
                 if isCompactLayout {
                     VStack(alignment: .leading, spacing: 12) {
-                        characterSelection
+                        SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
                         
                         if root.gameModel.selectedCharacter != nil {
-                            sharePlayStart
+                            SelectedPlayerViewSharePlayStartView(root: root, isCompactLayout: isCompactLayout)
                         }
                     }
                 } else {
                     HStack(alignment: .top, spacing: 12) {
-                        characterSelection
+                        SelectedPlayerViewCharacterSelectionView(root: root, selection: selection)
                     }
                     .overlay(alignment: .trailing) {
                         if root.gameModel.selectedCharacter != nil {
-                            sharePlayStart
+                            SelectedPlayerViewSharePlayStartView(root: root, isCompactLayout: isCompactLayout)
                         }
                     }
                 }
@@ -88,14 +84,6 @@ struct SelectedPlayerView: View {
         }
     }
 
-    @ViewBuilder private var characterSelection: some View {
-        root.characterRoot.viewController.dropChooseView(model: selection)
-            .frame(maxWidth: .infinity)
-#if os(macOS)
-            .padding()
-#endif
-    }
-
     private func updateTipSelection(_ characterID: UUID?) {
         MasterRPGTips.setSelectedCharacter(characterID != nil)
         guard characterID != nil else { return }
@@ -103,8 +91,29 @@ struct SelectedPlayerView: View {
             await MasterRPGTips.donateCharacterSelected()
         }
     }
+}
 
-    var sharePlayStart: some View {
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SelectedPlayerViewCharacterSelectionView: View {
+    let root: GameRoot
+    let selection: ItemSelectionModel
+
+    @ViewBuilder
+    var body: some View {
+        root.characterRoot.viewController.dropChooseView(model: selection)
+            .frame(maxWidth: .infinity)
+#if os(macOS)
+            .padding()
+#endif
+    }
+}
+
+private struct SelectedPlayerViewSharePlayStartView: View {
+    let root: GameRoot
+    let isCompactLayout: Bool
+
+    var body: some View {
         // A phone-width layout lines the SharePlay and code buttons up in
         // one row, with a spacer opening up the space between them, instead
         // of stacking them so the card stays compact.
@@ -114,30 +123,42 @@ struct SelectedPlayerView: View {
 
         return layout {
 #if !os(tvOS)
-            sharePlayButton
+            SelectedPlayerViewSharePlayButtonView(root: root)
             if isCompactLayout {
                 Spacer()
             }
-            playerJoinCodeButton
+            SelectedPlayerViewPlayerJoinCodeButtonView(root: root)
 #endif
         }
         .padding(12)
     }
+}
 
 #if !os(tvOS)
-    private var sharePlayButton: some View {
+private struct SelectedPlayerViewSharePlayButtonView: View {
+    let root: GameRoot
+
+    private var sharePlayStore: RPGSharePlayController {
+        root.networkStore.sharePlayStore
+    }
+
+    var body: some View {
         SharePlayButton("Play RPG Online", activity: RPGActivity())
             .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
             .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
             .accessibilityHidden(sharePlayStore.canActivateSharePlay)
     }
+}
 
-    private var playerJoinCodeButton: some View {
+private struct SelectedPlayerViewPlayerJoinCodeButtonView: View {
+    let root: GameRoot
+
+    var body: some View {
         @Bindable var gameJoinCodeModel = root.gameJoinCodeModel
         return GameJoinCodeSetupButton(title: "Your Player Code", code: $gameJoinCodeModel.playerCode)
     }
-#endif
 }
+#endif
 
 #Preview(traits: .mockData) {
     SelectedPlayerView(root: .preview)

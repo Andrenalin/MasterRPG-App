@@ -240,13 +240,24 @@ extension View {
     }
 
     /// Establishes a navigation checkpoint with an action handler fired on return.
+    ///
+    /// `.id(checkpoint.name)` forces SwiftUI to tear down and rebuild this
+    /// modifier (and its internal `@State`-cached identifier) whenever a
+    /// genuinely different checkpoint is passed at this same view-tree
+    /// position, instead of silently keeping the first-seen checkpoint's
+    /// stale state. See CODE_AUDIT §8.2.
     public func navigationCheckpoint<T>(_ checkpoint: NavigationCheckpoint<T>, action: @escaping () -> Void) -> some View {
         self.modifier(NavigationCheckpointActionModifier(checkpoint: checkpoint, action: action))
+            .id(checkpoint.name)
     }
 
     /// Establishes a navigation checkpoint with a completion handler that accepts a return value.
+    ///
+    /// See the `.id(checkpoint.name)` note on the `action:` overload above —
+    /// same reasoning applies here. See CODE_AUDIT §8.2.
     public func navigationCheckpoint<T: Hashable>(_ checkpoint: NavigationCheckpoint<T>, completion: @escaping (T) -> Void) -> some View {
         self.modifier(NavigationCheckpointValueModifier(checkpoint: checkpoint, completion: completion))
+            .id(checkpoint.name)
     }
 
     /// Declarative `returnToCheckpoint` modifier.
@@ -291,7 +302,17 @@ private struct NavigationCheckpointModifier<T>: ViewModifier {
 private struct CheckpointAction: Hashable {}
 
 private struct NavigationCheckpointActionModifier<T>: ViewModifier {
-    @State internal var checkpoint: NavigationCheckpoint<T>
+    // `@State` (not a plain `let`) is required here to freeze the
+    // auto-generated `identifier` stable across ordinary re-renders — a
+    // plain stored property would regenerate a fresh random `UUID` on every
+    // parent re-render, breaking the identifier the navigator later matches
+    // a returning value against. The `.id(checkpoint.name)` on the
+    // `navigationCheckpoint(_:action:)` call site above covers the other
+    // half: if a genuinely different checkpoint is ever passed at the same
+    // view-tree position, it forces SwiftUI to treat this as a new view
+    // instance (dropping the stale `@State`) instead of silently keeping the
+    // first-seen checkpoint. See CODE_AUDIT §8.2.
+    @State private var checkpoint: NavigationCheckpoint<T>
     internal let action: () -> Void
     @Environment(\.navigator) private var navigator: Navigator
     init(
@@ -316,7 +337,9 @@ private struct NavigationCheckpointActionModifier<T>: ViewModifier {
 }
 
 private struct NavigationCheckpointValueModifier<T: Hashable>: ViewModifier {
-    @State internal var checkpoint: NavigationCheckpoint<T>
+    // See the comment on `NavigationCheckpointActionModifier.checkpoint`
+    // above — same reasoning applies here. See CODE_AUDIT §8.2.
+    @State private var checkpoint: NavigationCheckpoint<T>
     internal let completion: (T) -> Void
     @Environment(\.navigator) private var navigator: Navigator
     init(

@@ -24,22 +24,57 @@ struct SendFeedbackButton: View {
 
     var body: some View {
         if allReported {
-            buttonView
+            SendFeedbackButtonButtonView(allReported: allReported, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction, value: value, isSending: $isSending, isUpdating: $isUpdating, changeVariableValue: changeVariableValue, responseTimeout: responseTimeout)
                 .buttonStyle(.bordered)
         } else {
-            buttonView
+            SendFeedbackButtonButtonView(allReported: allReported, module: module, secondActionIcon: secondActionIcon, action: action, secondAction: secondAction, value: value, isSending: $isSending, isUpdating: $isUpdating, changeVariableValue: changeVariableValue, responseTimeout: responseTimeout)
                 .buttonStyle(.borderedProminent)
         }
     }
+
+    func changeVariableValue() async {
+        while isSending && !Task.isCancelled {
+            if value >= 1 { value = 0 }
+            try? await Task.sleep(for: Self.wifiSymbolTickInterval)
+            value += 0.25
+        }
+    }
     
-    var buttonView: some View {
+    func responseTimeout() async {
+        try? await Task.sleep(for: Self.sendingResponseTimeout)
+        isSending = false
+        isUpdating = false
+    }
+}
+
+#Preview {
+    SendFeedbackButton(allReported: false, module: .audio, secondActionIcon: "gear") {} secondAction: {}
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct SendFeedbackButtonButtonView: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let allReported: Bool
+    let module: NetworkModules
+    let secondActionIcon: String?
+    let action: () -> Void
+    let secondAction: (() -> Void)?
+    let value: Double
+    @Binding var isSending: Bool
+    @Binding var isUpdating: Bool
+    let changeVariableValue: () async -> Void
+    let responseTimeout: () async -> Void
+
+    var body: some View {
         Button {
             guard !isSending else { return }
             withAnimation(accessibilityReduceMotion ? nil : .default) {
                 isSending.toggle()
                 if let secondAction, allReported == true {
                     secondAction()
-                } else {                    
+                } else {
                     action()
                 }
             }
@@ -77,22 +112,4 @@ struct SendFeedbackButton: View {
             }
         }
     }
-    
-    func changeVariableValue() async {
-        while isSending && !Task.isCancelled {
-            if value >= 1 { value = 0 }
-            try? await Task.sleep(for: Self.wifiSymbolTickInterval)
-            value += 0.25
-        }
-    }
-    
-    func responseTimeout() async {
-        try? await Task.sleep(for: Self.sendingResponseTimeout)
-        isSending = false
-        isUpdating = false
-    }
-}
-
-#Preview {
-    SendFeedbackButton(allReported: false, module: .audio, secondActionIcon: "gear") {} secondAction: {}
 }

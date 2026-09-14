@@ -17,17 +17,17 @@ struct ToolbarItemListViewModifier: ViewModifier {
     let dismissHandler: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
-    
+
     func body(content: Content) -> some View {
         content
             .toolbar {
 #if os(macOS)
                 ToolbarItem(placement: .secondaryAction) {
-                    actionMenu
+                    ToolbarItemListActionMenuView(root: root, listController: listController, parentModel: parentModel, modal: modal)
                 }
 #else
                 ToolbarItemGroup(placement: .secondaryActionAll) {
-                    secondaryActionMenu
+                    ToolbarItemListSecondaryActionMenuView(root: root, listController: listController, parentModel: parentModel, modal: modal)
 #if os(visionOS)
                         .foregroundStyle(.primary)
 #endif
@@ -42,7 +42,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
                             .foregroundStyle(.primary)
 #endif
                     } else if modal == false || (parentModel != nil && parentModel!.specialCategory) {
-                        addItemButton(for: .item)
+                        addItemButton(for: .item, root: root, listController: listController)
 #if os(visionOS)
                             .foregroundStyle(.primary)
 #endif
@@ -52,7 +52,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
 #if !os(macOS)
                 ToolbarItem(placement: .confirmationAction) {
                     if modal == true {
-                        dismissButton
+                        ToolbarItemListDismissButtonView(dismissHandler: dismissHandler)
 #if os(visionOS)
                             .foregroundStyle(.primary)
 #endif
@@ -64,49 +64,129 @@ struct ToolbarItemListViewModifier: ViewModifier {
 }
 
 private extension ToolbarItemListViewModifier {
-    var listModel: FolderListModel {
+    var listDisplayModel: ListDisplayModel {
+        listController.listDisplayModel
+    }
+}
+
+// These free functions were extracted from `ToolbarItemListViewModifier` and are called
+// only from `View.body` contexts (which are `@MainActor` per SwiftUI's `View`/`ViewModifier`
+// protocol conformance) — `@MainActor` restores the isolation they implicitly had as
+// instance methods before extraction, since a plain top-level function gets none of that
+// inference on its own. See CODE_AUDIT §8.3.
+@MainActor
+@ViewBuilder
+private func toggleFolder(listController: any FolderListControllable) -> some View {
+    Button {
+        if let selected = listController.listModel.selected,
+           let item = listController.listModel.list.first(where: { $0.source.itemId == selected }) {
+            listController.toggleFolder(item: item)
+        }
+    } label: {
+        Label {
+            Text("Toggle Folder", bundle: .module)
+        } icon: {
+            Image(systemName: "list.bullet.indent")
+        }
+    }
+}
+
+@MainActor
+@ViewBuilder
+private func addItemButton(for type: EditControllerAddType, showTip: Bool = true, root: any ItemRootControllable, listController: any FolderListControllable) -> some View {
+    let button = Button {
+        Task {
+            await addItem(for: type, listController: listController, root: root)
+        }
+    } label: {
+        Label {
+            Text(type.title)
+        } icon: {
+            Image(systemName: type.icon(collection: root.itemControllable.collectionCategory.icon))
+        }
+    }
+    if type == .item && showTip {
+        button
+            .popoverTip(MasterRPGTips.firstItem)
+    } else {
+        button
+    }
+}
+
+@MainActor
+private func addItem(for type: EditControllerAddType, listController: any FolderListControllable, root: any ItemRootControllable) async {
+    listController.add(type: type, url: nil, root: root)
+}
+
+// MARK: - Extracted subviews (CODE_AUDIT §8.3)
+
+private struct ToolbarItemListActionMenuView: View {
+    let root: any ItemRootControllable
+    let listController: any FolderListControllable
+    let parentModel: (any ItemDataAccessable)?
+    let modal: Bool
+
+    private var listModel: FolderListModel {
         listController.listModel
     }
 
-    var listDisplayModel: ListDisplayModel {
+    private var listDisplayModel: ListDisplayModel {
         listController.listDisplayModel
     }
 
     @ViewBuilder
-    var actionMenu: some View {
+    var body: some View {
         Menu {
             MenuDisplayModeToggle(listDisplayModel: listDisplayModel, showSelectionButton: false, modal: modal) {
                 if parentModel == nil && modal == false {
-                    addItemButton(for: .folder)
+                    addItemButton(for: .folder, root: root, listController: listController)
                         .disabled(listDisplayModel.isListMode)
-                    addItemButton(for: .collection)
+                    addItemButton(for: .collection, root: root, listController: listController)
                         .disabled(listDisplayModel.isListMode)
                     Divider()
 
-                    toggleFolder()
+                    toggleFolder(listController: listController)
                         .disabled(listModel.selected == nil)
 
                     Divider()
                 } else if let parentModel, parentModel.specialCategory && modal == false {
                     // For special categories (folder/collection), show appropriate add buttons
                     if parentModel.category == .folder {
-                        addItemButton(for: .folder)
-                        addItemButton(for: .collection)
+                        addItemButton(for: .folder, root: root, listController: listController)
+                        addItemButton(for: .collection, root: root, listController: listController)
                     } else if parentModel.category == root.itemControllable.collectionCategory {
                         // Collections cannot contain folders
-                        addItemButton(for: .collection)
+                        addItemButton(for: .collection, root: root, listController: listController)
                     }
                     Divider()
                 }
             }
         } label: {
-            Image(systemName: "ellipsis.circle")
+            // A `Label` (not a bare `Image`) so VoiceOver announces this
+            // overflow menu's purpose — the toolbar still renders it
+            // icon-only by default. See CODE_AUDIT §8.4.
+            Label {
+                Text("More", bundle: .module)
+            } icon: {
+                Image(systemName: "ellipsis.circle")
+            }
         }
         .popoverTip(MasterRPGTips.organizeContent)
     }
+}
+
+private struct ToolbarItemListSecondaryActionMenuView: View {
+    let root: any ItemRootControllable
+    let listController: any FolderListControllable
+    let parentModel: (any ItemDataAccessable)?
+    let modal: Bool
+
+    private var listDisplayModel: ListDisplayModel {
+        listController.listDisplayModel
+    }
 
     @ViewBuilder
-    var secondaryActionMenu: some View {
+    var body: some View {
         // Use opacity/hidden instead of conditional presence to keep the toolbar preference
         // tree stable across selection mode changes and navigation transitions.
         MenuSelectionButtonView(listDisplayModel: listDisplayModel)
@@ -120,10 +200,10 @@ private extension ToolbarItemListViewModifier {
                 // are visible at once. Attaching the same Tip's `.popoverTip` to two live
                 // anchor views simultaneously confuses TipKit's presentation and crashes with
                 // "should have a non-nil sourceView" — only one copy may own the tip.
-                addItemButton(for: .item, showTip: false)
-                addItemButton(for: .folder, showTip: false)
+                addItemButton(for: .item, showTip: false, root: root, listController: listController)
+                addItemButton(for: .folder, showTip: false, root: root, listController: listController)
                     .disabled(parentModel?.category == root.itemControllable.collectionCategory)
-                addItemButton(for: .collection, showTip: false)
+                addItemButton(for: .collection, showTip: false, root: root, listController: listController)
                     //.popoverTip(MasterRPGTips.organizeContent)
             }
         }
@@ -140,53 +220,19 @@ private extension ToolbarItemListViewModifier {
 
             if modal == false {
                 ControlGroup {
-                    toggleFolder()
+                    toggleFolder(listController: listController)
                 }
             }
         }
     }
+}
 
-    func toggleFolder() -> some View {
-        Button {
-            if let selected = listModel.selected,
-               let item = listModel.list.first(where: { $0.source.itemId == selected }) {
-                listController.toggleFolder(item: item)
-            }
-        } label: {
-            Label {
-                Text("Toggle Folder", bundle: .module)
-            } icon: {
-                Image(systemName: "list.bullet.indent")
-            }
-        }
-    }
+private struct ToolbarItemListDismissButtonView: View {
+    let dismissHandler: (() -> Void)?
 
-    @ViewBuilder
-    func addItemButton(for type: EditControllerAddType, showTip: Bool = true) -> some View {
-        let button = Button {
-            Task {
-                await addItem(for: type)
-            }
-        } label: {
-            Label {
-                Text(type.title)
-            } icon: {
-                Image(systemName: type.icon(collection: root.itemControllable.collectionCategory.icon))
-            }
-        }
-        if type == .item && showTip {
-            button
-                .popoverTip(MasterRPGTips.firstItem)
-        } else {
-            button
-        }
-    }
+    @Environment(\.dismiss) private var dismiss
 
-    func addItem(for type: EditControllerAddType) async {
-        listController.add(type: type, url: nil, root: root)
-    }
-    
-    var dismissButton: some View {
+    var body: some View {
         Button {
             dismissHandler?()
             dismiss()
