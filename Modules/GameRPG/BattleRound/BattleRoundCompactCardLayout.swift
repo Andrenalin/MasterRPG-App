@@ -13,6 +13,8 @@ struct BattleRoundCompactCardLayout: View {
                     rank: context.presentation.rank,
                     isActive: context.presentation.isActive
                 )
+                // See CODE_AUDIT §7.2.
+                .equatable()
                 BattleParticipantColumn(
                     state: context.state,
                     presentation: context.presentation.attacker,
@@ -30,6 +32,8 @@ struct BattleRoundCompactCardLayout: View {
                     isActive: context.presentation.isActive,
                     controller: context.controller
                 )
+                // See CODE_AUDIT §7.2.
+                .equatable()
                 Spacer(minLength: 0)
             }
 

@@ -18,6 +18,11 @@ struct BattleParticipantColumn: View {
 
     private var root: MapRootModel { controller.root.mapRoot }
 
+    /// `48pt` square avatar — written once here and reused below instead of
+    /// repeating the literal at both the requested image size and the
+    /// displayed frame. See CODE_AUDIT §9.5.
+    private static let avatarSize: CGFloat = 48
+
     // A hard-coded `maxWidth` ignored Dynamic Type entirely, risking illegible
     // truncation of a free-text combatant name at larger accessibility sizes.
     @ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90
@@ -47,15 +52,15 @@ struct BattleParticipantColumn: View {
                     .help(Text(verbatim: combatant.name))
             }
             
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .center, spacing: BattleRoundSpacing.standard) {
                 Button(action: openCharacter) {
                     controller.root.photoRoot.viewController.mapImage(
                         root: controller.root.photoRoot,
                         for: combatant.photoId,
-                        size: CGSize(width: 48, height: 48),
+                        size: CGSize(width: Self.avatarSize, height: Self.avatarSize),
                         color: combatant.color
                     )
-                    .frame(width: 48, height: 48)
+                    .frame(width: Self.avatarSize, height: Self.avatarSize)
                     .clipShape(.circle)
                     .overlay {
                         if combatant.isDead {
@@ -98,8 +103,7 @@ struct BattleParticipantColumn: View {
 #if os(iOS) || os(macOS) || os(visionOS)
                 .battleLinkCharacterDropDestination { characters, _ in
                     guard let character = characters.first else { return false }
-                    controller.assignCharacter(combatant.id, character.itemId)
-                    return true
+                    return controller.assignCharacter(combatant.id, character.itemId)
                 }
 #endif
                 
@@ -117,46 +121,28 @@ struct BattleParticipantColumn: View {
                     .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
                     .help(Text("Choose the Initiative value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
-                    .battleLinkCharacterDropDestination { values, _ in
-                        guard let value = values.first, let entryId = value.entryId else {
-                            return false
-                        }
-                        return controller.assignValueEntry(
-                            combatantId: combatant.id,
-                            sourceCharacterId: value.itemId,
-                            sourceEntryId: entryId,
-                            kind: .initiative
-                        )
-                    }
+                    .battleLinkCharacterDropDestination(action: valueDropAction(kind: .initiative))
 #endif
-                    
+
+                    // Computed once and reused below: `hitPointsValue` walks a
+                    // linked entry's formula chain, so reading it a second time
+                    // purely for the color check would redo that work for no
+                    // benefit. See CODE_AUDIT §7.1.
+                    let hp = hitPointsValue
                     Button(action: selectHitPointsEntry) {
                         HStack(spacing: BattleRoundSpacing.extraTight) {
                             Text("HP:", bundle: .module)
-                            Text(verbatim: hitPointsValue ?? "")
+                            Text(verbatim: hp ?? "")
                                 .monospacedDigit()
                         }
                         .font(.caption2)
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(hitPointsValue == nil ? .tertiary : .primary)
+                    .foregroundStyle(hp == nil ? .tertiary : .primary)
                     .help(Text("Choose the Hit Points value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
-                    .battleLinkCharacterDropDestination { values, _ in
-                        guard let value = values.first, let entryId = value.entryId else {
-                            return false
-                        }
-                        // `assignValueEntry` resolves `value.itemId` up through any
-                        // value-group ownership chain and rejects it unless that
-                        // resolves to this combatant's own source Character.
-                        return controller.assignValueEntry(
-                            combatantId: combatant.id,
-                            sourceCharacterId: value.itemId,
-                            sourceEntryId: entryId,
-                            kind: .hitPoints
-                        )
-                    }
+                    .battleLinkCharacterDropDestination(action: valueDropAction(kind: .hitPoints))
 #endif
                 }
             }
@@ -256,6 +242,25 @@ struct BattleParticipantColumn: View {
     private func toggleDead() {
         controller.setDead(combatant.id, !combatant.isDead)
     }
+
+    /// Shared by the Initiative and Hit Points drop targets below — the two
+    /// were byte-identical apart from `kind`. See CODE_AUDIT §9.3.
+    private func valueDropAction(kind: BattleValueKind) -> @MainActor ([LinkCharacterData], CGPoint) -> Bool {
+        { values, _ in
+            guard let value = values.first, let entryId = value.entryId else {
+                return false
+            }
+            // `assignValueEntry` resolves `value.itemId` up through any
+            // value-group ownership chain and rejects it unless that
+            // resolves to this combatant's own source Character.
+            return controller.assignValueEntry(
+                combatantId: combatant.id,
+                sourceCharacterId: value.itemId,
+                sourceEntryId: entryId,
+                kind: kind
+            )
+        }
+    }
 }
 
 extension BattleParticipantColumn: Equatable {
@@ -268,6 +273,16 @@ extension BattleParticipantColumn: Equatable {
     /// `BattleRoundCard` excludes its own: never `Equatable`, and stable
     /// once hoisted to method references at the call site (see
     /// `BattleRoundView`).
+    ///
+    /// `nameMaxWidth` (a `@ScaledMetric`, driven by `\.sizeCategory`) is
+    /// deliberately excluded too, for the same reason `BattleRoundCard`
+    /// excludes `accessibilityReduceMotion`: it can only be read correctly
+    /// from a real installed view, so comparing it here would either always
+    /// see the environment default (masking real Dynamic Type changes) or
+    /// reintroduce the exact bug `fd8ed359` fixed for `cardLayout`. The
+    /// accepted tradeoff is that a Dynamic Type size change may not widen a
+    /// truncated name until some other compared field changes and forces a
+    /// real re-render. See CODE_AUDIT §8.3.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.state === rhs.state
             && lhs.presentation == rhs.presentation

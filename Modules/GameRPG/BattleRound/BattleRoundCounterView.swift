@@ -6,11 +6,6 @@ import SwiftUI
 /// A presentation-only round label shared by the game chrome and the battle
 /// window. The containing chrome decides whether it is interactive.
 struct BattleRoundCounterView: View {
-    init(model: BattleRoundModel, style: BattleRoundCounterStyle) {
-        self.model = model
-        self.style = style
-    }
-
     let model: BattleRoundModel
     let style: BattleRoundCounterStyle
 

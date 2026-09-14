@@ -14,8 +14,8 @@ struct BattleRoundCompactCounter: View {
         }
         .font(.headline)
         .foregroundStyle(.primary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, BattleRoundSpacing.loose)
+        .padding(.vertical, BattleRoundSpacing.standard)
         .background(.regularMaterial, in: .capsule)
     }
 }

@@ -12,6 +12,8 @@ struct BattleRoundWideCardLayout: View {
                 rank: context.presentation.rank,
                 isActive: context.presentation.isActive
             )
+            // See CODE_AUDIT §7.2.
+            .equatable()
             BattleParticipantColumn(
                 state: context.state,
                 presentation: context.presentation.attacker,
@@ -29,6 +31,8 @@ struct BattleRoundWideCardLayout: View {
                 isActive: context.presentation.isActive,
                 controller: context.controller
             )
+            // See CODE_AUDIT §7.2.
+            .equatable()
             Image(systemName: "arrow.right")
                 .foregroundStyle(.tertiary)
                 .padding(.top, 20)

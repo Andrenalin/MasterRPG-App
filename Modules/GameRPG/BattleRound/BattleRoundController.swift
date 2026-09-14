@@ -37,6 +37,8 @@ struct BattleRoundController: Sendable {
         root.gameModel.gameConfig.isMaster ? model.mapId : nil
     }
 
+    // MARK: - Lifecycle
+
     @discardableResult
     func start() -> Bool {
         guard root.gameModel.gameConfig.isMaster,
@@ -83,6 +85,8 @@ struct BattleRoundController: Sendable {
         return true
     }
 
+    // MARK: - Initiative
+
     @discardableResult
     func setInitiative(_ combatantId: UUID, _ value: Int?) -> Bool {
         guard let mapId = authorizedMapId else {
@@ -119,9 +123,11 @@ struct BattleRoundController: Sendable {
     }
 
     func moveEntries(_ source: IndexSet, _ destination: Int) {
-        guard root.gameModel.gameConfig.isMaster else { return }
+        guard authorizedMapId != nil else { return }
         root.mapRoot.mapGameControllable.moveBattleEntries(from: source, to: destination)
     }
+
+    // MARK: - Turn progression
 
     @discardableResult
     func activateAttacker(_ combatantId: UUID) -> Bool {
@@ -156,6 +162,8 @@ struct BattleRoundController: Sendable {
         return true
     }
 
+    // MARK: - Combatant mutation
+
     @discardableResult
     func addCombatant(pinId: UUID) -> Bool {
         guard let mapId = authorizedMapId,
@@ -184,6 +192,8 @@ struct BattleRoundController: Sendable {
         return true
     }
 
+    // MARK: - Rolls
+
     @discardableResult
     func addRoll(
         combatantId: UUID,
@@ -211,6 +221,8 @@ struct BattleRoundController: Sendable {
             combatantId: combatantId
         )
     }
+
+    // MARK: - Combatant mutation
 
     @discardableResult
     func setDead(_ combatantId: UUID, _ isDead: Bool) -> Bool {
@@ -291,6 +303,8 @@ struct BattleRoundController: Sendable {
         )
     }
 
+    // MARK: - Value-entry assignment
+
     /// Maps a dropped/picked value entry onto a combatant's initiative or
     /// hit-points slot. Broadcasts on an actual change (previously did not —
     /// see CODE_AUDIT_Game §5.4 — a `.hitPoints` assignment changes what
@@ -361,6 +375,8 @@ struct BattleRoundController: Sendable {
         root.mapRoot.mapGameControllable.refreshBattleConfiguredValues(itemId: mapId)
         broadcast(mapId: mapId)
     }
+
+    // MARK: - Broadcast
 
     /// Recomputes every combatant's `pin.healthPercent` from its linked
     /// hit-points entry before broadcasting — mirrors `RootGameMapViewer`'s

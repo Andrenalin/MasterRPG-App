@@ -2,7 +2,9 @@
 
 import SwiftUI
 
-struct BattleRankBadge: View {
+/// `Equatable` so `.equatable()` at its call sites can skip re-diffing this
+/// leaf when an unrelated part of the same card changes. See CODE_AUDIT §7.2.
+struct BattleRankBadge: View, Equatable {
     let rank: Int
     let isActive: Bool
 
@@ -12,7 +14,7 @@ struct BattleRankBadge: View {
             .foregroundStyle(isActive ? .white : .gray)
             .frame(minWidth: 28, minHeight: 28)
             .background(isActive ? Color.blue : Color.gray.opacity(0.14), in: .circle)
-            .padding(.top, 8)
+            .padding(.top, BattleRoundSpacing.standard)
             .accessibilityLabel(Text("Initiative position \(rank)", bundle: .module))
     }
 }

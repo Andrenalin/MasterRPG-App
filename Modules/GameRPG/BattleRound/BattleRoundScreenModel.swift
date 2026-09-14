@@ -54,8 +54,7 @@ final class BattleRoundScreenModel {
               let combatantId = pendingCharacterCombatantId,
               let characterId = newSelection.first?.itemId else { return }
         controller.assignCharacter(combatantId, characterId)
-        pendingCharacterCombatantId = nil
-        selectedCharacter.resetSelection(itemId: nil, entryId: nil)
+        resetCharacterSelectionState()
         if case .selection = presentation { presentation = nil }
     }
 
@@ -86,9 +85,7 @@ final class BattleRoundScreenModel {
             )
         }
 
-        pendingValueSelection = nil
-        selectedValue.onlyChildrenFrom = nil
-        selectedValue.resetSelection(itemId: nil, entryId: nil)
+        resetValueSelectionState()
         if case .selection = presentation { presentation = nil }
     }
 
@@ -106,14 +103,8 @@ final class BattleRoundScreenModel {
         // Switching back to character-assignment mode must drop any pending
         // value-selection state, or the inspector stays stuck showing the
         // previous combatant's value list instead of the full character list.
-        pendingValueSelection = nil
-        selectedValue.onlyChildrenFrom = nil
-        selectedValue.resetSelection(itemId: nil, entryId: nil)
-#if os(macOS)
-        isInspectorPresented = true
-#else
-        presentation = .selection(combatant.id)
-#endif
+        resetValueSelectionState()
+        presentInspectorOrSelection(id: combatant.id)
     }
 
     func selectConfiguredValue(
@@ -159,13 +150,14 @@ final class BattleRoundScreenModel {
         )
     }
 
+    @discardableResult
     func useDroppedConfiguredValue(
         _ value: LinkCharacterData,
         kind: BattleValueKind,
         controller: BattleRoundController
-    ) {
-        guard let entryId = value.entryId else { return }
-        applySettingEntry(
+    ) -> Bool {
+        guard let entryId = value.entryId else { return false }
+        return applySettingEntry(
             characterId: value.itemId,
             entryId: entryId,
             kind: kind,
@@ -186,31 +178,85 @@ final class BattleRoundScreenModel {
         selectedValue.onlyEntrySelection = true
         selectedValue.resetSelection(itemId: nil, entryId: nil)
         // Mirror of the reset above: leaving character-assignment mode.
+        resetCharacterSelectionState()
+        presentInspectorOrSelection(id: pendingValueSelection?.presentationId ?? UUID())
+    }
+
+    /// Clears the character-assignment selection flow — used both when a
+    /// character assignment completes (`selectionDidChange`) and when
+    /// switching into value-assignment mode, where it mirrors
+    /// `resetValueSelectionState()`. See CODE_AUDIT §9.1.
+    private func resetCharacterSelectionState() {
         pendingCharacterCombatantId = nil
         selectedCharacter.resetSelection(itemId: nil, entryId: nil)
+    }
+
+    /// Clears the value-assignment selection flow — used both when a value
+    /// assignment completes (`valueSelectionDidChange`) and when switching
+    /// into character-assignment mode, where it mirrors
+    /// `resetCharacterSelectionState()`. See CODE_AUDIT §9.1.
+    private func resetValueSelectionState() {
+        pendingValueSelection = nil
+        selectedValue.onlyChildrenFrom = nil
+        selectedValue.resetSelection(itemId: nil, entryId: nil)
+    }
+
+    /// The one place that decides "inspector on macOS, sheet elsewhere" —
+    /// `showCharacterSheet` and `presentValueSelection` used to each hand-copy
+    /// this branch. See CODE_AUDIT §9.1.
+    private func presentInspectorOrSelection(id: UUID) {
 #if os(macOS)
         isInspectorPresented = true
 #else
-        presentation = .selection(UUID())
+        presentation = .selection(id)
 #endif
     }
 
+    @discardableResult
     private func applySettingEntry(
         characterId: UUID,
         entryId: UUID,
         kind: BattleValueKind,
         controller: BattleRoundController
-    ) {
+    ) -> Bool {
         guard let entry = controller.root.characterRoot.valueGameControllable.gameEntry(
             characterId: characterId,
             entryId: entryId
-        ) else { return }
+        ) else { return false }
         controller.root.mapRoot.mapGameControllable.battleRoundSettings.addName(entry.name, for: kind)
         refreshConfiguredValues(controller: controller)
+        return true
     }
 }
 
 enum PendingValueSelection {
     case setting(BattleValueKind)
     case combatant(combatantId: UUID, kind: BattleValueKind)
+
+    /// A stable id for `.selection`'s `Identifiable` sheet-item requirement.
+    /// Not otherwise read anywhere — the list actually shown is driven by
+    /// `pendingValueSelection`/`selectedCharacter`/`selectedValue`, not by
+    /// this id — but it used to be a fresh random `UUID()` on every call,
+    /// inconsistent with `showCharacterSheet`'s use of the combatant's own
+    /// stable id for the same `.selection` case. See CODE_AUDIT §9.2.
+    var presentationId: UUID {
+        switch self {
+        case .combatant(let combatantId, _):
+            combatantId
+        case .setting(let kind):
+            kind.settingsPresentationId
+        }
+    }
+}
+
+private extension BattleValueKind {
+    /// A fixed, stable id per kind, used only by `PendingValueSelection.presentationId`.
+    var settingsPresentationId: UUID {
+        switch self {
+        case .initiative:
+            UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+        case .hitPoints:
+            UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2))
+        }
+    }
 }

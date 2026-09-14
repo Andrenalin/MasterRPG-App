@@ -92,7 +92,13 @@ struct BattleRoundCard: View {
                 .frame(width: 4)
                 .accessibilityHidden(true)
             }
-            .opacity(presentation.attacker.combatant.isDead ? 0.58 : 1)
+            // "Dead" dimming is owned solely by `BattleParticipantColumn`
+            // (both the attacker and every defender dim themselves the same
+            // way) — deliberately not repeated here. It used to also be
+            // applied at this card level for the attacker only, which
+            // compounded with the column's own dimming and made a dead
+            // attacker's row read far darker than a dead defender's. See
+            // CODE_AUDIT §8.1.
             .animation(
                 accessibilityReduceMotion ? nil : .easeInOut(duration: 0.2),
                 value: presentation.isActive
@@ -146,6 +152,14 @@ extension BattleRoundCard: Equatable {
     /// installed into the view tree, and reading an `@Environment`-wrapped
     /// property outside that installation always silently returns its
     /// default value (with a runtime diagnostic) instead of the real one.
+    ///
+    /// `accessibilityReduceMotion` (also `@Environment`) is deliberately left
+    /// out of this comparison for the same reason — comparing it here would
+    /// just compare the environment default against itself, not the real
+    /// setting. The accepted tradeoff: toggling Reduce Motion while a card's
+    /// other compared state is unchanged may leave its `.animation` modifier
+    /// at whatever it captured on the last real re-render, until an
+    /// unrelated field change forces one. See CODE_AUDIT §8.2.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.presentation == rhs.presentation
             && lhs.controller.root === rhs.controller.root

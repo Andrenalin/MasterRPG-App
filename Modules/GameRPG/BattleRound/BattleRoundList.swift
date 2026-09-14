@@ -83,8 +83,7 @@ struct BattleRoundList: View {
     private func moveEntry(at index: Int, by offset: Int) {
         let targetIndex = index + offset
         guard cards.indices.contains(index), cards.indices.contains(targetIndex) else { return }
-        let destination = targetIndex > index ? targetIndex + 1 : targetIndex
-        controller.moveEntries(IndexSet(integer: index), destination)
+        controller.moveEntries(IndexSet(integer: index), Self.moveDestination(from: index, to: targetIndex))
     }
 
     private func reorder(_ payloads: [String], over targetId: UUID) {
@@ -99,8 +98,15 @@ struct BattleRoundList: View {
         }
         guard sourceIndex != targetIndex else { return }
 
-        let destination = sourceIndex < targetIndex ? targetIndex + 1 : targetIndex
-        controller.moveEntries(IndexSet(integer: sourceIndex), destination)
+        controller.moveEntries(IndexSet(integer: sourceIndex), Self.moveDestination(from: sourceIndex, to: targetIndex))
+    }
+
+    /// Shared by both reorder paths (drag-and-drop and the VoiceOver
+    /// accessibility actions above): `IndexSet`-based moves expect a
+    /// destination index that's one past `to` whenever the move is going
+    /// forward. See CODE_AUDIT §9.4.
+    private static func moveDestination(from: Int, to: Int) -> Int {
+        to > from ? to + 1 : to
     }
 }
 

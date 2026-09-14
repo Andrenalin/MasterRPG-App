@@ -46,6 +46,16 @@ struct BattleAttackerDetails: View {
     }
 }
 
+extension BattleAttackerDetails: Equatable {
+    /// Lets `.equatable()` at its call sites skip re-diffing this leaf when
+    /// an unrelated part of the same card changes. See CODE_AUDIT §7.2.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.combatant == rhs.combatant
+            && lhs.isActive == rhs.isActive
+            && lhs.controller.root === rhs.controller.root
+    }
+}
+
 #Preview("Active attacker") {
     let controller = BattleRoundController.preview()
     let model = controller.model

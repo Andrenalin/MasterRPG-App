@@ -7,7 +7,7 @@ import SwiftUI
 
 struct BattleRoundCharacterInspectorView: View {
     let controller: BattleRoundController
-    @Bindable var screenModel: BattleRoundScreenModel
+    let screenModel: BattleRoundScreenModel
 
     var body: some View {
         // `.inspector` is the same bare, non-selecting browsing mode

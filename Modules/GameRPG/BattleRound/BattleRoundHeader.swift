@@ -19,7 +19,7 @@ struct BattleRoundHeader: View {
                     round: round,
                     activeAttackerName: activeAttackerName
                 )
-                Spacer(minLength: 8)
+                Spacer(minLength: BattleRoundSpacing.standard)
                 BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 BattleRoundHeaderActions(isRunning: isRunning, controller: controller)
             }
@@ -39,7 +39,7 @@ struct BattleRoundHeader: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, BattleRoundSpacing.loose)
         .overlay(alignment: .bottom) {
             Divider()
         }

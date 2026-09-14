@@ -110,8 +110,7 @@ private struct BattleRoundPatternAddRow: View {
             guard let value = values.first, value.entryId != nil else {
                 return false
             }
-            screenModel.useDroppedConfiguredValue(value, kind: kind, controller: controller)
-            return true
+            return screenModel.useDroppedConfiguredValue(value, kind: kind, controller: controller)
         }
     }
 
