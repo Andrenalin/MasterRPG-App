@@ -78,7 +78,6 @@ struct LinkHighlightTextModelTests {
         
         let result = await sut.displayText
         try #require(result.count == 11)
-        print(result.map { $0.string })
         #expect(result[0].string == "4")
         #expect(result[1].string == ": ")
         #expect(result[2].string == "tablecells.fill")
@@ -111,8 +110,6 @@ struct LinkHighlightTextModelTests {
         let sut = await LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: text, highlightedText: "")
 
         let result = await sut.displayText
-        print(result.count)
-        print(result.map { $0.string })
 
         try #require(result.count == 10)
         #expect(result[0].string == "tablecells.fill")

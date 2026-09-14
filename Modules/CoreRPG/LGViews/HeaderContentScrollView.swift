@@ -118,9 +118,6 @@ private struct HeaderView<Header: View>: View {
     ) {
         HStack(spacing: 15) {
             Button {
-#if DEBUG
-                print("Back button tapped")
-#endif
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.title3)

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os.log
 
 /// Configuration options for Navigator.
 ///
@@ -69,8 +70,11 @@ nonisolated public struct NavigationConfiguration {
     public init(
         restorationKey: String? = nil,
         logger: ((NavigationEvent) -> Void)? = {
+            // Uses the project's `Logger` conventions rather than a bare
+            // `print`, so navigation events are filterable/redactable like
+            // every other subsystem's logging. See CODE_AUDIT §5.5.
             #if DEBUG
-            print($0)
+            Logger.navigation.debug("\($0.description, privacy: .public)")
             #endif
         },
         executionDelay: TimeInterval = 0.3,

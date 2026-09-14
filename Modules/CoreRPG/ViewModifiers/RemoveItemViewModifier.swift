@@ -37,16 +37,10 @@ struct RemoveItemViewModifier: ViewModifier {
     VStack {
         Text(verbatim: "Hello World")
             .removeItemImage {
-#if DEBUG
-                print("Removed")
-#endif
             }
 
         Text(verbatim: "Hello World")
             .removeItemImage(isLeading: true) {
-#if DEBUG
-                print("Removed")
-#endif
             }
     }
 }

@@ -378,14 +378,20 @@ public final class GameRoot {
         }
     }
 
+    // Force-unwrapped with `!` rather than `.unsafelyUnwrapped`: both backing
+    // properties are unconditionally assigned at the end of `init`, so this
+    // should never trap in practice, but `!` still traps with a diagnosable
+    // crash log if a future refactor (deferred/lazy construction, a new
+    // failable init path) ever leaves one `nil` — `.unsafelyUnwrapped` would
+    // instead be undefined behavior in a Release build. See CODE_AUDIT §5.2.
     private(set) var _viewController: ViewController?
     public var viewController: ViewController {
-        _viewController.unsafelyUnwrapped
+        _viewController!
     }
-    
+
     private(set) var _logGameController: LogGameController?
     var logGameController: LogGameController {
-        _logGameController.unsafelyUnwrapped
+        _logGameController!
     }
 
     public func updateSupporterTier(_ supporterTier: SupporterTier) {

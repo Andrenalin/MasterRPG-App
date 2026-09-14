@@ -27,6 +27,7 @@ public extension Logger {
     static let importController = Logger(subsystem: subsystem, category: "ImportController")
     static let itemController = Logger(subsystem: subsystem, category: "ItemController")
     static let linkController = Logger(subsystem: subsystem, category: "LinkController")
+    static let navigation = Logger(subsystem: subsystem, category: "Navigation")
     static internal let persistenceController = Logger(subsystem: subsystem, category: "PersistenceController")
     static internal let persistentHistory = Logger(subsystem: subsystem, category: "PersistentHistory")
     static let networking = Logger(subsystem: subsystem, category: "networking")

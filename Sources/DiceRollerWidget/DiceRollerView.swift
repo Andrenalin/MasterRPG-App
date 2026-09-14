@@ -12,6 +12,12 @@ struct DiceRollerView: View {
     /// Simulated roll-animation duration before the result is computed and shown.
     /// See CODE_AUDIT §9.14.
     private static let rollAnimationDuration: Duration = .seconds(0.6)
+    /// Caps how many past rolls are kept in memory and persisted. Without this,
+    /// `rollHistory` would grow without bound over a long session, and the full
+    /// array is JSON re-encoded/decoded through the shared App Group
+    /// `UserDefaults` on every roll and every appearance — costly in this
+    /// memory-constrained widget-extension process. See CODE_AUDIT §7.1.
+    private static let maxRollHistoryCount = 50
     @State private var rollHistory: [DiceResultModel] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -119,6 +125,9 @@ struct DiceRollerView: View {
                 withAnimation(reduceMotion ? nil : .default) {
                     currentRoll = result
                     rollHistory.append(result)
+                    if rollHistory.count > Self.maxRollHistoryCount {
+                        rollHistory.removeFirst(rollHistory.count - Self.maxRollHistoryCount)
+                    }
                     isRolling = false
                 }
 
@@ -139,7 +148,9 @@ struct DiceRollerView: View {
         let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
         if let data = defaults?.data(forKey: UserDefaults.DiceKeys.rollHistory),
            let history = try? JSONDecoder().decode([DiceResultModel].self, from: data) {
-            rollHistory = history
+            // Also trims a larger history persisted before `maxRollHistoryCount`
+            // existed, rather than only capping future growth.
+            rollHistory = Array(history.suffix(Self.maxRollHistoryCount))
         }
     }
 

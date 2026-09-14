@@ -390,20 +390,45 @@ public extension FileUrlDataController {
             case .local, .appCloud, .newCloud:
                 Task { @concurrent in
                     await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)", file: "FileUrlDataController.swift")
-                    
+
                     guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
-                    try? await FileManager.default.removeItem(coordinatingAccessAt: accessUrl)
+                    // Only drop the bookmark once the file is actually gone (or was
+                    // already gone) — a genuine removal failure (coordination
+                    // timeout, permission error, transient iCloud state) instead
+                    // keeps the bookmark so the file isn't silently orphaned with
+                    // nothing left referencing it. See CODE_AUDIT §5.3.
+                    guard await removeFileLoggingFailure(at: accessUrl) else { return }
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
             case .url:
                 Task { @concurrent in
                     let cacheURL = remoteCacheURL(for: fileUrl)
-                    try? await FileManager.default.removeItem(coordinatingAccessAt: cacheURL)
+                    guard await removeFileLoggingFailure(at: cacheURL) else { return }
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
             case .icloud, .other:
                 fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 break
+        }
+    }
+
+    /// Removes the file at `url`, logging (rather than silently discarding)
+    /// any failure other than the file already being absent. Returns `true`
+    /// when the caller may safely treat the file as gone — either it was
+    /// actually removed, or it didn't exist in the first place — and `false`
+    /// when a real error occurred and the caller should keep whatever
+    /// reference (e.g. a bookmark) it was about to drop, so the file isn't
+    /// silently orphaned. See CODE_AUDIT §5.3.
+    private func removeFileLoggingFailure(at url: URL) async -> Bool {
+        do {
+            try await FileManager.default.removeItem(coordinatingAccessAt: url)
+            return true
+        } catch {
+            guard (error as NSError).code == NSFileNoSuchFileError else {
+                Logger.fileStore.error("Cannot delete file, keeping bookmark for retry \(error.localizedDescription, privacy: .public)")
+                return false
+            }
+            return true
         }
     }
 

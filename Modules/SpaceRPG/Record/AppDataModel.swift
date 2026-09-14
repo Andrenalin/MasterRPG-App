@@ -238,8 +238,15 @@ final class AppDataModel: Identifiable {
     /// Creates a new object capture session.
     private func startNewCapture() -> Bool {
         Logger.scanner3D.log("startNewCapture() called...")
-        if !ObjectCaptureSession.isSupported {
-            preconditionFailure("ObjectCaptureSession is not supported on this device!")
+        // Graceful failures rather than `preconditionFailure` — the only call
+        // site today is gated by an `isSupported()` check in the UI, but this
+        // function performs no re-check itself, so a future entry point (a
+        // Shortcuts/App Intent action, or a capability-check race) should
+        // surface an error state instead of crashing the whole app. See
+        // CODE_AUDIT §5.4.
+        guard ObjectCaptureSession.isSupported else {
+            Logger.scanner3D.error("ObjectCaptureSession is not supported on this device!")
+            return false
         }
 
         guard let folderManager = CaptureFolderManager() else {
@@ -250,7 +257,8 @@ final class AppDataModel: Identifiable {
         objectCaptureSession = ObjectCaptureSession()
 
         guard let session = objectCaptureSession else {
-            preconditionFailure("startNewCapture() got unexpectedly nil session!")
+            Logger.scanner3D.error("startNewCapture() got unexpectedly nil session!")
+            return false
         }
 
         var configuration = ObjectCaptureSession.Configuration()

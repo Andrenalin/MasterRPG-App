@@ -1170,8 +1170,14 @@ private enum FoundryPackageResourceResolver {
     }
 
     private static func isRemote(_ path: String) -> Bool {
+        // Must stay in sync with `FoundryVTTResourceResolver.isRemote` in
+        // FoundryVTTImportReader.swift — the two were found to have drifted
+        // (this copy was missing the `data:` case), which let a data-URI
+        // asset reference in a system-package import be misclassified as a
+        // local path lookup instead of being skipped as remote. See
+        // CODE_AUDIT §6.1/§9.1.
         let lowercased = path.lowercased()
-        return lowercased.hasPrefix("https://") || lowercased.hasPrefix("http://")
+        return lowercased.hasPrefix("https://") || lowercased.hasPrefix("http://") || lowercased.hasPrefix("data:")
     }
 
     private static func isFoundryInstallationPath(_ path: String) -> Bool {
