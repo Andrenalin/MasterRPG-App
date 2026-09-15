@@ -4248,6 +4248,9 @@
         }
       }
     },
+    "Reconnecting…" : {
+
+    },
     "Recorded games: %lld" : {
       "localizations" : {
         "de" : {

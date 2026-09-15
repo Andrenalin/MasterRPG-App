@@ -180,8 +180,18 @@ extension MasterNetworkController {
 
 extension MasterNetworkController: ConnectionControllerDelegate {
     @MainActor
-    func failed(with error: String?, for id: ConnectionController.ID) async {
-        await connectionThrottle.resolve(id: id, succeeded: false)
+    func failed(with error: String?, isAuthenticationFailure: Bool = true, for id: ConnectionController.ID) async {
+        // Only a TLS/passcode rejection is evidence of a bad-passcode guess.
+        // An ordinary transport-layer failure (Wi-Fi drop, timeout,
+        // unreachable peer) is exactly what a legitimate player's automatic
+        // reconnect retry can hit, and counting it toward the lockout would
+        // let a flaky network eventually throttle a real peer out of
+        // reconnecting. See CODE_AUDIT_Reconnect §6.1.
+        if isAuthenticationFailure {
+            await connectionThrottle.resolve(id: id, succeeded: false)
+        } else {
+            await connectionThrottle.clear(id: id)
+        }
         await removeConnectionAndNotify(id: id)
     }
 

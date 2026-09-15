@@ -14,7 +14,7 @@ final class PlayerConnectionDelegateMock: ConnectionControllerDelegate, @uncheck
         calledReceivedData += 1
     }
 
-    func failed(with error: String?, for id: ConnectionController.ID) async {
+    func failed(with error: String?, isAuthenticationFailure: Bool, for id: ConnectionController.ID) async {
         calledFailed += 1
     }
 

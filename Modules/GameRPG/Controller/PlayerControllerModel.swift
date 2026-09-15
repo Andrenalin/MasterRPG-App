@@ -111,6 +111,16 @@ final class PlayerControllerModel {
     /// its UUID from a broadcast.
     private var sharePlayMasterParticipantId: UUID?
     private var resynchronizeAfterSharePlayMasterRebind = false
+    // `GroupSessionMessenger` can redeliver the master's own complete
+    // broadcast well after the fact — e.g. one sent just before the master
+    // dropped, arriving after `removeSharePlayMasterParticipant` already
+    // unbound the slot. Without remembering departed participant IDs, that
+    // stale broadcast rebinds the slot to the now-departed identity, and the
+    // master's genuine reconnect (a new participant ID) is then permanently
+    // rejected — nothing ever clears a denylist entry for the old ID again.
+    // Bounded to a small capacity: only ever a few master churns occur in one
+    // session. See CODE_AUDIT_Reconnect §3.2.
+    private var departedSharePlayMasterParticipantIds = PhysicalIdentityDenylist<UUID>(capacity: 16)
     var lostMaster: Bool = true
     var hasSendPlayer = false
     var asGameMaster = false
@@ -188,6 +198,11 @@ final class PlayerControllerModel {
             // the public logical master UUID cannot win the rebind race with a
             // state-less command.
             guard isCompleteMasterBroadcast else { return .rejected }
+            // A stale, redelivered broadcast from an already-departed
+            // participant must never re-bind the slot out from under a
+            // genuine reconnect under a new participant ID. See
+            // `departedSharePlayMasterParticipantIds`'s own doc.
+            guard !departedSharePlayMasterParticipantIds.contains(id) else { return .rejected }
             self.sharePlayMasterParticipantId = id
             if resynchronizeAfterSharePlayMasterRebind {
                 resynchronizeAfterSharePlayMasterRebind = false
@@ -203,12 +218,14 @@ final class PlayerControllerModel {
         guard sharePlayMasterParticipantId == id else { return false }
         sharePlayMasterParticipantId = nil
         resynchronizeAfterSharePlayMasterRebind = true
+        departedSharePlayMasterParticipantIds.insert(id)
         return true
     }
 
     func resetSharePlayMasterParticipant() {
         sharePlayMasterParticipantId = nil
         resynchronizeAfterSharePlayMasterRebind = false
+        departedSharePlayMasterParticipantIds.removeAll()
     }
 
     func isSharePlayMasterParticipant(id: UUID) -> Bool {

@@ -106,23 +106,46 @@ actor SharePlayPlayerJournalAdmission {
     private let maximumAdmissionCount: Int
     private let maximumPendingCount: Int
     private let maximumPendingByteCount: Int
+    /// `GroupSessionMessenger` can redeliver the same logical message well
+    /// after the fact — e.g. following a participant reconnecting after being
+    /// briefly unreachable (the same phenomenon `GameRelayAdmission` guards
+    /// against; see its own doc). A purely count-capped `admissionOrder`
+    /// could evict a legitimate admission's key long before such a
+    /// legitimately-delayed retry arrives, letting a different participant
+    /// newly claim that key. Age-based eviction keeps a key recognized for at
+    /// least this long regardless of how much unrelated traffic passed
+    /// through in between. See CODE_AUDIT_Reconnect §7.4.
+    private let admissionRetentionWindow: Duration
+    private let clock: ContinuousClock
 
     private var senderByDirectParticipant: [UUID: UUID] = [:]
     private var ownerParticipantBySender: [UUID: UUID] = [:]
     private var trustedMasterRelayParticipantID: UUID?
     private var admissionOrder: [SharePlayPlayerJournalAdmissionKey] = []
     private var admissionByKey: [SharePlayPlayerJournalAdmissionKey: Admission] = [:]
+    private var admittedAt: [SharePlayPlayerJournalAdmissionKey: ContinuousClock.Instant] = [:]
     private var pendingJournals: [PendingJournal] = []
     private var pendingByteCount = 0
+    /// Participant IDs known to have left the session. A late-redelivered
+    /// message still tagged with a departed participant ID must never be
+    /// allowed to (re-)establish a sender/participant binding out from under
+    /// the legitimately reconnected participant's new ID — see
+    /// `acceptsPlayerMessenger`'s guard below. Bounded like every other cache
+    /// in this actor. See CODE_AUDIT_Reconnect §3.3.
+    private var departedParticipantIds = PhysicalIdentityDenylist<UUID>(capacity: 64)
 
     init(
         maximumAdmissionCount: Int = 512,
         maximumPendingCount: Int = 16,
-        maximumPendingByteCount: Int = 64 * 1_024 * 1_024
+        maximumPendingByteCount: Int = 64 * 1_024 * 1_024,
+        admissionRetentionWindow: Duration = .seconds(120),
+        clock: ContinuousClock = ContinuousClock()
     ) {
         self.maximumAdmissionCount = max(1, maximumAdmissionCount)
         self.maximumPendingCount = max(1, maximumPendingCount)
         self.maximumPendingByteCount = max(0, maximumPendingByteCount)
+        self.admissionRetentionWindow = admissionRetentionWindow
+        self.clock = clock
     }
 
     /// Applies the SharePlay role policy and pins the transport participant to
@@ -132,7 +155,9 @@ actor SharePlayPlayerJournalAdmission {
         _ model: GameNetworkModel,
         participantID: UUID
     ) -> Bool {
-        guard model.sender.role == .player else { return false }
+        guard model.sender.role == .player,
+              !departedParticipantIds.contains(participantID)
+        else { return false }
 
         if trustedMasterRelayParticipantID == participantID {
             if let ownerParticipantID = ownerParticipantBySender[model.sender.id] {
@@ -189,6 +214,7 @@ actor SharePlayPlayerJournalAdmission {
             return model.isJournalAdmissionOnly ? .rejected : .notAdmission
         }
         guard let key = Self.key(for: model) else { return .rejected }
+        pruneExpiredAdmissions(before: clock.now)
 
         if isMasterAnnouncement {
             // Messenger metadata claiming master authority is admitted only
@@ -213,8 +239,11 @@ actor SharePlayPlayerJournalAdmission {
                 fingerprint: fingerprint
             )
             admissionOrder.append(key)
+            admittedAt[key] = clock.now
             while admissionOrder.count > maximumAdmissionCount {
-                admissionByKey[admissionOrder.removeFirst()] = nil
+                let evicted = admissionOrder.removeFirst()
+                admissionByKey[evicted] = nil
+                admittedAt[evicted] = nil
             }
         }
 
@@ -276,6 +305,11 @@ actor SharePlayPlayerJournalAdmission {
     }
 
     func participantLeft(_ participantID: UUID) {
+        // Remember this participant departed so a late-redelivered message
+        // still tagged with its ID can never (re-)establish a binding out
+        // from under the legitimately reconnected participant's new ID. See
+        // `departedParticipantIds`'s own doc.
+        departedParticipantIds.insert(participantID)
         let trustedMasterRelayLeft = trustedMasterRelayParticipantID == participantID
         let departedSenderIDs = Set(ownerParticipantBySender.compactMap { senderID, ownerID in
             ownerID == participantID ? senderID : nil
@@ -294,6 +328,9 @@ actor SharePlayPlayerJournalAdmission {
             $0.value.participantID != participantID
         }
         admissionOrder.removeAll { departedAdmissionKeys.contains($0) }
+        for key in departedAdmissionKeys {
+            admittedAt[key] = nil
+        }
         if trustedMasterRelayLeft {
             pendingJournals.removeAll()
             pendingByteCount = 0
@@ -312,8 +349,23 @@ actor SharePlayPlayerJournalAdmission {
         trustedMasterRelayParticipantID = nil
         admissionOrder.removeAll()
         admissionByKey.removeAll()
+        admittedAt.removeAll()
         pendingJournals.removeAll()
         pendingByteCount = 0
+        departedParticipantIds.removeAll()
+    }
+
+    /// `admissionOrder` is chronological (append-only, evicted from the
+    /// front), so this stops at the first still-fresh entry rather than
+    /// scanning the whole window. Mirrors `GameRelayAdmission.pruneExpired`.
+    private func pruneExpiredAdmissions(before now: ContinuousClock.Instant) {
+        while let oldest = admissionOrder.first,
+              let admittedTime = admittedAt[oldest],
+              now - admittedTime > admissionRetentionWindow {
+            admissionOrder.removeFirst()
+            admissionByKey[oldest] = nil
+            admittedAt[oldest] = nil
+        }
     }
 
     private static func key(for model: GameNetworkModel) -> SharePlayPlayerJournalAdmissionKey? {

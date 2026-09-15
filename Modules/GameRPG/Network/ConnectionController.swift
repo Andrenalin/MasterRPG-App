@@ -19,7 +19,14 @@ protocol ConnectionControllable: Sendable {
 
 protocol ConnectionControllerDelegate: Sendable & AnyObject {
     func received(data: Data?, for id: ConnectionController.ID) async
-    func failed(with error: String?, for id: ConnectionController.ID) async
+    /// `isAuthenticationFailure` distinguishes a TLS/PSK (passcode) rejection
+    /// from an ordinary transport-layer failure (Wi-Fi drop, timeout,
+    /// unreachable peer) — only the former is evidence of a bad-passcode
+    /// guess. A conformer that doesn't need the distinction can ignore it;
+    /// the throttle-aware conformers (`PlayerNetworkController`,
+    /// `MasterNetworkController`) use it to avoid penalizing a legitimate
+    /// peer's ordinary reconnect retry. See CODE_AUDIT_Reconnect §6.1.
+    func failed(with error: String?, isAuthenticationFailure: Bool, for id: ConnectionController.ID) async
     func lostConnection(for id: ConnectionController.ID) async
     func readyConnection(for id: ConnectionController.ID) async
 }
@@ -31,6 +38,19 @@ actor ConnectionController: Identifiable {
     private let queue = DispatchQueue(label: "de.andretrettin.MasterRPG.ConnectionController")
     private weak var delegate: (any ConnectionControllerDelegate)?
     private var receiveTask: Task<Void, Never>?
+    /// Set the moment `connectionFailed(message:isAuthenticationFailure:)`
+    /// reports a terminal outcome to the delegate. `cancel()` (called from
+    /// every failure path) always produces a later `.cancelled` state
+    /// callback from `NWConnection`; without this guard that `.cancelled`
+    /// would *also* call `lostConnection()`, delivering two independent
+    /// terminal-outcome delegate calls — `failed` then `lostConnection` — for
+    /// one underlying failure, racing `ConnectionThrottleTracker`'s
+    /// `resolve(id:succeeded:)` against its own `clear(id:)` with no ordering
+    /// guarantee between them. If `clear` won that race, the failure was
+    /// silently dropped from the throttle's tally. One instance only ever
+    /// reports one terminal outcome, so this never needs to reset. See
+    /// CODE_AUDIT_Reconnect §3.1.
+    private var terminalOutcomeReported = false
 
     init(id: UUID, endpoint: NWEndpoint, passcode: String, delegate: ConnectionControllerDelegate) {
         self.id = id
@@ -130,7 +150,7 @@ extension ConnectionController: ConnectionControllable {
         let uuid = id.uuidString
         Logger.connectionController.error("Connection: \(uuid, privacy: .public) Send failed \(error.localizedDescription, privacy: .public)")
         cancel()
-        await connectionFailed(message: error.localizedDescription)
+        await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
     }
 }
 
@@ -191,7 +211,7 @@ private extension ConnectionController {
         case let .failed(error):
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(error.localizedDescription, privacy: .public)")
             cancel()
-            await connectionFailed(message: error.localizedDescription)
+            await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
 
         case .cancelled:
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Cancelled")
@@ -202,6 +222,13 @@ private extension ConnectionController {
             // underlying event. See CODE_AUDIT_Network §5.9.
             receiveTask?.cancel()
             receiveTask = nil
+            // Only report a fresh loss if this instance hasn't already
+            // reported a terminal outcome via `connectionFailed` — see
+            // `terminalOutcomeReported`'s own doc. A `.cancelled` that
+            // follows an external `cancel()` (e.g. `stop()`'s own teardown,
+            // never preceded by a reported failure) still reports normally.
+            guard !terminalOutcomeReported else { return }
+            terminalOutcomeReported = true
             await lostConnection()
 
         default:
@@ -240,7 +267,8 @@ private extension ConnectionController {
             let uuid = id.uuidString
             Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "", privacy: .public)")
             cancel()
-            await connectionFailed(message: error?.localizedDescription ?? "")
+            let isAuthenticationFailure = (error as? NWError).map(Self.isAuthenticationFailure) ?? false
+            await connectionFailed(message: error?.localizedDescription ?? "", isAuthenticationFailure: isAuthenticationFailure)
             return
         }
         guard content != nil else {
@@ -257,7 +285,8 @@ private extension ConnectionController {
             let uuid = id.uuidString
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Peer closed the connection")
             cancel()
-            await connectionFailed(message: "Peer closed the connection")
+            // A graceful peer half-close is never evidence of a bad passcode.
+            await connectionFailed(message: "Peer closed the connection", isAuthenticationFailure: false)
             return
         }
         guard let gameMessage = context?.protocolMetadata(definition: GameProtocol.definition) as? NWProtocolFramer.Message else {
@@ -282,10 +311,25 @@ extension ConnectionController {
         await delegate?.readyConnection(for: id)
     }
 
-    func connectionFailed(message: String) async {
+    func connectionFailed(message: String, isAuthenticationFailure: Bool) async {
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(message, privacy: .public)")
-        await delegate?.failed(with: message, for: id)
+        // See `terminalOutcomeReported`'s own doc — the `.cancelled` that
+        // `cancel()` (called by every path that reaches this) always
+        // produces afterward must not also report `lostConnection()`.
+        terminalOutcomeReported = true
+        await delegate?.failed(with: message, isAuthenticationFailure: isAuthenticationFailure, for: id)
+    }
+
+    /// A TLS/PSK (passcode) rejection surfaces as `NWError.tls` — the only
+    /// case a wrong passcode can plausibly produce, since the PSK identity
+    /// itself is fixed and only the derived key differs. Every other case
+    /// (`.posix`, `.dns`, `.quic`) is a transport-layer failure (Wi-Fi drop,
+    /// timeout, unreachable/firewalled peer) that says nothing about whether
+    /// the passcode was even checked yet. See CODE_AUDIT_Reconnect §6.1.
+    nonisolated static func isAuthenticationFailure(_ error: NWError) -> Bool {
+        if case .tls = error { return true }
+        return false
     }
 
     func receivedMessage(content: Data?, message: NWProtocolFramer.Message) async {

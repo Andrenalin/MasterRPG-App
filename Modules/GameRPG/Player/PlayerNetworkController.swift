@@ -165,6 +165,18 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         networkModel.playerConnectionId = nil
         networkModel.model = nil
         networkModel.isConnected = false
+        // The fallback listener (`startPlayerServer()`) is owned only by this
+        // controller, not by `ConnectionController`, and is never torn down
+        // by any of its own delegate callbacks when the *controller* — not
+        // the listener — decides to stop. Without this, a listener started
+        // while `.lost` outlives `stop()` (leaking the Bonjour advertisement
+        // and open socket), and `startPlayerServer()`'s `listener == nil`
+        // guard then silently disables the fallback-reconnect recovery for
+        // every future lost-master event in this app run. See
+        // CODE_AUDIT_Reconnect §5.1.
+        let listener = networkModel.listener
+        networkModel.reset(listener: nil)
+        listener?.stopListening()
         await connectionController?.cancel()
     }
 
@@ -212,7 +224,7 @@ private extension PlayerNetworkController {
 
 extension PlayerNetworkController: ConnectionControllerDelegate {
     @MainActor
-    func failed(with error: String?, for id: ConnectionController.ID) async {
+    func failed(with error: String?, isAuthenticationFailure: Bool = true, for id: ConnectionController.ID) async {
         guard isCurrentConnection(id) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Ignore failure from replaced connection \(id.uuidString, privacy: .public)")
             return
@@ -221,11 +233,20 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             await lostConnection(for: id)
         } else {
             // A fresh reconnect attempt (state == .notReady) failing immediately
-            // is a handshake/auth failure, not a previously-established
-            // connection dropping — this is the passcode-guessing signal the
-            // throttle tracks. Outbound `start(model:)` attempts never appear
-            // here, since only `restart(connection:)` registers a pending source.
-            await connectionThrottle.resolve(id: id, succeeded: false)
+            // covers both a handshake/auth rejection (the passcode-guessing
+            // signal the throttle tracks) and an ordinary transient failure
+            // (Wi-Fi drop, timeout, unreachable peer — exactly what a
+            // legitimate automatic reconnect retry can hit). Only the former
+            // is evidence of a bad-passcode guess; counting the latter toward
+            // the lockout would let a flaky network eventually throttle a
+            // real peer out of reconnecting to itself. Outbound `start(model:)`
+            // attempts never appear here, since only `restart(connection:)`
+            // registers a pending source. See CODE_AUDIT_Reconnect §6.1.
+            if isAuthenticationFailure {
+                await connectionThrottle.resolve(id: id, succeeded: false)
+            } else {
+                await connectionThrottle.clear(id: id)
+            }
             // Also covers an outbound `start(model:)` attempt made with a bad
             // join code: the TLS/passcode handshake fails right here, so the
             // caller waiting in `toggleConnection(to:passcode:)` must be told
@@ -334,11 +355,22 @@ extension PlayerNetworkController {
 
     func checkForRemoval() async {
         guard networkModel.model != nil else { return }
+        // Re-arm `withObservationTracking` before processing the current
+        // batch, not after. `onChange` fires once and must be re-registered
+        // before the next mutation to be seen at all; the async teardown
+        // below (`removedConnection` → `lostConnection` → several actor hops
+        // and `stop()`'s own connection teardown) can take long enough that a
+        // second Bonjour-removal change lands while still in flight — arming
+        // late meant that change was missed until some later, unrelated
+        // mutation happened to re-trigger observation. A second
+        // `checkForRemoval()` scheduled by that re-registration racing this
+        // one's own loop is safe: `lostConnection(for:)` is already
+        // idempotent via `markLostIfCurrent`. See CODE_AUDIT_Reconnect §3.5.
+        observeRemovedConnection()
         for game in browserManager.removed {
             let endpoint = browserManager.nwEndpoint(for: game)
             await removedConnection(endpoint: endpoint)
         }
-        observeRemovedConnection()
     }
 
     func removedConnection(endpoint: NWEndpoint) async {

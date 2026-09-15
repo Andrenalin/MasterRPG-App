@@ -143,7 +143,13 @@ final class MasterControllerModel {
     var messageCounter: Int = 1
     var connectIDPlayers: [ConnectionController.ID: UUID] = [:]
     private var connectionRoles: [ConnectionController.ID: GameType] = [:]
-    private var retiredConnectionIDs: Set<ConnectionController.ID> = []
+    // Bounded like every sibling per-connection cache below (256, matching
+    // `maximumPlayerJournalAdmissions`/`maximumPeerAvailabilitySources`) —
+    // previously an unbounded `Set` that only ever grew for the life of the
+    // game, since a LAN/proxy id is never reinstated (only a SharePlay
+    // participant UUID is, per `reinstateConnection`'s own doc). See
+    // CODE_AUDIT_Reconnect §7.1, §9.2.
+    private var retiredConnectionIDs = PhysicalIdentityDenylist<ConnectionController.ID>(capacity: 256)
     let deliverySessionID = UUID()
     private var deliveryMessagesByWireID: [UUID: GameDeliveryMessageID] = [:]
     private var deliveryMessagesByWireIDOrder: [UUID] = []

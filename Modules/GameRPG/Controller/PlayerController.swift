@@ -39,6 +39,15 @@ final class PlayerController {
         if asGameMaster {
             proxyMasterController = nil
             root.networkStore.setupLocal()
+            // A co-located local player never goes through the network
+            // `ready()`/`lostConnection()` delegate lifecycle — `setupLocal()`
+            // wires it directly, and `GameNetworkController` explicitly skips
+            // calling `ready()` for it (`guard !model.hasLocalPlayer`). Left
+            // at its default, `lostMaster` (and the `canSendCharacter` gate
+            // derived from it) would stay permanently `true`/`false` for the
+            // entire session — currently masked only by defensive guards at
+            // every call site that reads it. See CODE_AUDIT_Reconnect §5.2.
+            gameModel.reset(lostMaster: false)
         } else {
             proxyMasterController = MasterController(root: root, asProxy: true)
         }

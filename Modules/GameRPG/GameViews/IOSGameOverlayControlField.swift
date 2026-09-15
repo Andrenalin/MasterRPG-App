@@ -19,7 +19,13 @@ struct IOSGameOverlayControlField: View {
             isBattleRunning: battleModel.isRunning,
             battleRound: battleModel.roundCounter,
             lostMaster: playerController?.gameModel.lostMaster ?? false,
-            sharePlayState: root.networkStore.sharePlayStore.connectionState
+            sharePlayState: root.networkStore.sharePlayStore.connectionState,
+            // `.lost` is set the instant the LAN connection drops and this
+            // device starts its fallback listener, waiting for the master to
+            // dial back in with the already-known passcode — a real,
+            // in-progress recovery distinct from a connection that never
+            // recovers. See CODE_AUDIT_Reconnect §8.1.
+            isReconnecting: root.networkStore.model.playerStore?.networkModel.connectionState == .lost
         )
 
         HStack(spacing: spacing) {

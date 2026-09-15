@@ -684,7 +684,23 @@ final class RPGSharePlayController {
     /// with identifier: ..." moments later — reproduced on-device 2026-08-22
     /// pairing a Release and a Debug build (their differing startup speed is
     /// exactly what exposes the ordering).
-    private var coordinatedTabletopGame: ObjectIdentifier?
+    /// Identifies which session a `tabletopGame` instance was actually
+    /// coordinated with, not merely whether it was coordinated at all. A
+    /// deferred task's body never checks `Task.isCancelled` (see
+    /// `deferCoordinateAndAssignSeats`'s doc), so one scheduled for an
+    /// already-invalidated session can still run after `reset()` cleared this
+    /// property back to `nil` and land *before* the replacement session
+    /// schedules its own deferred task — coordinating `tabletopGame` with the
+    /// stale, dead session and marking that tabletopGame instance "already
+    /// coordinated" before the real, current session ever gets a turn. Keying
+    /// by (tabletopGame identity, session id) together — and re-validating
+    /// session currency immediately before the call, not just at scheduling
+    /// time — closes that gap. See CODE_AUDIT_Reconnect §3.4.
+    private struct CoordinatedSession: Equatable {
+        let tabletopGameId: ObjectIdentifier
+        let sessionId: UUID
+    }
+    private var coordinatedTabletopGame: CoordinatedSession?
     #endif
 
     private let groupStateObserver = GroupStateObserver()
@@ -843,7 +859,19 @@ final class RPGSharePlayController {
     ) {
         let task = Task { @MainActor [weak self, weak tabletopGame, weak gameTableModel] in
             guard let self, let tabletopGame, self.tabletopGame === tabletopGame else { return }
-            let identifier = ObjectIdentifier(tabletopGame)
+            // Re-validate session currency immediately before coordinating,
+            // not just at scheduling time. This task's body never checks
+            // `Task.isCancelled` (see this function's own doc), so one
+            // scheduled for an already-superseded session can still run —
+            // without this guard it would bind `tabletopGame` to a stale,
+            // dead `GroupSession` and mark that instance "coordinated" ahead
+            // of the real, current session's own deferred task, permanently
+            // starving it. See CODE_AUDIT_Reconnect §3.4.
+            guard self.sessionLoopIsCurrent(sessionId: groupSession.id) else {
+                Logger.sharePlay.debug("Skipped TabletopKit coordination for a superseded session \(groupSession.id, privacy: .public)")
+                return
+            }
+            let identifier = CoordinatedSession(tabletopGameId: ObjectIdentifier(tabletopGame), sessionId: groupSession.id)
             guard self.coordinatedTabletopGame != identifier else { return }
             self.coordinatedTabletopGame = identifier
             tabletopGame.coordinateWithSession(groupSession)
@@ -1971,11 +1999,19 @@ extension RPGSharePlayController {
             reset()
             await sessionTeardownCoordinator.waitForCompletion(of: teardown)
             guard !Task.isCancelled else { return }
+        } else {
+            // `reset()` above already resets both trackers for the
+            // replace-an-existing-session path (and `drainSessionTeardownEvents()`
+            // resets `participantTracker` a second time before that even
+            // runs) — redundant but harmless there. This `else` is reached
+            // only on the first-ever configure, where neither of those ran,
+            // so it's the sole place these two actually need resetting. See
+            // CODE_AUDIT_Reconnect §9.1.
+            participantTracker.reset()
+            mapRecoveryTracker.reset()
         }
 
         sessionLifecycle.prepare(sessionId: groupSession.id)
-        participantTracker.reset()
-        mapRecoveryTracker.reset()
         isActive = false
         self.groupSession = groupSession
         connectionState = .waiting

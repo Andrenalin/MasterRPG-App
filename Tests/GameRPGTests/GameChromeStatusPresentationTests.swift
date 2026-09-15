@@ -34,6 +34,7 @@ struct GameChromeStatusPresentationTests {
     struct ConnectionCase: Sendable, CustomTestStringConvertible {
         let lostMaster: Bool
         let sharePlayState: SharePlayConnectionState
+        var isReconnecting: Bool = false
         let expected: GameConnectionStatusPresentation
         let testDescription: String
     }
@@ -52,6 +53,17 @@ struct GameChromeStatusPresentationTests {
                 sharePlayState: .inactive,
                 expected: .localNetworkLost,
                 testDescription: "local network lost"
+            ),
+            // Regression for CODE_AUDIT_Reconnect §8.1 — a live, in-progress
+            // fallback-listener retry must render distinctly from a
+            // connection that has no recovery in flight, not identically to
+            // `.localNetworkLost`.
+            ConnectionCase(
+                lostMaster: true,
+                sharePlayState: .inactive,
+                isReconnecting: true,
+                expected: .localNetworkReconnecting,
+                testDescription: "local network actively reconnecting"
             ),
             ConnectionCase(
                 lostMaster: true,
@@ -85,7 +97,8 @@ struct GameChromeStatusPresentationTests {
             isBattleRunning: false,
             battleRound: 0,
             lostMaster: testCase.lostMaster,
-            sharePlayState: testCase.sharePlayState
+            sharePlayState: testCase.sharePlayState,
+            isReconnecting: testCase.isReconnecting
         )
 
         // Then
