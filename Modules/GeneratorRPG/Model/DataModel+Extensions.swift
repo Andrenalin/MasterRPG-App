@@ -13,9 +13,6 @@ extension RPGGenerator {
         set { entries = NSSet(array: newValue) }
     }
 
-    func entryOrNew(for uuid: UUID) -> RPGGeneratorEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 extension RPGGenerator: SpotlightIndexerAttribute {

@@ -17,11 +17,11 @@ public extension TableRootModel {
     ) -> TableRootModel {
         let root = TableRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.diceRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.pdfRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         for model in models {
             root.itemController.replace(model: model, isInsert: true)
         }
@@ -37,11 +37,11 @@ public extension TableRootModel {
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
         let root = TableRootModel(tagController: .preview, diceRoot: diceRoot, pdfRoot: pdfRoot)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.diceRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.pdfRoot.setUp(context: nil, batchContext: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         return root
     }
 #endif

@@ -15,7 +15,7 @@ struct DataControllerTests {
             CoreRPG.Resources.bundle,
             CharacterRPG.Resources.bundle
         ])
-        let sut = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.value.token)
+        let sut = DataController(context: store.context, token: NetworkModules.value.token)
 
         let itemId = UUID()
         let parentId = UUID()
@@ -144,7 +144,7 @@ struct DataControllerTests {
             photoIds: photoIds
         )
 
-        let dataController = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.value.token)
+        let dataController = DataController(context: store.context, token: NetworkModules.value.token)
         let models = try await dataController.fetch()
         let model = try #require(models.first)
 
@@ -158,7 +158,6 @@ struct DataControllerTests {
 private struct PersistentTestStore {
     let container: NSPersistentContainer
     let context: NSManagedObjectContext
-    let batchContext: NSManagedObjectContext
 
     @MainActor
     init(bundles: [Bundle]) throws {
@@ -179,7 +178,6 @@ private struct PersistentTestStore {
         }
 
         context = container.newBackgroundContext()
-        batchContext = container.newBackgroundContext()
     }
 }
 #endif

@@ -132,7 +132,6 @@ public final class RuleRootModel {
 
     public func setUp(
         context: NSManagedObjectContext?,
-        batchContext: NSManagedObjectContext?,
         rootManager: RootManager,
         adventureRootControllable: any RootExportControllable,
         linkRegisterController: LinkRegisterController
@@ -141,7 +140,6 @@ public final class RuleRootModel {
         itemController.itemDataModel.dataController = context.map {
             DataController(
                 context: $0,
-                batchContext: batchContext,
                 token: config.module.token
             )
         }

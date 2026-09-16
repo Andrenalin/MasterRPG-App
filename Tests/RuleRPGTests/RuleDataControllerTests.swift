@@ -20,7 +20,6 @@ struct RuleDataControllerTests {
         ])
         let controller = DataController(
             context: store.context,
-            batchContext: store.batchContext,
             token: NetworkModules.rule.token
         )
         let itemId = try #require(UUID(uuidString: "730A837D-BB12-4200-B65D-AF0C34F1E0DF"))
@@ -141,7 +140,6 @@ struct RuleDataControllerTests {
 private struct RulePersistentTestStore {
     let container: NSPersistentContainer
     let context: NSManagedObjectContext
-    let batchContext: NSManagedObjectContext
 
     @MainActor
     init(bundles: [Bundle]) throws {
@@ -163,7 +161,6 @@ private struct RulePersistentTestStore {
             throw loadError
         }
         context = container.newBackgroundContext()
-        batchContext = container.newBackgroundContext()
     }
 }
 #endif

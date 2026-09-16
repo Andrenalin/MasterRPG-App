@@ -13,9 +13,6 @@ extension RPGRule {
         set { entries = NSSet(array: newValue) }
     }
 
-    func entryOrNew(for id: UUID) -> RPGRuleEntry {
-        childOrNew(id, in: entriesModel)
-    }
 }
 
 extension RPGRule: SpotlightIndexerAttribute {

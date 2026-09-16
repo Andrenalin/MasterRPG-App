@@ -226,7 +226,6 @@ struct RuleWorkflowTests {
         )
         root.setUp(
             context: nil,
-            batchContext: nil,
             rootManager: rootManager,
             adventureRootControllable: root,
             linkRegisterController: LinkRegisterController(root: rootManager)

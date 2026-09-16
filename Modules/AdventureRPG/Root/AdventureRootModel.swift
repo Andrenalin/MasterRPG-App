@@ -102,7 +102,7 @@ public final class AdventureRootModel {
         self.openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.adventure.viewerWindowId, canShow: true) { DetailRoute.viewer($0) }
     }
 
-    @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?) {
+    @MainActor public func setUp(root: RootManager, context: NSManagedObjectContext?) {
         let linkRegisterController = LinkRegisterController(root: root)
         linkRegisterController.setup(context: context)
 
@@ -124,18 +124,18 @@ public final class AdventureRootModel {
         editorLinkModel.rootManager = root
         playerLinkModel.rootManager = root
 
-        audioRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        diceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        pdfRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        photoRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        ruleRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        spaceRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        weatherRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        tableRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        characterRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
-        mapRoot.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        audioRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        diceRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        pdfRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        photoRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        ruleRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        spaceRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        weatherRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        tableRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        characterRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        mapRoot.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
 #if !os(tvOS)
-        generatorRoot?.setUp(context: context, batchContext: batchContext, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
+        generatorRoot?.setUp(context: context, rootManager: root, adventureRootControllable: self, linkRegisterController: linkRegisterController)
 #endif
 
         syncTask?.cancel()
@@ -187,7 +187,7 @@ public final class AdventureRootModel {
     // Aligns with the other 10 modules' root models: there's no separate optional-storage
     // force-unwrapped accessor here, just the shared `ItemControllable.linkRegisterController`
     // default (CODE_AUDIT §5.5), which fails with a diagnostic message instead of a bare `!`
-    // if read before `setUp(root:context:batchContext:)` runs.
+    // if read before `setUp(root:context:)` runs.
     @ObservationIgnored var linkRegisterController: LinkRegisterController { itemController.linkRegisterController }
 
     @MainActor @ObservationIgnored public lazy var rootController: ItemRootController = {

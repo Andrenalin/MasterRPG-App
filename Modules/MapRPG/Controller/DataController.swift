@@ -6,10 +6,9 @@ import CoreData
 import SwiftUI
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
         self.dataController = CoreDataController<MapModel, RPGMap>(
             context: context,
-            batchContext: batchContext,
             // Core Data relationship names, not the Swift convenience wrappers
             // (entryModels etc.) — unknown key paths are silently ignored and
             // the prefetch never happens.

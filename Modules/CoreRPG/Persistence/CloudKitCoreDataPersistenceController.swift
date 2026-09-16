@@ -43,7 +43,7 @@ public struct CloudKitCoreDataPersistenceController {
             do {
                 try fileManager.createDirectory(at: privateStoreFolderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription)")
+                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription, privacy: .public)")
                 model.error = .loadModel
             }
         }
@@ -167,14 +167,6 @@ public struct CloudKitCoreDataPersistenceController {
         context.transactionAuthor = model.currentActor.rawValue
         context.automaticallyMergesChangesFromParent = true
         model.context = context
-
-        // Setup dedicated batch context for batch operations
-        let batchContext = container.newBackgroundContext()
-        batchContext.name = "batchContext"
-        batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        batchContext.transactionAuthor = model.currentActor.rawValue
-        batchContext.automaticallyMergesChangesFromParent = true
-        model.batchContext = batchContext
 
 #if !os(tvOS)
         model.spotlightIndexer?.startSpotlightIndexing()

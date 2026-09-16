@@ -14,53 +14,65 @@ public final class ShareExtensionDatabaseService {
     // MARK: - Properties
     
     public private(set) var context: NSManagedObjectContext?
-    public private(set) var batchContext: NSManagedObjectContext?
     public private(set) var container: NSPersistentContainer?
     public private(set) var isReady = false
-        
+
     private let useCloudKit: Bool
-    private var persistence: CoreDataPersistenceController?
-    
+    // Holds whichever controller `setup()` actually constructs, so `save()`'s error path
+    // and any future re-setup stay agnostic to which one is live.
+    private var localPersistence: CoreDataPersistenceController?
+    private var cloudPersistence: CloudKitCoreDataPersistenceController?
+
     // MARK: - Initialization
-    
+
     public init(useCloudKit: Bool = false) {
         self.useCloudKit = useCloudKit
     }
-    
+
     // MARK: - Setup
-    
+
     /// Loads ALL modules to ensure database integrity
     /// Loading partial modules can corrupt the Core Data store
     public func setup() async throws {
         guard !isReady else { return }
-        
+
         // Load ALL module bundles
         let bundles = DataBaseModel.rpgModuleBundles
 
-        // Create persistence controller
-        persistence = CoreDataPersistenceController(
-            inMemory: false,
-            currentActor: .sharingExtension
-        )
-        
-        // Load complete database
-        persistence?.loadDatabase(bundles: bundles)
-        
-        // Wait for context to be available
-        guard let model = persistence?.model else {
-            throw ShareExtensionError.databaseInitializationFailed
+        // Must open the SAME store the main app is currently using — the CloudKit-synced
+        // private store when the user has iCloud sync on, the local-only store otherwise.
+        // This used to always construct `CoreDataPersistenceController` regardless of
+        // `useCloudKit`, so anything shared while the main app was in CloudKit mode was
+        // written to a SQLite file the main app never opens and silently lost. See
+        // CODE_AUDIT §5.1.
+        let model: CoreDataInitModel
+        if useCloudKit {
+            let persistence = CloudKitCoreDataPersistenceController(
+                inMemory: false,
+                currentActor: .sharingExtension
+            )
+            cloudPersistence = persistence
+            persistence.loadDatabase(bundles: bundles)
+            model = persistence.model
+        } else {
+            let persistence = CoreDataPersistenceController(
+                inMemory: false,
+                currentActor: .sharingExtension
+            )
+            localPersistence = persistence
+            persistence.loadDatabase(bundles: bundles)
+            model = persistence.model
         }
-        
+
         // Check for errors
         if model.error != .none {
             throw ShareExtensionError.databaseError(model.error)
         }
-        
+
         // Set contexts
         self.context = model.context
-        self.batchContext = model.batchContext
         self.container = model.container
-        
+
         self.isReady = true
     }
     

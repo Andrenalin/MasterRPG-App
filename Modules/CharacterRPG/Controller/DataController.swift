@@ -5,8 +5,8 @@ import Foundation
 import CoreData
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
-        self.dataController = CoreDataController<ValueModel, RPGValue>(context: context, batchContext: batchContext, relationshipKeyPaths: ["entries", "photos"])
+    @MainActor init(context: NSManagedObjectContext, token: String) {
+        self.dataController = CoreDataController<ValueModel, RPGValue>(context: context, relationshipKeyPaths: ["entries", "photos"])
         self.token = token
     }
     

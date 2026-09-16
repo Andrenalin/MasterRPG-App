@@ -65,7 +65,6 @@ struct DatabaseInitializationView: View {
         guard let context = appModel.databaseModel.context else { return }
         appModel.setupRootModels(
             context: context,
-            batchContext: appModel.databaseModel.batchContext,
             spotlightIndexer: appModel.databaseModel.spotlightIndexer,
             coreDataInitModel: appModel.databaseModel.coreDataInitModel
         )

@@ -20,9 +20,9 @@ public extension PhotoRootModel {
     ) -> PhotoRootModel {
         let root = PhotoRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
-        root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
+        root.setUp(context: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
 
         for model in models {
             root.itemController.replace(model: model, isInsert: true)
@@ -50,9 +50,9 @@ public extension PhotoRootModel {
     static func testRoot() -> PhotoRootModel {
         let root = PhotoRootModel(tagController: .preview)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, batchContext: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
+        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let realRootManager = RootManager.preview(fake: root.rootController)
-        root.setUp(context: nil, batchContext: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
+        root.setUp(context: nil, rootManager: realRootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: realRootManager))
         return root
     }
 #endif

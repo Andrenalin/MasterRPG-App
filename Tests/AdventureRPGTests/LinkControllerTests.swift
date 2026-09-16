@@ -65,8 +65,7 @@ struct LinkControllerTests {
                 tableRoot: tableRoot,
                 weatherRoot: weatherRoot
             ),
-            context: nil,
-            batchContext: nil
+            context: nil
         )
         return root
     }

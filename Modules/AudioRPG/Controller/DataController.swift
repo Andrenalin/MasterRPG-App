@@ -5,10 +5,10 @@ import CoreData
 import Foundation
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
+    @MainActor init(context: NSManagedObjectContext, token: String) {
         // Prefetch entries: mapSnapshot touches entriesModel on every fetched object,
         // which fires one relationship fault per row without prefetching.
-        self.dataController = CoreDataController<AudioModel, RPGAudio>(context: context, batchContext: batchContext, relationshipKeyPaths: ["entries"])
+        self.dataController = CoreDataController<AudioModel, RPGAudio>(context: context, relationshipKeyPaths: ["entries"])
         self.token = token
     }
 

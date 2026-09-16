@@ -10,7 +10,6 @@ public extension RuleRootModel {
         let temporaryManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(
             context: nil,
-            batchContext: nil,
             rootManager: temporaryManager,
             adventureRootControllable: root,
             linkRegisterController: LinkRegisterController(root: temporaryManager)
@@ -18,7 +17,6 @@ public extension RuleRootModel {
         let rootManager = RootManager(anyRoot: root)
         root.setUp(
             context: nil,
-            batchContext: nil,
             rootManager: rootManager,
             adventureRootControllable: root,
             linkRegisterController: LinkRegisterController(root: rootManager)
@@ -39,7 +37,6 @@ public extension RuleRootModel {
         let rootManager = RootManager(anyRoot: root)
         root.setUp(
             context: nil,
-            batchContext: nil,
             rootManager: rootManager,
             adventureRootControllable: root,
             linkRegisterController: LinkRegisterController(root: rootManager)

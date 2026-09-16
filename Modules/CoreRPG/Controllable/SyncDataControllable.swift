@@ -41,34 +41,47 @@ public extension SyncDataControllable {
     @Sendable
     func updateFromSync(deletedIds: [UUID], insertedIds: [UUID], updatedIds: [UUID]) {
         Task { @MainActor in
-            // Cancel any still-in-flight sync from a previous notification so overlapping
-            // CloudKit change batches for this module can't race each other applying
-            // deletes/inserts/updates out of order — mirrors the cancel-and-replace
-            // pattern `FolderListControllable` already uses for its own debounced work.
-            // See CODE_AUDIT_EditItem §3.2.
-            itemControllable.itemDataModel.pendingSyncTask?.cancel()
+            // Chain onto (rather than cancel) any still-in-flight sync from a previous
+            // notification, so overlapping CloudKit change batches for this module apply
+            // in arrival order without ever discarding part of an in-flight batch. This
+            // used to `cancel()` the previous task instead: since each loop below checked
+            // cancellation per-item, a notification arriving mid-batch could cut off the
+            // previous batch's remaining deletes, leaving those items permanently "deleted
+            // in Core Data, still present in ItemDataModel" until the app relaunched — and
+            // if the user then edited/saved one of those ghost items, `CoreDataController`
+            // would silently recreate (and re-sync) the row it had already deleted. See
+            // CODE_AUDIT §3.1. Awaiting the predecessor's `.value` preserves the original
+            // ordering guarantee (mirrors the intent behind `FolderListControllable`'s own
+            // cancel-and-replace pattern, see CODE_AUDIT_EditItem §3.2) without dropping work.
+            let previousTask = itemControllable.itemDataModel.pendingSyncTask
             itemControllable.itemDataModel.pendingSyncTask = Task(priority: .userInitiated) {
+                await previousTask?.value
                 do {
-                    try Task.checkCancellation()
                     await CloudKitOperationCounter.shared.recordOperation(
                         function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
                         file: "SyncDataControllable.swift"
                     )
 
-                    // Process deletions — act directly on the reported ids instead of fetching
-                    // every id in the store and diffing against the full in-memory set; that
-                    // O(n) full-table reconciliation is reserved for `fetchUpdates()`, which
-                    // already runs once at `start()` and would catch any deletion this misses.
-                    for deletedId in deletedIds {
-                        try Task.checkCancellation()
-                        await itemControllable.delete(itemId: deletedId, withFileData: false, withDatabase: false)
+                    // Process deletions — diff the reported ids against Core Data's actual
+                    // current ids rather than trusting `deletedIds` directly.
+                    // `CoreDataChangeObserver` can report a placeholder (freshly-generated,
+                    // meaningless) UUID for a deleted object it can no longer resolve once
+                    // Core Data has already turned it into an unfulfillable fault — acting on
+                    // that placeholder directly is a guaranteed no-op, silently dropping the
+                    // deletion. Diffing against a fresh id fetch is what the producer's own
+                    // contract ("consumers diff against fetched ids") assumes. See CODE_AUDIT §3.2.
+                    if !deletedIds.isEmpty {
+                        let currentIds = Set(try await dataControllable.fetchIds())
+                        let staleIds = itemControllable.itemDataModel.items.filter { !currentIds.contains($0) }
+                        for staleId in staleIds {
+                            await itemControllable.delete(itemId: staleId, withFileData: false, withDatabase: false)
+                        }
                     }
 
                     // Process insertions
                     // The data is ALREADY in Core Data (we're fetching from it!)
                     // We only need to update in-memory models, NOT save back to database
                     for insertedId in insertedIds {
-                        try Task.checkCancellation()
                         guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
                         // `resetModel(with:)` is itself `@MainActor` — `await` alone hops, same as
                         // `delete(itemId:...)` above; no `MainActor.run` wrapper needed.
@@ -77,7 +90,6 @@ public extension SyncDataControllable {
 
                     // Process updates
                     for updatedId in updatedIds {
-                        try Task.checkCancellation()
                         guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
                         // Use mergeUpdates to avoid database writes during sync
                         itemControllable.mergeUpdates(model: model)
@@ -85,9 +97,7 @@ public extension SyncDataControllable {
                 } catch {
                     // Sync errors are non-fatal; the next CloudKit notification will retry —
                     // but log so a merge that keeps failing (rather than self-healing on the
-                    // next notification) is actually diagnosable. (Cancellation surfaces here
-                    // too, as `CancellationError` — expected when a newer batch superseded
-                    // this one, not itself worth alarming about, but harmless to log.)
+                    // next notification) is actually diagnosable.
                     Logger.syncDataControllable.error(
                         "updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count)) failed: \(error.localizedDescription, privacy: .public)"
                     )

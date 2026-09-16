@@ -87,10 +87,10 @@ public final class MapRootModel {
         self.openFileWindowModel = OpenFileWindowModel(windowId: NetworkModules.map.viewerWindowId, route: { DetailRoute.viewer($0) })
     }
 
-    @MainActor public func setUp(context: NSManagedObjectContext?, batchContext: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
+    @MainActor public func setUp(context: NSManagedObjectContext?, rootManager: RootManager, adventureRootControllable: any RootExportControllable, linkRegisterController: LinkRegisterController) {
         rootController.rootManager = rootManager
 
-        itemController.itemDataModel.dataController = context.map { DataController(context: $0, batchContext: batchContext, token: config.module.token) }
+        itemController.itemDataModel.dataController = context.map { DataController(context: $0, token: config.module.token) }
         itemController.itemDataModel.linkRegisterController = linkRegisterController
 
         exportController.hubControllable = adventureRootControllable

@@ -16,6 +16,7 @@ public protocol CoreDataId {
 /// a save that races the enqueue.
 final class CoreDataModel: Sendable {
     private let operations = Mutex<[PendingOperation]>([])
+    private let flushChain = Mutex<Task<Void, Error>?>(nil)
 
     func addPendingOperation(_ operation: PendingOperation) {
         operations.withLock { $0.append(operation) }
@@ -27,6 +28,25 @@ final class CoreDataModel: Sendable {
             pending.removeAll()
             return cleared
         }
+    }
+
+    /// Runs `work` only after any previously-chained flush has finished, atomically swapping
+    /// in the new task under one lock acquisition so two concurrent `flushPendingOperations()`/
+    /// `save()` calls on this controller (e.g. an autosave debounce racing an explicit save)
+    /// can never both observe "no predecessor" and run their dequeue→batchExists→apply
+    /// sequences in parallel — which could let an older call's apply step land after (and
+    /// silently overwrite) a newer one's. See CODE_AUDIT §3.3.
+    func chainedFlush(_ work: @escaping @Sendable () async throws -> Void) async throws {
+        let task = flushChain.withLock { chain -> Task<Void, Error> in
+            let previous = chain
+            let newTask = Task<Void, Error> {
+                _ = await previous?.result
+                try await work()
+            }
+            chain = newTask
+            return newTask
+        }
+        try await task.value
     }
 }
 
@@ -43,17 +63,14 @@ public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & C
     let model: CoreDataModel
 
     private let context: NSManagedObjectContext
-    private let batchContext: NSManagedObjectContext
     private let relationshipKeyPaths: [String]
 
     @MainActor
     public init(
         context: NSManagedObjectContext,
-        batchContext: NSManagedObjectContext? = nil,
         relationshipKeyPaths: [String] = []
     ) {
         self.context = context
-        self.batchContext = batchContext ?? context
         self.relationshipKeyPaths = relationshipKeyPaths
         model = CoreDataModel()
     }
@@ -150,25 +167,27 @@ public extension CoreDataController {
     /// covers every module's changes. Direct callers (`addNew`, `delete`, `batchReplace`) use
     /// `save()` instead, which flushes and saves immediately.
     func flushPendingOperations() async throws {
-        let pendingOperations = model.clearPendingOperations()
-        guard !pendingOperations.isEmpty else { return }
+        try await model.chainedFlush {
+            let pendingOperations = model.clearPendingOperations()
+            guard !pendingOperations.isEmpty else { return }
 
-        var operationsByID: [UUID: PendingOperation] = [:]
-        for operation in pendingOperations {
-            operationsByID[operation.id] = operation
-        }
-        let uniqueOperations = Array(operationsByID.values)
-        let existingUUIDs = try await batchExists(uuids: uniqueOperations.map { $0.id })
+            var operationsByID: [UUID: PendingOperation] = [:]
+            for operation in pendingOperations {
+                operationsByID[operation.id] = operation
+            }
+            let uniqueOperations = Array(operationsByID.values)
+            let existingUUIDs = try await batchExists(uuids: uniqueOperations.map { $0.id })
 
-        await context.perform {
-            for operation in uniqueOperations {
-                if existingUUIDs.contains(operation.id) {
-                    if let existing = self.fetchCoreData(uuid: operation.id) {
-                        operation.updater(operation.model, existing)
+            await context.perform {
+                for operation in uniqueOperations {
+                    if existingUUIDs.contains(operation.id) {
+                        if let existing = self.fetchCoreData(uuid: operation.id) {
+                            operation.updater(operation.model, existing)
+                        }
+                    } else {
+                        let new = DataType(context: self.context)
+                        operation.updater(operation.model, new)
                     }
-                } else {
-                    let new = DataType(context: self.context)
-                    operation.updater(operation.model, new)
                 }
             }
         }

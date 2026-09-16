@@ -5,8 +5,8 @@ import Foundation
 import CoreData
 
 struct DataController: DataPersistenceControllable {
-    @MainActor init(context: NSManagedObjectContext, batchContext: NSManagedObjectContext? = nil, token: String) {
-            self.dataController = CoreDataController<GeneratorModel, RPGGenerator>(context: context, batchContext: batchContext)
+    @MainActor init(context: NSManagedObjectContext, token: String) {
+            self.dataController = CoreDataController<GeneratorModel, RPGGenerator>(context: context)
             self.token = token
         }
         
@@ -43,12 +43,17 @@ extension DataController: CoreDataSnapshotPersistable {
         model.tags <=> snapshot.tags.rawValue
         model.generatorCategory <=> snapshot.category.rawValue
         model.displayState <=> Int32(snapshot.displayState)
+        // Uses the shared `syncEntries` helper (CODE_AUDIT §5.4/§9.9) so entries removed from
+        // the incoming snapshot are actually deleted rather than just dropped from the
+        // relationship's NSSet — which previously left them as orphaned rows that leaked
+        // locally and re-exported to CloudKit as zombie records with no owner.
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
-            model.entriesModel = snapshot.entries.wrappedValue.enumerated().map {
-                let entry = model.entryOrNew(for: $1.id)
-                self.map($1, into: entry, index: $0)
-                return entry
-            }
+            model.entriesModel = model.syncEntries(
+                incoming: snapshot.entries.wrappedValue,
+                current: model.entriesModel,
+                childId: { $0.id },
+                map: { self.map($0, into: $1, index: $2) }
+            )
         }
         model.parentId <=> snapshot.parentId
         model.genType <=> Int16(snapshot.genType.rawValue)

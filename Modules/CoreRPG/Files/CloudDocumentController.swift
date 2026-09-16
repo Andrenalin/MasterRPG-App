@@ -5,24 +5,58 @@ import os.log
 
 // MARK: - CloudKit Operation Counter
 
+// Actually enforces something (a periodic reset + a one-time-per-window log warning) instead
+// of being pure write-only telemetry nobody ever read `getCount()`/called `reset()` on — see
+// CODE_AUDIT §9.2. `warningThreshold` is a heuristic, not an Apple-documented CloudKit quota:
+// it exists to surface an unusually chatty day of Core Data saves/file operations in the log
+// before they risk CloudKit's actual per-request rate limits, not to enforce a real limit.
 actor CloudKitOperationCounter {
     static let shared = CloudKitOperationCounter()
-    
-    private var operationCount: Int = 0
-    private let startTime: Date = Date()
-    
+
+    private static let warningThreshold = 1_000
+    private static let resetInterval: Duration = .seconds(24 * 60 * 60)
+
+    private var operationCount = 0
+    private var startTime = Date()
+    private var hasWarnedThisWindow = false
+    private var resetTask: Task<Void, Never>?
+
+    init() {
+        // Reached via `Self.shared`/`CloudKitOperationCounter.shared`, not a `self` capture:
+        // an actor's synchronous init only permits nonisolated access to `self` once a closure
+        // in its body has captured `self` for later (Sendable/escaping) use, so this task
+        // deliberately avoids capturing `self` at all — it only reaches back into the actor
+        // once the singleton is fully constructed, when the task actually runs.
+        resetTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.resetInterval)
+                await CloudKitOperationCounter.shared.reset()
+            }
+        }
+    }
+
+    deinit {
+        resetTask?.cancel()
+    }
+
     func recordOperation(function: String, file: String) {
         operationCount += 1
         let elapsed = Date().timeIntervalSince(startTime)
         Logger.fileStore.info("☁️ CloudKit Op #\(self.operationCount, privacy: .public) [\(elapsed, privacy: .public)s] - \(function, privacy: .public)")
+
+        guard operationCount >= Self.warningThreshold, !hasWarnedThisWindow else { return }
+        hasWarnedThisWindow = true
+        Logger.fileStore.warning("☁️ CloudKit operation count has crossed \(Self.warningThreshold, privacy: .public) since \(self.startTime, privacy: .public) — check for a sync loop or an unusually chatty batch.")
     }
-    
+
     func getCount() -> Int {
-        return operationCount
+        operationCount
     }
-    
+
     func reset() {
         operationCount = 0
+        startTime = Date()
+        hasWarnedThisWindow = false
     }
 }
 

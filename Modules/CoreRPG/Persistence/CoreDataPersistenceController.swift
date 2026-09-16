@@ -32,7 +32,6 @@ public final class CoreDataInitModel: @unchecked Sendable {
     var containerStoreUrl: URL?
 
     public internal(set) var context: NSManagedObjectContext?
-    public internal(set) var batchContext: NSManagedObjectContext?
     public internal(set) var container: NSPersistentContainer?
     public internal(set) var error: CoreDataInitError = .none
 
@@ -96,7 +95,7 @@ public struct CoreDataPersistenceController {
             do {
                 try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription)")
+                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription, privacy: .public)")
                 model.error = .loadModel
             }
         }
@@ -187,14 +186,6 @@ public struct CoreDataPersistenceController {
         context.transactionAuthor = model.currentActor.rawValue
         context.automaticallyMergesChangesFromParent = true
         model.context = context
-
-        // Setup dedicated batch context for batch operations
-        let batchContext = container.newBackgroundContext()
-        batchContext.name = "batchContext"
-        batchContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        batchContext.transactionAuthor = model.currentActor.rawValue
-        batchContext.automaticallyMergesChangesFromParent = true
-        model.batchContext = batchContext
 
 #if !os(tvOS)
         model.spotlightIndexer?.startSpotlightIndexing()

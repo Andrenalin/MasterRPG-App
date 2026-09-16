@@ -214,20 +214,18 @@ private actor PersistentHistoryProcessor {
     ) throws -> [NSPersistentHistoryTransaction] {
         let historyFetchRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: fromDate)
         if let fetchRequest = NSPersistentHistoryTransaction.fetchRequest {
-            var predicates: [NSPredicate] = []
-
-            AppPersistentActor.allCases.forEach { appActor in
-                if appActor == currentActor {
-                    // For own transactions, only process batchContext (which generates history)
-                    // Regular background_context changes don't need to be merged back to itself
-                    let predicate = NSPredicate(format: "%K = %@ AND %K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue, #keyPath(NSPersistentHistoryTransaction.contextName), "batchContext")
-                    predicates.append(predicate)
-                } else {
-                    // For other actors, process all their transactions (they need to be merged into this actor's contexts)
-                    let predicate = NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue)
-                    predicates.append(predicate)
+            // Only OTHER actors' transactions ever need to be merged back into this actor's
+            // contexts — this actor's own regular-context changes are already reflected in
+            // its own contexts and never need reprocessing, so the current actor is simply
+            // excluded rather than special-cased. (A dedicated "batchContext" used to exist
+            // for capturing this actor's own history for that purpose, but nothing ever wrote
+            // through it — removed along with the predicate that referenced it. See
+            // CODE_AUDIT §9.1.)
+            let predicates = AppPersistentActor.allCases
+                .filter { $0 != currentActor }
+                .map { appActor in
+                    NSPredicate(format: "%K = %@", #keyPath(NSPersistentHistoryTransaction.author), appActor.rawValue)
                 }
-            }
 
             let compoundPredicate = NSCompoundPredicate(type: .or, subpredicates: predicates)
             fetchRequest.predicate = compoundPredicate

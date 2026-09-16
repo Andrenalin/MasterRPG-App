@@ -17,7 +17,7 @@ struct DataControllerTests {
             CoreRPG.Resources.bundle,
             MapRPG.Resources.bundle
         ])
-        let sut = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.map.token)
+        let sut = DataController(context: store.context, token: NetworkModules.map.token)
         let pinEntity = try #require(store.container.managedObjectModel.entitiesByName["RPGMapPin"])
         let deadAttribute = try #require(pinEntity.attributesByName["isDead"])
         let characterAttribute = try #require(pinEntity.attributesByName["characterId"])
@@ -259,7 +259,7 @@ struct DataControllerTests {
             photoId: photoId
         )
 
-        let dataController = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.map.token)
+        let dataController = DataController(context: store.context, token: NetworkModules.map.token)
         let models = try await dataController.fetch()
         let model = try #require(models.first)
 
@@ -274,7 +274,6 @@ struct DataControllerTests {
 private struct PersistentTestStore {
     let container: NSPersistentContainer
     let context: NSManagedObjectContext
-    let batchContext: NSManagedObjectContext
 
     @MainActor
     init(bundles: [Bundle]) throws {
@@ -295,7 +294,6 @@ private struct PersistentTestStore {
         }
 
         context = container.newBackgroundContext()
-        batchContext = container.newBackgroundContext()
     }
 }
 #endif

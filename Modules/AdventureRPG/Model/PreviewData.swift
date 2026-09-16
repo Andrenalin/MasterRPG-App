@@ -28,7 +28,7 @@ public extension AdventureRootModel {
         let ruleRoot = RuleFactory.root(tagController: .preview)
         let root = AdventureRootModel(tagController: .preview, audioRoot: .preview, diceRoot: .preview, generatorRoot: nil, mapRoot: .preview, pdfRoot: .preview, photoRoot: .preview, ruleRoot: ruleRoot, spaceRoot: .preview, tableRoot: .preview, characterRoot: .preview, weatherRoot: .preview)
         let rootManager = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, ruleRoot: ruleRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.weatherRoot)
-        root.setUp(root: rootManager, context: nil, batchContext: nil)
+        root.setUp(root: rootManager, context: nil)
         for model in models {
             root.itemController.replace(model: model, isInsert: true)
         }
@@ -59,7 +59,7 @@ public extension AdventureRootModel {
         let ruleRoot = RuleFactory.root(tagController: .preview)
         let root = AdventureRootModel(tagController: .preview, audioRoot: audioRoot, diceRoot: diceRoot, generatorRoot: nil, mapRoot: mapRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, ruleRoot: ruleRoot, spaceRoot: spaceRoot, tableRoot: tableRoot, characterRoot: characterRoot, weatherRoot: weatherRoot)
         let rootManager = RootManager(adventureRoot: root, audioRoot: root.audioRoot, characterRoot: root.characterRoot, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root.mapRoot, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, ruleRoot: ruleRoot, spaceRoot: root.spaceRoot, tableRoot: root.tableRoot, weatherRoot: root.weatherRoot)
-        root.setUp(root: rootManager, context: nil, batchContext: nil)
+        root.setUp(root: rootManager, context: nil)
         root.editController.setCurrentItem(to: .preview)
         return root
     }

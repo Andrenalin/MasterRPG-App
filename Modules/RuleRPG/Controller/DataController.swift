@@ -8,12 +8,10 @@ struct DataController: DataPersistenceControllable {
     @MainActor
     init(
         context: NSManagedObjectContext,
-        batchContext: NSManagedObjectContext? = nil,
         token: String
     ) {
         dataController = CoreDataController<RuleModel, RPGRule>(
             context: context,
-            batchContext: batchContext,
             relationshipKeyPaths: ["entries"]
         )
         self.token = token
@@ -62,19 +60,16 @@ extension DataController: CoreDataSnapshotPersistable {
         model.displayState <=> Int32(snapshot.displayState)
         model.sourceMetadata <=> snapshot.sourceMetadata.rawValue
         model.sourcePayload <=> snapshot.sourcePayload.rawValue
+        // Uses the shared `syncEntries` helper instead of hand-rolling the find-or-new +
+        // diff + delete-orphans pattern (CODE_AUDIT §9.3) — the same duplicated block that
+        // GeneratorRPG's copy silently lost the delete step from (see CODE_AUDIT §5.4).
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
-            let oldEntries = model.entriesModel
-            let newEntries = snapshot.entries.wrappedValue.enumerated().map { index, entry in
-                let managedEntry = model.entryOrNew(for: entry.id)
-                map(entry, into: managedEntry, index: index)
-                return managedEntry
-            }
-            model.entriesModel = newEntries
-
-            let retained = Set(newEntries.map(ObjectIdentifier.init))
-            for entry in oldEntries where !retained.contains(ObjectIdentifier(entry)) {
-                model.managedObjectContext?.delete(entry)
-            }
+            model.entriesModel = model.syncEntries(
+                incoming: snapshot.entries.wrappedValue,
+                current: model.entriesModel,
+                childId: { $0.id },
+                map: { self.map($0, into: $1, index: $2) }
+            )
         }
         model.parentId <=> snapshot.parentId
     }

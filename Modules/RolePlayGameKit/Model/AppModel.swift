@@ -410,9 +410,9 @@ extension AppModel: ExampleUrlProvider {
 // MARK: - DB and Root Models setup
 
 extension AppModel {
-    @MainActor public func setupRootModels(context: NSManagedObjectContext, batchContext: NSManagedObjectContext?, spotlightIndexer: RpgSpotlightIndexerDelegate?, coreDataInitModel: CoreDataInitModel?) {
+    @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?, coreDataInitModel: CoreDataInitModel?) {
         tagController.setup(context: context)
-        adventureRoot.setUp(root: root, context: context, batchContext: batchContext)
+        adventureRoot.setUp(root: root, context: context)
         gameRoot.setUpStatistics(context: context)
 
         self.rpgSpotlightIndexer = spotlightIndexer
@@ -644,7 +644,7 @@ extension AppModel {
             databaseModelOverride: dbModel,
             settingsModelOverride: .previewFixture()
         )
-        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, batchContext: dbModel.batchContext, spotlightIndexer: nil, coreDataInitModel: nil)
+        model.setupRootModels(context: dbModel.context.unsafelyUnwrapped, spotlightIndexer: nil, coreDataInitModel: nil)
         return model
     }
     @MainActor public static var previewWithoutDatabase: AppModel {

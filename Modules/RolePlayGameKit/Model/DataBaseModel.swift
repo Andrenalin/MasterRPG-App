@@ -52,7 +52,6 @@ public final class DataBaseModel {
     }()
 
     public private(set) var context: NSManagedObjectContext?
-    public private(set) var batchContext: NSManagedObjectContext?
     public private(set) var spotlightIndexer: RpgSpotlightIndexerDelegate?
 
     private var inMemory: Bool
@@ -121,11 +120,9 @@ public final class DataBaseModel {
             guard !hasContextSet else { return }
             if hasCloudKit {
                 context = cloudPersistence?.model.context
-                batchContext = cloudPersistence?.model.batchContext
                 spotlightIndexer = cloudPersistence?.model.spotlightIndexer
             } else {
                 context = localPersistence?.model.context
-                batchContext = localPersistence?.model.batchContext
                 spotlightIndexer = localPersistence?.model.spotlightIndexer
             }
             hasContextSet = true

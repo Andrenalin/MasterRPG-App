@@ -350,7 +350,24 @@ public extension FileUrlDataController {
         let fullUrl = try await cloudDocumentController.createNameUrl(for: url)
         try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
-        return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil, contentHash: contentHash)
+        // Compute a contentHash from the picker's file data when the caller didn't already
+        // supply one — this path used to always persist `contentHash == nil` for picker-added
+        // files while `createNewFileUrl` (the import path) always populated it, forcing
+        // picker-added files onto a weaker CloudKit version-determinism fallback than
+        // imported ones. See CODE_AUDIT §5.5.
+        let resolvedContentHash: String?
+        if let contentHash {
+            resolvedContentHash = contentHash
+        } else {
+            do {
+                let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
+                resolvedContentHash = FileUrl.contentHash(of: data)
+            } catch {
+                Logger.fileStore.error("Cannot read picker file to compute contentHash \(error.localizedDescription, privacy: .public)")
+                resolvedContentHash = nil
+            }
+        }
+        return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: module, relativeUrl: nil, contentHash: resolvedContentHash)
     }
 
     /// Check if the new URL points to the same file as the existing FileUrl

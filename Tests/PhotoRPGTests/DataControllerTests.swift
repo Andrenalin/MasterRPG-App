@@ -15,7 +15,7 @@ struct DataControllerTests {
             CoreRPG.Resources.bundle,
             PhotoRPG.Resources.bundle
         ])
-        let sut = DataController(context: store.context, batchContext: store.batchContext, token: NetworkModules.photo.token)
+        let sut = DataController(context: store.context, token: NetworkModules.photo.token)
 
         let itemId = UUID()
         let parentId = UUID()
@@ -100,7 +100,6 @@ struct DataControllerTests {
 private struct PersistentTestStore {
     let container: NSPersistentContainer
     let context: NSManagedObjectContext
-    let batchContext: NSManagedObjectContext
 
     @MainActor
     init(bundles: [Bundle]) throws {
@@ -121,7 +120,6 @@ private struct PersistentTestStore {
         }
 
         context = container.newBackgroundContext()
-        batchContext = container.newBackgroundContext()
     }
 }
 #endif

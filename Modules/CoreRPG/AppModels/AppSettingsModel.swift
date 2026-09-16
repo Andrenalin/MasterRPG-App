@@ -138,14 +138,19 @@ public final class AppSettingsModel: Sendable {
     }
 
     // MARK: - Shared Settings Value in AppGroups
-    
+
+    // `useCloudKit` is persisted to `UserDefaults.appGroup`, not `.standard` — it must be
+    // readable from the Share Extension process (see `readUseCloudKitFromDefaults()`), which
+    // has its own sandboxed `.standard` domain that never sees values the main app writes to
+    // its own `.standard`. Writing here to `.standard` used to make the extension permanently
+    // believe CloudKit sync was off, no matter the user's actual setting. See CODE_AUDIT §5.2.
     public private(set) var useCloudKit: Bool = false {
         didSet {
             guard oldValue != useCloudKit else { return }
-            defaults?.set(useCloudKit, forKey: AppSettingsModel.useCloudKitKey)
+            UserDefaults.appGroup?.set(useCloudKit, forKey: AppSettingsModel.useCloudKitKey)
         }
     }
-    
+
     // MARK: - Reset function
 
     public func resetCloudKit(to newValue: Bool) {
@@ -153,13 +158,15 @@ public final class AppSettingsModel: Sendable {
         useCloudKit = newValue
     }
 
-    /// Reads the persisted `useCloudKit` value directly from `UserDefaults.standard` without
-    /// constructing an `AppSettingsModel` (or anything that owns one, such as `AppModel`).
+    /// Reads the persisted `useCloudKit` value directly from the shared App Group defaults,
+    /// without constructing an `AppSettingsModel` (or anything that owns one, such as `AppModel`).
     ///
     /// Intended for lightweight call sites — like the Share Extension — that need this single
-    /// value but must not pay the cost of building the full app object graph to get it.
+    /// value but must not pay the cost of building the full app object graph to get it. Must
+    /// read the same `UserDefaults.appGroup` domain the main app writes to above, not `.standard`
+    /// — see CODE_AUDIT §5.2.
     public static func readUseCloudKitFromDefaults() -> Bool {
-        UserDefaults.standard.bool(forKey: useCloudKitKey)
+        UserDefaults.appGroup?.bool(forKey: useCloudKitKey) ?? false
     }
     
     // MARK: - Init Settings
@@ -184,8 +191,10 @@ public final class AppSettingsModel: Sendable {
         showGamePlayerDice = defaults.value(forKey: AppSettingsModel.showGamePlayerDiceKey) as? Bool ?? true
         needsValidateDatabase = defaults.value(forKey: AppSettingsModel.needsValidateDatabaseKey) as? Bool ?? true
 
-        // shared App groups
-        useCloudKit = defaults.bool(forKey: AppSettingsModel.useCloudKitKey)
+        // Shared across processes (main app + Share Extension) — always read from the App
+        // Group domain, not the `defaults` this instance was otherwise constructed with, so
+        // every process observes the same value. See CODE_AUDIT §5.2.
+        useCloudKit = UserDefaults.appGroup?.bool(forKey: AppSettingsModel.useCloudKitKey) ?? false
     }
 
     public static func previewFixture(
