@@ -12,10 +12,14 @@ public struct AudioPlayerMiniBarView: View {
     @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
 
+    // Reuses the same artwork-loading model as the full player bar instead of
+    // always showing a static placeholder. See CODE_AUDIT_Audio §8.3.
+    @State private var viewModel = AudioPlayerBarViewModel()
+
     public var body: some View {
         HStack(spacing: 8) {
             if showsMetadata {
-                AudioPlayerMiniBarMusicArtTitleTimelineView()
+                AudioPlayerMiniBarMusicArtTitleTimelineView(viewModel: viewModel)
 
                 Spacer(minLength: 8)
             }
@@ -25,6 +29,12 @@ public struct AudioPlayerMiniBarView: View {
         .padding(4)
         .padding(.horizontal)
         .frame(maxWidth: showsMetadata ? .infinity : nil)
+        .task(id: root.audioPlayerModel.currentItem?.id) {
+            viewModel.loadAlbumArtwork(for: root.audioPlayerModel.currentItem)
+        }
+        .onDisappear {
+            viewModel.cancelArtworkLoad()
+        }
     }
 }
 
@@ -77,6 +87,8 @@ private struct AudioPlayerMiniBarPlaybackControlsView: View {
 }
 
 private struct AudioPlayerMiniBarMusicArtTitleTimelineView: View {
+    let viewModel: AudioPlayerBarViewModel
+
     @Environment(AudioRootModel.self) private var root
     @Environment(\.tabViewBottomAccessoryPlacement) private var tabViewBottomAccessoryPlacement
 
@@ -87,14 +99,12 @@ private struct AudioPlayerMiniBarMusicArtTitleTimelineView: View {
                 Button {
                     withAnimation { root.audioPlayerModel.showPlayerToolBar = false }
                 } label: {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .foregroundStyle(.secondary)
-                        )
-                        .shadow(radius: 2, y: 1)
+                    AlbumArtworkView(
+                        artwork: viewModel.albumArtwork,
+                        fallbackImage: viewModel.appIconImage(),
+                        size: 32,
+                        cornerRadius: 6
+                    )
                 }
                 .accessibilityLabel(Text("Now Playing", bundle: .module))
                 .accessibilityHint(Text("Hide player toolbar", bundle: .module))

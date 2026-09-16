@@ -42,11 +42,6 @@ struct GameController: Sendable {
     let audioController: AudioController
     let gameModel: ItemGameModel
 
-    @MainActor
-    private func fileUrlAndName(of item: AudioModel) -> (FileUrl?, String) {
-        (item.fileUrl, item.name)
-    }
-
 }
 
 // gameItem(for:)/setGame(item:itemId:)/currentItem() come from
@@ -150,42 +145,6 @@ extension GameController {
             guard await hasLocalDatabaseAudioData(for: entryId, visited: visited) else { return false }
         }
         return true
-    }
-
-    func audioAsset(for itemId: UUID) async -> PlaylistItem? {
-        let item = await gameItem(for: itemId)
-        // Extract the Sendable fields on the MainActor — the @MainActor model must
-        // not be read inside the file-loading closures below.
-        let (itemFileUrl, title) = await fileUrlAndName(of: item)
-        guard let fileUrl = itemFileUrl, let fileUrlDataController = itemController.fileUrlDataController else { return nil }
-
-        var audioAsset: PlaylistItem? = nil
-        do {
-            _ = await fileUrlDataController.fileDownloaded(for: fileUrl)
-            audioAsset = try await fileUrlDataController.url(for: fileUrl) { url -> PlaylistItem? in
-                guard let url else { return nil }
-                // Use ResourceCache for better performance
-                let key = "audio.game.\(itemId.uuidString)"
-                let data = try await ResourceCache.shared.load(key: key, from: url)
-                let fileExtension = url.pathExtension
-                let tempUrl = URL.temporaryDirectory.appending(path: itemId.uuidString).appendingPathExtension(fileExtension)
-                try data.write(to: tempUrl)
-                return try await PlaylistItem.loading(id: itemId, title: title, artist: "MasterRPG", from: tempUrl)
-            }
-        } catch {
-            Logger.gameController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
-        }
-
-        do {
-            if audioAsset == nil, let data = fileUrl.data {
-                let tempUrl = URL.temporaryDirectory.appending(path: itemId.uuidString).appendingPathExtension("mp4")
-                try data.write(to: tempUrl)
-                return try await PlaylistItem.loading(id: itemId, title: title, artist: "MasterRPG", from: tempUrl)
-            }
-        } catch {
-            Logger.gameController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
-        }
-        return audioAsset
     }
 
     @MainActor

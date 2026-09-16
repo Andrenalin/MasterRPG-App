@@ -13,12 +13,19 @@ import UIKit
 @MainActor
 @Observable
 final class AudioPlayerBarViewModel {
-    var isScubberVisible = false
+    var isScrubberVisible = false
     var isVolumeSliderVisible = false
     var previousVolume: Double = 0.25
     var albumArtwork: Image?
 
     private var artworkLoadTask: Task<Void, Never>?
+
+    /// Cancels an in-flight artwork load without starting a new one — call from
+    /// `onDisappear` so a track that's no longer visible doesn't keep loading
+    /// artwork in the background. See CODE_AUDIT_Audio §3.7.
+    func cancelArtworkLoad() {
+        artworkLoadTask?.cancel()
+    }
 
     func loadAlbumArtwork(for item: PlaylistItem?) {
         // Cancel any existing load task

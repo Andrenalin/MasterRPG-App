@@ -48,8 +48,8 @@ extension AudioDetailRoute: ItemDetailRoute {
     
     public func detail() -> UUID? {
         switch self {
-            case .folder(let id): return id
-            case .folderInline(let id): return id
+        case .folder(let id): return id
+        case .folderInline(let id): return id
         }
     }
 }

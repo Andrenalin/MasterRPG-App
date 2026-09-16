@@ -5,7 +5,7 @@ import Combine
 import SwiftUI
 
 @MainActor @Observable
-public final class AudioPlayerModel {
+public final class AudioPlayerModel: Sendable {
     
     // MARK: player
     public var showPlayerToolBar: Bool = false
@@ -57,6 +57,7 @@ public final class AudioPlayerModel {
     private(set) var subscriptions = Set<AnyCancellable>()
     var timeObserver: Any? = nil
     @ObservationIgnored var sharedAudioTask: Task<Void, Never>?
+    @ObservationIgnored var seekTask: Task<Void, Never>?
     
     func add(subscriptions: Set<AnyCancellable>) {
         self.subscriptions = self.subscriptions.union(subscriptions)

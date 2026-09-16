@@ -8,20 +8,8 @@ struct ToolbarVolumeButtonView: View {
     @State private var isVolumeSliderPresented = false
 
     var body: some View {
-        Button {
+        VariableVolumeButton(volume: root.audioPlayerModel.volume) {
             isVolumeSliderPresented.toggle()
-        } label: {
-            Label {
-                Text("Volume", bundle: .module)
-            } icon: {
-                Image(
-                    systemName: "volume.3",
-                    variableValue: root.audioPlayerModel.volume
-                )
-                .symbolRenderingMode(.hierarchical)
-                .symbolEffect(.bounce, value: root.audioPlayerModel.volume)
-            }
-            .labelStyle(.iconOnly)
         }
         .help(Text("Adjust playback volume", bundle: .module))
 #if !os(tvOS)

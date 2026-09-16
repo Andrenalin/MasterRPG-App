@@ -38,14 +38,15 @@ struct AudioEntity: IndexedEntity {
     private let storedDescription: String
 
     var root: AudioRootModel
-    var model: AudioModel
 
     // Display fields are captured eagerly: entity properties are nonisolated, the
     // @MainActor model must not be read from them. All queries are @MainActor.
+    // `model` itself is intentionally not stored — nothing here reads it after
+    // init, and storing it would add a second non-Sendable stored property
+    // alongside `root`. See CODE_AUDIT_Audio §3.2.
     @MainActor
     init(root: AudioRootModel, model: AudioModel) {
         self.root = root
-        self.model = model
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description

@@ -29,9 +29,7 @@ struct AudioPlayerVolumeControl: View {
 #if !os(tvOS)
             // Volume slider (visible when expanded)
             if isSliderVisible {
-                Slider(value: $audioPlayerModel.volume, in: 0...1) {
-                    Text("Volume", bundle: .module)
-                }
+                VolumeSlider(volume: $audioPlayerModel.volume)
                     .frame(width: Constants.sliderWidth)
                     .tint(.primary)
                     .padding(.leading, 12)
@@ -91,8 +89,8 @@ struct AudioPlayerVolumeControl: View {
     }
 
     private func handleVolumeButtonTap() {
-#if os(macOS)
-        // macOS: toggle mute if already showing slider, otherwise show slider
+        // Same behavior on every platform: first tap shows the slider, second
+        // tap (while already showing) mutes. See CODE_AUDIT_Audio §9.6.
         if isSliderVisible {
             withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
                 onToggleMute()
@@ -102,18 +100,6 @@ struct AudioPlayerVolumeControl: View {
                 isSliderVisible = true
             }
         }
-#else
-        // iOS/visionOS: first tap shows slider, second tap mutes
-        if isSliderVisible {
-            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
-                onToggleMute()
-            }
-        } else {
-            withAnimation(reduceMotion ? nil : Constants.volumeSpring) {
-                isSliderVisible = true
-            }
-        }
-#endif
     }
 }
 

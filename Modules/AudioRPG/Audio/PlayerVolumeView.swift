@@ -33,12 +33,9 @@ struct PlayerVolumeView: View {
 
         VStack {
 #if !os(tvOS)
-            Slider(value: $model.volume, in: 0.0 ... 1.0) {
-                Text("Volume", bundle: .module)
-            }
+            VolumeSlider(volume: $model.volume)
                 .frame(width: 160)
                 .tint(Color.accentColor)
-                .accessibilityValue(Text(model.volume, format: .percent))
 #endif
         }
         .padding(8)
@@ -77,19 +74,10 @@ private struct PlayerVolumeButtonView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Button {
+        VariableVolumeButton(volume: root.audioController.model.volume) {
             showVolume.toggle()
-        } label: {
-            Label {
-                Text("Volume", bundle: .module)
-            } icon: {
-                Image(systemName: "volume.3", variableValue: Double(root.audioController.model.volume))
-                    .symbolRenderingMode(.hierarchical)
-                    .symbolEffect(.bounce, value: root.audioController.model.volume)
-            }
-            .labelStyle(.iconOnly)
-            .tint(Color.accentColor)
         }
+        .tint(Color.accentColor)
         .frame(minWidth: 44, minHeight: 44)
         .accessibilityValue(Text(root.audioController.model.volume, format: .percent))
         .transaction { transaction in

@@ -50,7 +50,7 @@ extension AudioRoute: ItemDetailRoute {
 
     public func detail() -> UUID? {
         switch self {
-            case .detail(let id): return id
+        case .detail(let id): return id
         }
     }
 }

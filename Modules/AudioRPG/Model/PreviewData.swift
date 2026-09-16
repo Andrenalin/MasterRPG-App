@@ -103,19 +103,19 @@ extension AudioModel {
 
 extension PlaylistItem {
     static var previewFixtures: [PlaylistItem] {
-        let audioURL = PreviewAssetFixture.url(.audio)
+        let audioUrl = PreviewAssetFixture.url(.audio)
             ?? URL.temporaryDirectory.appending(path: "masterrpg-preview-audio.mp3")
         return [
             PlaylistItem(
                 id: AudioModel.previewId,
-                url: audioURL,
+                url: audioUrl,
                 title: "Storm over Emberkeep",
                 artist: "MasterRPG Preview",
                 duration: CMTime(seconds: 180, preferredTimescale: 600)
             ),
             PlaylistItem(
                 id: AudioModel.previewAmbientId,
-                url: audioURL,
+                url: audioUrl,
                 title: "Rain in the Old Forest",
                 artist: "MasterRPG Preview",
                 duration: CMTime(seconds: 240, preferredTimescale: 600)
@@ -136,7 +136,7 @@ extension ItemRowTreeModel {
 extension ItemController {
     @MainActor
     static var preview = AudioRootModel.preview.itemController
-    }
+}
 
 extension EditController {
     @MainActor

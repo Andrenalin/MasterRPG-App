@@ -57,13 +57,13 @@ struct AudioPlayerTimelineView: View {
 
     private func showScrubber() {
         withAnimation(reduceMotion ? nil : Constants.hoverSpring) {
-            viewModel.isScubberVisible = true
+            viewModel.isScrubberVisible = true
         }
     }
 
     private func hideScrubber() {
         withAnimation(reduceMotion ? nil : Constants.hoverSpring) {
-            viewModel.isScubberVisible = false
+            viewModel.isScrubberVisible = false
         }
     }
 }
@@ -106,6 +106,9 @@ private struct AudioPlayerTimelineIPadView: View {
             .task(id: currentItem?.id) {
                 viewModel.loadAlbumArtwork(for: currentItem)
             }
+            .onDisappear {
+                viewModel.cancelArtworkLoad()
+            }
     }
 }
 
@@ -121,7 +124,7 @@ private struct AudioPlayerTimelineMacView: View {
 
     var body: some View {
         AudioPlayerTimelineContentLayerView(currentItem: currentItem, viewModel: viewModel)
-            .allowsHitTesting(!viewModel.isScubberVisible)
+            .allowsHitTesting(!viewModel.isScrubberVisible)
             .overlay(alignment: .bottom) {
                 AudioPlayerTimelineProgressOverlayView(audioPlayerModel: audioPlayerModel, viewModel: viewModel)
             }
@@ -137,12 +140,15 @@ private struct AudioPlayerTimelineMacView: View {
         #if !os(tvOS)
             .onHover { hovering in
                 withAnimation(reduceMotion ? nil : AudioPlayerTimelineView.Constants.hoverSpring) {
-                    viewModel.isScubberVisible = hovering
+                    viewModel.isScrubberVisible = hovering
                 }
             }
         #endif
             .task(id: currentItem?.id) {
                 viewModel.loadAlbumArtwork(for: currentItem)
+            }
+            .onDisappear {
+                viewModel.cancelArtworkLoad()
             }
     }
 }
@@ -159,17 +165,17 @@ private struct AudioPlayerTimelineContentLayerView: View {
                 size: AudioPlayerTimelineView.Constants.albumArtSize,
                 cornerRadius: AudioPlayerTimelineView.Constants.albumArtCornerRadius
             )
-            .blur(radius: viewModel.isScubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
+            .blur(radius: viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
 
             SongInfoView(
                 title: currentItem?.title ?? String(localized: "Not Playing", bundle: .module),
                 artist: currentItem?.artist ?? "---"
             )
-            .blur(radius: viewModel.isScubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
+            .blur(radius: viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.blurRadius : 0, opaque: false)
         }
         .frame(height: AudioPlayerTimelineView.Constants.contentHeight, alignment: .center)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .opacity(viewModel.isScubberVisible ? AudioPlayerTimelineView.Constants.hoverOpacity : 1)
+        .opacity(viewModel.isScrubberVisible ? AudioPlayerTimelineView.Constants.hoverOpacity : 1)
     }
 }
 
@@ -179,7 +185,7 @@ private struct AudioPlayerTimelineProgressOverlayView: View {
 
     @ViewBuilder
     var body: some View {
-        if !viewModel.isScubberVisible {
+        if !viewModel.isScrubberVisible {
             ProgressView(
                 value: audioPlayerModel.currentTime,
                 total: max(audioPlayerModel.playerTime.totalDuration, 1)
@@ -202,7 +208,7 @@ private struct AudioPlayerTimelineScrubberOverlayView: View {
 
     @ViewBuilder
     var body: some View {
-        if viewModel.isScubberVisible {
+        if viewModel.isScrubberVisible {
             AudioPlayerScrubberView(
                 currentTime: audioPlayerModel.currentTime,
                 totalDuration: audioPlayerModel.playerTime.totalDuration,

@@ -158,7 +158,7 @@ extension AudioModel: nonisolated ItemDiffComparable {
             fileUrl_.update == other.fileUrl_.update &&
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
-            // santity checks
+            // sanity checks
             entries.count == other.entries.count &&
             entries.enumerated().allSatisfy { index, entry in
                 entry == other.entries[index]

@@ -95,15 +95,9 @@ private struct AudioPlayerViewVolumeView: View {
 #else
         @Bindable var item = root.audioController.model
 
-        Slider(value: $item.volume, in: 0.0 ... 1.0) {
-            Text("Volume", bundle: .module)
-        } minimumValueLabel: {
-            Image(systemName: "speaker")
-        } maximumValueLabel: {
-            Image(systemName: "speaker.wave.3")
-        }
-        .labelsHidden()
-        .tint(Color.accentColor)
+        VolumeSlider(volume: $item.volume, minIcon: "speaker", maxIcon: "speaker.wave.3")
+            .labelsHidden()
+            .tint(Color.accentColor)
 #endif
     }
 }
@@ -134,7 +128,7 @@ private struct AudioPlayerViewPlaySkipControlView: View {
 
             Button {
                 if let currentId = root.audioController.model.currentId, appGameStateModel.isGameRunning {
-                    networkActions?.game(root.gameController.requestPlay(id: currentId), .generic, nil)
+                    networkActions?.game(root.gameController.requestPlay(id: currentId), .playAudio, nil)
                 } else {
                     root.audioController.toggle()
                 }

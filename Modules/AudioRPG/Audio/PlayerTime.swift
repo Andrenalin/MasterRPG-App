@@ -21,7 +21,7 @@ struct PlayerTime: Equatable, Hashable, Sendable {
         totalDuration = elapsedTime + remainingTime
     }
 
-    private static func formatted(time: Double) -> String {
+    static func formatted(time: Double) -> String {
         guard time.isFinite else { return "--:--" }
         let totalSeconds = Int(ceil(max(time, 0)))
         let pattern: Duration.TimeFormatStyle.Pattern = totalSeconds >= TimeConstant.secsPerHour
@@ -32,6 +32,9 @@ struct PlayerTime: Equatable, Hashable, Sendable {
 }
 
 struct PlaylistItem: Equatable, Hashable, Identifiable, Sendable {
+    /// Fallback artist name for tracks with no item description to use instead.
+    static let defaultArtistName = "MasterRPG"
+
     let id: UUID
     let url: URL
     let title: String
@@ -47,8 +50,8 @@ struct PlaylistItem: Equatable, Hashable, Identifiable, Sendable {
     }
 
     /// Loads `assetUrl`'s duration and builds the resulting item — the "AVURLAsset →
-    /// load duration → PlaylistItem" step shared by `AudioController` and `GameController`'s
-    /// otherwise-differing asset-loading strategies (see CODE_AUDIT §9.17/§7.1).
+    /// load duration → PlaylistItem" step used by `AudioController`'s asset-loading
+    /// path (see CODE_AUDIT §9.17/§7.1).
     static func loading(id: UUID, title: String, artist: String, from assetUrl: URL) async throws -> PlaylistItem {
         let asset = AVURLAsset(url: assetUrl)
         let duration = try await asset.load(.duration)

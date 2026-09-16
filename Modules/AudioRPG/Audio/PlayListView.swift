@@ -24,7 +24,7 @@ struct PlayListView: View {
                 HStack {
                     Button {
                         if appGameStateModel.isGameRunning {
-                            networkActions?.game(root.gameController.requestPlay(id: audio.id), .generic, nil)
+                            networkActions?.game(root.gameController.requestPlay(id: audio.id), .playAudio, nil)
                         } else {
                             root.audioController.togglePlay(id: audio.id)
                         }
@@ -46,7 +46,7 @@ struct PlayListView: View {
 
                     Button(role: .destructive) {
                         if appGameStateModel.isGameRunning && root.audioController.model.isPlaying && root.audioController.model.currentId == audio.id {
-                            networkActions?.game(root.gameController.requestPlay(id: audio.id), .generic, nil)
+                            networkActions?.game(root.gameController.requestPlay(id: audio.id), .playAudio, nil)
                         }
                         withAnimation(reduceMotion ? nil : .default) {
                             root.audioController.removeAudio(id: audio.id)

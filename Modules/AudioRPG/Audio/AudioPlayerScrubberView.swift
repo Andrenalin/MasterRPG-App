@@ -13,6 +13,12 @@ struct AudioPlayerScrubberView: View {
     let elapsedText: String
     let onSeek: @Sendable (Double) -> Void
 
+    // Tracks the drag independently of `currentTime` so intermediate drag
+    // positions don't each trigger a seek — only the value at release does.
+    // See CODE_AUDIT_Audio §7.1.
+    @State private var isEditing = false
+    @State private var editingValue: Double = 0
+
     var body: some View {
         HStack(spacing: 8) {
             Text(verbatim: elapsedText)
@@ -25,11 +31,16 @@ struct AudioPlayerScrubberView: View {
 #if !os(tvOS)
             Slider(
                 value: Binding(
-                    get: { clampedCurrentTime },
-                    set: onSeek
+                    get: { isEditing ? editingValue : clampedCurrentTime },
+                    set: { editingValue = $0 }
                 ),
                 in: sliderRange
-            )
+            ) { editing in
+                isEditing = editing
+                if !editing {
+                    onSeek(editingValue)
+                }
+            }
             .tint(.primary)
             .accessibilityLabel(Text("Playback Position", bundle: .module))
             .accessibilityValue(accessibilityTimeValue)
@@ -58,7 +69,7 @@ struct AudioPlayerScrubberView: View {
     }
 
     private var formattedTotalTime: String {
-        formatTime(totalDuration)
+        PlayerTime.formatted(time: totalDuration)
     }
 
     private var accessibilityTimeValue: Text {
@@ -66,16 +77,5 @@ struct AudioPlayerScrubberView: View {
             "\(Int(clampedCurrentTime.rounded())) seconds of \(Int(sliderRange.upperBound.rounded())) seconds",
             bundle: .module
         )
-    }
-
-    private func formatTime(_ time: Double) -> String {
-        guard !time.isNaN && time.isFinite else { return "--:--" }
-
-        let totalSeconds = Int(ceil(max(time, 0)))
-        let hours = totalSeconds / 3600
-        let pattern: Duration.TimeFormatStyle.Pattern = hours > 0
-            ? .hourMinuteSecond(padHourToLength: 2)
-            : .minuteSecond(padMinuteToLength: 2)
-        return Duration.seconds(totalSeconds).formatted(.time(pattern: pattern))
     }
 }

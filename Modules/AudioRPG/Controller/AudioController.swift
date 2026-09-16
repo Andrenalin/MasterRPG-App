@@ -7,7 +7,7 @@ import GroupActivities
 import OSLog
 import Observation
 
-final class AudioController {
+final class AudioController: Sendable {
     @MainActor
     init(itemController: ItemController, model: AudioPlayerModel) {
         self.itemController = itemController
@@ -75,9 +75,19 @@ extension AudioController {
         togglePlay(id: newId)
     }
 
+    // Stays nonisolated (not @MainActor) — the scrubber stores this as a
+    // @Sendable closure so it must remain callable from any isolation context.
     func skip(to offset: TimeInterval) {
-        Task {
-            await model.player.seek(to: CMTime(seconds: offset, preferredTimescale: CMTimeScale(1)))
+        Task { @MainActor in
+            // Cancel any in-flight seek before starting a new one — a rapid
+            // sequence of calls (e.g. debounced scrubber updates) should only
+            // ever land on the last requested position. `preferredTimescale:
+            // 600` avoids snapping every seek to the nearest whole second.
+            // See CODE_AUDIT_Audio §7.1.
+            model.seekTask?.cancel()
+            model.seekTask = Task {
+                await model.player.seek(to: CMTime(seconds: offset, preferredTimescale: 600))
+            }
         }
     }
 
@@ -107,16 +117,24 @@ extension AudioController {
             return AudioAssetRequest(
                 id: item.id,
                 title: item.name,
-                artist: item.description.isEmpty ? "MasterRPG" : item.description,
+                artist: item.description.isEmpty ? PlaylistItem.defaultArtistName : item.description,
                 fileUrl: fileUrl
             )
         }
 
-        var playItems: [PlaylistItem] = []
-        for request in requests {
-            guard let playItem = await audioAsset(for: request) else { continue }
-            playItems.append(playItem)
+        // Load concurrently (each request is an independent file copy + duration
+        // load off the main actor), then reassemble in the original request order.
+        let loaded = await withTaskGroup(of: (Int, PlaylistItem?).self) { group in
+            for (index, request) in requests.enumerated() {
+                group.addTask { (index, await self.audioAsset(for: request)) }
+            }
+            var results = [Int: PlaylistItem?]()
+            for await (index, playItem) in group {
+                results[index] = playItem
+            }
+            return results
         }
+        let playItems = requests.indices.compactMap { loaded[$0] ?? nil }
         // Single mutation: one observation change instead of one per item.
         model.playList.append(contentsOf: playItems)
     }
@@ -138,8 +156,7 @@ extension AudioController {
                 // Stable per-item filename (no per-play UUID suffix) so replaying —
                 // or switching playlists back and forth over — the same track
                 // overwrites its own temp copy instead of leaking a fresh file every
-                // time; mirrors GameController.audioAsset(for:)'s existing pattern.
-                // See CODE_AUDIT §7.1.
+                // time. See CODE_AUDIT §7.1.
                 let tempUrl = URL.temporaryDirectory
                     .appending(path: request.id.uuidString)
                     .appendingPathExtension(url.pathExtension)
@@ -176,7 +193,6 @@ extension AudioController {
         }
         // Item not in playlist, load it first
         let models = [itemController.itemOrEmpty(for: id)]
-        guard !models.isEmpty else { return }
         Task {
             await add(audio: models, replace: true)
             // After loading, set it as current and play
@@ -195,6 +211,13 @@ extension AudioController {
         // else will reclaim it once it's gone from the list. See CODE_AUDIT §7.1.
         try? FileManager.default.removeItem(at: model.playList[index].url)
         model.playList.remove(at: index)
+        // The removed item may have been the current-but-paused track: `currentItem`
+        // is a stored reference, not derived from `playList`, so leaving it pointing
+        // at a row no longer in the list would permanently break `currentIndex`
+        // (and therefore hasNext/hasPrev). Clear it explicitly instead. See CODE_AUDIT_Audio §5.3.
+        if model.currentId == id {
+            model.currentItem = nil
+        }
     }
 
 }
@@ -203,6 +226,10 @@ extension AudioController {
     @MainActor
     func preparePlay(id: UUID, triggerPlay: Bool = true) async {
         initAudioSessionEngine()
+        // A prior playlist-completion (see resetPlaylist) must not stick past the
+        // track it applied to — otherwise every later toggle() treats playback as
+        // "finished" and restarts from 0:00 instead of resuming. See CODE_AUDIT_Audio §5.2.
+        model.isPlaybackComplete = false
         if model.currentId != id {
             model.set(currentId: id)
         }

@@ -38,8 +38,7 @@ struct MediaPlayerCoordinator {
             newNowPlayingInfo[MPNowPlayingInfoPropertyAssetURL] = currentItem.url
             newNowPlayingInfo[MPMediaItemPropertyTitle] = currentItem.title
             newNowPlayingInfo[MPMediaItemPropertyAlbumTitle] = currentItem.artist
-            newNowPlayingInfo[MPMediaItemPropertyArtist] = "MasterRPG"
-            //            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { size -> AKImage in return image })
+            newNowPlayingInfo[MPMediaItemPropertyArtist] = PlaylistItem.defaultArtistName
 
             newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index
             newNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackQueueCount] = count

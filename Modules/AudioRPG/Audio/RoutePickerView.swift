@@ -4,7 +4,6 @@ import AVFoundation
 import AVKit
 import SwiftUI
 
-
 #if os(visionOS)
 struct RoutePickerView: View {
     var body: some View {

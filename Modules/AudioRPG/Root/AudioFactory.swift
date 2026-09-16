@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-
 import SwiftUI
 
 public enum AudioFactory {

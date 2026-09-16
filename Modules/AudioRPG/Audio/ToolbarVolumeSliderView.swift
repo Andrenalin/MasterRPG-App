@@ -10,15 +10,9 @@ struct ToolbarVolumeSliderView: View {
 #if os(tvOS)
         EmptyView()
 #else
-        Slider(value: $audioPlayerModel.volume, in: 0...1) {
-            Text("Volume", bundle: .module)
-        } minimumValueLabel: {
-            Image(systemName: "speaker.fill")
-        } maximumValueLabel: {
-            Image(systemName: "speaker.wave.3.fill")
-        }
-        .padding()
-        .frame(minWidth: 240)
+        VolumeSlider(volume: $audioPlayerModel.volume, minIcon: "speaker.fill", maxIcon: "speaker.wave.3.fill")
+            .padding()
+            .frame(minWidth: 240)
 #endif
     }
 }
