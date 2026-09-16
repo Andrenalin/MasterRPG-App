@@ -41,16 +41,18 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor @ViewBuilder func gameViewer(root: SpaceRootModel) -> some View {
+        if let currentItemId = root.gameController.gameModel.currentItemId {
 #if os(tvOS)
-        SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            SpaceQuickLook(root: root, item: ItemSelection(itemId: currentItemId, entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 #elseif os(visionOS)
-        SpaceQuickLook(root: root, item: ItemSelection(itemId: root.gameController.gameModel.currentItemId ?? UUID(), entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            SpaceQuickLook(root: root, item: ItemSelection(itemId: currentItemId, entryId: nil), startLoading: true, gameMode: true, dismiss: nil)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 #else
-        SpaceViewer(root: root, id: root.gameController.gameModel.currentItemId ?? UUID(), isModal: false)
-            .padding()
+            SpaceViewer(root: root, id: currentItemId, isModal: false)
+                .padding()
 #endif
+        }
     }
 
     @MainActor func viewer(root: SpaceRootModel, itemId: UUID, configuration: ViewerConfiguration, dismissAction: (() -> Void)? = nil) -> some View {

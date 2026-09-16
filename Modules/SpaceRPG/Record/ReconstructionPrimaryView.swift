@@ -34,6 +34,7 @@ struct ReconstructionPrimaryView: View {
                 completed: $completed,
                 cancelled: $cancelled
             )
+            .equatable()
             .onAppear {
                 UIApplication.shared.isIdleTimerDisabled = true
             }

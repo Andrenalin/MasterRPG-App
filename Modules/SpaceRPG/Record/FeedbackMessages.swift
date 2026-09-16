@@ -20,38 +20,38 @@ final class FeedbackMessages {
         switch feedback {
 
             case .objectTooFar:
-                return NSLocalizedString(
-                    "Move Closer (Object Capture)",
-                    bundle: LocString.bundleForLocalizedStrings,
-                    value: "Move Closer",
+                return String(
+                    localized: "Move Closer (Object Capture)",
+                    defaultValue: "Move Closer",
+                    bundle: .module,
                     comment: "Feedback message to move closer for object capture")
 
             case .objectTooClose:
-                return NSLocalizedString(
-                    "Move Farther Away (Object Capture)",
-                    bundle: LocString.bundleForLocalizedStrings,
-                    value: "Move Farther Away",
+                return String(
+                    localized: "Move Farther Away (Object Capture)",
+                    defaultValue: "Move Farther Away",
+                    bundle: .module,
                     comment: "Feedback message to move back for object capture")
 
             case .environmentTooDark, .environmentLowLight:
-                return NSLocalizedString(
-                    "More Light Required (Object Capture)",
-                    bundle: LocString.bundleForLocalizedStrings,
-                    value: "More Light Required",
+                return String(
+                    localized: "More Light Required (Object Capture)",
+                    defaultValue: "More Light Required",
+                    bundle: .module,
                     comment: "Feedback message to increase lighting for object capture")
 
             case .movingTooFast:
-                return NSLocalizedString(
-                    "Move slower (Object Capture)",
-                    bundle: LocString.bundleForLocalizedStrings,
-                    value: "Move slower",
+                return String(
+                    localized: "Move slower (Object Capture)",
+                    defaultValue: "Move slower",
+                    bundle: .module,
                     comment: "Feedback message to slow down for object capture")
 
             case .outOfFieldOfView:
-                return NSLocalizedString(
-                    "Aim at your object (Object Capture)",
-                    bundle: LocString.bundleForLocalizedStrings,
-                    value: "Aim at your object",
+                return String(
+                    localized: "Aim at your object (Object Capture)",
+                    defaultValue: "Aim at your object",
+                    bundle: .module,
                     comment: "Feedback message to aim at your object for object capture")
 
             default:

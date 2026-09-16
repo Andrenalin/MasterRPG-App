@@ -7,7 +7,7 @@ Device orbit component of a data model that maintains the state of the app.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import UIKit
+import Foundation
 
 extension AppDataModel {
     enum Orbit: Int, CaseIterable, Identifiable, Comparable {
@@ -28,7 +28,7 @@ extension AppDataModel {
         }
 
         func next() -> Self {
-            let currentIndex = Self.allCases.firstIndex(of: self)!
+            guard let currentIndex = Self.allCases.firstIndex(of: self) else { return self }
             let nextIndex = Self.allCases.index(after: currentIndex)
             return Self.allCases[nextIndex == Self.allCases.endIndex ? Self.allCases.endIndex - 1 : nextIndex]
         }
@@ -36,31 +36,51 @@ extension AppDataModel {
         func feedbackString(isObjectFlippable: Bool) -> String {
             switch self {
                 case .orbit1:
-                    return LocString.segment1FeedbackString
+                    return String(
+                        localized: "Move slowly around your object. (Object Capture, Segment, Feedback)",
+                        defaultValue: "Move slowly around your object.",
+                        bundle: .module,
+                        comment: "Guided feedback message to move slowly around object to start capturing."
+                    )
                 case .orbit2, .orbit3:
                     if isObjectFlippable {
-                        return LocString.segment2And3FlippableFeedbackString
+                        return String(
+                            localized: "Flip object on its side and move around. (Object Capture, Segment, Feedback)",
+                            defaultValue: "Flip object on its side and move around.",
+                            bundle: .module,
+                            comment: "Guided feedback message for user to move around object again after flipping."
+                        )
                     } else {
                         if case .orbit2 = self {
-                            return LocString.segment2UnflippableFeedbackString
+                            return String(
+                                localized: "Move low and capture again. (Object Capture, Segment, Feedback)",
+                                defaultValue: "Move low and capture again.",
+                                bundle: .module,
+                                comment: "Guided feedback message for user to move around object again from a lower angle without flipping"
+                            )
                         }
-                        return LocString.segment3UnflippableFeedbackString
+                        return String(
+                            localized: "Move above your object and capture again. (Object Capture, Segment, Feedback)",
+                            defaultValue: "Move above your object and capture again.",
+                            bundle: .module,
+                            comment: "Guided feedback message for user to move around object again from a higher angle without flipping"
+                        )
                     }
             }
         }
 
-        func feedbackVideoName(for interfaceIdiom: UIUserInterfaceIdiom, isObjectFlippable: Bool) -> String {
+        func feedbackVideoName(isRegularWidth: Bool, isObjectFlippable: Bool) -> String {
             switch self {
                 case .orbit1:
-                    return interfaceIdiom == .pad ? "ScanPasses-iPad-FixedHeight-1" : "ScanPasses-iPhone-FixedHeight-1"
+                    return isRegularWidth ? "ScanPasses-iPad-FixedHeight-1" : "ScanPasses-iPhone-FixedHeight-1"
                 case .orbit2:
                     let iPhoneVideoName = isObjectFlippable ? "ScanPasses-iPhone-FixedHeight-2" : "ScanPasses-iPhone-FixedHeight-unflippable-low"
                     let iPadVideoName = isObjectFlippable ? "ScanPasses-iPad-FixedHeight-2" : "ScanPasses-iPad-FixedHeight-unflippable-low"
-                    return interfaceIdiom == .pad ? iPadVideoName : iPhoneVideoName
+                    return isRegularWidth ? iPadVideoName : iPhoneVideoName
                 case .orbit3:
                     let iPhoneVideoName = isObjectFlippable ? "ScanPasses-iPhone-FixedHeight-3" : "ScanPasses-iPhone-FixedHeight-unflippable-high"
                     let iPadVideoName = isObjectFlippable ? "ScanPasses-iPad-FixedHeight-3" : "ScanPasses-iPad-FixedHeight-unflippable-high"
-                    return interfaceIdiom == .pad ? iPadVideoName : iPhoneVideoName
+                    return isRegularWidth ? iPadVideoName : iPhoneVideoName
             }
         }
 

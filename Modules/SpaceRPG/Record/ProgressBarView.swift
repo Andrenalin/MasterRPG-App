@@ -11,7 +11,13 @@ import Foundation
 import SwiftUI
 import RealityKit
 
-struct ProgressBarView: View {
+struct ProgressBarView: View, Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.progress == rhs.progress
+            && lhs.estimatedRemainingTime == rhs.estimatedRemainingTime
+            && lhs.processingStageDescription == rhs.processingStageDescription
+    }
+
     @Environment(AppDataModel.self) private var appModel
     // The progress value from 0 to 1 which describes how much coverage is done.
     var progress: Float
@@ -27,15 +33,11 @@ struct ProgressBarView: View {
         )
     }
 
+    // Reads the shot count `CaptureFolderManager.loadShots()` already cached on entering
+    // reconstruction, instead of hitting the filesystem synchronously on every body
+    // evaluation. See CODE_AUDIT_Space §7.1.
     private var numOfImages: Int {
-        guard let folderManager = appModel.scanFolderManager else { return 0 }
-        guard let urls = try? FileManager.default.contentsOfDirectory(
-            at: folderManager.imagesFolder,
-            includingPropertiesForKeys: nil
-        ) else {
-            return 0
-        }
-        return urls.filter { $0.pathExtension.uppercased() == "HEIC" }.count
+        appModel.scanFolderManager?.shots.count ?? 0
     }
 
     var body: some View {
@@ -91,24 +93,24 @@ struct ProgressBarView: View {
     }
 
     private struct LocalizedString {
-        static let processing = NSLocalizedString(
-            "Processing (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Processing…",
+        static let processing = String(
+            localized: "Processing (Object Capture)",
+            defaultValue: "Processing…",
+            bundle: .module,
             comment: "Processing title for object reconstruction."
         )
 
-        static let processingModelDescription = NSLocalizedString(
-            "Keep app running while processing. (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Keep app running while processing.",
+        static let processingModelDescription = String(
+            localized: "Keep app running while processing. (Object Capture)",
+            defaultValue: "Keep app running while processing.",
+            bundle: .module,
             comment: "Description displayed while processing models."
         )
 
-        static let calculating = NSLocalizedString(
-            "Calculating… (Estimated time, Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Calculating…",
+        static let calculating = String(
+            localized: "Calculating… (Estimated time, Object Capture)",
+            defaultValue: "Calculating…",
+            bundle: .module,
             comment: "When estimated processing time isn't available yet."
         )
     }

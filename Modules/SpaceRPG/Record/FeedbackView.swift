@@ -11,8 +11,12 @@ import Foundation
 import RealityKit
 import SwiftUI
 
-struct FeedbackView: View {
+struct FeedbackView: View, Equatable {
     @Bindable var messageList: TimedMessageList
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.messageList === rhs.messageList
+    }
 
     var body: some View {
         VStack {

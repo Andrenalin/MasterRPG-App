@@ -10,7 +10,11 @@ import Foundation
 import SwiftUI
 import os
 
-struct ReconstructionProgressView: View {
+struct ReconstructionProgressView: View, Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.outputFile == rhs.outputFile
+    }
+
     @Environment(AppDataModel.self) private var appModel
     let outputFile: URL
     @Binding var completed: Bool
@@ -35,7 +39,7 @@ struct ReconstructionProgressView: View {
                         isCancelling = true
                         appModel.photogrammetrySession?.cancel()
                     } label: {
-                        Text(LocalizedString.cancel)
+                        Text(verbatim: LocalizedString.cancel)
                             .font(.headline)
                             .bold()
                             .padding(30)
@@ -58,6 +62,7 @@ struct ReconstructionProgressView: View {
                 estimatedRemainingTime: estimatedRemainingTime,
                 processingStageDescription: processingStageDescription
             )
+            .equatable()
             .padding(contentPadding)
 
             Spacer()
@@ -81,21 +86,30 @@ struct ReconstructionProgressView: View {
             }
         }
         .task {
-            precondition(appModel.state == .reconstructing)
+            guard appModel.state == .reconstructing else {
+                Logger.scanner3D.error("ReconstructionProgressView's task ran outside .reconstructing state; surfacing an error instead of crashing.")
+                gotError = true
+                return
+            }
             guard let session = appModel.photogrammetrySession else {
                 Logger.scanner3D.error("Missing photogrammetry session while reconstructing")
+                gotError = true
                 return
             }
 
-            let outputs = UntilProcessingCompleteFilter(input: session.outputs)
+            var outputs = UntilProcessingCompleteFilter(input: session.outputs)
             do {
                 try session.process(requests: [.modelFile(url: outputFile)])
+
+                while let output = try await outputs.next() {
+                    handle(output)
+                }
             } catch {
                 Logger.scanner3D.error("Processing the session failed: \(String(describing: error))")
-            }
-
-            for await output in outputs {
-                handle(output)
+                if !isCancelling {
+                    gotError = true
+                    self.error = error
+                }
             }
         }
     }
@@ -153,10 +167,10 @@ struct ReconstructionProgressView: View {
     }
 
     private enum LocalizedString {
-        static let cancel = NSLocalizedString(
-            "Cancel (Object Reconstruction)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Cancel",
+        static let cancel = String(
+            localized: "Cancel (Object Reconstruction)",
+            defaultValue: "Cancel",
+            bundle: .module,
             comment: "Button title to cancel reconstruction"
         )
     }
@@ -166,45 +180,45 @@ extension PhotogrammetrySession.Output.ProcessingStage {
     var processingStageString: String? {
         switch self {
         case .preProcessing:
-            NSLocalizedString(
-                "Pre-Processing (Reconstruction)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Pre-Processing…",
+            String(
+                localized: "Pre-Processing (Reconstruction)",
+                defaultValue: "Pre-Processing…",
+                bundle: .module,
                 comment: "Feedback message during the object reconstruction phase."
             )
         case .imageAlignment:
-            NSLocalizedString(
-                "Aligning Images (Reconstruction)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Aligning Images…",
+            String(
+                localized: "Aligning Images (Reconstruction)",
+                defaultValue: "Aligning Images…",
+                bundle: .module,
                 comment: "Feedback message during the object reconstruction phase."
             )
         case .pointCloudGeneration:
-            NSLocalizedString(
-                "Generating Point Cloud (Reconstruction)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Generating Point Cloud…",
+            String(
+                localized: "Generating Point Cloud (Reconstruction)",
+                defaultValue: "Generating Point Cloud…",
+                bundle: .module,
                 comment: "Feedback message during the object reconstruction phase."
             )
         case .meshGeneration:
-            NSLocalizedString(
-                "Generating Mesh (Reconstruction)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Generating Mesh…",
+            String(
+                localized: "Generating Mesh (Reconstruction)",
+                defaultValue: "Generating Mesh…",
+                bundle: .module,
                 comment: "Feedback message during the object reconstruction phase."
             )
         case .textureMapping:
-            NSLocalizedString(
-                "Mapping Texture (Reconstruction)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Mapping Texture…",
+            String(
+                localized: "Mapping Texture (Reconstruction)",
+                defaultValue: "Mapping Texture…",
+                bundle: .module,
                 comment: "Feedback message during the object reconstruction phase."
             )
         case .optimization:
-            NSLocalizedString(
-                "Optimizing (Reconstruction)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Optimizing…",
+            String(
+                localized: "Optimizing (Reconstruction)",
+                defaultValue: "Optimizing…",
+                bundle: .module,
                 comment: "Feedback message during the object reconstruction phase."
             )
         default:

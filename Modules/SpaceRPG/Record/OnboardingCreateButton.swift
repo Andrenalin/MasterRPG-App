@@ -4,6 +4,7 @@ See the LICENSE.txt file for this sample’s licensing information.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
+import CoreRPG
 import SwiftUI
 import os
 
@@ -15,7 +16,7 @@ struct OnboardingCreateButton: View {
     var showBusyIndicator = false
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         Button {
@@ -32,7 +33,7 @@ struct OnboardingCreateButton: View {
                         ProgressView()
                             .progressViewStyle(
                                 CircularProgressViewStyle(
-                                    tint: shouldApplyBackground ? .white : (colorScheme == .light ? .black : .white)
+                                    tint: shouldApplyBackground ? .white : .primary
                                 )
                             )
                     }
@@ -45,14 +46,14 @@ struct OnboardingCreateButton: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .if(shouldApplyBackground) { view in
+        .applyIf(shouldApplyBackground) { view in
             view.background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(buttonBackgroundColor)
             )
         }
         .padding(.horizontal)
-        .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 380 : .infinity)
+        .frame(maxWidth: horizontalSizeClass == .regular ? 380 : .infinity)
         .disabled(buttonLabel.isEmpty)
         .accessibilityHidden(buttonLabel.isEmpty)
     }

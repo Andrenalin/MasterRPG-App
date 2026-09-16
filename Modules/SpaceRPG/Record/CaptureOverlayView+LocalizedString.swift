@@ -11,46 +11,46 @@ import Foundation
 
 extension CaptureOverlayView {
     struct LocalizedString {
-        static let startCapture = NSLocalizedString(
-            "Start Capture (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Start Capture",
+        static let startCapture = String(
+            localized: "Start Capture (Object Capture)",
+            defaultValue: "Start Capture",
+            bundle: .module,
             comment: "Title for start capture button on the object capture screen.")
 
-        static let resetBox = NSLocalizedString(
-            "Reset Box (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Reset Box",
+        static let resetBox = String(
+            localized: "Reset Box (Object Capture)",
+            defaultValue: "Reset Box",
+            bundle: .module,
             comment: "Title for resetting bounding box on the object capture screen.")
 
-        static let `continue` = NSLocalizedString(
-            "Continue (Object Capture, Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Continue",
+        static let `continue` = String(
+            localized: "Continue (Object Capture, Capture)",
+            defaultValue: "Continue",
+            bundle: .module,
             comment: "Title for continue button on the object capture screen.")
 
-        static let next = NSLocalizedString(
-            "Next (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Next",
+        static let next = String(
+            localized: "Next (Object Capture)",
+            defaultValue: "Next",
+            bundle: .module,
             comment: "Title for next button on the object capture screen.")
 
-        static let cancel = NSLocalizedString(
-            "Cancel (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Cancel",
+        static let cancel = String(
+            localized: "Cancel (Object Capture)",
+            defaultValue: "Cancel",
+            bundle: .module,
             comment: "Title for cancel button on the object capture screen.")
 
-        static let numOfImages = NSLocalizedString(
-            "%d/%d (Format, # of Images)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "%d/%d",
+        static let numOfImages = String(
+            localized: "%d/%d (Format, # of Images)",
+            defaultValue: "%d/%d",
+            bundle: .module,
             comment: "Images taken over maximum number of images.")
 
-        static let help = NSLocalizedString(
-            "Help (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Help",
+        static let help = String(
+            localized: "Help (Object Capture)",
+            defaultValue: "Help",
+            bundle: .module,
             comment: "Title for help button on the object capture screen to show the tutorial pages.")
     }
 }

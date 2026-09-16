@@ -42,6 +42,7 @@ struct Scanner3DRootView: View {
                 }
             } else if showProgressView {
                 CircularProgressView()
+                    .equatable()
             }
         }
         // Apple's sample never needs this: `ContentView` there *is* the app's only

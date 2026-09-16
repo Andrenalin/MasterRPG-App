@@ -31,25 +31,24 @@ struct BoundingBoxGuidanceView: View {
     private var guidanceText: String? {
         if case .ready = session.state {
             if hasDetectionFailed {
-                return NSLocalizedString(
-                    "Can‘t find your object. It should be larger than 3in (8cm) in each dimension.",
-                    bundle: LocString.bundleForLocalizedStrings,
-                    value: "Can‘t find your object. It should be larger than 3in (8cm) in each dimension.",
+                return String(
+                    localized: "Can‘t find your object. It should be larger than 3in (8cm) in each dimension.",
+                    bundle: .module,
                     comment: "Feedback message when detection has failed."
                 )
             }
 
-            return NSLocalizedString(
-                "Move close and center the dot on your object, then tap Continue. (Object Capture, State)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Move close and center the dot on your object, then tap Continue.",
+            return String(
+                localized: "Move close and center the dot on your object, then tap Continue. (Object Capture, State)",
+                defaultValue: "Move close and center the dot on your object, then tap Continue.",
+                bundle: .module,
                 comment: "Feedback message to fill camera feed with object."
             )
         } else if case .detecting = session.state {
-            return NSLocalizedString(
-                "Move around to ensure that the whole object is inside the box. Drag handles to manually resize. (Object Capture, State)",
-                bundle: LocString.bundleForLocalizedStrings,
-                value: "Move around to ensure that the whole object is inside the box. Drag handles to manually resize.",
+            return String(
+                localized: "Move around to ensure that the whole object is inside the box. Drag handles to manually resize. (Object Capture, State)",
+                defaultValue: "Move around to ensure that the whole object is inside the box. Drag handles to manually resize.",
+                bundle: .module,
                 comment: "Feedback message to size box to object."
             )
         }

@@ -23,6 +23,7 @@ struct CaptureOverlayView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var deviceOrientation: UIDeviceOrientation = UIDevice.current.orientation
+    @State private var tutorialVideoUrl: URL?
 
     var body: some View {
         VStack(spacing: 20) {
@@ -41,11 +42,7 @@ struct CaptureOverlayView: View {
 
             Spacer()
 
-            if shouldShowTutorial, let url = Bundle.module.url(
-                forResource: appModel.orbit.feedbackVideoName(
-                    for: UIDevice.current.userInterfaceIdiom,
-                    isObjectFlippable: appModel.isObjectFlippable),
-                withExtension: "mp4") {
+            if shouldShowTutorial, let url = tutorialVideoUrl {
                 TutorialVideoView(url: url, isInReviewSheet: false)
                     .frame(maxHeight: horizontalSizeClass == .regular ? 350 : 280)
 
@@ -106,12 +103,23 @@ struct CaptureOverlayView: View {
                         .hidden()
 
                     FeedbackView(messageList: appModel.messageList)
+                        .equatable()
                         .layoutPriority(1)
                 }
                 .rotationEffect(rotationAngle)
             }
         }
         .task {
+            // Resolved once per view lifetime, not on every body evaluation: during the
+            // tutorial-visible window `appModel.orbit` is always `.orbit1`, whose video name
+            // doesn't depend on `isObjectFlippable`, so this is stable for as long as the
+            // tutorial is shown. See CODE_AUDIT_Space §7.2.
+            tutorialVideoUrl = Bundle.module.url(
+                forResource: appModel.orbit.feedbackVideoName(
+                    isRegularWidth: horizontalSizeClass == .regular,
+                    isObjectFlippable: appModel.isObjectFlippable),
+                withExtension: "mp4")
+
             for await _ in NotificationCenter.default.notifications(named:
                     UIDevice.orientationDidChangeNotification).map({ $0.name }) {
                 withAnimation(reduceMotion ? nil : .default) {

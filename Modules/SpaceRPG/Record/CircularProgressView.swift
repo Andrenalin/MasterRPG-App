@@ -6,9 +6,7 @@ See the LICENSE.txt file for this sample’s licensing information.
 
 import SwiftUI
 
-struct CircularProgressView: View {
-    @Environment(\.colorScheme) private var colorScheme
-
+struct CircularProgressView: View, Equatable {
     var body: some View {
         VStack {
             Spacer()
@@ -16,7 +14,7 @@ struct CircularProgressView: View {
                 Spacer()
                 ProgressView()
                     .progressViewStyle(
-                        CircularProgressViewStyle(tint: colorScheme == .light ? .black : .white)
+                        CircularProgressViewStyle(tint: .primary)
                     )
                 Spacer()
             }

@@ -43,8 +43,8 @@ struct PlayerView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> AVPlayerView {
         let playerView = AVPlayerView()
-        playerView.playerLayer.videoGravity = .resizeAspect
-        playerView.playerLayer.pixelBufferAttributes = isTransparent ? Self.transparentPixelBufferAttributes : nil
+        playerView.playerLayer?.videoGravity = .resizeAspect
+        playerView.playerLayer?.pixelBufferAttributes = isTransparent ? Self.transparentPixelBufferAttributes : nil
         loadPlayer(in: playerView, coordinator: context.coordinator)
 
         return playerView
@@ -165,13 +165,13 @@ class AVPlayerView: UIView {
         return AVPlayerLayer.self
     }
 
-    var playerLayer: AVPlayerLayer! {
-        return layer as? AVPlayerLayer
-    }
+    /// Safe by construction: `layerClass` above guarantees `layer` is always backed by an
+    /// `AVPlayerLayer`, cached once here instead of re-deriving the cast on every access.
+    fileprivate lazy var playerLayer: AVPlayerLayer? = layer as? AVPlayerLayer
 
     var player: AVPlayer? {
-        get { return playerLayer.player }
-        set { playerLayer.player = newValue }
+        get { playerLayer?.player }
+        set { playerLayer?.player = newValue }
     }
 }
 

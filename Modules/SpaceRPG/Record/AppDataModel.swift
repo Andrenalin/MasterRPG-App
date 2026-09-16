@@ -45,7 +45,7 @@ final class AppDataModel: Identifiable {
     private(set) var photogrammetrySession: PhotogrammetrySession?
 
     /// The folder set when a new capture session starts.
-    private(set) var scanFolderManager: CaptureFolderManager!
+    private(set) var scanFolderManager: CaptureFolderManager?
 
     var messageList = TimedMessageList()
 
@@ -97,6 +97,7 @@ final class AppDataModel: Identifiable {
     // Leaves the model state in ready.
      private init() {
         state = .ready
+        CaptureFolderManager.cleanupStaleScans()
     }
 
     // No deinit cleanup needed: `AppDataModel` is a singleton (`static let instance`), so
@@ -165,7 +166,7 @@ final class AppDataModel: Identifiable {
     private func scheduleStartNewCapture() {
         pendingCaptureStartTask?.cancel()
         pendingCaptureStartTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: Self.cameraTeardownDelay)
             guard !Task.isCancelled, let self, self.state == .ready, self.objectCaptureSession == nil else { return }
             guard self.startNewCapture() else {
                 Logger.scanner3D.error("Starting new capture failed!")
@@ -173,6 +174,12 @@ final class AppDataModel: Identifiable {
             }
         }
     }
+
+    /// How long `scheduleStartNewCapture()` waits before starting a replacement
+    /// `ObjectCaptureSession`, to give the previous session's camera teardown time to
+    /// actually finish (see that method's own doc comment). Too short reintroduces the
+    /// `FigCaptureSourceRemote err=-12784` race that comment describes.
+    private static let cameraTeardownDelay: Duration = .milliseconds(500)
 
     // This sample doesn't modify the `showPreviewModel` directly. The `CapturePrimaryView`
     // remains on screen and blurred underneath, it doesn't pause.  So, pause
@@ -208,9 +215,10 @@ final class AppDataModel: Identifiable {
     private func attachListeners() {
         Logger.scanner3D.debug("Attaching listeners...")
         guard let model = objectCaptureSession else {
-            fatalError("Logic error")
+            Logger.scanner3D.error("attachListeners() called with no objectCaptureSession; skipping.")
+            return
         }
-        
+
         tasks.append(Task<Void, Never> { [weak self] in
                 for await newFeedback in model.feedbackUpdates {
                     Logger.scanner3D.debug("Task got async feedback change to: \(String(describing: newFeedback))")
@@ -262,12 +270,12 @@ final class AppDataModel: Identifiable {
         }
 
         var configuration = ObjectCaptureSession.Configuration()
-        configuration.checkpointDirectory = scanFolderManager.snapshotsFolder
+        configuration.checkpointDirectory = folderManager.snapshotsFolder
         configuration.isOverCaptureEnabled = true
         Logger.scanner3D.log("Enabling overcapture...")
 
         // Starts the initial segment and sets the output locations.
-        session.start(imagesDirectory: scanFolderManager.imagesFolder,
+        session.start(imagesDirectory: folderManager.imagesFolder,
                       configuration: configuration)
 
         if case let .failed(error) = session.state {
@@ -295,6 +303,10 @@ final class AppDataModel: Identifiable {
     private func startReconstruction() throws {
         Logger.scanner3D.debug("startReconstruction() called.")
 
+        guard let scanFolderManager else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+
         var configuration = PhotogrammetrySession.Configuration()
         configuration.checkpointDirectory = scanFolderManager.snapshotsFolder
         photogrammetrySession = try PhotogrammetrySession(
@@ -321,6 +333,7 @@ final class AppDataModel: Identifiable {
             }
         }
 
+        photogrammetrySession?.cancel()
         photogrammetrySession = nil
         objectCaptureSession = nil
         scanFolderManager = nil
@@ -387,10 +400,14 @@ final class AppDataModel: Identifiable {
             case .prepareToReconstruct:
                 // Cleans up the session to free GPU and memory resources.
                 objectCaptureSession = nil
+                if let scanFolderManager {
+                    Task { try? await scanFolderManager.loadShots() }
+                }
                 do {
                     try startReconstruction()
                 } catch {
-                    Logger.scanner3D.error("Reconstructing failed!")
+                    Logger.scanner3D.error("Reconstructing failed: \(String(describing: error))")
+                    switchToErrorState(error: error)
                 }
             case .restart, .completed:
                 reset()
@@ -400,11 +417,12 @@ final class AppDataModel: Identifiable {
                 // Removes snapshots folder to free up space after generating the model.
                 // Genuinely benefits from staying detached (plain file I/O, no MainActor
                 // work needed) — tracked so `reset()` can cancel a stale one.
-                let snapshotsFolder = scanFolderManager.snapshotsFolder
-                cleanupTask?.cancel()
-                cleanupTask = Task.detached(priority: .background) {
-                    guard !Task.isCancelled else { return }
-                    try? FileManager.default.removeItem(at: snapshotsFolder)
+                if let snapshotsFolder = scanFolderManager?.snapshotsFolder {
+                    cleanupTask?.cancel()
+                    cleanupTask = Task.detached(priority: .background) {
+                        guard !Task.isCancelled else { return }
+                        try? FileManager.default.removeItem(at: snapshotsFolder)
+                    }
                 }
 
             case .failed:
@@ -419,7 +437,7 @@ final class AppDataModel: Identifiable {
         guard let session = objectCaptureSession else { return nil }
         let orbitCompleted = session.userCompletedScanPass
         var currentState = OnboardingState.tooFewImages
-        if session.numberOfShotsTaken >= LocString.minNumImages {
+        if session.numberOfShotsTaken >= CaptureConstants.minNumImages {
             switch orbit {
                 case .orbit1:
                     currentState = orbitCompleted ? .firstSegmentComplete : .firstSegmentNeedsWork
@@ -434,37 +452,10 @@ final class AppDataModel: Identifiable {
 
 }
 
-    enum LocString {
+    /// Capture-flow tuning constants unrelated to localization (see CODE_AUDIT_Space §4.5 —
+    /// this used to live inside the `LocString` localization enum).
+    enum CaptureConstants {
         static let minNumImages = 10
-        static let bundleForLocalizedStrings = { return Bundle.module }()
-
-        static let segment1FeedbackString = NSLocalizedString(
-            "Move slowly around your object. (Object Capture, Segment, Feedback)",
-            bundle: bundleForLocalizedStrings,
-            value: "Move slowly around your object.",
-            comment: "Guided feedback message to move slowly around object to start capturing."
-        )
-
-        static let segment2And3FlippableFeedbackString = NSLocalizedString(
-            "Flip object on its side and move around. (Object Capture, Segment, Feedback)",
-            bundle: bundleForLocalizedStrings,
-            value: "Flip object on its side and move around.",
-            comment: "Guided feedback message for user to move around object again after flipping."
-        )
-
-        static let segment2UnflippableFeedbackString = NSLocalizedString(
-            "Move low and capture again. (Object Capture, Segment, Feedback)",
-            bundle: bundleForLocalizedStrings,
-            value: "Move low and capture again.",
-            comment: "Guided feedback message for user to move around object again from a lower angle without flipping"
-        )
-
-        static let segment3UnflippableFeedbackString = NSLocalizedString(
-            "Move above your object and capture again. (Object Capture, Segment, Feedback)",
-            bundle: bundleForLocalizedStrings,
-            value: "Move above your object and capture again.",
-            comment: "Guided feedback message for user to move around object again from a higher angle without flipping"
-        )
     }
 
 #endif

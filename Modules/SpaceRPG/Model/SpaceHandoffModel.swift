@@ -30,6 +30,13 @@ final class SpaceHandoffModel {
 
     private(set) var pending: Pending?
 
+    /// Cancels a stale handoff (immersive space never opened, or opening failed) so its
+    /// entity's RealityKit resources aren't retained indefinitely. See CODE_AUDIT_Space §5.7.
+    private var expirationTask: Task<Void, Never>?
+
+    /// How long an unclaimed handoff is kept before it's dropped.
+    private static let expiration: Duration = .seconds(30)
+
     /// Detaches `entity` from its current parent and marks it ready for the
     /// immersive space to adopt on its next load pass. The entity's own
     /// `transform.rotation` carries over as-is — `ManipulationComponent`
@@ -38,11 +45,20 @@ final class SpaceHandoffModel {
     func handOff(itemId: UUID, entity: Entity) {
         entity.removeFromParent()
         pending = Pending(itemId: itemId, entity: entity)
+
+        expirationTask?.cancel()
+        expirationTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.expiration)
+            guard !Task.isCancelled, let self, self.pending?.itemId == itemId else { return }
+            self.pending = nil
+        }
     }
 
     /// Returns and clears the pending handoff for `itemId`, if any.
     func takePending(for itemId: UUID) -> Pending? {
         guard let pending, pending.itemId == itemId else { return nil }
+        expirationTask?.cancel()
+        expirationTask = nil
         self.pending = nil
         return pending
     }

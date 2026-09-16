@@ -14,10 +14,10 @@ struct ReconstructionTitleView: View {
     }
 
     private enum LocalizedString {
-        static let processingTitle = NSLocalizedString(
-            "Processing title (Object Capture)",
-            bundle: LocString.bundleForLocalizedStrings,
-            value: "Processing",
+        static let processingTitle = String(
+            localized: "Processing title (Object Capture)",
+            defaultValue: "Processing",
+            bundle: .module,
             comment: "Title of processing view during processing phase."
         )
     }

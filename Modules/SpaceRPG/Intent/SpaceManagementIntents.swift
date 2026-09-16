@@ -41,7 +41,9 @@ struct CreateSpaceIntent: AppIntent {
         await root.itemController.save()
 
         let entity = SpaceEntity(root: root, model: model)
-        try await indexIntentEntities([entity])
+        // A Spotlight-indexing hiccup shouldn't override an already-committed data mutation
+        // as a failed intent — see CODE_AUDIT_Space §5.5.
+        try? await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.spaces(model.id, nil))
@@ -84,7 +86,8 @@ struct AddSpaceNoteIntent: AppIntent {
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([SpaceEntity(root: root, model: model)])
+            // See CODE_AUDIT_Space §5.5.
+            try? await indexIntentEntities([SpaceEntity(root: root, model: model)])
         }
 
         return .result(dialog: "Added note to \"\(target.name)\".")
@@ -130,7 +133,8 @@ struct DeleteSpaceIntent: DeleteIntent {
         }
         await root.itemController.save()
 
-        try await deleteIntentEntities(ids: ids, ofType: SpaceEntity.self)
+        // See CODE_AUDIT_Space §5.5.
+        try? await deleteIntentEntities(ids: ids, ofType: SpaceEntity.self)
 
         let count = entities.count
         let message = AttributedString(

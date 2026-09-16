@@ -7,7 +7,6 @@ import AppIntents
 import CoreSpotlight
 import CoreTransferable
 import SwiftUI
-import PDFKit
 
 struct SpaceEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {

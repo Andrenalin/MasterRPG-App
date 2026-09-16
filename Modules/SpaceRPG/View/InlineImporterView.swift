@@ -86,9 +86,11 @@ struct InlineImporterView: View, Equatable {
     var body: some View {
 #if os(visionOS)
         InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
+            .id(preopen)
 #else
         GlassEffectContainer {
             InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
+                .id(preopen)
         }
 #endif
     }
@@ -97,7 +99,12 @@ struct InlineImporterView: View, Equatable {
         // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
         // uses this to decide whether to skip re-rendering, and both drive stored state
         // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
-        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
+        // change for the same `itemId`. `.id(preopen)` above (not just this comparison) is what
+        // actually forces `InlineImporterContentView`'s `@State private var isExpanded` to
+        // re-seed on a `preopen` change — `@State`'s initial value is otherwise only applied
+        // the first time a view identity is created, regardless of what a later `init` passes.
+        // See CODE_AUDIT_Space §5.6 (supersedes the identical-looking but incomplete fix
+        // referenced by the old CODE_AUDIT_9 §5.1 comment here).
         lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
     }
 }
@@ -124,9 +131,15 @@ private struct InlineImporterContentView: View {
 
     var body: some View {
         ZStack {
-            button(type: .file)
-            button(type: .url)
-            button(type: .scanner)
+            ImporterFanButton(type: .file, isExpanded: isExpanded, layoutDown: layoutDown) {
+                showImporter.toggle()
+            }
+            ImporterFanButton(type: .url, isExpanded: isExpanded, layoutDown: layoutDown) {
+                showRemoteURLImporter.toggle()
+            }
+            ImporterFanButton(type: .scanner, isExpanded: isExpanded, layoutDown: layoutDown) {
+                showScanner.toggle()
+            }
 
             Button {
                 withAnimation(reduceMotion ? nil : .default) {
@@ -188,18 +201,18 @@ private struct InlineImporterContentView: View {
     private var importerTitle: String {
         String(localized: "Importer", bundle: .module)
     }
+}
 
-    private func button(type: ImporterButtonType) -> some View {
-        return Button {
-            switch type {
-            case .file:
-                showImporter.toggle()
-            case .url:
-                showRemoteURLImporter.toggle()
-            case .scanner:
-                showScanner.toggle()
-            }
-        } label: {
+private struct ImporterFanButton: View {
+    let type: ImporterButtonType
+    let isExpanded: Bool
+    let layoutDown: Bool
+    let action: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button(action: action) {
             Label {
                 Text(type.localizedLabel)
             } icon: {

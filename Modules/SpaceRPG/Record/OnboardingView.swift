@@ -15,7 +15,6 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(AppDataModel.self) private var appModel
     @State private var stateMachine: OnboardingStateMachine
-    @Environment(\.colorScheme) private var colorScheme
 
     init(state: OnboardingState) {
         _stateMachine = State(wrappedValue: OnboardingStateMachine(state))
@@ -23,7 +22,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color(colorScheme == .light ? .white : .black).ignoresSafeArea()
+            Color(.systemBackground).ignoresSafeArea()
             if let session = appModel.objectCaptureSession {
                 OnboardingTutorialView(session: session, onboardingStateMachine: stateMachine)
                 OnboardingButtonView(session: session, onboardingStateMachine: stateMachine)

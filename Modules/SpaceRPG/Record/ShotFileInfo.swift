@@ -7,17 +7,16 @@ Value type for holding the various info about a particular snapshot file.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import Combine
 import Foundation
 import SwiftUI
 import UIKit
 
 struct ShotFileInfo {
-    let fileURL: URL
+    let fileUrl: URL
     let id: UInt32
 
     @MainActor init?(url: URL) {
-        fileURL = url
+        fileUrl = url
         guard let shotId = CaptureFolderManager.parseShotId(url: url) else {
             return nil
         }

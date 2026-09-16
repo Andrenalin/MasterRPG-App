@@ -7,7 +7,6 @@ A timed queue of messages that modifies published properties.
 
 #if os(iOS) && !targetEnvironment(simulator)
 
-import Combine
 import CoreRPG
 import Foundation
 import SwiftUI

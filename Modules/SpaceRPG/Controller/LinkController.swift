@@ -24,8 +24,11 @@ extension LinkController: LinkControllable {
                 if shareResult.gameModus == .master {
                     await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                 } else {
-                    if let result = try? await gameController.createGameData(for: itemId) {
+                    do {
+                        let result = try await gameController.createGameData(for: itemId)
                         shareResult.networkActions?.game(result, .generic, nil)
+                    } catch {
+                        Logger.linkController.error("Space: failed to create game data to share for item \(itemId.uuidString, privacy: .public): \(String(describing: error))")
                     }
                 }
             }
@@ -45,7 +48,7 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), !inspectedItem.isHidden, let replacedItem = itemController.copy(of: itemId) else { return }
 
         // Entries are single-child references (`SpaceEntryModel`) with no free-text `content`
         // of their own to repair — only the item's own `description` can embed a link.

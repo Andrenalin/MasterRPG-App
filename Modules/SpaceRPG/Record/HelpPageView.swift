@@ -29,7 +29,7 @@ struct HelpPageView: View {
                         }
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(Color(white: 0.7, opacity: 0.5))
+                            .foregroundStyle(.secondary)
                             .font(.title)
                     }
                     .accessibilityLabel(Text("Close", bundle: .module))
@@ -41,8 +41,11 @@ struct HelpPageView: View {
                 }
                 .tabViewStyle(.page)
                 .onAppear {
-                    UIPageControl.appearance().currentPageIndicatorTintColor = .black
-                    UIPageControl.appearance().pageIndicatorTintColor = .lightGray
+                    // `.label`/`.tertiaryLabel` are dynamic UIColors that resolve themselves
+                    // per current trait collection, unlike the fixed `.black`/`.lightGray` this
+                    // replaced (invisible in dark mode). See CODE_AUDIT_Space §8.6.
+                    UIPageControl.appearance().currentPageIndicatorTintColor = .label
+                    UIPageControl.appearance().pageIndicatorTintColor = .tertiaryLabel
                 }
             }
             .padding()

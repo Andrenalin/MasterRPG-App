@@ -18,6 +18,9 @@ struct OnboardingTutorialView: View {
     var session: ObjectCaptureSession
     let onboardingStateMachine: OnboardingStateMachine
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var tutorialUrl: URL?
+
     var body: some View {
         VStack {
             ZStack {
@@ -70,9 +73,12 @@ struct OnboardingTutorialView: View {
                 Spacer()
             }
             .frame(maxHeight: .infinity)
-            .padding(.leading, UIDevice.current.userInterfaceIdiom == .pad ? 50 : 30)
-            .padding(.trailing, UIDevice.current.userInterfaceIdiom == .pad ? 50 : 30)
+            .padding(.leading, horizontalSizeClass == .regular ? 50 : 30)
+            .padding(.trailing, horizontalSizeClass == .regular ? 50 : 30)
 
+        }
+        .onChange(of: onboardingStateMachine.currentState, initial: true) { _, newState in
+            tutorialUrl = Self.tutorialVideoUrl(for: newState, isRegularWidth: horizontalSizeClass == .regular)
         }
     }
 
@@ -85,26 +91,28 @@ struct OnboardingTutorialView: View {
         }
     }
 
-    private let onboardingStateToTutorialNameMapOnIphone: [OnboardingState: String] = [
+    private static let onboardingStateToTutorialNameMapOnIphone: [OnboardingState: String] = [
         .flipObject: "ScanPasses-iPhone-FixedHeight-2",
         .flipObjectASecondTime: "ScanPasses-iPhone-FixedHeight-3",
         .captureFromLowerAngle: "ScanPasses-iPhone-FixedHeight-unflippable-low",
         .captureFromHigherAngle: "ScanPasses-iPhone-FixedHeight-unflippable-high"
     ]
 
-    private let onboardingStateToTutorialNameMapOnIpad: [OnboardingState: String] = [
+    private static let onboardingStateToTutorialNameMapOnIpad: [OnboardingState: String] = [
         .flipObject: "ScanPasses-iPad-FixedHeight-2",
         .flipObjectASecondTime: "ScanPasses-iPad-FixedHeight-3",
         .captureFromLowerAngle: "ScanPasses-iPad-FixedHeight-unflippable-low",
         .captureFromHigherAngle: "ScanPasses-iPad-FixedHeight-unflippable-high"
     ]
 
-    private var tutorialUrl: URL? {
+    // Resolved once per `currentState` change (see the `.onChange` in `body`) instead of on
+    // every body evaluation. See CODE_AUDIT_Space §7.2.
+    private static func tutorialVideoUrl(for state: OnboardingState, isRegularWidth: Bool) -> URL? {
         let videoName: String
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            videoName = onboardingStateToTutorialNameMapOnIpad[onboardingStateMachine.currentState] ?? "ScanPasses-iPad-FixedHeight-1"
+        if isRegularWidth {
+            videoName = onboardingStateToTutorialNameMapOnIpad[state] ?? "ScanPasses-iPad-FixedHeight-1"
         } else {
-            videoName = onboardingStateToTutorialNameMapOnIphone[onboardingStateMachine.currentState] ?? "ScanPasses-iPhone-FixedHeight-1"
+            videoName = onboardingStateToTutorialNameMapOnIphone[state] ?? "ScanPasses-iPhone-FixedHeight-1"
         }
         return Bundle.module.url(forResource: videoName, withExtension: "mp4")
     }
@@ -117,7 +125,7 @@ struct OnboardingTutorialView: View {
         return orbitCompleted ? orbitCompleteImage : orbitNotCompleteImage
     }
 
-    private let onboardingStateToTitleMap: [OnboardingState: String] = [
+    private static let onboardingStateToTitleMap: [OnboardingState: String] = [
         .tooFewImages: LocalizedString.tooFewImagesTitle,
         .firstSegmentNeedsWork: LocalizedString.firstSegmentNeedsWorkTitle,
         .firstSegmentComplete: LocalizedString.firstSegmentCompleteTitle,
@@ -133,10 +141,10 @@ struct OnboardingTutorialView: View {
     ]
 
     private var title: String {
-        onboardingStateToTitleMap[onboardingStateMachine.currentState] ?? ""
+        Self.onboardingStateToTitleMap[onboardingStateMachine.currentState] ?? ""
     }
 
-    private let onboardingStateTodetailTextMap: [OnboardingState: String] = [
+    private static let onboardingStateTodetailTextMap: [OnboardingState: String] = [
         .tooFewImages: LocalizedString.tooFewImagesDetailText,
         .firstSegmentNeedsWork: LocalizedString.firstSegmentNeedsWorkDetailText,
         .firstSegmentComplete: LocalizedString.firstSegmentCompleteDetailText,
@@ -152,7 +160,7 @@ struct OnboardingTutorialView: View {
     ]
 
     private var detailText: String {
-        onboardingStateTodetailTextMap[onboardingStateMachine.currentState] ?? ""
+        Self.onboardingStateTodetailTextMap[onboardingStateMachine.currentState] ?? ""
     }
 }
 

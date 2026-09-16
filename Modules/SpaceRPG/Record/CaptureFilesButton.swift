@@ -34,8 +34,10 @@ extension CaptureOverlayView {
                 isPresented: $showDocumentBrowser,
                 onDismiss: { showDocumentBrowser = false }
             ) {
-                ManagedPresentationView {
-                    DocumentBrowser(startingDir: appModel.scanFolderManager.rootScanFolder)
+                if let folderManager = appModel.scanFolderManager {
+                    ManagedPresentationView {
+                        DocumentBrowser(startingDir: folderManager.rootScanFolder)
+                    }
                 }
             }
         }

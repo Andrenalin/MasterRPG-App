@@ -91,7 +91,7 @@ struct SpaceViewer: View {
             if handedOffToImmersive {
                 SpaceViewerMovedToImmersiveSpaceView()
             } else if let loadError {
-                errorView(message: loadError)
+                SpaceViewerErrorView(message: loadError)
             } else {
                 SpaceViewerProgressView(hasLoaded: hasLoaded)
 
@@ -115,7 +115,7 @@ struct SpaceViewer: View {
             }
 #else
             if let loadError {
-                errorView(message: loadError)
+                SpaceViewerErrorView(message: loadError)
             } else {
                 SpaceViewerProgressView(hasLoaded: hasLoaded)
 
@@ -366,6 +366,10 @@ private extension SpaceViewer {
 // MARK: - Window → immersive space handoff
 
 private extension SpaceViewer {
+    /// Minimum drag distance (meters) for `handleManipulationEnded` to treat a gesture as
+    /// "grabbed and pulled toward the immersive space" rather than an idle orienting nudge.
+    private static let handoffDragThreshold: Float = 0.15
+
     /// Fires on `ManipulationEvents.WillEnd` — the object has settled at its
     /// final position for this gesture. Compares that against where it stood
     /// when the gesture began (`ManipulationEvents.WillBegin`) and, if it
@@ -379,7 +383,7 @@ private extension SpaceViewer {
         // The object is normalized to ~0.5 m in the window (see `loadEntity`);
         // moving it about a third of its own size reads as "grabbed and
         // pulled," not an idle nudge while orienting it.
-        guard simd_distance(entity.position, start) > 0.15 else { return }
+        guard simd_distance(entity.position, start) > Self.handoffDragThreshold else { return }
         moveToImmersiveSpace()
     }
 
@@ -462,21 +466,14 @@ private extension SpaceViewer {
 #endif
 
 private extension SpaceViewer {
-    func errorView(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundStyle(.red)
-            Text("Failed to Load 3D Model", bundle: .module)
-                .font(.headline)
-            Text(verbatim: message)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
+    /// Normalized model size (meters) inside the window-embedded viewer.
+    static let windowTargetSize: Float = 0.5
+    /// Normalized model size (meters) inside the visionOS immersive space — larger since
+    /// there's no window frame constraining it.
+    static let immersiveTargetSize: Float = 1.0
+    /// Below this world-space extent, normalizing scale would divide by a near-zero value;
+    /// treated as "no meaningful geometry to normalize" instead.
+    static let minimumNormalizableExtent: Float = 0.0001
 
     @MainActor
     func loadEntity(into content: some RealityViewContentProtocol) async {
@@ -637,13 +634,13 @@ private extension SpaceViewer {
             // get the "natural" extents at scale=1 — this correctly undoes any embedded
             // USDZ unit transforms that relativeTo:entity misses.
 #if os(visionOS)
-            let targetSize: Float = isImmersiveSpace ? 1.0 : 0.5
+            let targetSize: Float = isImmersiveSpace ? Self.immersiveTargetSize : Self.windowTargetSize
 #else
-            let targetSize: Float = 0.5
+            let targetSize: Float = Self.windowTargetSize
 #endif
             let baseExtents = loadedEntity.visualBounds(relativeTo: nil).extents / loadedEntity.scale
             let maxBase = max(baseExtents.x, max(baseExtents.y, baseExtents.z))
-            if maxBase > 0.0001 && maxBase.isFinite {
+            if maxBase > Self.minimumNormalizableExtent && maxBase.isFinite {
                 loadedEntity.scale = SIMD3<Float>(repeating: targetSize / maxBase)
             }
 
@@ -817,6 +814,26 @@ private extension SpaceViewer {
 // `some View` properties on `SpaceViewer` itself that all re-evaluated whenever any part
 // of `SpaceViewer`'s body did.
 
+private struct SpaceViewerErrorView: View {
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.red)
+            Text("Failed to Load 3D Model", bundle: .module)
+                .font(.headline)
+            Text(verbatim: message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 private struct SpaceViewerProgressView: View {
     let hasLoaded: Bool
 
@@ -910,36 +927,43 @@ private struct SpaceViewerContentView: View {
             )
         )
         .accessibilityAction(named: Text("Rotate Left", bundle: .module)) {
-            rotate(-.pi / 6, 0)
+            rotate(-Self.accessibilityRotationStep, 0)
         }
         .accessibilityAction(named: Text("Rotate Right", bundle: .module)) {
-            rotate(.pi / 6, 0)
+            rotate(Self.accessibilityRotationStep, 0)
         }
         .accessibilityAction(named: Text("Tilt Up", bundle: .module)) {
-            rotate(0, .pi / 12)
+            rotate(0, Self.accessibilityTiltStep)
         }
         .accessibilityAction(named: Text("Tilt Down", bundle: .module)) {
-            rotate(0, -.pi / 12)
+            rotate(0, -Self.accessibilityTiltStep)
         }
         .accessibilityAction(named: Text("Move Left", bundle: .module)) {
-            moveObject(-0.1, 0, 0)
+            moveObject(-Self.accessibilityMoveStep, 0, 0)
         }
         .accessibilityAction(named: Text("Move Right", bundle: .module)) {
-            moveObject(0.1, 0, 0)
+            moveObject(Self.accessibilityMoveStep, 0, 0)
         }
         .accessibilityAction(named: Text("Move Up", bundle: .module)) {
-            moveObject(0, 0.1, 0)
+            moveObject(0, Self.accessibilityMoveStep, 0)
         }
         .accessibilityAction(named: Text("Move Down", bundle: .module)) {
-            moveObject(0, -0.1, 0)
+            moveObject(0, -Self.accessibilityMoveStep, 0)
         }
         .accessibilityAction(named: Text("Move Forward", bundle: .module)) {
-            moveObject(0, 0, 0.1)
+            moveObject(0, 0, Self.accessibilityMoveStep)
         }
         .accessibilityAction(named: Text("Move Backward", bundle: .module)) {
-            moveObject(0, 0, -0.1)
+            moveObject(0, 0, -Self.accessibilityMoveStep)
         }
     }
+
+    /// Yaw/pitch step (radians) for the rotate-left/right/tilt-up/down accessibility actions.
+    private static let accessibilityRotationStep: Float = .pi / 6
+    private static let accessibilityTiltStep: Float = .pi / 12
+    /// Translation step (meters) for the move-left/right/up/down/forward/backward
+    /// accessibility actions.
+    private static let accessibilityMoveStep: Float = 0.1
 }
 
 /// The actual `RealityView` construction: with attachments and

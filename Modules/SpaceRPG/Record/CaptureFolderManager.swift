@@ -8,7 +8,6 @@ A class that supports the creation, listing, and filename support of a capture f
 #if os(iOS) && !targetEnvironment(simulator)
 
 import CoreRPG
-import Combine
 import Dispatch
 import Foundation
 import os
@@ -115,19 +114,6 @@ final class CaptureFolderManager {
         return imageStringPrefix + padding + rawIdentifier
     }
 
-    /// Returns the file URL for the HEIC image that matches the specified
-    /// image id  in a specified output directory.
-    ///
-    /// - Parameters:
-    ///   - outputDir: The directory where the capture session saves images.
-    ///   - id: Identifier of an image.
-    /// - Returns: `outputDir` URL if the image exists
-    static func heicImageUrl(in outputDir: URL, id: UInt32) -> URL {
-        return outputDir
-            .appending(path: imageIdString(for: id))
-            .appendingPathExtension(heicImageExtension)
-    }
-
     /// Creates a new Scans directory based on the current timestamp in the top level Documents
     /// folder.
     /// - Returns: The new Scans folder's file URL, or `nil` on error.
@@ -201,9 +187,29 @@ final class CaptureFolderManager {
     private static let imageStringPrefix = "IMG_"
     private static let heicImageExtension = "HEIC"
 
-    /// Returns the app documents folder for all our captures.
+    /// Returns the folder for all in-progress captures.
+    ///
+    /// Deliberately under `URL.cachesDirectory`, not `URL.documentsDirectory`: raw capture
+    /// photos of a user's real tabletop/miniatures/room shouldn't be Finder/Files-app
+    /// visible (this app has `UIFileSharingEnabled`) or included in iCloud/device backups
+    /// for the whole capture+reconstruction lifetime. See CODE_AUDIT_Space §6.1.
     private static func rootScansFolder() -> URL? {
-        URL.documentsDirectory.appending(path: "Scans/", directoryHint: .isDirectory)
+        URL.cachesDirectory.appending(path: "Scans/", directoryHint: .isDirectory)
+    }
+
+    /// Deletes any `Scans/*` subfolders left behind by a crash or force-quit during a
+    /// previous run. Call once, early, before a new capture folder is created — there's no
+    /// other reachable teardown point for a session that never reached `reset()`.
+    /// See CODE_AUDIT_Space §6.1.
+    static func cleanupStaleScans() {
+        guard let capturesFolder = rootScansFolder() else { return }
+        guard let staleFolders = try? FileManager.default.contentsOfDirectory(
+            at: capturesFolder,
+            includingPropertiesForKeys: nil
+        ) else { return }
+        for folder in staleFolders {
+            try? FileManager.default.removeItem(at: folder)
+        }
     }
 }
 

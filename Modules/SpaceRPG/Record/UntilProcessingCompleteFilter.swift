@@ -28,12 +28,12 @@ struct UntilProcessingCompleteFilter<Base>: AsyncSequence,
         iterator = inputSequence.makeAsyncIterator()
     }
 
-    mutating func next() async -> Element? {
+    mutating func next() async throws -> Element? {
         if completed {
             return nil
         }
 
-        guard let nextElement = try? await iterator.next() else {
+        guard let nextElement = try await iterator.next() else {
             completed = true
             return nil
         }
