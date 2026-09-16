@@ -5,7 +5,7 @@ import SwiftUI
 
 enum SelectionRoute: Equatable, Hashable, Codable {
     case selection
-    case mutliSelection
+    case multiSelection
 }
 
 #Preview(traits: .mockData) {
@@ -17,7 +17,7 @@ extension SelectionRoute: NavigationDestination {
         switch self {
         case .selection:
             SelectionDestinationView()
-        case .mutliSelection:
+        case .multiSelection:
             MultiSelectionDestinationView()
         }
     }

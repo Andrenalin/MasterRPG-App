@@ -105,12 +105,6 @@ public final class PhotoModel: nonisolated Identifiable {
 
 extension PhotoModel: nonisolated ItemGameReportable, nonisolated ItemLinkRegistable {}
 
-extension PhotoModel {
-    var hasPhoto: Bool {
-        fileUrl != nil
-    }
-}
-
 extension PhotoModel: nonisolated Comparable {
     nonisolated public static func < (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
         return assumeMainActorIsolated {
@@ -129,7 +123,13 @@ extension PhotoModel: nonisolated ItemDiffComparable {
                 let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
                 let combined = allIds
                     .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                    // `PhotoEntryModel.name` is a constant placeholder ("Photo"), not a real
+                    // sort key, so sorting by it was a no-op that left `Set`'s randomized
+                    // iteration order in place — two devices merging identical entries could
+                    // land on different array orders and compare as permanently "different"
+                    // in `isSame(_:)` (below), which compares entries by index. Sort by `id`
+                    // instead so the merge result is deterministic across devices.
+                    .sorted { $0.id.uuidString < $1.id.uuidString }
                 mergedEntries = CRDTDataUpdate(wrappedValue: combined)
             } else {
                 mergedEntries = entries_.merged(other: other.entries_)
@@ -260,39 +260,6 @@ extension PhotoModel: nonisolated ItemDataAccessable {
     public func urlName(entryId: UUID) -> String {
         let title = entries.first(where: { $0.id == entryId })?.name ?? name
         return "\(title.withoutLink())"
-    }
-}
-
-extension PhotoModel: nonisolated Codable {
-    enum CodingKeys: CodingKey {
-        case _id
-        case _name_
-        case _description_
-        case _tags_
-        case _category_
-        case _displayState
-        case _degrees_
-        case _fileUrl_
-        case _entries_
-        case _parentId
-    }
-
-    nonisolated final public func encode(to encoder: Encoder) throws {
-        try encoder.encodeOnMainActor { encoder in
-            var container: KeyedEncodingContainer<PhotoModel.CodingKeys> = encoder.container(keyedBy: PhotoModel.CodingKeys.self)
-
-            try container.encode(self.id, forKey: PhotoModel.CodingKeys._id)
-            try container.encode(self._name_, forKey: PhotoModel.CodingKeys._name_)
-            try container.encode(self._description_, forKey: PhotoModel.CodingKeys._description_)
-            try container.encode(self._tags_, forKey: PhotoModel.CodingKeys._tags_)
-            try container.encode(self._category_, forKey: PhotoModel.CodingKeys._category_)
-            try container.encode(self._displayState, forKey: PhotoModel.CodingKeys._displayState)
-            try container.encode(self._degrees_, forKey: PhotoModel.CodingKeys._degrees_)
-            try container.encode(self._fileUrl_, forKey: PhotoModel.CodingKeys._fileUrl_)
-            try container.encode(self._entries_, forKey: PhotoModel.CodingKeys._entries_)
-            try container.encodeIfPresent(self._parentId, forKey: PhotoModel.CodingKeys._parentId)
-    
-        }
     }
 }
 

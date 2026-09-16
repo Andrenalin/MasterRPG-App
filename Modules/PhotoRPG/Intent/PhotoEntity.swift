@@ -64,8 +64,12 @@ extension PhotoEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         // Exports the actual stored photo file — not a rendered Name/
         // Description placeholder — so Shortcuts/Share Sheet/drag-out hand
-        // the real image to whatever consumes it.
-        FileRepresentation(exportedContentType: .jpeg) { @MainActor item in
+        // the real image to whatever consumes it. Declared as the abstract
+        // `.image` type (not `.jpeg`): not every import path converts to JPEG
+        // (see `EditController.isNotJpegPhoto`), so a fixed `.jpeg` UTI would
+        // mismatch the actual bytes for PNG/HEIC/TIFF-sourced photos. See
+        // CODE_AUDIT §5.2.
+        FileRepresentation(exportedContentType: .image) { @MainActor item in
             guard let url = await item.root.itemController.loadableUrl(itemId: item.id) else {
                 throw PhotoEntityAssetUnavailableError()
             }

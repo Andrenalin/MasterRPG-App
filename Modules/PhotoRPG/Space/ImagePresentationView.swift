@@ -33,6 +33,14 @@ struct ImagePresentationView: View {
     /// SwiftUI-driven frame the way `update` alone can.
     @State private var sceneUpdateSubscription: EventSubscription?
 
+    /// Feeds `syncPresentation()` calls triggered by `sceneUpdateSubscription` to a
+    /// single long-lived consumer `Task` instead of spawning a fresh unstructured
+    /// `Task` on every RealityKit engine tick (~90Hz on visionOS) — see that
+    /// subscription's own doc. `.bufferingNewest(1)` coalesces bursts of ticks into
+    /// the latest signal rather than queuing every one. See CODE_AUDIT §7.1.
+    @State private var frameSyncContinuation: AsyncStream<Void>.Continuation?
+    @State private var frameSyncTask: Task<Void, Never>?
+
     /// The window's bounds in RealityKit scene space, refreshed synchronously
     /// from `content.convert(...)` inside `make`/`update` — `content` there
     /// is an `inout` parameter, so it can't be captured by the escaping
@@ -51,13 +59,18 @@ struct ImagePresentationView: View {
                 content.add(model.contentEntity)
                 // `SceneEvents.Update` isn't MainActor-isolated, and
                 // `model.contentEntity` lives on `model`'s `@MainActor`
-                // isolation — hop through a `Task` before touching it,
-                // mirroring `SpaceViewer.attachCloseButtonIfNeeded`'s own
-                // subscription for the same reason.
-                sceneUpdateSubscription = content.subscribe(to: SceneEvents.Update.self) { _ in
-                    Task { @MainActor in
+                // isolation — hop through the coalescing stream above before
+                // touching it, mirroring `SpaceViewer.attachCloseButtonIfNeeded`'s
+                // own subscription for the same reason.
+                let (stream, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+                frameSyncContinuation = continuation
+                frameSyncTask = Task { @MainActor in
+                    for await _ in stream {
                         syncPresentation()
                     }
+                }
+                sceneUpdateSubscription = content.subscribe(to: SceneEvents.Update.self) { _ in
+                    continuation.yield()
                 }
             } update: { content in
                 let availableBounds = content.convert(geometry.frame(in: .local), from: .local, to: .scene)
@@ -74,6 +87,10 @@ struct ImagePresentationView: View {
                 }
                 // Ensure that the scene resizes uniformly on X and Y axes.
                 windowScene.requestGeometryUpdate(.Vision(resizingRestrictions: .uniform))
+            }
+            .onDisappear {
+                frameSyncContinuation?.finish()
+                frameSyncTask?.cancel()
             }
             .onChange(of: model.imageAspectRatio) { _, newAspectRatio in
                 guard let windowScene = navigationModel.sceneModel?.windowScene else {

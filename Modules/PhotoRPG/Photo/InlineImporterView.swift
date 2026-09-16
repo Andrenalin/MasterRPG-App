@@ -11,89 +11,6 @@ import UniformTypeIdentifiers
 import ImagePlayground
 #endif
 
-
-enum PhotoImporterButtonType: String {
-    case file, url, library, camera, playground
-    
-    var systemImage: String {
-        switch self {
-        case .file:
-            return "folder"
-        case .url:
-            return "link.badge.plus"
-        case .library:
-            return "photo.stack"
-        case .camera:
-            return "camera"
-        case .playground:
-            return "apple.image.playground"
-        }
-    }
-    
-    var localizedLabel: String {
-        switch self {
-        case .file:
-            String(localized: "File", bundle: .module)
-        case .url:
-            String(localized: "URL", bundle: .module)
-        case .library:
-            String(localized: "Photo Library", bundle: .module)
-        case .camera:
-            String(localized: "Camera", bundle: .module)
-        case .playground:
-            String(localized: "Image Playground", bundle: .module)
-        }
-    }
-    
-    var duration: CGFloat {
-        switch self {
-        case .file:
-            return 0.3
-        case .url:
-            return 0.35
-        case .library:
-            return 0.4
-        case .camera:
-            return 0.5
-        case .playground:
-            return 0.6
-        }
-    }
-    
-    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
-        guard expanded else {
-            return .zero
-        }
-        
-        switch self {
-        case .file:
-            return offset(atIndex: 0, layoutDown: layoutDown)
-        case .url:
-            return offset(atIndex: 1, layoutDown: layoutDown)
-        case .library:
-            return offset(atIndex: 2, layoutDown: layoutDown)
-        case .camera:
-            return offset(atIndex: 3, layoutDown: layoutDown)
-        case .playground:
-            return offset(atIndex: 4, layoutDown: layoutDown)
-        }
-    }
-    
-    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
-        let radius: CGFloat = 120
-        let startAngleDeg = -180.0
-        let step = 90.0 / Double(5 - 1)
-        
-        let angleDeg = startAngleDeg + (Double(index) * step)
-        let angleRad = angleDeg * .pi / 180
-        
-        let x = cos(angleRad) * radius
-        let y = sin(angleRad) * radius * (layoutDown ? -1 : 1)
-        
-        return CGSize(width: x, height: y)
-    }
-}
-
 struct InlineImporterView: View, Equatable {
     init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
         self.itemId = itemId
@@ -198,6 +115,8 @@ private struct InlineImporterContentView: View {
     @Binding var selectedItem: PhotosPickerItem?
 #endif
 
+    @State private var importErrorMessage: String?
+
     var body: some View {
         ZStack {
             button(type: .file)
@@ -218,9 +137,13 @@ private struct InlineImporterContentView: View {
         }
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
-            guard let url = try? result.get() else { return }
-            Task {
-                await root.editController.resetFile(url: url, itemId: itemId)
+            switch result {
+            case .success(let url):
+                Task {
+                    await root.editController.resetFile(url: url, itemId: itemId)
+                }
+            case .failure(let error):
+                importErrorMessage = error.localizedDescription
             }
         }
         .remoteFileURLImporter(
@@ -241,8 +164,15 @@ private struct InlineImporterContentView: View {
             guard let localItem = selectedItem else { return }
             let id = itemId
             Task {
-                if let data = try? await localItem.loadTransferable(type: Data.self) {
-                    await update(id: id, image: AKImage(data: data))
+                do {
+                    guard let data = try await localItem.loadTransferable(type: Data.self),
+                          let image = AKImage(data: data) else {
+                        importErrorMessage = String(localized: "The selected photo could not be loaded.", bundle: .module)
+                        return
+                    }
+                    await update(id: id, image: image)
+                } catch {
+                    importErrorMessage = error.localizedDescription
                 }
             }
         }
@@ -263,12 +193,39 @@ private struct InlineImporterContentView: View {
         .onDrop(of: ItemController.importImageTypes, isTargeted: nil) { providers in
             let id = itemId
             Task {
-                guard let data = try? await ItemController.importImageFromProviders(providers) else { return }
-                await update(id: id, image: AKImage(data: data))
+                do {
+                    guard let data = try await ItemController.importImageFromProviders(providers) else { return }
+                    guard let image = AKImage(data: data) else {
+                        importErrorMessage = String(localized: "The dropped image could not be loaded.", bundle: .module)
+                        return
+                    }
+                    await update(id: id, image: image)
+                } catch {
+                    importErrorMessage = error.localizedDescription
+                }
             }
             return true
         }
 #endif
+        .alert(
+            Text("Import Failed", bundle: .module),
+            isPresented: Binding(
+                get: { importErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        importErrorMessage = nil
+                    }
+                }
+            )
+        ) {
+            Button(role: .cancel) {
+                importErrorMessage = nil
+            } label: {
+                Text("OK", bundle: .module)
+            }
+        } message: {
+            Text(verbatim: importErrorMessage ?? "")
+        }
     }
 
     private var importerTitle: String {
@@ -276,7 +233,11 @@ private struct InlineImporterContentView: View {
     }
 
     private func update(id: UUID, image: AKImage?) async {
-        await root.editController.resetPhoto(image: image, itemId: id)
+        do {
+            try await root.editController.resetPhoto(image: image, itemId: id)
+        } catch {
+            importErrorMessage = error.localizedDescription
+        }
     }
 
     private func button(type: PhotoImporterButtonType) -> some View {

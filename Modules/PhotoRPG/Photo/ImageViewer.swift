@@ -15,10 +15,11 @@ struct ImageViewer: View {
     let accessibilityHint: String?
     let toolBarModel: GameToolBarModel?
 
-    @State private var viewportModel: ViewportModel
+    // Not `private`: read by the gesture-handling extension in ImageViewer+Gestures.swift.
+    @State var viewportModel: ViewportModel
     @State private var configuredImageViewport: ImageViewportConfiguration?
 #if !os(tvOS)
-    @GestureState private var gestureSession = ImageViewportGestureSession()
+    @GestureState var gestureSession = ImageViewportGestureSession()
 #endif
 
     private var currentDegrees: Double {
@@ -35,7 +36,8 @@ struct ImageViewer: View {
         )
     }
 
-    private var geometry: ImageViewportGeometry {
+    // Not `private`: read by the gesture-handling extension in ImageViewer+Gestures.swift.
+    var geometry: ImageViewportGeometry {
         ImageViewportGeometry(configuration: imageViewportConfiguration)
     }
 
@@ -128,7 +130,10 @@ struct ImageViewer: View {
 
 // MARK: - Viewport updates
 
-private extension ImageViewer {
+// Not `private`: `apply(_:animated:)` is read by the gesture-handling extension in
+// ImageViewer+Gestures.swift. `ImageViewer` itself isn't `public`, so this doesn't
+// widen the module's actual API surface.
+extension ImageViewer {
     func configureViewport(for configuration: ImageViewportConfiguration) {
         guard configuredImageViewport != configuration else {
             return
@@ -213,66 +218,6 @@ private extension ImageViewer {
         }
     }
 }
-
-#if !os(tvOS)
-// MARK: - Gesture session
-
-private extension ImageViewer {
-    typealias ViewportGesture = SimultaneousGesture<MagnifyGesture, DragGesture>
-
-    var viewportGesture: some Gesture {
-        MagnifyGesture(minimumScaleDelta: 0)
-            .simultaneously(with: DragGesture(minimumDistance: 3, coordinateSpace: .local))
-            .updating($gestureSession, body: updateGestureSession(_:state:transaction:))
-            .onEnded(commitGestureSession(_:))
-    }
-
-    var doubleTapGesture: some Gesture {
-        SpatialTapGesture(count: 2, coordinateSpace: .local)
-            .onEnded(doubleTap(_:))
-    }
-
-    func updateGestureSession(
-        _ value: ViewportGesture.Value,
-        state: inout ImageViewportGestureSession,
-        transaction _: inout Transaction
-    ) {
-        if let magnify = value.first {
-            state.magnification = magnify.magnification
-            state.anchor = magnify.startLocation
-        }
-        if let drag = value.second {
-            state.translation = drag.translation
-        }
-    }
-
-    func commitGestureSession(_ value: ViewportGesture.Value) {
-        let transform = geometry.viewportGeometry.interacting(
-            from: viewportModel.transform,
-            translation: value.second?.translation ?? gestureSession.translation,
-            magnification: value.first?.magnification ?? gestureSession.magnification,
-            anchor: value.first?.startLocation
-                ?? gestureSession.anchor
-                ?? geometry.viewportGeometry.containerCenter
-        )
-        apply(transform, animated: false)
-    }
-
-    func doubleTap(_ value: SpatialTapGesture.Value) {
-        let transform = geometry.viewportGeometry.doubleTapped(
-            from: viewportModel.transform,
-            at: value.location
-        )
-        apply(transform, animated: true)
-    }
-}
-
-private struct ImageViewportGestureSession: Equatable {
-    var translation = CGSize.zero
-    var magnification: CGFloat = 1
-    var anchor: CGPoint?
-}
-#endif
 
 #if !os(macOS)
 #Preview {

@@ -37,16 +37,11 @@ extension CacheController: ImageCacheControllable {
     /// See CODE_AUDIT_9 §7.2.
     @concurrent
     private static func decodedImage(for fileUrl: FileUrl, fileUrlDataController: FileUrlDataController) async -> AKImage? {
-        if let data = fileUrl.data {
-            return AKImage(data: data)
-        } else if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
-            return AKImage(data: data)
-        } else {
-            return await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
-                guard let url else { return nil }
-                return AKImage(contentsOfFile: url.relativePath)
-            }
-        }
+        await fileUrlDataController.resolvedImage(
+            for: fileUrl,
+            decodeData: { AKImage(data: $0) },
+            decodeUrl: { AKImage(contentsOfFile: $0.relativePath) }
+        )
     }
 
     @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
@@ -75,15 +70,10 @@ extension CacheController: ImageCacheControllable {
 
     @MainActor private func downsampledSource(for itemId: UUID, item: any ItemDataAccessable) async -> AKImage? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
-        if let data = fileUrl.data {
-            return AKImage.downsampledThumbnail(from: data, maxPixelSize: Self.thumbnailMaxPixelSize)
-        }
-        if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
-            return AKImage.downsampledThumbnail(from: data, maxPixelSize: Self.thumbnailMaxPixelSize)
-        }
-        return await fileUrlDataController.url(for: fileUrl) { url -> AKImage? in
-            guard let url else { return nil }
-            return AKImage.downsampledThumbnail(from: url, maxPixelSize: Self.thumbnailMaxPixelSize)
-        }
+        return await fileUrlDataController.resolvedImage(
+            for: fileUrl,
+            decodeData: { AKImage.downsampledThumbnail(from: $0, maxPixelSize: Self.thumbnailMaxPixelSize) },
+            decodeUrl: { AKImage.downsampledThumbnail(from: $0, maxPixelSize: Self.thumbnailMaxPixelSize) }
+        )
     }
 }

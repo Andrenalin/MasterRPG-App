@@ -75,8 +75,8 @@ extension EditController {
         return cacheType == .image ? result : newThumbnail
     }
         
-    func resetPhoto(image: AKImage?, itemId: UUID) async {
+    func resetPhoto(image: AKImage?, itemId: UUID) async throws {
         let data = image?.jpegData(compressionQuality: JPEGQuality.export)
-        try? await resetFile(data: data, itemId: itemId, path: "")
+        try await resetFile(data: data, itemId: itemId, path: "")
     }
 }

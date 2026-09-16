@@ -40,7 +40,7 @@ final class ShareExtensionSaveController {
         var photoIds: [UUID] = []
         var photoLinks: [String] = []
 
-        let photoController = PhotoDataController()
+        let photoController = ShareImportPhotoController()
 
         for image in images {
             let (photoId, link) = await photoController.addNewPhoto(context: context, data: image.imageData, name: name, text: text)

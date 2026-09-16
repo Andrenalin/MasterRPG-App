@@ -28,14 +28,6 @@ struct CarouselDropAreaView: View {
         .padding(1)
     }
 
-    private var chooseText: LocalizedStringKey {
-#if os(macOS)
-        "Open \(root.configurable.module.title)"
-#else
-        "Choose \(root.configurable.module.title)"
-#endif
-    }
-
     private func addLink(itemId: UUID) {
         guard !photoIds.selection.contains(where: { $0.itemId == itemId }) else { return }
         withAnimation(reduceMotion ? nil : .easeInOut) {

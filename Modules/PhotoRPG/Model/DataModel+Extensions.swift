@@ -12,10 +12,6 @@ extension RPGPhoto {
         get { RPGPhotoEntry.sortedArray(from: entries) }
         set { entries = NSSet(array: newValue) }
     }
-
-    func entryOrNew(for uuid: UUID) -> RPGPhotoEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
 }
 
 

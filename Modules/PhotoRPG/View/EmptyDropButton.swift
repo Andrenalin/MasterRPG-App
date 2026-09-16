@@ -17,7 +17,7 @@ struct EmptyDropButton: View {
 #if os(macOS)
             scenesManager.openWindow(SceneId(rawValue: NetworkModules.photo.linkWindowId))
 #else
-            navigator.navigate(to: selectionModel.isSingleSelection ? SelectionRoute.selection : SelectionRoute.mutliSelection, method: .managedSheet)
+            navigator.navigate(to: selectionModel.isSingleSelection ? SelectionRoute.selection : SelectionRoute.multiSelection, method: .managedSheet)
 #endif
         } label: {
             VStack {
