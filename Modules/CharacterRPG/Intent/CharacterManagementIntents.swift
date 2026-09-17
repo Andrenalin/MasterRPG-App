@@ -31,9 +31,17 @@ struct CreateCharacterIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<CharacterEntity> & ProvidesDialog {
+        // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
+        // rather than silently creating a blank, unusable character.
+        // See CODE_AUDIT_Character §5.6.
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            throw $name.needsValueError("What should the character be called?")
+        }
+
         let model = ValueModel(
             id: UUID(),
-            name: name,
+            name: trimmedName,
             description: intentPlainText(from: details)
         )
         root.itemController.replace(model: model, isInsert: true)
@@ -47,7 +55,7 @@ struct CreateCharacterIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 
@@ -73,18 +81,31 @@ struct AddCharacterEntryIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
+        // rather than silently adding a blank, unusable entry.
+        // See CODE_AUDIT_Character §5.6.
+        let trimmedEntryName = entryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEntryName.isEmpty else {
+            throw $entryName.needsValueError("What should the entry be called?")
+        }
+
+        // `target` may be stale — deleted since Siri/Shortcuts last cached it.
+        // Confirm it still resolves before reporting success, rather than
+        // silently no-opping while still returning a success dialog.
+        guard let model = root.itemController.itemSync(for: target.id) else {
+            throw $target.needsValueError("Which character?")
+        }
+
         let entry = root.editController.create(
-            name: entryName,
+            name: trimmedEntryName,
             content: intentPlainText(from: content)
         )
         root.editController.add(entry: entry, itemId: target.id)
         await root.itemController.save()
 
-        if let model = root.itemController.itemSync(for: target.id) {
-            try await indexIntentEntities([CharacterEntity(root: root, model: model)])
-        }
+        try await indexIntentEntities([CharacterEntity(root: root, model: model)])
 
-        return .result(dialog: "Added \"\(entryName)\" to \"\(target.name)\".")
+        return .result(dialog: "Added \"\(trimmedEntryName)\" to \"\(target.name)\".")
     }
 }
 

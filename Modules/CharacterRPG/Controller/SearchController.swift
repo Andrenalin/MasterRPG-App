@@ -69,7 +69,12 @@ extension SearchController {
     }
 
     // displayMode: .regular in global search so all fields are covered.
-    @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult]) async {
+    /// - Parameter depth: recursion guard against a cyclic `valueId` chain (e.g. from a
+    ///   CloudKit merge conflict) — matches `buildCharacterFolderNode`'s `FolderTreeDepthLimit`
+    ///   guard on the same value-graph shape. See CODE_AUDIT_Character §5.3.
+    @MainActor private func result(item: ValueModel, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult], depth: Int = 0) async {
+        guard depth < FolderTreeDepthLimit.max else { return }
+
         if itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) {
             foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
         }
@@ -101,7 +106,7 @@ extension SearchController {
 
                 if let subValueId = entry.valueId {
                     guard let item = await itemController.item(for: subValueId) else { continue }
-                    await result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults)
+                    await result(item: item, searchText: searchText, displayMode: .regular, foundResults: &foundResults, depth: depth + 1)
                 }
             }
         }
@@ -402,7 +407,10 @@ extension SearchController {
     /// Collects matching entries from `item` into `entryChildren`.
     /// Inspector always searches entry name + content, regardless of displayMode.
     /// Recurses into sub-value groups via `entry.valueId`.
-    @MainActor private func collectValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, into entryChildren: inout [SearchResult]) async {
+    /// - Parameter depth: recursion guard against a cyclic `valueId` chain — see CODE_AUDIT_Character §5.3.
+    @MainActor private func collectValueEntries(of item: ValueModel, characterId: UUID, characterName: String, searchText: String, into entryChildren: inout [SearchResult], depth: Int = 0) async {
+        guard depth < FolderTreeDepthLimit.max else { return }
+
         for entry in item.entries {
             guard !Task.isCancelled else { break }
 
@@ -430,7 +438,7 @@ extension SearchController {
 
             if let subValueId = entry.valueId {
                 guard let subValue = await itemController.item(for: subValueId) else { continue }
-                await collectValueEntries(of: subValue, characterId: characterId, characterName: characterName, searchText: searchText, into: &entryChildren)
+                await collectValueEntries(of: subValue, characterId: characterId, characterName: characterName, searchText: searchText, into: &entryChildren, depth: depth + 1)
             }
         }
     }

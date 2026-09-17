@@ -9,6 +9,14 @@ struct DropChooseView: View {
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private static let cornerRadius: CGFloat = 24
+    private static let contentHeight: CGFloat = 128
+    private static let borderWidth: CGFloat = 2
+
+    private var cornerShape: some Shape {
+        .rect(cornerRadius: Self.cornerRadius, style: .continuous)
+    }
+
     var body: some View {
         DropItemModuleArea(module: root.configurable.module, contentView: {
             VStack {
@@ -20,16 +28,14 @@ struct DropChooseView: View {
                     EmptyDropButton(selectionModel: selectionModel)
                 }
             }
-            .frame(height: 128)
+            .frame(height: Self.contentHeight)
         }, dropAction: addLink(name:itemId:entryId:))
-        .containerShape(.rect(cornerRadius: 24))
+        .containerShape(.rect(cornerRadius: Self.cornerRadius))
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.accentColor.tertiary)
+            cornerShape.fill(Color.accentColor.tertiary)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.accentColor.secondary, lineWidth: 2)
+            cornerShape.stroke(Color.accentColor.secondary, lineWidth: Self.borderWidth)
         }
         .padding(1)
         .overlay(alignment: .topTrailing) {

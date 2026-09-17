@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import CoreRPG
-import DiceRPG
 import PhotoRPG
 import TableRPG
 import SwiftUI
@@ -25,15 +24,6 @@ extension ViewController: ViewControllable {
 
     @MainActor public func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView {
         AnyView(ThumbnailPhotoRow(itemId: model.id, item: model as? ValueModel).equatable())
-    }
-}
-
-// MARK: External Views
-
-extension ViewController {
-    @MainActor
-    func diceSelection(root: CharacterRootModel, selectionModel: ItemSelectionModel) -> some View {
-        root.diceRoot.viewController.dropChooseView(model: selectionModel)
     }
 }
 

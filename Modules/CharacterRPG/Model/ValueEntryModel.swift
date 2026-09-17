@@ -69,43 +69,14 @@ public struct ValueEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
 
     public var displayState: Int = 0
 
-    mutating func reset(isGenerator: Bool) {
-        if self.isGenerator != isGenerator {
-            self.isGenerator = isGenerator
-        }
-    }
-
     mutating func reset(valueType: ValueType) {
         if type != valueType {
             type = valueType
         }
     }
 
-    var isGeneratorToggle: Bool {
-        get { isGenerator }
-        set { reset(isGenerator: newValue) }
-    }
-
-    var isSelectedToggle: Bool {
-        get { valueSelected }
-        set { toggleSelection() }
-    }
-
-    var valueTypeToggle: ValueType {
-        get { type }
-        set { reset(valueType: newValue) }
-    }
-
     var canCalculate: Bool {
         type == .number || type == .decimal
-    }
-
-    var canGenerator: Bool {
-        type != .selection
-    }
-
-    var canSelection: Bool {
-        type == .selection
     }
 }
 
@@ -183,13 +154,11 @@ extension ValueEntryModel {
 
     @MainActor func calculate(on result: String) -> String {
         if let final = Calculator.calculate(result) {
+            guard !(final.isNaN || final.isInfinite) else { return "0 Error" }
             if type == .number {
-                if !(final.isNaN || final.isInfinite || abs(final) >= Double(Int.max)) {
-                    let valueTemp = Int(final)
-                    return "\(valueTemp)"
-                } else {
-                    return "0 Error"
-                }
+                guard abs(final) < Double(Int.max) else { return "0 Error" }
+                let valueTemp = Int(final)
+                return "\(valueTemp)"
             } else {
                 return "\(final)"
             }
@@ -204,6 +173,22 @@ extension ValueEntryModel {
         case .number: .number
         case .decimal: .decimal
         case .selection: .selection
+        }
+    }
+}
+
+extension ValueEntryModel.ValueType {
+    /// Inverse of `ValueEntryModel.editType` above — kept next to it so a new
+    /// `ValueType`/`SheetModelEditType` case is visible in both directions at
+    /// once instead of drifting silently across files. See CODE_AUDIT_Character §5.7.
+    /// `nil` for `.none`, which has no corresponding `ValueType`.
+    init?(editType: SheetModelEditType) {
+        switch editType {
+        case .text: self = .text
+        case .number: self = .number
+        case .decimal: self = .decimal
+        case .selection: self = .selection
+        case .none: return nil
         }
     }
 }

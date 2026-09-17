@@ -58,7 +58,11 @@ struct CharacterEntity: IndexedEntity {
 extension CharacterEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
+            // Derived from `item.id` rather than the user-editable `item.name` —
+            // two characters can share a name, or the same character can be
+            // exported concurrently, either of which would collide on the same
+            // cache path if keyed by name. See CODE_AUDIT_Character §6.1.
+            let url = URL.cachesDirectory.appending(component: "\(item.id.uuidString).pdf")
 
             let renderer = ImageRenderer(content: VStack {
                 Text(verbatim: item.name)

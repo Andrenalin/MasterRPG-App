@@ -17,6 +17,7 @@ struct OpenCharacterIntent: OpenIntent {
 
     @Dependency var navigator: Navigator
 
+    @MainActor
     func perform() async throws -> some IntentResult {
         await navigator.perform(route: KnownRoutes.values(target.id, nil))
         return .result()

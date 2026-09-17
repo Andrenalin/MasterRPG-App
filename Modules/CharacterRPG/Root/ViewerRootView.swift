@@ -46,6 +46,13 @@ private struct ReaderSheetView: View {
 
     @Environment(CharacterRootModel.self) private var root
 
+    /// Local read-only mirror of `ItemEditorModel.gameSheetRootModel`, resolved
+    /// from the `.onChange(of: model.id, initial: true)` lifecycle hook below
+    /// rather than as a side effect of a `body`-read computed property — see
+    /// CODE_AUDIT_Character §8.3. `body` only ever reads this; it never mutates
+    /// observable state itself.
+    @State private var resolvedGameSheetRootModel: SheetRootModel?
+
     // The live game view reuses its module's persistent counterpart to the
     // standalone editor's `sheetRootModel` (see `SheetRootModel.syncCounterpart()`)
     // instead of building a throwaway `SheetRootModel` per character —
@@ -54,24 +61,32 @@ private struct ReaderSheetView: View {
     // not `.id(model.id)`-scoped: tearing the view identity down on every
     // character switch would discard that reuse.
     var body: some View {
-        if configuration.isGame {
-            TableRootSheet(
-                root: root.rootController,
-                itemId: model.id,
-                module: root.config.module,
-                configuration: configuration,
-                dismissAction: dismissAction,
-                externalSheetRootModel: gameSheetRootModel
-            )
-        } else {
-            TableRootSheet(
-                root: root.rootController,
-                itemId: model.id,
-                module: root.config.module,
-                configuration: configuration,
-                dismissAction: dismissAction
-            )
-            .id(model.id)
+        Group {
+            if configuration.isGame {
+                if let resolvedGameSheetRootModel {
+                    TableRootSheet(
+                        root: root.rootController,
+                        itemId: model.id,
+                        module: root.config.module,
+                        configuration: configuration,
+                        dismissAction: dismissAction,
+                        externalSheetRootModel: resolvedGameSheetRootModel
+                    )
+                }
+            } else {
+                TableRootSheet(
+                    root: root.rootController,
+                    itemId: model.id,
+                    module: root.config.module,
+                    configuration: configuration,
+                    dismissAction: dismissAction
+                )
+                .id(model.id)
+            }
+        }
+        .onChange(of: model.id, initial: true) {
+            guard configuration.isGame else { return }
+            resolveGameSheetRootModel()
         }
     }
 
@@ -87,10 +102,11 @@ private struct ReaderSheetView: View {
     /// made here (add/remove/move an entry, etc.) are meant to persist just
     /// like the standalone editor's, not stay memory-only for the session; see
     /// `SheetRootModel.persistsEdits`.
-    private var gameSheetRootModel: SheetRootModel {
+    private func resolveGameSheetRootModel() {
         if let existing = root.editController.editorModel.gameSheetRootModel {
             existing.reset(itemId: model.id)
-            return existing
+            resolvedGameSheetRootModel = existing
+            return
         }
         guard let rootManager = root.rootManager else {
             preconditionFailure("ViewerRootView requires ItemRootController.rootManager to be set before presentation.")
@@ -104,7 +120,7 @@ private struct ReaderSheetView: View {
             isGameEditor: true
         )
         root.editController.editorModel.gameSheetRootModel = created
-        return created
+        resolvedGameSheetRootModel = created
     }
 }
 

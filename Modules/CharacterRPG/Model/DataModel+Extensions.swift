@@ -14,19 +14,11 @@ extension RPGValue {
         set { entries = NSSet(array: newValue) }
     }
 
-    func entryOrNew(for uuid: UUID) -> RPGValueEntry {
-        childOrNew(uuid, in: entriesModel)
-    }
-
     // MARK: Photos
 
     var photoIds: [RPGValuePhoto] {
         get { RPGValuePhoto.sortedArray(from: photos) }
         set { photos = NSSet(array: newValue) }
-    }
-
-    func photoOrNew(for id: UUID) -> RPGValuePhoto {
-        childOrNew(id, in: photoIds)
     }
 }
 

@@ -42,7 +42,7 @@ struct GameControllerTests {
         let reusedEntryDice = try #require(sut.focusDice(for: characterId))
         #expect(reusedEntryDice == firstEntryDice)
 
-        sut.resetGameDiceId(itemId: characterId, entryId: entryId)
+        sut.resetGameDiceId(entryId: entryId)
         let resetEntryDice = try #require(sut.focusDice(for: characterId))
         #expect(resetEntryDice != firstEntryDice)
 

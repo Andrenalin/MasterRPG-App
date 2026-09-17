@@ -28,7 +28,6 @@ struct ViewControllerTests {
         _ = sut.rowViewer(source: source, destination: source)
         _ = sut.thumbnailRowView(for: itemId)
         _ = sut.thumbnailRowView(for: value)
-        _ = sut.diceSelection(root: root, selectionModel: selectionModel)
         _ = sut.linkListView(type: .inspector, itemSelectionModel: selectionModel)
         _ = sut.viewer(root: root, itemId: itemId, configuration: ViewerConfiguration(closeButton: true), dismissAction: {})
         _ = sut.dropChooseView(model: selectionModel)

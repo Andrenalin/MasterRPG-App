@@ -14,11 +14,12 @@ public extension CharacterRootModel {
     @MainActor
     static let preview: CharacterRootModel = previewFixture()
 
+    /// Shared by `previewFixture(models:)` and `testRoot(...)` — both build a
+    /// throwaway fake `RootManager` for `setUp`'s isolated first call, then a
+    /// real cross-wired `RootManager` and re-`setUp` every sub-root against it.
+    /// See CODE_AUDIT_Character §9.10.
     @MainActor
-    internal static func previewFixture(
-        models: [ValueModel] = ValueModel.previewFixtures
-    ) -> CharacterRootModel {
-        let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
+    private static func wireRoots(_ root: CharacterRootModel) {
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
@@ -27,6 +28,14 @@ public extension CharacterRootModel {
         root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+    }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [ValueModel] = ValueModel.previewFixtures
+    ) -> CharacterRootModel {
+        let root = CharacterRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview, photoRoot: .preview, tableRoot: .preview)
+        wireRoots(root)
         for model in models {
             root.itemController.replace(model: model, isInsert: true)
         }
@@ -51,14 +60,7 @@ public extension CharacterRootModel {
     @MainActor
     static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, tableRoot: TableRootModel) -> CharacterRootModel {
         let root = CharacterRootModel(tagController: .preview, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot)
-        let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
-        let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root.tableRoot, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.tableRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        wireRoots(root)
         return root
     }
 #endif

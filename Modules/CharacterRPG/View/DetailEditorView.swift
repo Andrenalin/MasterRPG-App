@@ -11,7 +11,8 @@ struct DetailEditorView: View {
         let _ = Self.printViewChangesOnlyInDebug()
 
         DetailSelectionEditorView(root: root, model: model)
-            // task is swallowing the updates later, this causes a 2 double creation on start / that is acceptable
+            // TODO: .task swallows updates further down, causing a double creation on
+            // start — accepted for now. See CODE_AUDIT_Character §9.16.
             .onChange(of: model.id, initial: true) {
                 root.editorLinkModel.characterSelectionModel.onlyChildrenFrom <=> model.id
                 root.editController.editorModel.sheetRootModel?.reset(itemId: model.id)

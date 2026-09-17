@@ -9,8 +9,10 @@ struct QuickEntryEditor: View {
     
     @Environment(CharacterRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    
-    @State private var referenceText = DebouncerModel(initialValue: "", delay: 2)
+
+    private static let referenceTextDebounceDelay: Double = 2
+
+    @State private var referenceText = DebouncerModel(initialValue: "", delay: Self.referenceTextDebounceDelay)
 
     var body: some View {
         QuickEntryEditorView(root: root.rootController, editController: root.editController, model: model, referenceText: referenceText, pdfEditorRoute: CharacterEditorRoute.selectionPdf) {

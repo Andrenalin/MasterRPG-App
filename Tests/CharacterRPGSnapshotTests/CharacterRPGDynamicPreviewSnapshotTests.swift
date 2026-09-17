@@ -24,12 +24,12 @@ struct CharacterRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CharacterRPG::AddtionalEntryRow
-    @Test("AddtionalEntryRow")
-    func addtionalEntryRow() async throws {
-        try await assertPreviewSnapshot("AddtionalEntryRow") { _ in
+    // snapshot-root: CharacterRPG::AdditionalEntryRow
+    @Test("AdditionalEntryRow")
+    func additionalEntryRow() async throws {
+        try await assertPreviewSnapshot("AdditionalEntryRow") { _ in
             let entry = ValueEntryModel.testEntryText
-            AddtionalEntryRow(
+            AdditionalEntryRow(
                 source: ItemRowModel(
                     itemId: ValueModel.previewId,
                     entryId: entry.id,

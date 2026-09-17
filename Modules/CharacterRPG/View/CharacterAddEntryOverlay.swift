@@ -87,7 +87,7 @@ struct CharacterAddEntryControl: View {
                 .padding(.vertical, 6)
                 .background(theme.background(for: .value), in: .capsule)
                 .overlay {
-                    Capsule()
+                    fieldBorderShape
                         .strokeBorder(.secondary.opacity(0.3), lineWidth: 1)
                 }
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -105,6 +105,10 @@ struct CharacterAddEntryControl: View {
             in: .capsule
         )
 #endif
+    }
+
+    private var fieldBorderShape: some InsettableShape {
+        .capsule
     }
 
     private func toggle() {
@@ -162,7 +166,8 @@ struct CharacterAddEntryControl: View {
 
 #Preview("Character Add Entry") {
     @Previewable @Environment(\.appTheme) var theme
-    Rectangle().fill(theme.backgroundGradient)
+    let backgroundShape: some Shape = .rect
+    backgroundShape.fill(theme.backgroundGradient)
         .overlay {
             CharacterAddEntryOverlayContent(root: .preview, itemId: UUID())
                 .padding()

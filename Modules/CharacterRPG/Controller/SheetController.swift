@@ -13,9 +13,25 @@ extension SheetController: SheetControllable {
     @MainActor var linkRegisterController: LinkRegisterController { itemController.linkRegisterController }
 
     @MainActor func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool) -> SheetModel {
+        sheet(root: root, itemId: itemId, destination: destination, level: level, isShown: isShown, moduleDepth: moduleDepth, isEditor: isEditor, visited: [])
+    }
+
+    /// `visited` guards against a cycle in the value/link graph (a plausible
+    /// outcome of a merge/import bug, or two devices concurrently editing via
+    /// CloudKit sync — the same class of malformed data `EditController`'s
+    /// duplication helpers and `GameController`'s entry-path resolution both
+    /// already guard against with `RecursionLimits.maxValueLinkDepth`) recursing
+    /// indefinitely and crashing with a stack overflow while building the sheet
+    /// tree. See CODE_AUDIT_Character §5.1.
+    @MainActor private func sheet(root: RootManager, itemId: UUID, destination: ItemRowModel?, level: Int, isShown: Bool, moduleDepth: Int, isEditor: Bool, visited: Set<UUID>) -> SheetModel {
+        guard !visited.contains(itemId), visited.count < RecursionLimits.maxValueLinkDepth else {
+            return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: true, showHeader: false, name: "", description: "", inlineEntries: [], entries: [])
+        }
+        let visited = visited.union([itemId])
+
         let model = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         var inlineEntries: [SheetModel] = []
-        
+
         if let diceId = model.diceId {
             inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level, isShown: isShown))
         }
@@ -25,32 +41,40 @@ extension SheetController: SheetControllable {
         }
 
         let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
-        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
-        
+        let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: visited)
+
         let showHeader = model.displayState == 0
         return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
     }
 
     @MainActor func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> [SheetModel] {
+        sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: [])
+    }
+
+    @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool, visited: Set<UUID>) -> [SheetModel] {
         let item = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
         let sheets = item.entries.map { entry in
-            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor)
+            sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: visited)
         }
         return sheets
     }
-    
+
     @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool) -> SheetModel {
+        sheet(entry: entry, root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: [])
+    }
+
+    @MainActor private func sheet(entry: ValueEntryModel, root: RootManager, itemId: UUID, level: Int, moduleDepth: Int, isEditor: Bool, visited: Set<UUID>) -> SheetModel {
         let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
         let (name, description) = entryNameDescription(entry: entry, root: root)
 
         var inlineEntries: [SheetModel] = []
         if let diceId = entry.diceId {
-            inlineEntries.append(SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: destination, level: level, type: .dice, name: "", description: "", entries: []))
+            inlineEntries.append(createDiceInline(diceId: diceId, itemId: itemId, level: level, isShown: true, destination: destination))
         }
 
         var allSheets: [SheetModel] = []
         if let subValueId = entry.valueId {
-            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor)]
+            allSheets = [sheet(root: root, itemId: subValueId, destination: destination, level: level + 1, isShown: false, moduleDepth: 0, isEditor: isEditor, visited: visited)]
         }
 
         let links = linkRegisterController.linksFrom(source: destination)
@@ -62,7 +86,7 @@ extension SheetController: SheetControllable {
             switch linkDestination.typeId {
             case .value:
                 if linkDestination.entryId == nil {
-                    linkedSheet = sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor)
+                    linkedSheet = sheet(root: root, itemId: linkDestination.itemId, destination: destination, level: level + 1, isShown: false, moduleDepth: moduleDepth + 1, isEditor: isEditor, visited: visited)
                 } else {
                     linkedSheet = nil
                 }
@@ -93,8 +117,11 @@ extension SheetController: SheetControllable {
         return (name, description)
     }
     
-    @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
-        SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, isShown: isShown, name: "", description: "", entries: [])
+    /// Shared "dice inline sheet" construction — previously hand-rolled
+    /// verbatim at three call sites, which had already drifted once (one
+    /// call site omitted `isShown`). See CODE_AUDIT_Character §9.11.
+    @MainActor private func createDiceInline(diceId: UUID, itemId: UUID, level: Int, isShown: Bool, destination: ItemRowModel? = nil) -> SheetModel {
+        SheetModel(source: ItemRowModel(itemId: diceId, typeId: .dice), destination: destination ?? ItemRowModel(itemId: itemId, typeId: itemController.config.module), level: level, type: .dice, isShown: isShown, name: "", description: "", entries: [])
     }
 
     @MainActor private func createPhotoInline(photoId: UUID, itemId: UUID, level: Int, isShown: Bool) -> SheetModel {
@@ -193,7 +220,7 @@ extension SheetController: SheetControllable {
         if let diceId = entry.diceId {
             let destination = ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemController.config.module)
             let diceSource = ItemRowModel(itemId: diceId, typeId: .dice)
-            let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? SheetModel(source: diceSource, destination: destination, level: sheetModel.level, type: .dice, name: "", description: "", entries: [])
+            let diceSheetModel = existingSheetModel.inlineEntries.first(where: { $0.sheetType == .dice }) ?? createDiceInline(diceId: diceId, itemId: item.id, level: sheetModel.level, isShown: true, destination: destination)
             diceSheetModel.source = diceSource
             existingSheetModel.inlineEntries = [diceSheetModel]
         } else {
