@@ -12,6 +12,19 @@ class Lightning {
         case waiting, preparing, striking, fading
     }
 
+    /// Points added per update tick, scaled by elapsed time. See CODE_AUDIT_Weather §9.14.
+    private static let boltGrowthSpeed = 800.0
+    /// Random horizontal/vertical wobble added to each growth step.
+    private static let jitterRange = -10.0 ... 10.0
+    /// Random spread applied around straight-down when a bolt forks.
+    private static let forkAngleSpread = Double.pi / 4
+    /// Screen-flash opacity set the instant a strike finishes.
+    private static let strikeFlashOpacity = 0.6
+    /// Bolt width multiplier applied once a strike finishes, before fading.
+    private static let strikeWidthGrowth = 1.5
+    /// Bolt width lost per second while fading out.
+    private static let fadeRate = 15.0
+
     var bolts = [LightningBolt]()
     var state = LightningState.waiting
     var lastUpdate = Date.now
@@ -40,15 +53,15 @@ class Lightning {
             state = .striking
 
         case .striking:
-            let speed = delta * 800
+            let speed = delta * Self.boltGrowthSpeed
             var hasFinishedStriking = true
 
             for bolt in bolts {
                 guard var lastPoint = bolt.points.last else { continue }
 
                 for _ in 0 ..< 5 {
-                    let endX = lastPoint.x + (speed * cos(bolt.angle) + Double.random(in: -10 ... 10))
-                    let endY = lastPoint.y - (speed * sin(bolt.angle) + Double.random(in: -10 ... 10))
+                    let endX = lastPoint.x + (speed * cos(bolt.angle) + Double.random(in: Self.jitterRange))
+                    let endY = lastPoint.y - (speed * sin(bolt.angle) + Double.random(in: Self.jitterRange))
                     lastPoint = CGPoint(x: endX, y: endY)
                     bolt.points.append(lastPoint)
                 }
@@ -57,7 +70,7 @@ class Lightning {
                     hasFinishedStriking = false
 
                     if bolts.count < maximumBolts, Int.random(in: 0 ..< 100) < forkProbability {
-                        let newAngle = Double.random(in: -.pi / 4 ... .pi / 4) - .pi / 2
+                        let newAngle = Double.random(in: -Self.forkAngleSpread ... Self.forkAngleSpread) - .pi / 2
                         let newBolt = LightningBolt(start: lastPoint, width: bolt.width * 0.75, angle: newAngle)
                         bolts.append(newBolt)
                     }
@@ -66,10 +79,10 @@ class Lightning {
 
             if hasFinishedStriking {
                 state = .fading
-                flashOpacity = 0.6
+                flashOpacity = Self.strikeFlashOpacity
 
                 for bolt in bolts {
-                    bolt.width *= 1.5
+                    bolt.width *= Self.strikeWidthGrowth
                 }
             }
 
@@ -78,7 +91,7 @@ class Lightning {
             flashOpacity -= delta
 
             for bolt in bolts {
-                bolt.width -= delta * 15
+                bolt.width -= delta * Self.fadeRate
 
                 if bolt.width > 0.05 {
                     allFaded = false

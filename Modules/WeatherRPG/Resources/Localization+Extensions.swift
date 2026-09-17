@@ -3,9 +3,9 @@
 import Foundation
 
 extension Bundle {
-  func localizedString(forKey key: String) -> String {
-    self.localizedString(forKey: key, value: nil, table: nil)
-  }
+    func localizedString(forKey key: String) -> String {
+        self.localizedString(forKey: key, value: nil, table: nil)
+    }
 }
 
 extension String {

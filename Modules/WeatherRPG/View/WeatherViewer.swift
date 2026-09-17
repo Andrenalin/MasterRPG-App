@@ -17,60 +17,53 @@ struct WeatherViewer: View {
     @State private var lightningTrigger = 0
     @State private var animationTrace: PerformanceTrace.Interval?
 
-    static let backgroundTopStops: [Gradient.Stop] = [
-        .init(color: .midnightStart, location: 0),
-        .init(color: .midnightStart, location: 0.25),
-        .init(color: .sunriseStart, location: 0.33),
-        .init(color: .sunnyDayStart, location: 0.38),
-        .init(color: .sunnyDayStart, location: 0.7),
-        .init(color: .sunsetStart, location: 0.78),
-        .init(color: .midnightStart, location: 0.82),
-        .init(color: .midnightStart, location: 1),
-    ]
+    /// Shared "time of day" keyframe schedule for every gradient below, so the
+    /// day/night timing can only be tuned in one place. See CODE_AUDIT_Weather §9.2.
+    private enum DayKeyframe {
+        static let midnightStart = 0.0
+        static let midnightHold = 0.25
+        static let sunriseStart = 0.33
+        static let sunriseEnd = 0.38
+        static let sunsetStart = 0.7
+        static let sunsetEnd = 0.78
+        static let midnightReturn = 0.82
+        static let midnightEnd = 1.0
 
-    static let backgroundBottomStops: [Gradient.Stop] = [
-        .init(color: .midnightEnd, location: 0),
-        .init(color: .midnightEnd, location: 0.25),
-        .init(color: .sunriseEnd, location: 0.33),
-        .init(color: .sunnyDayEnd, location: 0.38),
-        .init(color: .sunnyDayEnd, location: 0.7),
-        .init(color: .sunsetEnd, location: 0.78),
-        .init(color: .midnightEnd, location: 0.82),
-        .init(color: .midnightEnd, location: 1),
-    ]
+        static let locations: [Double] = [
+            midnightStart, midnightHold, sunriseStart, sunriseEnd,
+            sunsetStart, sunsetEnd, midnightReturn, midnightEnd,
+        ]
 
-    static let cloudTopStops: [Gradient.Stop] = [
-        .init(color: .darkCloudStart, location: 0),
-        .init(color: .darkCloudStart, location: 0.25),
-        .init(color: .sunriseCloudStart, location: 0.33),
-        .init(color: .lightCloudStart, location: 0.38),
-        .init(color: .lightCloudStart, location: 0.7),
-        .init(color: .sunsetCloudStart, location: 0.78),
-        .init(color: .darkCloudStart, location: 0.82),
-        .init(color: .darkCloudStart, location: 1),
-    ]
+        static func stops(_ colors: [Color]) -> [Gradient.Stop] {
+            precondition(colors.count == locations.count)
+            return zip(locations, colors).map { .init(color: $1, location: $0) }
+        }
+    }
 
-    static let cloudBottomStops: [Gradient.Stop] = [
-        .init(color: .darkCloudEnd, location: 0),
-        .init(color: .darkCloudEnd, location: 0.25),
-        .init(color: .sunriseCloudEnd, location: 0.33),
-        .init(color: .lightCloudEnd, location: 0.38),
-        .init(color: .lightCloudEnd, location: 0.7),
-        .init(color: .sunsetCloudEnd, location: 0.78),
-        .init(color: .darkCloudEnd, location: 0.82),
-        .init(color: .darkCloudEnd, location: 1),
-    ]
+    static let backgroundTopStops: [Gradient.Stop] = DayKeyframe.stops([
+        .midnightStart, .midnightStart, .sunriseStart, .sunnyDayStart,
+        .sunnyDayStart, .sunsetStart, .midnightStart, .midnightStart,
+    ])
 
-    static let starStops: [Gradient.Stop] = [
-        .init(color: .white, location: 0),
-        .init(color: .white, location: 0.25),
-        .init(color: .clear, location: 0.33),
-        .init(color: .clear, location: 0.38),
-        .init(color: .clear, location: 0.7),
-        .init(color: .clear, location: 0.78),
-        .init(color: .white, location: 0.82),
-        .init(color: .white, location: 1),
-    ]
+    static let backgroundBottomStops: [Gradient.Stop] = DayKeyframe.stops([
+        .midnightEnd, .midnightEnd, .sunriseEnd, .sunnyDayEnd,
+        .sunnyDayEnd, .sunsetEnd, .midnightEnd, .midnightEnd,
+    ])
+
+    static let cloudTopStops: [Gradient.Stop] = DayKeyframe.stops([
+        .darkCloudStart, .darkCloudStart, .sunriseCloudStart, .lightCloudStart,
+        .lightCloudStart, .sunsetCloudStart, .darkCloudStart, .darkCloudStart,
+    ])
+
+    static let cloudBottomStops: [Gradient.Stop] = DayKeyframe.stops([
+        .darkCloudEnd, .darkCloudEnd, .sunriseCloudEnd, .lightCloudEnd,
+        .lightCloudEnd, .sunsetCloudEnd, .darkCloudEnd, .darkCloudEnd,
+    ])
+
+    static let starStops: [Gradient.Stop] = DayKeyframe.stops([
+        .white, .white, .clear, .clear,
+        .clear, .clear, .white, .white,
+    ])
 
     var starOpacity: Double {
         let color = Self.starStops.interpolated(amount: model.time)
@@ -117,7 +110,6 @@ struct WeatherViewer: View {
             .ignoresSafeArea(.container)
         #endif
         }
-        .frame(width: containerSize.width, height: containerSize.height)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Weather preview for \(model.name)", bundle: .module))
         .accessibilityValue(Text(verbatim: accessibilitySummary))

@@ -26,13 +26,7 @@ struct WeatherStormEditor: View {
                 icon: model.rainDirection ? "chevron.right" : "chevron.left"
             )
         } header: {
-#if os(macOS)
-            Divider()
-                .padding(.top)
-#endif
-            Text("Storm", bundle: .module)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
+            WeatherSectionHeader(titleKey: "Storm", bundle: .module)
         }
         .onChange(of: model.id, initial: true) {
             syncStormModel()

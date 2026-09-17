@@ -9,6 +9,11 @@ import CoreGraphics
 import Foundation
 
 class CloudGroup {
+    /// Number of `cloud0`...`cloud7` bundle images registered as Canvas symbols
+    /// by `CloudsView`. Shared so the modulo here and the symbol range there
+    /// can't drift out of sync. See CODE_AUDIT_Weather §9.15.
+    static let cloudImageCount = 8
+
     var clouds = [Cloud]()
     let opacity: Double
     let deterministic: Bool
@@ -60,7 +65,7 @@ class CloudGroup {
             } else {
                 scale = Double.random(in: cloudScale)
             }
-            let imageNumber = i % 8
+            let imageNumber = i % Self.cloudImageCount
 
             let cloud = Cloud(imageNumber: imageNumber, scale: scale)
             clouds.append(cloud)

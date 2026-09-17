@@ -24,20 +24,14 @@ struct InlineRowViewer: View, Equatable {
 
     @Environment(WeatherRootModel.self) private var root
 
-    @State private var containerSize: CGSize = .zero
-
     var body: some View {
-        Color.clear
-            .overlay {
-                WeatherViewer(model: (sourceModel as? WeatherModel) ?? root.itemController.itemOrEmpty(for: source.itemId), size: containerSize, useGame: useGame, isAnimating: .constant(isAnimating))
-            }
-            .onGeometryChange(for: CGSize.self) { proxy in
-                proxy.size
-            } action: { newValue in
-                containerSize = newValue
-            }
-            .frame(height: 256)
-            .clipped()
+        WeatherViewerContainer(
+            model: (sourceModel as? WeatherModel) ?? root.itemController.itemOrEmpty(for: source.itemId),
+            useGame: useGame,
+            isAnimating: .constant(isAnimating)
+        )
+        .frame(height: 256)
+        .clipped()
     }
     
     static func == (lhs: Self, rhs: Self) -> Bool {

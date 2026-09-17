@@ -15,20 +15,12 @@ struct ViewerRootView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var isAnimating: Bool = false
-    @State private var containerSize: CGSize = .zero
 
     var body: some View {
         VStack {
-            Color.clear
-                .overlay {
-                    WeatherViewer(model: model, size: containerSize, useGame: configuration.isGame, isAnimating: $isAnimating)
-                        .id(model.id)
-                }
-                .onGeometryChange(for: CGSize.self) { proxy in
-                    proxy.size
-                } action: { newValue in
-                    containerSize = newValue
-                }
+            WeatherViewerContainer(model: model, useGame: configuration.isGame, isAnimating: $isAnimating) {
+                $0.id(model.id)
+            }
         }
         .ignoresSafeArea(.container, edges: [.top, .bottom])
         .applyIf(!configuration.isGame) {

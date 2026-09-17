@@ -5,7 +5,13 @@
 //  Created by Paul Hudson on 16/11/2021.
 //
 
+import CoreRPG
 import SwiftUI
+import os.log
+
+private extension Logger {
+    static let weatherColor = Logger(subsystem: subsystem, category: "WeatherColor")
+}
 
 extension Color {
     func getComponents() -> (red: Double, green: Double, blue: Double, alpha: Double) {
@@ -15,11 +21,17 @@ extension Color {
         var alpha: CGFloat = 0
 
         #if os(macOS)
-            let nsColor = NSColor(self).usingColorSpace(.sRGB)
-            nsColor?.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            guard let nsColor = NSColor(self).usingColorSpace(.sRGB) else {
+                Logger.weatherColor.error("Failed to convert Color to sRGB NSColor; falling back to white.")
+                return (1, 1, 1, 1)
+            }
+            nsColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
         #else
             let uiColor = UIColor(self)
-            uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+                Logger.weatherColor.error("Failed to read RGBA components from Color; falling back to white.")
+                return (1, 1, 1, 1)
+            }
         #endif
         return (red, green, blue, alpha)
     }

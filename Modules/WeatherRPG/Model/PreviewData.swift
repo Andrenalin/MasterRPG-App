@@ -9,36 +9,33 @@ public extension WeatherRootModel {
     static var preview: WeatherRootModel { previewFixture() }
 
     @MainActor
-    internal static func previewFixture(
-        models: [WeatherModel] = WeatherModel.previewFixtures,
-        photoRoot: PhotoRootModel = .preview
-    ) -> WeatherRootModel {
+    private static func makeWiredRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
         let root = WeatherRootModel(tagController: .preview, photoRoot: photoRoot)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
         let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root, generatorRoot: root, mapRoot: root, pdfRoot: root, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root, weatherRoot: root)
         root.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
+        return root
+    }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [WeatherModel] = WeatherModel.previewFixtures,
+        photoRoot: PhotoRootModel = .preview
+    ) -> WeatherRootModel {
+        let root = makeWiredRoot(photoRoot: photoRoot)
         for model in models {
             root.itemController.replace(model: model, isInsert: true)
         }
         root.editController.setCurrentItem(to: .preview)
         return root
     }
-    
-    @MainActor
-    static var previewWithData: WeatherRootModel { previewFixture() }
-    
+
 #if DEBUG
     @MainActor
     static func testRoot(photoRoot: PhotoRootModel) -> WeatherRootModel {
-        let root = WeatherRootModel(tagController: .preview, photoRoot: photoRoot)
-        let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
-        let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root, generatorRoot: root, mapRoot: root, pdfRoot: root, photoRoot: root.photoRoot, spaceRoot: root, tableRoot: root, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.photoRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        return root
+        makeWiredRoot(photoRoot: photoRoot)
     }
 #endif
 }
@@ -66,7 +63,7 @@ extension WeatherModel {
             rainAngle: 90,
             rainIntensity: 500,
             lightningFrequency: 60,
-            lightningMaxBolts: 120,
+            lightningMaxBolts: 8,
             lightningForkProbability: 80,
             photoId: PhotoRootModel.previewPhotoId
         )
@@ -117,7 +114,7 @@ extension WeatherModel {
             description: "Lightly cloudy but overall pleasant weather.",
             tags: ["Summer", "Day"],
             weatherUpdate: fixtureID(0x84),
-            time: 12 * 60 * 60,
+            time: 12 / 24.0,
             cloudThickness: .light,
             stormType: .none,
             rainAngle: 0,
@@ -136,7 +133,7 @@ extension WeatherModel {
             description: "Some clouds but still dry weather.",
             tags: ["Summer", "Night"],
             weatherUpdate: fixtureID(0x85),
-            time: 20 * 60 * 60,
+            time: 20 / 24.0,
             cloudThickness: .regular,
             stormType: .none,
             rainAngle: 0,
@@ -155,7 +152,7 @@ extension WeatherModel {
             description: "Heavy clouds with steady rain.",
             tags: ["Summer", "Night"],
             weatherUpdate: fixtureID(0x86),
-            time: 17 * 60 * 60,
+            time: 17 / 24.0,
             cloudThickness: .thick,
             stormType: .rain,
             rainAngle: -10,
@@ -174,7 +171,7 @@ extension WeatherModel {
             description: "Heavy clouds with regular snow.",
             tags: ["Winter", "Night"],
             weatherUpdate: fixtureID(0x87),
-            time: 20 * 60 * 60,
+            time: 20 / 24.0,
             cloudThickness: .thick,
             stormType: .snow,
             rainAngle: -10,
@@ -193,13 +190,13 @@ extension WeatherModel {
             description: "A powerful nighttime thunderstorm.",
             tags: ["Thunder", "Night"],
             weatherUpdate: fixtureID(0x88),
-            time: 20 * 60 * 60,
+            time: 20 / 24.0,
             cloudThickness: .thick,
             stormType: .none,
             rainAngle: 0,
             rainIntensity: 200,
             lightningFrequency: 100,
-            lightningMaxBolts: 2_000,
+            lightningMaxBolts: 10,
             lightningForkProbability: 100,
             photoId: nil
         )

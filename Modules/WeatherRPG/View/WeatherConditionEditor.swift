@@ -20,13 +20,7 @@ struct WeatherConditionEditor: View {
             WeatherTimeEditor(model: model)
             WeatherCloudsEditor(model: cloudEditModel)
         } header: {
-#if os(macOS)
-            Divider()
-                .padding(.top)
-#endif
-            Text("Weather", bundle: .module)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
+            WeatherSectionHeader(titleKey: "Weather", bundle: .module)
         }
         .onChange(of: model.id, initial: true) {
             syncCloudModel()

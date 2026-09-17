@@ -9,8 +9,16 @@ import SwiftUI
 
 struct LightningView: View {
     var frequency: Double = 0.0
-    var lightning: Lightning
+    let maximumBolts: Int
+    let forkProbability: Int
     let trigger: Int
+
+    // Boxed in @State so in-flight bolts survive `WeatherViewer.body`
+    // re-evaluations triggered by unrelated model changes instead of resetting
+    // on every edit. `maximumBolts`/`forkProbability` are re-applied to the
+    // persisted instance below since they're baked in only at construction.
+    // See CODE_AUDIT_Weather §8.1.
+    @State private var lightning: Lightning
 
     @Environment(\.accessibilityDimFlashingLights) private var accessibilityDimFlashingLights
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
@@ -59,6 +67,12 @@ struct LightningView: View {
                 lightning.stop()
             }
         }
+        .onChange(of: maximumBolts, initial: true) { _, newValue in
+            lightning.maximumBolts = newValue
+        }
+        .onChange(of: forkProbability, initial: true) { _, newValue in
+            lightning.forkProbability = newValue
+        }
     }
 
     init(
@@ -67,9 +81,11 @@ struct LightningView: View {
         forkProbability: Int = 20,
         trigger: Int = 0
     ) {
-        lightning = Lightning(maximumBolts: maximumBolts, forkProbability: forkProbability)
         self.frequency = frequency
+        self.maximumBolts = maximumBolts
+        self.forkProbability = forkProbability
         self.trigger = trigger
+        _lightning = State(initialValue: Lightning(maximumBolts: maximumBolts, forkProbability: forkProbability))
     }
 
     private var shouldSuppressLightning: Bool {

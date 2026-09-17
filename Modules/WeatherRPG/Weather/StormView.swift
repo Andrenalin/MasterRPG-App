@@ -8,7 +8,17 @@
 import SwiftUI
 
 struct StormView: View {
-    let storm: Storm
+    let type: Storm.Contents
+    let direction: Angle
+    let strength: Int
+
+    // Boxed in @State so in-flight drops survive `WeatherViewer.body`
+    // re-evaluations triggered by unrelated model changes instead of resetting
+    // on every edit. `type`/`direction`/`strength` are baked into `drops` at
+    // construction, so a genuine change to any of them still rebuilds the
+    // storm — only re-renders from unrelated model changes preserve it.
+    // See CODE_AUDIT_Weather §8.1.
+    @State private var storm: Storm
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -32,10 +42,26 @@ struct StormView: View {
             }
         }
         .ignoresSafeArea()
+        .onChange(of: stormKey) { _, _ in
+            storm = Storm(type: type, direction: direction, strength: strength)
+        }
     }
 
     init(type: Storm.Contents, direction: Angle, strength: Int) {
-        storm = Storm(type: type, direction: direction, strength: strength)
+        self.type = type
+        self.direction = direction
+        self.strength = strength
+        _storm = State(initialValue: Storm(type: type, direction: direction, strength: strength))
+    }
+
+    private struct StormKey: Equatable {
+        let type: Storm.Contents
+        let direction: Angle
+        let strength: Int
+    }
+
+    private var stormKey: StormKey {
+        StormKey(type: type, direction: direction, strength: strength)
     }
 }
 

@@ -15,23 +15,15 @@ struct OverlayViewer: View {
     
     @Environment(WeatherRootModel.self) private var root
 
-    @State private var containerSize: CGSize = .zero
-
     var body: some View {
-        Color.clear
-            .overlay {
-                WeatherViewer(model: model, size: containerSize, useGame: false, isAnimating: $animate)
+        WeatherViewerContainer(model: model, useGame: false, isAnimating: $animate) { viewer in
+            viewer
 #if !os(visionOS)
-                    .glassEffect(.clear)
+                .glassEffect(.clear)
 #endif
-                    .clipShape(.capsule)
-            }
-            .onGeometryChange(for: CGSize.self) { proxy in
-                proxy.size
-            } action: { newValue in
-                containerSize = newValue
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 128)
+                .clipShape(.capsule)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 128)
     }
 }

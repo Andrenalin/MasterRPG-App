@@ -23,13 +23,7 @@ struct WeatherPhotoEditor: View {
                     withAnimation(.easeInOut) { root.editController.weatherEditModel.selectionPhoto.resetSelection(itemId: model.photoId, entryId: nil) }
                 }
         } header: {
-#if os(macOS)
-            Divider()
-                .padding(.top)
-#endif
-            Text("Photo", bundle: .module)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
+            WeatherSectionHeader(titleKey: "Photo", bundle: .module)
         }
     }
 }

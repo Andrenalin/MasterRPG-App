@@ -23,13 +23,7 @@ struct WeatherThunderEditor: View {
             WeatherLightningMaxBoltsEditor(model: model, editModel: lightningMaxBolts)
             WeatherLightningForkEditor(model: model, editModel: lightningForkProbability)
         } header: {
-#if os(macOS)
-            Divider()
-                .padding(.top)
-#endif
-            Text("Thunder", bundle: .module)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .center)
+            WeatherSectionHeader(titleKey: "Thunder", bundle: .module)
         }
         .onChange(of: model.id, initial: true) {
             syncLightningModels()

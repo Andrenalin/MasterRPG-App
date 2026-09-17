@@ -38,15 +38,13 @@ struct WeatherEntity: IndexedEntity {
     private let storedName: String
     private let storedDescription: String
 
-    var root: WeatherRootModel
-    var model: WeatherModel
-
     // Display fields are captured eagerly: entity properties are nonisolated, the
     // @MainActor model must not be read from them. All queries are @MainActor.
+    // Unlike sibling *Entity types with a file-backed Transferable (e.g. PdfEntity),
+    // this entity never needs live access to `root`/`model` after init, so neither
+    // is retained as a stored property.
     @MainActor
     init(root: WeatherRootModel, model: WeatherModel) {
-        self.root = root
-        self.model = model
         self.id = model.id
         self.storedName = model.name
         self.storedDescription = model.description
@@ -54,6 +52,10 @@ struct WeatherEntity: IndexedEntity {
         self.icon = isSpecial ? model.category.icon : root.config.module.icon
     }
 }
+
+/// Thrown when the `WeatherEntity` PDF export can't open a `CGContext` for the
+/// destination file (e.g. disk full, sandbox/permission issue).
+struct WeatherEntityPdfRenderingError: Error {}
 
 extension WeatherEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
@@ -65,6 +67,7 @@ extension WeatherEntity: Transferable {
                 Text(item.description)
             }.frame(width: 600))
 
+            var didWritePdf = false
             renderer.render { size, renderer in
                 var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
 
@@ -75,8 +78,12 @@ extension WeatherEntity: Transferable {
                 renderer(pdf)
                 pdf.endPDFPage()
                 pdf.closePDF()
+                didWritePdf = true
             }
 
+            guard didWritePdf else {
+                throw WeatherEntityPdfRenderingError()
+            }
             return .init(url)
         }
 

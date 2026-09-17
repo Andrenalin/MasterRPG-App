@@ -14,8 +14,27 @@ final class WeatherGameModel {
     /// the authority for deciding whether an id-only reveal can be displayed.
     var availableVersions: [UUID: Int] = [:]
 
+    /// Serializes concurrent `revealWeather(itemId:data:)` calls for the same item
+    /// (e.g. a stale retransmit racing a newer update) so the "check availability,
+    /// import, mark available" sequence can't interleave across two callers. See
+    /// CODE_AUDIT_Weather §5.4.
+    private var inFlightReveals: [UUID: Task<Bool, Error>] = [:]
+
     func reset() {
         availableVersions.removeAll()
+        inFlightReveals.removeAll()
+    }
+
+    func inFlightReveal(for itemId: UUID) -> Task<Bool, Error>? {
+        inFlightReveals[itemId]
+    }
+
+    func setInFlightReveal(_ task: Task<Bool, Error>, for itemId: UUID) {
+        inFlightReveals[itemId] = task
+    }
+
+    func clearInFlightReveal(for itemId: UUID) {
+        inFlightReveals[itemId] = nil
     }
 }
 
@@ -119,22 +138,39 @@ extension GameController: WeatherGameControllable {
             throw ItemGameStorableError.wrongData
         }
 
-        if await isWeatherAvailable(itemId: itemId, version: data.version) {
+        // Join an already-running reveal for this item instead of racing it —
+        // otherwise two overlapping reveals could both pass `isWeatherAvailable`
+        // before either finishes importing, and the later `markWeatherAvailable`
+        // could win with a version that doesn't match what `setCurrent` sees.
+        if let inFlight = await weatherGameModel.inFlightReveal(for: itemId) {
+            return try await inFlight.value
+        }
+
+        let task = Task<Bool, Error> {
+            defer {
+                Task { @MainActor in weatherGameModel.clearInFlightReveal(for: itemId) }
+            }
+
+            if await isWeatherAvailable(itemId: itemId, version: data.version) {
+                return await setCurrent(itemId: itemId)
+            }
+
+            guard data.data != nil else { return false }
+            try await updateGame(
+                data: data,
+                hide: false,
+                deep: true,
+                policy: .memoryOnly
+            )
+            guard await hasWeatherModel(itemId: itemId) else {
+                return false
+            }
+
+            await markWeatherAvailable(itemId: itemId, version: data.version)
             return await setCurrent(itemId: itemId)
         }
 
-        guard data.data != nil else { return false }
-        try await updateGame(
-            data: data,
-            hide: false,
-            deep: true,
-            policy: .memoryOnly
-        )
-        guard await hasWeatherModel(itemId: itemId) else {
-            return false
-        }
-
-        await markWeatherAvailable(itemId: itemId, version: data.version)
-        return await setCurrent(itemId: itemId)
+        await weatherGameModel.setInFlightReveal(task, for: itemId)
+        return try await task.value
     }
 }

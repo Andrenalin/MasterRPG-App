@@ -9,14 +9,22 @@ import SwiftUI
 
 struct CloudsView: View {
     init(thickness: Cloud.Thickness, topTint: Color, bottomTint: Color, deterministic: Bool = false) {
-        cloudGroup = CloudGroup(thickness: thickness, deterministic: deterministic)
+        self.thickness = thickness
         self.topTint = topTint
         self.bottomTint = bottomTint
+        self.deterministic = deterministic
+        _cloudGroup = State(initialValue: CloudGroup(thickness: thickness, deterministic: deterministic))
     }
 
-    let cloudGroup: CloudGroup
+    let thickness: Cloud.Thickness
     let topTint: Color
     let bottomTint: Color
+    let deterministic: Bool
+
+    // Boxed in @State so the cloud particles survive `WeatherViewer.body`
+    // re-evaluations triggered by unrelated model changes (rain, lightning,
+    // time) instead of resetting on every edit. See CODE_AUDIT_Weather §8.1.
+    @State private var cloudGroup: CloudGroup
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
@@ -30,15 +38,17 @@ struct CloudsView: View {
                 // Using colorMultiply on symbols instead (see line 45).
 
                 for cloud in cloudGroup.clouds {
-                    let cloudImage = context.resolveSymbol(id: "cloud\(cloud.imageNumber)")!
-                    
+                    guard let cloudImage = context.resolveSymbol(id: "cloud\(cloud.imageNumber)") else {
+                        continue
+                    }
+
                     context.translateBy(x: cloud.position.x, y: cloud.position.y)
                     context.scaleBy(x: cloud.scale, y: cloud.scale)
                     context.draw(cloudImage, at: .zero, anchor: .topLeading)
                     context.transform = .identity
                 }
             } symbols: {
-                ForEach(0..<8, id: \.self) {
+                ForEach(0..<CloudGroup.cloudImageCount, id: \.self) {
                     Image.bundleImage(name: "cloud\($0)")
                         .colorMultiply(topTint.interpolated(to: bottomTint, amount: 0.3))
                         .tag("cloud\($0)")
@@ -47,6 +57,12 @@ struct CloudsView: View {
 
         }
         .ignoresSafeArea()
+        .onChange(of: thickness) { _, newThickness in
+            // Cloud count/opacity/scale range are baked in at construction, so a
+            // genuine thickness edit still needs a fresh CloudGroup — only re-renders
+            // from unrelated model changes should preserve the existing one.
+            cloudGroup = CloudGroup(thickness: newThickness, deterministic: deterministic)
+        }
     }
 }
 

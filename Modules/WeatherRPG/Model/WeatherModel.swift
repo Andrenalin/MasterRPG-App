@@ -126,252 +126,10 @@ public final class WeatherModel: nonisolated Identifiable {
     public var parentId: UUID? = nil
 }
 
-extension WeatherModel {
-    var rainDirection: Bool {
-        get { rainAngle >= 0 }
-        set { rainAngle *= -1 }
-    }
-
-    var children: [WeatherModel] {
-        [self]
-    }
-}
-
-extension WeatherModel: nonisolated Comparable {
-    nonisolated public static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
-        return assumeMainActorIsolated {
-            lhs.name < rhs.name
-    
-        }
-    }
-}
-
-extension WeatherModel: nonisolated ItemLinkRegistable {
-    @MainActor public func changedLinkRegisterModels(oldValue: WeatherModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
-        var added: [LinkRegisterModel] = []
-        var removed: [LinkRegisterModel] = []
-        
-        if oldValue.photoId != photoId {
-            let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
-            if let photoId {
-                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
-            }
-            if let oldPhotoId = oldValue.photoId {
-                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldPhotoId, typeId: .photo)))
-            }
-        }
-        
-        return (added, removed)
-    }
-}
-
-extension WeatherModel: nonisolated ItemDiffComparable {
-    nonisolated public func merge(_ other: WeatherModel) -> WeatherModel {
-        return assumeMainActorIsolated {
-            let merged = weatherUpdate_.merged(other: other.weatherUpdate_)
-            let shouldUpdate = merged.wrappedValue == weatherUpdate_.wrappedValue
-            let mergedCategory = category_.merged(other: other.category_)
-            let mergedEntries: CRDTDataUpdate<[ChildEntryModel]>
-            if mergedCategory.wrappedValue == .folder {
-                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-                let combined = allIds
-                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-            } else {
-                mergedEntries = entries_.merged(other: other.entries_)
-            }
-            return WeatherModel(
-                id: id,
-                name: name_.merged(other: other.name_),
-                description: description_.merged(other: other.description_),
-                tags: tags_.merged(other: other.tags_),
-                category: mergedCategory,
-                displayState: other.displayState,
-                weatherUpdate: merged,
-                time: shouldUpdate ? time : other.time,
-                cloudThickness: shouldUpdate ? cloudThickness : other.cloudThickness,
-                stormType: shouldUpdate ? stormType : other.stormType,
-                rainAngle: shouldUpdate ? rainAngle : other.rainAngle,
-                rainIntensity: shouldUpdate ? rainIntensity : other.rainIntensity,
-                lightningFrequency: shouldUpdate ? lightningFrequency : other.lightningFrequency,
-                lightningMaxBolts: shouldUpdate ? lightningMaxBolts : other.lightningMaxBolts,
-                lightningForkProbability: shouldUpdate ? lightningForkProbability : other.lightningForkProbability,
-                photoId: shouldUpdate ? photoId : other.photoId,
-                entries: mergedEntries,
-                parentId: other.parentId
-            )
-    
-        }
-    }
-
-    nonisolated public func isSame(_ other: WeatherModel) -> Bool {
-        return assumeMainActorIsolated {
-            // Split comparison into typed chunks for faster type-checking
-            let basicFieldsMatch: Bool = (
-                name == other.name &&
-                description == other.description &&
-                tags == other.tags &&
-                category == other.category
-            )
-            guard basicFieldsMatch else { return false }
-
-            let weatherConfigMatch: Bool = (
-                weatherUpdate_.wrappedValue == other.weatherUpdate_.wrappedValue &&
-                time == other.time &&
-                cloudThickness == other.cloudThickness &&
-                stormType == other.stormType
-            )
-            guard weatherConfigMatch else { return false }
-
-            let rainConfigMatch: Bool = (
-                rainAngle == other.rainAngle &&
-                rainIntensity == other.rainIntensity
-            )
-            guard rainConfigMatch else { return false }
-
-            let lightningConfigMatch: Bool = (
-                lightningFrequency == other.lightningFrequency &&
-                lightningMaxBolts == other.lightningMaxBolts &&
-                lightningForkProbability == other.lightningForkProbability
-            )
-            guard lightningConfigMatch else { return false }
-
-            return photoId == other.photoId &&
-                   entries_.update == other.entries_.update &&
-                   parentId == other.parentId
-    
-        }
-    }
-}
-
-// MARK: - Review Properties
-
-extension WeatherModel {
-    @MainActor public var reviewProperties: [ReviewCustomProperty] {
-        [
-            ReviewCustomProperty(displayName: String(localized: "Photo", bundle: .module)) {
-                ReviewPropertyValue(photoId: ($0 as? WeatherModel)?.photoId)
-            },
-            ReviewCustomProperty(displayName: String(localized: "Time", bundle: .module)) {
-                ReviewPropertyValue(($0 as? WeatherModel)?.time ?? 0)
-            },
-            ReviewCustomProperty(displayName: String(localized: "Clouds", bundle: .module)) {
-                let thickness = ($0 as? WeatherModel)?.cloudThickness ?? .none
-                return .option(String(localized: thickness.localizedTitle))
-            },
-            ReviewCustomProperty(displayName: String(localized: "Storm", bundle: .module)) {
-                let contents = ($0 as? WeatherModel)?.stormType ?? .none
-                return .option(String(localized: contents.localizedTitle))
-            },
-            ReviewCustomProperty(displayName: String(localized: "Rain Angle", bundle: .module)) {
-                ReviewPropertyValue(($0 as? WeatherModel)?.rainAngle ?? 0)
-            },
-            ReviewCustomProperty(displayName: String(localized: "Rain Intensity", bundle: .module)) {
-                ReviewPropertyValue(($0 as? WeatherModel)?.rainIntensity ?? 0)
-            },
-            ReviewCustomProperty(displayName: String(localized: "Lightning Frequency", bundle: .module)) {
-                ReviewPropertyValue(($0 as? WeatherModel)?.lightningFrequency ?? 0)
-            },
-            ReviewCustomProperty(displayName: String(localized: "Lightning Max Bolts", bundle: .module)) {
-                ReviewPropertyValue(($0 as? WeatherModel)?.lightningMaxBolts ?? 0)
-            },
-            ReviewCustomProperty(displayName: String(localized: "Lightning Fork Probability", bundle: .module)) {
-                ReviewPropertyValue(($0 as? WeatherModel)?.lightningForkProbability ?? 0)
-            }
-        ]
-    }
-}
-
-extension WeatherModel: nonisolated ItemDuplicatable {
-    nonisolated public func duplicate() -> WeatherModel {
-        return assumeMainActorIsolated {
-            let copyName = duplicateName(from: name)
-            return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
-    
-        }
-    }
-}
-
-extension WeatherModel: nonisolated ItemDataAccessable {
-    public var fileUrl: FileUrl? {
-        get { nil }
-        set(newValue) {}
-    }
-
-    nonisolated public static var empty: WeatherModel { empty(UUID()) }
-    nonisolated public static func empty(_ id: UUID) -> WeatherModel {
-        WeatherModel(id: id, name: "", description: "", tags: [], time: 0.0, cloudThickness: .none, stormType: .none, rainAngle: 0, rainIntensity: 0, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
-    }
-    nonisolated public static let typeId: NetworkModules = .weather
-
-    public func copy() -> WeatherModel {
-        WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries_, parentId: parentId)
-    }
-
-    public func filter(filter: String, includeEntries: Bool) -> Bool {
-        guard !filter.isEmpty else { return true }
-        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
-        return false
-    }
-
-    public func isEqual(other: WeatherModel) -> Bool {
-        self == other
-    }
-
-    public var isGroupHiddenToggle: Bool {
-        get { isGroupHidden }
-        set {
-            if newValue {
-                displayState = DisplayStateMask.groupHidden.set(on: displayState)
-            } else {
-                displayState = DisplayStateMask.groupHidden.reset(on: displayState)
-            }
-        }
-    }
-    
-    @MainActor public func replace(with model: WeatherModel) -> Bool {
-        guard self != model else { return false }
-        name_ <=> model.name_
-        description_ <=> model.description_
-        tags_ <=> model.tags_
-        category_ <=> model.category_
-        displayState <=> model.displayState
-        weatherUpdate_.wrappedValue = UUID()
-        time <=> model.time
-        cloudThickness <=> model.cloudThickness
-        stormType <=> model.stormType
-        rainAngle <=> model.rainAngle
-        rainIntensity <=> model.rainIntensity
-        lightningFrequency <=> model.lightningFrequency
-        lightningMaxBolts <=> model.lightningMaxBolts
-        lightningForkProbability <=> model.lightningForkProbability
-        photoId <=> model.photoId
-        entries_ <=> model.entries_
-        parentId <=> model.parentId
-        return true
-    }
-    
-    public subscript(id: UUID) -> ChildEntryModel {
-        get {
-            guard let index = entries.firstIndex(where: { $0.id == id }) else { return ChildEntryModel.empty(id) }
-            return entries[index]
-        }
-        set {
-            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
-            entries[index] = newValue
-        }
-    }
-
-    public func urlName(entryId: UUID) -> String {
-        urlName()
-    }
-
-    public func url(linkNumber: Int, entryId: UUID) -> String {
-        url(linkNumber: 0)
-    }
-}
-
+// `encode(to:)` reads the @Observable macro's raw backing storage (`_name_` etc.,
+// not the tracked `name_` accessor) to avoid registering observation access during
+// encode — that storage is macro-synthesized `private`, so this conformance must
+// stay in the same file as the class declaration; see CODE_AUDIT_Weather §9.7.
 extension WeatherModel: nonisolated Codable {
     public enum CodingKeys: CodingKey {
         case _id
@@ -417,8 +175,141 @@ extension WeatherModel: nonisolated Codable {
             try container.encode(self._entries_, forKey: WeatherModel.CodingKeys._entries_)
             try container.encodeIfPresent(self._parentId, forKey: WeatherModel.CodingKeys._parentId)
 
+
+        }
+    }
+}
+
+extension WeatherModel {
+    var rainDirection: Bool {
+        get { rainAngle >= 0 }
+        set {
+            // `abs(rainAngle)` alone is a no-op at rainAngle == 0 (and `-0.0 >= 0`
+            // is still true), so a zero magnitude falls back to a visible default.
+            let magnitude = abs(rainAngle) > 0 ? abs(rainAngle) : 1
+            rainAngle = newValue ? magnitude : -magnitude
+        }
+    }
+}
+
+extension WeatherModel: nonisolated Comparable {
+    nonisolated public static func < (lhs: WeatherModel, rhs: WeatherModel) -> Bool {
+        return assumeMainActorIsolated {
+            lhs.name < rhs.name
     
         }
+    }
+}
+
+extension WeatherModel: nonisolated ItemLinkRegistable {
+    @MainActor public func changedLinkRegisterModels(oldValue: WeatherModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
+        var added: [LinkRegisterModel] = []
+        var removed: [LinkRegisterModel] = []
+        
+        if oldValue.photoId != photoId {
+            let modelSource = ItemRowModel(itemId: id, typeId: .adventure)
+            if let photoId {
+                added.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: photoId, typeId: .photo)))
+            }
+            if let oldPhotoId = oldValue.photoId {
+                removed.append(LinkRegisterModel(name: "", source: modelSource, destination: ItemRowModel(itemId: oldPhotoId, typeId: .photo)))
+            }
+        }
+        
+        return (added, removed)
+    }
+}
+
+extension WeatherModel: nonisolated ItemDuplicatable {
+    nonisolated public func duplicate() -> WeatherModel {
+        return assumeMainActorIsolated {
+            let copyName = duplicateName(from: name)
+            return WeatherModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId)
+    
+        }
+    }
+}
+
+// `nonisolated ItemDataAccessable` conformance must stay in this file: Swift
+// requires a class's `Sendable`-implying conformances to be co-located with the
+// class declaration, or it's a build warning today ("will be an error in a
+// future Swift language mode"). See CODE_AUDIT_Weather §9.7.
+extension WeatherModel: nonisolated ItemDataAccessable {
+    public var fileUrl: FileUrl? {
+        get { nil }
+        set(newValue) {}
+    }
+
+    nonisolated public static var empty: WeatherModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> WeatherModel {
+        WeatherModel(id: id, name: "", description: "", tags: [], time: 0.0, cloudThickness: .none, stormType: .none, rainAngle: 0, rainIntensity: 0, lightningFrequency: 0, lightningMaxBolts: 0, lightningForkProbability: 0, photoId: nil)
+    }
+    nonisolated public static let typeId: NetworkModules = .weather
+
+    public func copy() -> WeatherModel {
+        WeatherModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, weatherUpdate: weatherUpdate_, time: time, cloudThickness: cloudThickness, stormType: stormType, rainAngle: rainAngle, rainIntensity: rainIntensity, lightningFrequency: lightningFrequency, lightningMaxBolts: lightningMaxBolts, lightningForkProbability: lightningForkProbability, photoId: photoId, entries: entries_, parentId: parentId)
+    }
+
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedStandardContains(filter) || description.localizedStandardContains(filter)) else { return true }
+        return false
+    }
+
+    public func isEqual(other: WeatherModel) -> Bool {
+        self == other
+    }
+
+    public var isGroupHiddenToggle: Bool {
+        get { isGroupHidden }
+        set {
+            if newValue {
+                displayState = DisplayStateMask.groupHidden.set(on: displayState)
+            } else {
+                displayState = DisplayStateMask.groupHidden.reset(on: displayState)
+            }
+        }
+    }
+
+    @MainActor public func replace(with model: WeatherModel) -> Bool {
+        guard self != model else { return false }
+        name_ <=> model.name_
+        description_ <=> model.description_
+        tags_ <=> model.tags_
+        category_ <=> model.category_
+        displayState <=> model.displayState
+        weatherUpdate_.wrappedValue = UUID()
+        time <=> model.time
+        cloudThickness <=> model.cloudThickness
+        stormType <=> model.stormType
+        rainAngle <=> model.rainAngle
+        rainIntensity <=> model.rainIntensity
+        lightningFrequency <=> model.lightningFrequency
+        lightningMaxBolts <=> model.lightningMaxBolts
+        lightningForkProbability <=> model.lightningForkProbability
+        photoId <=> model.photoId
+        entries_ <=> model.entries_
+        parentId <=> model.parentId
+        return true
+    }
+
+    public subscript(id: UUID) -> ChildEntryModel {
+        get {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return ChildEntryModel.empty(id) }
+            return entries[index]
+        }
+        set {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
+        }
+    }
+
+    public func urlName(entryId: UUID) -> String {
+        urlName()
+    }
+
+    public func url(linkNumber: Int, entryId: UUID) -> String {
+        url(linkNumber: 0)
     }
 }
 
