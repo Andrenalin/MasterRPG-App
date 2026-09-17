@@ -198,6 +198,32 @@ extension CharacterRootModel {
     }
 }
 
+// MARK: - Game Sheet
+
+extension CharacterRootModel {
+    /// Eagerly resolves (creating if needed) the live game view's persistent
+    /// sheet slot for `itemId`, so `ReaderSheetView` finds it already in place
+    /// when the character panel first renders instead of racing its own
+    /// `onChange`-driven lazy creation. Called once at game join — see
+    /// `GameController.startGame(for:)`. Cleared again in
+    /// `GameController.resetGameState()` when the game ends.
+    @MainActor func startGameSheetRootModel(itemId: UUID) {
+        if let existing = editController.editorModel.gameSheetRootModel {
+            existing.reset(itemId: itemId)
+            return
+        }
+        guard let rootManager else { return }
+        editController.editorModel.gameSheetRootModel = SheetRootModel(
+            rootManager: rootManager,
+            linkControllable: rootController.linkControllable,
+            sheetControllable: rootController.sheetControllable,
+            itemId: itemId,
+            isEditor: false,
+            isGameEditor: true
+        )
+    }
+}
+
 // MARK: - Actions
 
 extension CharacterRootModel {

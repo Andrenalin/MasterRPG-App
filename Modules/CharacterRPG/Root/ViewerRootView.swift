@@ -63,14 +63,22 @@ private struct ReaderSheetView: View {
     var body: some View {
         Group {
             if configuration.isGame {
-                if let resolvedGameSheetRootModel {
+                // `CharacterRootModel.startGameSheetRootModel(itemId:)` already
+                // resolves this at game join (see `GameController.startGame(for:)`),
+                // so the common case reads it here on the very first render — the
+                // `onChange` below only still needs to run for the rare case where
+                // this view appears outside that flow, or the player switches
+                // characters. A plain read of an existing `@Observable` value is
+                // not a body-mutation, unlike the removed computed property this
+                // replaced — see CODE_AUDIT_Character §8.3.
+                if let sheetRootModel = resolvedGameSheetRootModel ?? root.editController.editorModel.gameSheetRootModel {
                     TableRootSheet(
                         root: root.rootController,
                         itemId: model.id,
                         module: root.config.module,
                         configuration: configuration,
                         dismissAction: dismissAction,
-                        externalSheetRootModel: resolvedGameSheetRootModel
+                        externalSheetRootModel: sheetRootModel
                     )
                 }
             } else {

@@ -209,6 +209,7 @@ extension GameController: ValueGameStorable {
     public func startGame(for id: UUID?) async {
         guard let characterId = root.linkController.validate(id: id) else { return }
         await focus(on: [characterId])
+        root.startGameSheetRootModel(itemId: characterId)
     }
 
     @MainActor
