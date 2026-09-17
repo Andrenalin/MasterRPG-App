@@ -11,6 +11,9 @@ struct VolumeSlider: View {
     var maxIcon: String?
 
     var body: some View {
+        #if os(tvOS)
+        EmptyView()
+        #else
         Group {
             if let minIcon, let maxIcon {
                 Slider(value: $volume, in: 0...1) {
@@ -27,6 +30,7 @@ struct VolumeSlider: View {
             }
         }
         .accessibilityValue(Text(volume, format: .percent))
+        #endif
     }
 }
 

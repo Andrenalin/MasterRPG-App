@@ -169,3 +169,69 @@ extension TableModel: nonisolated Codable {
         }
     }
 }
+
+extension TableModel: nonisolated ItemDataAccessable {
+    public var fileUrl: FileUrl? {
+        get { nil }
+        set(newValue) {}
+    }
+
+    nonisolated public static var empty: TableModel { empty(UUID()) }
+    nonisolated public static func empty(_ id: UUID) -> TableModel {
+        TableModel(id: id, name: "", entries: [])
+    }
+    nonisolated public static let typeId: NetworkModules = .table
+
+    public func copy() -> TableModel {
+        TableModel(id: id, name: name_, description: description_, tags: tags_, category: category_, displayState: displayState, tableType: tableType_, diceId: diceId_, entries: entries_, parentId: parentId)
+    }
+
+    public func filter(filter: String, includeEntries: Bool) -> Bool {
+        guard !filter.isEmpty else { return true }
+        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        guard specialCategory == false else { return false }
+        return entries.contains {
+            $0.filter(with: filter)
+        }
+    }
+
+    public func isEqual(other: TableModel) -> Bool {
+        self == other
+    }
+
+    public var isGroupHiddenToggle: Bool {
+        get { isGroupHidden }
+        set {
+            if newValue {
+                displayState = DisplayStateMask.groupHidden.set(on: displayState)
+            } else {
+                displayState = DisplayStateMask.groupHidden.reset(on: displayState)
+            }
+        }
+    }
+
+    @MainActor public func replace(with model: TableModel) -> Bool {
+        guard self != model else { return false }
+        name_ <=> model.name_
+        description_ <=> model.description_
+        tags_ <=> model.tags_
+        category_ <=> model.category_
+        displayState <=> model.displayState
+        tableType_ <=> model.tableType_
+        diceId_ <=> model.diceId_
+        entries_ <=> model.entries_
+        parentId <=> model.parentId
+        return true
+    }
+
+    public subscript(id: UUID) -> TableEntryModel {
+        get {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return .empty(id) }
+            return entries[index]
+        }
+        set {
+            guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+            entries[index] = newValue
+        }
+    }
+}
