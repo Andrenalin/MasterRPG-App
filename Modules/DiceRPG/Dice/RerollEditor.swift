@@ -44,7 +44,7 @@ private extension RerollEditor {
     }
 
     func addCurrentReroll() {
-        withAnimation(reduceMotion ? nil : .easeInOut) {
+        withAnimation(Animation.easeInOut.reduced(if: reduceMotion)) {
             root.editController.add(reroll: Int(rerollValue), value: Int(replaceValue), isMaxDiceValue: isMaxDiceValue, itemId: model.id)
             rerollValue = 0.0
             replaceValue = 0.0
@@ -65,7 +65,7 @@ private struct RerollEditorRerollValueView: View {
                 HStack(spacing: 8) {
                     ForEach(rerollOptions) { reroll in
                         Button {
-                            withAnimation(reduceMotion ? nil : .easeInOut) {
+                            withAnimation(Animation.easeInOut.reduced(if: reduceMotion)) {
                                 onRemove(reroll)
                             }
                         } label: {
@@ -121,7 +121,11 @@ private struct RerollEditorRerollEditorView: View {
                 .frame(minWidth: 44, minHeight: 44)
                 .disabled(!isMaxDiceValue && rerollValue == 0)
 
-                TextIntEditor(value: $rerollValue, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minValue...model.maxValue)
+                // A reroll's trigger number is matched against one die's own
+                // result, not the pool's summed range — `minValue`/`maxValue`
+                // made "reroll on a natural 1" impossible to enter for any
+                // multi-die pool. See CODE_AUDIT §5.3.
+                TextIntEditor(value: $rerollValue, title: "Re-roll Value", icon: "plus", prompt: "re-roll", bundle: .module, range: model.minFirstValue...model.maxFirstValue)
             }
             .labelsHidden()
         } label: {
@@ -153,7 +157,9 @@ private struct RerollEditorRerollReplaceEditorView: View {
                 .frame(minWidth: 44, minHeight: 44)
                 .disabled(rerollValue == 0 && replaceValue == 0)
 
-                TextIntEditor(value: $replaceValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minValue...model.maxValue)
+                // See CODE_AUDIT §5.3 — a replacement value also resolves
+                // against a single die's face range, not the pool sum.
+                TextIntEditor(value: $replaceValue, title: "Replace Value", icon: "plus", prompt: "replace", bundle: .module, range: model.minFirstValue...model.maxFirstValue)
             }
             .labelsHidden()
         } label: {

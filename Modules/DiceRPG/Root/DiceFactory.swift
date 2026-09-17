@@ -12,11 +12,6 @@ public enum DiceFactory {
         DiceRootView()
     }
     
-    public static func diceImage(for die: RawDie, result: Int) -> Image {
-        let model = DieModel(id: UUID(), die: die)
-        return model.diceImage(for: result)
-    }
-    
     @MainActor @ViewBuilder public static func detailView(root: DiceRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
             ManagedNavigationStack(name: "Split-Dice") {

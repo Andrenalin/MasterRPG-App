@@ -21,10 +21,10 @@ struct DiceInline: View {
         HStack {
             if !appGameStateModel.isGameRunning || player {
                 Button {
-                    withAnimation(reduceMotion ? nil : .default) {
+                    withAnimation(Animation.default.reduced(if: reduceMotion)) {
                         root.gameController.gameModel.focusItemIds <=> [itemId]
                     }
-                    roleAndShareDiceResult()
+                    rollAndShareDiceResult()
                 } label: {
                     DiceInlineLabel(text: root.gameController.gameItem(for: itemId).inlineText)
                 }
@@ -33,13 +33,13 @@ struct DiceInline: View {
             } else {
                 MenuTV {
                     Button {
-                        roleAndShareDiceResult()
+                        rollAndShareDiceResult()
                     } label: {
-                        Label { Text(roleShareTitle, bundle: .module) } icon: { Image(systemName: root.itemController.config.module.icon) }
+                        Label { Text(rollShareTitle, bundle: .module) } icon: { Image(systemName: root.itemController.config.module.icon) }
                     }
 
                     Button {
-                        withAnimation(reduceMotion ? nil : .default) {
+                        withAnimation(Animation.default.reduced(if: reduceMotion)) {
                             root.gameController.gameModel.focusItemIds = [itemId]
                         }
                     } label: {
@@ -71,7 +71,7 @@ struct DiceInline: View {
                     }
 
                     Button(role: .destructive) {
-                        withAnimation(reduceMotion ? nil : .default) {
+                        withAnimation(Animation.default.reduced(if: reduceMotion)) {
                             root.gameController.reset(for: itemId)
                             showResult = false
                         }
@@ -95,7 +95,7 @@ struct DiceInline: View {
                 } icon: {
                     Image(systemName: root.itemController.config.module.icon)
                 }
-                    .animation(reduceMotion ? nil : .bouncy, value: showResult)
+                    .animation(Animation.bouncy.reduced(if: reduceMotion), value: showResult)
             }
         }
     }
@@ -104,13 +104,13 @@ struct DiceInline: View {
         playerSharingActions.control?() ?? []
     }
 
-    private var roleShareTitle: LocalizedStringKey {
+    private var rollShareTitle: LocalizedStringKey {
         networkActions != nil ? "Roll" : "Roll & Share"
     }
 
-    private func roleAndShareDiceResult() {
-        withAnimation(reduceMotion ? nil : .default) {
-            root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategopry: resultCategory)
+    private func rollAndShareDiceResult() {
+        withAnimation(Animation.default.reduced(if: reduceMotion)) {
+            root.gameController.rollDice(itemId: itemId, networkActions: networkActions, resultCategory: resultCategory)
             showResult <=> true
         }
     }

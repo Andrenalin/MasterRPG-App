@@ -4,6 +4,10 @@ import SwiftUI
 import CoreRPG
 
 struct DicePlayerRoot: View {
+    /// Slides the player-dice panel fully off-screen to the trailing edge
+    /// when hidden. See CODE_AUDIT §8.3.
+    private static let hiddenOffset: CGFloat = -200
+
     @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) private var diceDisplayModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -11,7 +15,7 @@ struct DicePlayerRoot: View {
     var body: some View {
         VStack(alignment: .trailing) {
             Button {
-                withAnimation(reduceMotion ? nil : .default) {
+                withAnimation(Animation.default.reduced(if: reduceMotion)) {
                     diceDisplayModel.showPlayerDice.toggle()
                 }
             } label: {
@@ -31,7 +35,7 @@ struct DicePlayerRoot: View {
 
             DicePlayer(filterout: root.gameController.gameModel.focusItemIds.first ?? UUID(), alignment: .trailing)
                 .opacity(diceDisplayModel.showPlayerDice ? 1 : 0)
-                .offset(x: diceDisplayModel.showPlayerDice ? 0 : -200)
+                .offset(x: diceDisplayModel.showPlayerDice ? 0 : Self.hiddenOffset)
                 .allowsHitTesting(diceDisplayModel.showPlayerDice)
                 .accessibilityHidden(!diceDisplayModel.showPlayerDice)
         }

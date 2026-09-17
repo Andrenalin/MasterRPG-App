@@ -48,7 +48,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 
 #if !os(visionOS)
             if !hideDice && gameScreenModel.showDice {
-                root.diceRoot.viewController.overlayGameView(root: root.diceRoot, hideDice: hideDice)
+                root.diceRoot.viewController.overlayGameView(root: root.diceRoot)
 #if os(iOS)
                     // Dice and character/adventure content begin on the same
                     // row, one standard spacing step below the menu field.

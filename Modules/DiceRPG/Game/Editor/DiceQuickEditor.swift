@@ -32,8 +32,8 @@ struct DiceQuickEditor: View {
     var body: some View {
         VStack {
             VStack {
-                DiceQuickEditorRowMinusButtonsView(numberBinding: valueIntBinding)
-                DiceQuickEditorRowPlusButtonsView(numberBinding: valueIntBinding)
+                DiceQuickEditorRowButtonsView(numberBinding: valueIntBinding, values: [10, 5, 2, 1], isAddition: false)
+                DiceQuickEditorRowButtonsView(numberBinding: valueIntBinding, values: [1, 2, 5, 10], isAddition: true)
             }
             .rowEditColor()
 
@@ -86,25 +86,17 @@ struct DiceQuickEditor: View {
 
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
-private struct DiceQuickEditorRowMinusButtonsView: View {
+// The minus/plus rows were previously two near-identical views differing
+// only in their value order and `isAddition`. See CODE_AUDIT §9.16.
+private struct DiceQuickEditorRowButtonsView: View {
     let numberBinding: Binding<Int>
+    let values: [Int]
+    let isAddition: Bool
 
     var body: some View {
         HStack {
-            ForEach([10, 5, 2, 1], id: \.self) { value in
-                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: false)
-            }
-        }
-    }
-}
-
-private struct DiceQuickEditorRowPlusButtonsView: View {
-    let numberBinding: Binding<Int>
-
-    var body: some View {
-        HStack {
-            ForEach([1, 2, 5, 10], id: \.self) { value in
-                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: true)
+            ForEach(values, id: \.self) { value in
+                QuickEditorButtonView(number: numberBinding, value: value, title: "\(value)", isAddition: isAddition)
             }
         }
     }

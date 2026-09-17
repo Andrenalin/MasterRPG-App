@@ -28,33 +28,45 @@ public struct RollDiceIntent: AppIntent {
         self.diceType = .d20
     }
     
-    public func perform() async throws -> some IntentResult {
-        // This is a simple intent that just creates a URL to open the app
-        // The full implementation is in DiceRollerIntents.swift for widgets
-        let urlString = "gamerpg://dice/400/\(UUID().uuidString)/roll?type=\(diceType.rawValue)"
-        guard let url = URL(string: urlString) else {
-            return .result()
-        }
-        
-        return .result(opensIntent: OpenURLIntent(url))
+    // Previously opened a hardcoded "gamerpg://..." URL — a scheme the app
+    // never registers (the real scheme is `URL.appScheme`, "RPG") — so this
+    // shortcut silently did nothing. Rolling a raw die and reporting the
+    // result directly needs no app-side navigation at all. See CODE_AUDIT §5.2.
+    @MainActor
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
+        let die = DieModel(id: UUID(), die: diceType.rawDie)
+        let rollValue = die.die.roll()
+        let rolledDie = die.applyResult(values: [rollValue])
+        let snapshot = DiceSnapshot(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
+
+        var config = DiceConfiguration.loadFromUserDefaults()
+        config.lastRoll = DiceResultModel(diceModel: snapshot, result: .rolled, values: "\(rollValue)", sum: rollValue, checked: false)
+        config.selectedDice = snapshot
+        config.save()
+        DiceWidgetReloader.reloadDiceWidgets()
+
+        let dialog: IntentDialog = "🎲 Rolled \(diceType.rawValue): \(rollValue)"
+        return .result(dialog: dialog)
     }
 }
 
-/// App Intent for showing dice history
+/// App Intent for showing the last dice roll (the same result the widget
+/// displays) — there is no dedicated in-app "history" screen to navigate to,
+/// so this reports the last roll directly instead of opening a URL nothing
+/// ever handled. See CODE_AUDIT §5.2.
 public struct ShowDiceHistoryIntent: AppIntent {
     public static let title: LocalizedStringResource = "Show Dice History"
-    public static let description = IntentDescription("Show recent dice rolls")
-    
+    public static let description = IntentDescription("Show your last dice roll")
+
     public init() {}
-    
-    public func perform() async throws -> some IntentResult {
-        // Open app to history view
-        let urlString = "gamerpg://dice/0/history"
-        guard let url = URL(string: urlString) else {
-            return .result()
+
+    public func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let lastRoll = DiceConfiguration.loadFromUserDefaults().lastRoll else {
+            return .result(dialog: "You haven't rolled any dice yet.")
         }
-        
-        return .result(opensIntent: OpenURLIntent(url))
+        let name = lastRoll.diceModel.name.isEmpty ? lastRoll.diceModel.dice.first?.die.text ?? "" : lastRoll.diceModel.name
+        let dialog: IntentDialog = "Last roll — \(name): \(lastRoll.sum)"
+        return .result(dialog: dialog)
     }
 }
 

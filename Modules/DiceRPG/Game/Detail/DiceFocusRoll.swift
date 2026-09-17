@@ -18,17 +18,11 @@ public final class DiceDisplayModel {
 
 struct DiceFocusRoll: View {
     @Environment(DiceRootModel.self) private var root
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var itemId = UUID()
-    
     var body: some View {
-        DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.config.module), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
-            .onChange(of: root.gameController.gameModel.focusItemIds, initial: true) {
-                withAnimation(reduceMotion ? nil : .default) {
-                    itemId <=> root.gameController.gameModel.focusItemIds.first ?? UUID()
-                }
-            }
+        FocusedDiceContainer { itemId in
+            DiceOverlay(item: ItemRowTreeModel(itemId: itemId, typeId: root.itemController.config.module), showFocusButton: false, canShowPlayer: false, hideOwnDice: false, alignIsVertical: false)
+        }
     }
 }
 

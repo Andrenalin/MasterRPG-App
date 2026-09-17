@@ -181,7 +181,6 @@ struct DiceRollerWidgetConfiguration: View {
     let configuration = DiceConfiguration(
         selectedDice: DiceModel.previewSnapshot,
         lastRoll: roll,
-        availableDice: [.die6(color: .G), .die8(color: .G), .die20(color: .G)],
         showHistory: true
     )
 

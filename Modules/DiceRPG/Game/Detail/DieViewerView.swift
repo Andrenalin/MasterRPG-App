@@ -16,6 +16,11 @@ struct DieViewerView: View {
     /// the next roll. See CODE_AUDIT §9.14.
     private static let rotationResetDelay: Duration = .seconds(0.60)
 
+    /// Cancelled and replaced on every rotation change so a rapid sequence of
+    /// rolls can't queue up multiple resets racing to clobber a newer roll's
+    /// state. See CODE_AUDIT §3.1.
+    @State private var resetTask: Task<Void, Never>?
+
     var body: some View {
         die.diceImage(for: die.result.last ?? die.die.max)
             .resizable()
@@ -47,17 +52,19 @@ struct DieViewerView: View {
             }
             .shadow(radius: 8)
             .animation(
-                reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7).delay(0.5),
+                Animation.spring(response: 0.35, dampingFraction: 0.7).delay(0.5).reduced(if: reduceMotion),
                 value: die.rotation
             )
-            .animation(reduceMotion ? nil : .default.delay(0.5), value: die.result)
+            .animation(Animation.default.delay(0.5).reduced(if: reduceMotion), value: die.result)
             .onChange(of: die.rotation, initial: true) {
+                resetTask?.cancel()
                 if die.rotation != 0 {
-                    Task { @MainActor in
+                    resetTask = Task { @MainActor in
                         try? await Task.sleep(for: Self.rotationResetDelay)
+                        guard !Task.isCancelled else { return }
                         var die = gameController.gameItem(for: diceId).die(for: die.id)
                         die.rotation = 0
-                        withAnimation(reduceMotion ? nil : .default) {
+                        withAnimation(Animation.default.reduced(if: reduceMotion)) {
                             gameController.gameItem(for: diceId).resetDie(die)
                         }
                     }

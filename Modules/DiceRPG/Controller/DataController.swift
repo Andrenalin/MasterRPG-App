@@ -55,7 +55,15 @@ extension DataController: CoreDataSnapshotPersistable {
         model.diceCategory <=> snapshot.category_.rawValue
         model.displayState <=> Int32(snapshot.displayState)
         unequalSet(lhs: &model.diceUpdate, rhs: snapshot.dice_.$update.rawValue) {
-            model.dice = snapshot.dice.map { $0.die.text }.joined(separator: ",")
+            // Persisting only `die.text` ("d20") silently dropped the chosen
+            // A/G skin on every reload/CloudKit merge. Appending the color
+            // (default omitted to keep old-format strings decodable) fixes
+            // that. See CODE_AUDIT §5.4.
+            model.dice = snapshot.dice.map { die in
+                die.color.isEmpty || die.color == DieModel.ColorCode.Random.rawValue
+                    ? die.die.text
+                    : "\(die.die.text):\(die.color)"
+            }.joined(separator: ",")
         }
         model.sumUp <=> snapshot.sumUp
         model.modifier <=> Float(snapshot.modifier)
@@ -121,12 +129,19 @@ extension DataController: CoreDataSnapshotPersistable {
     private func dice(from model: String?) -> [DieModel] {
         guard let model else { return [] }
 
-        return model.components(separatedBy: ",").compactMap {
-            let die = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        return model.components(separatedBy: ",").compactMap { entry in
+            let die = entry.trimmingCharacters(in: .whitespacesAndNewlines)
             if die.isEmpty {
                 return nil
             }
-            return DieModel(id: UUID(), die: RawDie(text: $0))
+            // Trailing ":<color>" is the A/G skin persisted alongside the
+            // sides (see `applySnapshot` above); older strings have no
+            // color suffix and fall back to the previous default. See
+            // CODE_AUDIT §5.4.
+            let components = die.split(separator: ":", maxSplits: 1)
+            let sidesText = String(components[0])
+            let color = components.count > 1 ? String(components[1]) : DieModel.ColorCode.Random.rawValue
+            return DieModel(id: UUID(), die: RawDie(text: sidesText), color: color)
         }
     }
     

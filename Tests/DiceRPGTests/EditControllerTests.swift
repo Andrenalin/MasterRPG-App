@@ -65,7 +65,7 @@ struct EditControllerTests {
 
         sut.reset(addValue: 3, itemId: itemId)
         sut.reset(compareValue: 12, itemId: itemId)
-        sut.reset(modifer: -2, itemId: itemId)
+        sut.reset(modifier: -2, itemId: itemId)
         sut.reset(compareOption: .equalHigher, itemId: itemId)
 
         edited = root.itemController.itemOrEmpty(for: itemId)
@@ -85,7 +85,7 @@ struct EditControllerTests {
         sut.remove(reroll: DiceModel.RerollOption(number: 1, value: 1, maxDiceValue: false), itemId: missingId)
         sut.reset(addValue: 1, itemId: missingId)
         sut.reset(compareValue: 1, itemId: missingId)
-        sut.reset(modifer: 1, itemId: missingId)
+        sut.reset(modifier: 1, itemId: missingId)
         sut.reset(compareOption: .off, itemId: missingId)
     }
 }

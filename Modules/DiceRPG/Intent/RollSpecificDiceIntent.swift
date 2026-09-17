@@ -34,16 +34,18 @@ public struct RollSpecificDiceIntent: AppIntent {
         
         root.gameController.rollDice(itemId: dice.model.id, rollSynced: true)
         let rollResult = root.gameController.result(itemId: dice.model.id)
-        
-        // Save to configuration
-        var config = DiceConfiguration.loadFromUserDefaults()
-        config.lastRoll = rollResult
-        config.selectedDice = rollResult.diceModel
-        config.save()
-        
-        // Reload widgets
-        DiceWidgetReloader.reloadDiceWidgets()
-        
+
+        // Off-main for the same reason as GameController.diceUpdateWidget:
+        // this JSON-encode + UserDefaults write shouldn't block the main
+        // actor. See CODE_AUDIT §3.3.
+        Task.detached(priority: .utility) {
+            var config = DiceConfiguration.loadFromUserDefaults()
+            config.lastRoll = rollResult
+            config.selectedDice = rollResult.diceModel
+            config.save()
+            DiceWidgetReloader.reloadDiceWidgets()
+        }
+
         let finalSum = rollResult.sum
         // Create result dialog based on result type
         let dialog: IntentDialog

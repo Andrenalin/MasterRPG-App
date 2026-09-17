@@ -60,7 +60,7 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
     }
 
     public func roll() -> Int {
-        Int.random(in: 1 ... sides.number())
+        Self.roll(sides)
     }
 
     public var min: Int {

@@ -14,7 +14,7 @@ struct CoupEditor: View {
             values: model.coupValues,
             toggleKeyPath: \.coupOnlyOnFirstDie,
             toggleTitle: "Only first die can coup",
-            toggleSaveMessage: String(localized: "change coup option", bundle: .module).localizedString,
+            toggleSaveMessage: String(localized: "change coup option", bundle: .module),
             sectionHeader: Text("Coup Options", bundle: .module),
             valuesLabel: Text("Coup", bundle: .module),
             addLabel: Text("Add coup", bundle: .module),

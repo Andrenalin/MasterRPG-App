@@ -5,13 +5,23 @@ import RPGResources
 import SwiftUI
 
 public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
+    // Resolving `.Random` to a concrete "A"/"G" skin here, once, at construction
+    // time — instead of re-rolling it every time `name(for:)` is read from a
+    // SwiftUI view body — is what fixes the flicker where a d4/d20's art asset
+    // used to change on every unrelated re-render. See CODE_AUDIT §5.5.
     public init(id: UUID, die: RawDie, color: String = ColorCode.Random.rawValue, rotation: Double = 0, result: [Int] = [], displayState: Int = 0) {
         self.id = id
         self.die = die
-        self.color = color
+        self.color = DieModel.resolvedColor(color, for: die)
         self.rotation = rotation
         self.result = result
         self.displayState = displayState
+    }
+
+    private static func resolvedColor(_ color: String, for die: RawDie) -> String {
+        guard die.sides == .four || die.sides == .twenty else { return ColorCode.G.rawValue }
+        guard color == ColorCode.Random.rawValue || color.isEmpty else { return color }
+        return RawDie(.number(2)).roll() == 1 ? ColorCode.A.rawValue : ColorCode.G.rawValue
     }
     
     public let id: UUID
@@ -62,24 +72,24 @@ extension DieModel {
         case A, G
     }
     
+    // The setter is a required no-op, not dead code: `EntryDataAccessable`
+    // requires `name` to be `{ get set }` for types that support renaming
+    // entries via the shared list-editing UI, but a die has no free-text
+    // name of its own to rename (same pattern as `content` below).
+    // CODE_AUDIT §9.17 mistakenly flagged this as removable — reverted
+    // after the protocol conformance failed to build.
     public var name: String {
         get { name(for: 1) }
         set {}
     }
 
     func name(for number: Int) -> String {
-        var code = color
-        if die.sides == .four || die.sides == .twenty {
-            if color == ColorCode.Random.rawValue || color.isEmpty {
-                if RawDie(.number(2)).roll() == 1 {
-                    code = ColorCode.A.rawValue
-                } else {
-                    code = ColorCode.G.rawValue
-                }
-            }
-        } else {
-            code = ColorCode.G.rawValue
-        }
+        // `color` is already resolved to a concrete "A"/"G" skin by the
+        // initializer (see CODE_AUDIT §5.5) — this only re-resolves a
+        // literal "Random"/empty value that could still reach here from
+        // data decoded before that fix (Codable's `init(from:)` reads
+        // `color` directly, bypassing the initializer).
+        let code = DieModel.resolvedColor(color, for: die)
         return switch die.sides {
         case .two: "D2\(code)-\(number)"
         case .four: "D4\(code)-\(number)"
@@ -132,21 +142,31 @@ extension DieModel: ItemDiffComparable {
 }
 
 extension DieModel {
+    // These three reconstructions previously omitted `color:`, silently
+    // reverting a chosen A/G skin back to `.Random` on every single roll or
+    // reset within the same session (compounding the flicker fixed above).
+    // See CODE_AUDIT §5.4/§5.5.
     func resetResults() -> DieModel {
-        return DieModel(id: id, die: die)
+        return DieModel(id: id, die: die, color: color)
     }
 
     func applyResult(values: [Int]) -> DieModel {
-        DieModel(id: id, die: die, rotation: RawDie.rollPercent() * 360, result: values)
+        DieModel(id: id, die: die, color: color, rotation: RawDie.rollPercent() * 360, result: values)
     }
 
     public func roll(resetResults: Bool = false, rerollOptions: [DiceModel.RerollOption]) -> DieModel {
         var rollResult: [Int] = []
         var roll: Int
+        var attempts = 0
+        // Without this cap, reroll options that cover every face of the die
+        // (e.g. one reroll rule per side of a d4) made this loop spin
+        // forever, freezing the app. See CODE_AUDIT §5.1.
+        let maxAttempts = die.max + 1
         repeat {
             roll = die.roll()
             rollResult.append(roll)
-        } while rerollOptions.contains(where: { $0.number == roll })
+            attempts += 1
+        } while attempts < maxAttempts && rerollOptions.contains(where: { $0.number == roll })
 
         let updatedResult: [Int]
         if resetResults {
@@ -154,62 +174,35 @@ extension DieModel {
         } else {
             updatedResult = result + rollResult
         }
-        return DieModel(id: id, die: die, rotation: (1800 + RawDie.rollPercent() * 360), result: updatedResult)
+        return DieModel(id: id, die: die, color: color, rotation: (1800 + RawDie.rollPercent() * 360), result: updatedResult)
     }
 
-    public static var die2: DieModel {
-        die2(color: .Random)
+    // Named per-size shortcuts kept for call-site readability (they're used
+    // throughout the module and widget target); each now forwards to one
+    // shared helper instead of repeating its own `DieModel(id:die:color:)`
+    // call. See CODE_AUDIT §9.6.
+    private static func die(_ sides: RawDie.Sides, color: ColorCode) -> DieModel {
+        DieModel(id: UUID(), die: RawDie(sides), color: color.rawValue)
     }
 
-    public static func die2(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.two, color: color.rawValue)
-    }
-    
-    public static var die4: DieModel {
-        die4(color: .Random)
-    }
+    public static var die2: DieModel { die2(color: .Random) }
+    public static func die2(color: ColorCode) -> DieModel { die(.two, color: color) }
 
-    public static func die4(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.four, color: color.rawValue)
-    }
+    public static var die4: DieModel { die4(color: .Random) }
+    public static func die4(color: ColorCode) -> DieModel { die(.four, color: color) }
 
-    public static var die6: DieModel {
-        die6(color: .Random)
-    }
+    public static var die6: DieModel { die6(color: .Random) }
+    public static func die6(color: ColorCode) -> DieModel { die(.six, color: color) }
 
-    public static func die6(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.six, color: color.rawValue)
-    }
+    public static var die8: DieModel { die8(color: .Random) }
+    public static func die8(color: ColorCode) -> DieModel { die(.eight, color: color) }
 
-    public static var die8: DieModel {
-        die8(color: .Random)
-    }
+    public static var die10: DieModel { die10(color: .Random) }
+    public static func die10(color: ColorCode) -> DieModel { die(.ten, color: color) }
 
-    public static func die8(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.eight, color: color.rawValue)
-    }
+    public static var die12: DieModel { die12(color: .Random) }
+    public static func die12(color: ColorCode) -> DieModel { die(.twelve, color: color) }
 
-    public static var die10: DieModel {
-        die10(color: .Random)
-    }
-
-    public static func die10(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.ten, color: color.rawValue)
-    }
-
-    public static var die12: DieModel {
-        die12(color: .Random)
-    }
-
-    public static func die12(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.twelve, color: color.rawValue)
-    }
-
-    public static var die20: DieModel {
-        die20(color: .Random)
-    }
-    
-    public static func die20(color: ColorCode) -> DieModel {
-        DieModel(id: UUID(), die: RawDie.twenty, color: color.rawValue)
-    }
+    public static var die20: DieModel { die20(color: .Random) }
+    public static func die20(color: ColorCode) -> DieModel { die(.twenty, color: color) }
 }

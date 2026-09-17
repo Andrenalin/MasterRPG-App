@@ -25,6 +25,20 @@ public enum DiceWidgetReloader {
     }
 }
 
+// `DiceWidgetSnapshot` and `DiceConfiguration` each hand-rolled an identical
+// encode/decode + App-Group-UserDefaults read/write pair. See CODE_AUDIT §9.18.
+private enum AppGroupCodableStore {
+    static func load<T: Codable>(_ type: T.Type, key: String) -> T? {
+        guard let data = UserDefaults(suiteName: UserDefaults.appGroupString)?.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(T.self, from: data)
+    }
+
+    static func save<T: Codable>(_ value: T, key: String) {
+        guard let data = try? JSONEncoder().encode(value) else { return }
+        UserDefaults(suiteName: UserDefaults.appGroupString)?.set(data, forKey: key)
+    }
+}
+
 // MARK: - Compact Widget Snapshot
 
 public struct DiceWidgetDice: Codable, Identifiable, Equatable, Hashable, Sendable {
@@ -159,9 +173,7 @@ public struct DiceWidgetSnapshot: Codable, Equatable, Sendable {
     }
 
     public static func loadFromUserDefaults() -> DiceWidgetSnapshot {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
-        if let data = defaults?.data(forKey: UserDefaults.DiceKeys.widgetSnapshot),
-           let snapshot = try? JSONDecoder().decode(DiceWidgetSnapshot.self, from: data) {
+        if let snapshot = AppGroupCodableStore.load(DiceWidgetSnapshot.self, key: UserDefaults.DiceKeys.widgetSnapshot) {
             return snapshot
         }
 
@@ -171,47 +183,40 @@ public struct DiceWidgetSnapshot: Codable, Equatable, Sendable {
     }
 
     public func save() {
-        guard let data = try? JSONEncoder().encode(self) else { return }
-        UserDefaults(suiteName: UserDefaults.appGroupString)?.set(data, forKey: UserDefaults.DiceKeys.widgetSnapshot)
+        AppGroupCodableStore.save(self, key: UserDefaults.DiceKeys.widgetSnapshot)
     }
 }
 
 // MARK: - Dice Configuration
 
 public struct DiceConfiguration: Codable {
-    public init(selectedDice: DiceSnapshot, lastRoll: DiceResultModel? = nil, availableDice: [DieModel], showHistory: Bool) {
+    // `availableDice` was previously stored and re-encoded to the App Group
+    // on every roll but never read back anywhere — dead field, dropped along
+    // with the write it cost each roll. See CODE_AUDIT §7.1.
+    public init(selectedDice: DiceSnapshot, lastRoll: DiceResultModel? = nil, showHistory: Bool) {
         self.selectedDice = selectedDice
         self.lastRoll = lastRoll
-        self.availableDice = availableDice
         self.showHistory = showHistory
     }
-    
+
     public var selectedDice: DiceSnapshot
     public var lastRoll: DiceResultModel?
-    public var availableDice: [DieModel]
     public var showHistory: Bool
-    
+
     public static var `default`: DiceConfiguration {
         DiceConfiguration(
             selectedDice: DiceModel.previewSnapshot,
             lastRoll: nil,
-            availableDice: [.die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)],
             showHistory: true
         )
     }
     
     public static func loadFromUserDefaults() -> DiceConfiguration {
-        guard let data = UserDefaults(suiteName: UserDefaults.appGroupString)?.data(forKey: UserDefaults.DiceKeys.diceConfiguration),
-              let config = try? JSONDecoder().decode(DiceConfiguration.self, from: data) else {
-            return .default
-        }
-        return config
+        AppGroupCodableStore.load(DiceConfiguration.self, key: UserDefaults.DiceKeys.diceConfiguration) ?? .default
     }
-    
+
     public func save() {
-        if let data = try? JSONEncoder().encode(self) {
-            UserDefaults(suiteName: UserDefaults.appGroupString)?.set(data, forKey: UserDefaults.DiceKeys.diceConfiguration)
-        }
+        AppGroupCodableStore.save(self, key: UserDefaults.DiceKeys.diceConfiguration)
         DiceWidgetSnapshot(configuration: self).save()
     }
 }

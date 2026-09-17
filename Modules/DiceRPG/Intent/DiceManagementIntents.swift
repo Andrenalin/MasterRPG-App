@@ -136,7 +136,10 @@ struct DeleteDiceIntent: DeleteIntent {
     }
 }
 
-private extension IntentDiceType {
+// Shared with `DiceIntents.swift`'s `RollDiceIntent` — kept internal (not
+// `private`) so both intent files can map a Siri-facing dice type to the
+// concrete `RawDie` without duplicating the switch. See CODE_AUDIT §5.2.
+extension IntentDiceType {
     var rawDie: RawDie {
         return switch self {
         case .d4: RawDie(.four)

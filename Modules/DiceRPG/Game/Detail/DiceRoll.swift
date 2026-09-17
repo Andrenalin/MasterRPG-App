@@ -20,7 +20,7 @@ struct DiceRoll: View {
                 ForEach(root.gameController.gameItem(for: itemId).dice) { die in
                     Button {
                         Task {
-                            await roleDice(die)
+                            await rollDice(die)
                         }
                     } label: {
                         VStack {
@@ -41,12 +41,10 @@ struct DiceRoll: View {
     }
 
     private func resultColor(for dieId: UUID) -> [Bool] {
-        let result = root.gameController.diceSuccess(for: itemId)
-        guard let colors = result.first(where: { $0.0 == dieId }) else { return [] }
-        return colors.1
+        root.gameController.resultColor(for: dieId, itemId: itemId)
     }
 
-    private func roleDice(_ die: DieModel) async {
+    private func rollDice(_ die: DieModel) async {
         root.gameController.roll(die: die, for: itemId)
         let result = await root.gameController.createDiceResult(for: itemId, resultCategory: ResultCategory(id: itemId, module: .dice))
         networkActions?.game(result, .generic, nil)

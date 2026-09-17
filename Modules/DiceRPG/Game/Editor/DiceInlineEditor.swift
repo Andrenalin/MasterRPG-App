@@ -41,7 +41,7 @@ struct DiceInlineEditor: View {
                 .padding(.top)
 
             GameDiceBag { die in
-                withAnimation(reduceMotion ? nil : .default) {
+                withAnimation(Animation.default.reduced(if: reduceMotion)) {
                     root.gameController.gameItem(for: itemId).dice.append(die)
                 }
             }

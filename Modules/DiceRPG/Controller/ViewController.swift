@@ -74,8 +74,8 @@ public extension ViewController {
             .environment(root)
     }
 
-    @MainActor func overlayGameView(root: DiceRootModel, hideDice: Bool) -> some View {
-        RootDiceOverlay(hideDice: hideDice)
+    @MainActor func overlayGameView(root: DiceRootModel) -> some View {
+        RootDiceOverlay()
             .environment(root)
     }
 }
@@ -96,8 +96,18 @@ public extension ViewController {
 }
 
 extension ViewController {
+    /// Base row height with no extra result rows — matches `DieViewerView`'s
+    /// 44pt die circle plus its padding/shadow chrome. See CODE_AUDIT §8.3.
+    private static let baseGameDiceHeight: CGFloat = 82.0
+    /// Extra height contributed by each additional stacked result row.
+    private static let perResultRowHeight: CGFloat = 36.0
+    /// Per-entry width on visionOS vs. other platforms, plus a fixed margin.
+    private static let visionOSEntryWidth: CGFloat = 112
+    private static let entryWidth: CGFloat = 56
+    private static let entryWidthMargin: CGFloat = 20
+
     @MainActor public func gameDiceHeight(root: DiceRootModel) -> CGFloat {
-        guard let itemId = root.gameController.gameModel.currentItemId else { return 82.0 }
+        guard let itemId = root.gameController.gameModel.currentItemId else { return Self.baseGameDiceHeight }
         let dice = root.gameController.gameItem(for: itemId)
         return height(for: dice)
     }
@@ -106,17 +116,17 @@ extension ViewController {
     func height(for dice: DiceModel, minResult: Int = 0, maxResult: Int = 25) -> CGFloat {
         var values = dice.dice.reduce(0) { $1.result.count > $0 ? $1.result.count : $0 } - 1
         values = min(max(minResult, values), maxResult)
-        return CGFloat(values) * 36.0 + 82.0
+        return CGFloat(values) * Self.perResultRowHeight + Self.baseGameDiceHeight
     }
-    
+
     @MainActor
     func width(for dice: DiceModel, maxWidth: CGFloat) -> CGFloat {
         var values = dice.entries.count
         values = max(1, values)
 #if os(visionOS)
-        return min(CGFloat(values) * 112 + 20, maxWidth)
+        return min(CGFloat(values) * Self.visionOSEntryWidth + Self.entryWidthMargin, maxWidth)
 #else
-        return min(CGFloat(values) * 56 + 20, maxWidth)
+        return min(CGFloat(values) * Self.entryWidth + Self.entryWidthMargin, maxWidth)
 #endif
 
     }

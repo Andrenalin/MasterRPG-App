@@ -24,7 +24,7 @@ struct DiceGameActionBar: View {
                 if !root.gameController.isPlayerDice(itemId: itemId) {
                     if !hideOwnDice {
                         Button {
-                        withAnimation(reduceMotion ? nil : .default) {
+                        withAnimation(Animation.default.reduced(if: reduceMotion)) {
                             diceDisplayModel.isEditing.toggle()
                         }
                         } label: {
@@ -44,7 +44,12 @@ struct DiceGameActionBar: View {
                         .gameOverlayControlStyle(isSelected: diceDisplayModel.isEditing)
                         .disabled(!root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning))
                         .opacity(root.gameController.canEditDice(itemId: itemId, isGameMode: appGameStateModel.isGameRunning) ? 1 : 0.5)
-                        .onChange(of: root.gameController.gameItem(for: itemId).entries) {
+                        // A roll mutates `.dice` (results/rotation), never
+                        // `.entries` (a separate child-reference field) — this
+                        // previously watched a property a roll never changes,
+                        // so the compare-value haptic never fired. See
+                        // CODE_AUDIT §5.6.
+                        .onChange(of: root.gameController.gameItem(for: itemId).dice) {
                             diceRollResult = root.gameController.result(itemId: itemId).checked
                         }
 #if !os(visionOS)
@@ -53,11 +58,11 @@ struct DiceGameActionBar: View {
                     
                     Button {
                         if diceDisplayModel.isEditing {
-                            withAnimation(reduceMotion ? nil : .default) {
+                            withAnimation(Animation.default.reduced(if: reduceMotion)) {
                                 diceDisplayModel.isEditing = false
                             }
                         }
-                        withAnimation(reduceMotion ? nil : .default) {
+                        withAnimation(Animation.default.reduced(if: reduceMotion)) {
                             root.gameController.rollDice(itemId: itemId, networkActions: networkActions)
                         }
                     } label: {
@@ -76,7 +81,7 @@ struct DiceGameActionBar: View {
                 if canShowPlayer {
                     if !root.gameController.diceGameModel.playerDice.isEmpty {
                         Button {
-                            withAnimation(reduceMotion ? nil : .default) {
+                            withAnimation(Animation.default.reduced(if: reduceMotion)) {
                                 diceDisplayModel.showPlayerDice.toggle()
                             }
                         } label: {
@@ -99,7 +104,7 @@ struct DiceGameActionBar: View {
                 if appGameStateModel.gameModus == .player && root.gameController.gameModel.focusItemIds.count > 1 {
                     Button {
                         if let last = root.gameController.gameModel.focusItemIds.last {
-                            withAnimation(reduceMotion ? nil : .default) {
+                            withAnimation(Animation.default.reduced(if: reduceMotion)) {
                                 root.gameController.gameModel.focusItemIds = [last]
                             }
                         }
@@ -119,7 +124,7 @@ struct DiceGameActionBar: View {
                     Spacer()
 
                     Button {
-                        withAnimation(reduceMotion ? nil : .default) {
+                        withAnimation(Animation.default.reduced(if: reduceMotion)) {
                             root.gameController.gameModel.focusItemIds = [itemId]
                         }
                     } label: {

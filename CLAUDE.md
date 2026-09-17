@@ -149,7 +149,7 @@ If CoreData is configured to use CloudKit:
 - **View** Other views
  
 ## Platform Conditionals
-Use `#if os(iOS)`, `#if os(macOS)`, `#if os(tvOS)`, `#if os(visionOS)` for platform-specific code. Widget extension code uses `#if !WIDGET_EXTENSION` to exclude unavailable APIs.
+Use `#if os(iOS)`, `#if os(macOS)`, `#if os(tvOS)`, `#if os(visionOS)` for platform-specific code. Widget extensions gate extension-unavailable APIs with `#if !os(...)`/API-availability checks on a case-by-case basis — no `WIDGET_EXTENSION` Swift compilation condition is defined on any target, so don't write `#if !WIDGET_EXTENSION` expecting it to do anything (it silently evaluates as always-true).
 All modules using the bundle version of SwiftUI views for example `Text("Editor Window", bundle: .module)` for the correct Localizations.
 
 ## App Groups & Entitlements

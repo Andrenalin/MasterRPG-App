@@ -541,7 +541,7 @@ extension DiceModel: nonisolated ItemDataAccessable {
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
         guard !filter.isEmpty else { return true }
-        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        guard !(name.localizedStandardContains(filter) || description.localizedStandardContains(filter)) else { return true }
         return false
     }
 

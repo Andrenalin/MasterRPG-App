@@ -19,14 +19,20 @@ extension LinkController: LinkControllable {
                 return handled
             }
             if command == LinkType.roll.rawValue {
-                gameController.rollDice(itemId: itemId, networkActions: shareResult?.networkActions, resultCategopry: nil, rollSynced: true)
+                gameController.rollDice(itemId: itemId, networkActions: shareResult?.networkActions, resultCategory: nil, rollSynced: true)
                 let rollUrl = specialLink(linkType: .roll, linkNumber: linkNumber, itemId: itemId, entryId: entryId)
                 return text.toggleLink(url: rollUrl, with: gameController.resultText(itemId: itemId), replace: true)
             }
             guard command == LinkType.share.rawValue else { return text }
             Task {
-                if let shareResult, let result = try? await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory) {
+                guard let shareResult else { return }
+                do {
+                    let result = try await gameController.createGameData(for: itemId, resultCategory: shareResult.resultCategory)
                     shareResult.networkActions?.game(result, .show, nil)
+                } catch {
+                    // `try?` previously discarded this error with no trace —
+                    // a failed share silently did nothing. See CODE_AUDIT §5.8.
+                    Logger.linkController.error("Dice: failed to share game data for \(itemId, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 }
             }
             return text

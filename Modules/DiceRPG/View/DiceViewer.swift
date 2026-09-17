@@ -16,7 +16,7 @@ struct DiceViewer: View {
                 ForEach(model.dice) { die in
                     if isEditor {
                         Button {
-                            withAnimation(reduceMotion ? nil : .default) {
+                            withAnimation(Animation.default.reduced(if: reduceMotion)) {
                                 root.editController.remove(die: die, itemId: model.id)
                             }
                         } label: {

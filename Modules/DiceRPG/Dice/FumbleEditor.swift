@@ -14,7 +14,7 @@ struct FumbleEditor: View {
             values: model.fumbleValues,
             toggleKeyPath: \.fumbleOnlyOnFirstDie,
             toggleTitle: "Only first die can fumble",
-            toggleSaveMessage: String(localized: "change fumble option", bundle: .module).localizedString,
+            toggleSaveMessage: String(localized: "change fumble option", bundle: .module),
             sectionHeader: Text("Fumble Options", bundle: .module),
             valuesLabel: Text("Fumble", bundle: .module),
             addLabel: Text("Add fumble", bundle: .module),

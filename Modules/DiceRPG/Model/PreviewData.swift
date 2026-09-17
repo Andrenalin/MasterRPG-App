@@ -178,7 +178,7 @@ extension DiceModel {
     static let diceCoC: DiceModel = .init(
         id: uuidCoC,
         name: "CoC",
-        description: "This is a dice for Call of Cthuhlu. A percent five where you need to roll equal or lower the value. 01 is a critical and 05 is extreme success. 100 is a fumble.",
+        description: "This is a dice for Call of Cthulhu. A percent five where you need to roll equal or lower the value. 01 is a critical and 05 is extreme success. 100 is a fumble.",
         tags: ["CoC", "Example"],
         category: .game,
         displayState: 0,

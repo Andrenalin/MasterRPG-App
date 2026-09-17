@@ -35,7 +35,7 @@ struct DropChooseView: View {
         .padding(1)
         .overlay(alignment: .topTrailing) {
             Button(role: .destructive) {
-                withAnimation(reduceMotion ? nil : .default) {
+                withAnimation(Animation.default.reduced(if: reduceMotion)) {
                     selectionModel.selection = []
                 }
             } label: {

@@ -192,10 +192,4 @@ extension DiceEntityQuery: @preconcurrency IndexedEntityQuery {
 }
 #endif
 
-extension DiceEntity {
-    var sharePreview: SharePreview<Never, Image> {
-        SharePreview(name, icon: Image(systemName: "dice"))
-    }
-}
-
 #endif

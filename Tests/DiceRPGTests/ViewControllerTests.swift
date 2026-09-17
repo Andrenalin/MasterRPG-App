@@ -35,7 +35,7 @@ struct ViewControllerTests {
         _ = sut.diceActionBarView(root: root)
         _ = sut.diceResultView(root: root)
         _ = sut.dicePlayerView(root: root)
-        _ = sut.overlayGameView(root: root, hideDice: true)
+        _ = sut.overlayGameView(root: root)
         _ = sut.viewCompactDice(root: root, itemId: itemId)
         _ = sut.viewDice(root: root, with: itemId, for: ResultCategory(id: UUID(), module: .table), player: true)
 

@@ -27,10 +27,10 @@ struct DiceOverlay: View {
         AnyLayout(diceLayout) {
             DiceOverlayDiceViewsView(alignIsVertical: alignIsVertical, itemId: itemId, showFocusButton: showFocusButton, canShowPlayer: canShowPlayer, hideOwnDice: hideOwnDice)
         }
-        .animation(reduceMotion ? nil : .spring(), value: diceDisplayModel.showDiceValueEditor)
+        .animation(Animation.spring().reduced(if: reduceMotion), value: diceDisplayModel.showDiceValueEditor)
         .onChange(of: diceDisplayModel.isEditing) {
             guard diceDisplayModel.isEditing else { return }
-            withAnimation(reduceMotion ? nil : .default) {
+            withAnimation(Animation.default.reduced(if: reduceMotion)) {
                 diceDisplayModel.showDiceValueEditor <=> false
             }
         }

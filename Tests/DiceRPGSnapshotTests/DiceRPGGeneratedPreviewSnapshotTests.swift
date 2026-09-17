@@ -140,7 +140,7 @@ struct DiceRPGGeneratedPreviewSnapshotTests {
         try await assertPreviewSnapshot("RootDiceOverlay") {
             Rectangle().fill(Color.red.gradient.opacity(0.5)).ignoresSafeArea()
                 .overlay {
-                    DiceRPG.RootDiceOverlay(hideDice: false)
+                    DiceRPG.RootDiceOverlay()
                 }
                 .environment(DiceDisplayModel())
         }

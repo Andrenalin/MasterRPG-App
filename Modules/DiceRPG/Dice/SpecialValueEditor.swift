@@ -69,7 +69,7 @@ private struct SpecialValueEditorValuesView: View {
                 HStack(spacing: 8) {
                     ForEach(values) { item in
                         Button {
-                            withAnimation(reduceMotion ? nil : removeAnimation) {
+                            withAnimation(removeAnimation.reduced(if: reduceMotion)) {
                                 onRemove(item)
                             }
                         } label: {
@@ -120,7 +120,11 @@ private struct SpecialValueEditorEditorView: View {
                 .frame(minWidth: 44, minHeight: 44)
                 .disabled(value == 0)
 
-                TextIntEditor(value: $value, title: valueFieldTitle, icon: "plus", prompt: valueFieldPrompt, bundle: .module, range: model.minValue...model.maxValue)
+                // Coup/fumble trigger values are matched per individual die
+                // result, not the pool's summed range — `minValue`/`maxValue`
+                // made "fumble on a natural 1" unreachable for any multi-die
+                // pool. See CODE_AUDIT §5.3.
+                TextIntEditor(value: $value, title: valueFieldTitle, icon: "plus", prompt: valueFieldPrompt, bundle: .module, range: model.minFirstValue...model.maxFirstValue)
             }
             .labelsHidden()
         } label: {
@@ -129,7 +133,7 @@ private struct SpecialValueEditorEditorView: View {
     }
 
     private func addCurrentValue() {
-        withAnimation(reduceMotion ? nil : addAnimation) {
+        withAnimation(addAnimation.reduced(if: reduceMotion)) {
             onAdd(Int(value), isDiceValueMatch)
             value = 0.0
         }

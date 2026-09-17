@@ -318,7 +318,7 @@ extension GameController {
     }
     
     @MainActor
-    func rollDice(itemId: UUID, networkActions: NetworkActions? = nil, resultCategopry: ResultCategory? = nil, rollSynced: Bool = false) {
+    func rollDice(itemId: UUID, networkActions: NetworkActions? = nil, resultCategory: ResultCategory? = nil, rollSynced: Bool = false) {
         reset(for: itemId)
         
         let rollFunction = {
@@ -326,7 +326,7 @@ extension GameController {
             
             if let networkActions {
                 Task {
-                    let sendedResult = resultCategopry ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.config.module)
+                    let sendedResult = resultCategory ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.config.module)
                     let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
                     networkActions.game(result, .generic, nil)
                 }
@@ -450,6 +450,13 @@ extension GameController {
     func coup(for itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
         return matchesSpecialValue(onlyFirstDie: item.coupOnlyOnFirstDie, values: item.coupValues, dice: item.dice)
+    }
+
+    // Shared by `DiceRoll`/`DicePlayer`, which previously each implemented
+    // this identical lookup themselves. See CODE_AUDIT §9.5.
+    @MainActor
+    func resultColor(for dieId: UUID, itemId: UUID) -> [Bool] {
+        diceSuccess(for: itemId).first(where: { $0.0 == dieId })?.1 ?? []
     }
 
     @MainActor

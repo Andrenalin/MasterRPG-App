@@ -27,6 +27,10 @@ public struct RawDieCounter: Equatable, Hashable {
     }
 
     public func roll() -> Int {
+        // `count == 0` (e.g. parsed from a malformed "0d6" notation string)
+        // previously built the invalid range `1...0` and trapped. See
+        // CODE_AUDIT §5.7.
+        guard count != 0 else { return 0 }
         var result = 0
         (1 ... abs(count)).forEach { _ in result += die.roll() }
         if count < 0 {

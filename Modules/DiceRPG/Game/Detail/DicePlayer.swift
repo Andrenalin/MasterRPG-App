@@ -23,7 +23,7 @@ struct DicePlayer: View {
                         }
                     }
                     .animation(
-                        reduceMotion ? nil : .bouncy,
+                        Animation.bouncy.reduced(if: reduceMotion),
                         value: root.gameController.isPlayerHidden(playerId: player.id)
                     )
                 }
@@ -117,9 +117,7 @@ struct DicePlayer: View {
     }
 
     private func resultColor(for dieId: UUID, playerId: UUID) -> [Bool] {
-        let result = root.gameController.diceSuccess(for: playerId)
-        guard let colors = result.first(where: { $0.0 == dieId }) else { return [] }
-        return colors.1
+        root.gameController.resultColor(for: dieId, itemId: playerId)
     }
 }
 
