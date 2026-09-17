@@ -83,25 +83,9 @@ struct DisplayConfigEditor: View {
         }
         
         Task {
-            if let (fullImage, _) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: true) {
-                let coords = model.displayConfig.tileCoordinates
-                let minX = coords.map { $0.x }.min() ?? 0
-                let maxX = coords.map { $0.x }.max() ?? 0
-                let minY = coords.map { $0.y }.min() ?? 0
-                let maxY = coords.map { $0.y }.max() ?? 0
-                
-                let tileRect = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-                
-#if os(macOS)
-                if let cgImage = fullImage.cgImage(forProposedRect: nil, context: nil, hints: nil),
-                   let croppedCGImage = cgImage.cropping(to: tileRect) {
-                    tileImage = NSImage(cgImage: croppedCGImage, size: tileRect.size)
-                }
-#else
-                if let cgImage = fullImage.cgImage?.cropping(to: tileRect) {
-                    tileImage = UIImage(cgImage: cgImage)
-                }
-#endif
+            if let (fullImage, _) = await root.photoRoot.fetchPhotoImage(for: photoId, useGame: true),
+               let tileRect = model.displayConfig.tileCoordinates.bounds {
+                tileImage = fullImage.cropping(to: tileRect)
             }
         }
     }

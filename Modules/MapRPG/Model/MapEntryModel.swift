@@ -87,29 +87,12 @@ public extension MapEntryModel {
 }
 
 extension MapEntryModel {
-    var xOffset: CGFloat {
-        var x: CGFloat = coordinates.first?.x ?? 0.0
-        coordinates.forEach { x = min($0.x, x) }
-        return x
-    }
+    private var boundingBox: CGRect? { coordinates.bounds }
 
-    var yOffset: CGFloat {
-        var y: CGFloat = coordinates.first?.y ?? 0.0
-        coordinates.forEach { y = min($0.y, y) }
-        return y
-    }
-
-    var height: CGFloat {
-        var y: CGFloat = coordinates.first?.y ?? 0.0
-        coordinates.forEach { y = max($0.y, y) }
-        return y
-    }
-
-    var width: CGFloat {
-        var x: CGFloat = coordinates.first?.x ?? 0.0
-        coordinates.forEach { x = max($0.x, x) }
-        return x
-    }
+    var xOffset: CGFloat { boundingBox?.minX ?? 0 }
+    var yOffset: CGFloat { boundingBox?.minY ?? 0 }
+    var height: CGFloat { boundingBox?.maxY ?? 0 }
+    var width: CGFloat { boundingBox?.maxX ?? 0 }
 
     var size: CGSize {
         let w = width - xOffset

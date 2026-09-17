@@ -181,17 +181,8 @@ struct MapPassiveRoomCanvas: View {
     private var tileRectangle: CGRect? {
         let coordinates = displayConfig.tileCoordinates
         guard coordinates.count == 4,
-              let minimumX = coordinates.map(\.x).min(),
-              let maximumX = coordinates.map(\.x).max(),
-              let minimumY = coordinates.map(\.y).min(),
-              let maximumY = coordinates.map(\.y).max() else { return nil }
-        let rectangle = CGRect(
-            x: minimumX,
-            y: minimumY,
-            width: maximumX - minimumX,
-            height: maximumY - minimumY
-        )
-        guard rectangle.width.isFinite,
+              let rectangle = coordinates.bounds,
+              rectangle.width.isFinite,
               rectangle.height.isFinite,
               rectangle.width >= 1,
               rectangle.height >= 1 else { return nil }

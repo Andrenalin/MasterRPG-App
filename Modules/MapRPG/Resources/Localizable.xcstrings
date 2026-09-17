@@ -2409,7 +2409,11 @@
         }
       }
     },
+    "Updated pin from character" : {
+
+    },
     "Updated pin from charakter" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

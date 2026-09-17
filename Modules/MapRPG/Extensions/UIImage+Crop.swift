@@ -24,23 +24,5 @@ extension AKImage {
         }
         return AKImage(cgImage: cgImage)
     }
-
-    func crop(in rect: CGRect) -> AKImage? {
-        guard let cgImage else {
-            return nil
-        }
-        UIGraphicsBeginImageContextWithOptions(rect.size, false, 0)
-        let context = UIGraphicsGetCurrentContext()
-
-        context?.translateBy(x: 0.0, y: size.height)
-        context?.scaleBy(x: 1.0, y: -1.0)
-        context?.draw(cgImage, in: CGRect(x: 0, y: 0, width: size.width, height: size.height), byTiling: false)
-        context?.clip(to: [rect])
-
-        let croppedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        return croppedImage
-    }
 }
 #endif

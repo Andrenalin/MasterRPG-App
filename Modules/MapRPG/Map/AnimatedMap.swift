@@ -34,9 +34,7 @@ struct AnimatedMap: View {
                 .environment(dropPinModel)
         }
         .onChange(of: date, initial: false) {
-            Task {
-                withAnimation { entryId = randomEntries() }
-            }
+            withAnimation { entryId = randomEntries() }
         }
     }
 

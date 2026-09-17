@@ -200,7 +200,7 @@ extension MapPinModel {
     }
 
     public func filter(_ filter: String, selectedTags _: [TagFilterSelection]) -> Bool {
-        filter.isEmpty || name.localizedCaseInsensitiveContains(filter)
+        filter.isEmpty || name.localizedStandardContains(filter)
     }
 }
 

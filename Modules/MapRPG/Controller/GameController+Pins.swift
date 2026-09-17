@@ -183,7 +183,9 @@ extension GameController {
         // pins as well as player-owned pins after the full map was imported.
         // Only their photos participate in this repair scan. The background is
         // part of the full map package and must stay on that transfer path.
-        let photoIds = model.mapPins.compactMap { $0.photoId }
+        // Hidden pins are excluded outright — their photo must never be
+        // proactively shared ahead of the GM revealing them. See CODE_AUDIT §6.1.
+        let photoIds = model.mapPins.filter(\.isShown).compactMap { $0.photoId }
         var result: [NetworkCodableDataType] = []
         var uniquePhotoIds: Set<UUID> = []
         for photoId in photoIds where uniquePhotoIds.insert(photoId).inserted {

@@ -5,8 +5,11 @@ import CoreGraphics
 import Foundation
 
 /// Versioned, photo-free map metadata sent through the ordinary chunked
-/// messenger path. UUID photo references are present in the snapshot, but no
-/// photo bytes or exported dependent-module records are included.
+/// messenger path. UUID photo references are present in the snapshot for
+/// shown pins, but no photo bytes or exported dependent-module records are
+/// included. Hidden-room content and hidden-pin identity/photo references
+/// are stripped entirely before this leaves the sender — see
+/// `MapSnapshot.redactedForNonMaster()`.
 struct MapUpdatePayload: Codable, Sendable, MessageMapper {
     static let currentSchemaVersion = 1
 
@@ -17,14 +20,20 @@ struct MapUpdatePayload: Codable, Sendable, MessageMapper {
     /// representations that may normalize during a round trip.
     let contentVersion: Int
 
+    /// This payload only ever travels the live game-sync wire (see the
+    /// doc comment on `MapSnapshot`), so its snapshot is always redacted for
+    /// a non-master recipient — see CODE_AUDIT §6.1. `contentVersion` is
+    /// still computed from the true, unredacted content: the fingerprint
+    /// must reflect the master's real map state (including hidden-content
+    /// edits) so a later reveal still registers as a version change.
     @MainActor
     init(model: MapModel) {
         let schemaVersion = Self.currentSchemaVersion
-        let snapshot = MapSnapshot(model)
+        let fullSnapshot = MapSnapshot(model)
         self.schemaVersion = schemaVersion
-        self.snapshot = snapshot
+        snapshot = fullSnapshot.redactedForNonMaster()
         contentVersion = StableVersionDigest.digest(
-            CanonicalMapContent(schemaVersion: schemaVersion, snapshot: snapshot)
+            CanonicalMapContent(schemaVersion: schemaVersion, snapshot: fullSnapshot)
         )
     }
 

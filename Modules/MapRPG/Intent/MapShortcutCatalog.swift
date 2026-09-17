@@ -6,6 +6,7 @@ import CoreRPG
 import AppIntents
 import CoreSpotlight
 import Foundation
+import os.log
 
 public enum MapShortcutCatalog {
     public static var all: [AppShortcut] {
@@ -81,7 +82,11 @@ public enum MapShortcutCatalog {
             guard let model = root.itemController.itemSync(for: id) else { return nil }
             return MapEntity(root: root, model: model)
         }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        do {
+            try await CSSearchableIndex.default().indexAppEntities(entities)
+        } catch {
+            Logger.appIntents.debug("Failed to reindex Map entities for Spotlight: \(error.localizedDescription, privacy: .public)")
+        }
     }
 }
 

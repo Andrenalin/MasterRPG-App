@@ -75,7 +75,7 @@ extension DataController: CoreDataSnapshotPersistable {
             )
         }
         unequalSet(lhs: &model.displayConfigUpdate, rhs: snapshot.displayConfig.$update.rawValue) {
-            let displayConfig = model.displyConfigOrNew(for: snapshot.id)
+            guard let displayConfig = model.displyConfigOrNew(for: snapshot.id) else { return }
             self.map(snapshot.displayConfig.wrappedValue, into: displayConfig)
             model.displayConfig = displayConfig
         }
@@ -190,8 +190,8 @@ extension DataController: CoreDataSnapshotPersistable {
             // every update created an all-new set and orphaned the previous rows via
             // the Nullify inverse). Reuse by index and delete the surplus instead.
             let oldCoordinates = model.coordinateModels
-            model.coordinateModels = viewModel.coordinates.enumerated().map {
-                let coordinate = $0 < oldCoordinates.count ? oldCoordinates[$0] : model.newCoordinate()
+            model.coordinateModels = viewModel.coordinates.enumerated().compactMap {
+                guard let coordinate = $0 < oldCoordinates.count ? oldCoordinates[$0] : model.newCoordinate() else { return nil }
                 self.map($1, into: coordinate, index: $0)
                 return coordinate
             }
@@ -221,8 +221,8 @@ extension DataController: CoreDataSnapshotPersistable {
         // Same reuse-by-index pattern as entry coordinates — the old fresh-UUID
         // lookup orphaned the previous tile set on every update.
         let oldCoordinates = model.tileCoordinateModels
-        model.tileCoordinateModels = viewModel.tileCoordinates.enumerated().map {
-            let coordinate = $0 < oldCoordinates.count ? oldCoordinates[$0] : model.newCoordinate()
+        model.tileCoordinateModels = viewModel.tileCoordinates.enumerated().compactMap {
+            guard let coordinate = $0 < oldCoordinates.count ? oldCoordinates[$0] : model.newCoordinate() else { return nil }
             map($1, into: coordinate, index: $0)
             return coordinate
         }
@@ -239,9 +239,10 @@ extension DataController: CoreDataSnapshotPersistable {
         model.photoUUID = viewModel.photoId
         model.characterId = viewModel.characterId
 
-        let coordinate = model.coordinateOrNew(for: UUID())
-        map(viewModel.location, into: coordinate, index: 0)
-        model.location = coordinate
+        if let coordinate = model.coordinateOrNew(for: UUID()) {
+            map(viewModel.location, into: coordinate, index: 0)
+            model.location = coordinate
+        }
         model.size = Int16(viewModel.size.rawValue)
         model.isShown = viewModel.isShown
         model.isDead = viewModel.isDead

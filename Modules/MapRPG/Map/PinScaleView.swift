@@ -22,7 +22,7 @@ struct PinScaleView: View {
                 .foregroundStyle(.primary)
             Slider(
                 value: $model.pinScale,
-                in: 0.5 ... 3.5,
+                in: MapEditorScaleRanges.pinScale,
                 onEditingChanged: onEditingChanged
             ) {
                 Text("Pin Scale", bundle: .module)

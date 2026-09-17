@@ -138,6 +138,51 @@ extension MapSnapshot {
     }
 }
 
+extension MapSnapshot {
+    /// Strips GM-only content before this snapshot crosses the wire to a
+    /// non-master peer: hidden-room text and hidden-pin name/photo/character
+    /// links. Client-side `isShown` checks only ever suppressed *rendering* —
+    /// the underlying data was otherwise fully present on every recipient's
+    /// device the moment a map package or content update arrived, defeating
+    /// fog-of-war. See CODE_AUDIT §6.1.
+    func redactedForNonMaster() -> MapSnapshot {
+        let redactedEntries = entries.wrappedValue.map { entry -> MapEntryModel in
+            var redacted = entry
+            guard !redacted.isShown else { return redacted }
+            redacted.content = ""
+            return redacted
+        }
+        let redactedPins = mapPins.wrappedValue.map { pin -> MapPinModel in
+            guard !pin.isShown else { return pin }
+            var redacted = pin
+            redacted.name = ""
+            redacted.photoId = nil
+            redacted.characterId = nil
+            return redacted
+        }
+        return MapSnapshot(
+            id: id,
+            name: name,
+            description: description,
+            tags: tags,
+            category: category,
+            displayState: displayState,
+            entries: CRDTDataUpdate(wrappedValue: redactedEntries, update: entries.$update),
+            displayConfig: displayConfig,
+            photoId: photoId,
+            width: width,
+            height: height,
+            mapPins: CRDTDataUpdate(wrappedValue: redactedPins, update: mapPins.$update),
+            walls: walls,
+            pinScale: pinScale,
+            hexMapScale: hexMapScale,
+            scale: scale,
+            degrees: degrees,
+            parentId: parentId
+        )
+    }
+}
+
 // Keep live-map payloads produced before wall support readable. All other fields retain their
 // established required-key behavior; only the additive wall field defaults when absent.
 extension MapSnapshot {

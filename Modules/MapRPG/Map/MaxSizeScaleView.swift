@@ -29,7 +29,7 @@ struct MaxSizeScaleView: View {
                     .foregroundStyle(.primary)
                 Slider(
                     value: $model.maxWidthRatio,
-                    in: 0.1 ... 1.0,
+                    in: MapEditorScaleRanges.maxSizeRatio,
                     onEditingChanged: onEditingChanged
                 ) {
                     Text("Max Width", bundle: .module)
@@ -46,7 +46,7 @@ struct MaxSizeScaleView: View {
                     .foregroundStyle(.primary)
                 Slider(
                     value: $model.maxHeightRatio,
-                    in: 0.1 ... 1.0,
+                    in: MapEditorScaleRanges.maxSizeRatio,
                     onEditingChanged: onEditingChanged
                 ) {
                     Text("Max Height", bundle: .module)

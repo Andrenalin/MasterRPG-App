@@ -10,10 +10,6 @@ import os.log
 import QuickLookThumbnailing
 #endif
 
-actor MapEntryCacheImageMapper {
-    var entryToItem: [UUID: UUID] = [:]
-}
-
 struct CacheController: Sendable {
     @MainActor init(photoRoot: PhotoRootModel) {
         self.photoRoot = photoRoot

@@ -214,45 +214,6 @@ extension LinkController {
 
 extension MapModel {
     static let uuid = UUID.fixture("14C7502D-2EDF-4457-AE0D-6152DFA8E8DF")
-
-    func generateModel() -> String {
-        """
-            MapViewModel(
-                id: UUID(uuidString: \"\(id)\")!,
-                name: \"\(name)\",
-                description:
-        \"\"\"
-        \(description)
-        \"\"\"
-        ,
-                tags: \(tags),
-                entries: \(generateEntries()),
-                displayConfig: \(displayConfig.generateModel()),
-                photoId: \(generateUUID(for: photoId)),
-                width: \(width),
-                height: \(height),
-                scale: \(scale),
-                degrees: \(degrees)
-            )
-        """
-    }
-
-    private func generateUUID(for uuid: UUID?) -> String {
-        if let uuid {
-            return "UUID(uuidString: \"\(uuid)\")!"
-        } else {
-            return "nil"
-        }
-    }
-
-    private func generateEntries() -> String {
-        var result = "["
-        entries.forEach {
-            result.append($0.generateModel() + ",")
-        }
-        result.append("]")
-        return result
-    }
 }
 
 extension MapEntryModel {
@@ -352,26 +313,6 @@ extension MapEntryModel {
         isShown: false
     )
 
-    func generateModel() -> String {
-        """
-            EntryViewModel(
-                id: UUID(uuidString: \"\(id)\")!,
-                name: \"\(name)\",
-                description:
-        \"\"\"
-        \(content)
-        \"\"\"
-        ,                
-                coordinates: \(generateCoords()),
-                isShown: \(isShown ? "true" : "false"),
-                links: []
-            )
-        """
-    }
-
-    private func generateCoords() -> String {
-        coordinates.map { "CGPoint(x: \($0.x), y: \($0.y)), " }.reduce("[") { $0 + $1 } + "]"
-    }
 }
 
 extension MapPinModel {
@@ -411,44 +352,6 @@ extension MapPinModel {
             isShown: false
         ),
     ]
-}
-
-extension DisplayConfigModel {
-    static var testViewModel: DisplayConfigModel {
-        DisplayConfigModel(id: UUID(uuid: (0xD1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), tileCoordinates: [
-            CGPoint(x: 0.5, y: 0.5),
-            CGPoint(x: 0.55, y: 0.5),
-            CGPoint(x: 0.55, y: 0.55),
-            CGPoint(x: 0.5, y: 0.55),
-        ], color: .blue, border: DisplayBorderViewModel(id: UUID(uuid: (0xD1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)), thickness: 10.0))
-    }
-
-    func generateModel() -> String {
-        """
-                DisplayConfigViewModel(
-                    id: UUID(uuidString: \"\(id)\")!,
-                    tileCoordinates: \(generatePoints()),
-                    color: \(CodableColor(color).generateModel()).color,
-                    border: \(border.generateModel())
-                )
-        """
-    }
-
-    private func generatePoints() -> String {
-        tileCoordinates.map { "CGPoint(x: \($0.x), y: \($0.y)), " }.reduce("[") { $0 + $1 } + "]"
-    }
-}
-
-extension DisplayBorderViewModel {
-    func generateModel() -> String {
-        """
-                DisplayBorderViewModel(
-                    id: UUID(uuidString: \"\(id)\")!,
-                    thickness: \(thickness),
-                    color: \(CodableColor(color).generateModel()).color
-                )
-        """
-    }
 }
 
 private extension UUID {

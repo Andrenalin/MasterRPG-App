@@ -61,7 +61,7 @@ struct HexMapScaleView: View {
                 .foregroundStyle(.primary)
             Slider(
                 value: $model.hexScale,
-                in: 20 ... 200,
+                in: MapEditorScaleRanges.hexScale,
                 onEditingChanged: onScaleEditingChanged
             ) {
                 Text("Hex Scale", bundle: .module)

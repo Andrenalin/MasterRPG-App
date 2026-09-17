@@ -333,7 +333,7 @@ extension EditController {
         pin.photoId = photoId
         pin.characterId = valueId
         item[MapPinId.id, pinId] = pin
-        save(updated: item, message: String(localized: "Updated pin from charakter", bundle: .module).localizedString)
+        save(updated: item, message: String(localized: "Updated pin from character", bundle: .module).localizedString)
     }
 }
 
@@ -343,39 +343,15 @@ extension EditController {
     @MainActor func addMonsters(map: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
         addMonsters(to: map, entryId: entryId, location: location, monsters: monsters, number: number)
     }
-    
+
     @MainActor private func addMonsters(to model: MapModel, entryId: UUID?, location: CGPoint?, monsters: [ItemRowModel], number: Int) {
-        let pinNumber = min(max(1, number), 25)
-        
-        var pins: [MapPinModel] = []
-        for _ in 0..<pinNumber {
-            pins.append(contentsOf: monsters.map { monster in
-                MapPinModel(id: UUID(), name: root.characterRoot.linkControllable.name(for: monster.itemId), color: .random, photoId: root.characterRoot.valueGameControllable.imageIds(for: monster.itemId).randomElement(), characterId: monster.itemId, location: location ?? .zero, size: .normal, isShown: true)
-            })
-        }
-        
-        if let entryId {
-            //model[entryId].content.append(values)
-            if location == nil {
-                pins = calculateLocations(model: model, for: pins, entryId: entryId)
-            }
+        var pins = MapPinPlacement.spawnPins(monsters: monsters, count: number, location: location, characterRoot: root.characterRoot)
+
+        if let entryId, location == nil {
+            pins = MapPinPlacement.cascade(pins: pins, in: model[entryId], pinScale: model.pinScale)
         }
         pins.forEach { pin in
             add(pin: pin, to: model)
-        }
-    }
-    
-    @MainActor private func calculateLocations(model: MapModel, for pins: [MapPinModel], entryId: UUID) -> [MapPinModel] {
-        let pinScale = model.pinScale
-        let entry = model[entryId]
-        var leftCenter = CGPoint(x: entry.xOffset + entry.size.width / 4, y: entry.yOffset + entry.size.height / 2)
-        return pins.map { pin in
-            var changedPin = pin
-            if changedPin.location == .zero {
-                changedPin.location = leftCenter
-                leftCenter = leftCenter + changedPin.size.size.width * pinScale + 5
-            }
-            return changedPin
         }
     }
 }
@@ -399,56 +375,10 @@ extension EditController {
     }
 
     @MainActor func createHexMap(model: MapModel, hexMapScale: Double = 0) {
-        let size = initHexGridSize(model: model, size: hexMapScale)
+        let size = MapHexGridGeometry.initialSize(for: model, requestedSize: hexMapScale)
         model.hexMapScale = size
-        let entries = calculateGrid(for: size, in: CGRect(origin: .zero, size: CGSize(width: model.width, height: model.height)))
-        replaceHexGrid(entries: entries, in: model)
-    }
-
-    @MainActor private func initHexGridSize(model: MapModel, size: Double) -> Double {
-        guard size < 10 else { return size }
-        let wScale = model.width / (12 * sqrt(3))
-        let hScale = model.height / (12 * (3/2))
-        return max(wScale, hScale)
-    }
-
-    @MainActor
-    private func replaceHexGrid(entries: [MapEntryModel], in model: MapModel) {
-        model.entries.removeAll(where: { $0.isHexGrid })
-        model.entries.append(contentsOf: entries)
-    }
-
-    private func calculateGrid(for size: Double, in rectSize: CGRect) -> [MapEntryModel] {
-        let hexWidth = sqrt(3) * size
-        let hexHeight = 2 * size
-        let columns = Int((rectSize.width + (hexWidth / 2)) / hexWidth) + 1
-        let rows = Int((rectSize.height + size / 2) / (3 * size / 2)) + 1
-
-        var hexa: [MapEntryModel] = []
-        for row in 0 ..< rows {
-            let offsetY = Double(row) * hexHeight - (Double(row) * size / 2)
-            let offsetRow = ((row % 2) != 0) ? -(hexWidth / 2) : 0
-            for col in 0 ..< columns {
-                let offsetX = Double(col) * hexWidth + offsetRow
-                let coordinates = calculateHex(at: CGPoint(x: offsetX, y: offsetY), maxPoint: CGPoint(x: rectSize.width, y: rectSize.height), size: size)
-                hexa.append(MapEntryModel(id: UUID(), name: "\(col) - \(row)", content: "", coordinates: coordinates, isHexGrid: true, displayState: DisplayStateMask.groupHidden.rawValue))
-            }
-        }
-        return hexa
-    }
-
-    private func calculateHex(at offset: CGPoint, maxPoint: CGPoint, size: Double) -> [CGPoint] {
-        let width = sqrt(3) * size
-        let height = 2 * size
-
-        let Point1 = CGPoint(x: min(max(offset.x, 0), maxPoint.x), y: min(max(offset.y, 0), maxPoint.y))
-        let Point2 = CGPoint(x: min(max(offset.x + width / 2, 0), maxPoint.x), y: min(max(offset.y - height / 4, 0), maxPoint.y))
-        let Point3 = CGPoint(x: min(max(offset.x + width, 0), maxPoint.x), y: min(max(offset.y, 0), maxPoint.y))
-        let Point4 = CGPoint(x: min(max(offset.x + width, 0), maxPoint.x), y: min(max(offset.y + size, 0), maxPoint.y))
-        let Point5 = CGPoint(x: min(max(offset.x + width / 2, 0), maxPoint.x), y: min(max(offset.y + 3 * height / 4, 0), maxPoint.y))
-        let Point6 = CGPoint(x: min(max(offset.x, 0), maxPoint.x), y: min(max(offset.y + size, 0), maxPoint.y))
-
-        return [Point1, Point2, Point3, Point4, Point5, Point6]
+        let entries = MapHexGridGeometry.grid(for: size, in: CGRect(origin: .zero, size: CGSize(width: model.width, height: model.height)))
+        MapHexGridGeometry.replaceGrid(entries, in: model)
     }
 }
 
