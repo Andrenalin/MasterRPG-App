@@ -55,12 +55,12 @@ extension PdfEntryModel: EntryDataAccessable {
     }
 
     public func filter(_ filter: String, selectedTags _: [TagFilterSelection]) -> Bool {
-        filter.isEmpty || name.localizedCaseInsensitiveContains(filter) ||
-        content.localizedCaseInsensitiveContains(filter)
+        filter.isEmpty || name.localizedStandardContains(filter) ||
+        content.localizedStandardContains(filter)
     }
-    
+
     public func filter(with search: String) -> Bool {
-        true
+        search.isEmpty || name.localizedStandardContains(search) || content.localizedStandardContains(search)
     }
     
     public func linkContent() -> String { content }

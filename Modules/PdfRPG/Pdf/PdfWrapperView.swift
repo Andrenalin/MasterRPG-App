@@ -17,6 +17,11 @@ typealias CustomViewRepresentable = NSViewRepresentable
 typealias CustomViewRepresentable = UIViewRepresentable
 #endif
 
+// `@unchecked` because PDFKit doesn't declare Sendable itself, but this is relied on
+// deliberately: `ItemController.pdfDocument(for:)` decodes `PDFDocument(url:)` inside a
+// `Task.detached` to keep it off the MainActor, which requires the value to cross that
+// isolation boundary. All decode/mutation of these types elsewhere in this module stays
+// on the MainActor. See CODE_AUDIT_Pdf §3.1/§7.1.
 extension PDFDocument: @unchecked @retroactive Sendable {}
 extension PDFSelection: @unchecked @retroactive Sendable {}
 
@@ -25,18 +30,13 @@ struct PdfWrapperView: CustomViewRepresentable {
     /// match — gives PDFKit's own layout/scroll a moment before driving it further.
     /// See CODE_AUDIT §9.14.
     private static let pdfViewNavigationDelay: Duration = .seconds(0.25)
+    private static let minScaleFactor: CGFloat = 0.25
+    private static let maxScaleFactor: CGFloat = 5.0
     let pdfDocument: PDFDocument?
     let horizontal: Bool
     let entry: PdfEntryModel?
     let searchModel: PdfSearchModel
-    
-    init(url: URL, entry: PdfEntryModel?, horizontal: Bool, searchModel: PdfSearchModel) {
-        pdfDocument = PDFDocument(url: url)
-        self.entry = entry
-        self.horizontal = horizontal
-        self.searchModel = searchModel
-    }
-    
+
     init(showing pdfDoc: PDFDocument, entry: PdfEntryModel?, horizontal: Bool, searchModel: PdfSearchModel) {
         pdfDocument = pdfDoc
         self.entry = entry
@@ -62,8 +62,8 @@ struct PdfWrapperView: CustomViewRepresentable {
         pdfView.autoScales = false
         pdfView.autoresizesSubviews = true
         pdfView.displayDirection = horizontal ? .horizontal : .vertical
-        pdfView.minScaleFactor = 0.25
-        pdfView.maxScaleFactor = 5.0
+        pdfView.minScaleFactor = Self.minScaleFactor
+        pdfView.maxScaleFactor = Self.maxScaleFactor
         pdfView.displayMode = .singlePageContinuous
 #if os(iOS) || os(visionOS)
         pdfView.isFindInteractionEnabled = true
@@ -79,9 +79,7 @@ struct PdfWrapperView: CustomViewRepresentable {
                 pdfView.highlightedSelections = [selection]
             }
         }
-        Task { @MainActor in
-            searchModel.pdfView = pdfView
-        }
+        searchModel.pdfView = pdfView
         return pdfView
     }
     

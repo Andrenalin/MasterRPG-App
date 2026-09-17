@@ -24,8 +24,11 @@ extension LinkController: LinkControllable {
                 if shareResult.gameModus == .master {
                     await shareResult.networkActions?.shareId(gameController.share(id: itemId))
                 } else {
-                    if let result = try? await gameController.createGameData(for: itemId) {
+                    do {
+                        let result = try await gameController.createGameData(for: itemId)
                         shareResult.networkActions?.game(result, .generic, nil)
+                    } catch {
+                        Logger.linkController.error("Failed to create game data for \(itemId, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     }
                 }
             }
@@ -67,7 +70,7 @@ extension LinkController: LinkControllable {
             }
         }
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Pdf: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.info("Pdf: \(replacedItem.name) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)

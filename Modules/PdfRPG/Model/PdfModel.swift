@@ -118,16 +118,26 @@ extension PdfModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: PdfModel) -> PdfModel {
         return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
-            let mergedEntries: CRDTDataUpdate<[PdfEntryModel]>
-            if mergedCategory.wrappedValue == .folder {
-                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-                let combined = allIds
-                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-            } else {
-                mergedEntries = entries_.merged(other: other.entries_)
-            }
+            // Per-id union (not `entries_.merged`'s whole-array last-writer-wins) so a
+            // bookmark added independently on two devices before syncing isn't silently
+            // discarded; entries present on both sides get their own CRDT fields merged
+            // via `PdfEntryModel.merge`. See CODE_AUDIT_Pdf §5.2.
+            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
+            let combined = allIds
+                .map { id -> PdfEntryModel in
+                    switch (entries.first { $0.id == id }, other.entries.first { $0.id == id }) {
+                    case let (local?, remote?): return local.merge(remote)
+                    case let (local?, nil): return local
+                    case let (nil, remote?): return remote
+                    case (nil, nil): return .empty(id)
+                    }
+                }
+                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            // Merge the `update` marker CRDT too (not a fresh random UUID) so that
+            // merging two otherwise-identical models is idempotent, matching
+            // `CRDTDataUpdate.merged`'s own convention.
+            let mergedUpdate = entries_.$update.merged(other: other.entries_.$update)
+            let mergedEntries = CRDTDataUpdate(wrappedValue: combined, update: mergedUpdate)
             return PdfModel(
                 id: id,
                 name: name_.merged(other: other.name_),
@@ -145,19 +155,18 @@ extension PdfModel: nonisolated ItemDiffComparable {
 
     nonisolated public func isSame(_ other: PdfModel) -> Bool {
         return assumeMainActorIsolated {
-            name == other.name &&
+            guard entries.count == other.entries.count else { return false }
+            // Compared by id, not position — entries can legitimately end up in a
+            // different order on each side (e.g. after a merge). See CODE_AUDIT_Pdf §5.5.
+            let otherEntriesById = Dictionary(uniqueKeysWithValues: other.entries.map { ($0.id, $0) })
+            return name == other.name &&
             description == other.description &&
             tags == other.tags &&
             category == other.category &&
             fileUrl_.update == other.fileUrl_.update &&
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
-            // santity checks
-            entries.count == other.entries.count &&
-            entries.enumerated().allSatisfy { index, entry in
-                entry == other.entries[index]
-            }
-    
+            entries.allSatisfy { otherEntriesById[$0.id] == $0 }
         }
     }
     
@@ -189,7 +198,7 @@ extension PdfModel: nonisolated ItemDataAccessable {
 
     public func filter(filter: String, includeEntries: Bool) -> Bool {
         guard !filter.isEmpty else { return true }
-        guard !(name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter)) else { return true }
+        guard !(name.localizedStandardContains(filter) || description.localizedStandardContains(filter)) else { return true }
         guard specialCategory == false else { return false }
         return entries.contains {
             $0.filter(with: filter)

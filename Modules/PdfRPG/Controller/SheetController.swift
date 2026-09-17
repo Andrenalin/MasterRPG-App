@@ -3,7 +3,7 @@
 import CoreRPG
 import Foundation
 
-struct SheetController {
+struct SheetController: Sendable {
     let itemController: ItemController
 }
 
@@ -25,17 +25,7 @@ extension SheetController: SheetControllable {
 
     @MainActor private func sheetEntries(root: RootManager, itemId: UUID, level: Int, moduleDepth: Int) -> [SheetModel] {
         let item = itemController.reviewAwareItemOrEmpty(root: root, for: itemId)
-        return item.entries.map { entry in
-            let name = entry.name
-            let description = entry.content
-            let destination = ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module)
-
-            let inlineEntries: [SheetModel] = [
-                SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, type: .pdf, name: "", description: "", entries: [])
-            ]
-
-            return SheetModel(source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: itemController.config.module), destination: destination, level: level, name: name, description: description, inlineEntries: inlineEntries, entries: [])
-        }
+        return item.entries.map { sheetEntry(itemId: itemId, entry: $0, level: level) }
     }
 
     @MainActor private func sheetEntry(itemId: UUID, entry: PdfEntryModel, level: Int) -> SheetModel {

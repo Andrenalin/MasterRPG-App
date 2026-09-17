@@ -22,29 +22,27 @@ struct PdfContentView: View {
             VStack(spacing: 0) {
                 if let pdfDoc = searchModel.pdfDoc {
                     PdfWrapperView(showing: pdfDoc, entry: entry, horizontal: horizontal, searchModel: searchModel)
+                } else if searchModel.pdfUnavailable {
+                    PdfUnavailableView()
                 } else {
-                    VStack {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .scaleEffect(1.5)
-                            .tint(Color.accentColor)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    PdfLoadingView()
                 }
                 
                 if showThumbnail && horizontal {
                     PdfContentViewThumbnailsView(searchModel: searchModel, horizontal: horizontal)
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: .PDFViewSelectionChanged)) { notification in
-                let view = notification.object as? PDFView
-                if let selection = view?.currentSelection, let page = selection.pages.first {
-                    let content = String(selection.string?.prefix(300) ?? "")
-                    let pageNumber = page.label ?? "-"
-                    let bounds = selection.bounds(for: page)
-                    searchModel.selectedEntry = root.editController.createBookmark(itemId: UUID(), content: content, page: pageNumber, bounds: bounds)
-                } else {
-                    searchModel.selectedEntry = nil
+            .task {
+                for await notification in NotificationCenter.default.notifications(named: .PDFViewSelectionChanged) {
+                    let view = notification.object as? PDFView
+                    if let selection = view?.currentSelection, let page = selection.pages.first {
+                        let content = String(selection.string?.prefix(300) ?? "")
+                        let pageNumber = page.label ?? "-"
+                        let bounds = selection.bounds(for: page)
+                        searchModel.selectedEntry = root.editController.createBookmark(content: content, page: pageNumber, bounds: bounds)
+                    } else {
+                        searchModel.selectedEntry = nil
+                    }
                 }
             }
         }

@@ -9,9 +9,9 @@ import SwiftUI
 
 
 struct OpenPdfIntent: OpenIntent {
-    static let title: LocalizedStringResource = "Open Pdf"
+    static let title: LocalizedStringResource = "Open PDF"
 
-    @Parameter(title: "Pdf", requestValueDialog: "Which pdf?")
+    @Parameter(title: "PDF", requestValueDialog: "Which PDF?")
     var target: PdfEntity
 
     @Dependency var navigator: Navigator

@@ -15,7 +15,7 @@ enum DetailRoute: Equatable, Hashable, Codable {
 extension DetailRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
-        case .viewer(let id, let entryId): "viewer/\(id.uuidString)\(entryId == nil ? "" : "/\(entryId!.uuidString)")"
+        case .viewer(let id, let entryId): "viewer/\(id.uuidString)\(entryId.map { "/\($0.uuidString)" } ?? "")"
         }
     }
 

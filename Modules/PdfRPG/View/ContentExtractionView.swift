@@ -112,7 +112,7 @@ private struct ContentView: View {
     var body: some View {
         switch viewState {
         case .loading:
-            LoadingView()
+            PdfLoadingView()
         case .extracting(let document):
             PdfContentExtractionView(pdfDocument: document) { content in
                 viewState = .extracted(content)
@@ -120,39 +120,9 @@ private struct ContentView: View {
         case .extracted(let content):
             ContentBlocksView(content: content)
         case .unavailable:
-            UnavailableView()
+            PdfUnavailableView()
         }
     }
 }
 
-private struct LoadingView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.5)
-            Text("Loading PDF...", bundle: .module)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Loading PDF document", bundle: .module))
-    }
-}
-
-private struct UnavailableView: View {
-    var body: some View {
-        ContentUnavailableView {
-            Label {
-                Text("PDF Not Available", bundle: .module)
-            } icon: {
-                Image(systemName: "doc.questionmark")
-            }
-        } description: {
-            Text("The PDF file could not be loaded.", bundle: .module)
-        }
-        .accessibilityLabel(Text("PDF unavailable", bundle: .module))
-        .accessibilityHint(Text("The PDF file could not be loaded", bundle: .module))
-    }
-}
 #endif

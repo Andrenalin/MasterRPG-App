@@ -70,7 +70,7 @@ private struct SelectionBarTextContentView: View {
         }
         if let currentSelection = searchModel.selectedEntry?.content {
             Text(verbatim: currentSelection)
-                .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
+                .lineLimit(2)
                 .foregroundStyle(Color.accentColor)
         }
     }

@@ -18,7 +18,6 @@ struct ViewerRootView: View {
     @Environment(PdfRootModel.self) private var root
 
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.navigator) private var navigator
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -85,22 +84,28 @@ struct ViewerRootView: View {
             $0.navigationTitle(Text(verbatim: model.name))
                 .navigationBarTitleDisplayModeAll(.inline)
         }
-        .onChange(of: model, initial: true) {
+        // `.task(id:)` instead of `.onChange` + a manually-spawned `Task`: it cancels the
+        // in-flight PDF decode automatically if `model` changes again or the view goes
+        // away, rather than leaving an orphaned Task decoding in the background.
+        // See CODE_AUDIT_Pdf §3.4.
+        .task(id: model) {
             let id = model.id
             guard model.url != nil else {
+#if !os(tvOS)
+                searchModel.pdfDoc = nil
+                searchModel.pdfUnavailable = false
+#endif
                 searchModel.pdfId = model.id
                 return
             }
 #if !os(tvOS)
-            Task {
-                let pdfTask = Task {
-                    await root.itemController.pdfDocument(for: id)
-                }
-                let doc = await pdfTask.value
-                searchModel.pdfDoc = doc
-                withAnimation(reduceMotion ? nil : .default) {
-                    searchModel.pdfId = id
-                }
+            searchModel.pdfUnavailable = false
+            let doc = await root.itemController.pdfDocument(for: id)
+            guard !Task.isCancelled else { return }
+            searchModel.pdfDoc = doc
+            searchModel.pdfUnavailable = doc == nil
+            withAnimation(reduceMotion ? nil : .default) {
+                searchModel.pdfId = id
             }
 #endif
         }

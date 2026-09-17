@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-//import CoreRPG
 #if !os(tvOS)
 import PDFKit
 #endif
@@ -36,6 +35,9 @@ final class PdfSearchModel: Sendable {
 #if !os(tvOS)
     @ObservationIgnored var pdfView: PDFView?
     @ObservationIgnored var pdfDoc: PDFDocument?
+    /// Set when the current item's PDF failed to download/decode, so the viewer can show
+    /// `PdfUnavailableView` instead of spinning forever. See CODE_AUDIT_Pdf §5.3.
+    var pdfUnavailable = false
 #endif
     var pdfId = UUID()
     

@@ -25,7 +25,7 @@ public enum PdfShortcutCatalog {
                 "Open a PDF in \(.applicationName)",
                 "Show \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Open Pdf",
+            shortTitle: "Open PDF",
             systemImageName: "books.vertical"
         )
     }

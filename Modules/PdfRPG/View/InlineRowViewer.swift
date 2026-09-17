@@ -4,6 +4,8 @@ import CoreRPG
 import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
+    private static let cornerRadius: CGFloat = 24
+
     let source: ItemRowModel
     let destination: ItemRowModel
     /// Pre-resolved by the caller where available — see `ViewControllable`'s
@@ -22,13 +24,13 @@ struct InlineRowViewer: View, Equatable {
             HStack {
                 if source.entryId == nil {
                     ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.folderListController.listDisplayModel, entryId: source.entryId)
-                        .containerShape(.rect(cornerRadius: 24))
+                        .containerShape(.rect(cornerRadius: Self.cornerRadius))
                         .background {
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
                                 .fill(Color.accentColor.tertiary)
                         }
                         .overlay {
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
                                 .stroke(Color.accentColor.secondary, lineWidth: 2)
                         }
                         .padding(1)
@@ -61,8 +63,12 @@ struct InlineRowViewer: View, Equatable {
         scenesManager.getSceneState(for: SceneId(rawValue: root.configurable.module.viewerWindowId)) == .opened
     }
 
+    // Also compares the resolved model's content, not just routing identity — otherwise
+    // `.equatable()` (see ViewController.rowViewer) short-circuits `body` even after the
+    // referenced PDF is renamed/re-thumbnailed elsewhere, leaving this row stale
+    // indefinitely. See CODE_AUDIT_Pdf §8.1.
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source
+        lhs.source == rhs.source && lhs.model.isSame(rhs.model)
     }
     
     private func actionHandler() {

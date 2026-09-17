@@ -30,7 +30,6 @@ struct EditControllerTests {
         #expect(created.content == "Created text")
 
         let bookmark = sut.createBookmark(
-            itemId: UUID(),
             content: "Bookmark summary text",
             page: "7",
             bounds: CGRect(x: 1, y: 2, width: 3, height: 4)
@@ -39,7 +38,7 @@ struct EditControllerTests {
         #expect(bookmark.pageLabel == "7")
         #expect(bookmark.bounds.origin.x == 1)
 
-        let unnamed = sut.createBookmark(itemId: UUID(), content: "", page: "8", bounds: .zero)
+        let unnamed = sut.createBookmark(content: "", page: "8", bounds: .zero)
         #expect(!unnamed.name.isEmpty)
 
         sut.addBookmark(itemId: itemId, entry: bookmark)

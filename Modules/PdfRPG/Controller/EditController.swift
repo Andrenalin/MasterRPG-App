@@ -59,14 +59,14 @@ extension EditController {
         )
     }
     
-    func createBookmark(itemId: UUID, content: String, page: String, bounds: CGRect) -> PdfEntryModel {
+    func createBookmark(content: String, page: String, bounds: CGRect) -> PdfEntryModel {
         let name: String
         if let nameWord = content.split(separator: " ").first {
             name = String(nameWord)
         } else {
             name = String(localized: "Unnamed", bundle: .module).localizedString
         }
-        return PdfEntryModel(id: itemId, name: name, content: content, pageNumber: page, bounds: bounds, displayState: 0)
+        return PdfEntryModel(id: UUID(), name: name, content: content, pageNumber: page, bounds: bounds, displayState: 0)
     }
 }
 

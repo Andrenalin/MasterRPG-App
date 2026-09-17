@@ -12,8 +12,8 @@ import PDFKit
 struct PdfEntity: IndexedEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation {
         return TypeDisplayRepresentation(
-            name: LocalizedStringResource("Pdf"),
-            numericFormat: "\(placeholder: .int) Pdfs"
+            name: LocalizedStringResource("PDF"),
+            numericFormat: "\(placeholder: .int) PDFs"
         )
     }
 

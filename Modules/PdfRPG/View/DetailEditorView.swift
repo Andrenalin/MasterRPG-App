@@ -8,6 +8,12 @@ import SwiftUI
     DetailEditorView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]))
 }
 
+/// Exercises the "No file is set" branch. See CODE_AUDIT_Pdf §9.7.
+#Preview("No file", traits: .mockData) {
+    @Previewable @Environment(PdfRootModel.self) var root
+    DetailEditorView(root: root, model: root.itemController.itemOrEmpty(for: PdfModel.previewEmptyId))
+}
+
 struct DetailEditorView: View {
     let root: PdfRootModel
     let model: PdfModel
