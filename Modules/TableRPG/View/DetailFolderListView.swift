@@ -6,7 +6,7 @@ import SwiftUI
 
 #Preview(traits: .mockData) {
     @Previewable @Environment(TableRootModel.self) var root
-    DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]), folderListController: root.folderListController)
+    DetailFolderListView(root: root, model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId), folderListController: root.folderListController)
 }
 
 struct DetailFolderListView: View {

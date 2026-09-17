@@ -26,6 +26,10 @@ extension LinkController: LinkControllable {
             case LinkType.generate.rawValue:
                 shareResult?.generationAction(itemId)
             case LinkType.share.rawValue:
+                // Fire-and-forget is intentional here: `share(id:)` and
+                // `shareId` cannot throw, and the call site is a synchronous
+                // text-link toggle with nowhere to hold a cancellable Task
+                // handle. See CODE_AUDIT_Table §3.3.
                 Task {
                     await shareResult?.networkActions?.shareId(gameController.share(id: itemId))
                 }
@@ -62,7 +66,7 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != DisplayStateMask.totalHidden.rawValue, let replacedItem = itemController.copy(of: itemId) else { return }
 
         if let diceId = replacedItem.diceId {
             if !diceRoot.linkControllable.validateLink(itemId: diceId) {
@@ -105,23 +109,38 @@ extension LinkController {
 
 extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
+        collectLinks(of: module, from: itemId, visitedTableIds: [])
+    }
+
+    // Tables may legitimately link to other tables (a random encounter
+    // table rolling on itself is a normal loop, mirroring
+    // `TableGenerationController.maxTableRecursionCount`), so photo/dice/pdf
+    // links nested behind a chain of table links must still be followed —
+    // recursing into this same module's own LinkController, guarded by
+    // `visitedTableIds` so a table cycle can't recurse forever.
+    // See CODE_AUDIT_Table §5.4.
+    @MainActor private func collectLinks(of module: NetworkModules, from itemId: UUID, visitedTableIds: Set<UUID>) -> [UUID] {
         guard let item = itemController.itemSync(for: itemId) else { return [] }
-        var photoIds: [UUID] = []
+        let visitedTableIds = visitedTableIds.union([itemId])
+        var collectedIds: [UUID] = []
         item.entries.forEach {
             let links = $0.links(for: $0.content)
             links.forEach {
                 switch $0.module {
                 case .photo:
-                    photoIds.append($0.itemId)
+                    collectedIds.append($0.itemId)
                 case .dice:
-                    photoIds.append(contentsOf: diceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    collectedIds.append(contentsOf: diceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
                 case .pdf:
-                    photoIds.append(contentsOf: pdfRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    collectedIds.append(contentsOf: pdfRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                case .table:
+                    guard !visitedTableIds.contains($0.itemId) else { break }
+                    collectedIds.append(contentsOf: collectLinks(of: module, from: $0.itemId, visitedTableIds: visitedTableIds))
                 default:
                     break
                 }
             }
         }
-        return Array(Set(photoIds))
+        return Array(Set(collectedIds))
     }
 }

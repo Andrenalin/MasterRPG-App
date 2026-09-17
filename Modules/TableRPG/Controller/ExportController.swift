@@ -26,7 +26,7 @@ extension ExportController: ExportModelBacked {
     public func exportingAll() -> ItemModuleIds {
         var allIds = diceRoot.exportControllable.exportingAll()
         allIds.merge(other: pdfRoot.exportControllable.exportingAll())
-        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
+        allIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue }]))
 
         return allIds
     }

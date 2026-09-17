@@ -24,23 +24,17 @@ struct TableExtractionDestination: View {
                 Text("This table has no entries to analyze.", bundle: .module)
             }
         } else {
-            TextSummaryExtractionView(module: .table, entriesText: formatEntries(model)) { content, selection in
+            TextSummaryExtractionView(
+                module: .table,
+                entriesText: TextSummaryExtractionFormatter.formatEntries(
+                    title: String(localized: "Table", bundle: .module),
+                    name: model.name,
+                    entries: model.entries.map { ($0.name, $0.content) }
+                )
+            ) { content, selection in
                 root.editController.applyExtractedContent(content, to: itemId, selection: selection)
             }
         }
-    }
-
-    private func formatEntries(_ model: TableModel) -> String {
-        var lines: [String] = []
-        if !model.name.isEmpty {
-            let tableLabel = String(localized: "Table", bundle: .module)
-            lines.append("\(tableLabel): \(model.name)")
-            lines.append("")
-        }
-        for entry in model.entries {
-            lines.append(entry.content.isEmpty ? "- \(entry.name)" : "- \(entry.name): \(entry.content)")
-        }
-        return lines.joined(separator: "\n")
     }
 }
 

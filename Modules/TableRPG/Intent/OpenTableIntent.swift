@@ -30,15 +30,12 @@ extension OpenTableIntent: TargetContentProvidingIntent {}
 extension TableRootModel {
     @MainActor
     func addSiriContext(to activity: NSUserActivity, itemId: UUID) {
-#if compiler(>=6.4)
         guard #available(iOS 27, macOS 27, visionOS 27, *) else { return }
         activity.appEntityIdentifier = EntityIdentifier(for: TableEntity.self, identifier: itemId)
-#endif
     }
 
     @MainActor
     func donateSiriViewingIntent(for itemId: UUID) async {
-#if compiler(>=6.4)
         guard #available(iOS 27, macOS 27, visionOS 27, *),
               let model = itemController.itemSync(for: itemId)
         else { return }
@@ -50,7 +47,6 @@ extension TableRootModel {
         } catch {
             Logger.appIntents.debug("Failed to donate OpenTableIntent for Siri/Shortcuts: \(error.localizedDescription, privacy: .public)")
         }
-#endif
     }
 }
 

@@ -32,6 +32,36 @@ private final class TableGameAvailabilityModel {
     }
 }
 
+/// Serializes `receiveTable` per `itemId` so its multi-`await` import/merge
+/// sequence can no longer interleave with a concurrent call for the same
+/// table (state like `previousIdentities`/`persistentTables` captured early
+/// in one call could otherwise go stale before it's used, if the MainActor
+/// ran a second `receiveTable` for the same item in between). Different
+/// items still run fully concurrently. See CODE_AUDIT_Table §3.2.
+@MainActor
+private final class TableReceiveSerializer {
+    private var tails: [UUID: (token: UUID, task: Task<Void, Never>)] = [:]
+
+    func run<T: Sendable>(
+        itemId: UUID,
+        _ operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        let token = UUID()
+        let previous = tails[itemId]?.task
+        let gate = Task<Void, Never> {
+            _ = await previous?.value
+        }
+        tails[itemId] = (token, gate)
+        await gate.value
+        defer {
+            if tails[itemId]?.token == token {
+                tails[itemId] = nil
+            }
+        }
+        return try await operation()
+    }
+}
+
 struct GameController: Sendable {
     @MainActor init(
         diceRoot: DiceRootModel,
@@ -46,6 +76,7 @@ struct GameController: Sendable {
 
         self.gameModel = ItemGameModel(itemDataModel: itemController.itemDataModel)
         self.tableGameAvailabilityModel = TableGameAvailabilityModel()
+        self.receiveSerializer = TableReceiveSerializer()
     }
 
     let diceRoot: DiceRootModel
@@ -55,6 +86,7 @@ struct GameController: Sendable {
 
     let gameModel: ItemGameModel
     private let tableGameAvailabilityModel: TableGameAvailabilityModel
+    private let receiveSerializer: TableReceiveSerializer
 
 }
 
@@ -98,24 +130,25 @@ extension GameController: TableGameStorable {
         }
     }
     
+    // Not currently called from production code (only from
+    // GameControllerTests) — `TableGenerationController.matchingEntry`
+    // handles live rolls instead. Kept in sync with it via the shared
+    // `TableRollRange` parser so a future caller doesn't inherit a stale
+    // implementation. See CODE_AUDIT_Table §5.1/§5.2/§5.8.
     @MainActor
     func entry(for id: UUID, with result: Int) -> UUID? {
         let item = gameItem(for: id)
         switch item.tableType {
         case .dice:
-            if let _ = item.diceId {
-                let entry = item.entries.first {
-                    let numbers = $0.name.split(separator: "-").compactMap { Int($0) }
-                    if let last = numbers.last {
-                        return result <= last
-                    }
-                    return false
-                }
-                if let uuid = entry?.id {
-                    return uuid
-                }
+            guard item.diceId != nil else { return nil }
+            if let ranged = item.entries.first(where: {
+                TableRollRange.selectorRange(for: $0.name)?.contains(result) == true
+            }) {
+                return ranged.id
             }
-            return nil
+            let index = result - 1
+            guard item.entries.indices.contains(index) else { return nil }
+            return item.entries[index].id
         case .list, .all:
             let index = result - 1
             if index >= 0 && index < item.entries.count {
@@ -132,6 +165,12 @@ extension GameController: TableGameStorable {
     }
 
     public func receiveTable(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool {
+        try await receiveSerializer.run(itemId: itemId) {
+            try await self.receiveTableSerialized(itemId: itemId, data: data, makeCurrent: makeCurrent)
+        }
+    }
+
+    private func receiveTableSerialized(itemId: UUID, data: NetworkCodableDataType, makeCurrent: Bool) async throws -> Bool {
         guard data.type == .table, data.id == itemId else {
             throw ItemGameStorableError.wrongData
         }

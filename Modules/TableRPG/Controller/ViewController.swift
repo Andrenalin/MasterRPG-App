@@ -35,7 +35,7 @@ extension ViewController {
 // MARK: - List Views
 
 public extension ViewController {
-    @MainActor func gameListView(root: TableRootModel) -> some View {
+    @MainActor func gameListView(root _: TableRootModel) -> some View {
         LinkRootView(type: .inspector, itemSelectionModel: ItemSelectionModel())
     }
 

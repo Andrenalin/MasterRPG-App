@@ -102,12 +102,17 @@ struct TableEntityQuery: ItemEntityQuery {
     func model(root: TableRootModel, id: UUID) -> TableModel? { root.itemController.itemSync(for: id) }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension TableEntity: SyncableEntity, OwnershipProvidingEntity {
     var ownership: EntityOwnership { .unknown }
 }
 
+// @preconcurrency is required, not optional: CoreSpotlight's
+// CSSearchableIndexDescription is not Sendable, and this conformance's
+// requirements cross into this @MainActor-isolated type — confirmed by
+// removing it, which fails with "Non-Sendable parameter type
+// 'CSSearchableIndexDescription' cannot be sent... into main actor-isolated
+// implementation". See CODE_AUDIT_Table §4.1.
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension TableEntityQuery: @preconcurrency IndexedEntityQuery {
     func reindexEntities(
@@ -123,7 +128,6 @@ extension TableEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
 
 extension TableEntity {
     var sharePreview: SharePreview<Never, Image> {

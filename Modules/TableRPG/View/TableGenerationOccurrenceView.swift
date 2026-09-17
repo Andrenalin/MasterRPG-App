@@ -62,7 +62,7 @@ struct TableGenerationOccurrenceView: View {
         .padding()
         .background(
             theme.tint(for: .table).opacity(0.08),
-            in: .rect(cornerRadius: 20, style: .continuous)
+            in: .rect(cornerRadius: TableGenerationLayout.groupRadius, style: .continuous)
         )
     }
 

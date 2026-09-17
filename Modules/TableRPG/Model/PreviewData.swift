@@ -11,30 +11,13 @@ public extension TableRootModel {
     @MainActor
     static var preview: TableRootModel { previewFixture() }
 
+    /// Builds a `TableRootModel` wired to a full, real `RootManager` (not
+    /// just the fake preview one construction needs), so link resolution
+    /// across modules works in previews/tests. Shared by `previewFixture`
+    /// and `testRoot`, which only differ in whether they seed sample
+    /// `models` afterward. See CODE_AUDIT_Table §9.8.
     @MainActor
-    internal static func previewFixture(
-        models: [TableModel] = TableModel.previewFixtures
-    ) -> TableRootModel {
-        let root = TableRootModel(tagController: .preview, diceRoot: .preview, pdfRoot: .preview)
-        let rootManager = RootManager.preview(fake: ItemRootController.fake)
-        root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
-        let rootManagerReal = RootManager(adventureRoot: root, audioRoot: root, characterRoot: root, diceRoot: root.diceRoot, generatorRoot: root, mapRoot: root, pdfRoot: root.pdfRoot, photoRoot: root, spaceRoot: root, tableRoot: root, weatherRoot: root)
-        root.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
-        for model in models {
-            root.itemController.replace(model: model, isInsert: true)
-        }
-        root.editController.setCurrentItem(to: .preview)
-        return root
-    }
-    
-    @MainActor
-    static var previewWithData: TableRootModel { previewFixture() }
-    
-#if DEBUG
-    @MainActor
-    static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
+    private static func makeWiredRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
         let root = TableRootModel(tagController: .preview, diceRoot: diceRoot, pdfRoot: pdfRoot)
         let rootManager = RootManager.preview(fake: ItemRootController.fake)
         root.setUp(context: nil, rootManager: rootManager, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManager))
@@ -43,6 +26,27 @@ public extension TableRootModel {
         root.diceRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         root.pdfRoot.setUp(context: nil, rootManager: rootManagerReal, adventureRootControllable: root, linkRegisterController: LinkRegisterController(root: rootManagerReal))
         return root
+    }
+
+    @MainActor
+    internal static func previewFixture(
+        models: [TableModel] = TableModel.previewFixtures
+    ) -> TableRootModel {
+        let root = makeWiredRoot(diceRoot: .preview, pdfRoot: .preview)
+        for model in models {
+            root.itemController.replace(model: model, isInsert: true)
+        }
+        root.editController.setCurrentItem(to: .preview)
+        return root
+    }
+
+    @MainActor
+    static var previewWithData: TableRootModel { previewFixture() }
+
+#if DEBUG
+    @MainActor
+    static func testRoot(diceRoot: DiceRootModel, pdfRoot: PdfRootModel) -> TableRootModel {
+        makeWiredRoot(diceRoot: diceRoot, pdfRoot: pdfRoot)
     }
 #endif
 }
@@ -239,6 +243,13 @@ extension TableModel {
                 id: UUID.fixture("76FE2A6B-DE29-484E-BE67-F5375B8ABBC1"),
                 name: "18",
                 content: "[d20](RPG://DICE/46339863-D29C-4B28-98BC-C6A20D5BCE0E) KM, [d20](RPG://DICE/46339863-D29C-4B28-98BC-C6A20D5BCE0E) SM, [d20](RPG://DICE/46339863-D29C-4B28-98BC-C6A20D5BCE0E) GM",
+                displayState: 0,
+                diceResult: nil
+            ),
+            TableEntryModel(
+                id: UUID.fixture("C3C6E0A1-6CE9-4B6A-9B39-FB6E7A0C6D5E"),
+                name: "19",
+                content: "[d20](RPG://DICE/46339863-D29C-4B28-98BC-C6A20D5BCE0E) Edelsteine",
                 displayState: 0,
                 diceResult: nil
             ),

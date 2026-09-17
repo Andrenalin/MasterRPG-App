@@ -139,33 +139,4 @@ struct DeleteTableIntent: DeleteIntent {
 extension SearchTablesIntent: TargetContentProvidingIntent {}
 #endif
 
-private func intentPlainText(from text: AttributedString?) -> String {
-    text.map { String($0.characters) } ?? ""
-}
-
-private func indexIntentEntities<Entity: IndexedEntity>(_ entities: [Entity]) async throws {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-    try await CSSearchableIndex.default().indexAppEntities(entities)
-}
-
-private func deleteIntentEntities<Entity: IndexedEntity>(
-    ids: [UUID],
-    ofType entityType: Entity.Type
-) async throws where Entity.ID == UUID {
-    guard CSSearchableIndex.isIndexingAvailable() else { return }
-
-#if compiler(>=6.4)
-    if #available(iOS 27, macOS 27, visionOS 27, *) {
-        try await CSSearchableIndex.default().deleteAppEntities(
-            identifiedBy: ids,
-            ofType: entityType
-        )
-    } else {
-        try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-    }
-#else
-    try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-#endif
-}
-
 #endif

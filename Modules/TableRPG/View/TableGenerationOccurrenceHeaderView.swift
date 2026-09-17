@@ -162,9 +162,7 @@ struct TableGenerationOccurrenceHeaderView: View {
                 )
                 networkActions?.game(data, .show, playerId)
             } catch {
-                occurrence.isAwaitingPlayerRoll = false
-                occurrence.awaitingPlayerId = nil
-                occurrence.awaitingPlayerName = nil
+                controller.cancelPendingShare(in: occurrence)
                 model.errorMessage = String(
                     localized: "Could not share the dice with \(playerName).",
                     bundle: .module

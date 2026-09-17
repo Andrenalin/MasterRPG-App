@@ -44,11 +44,11 @@ private struct TableGenerationCompactOutcomeView: View {
 
             Spacer()
         }
-        .frame(minHeight: 44)
+        .frame(minHeight: TableGenerationLayout.minTouchTargetHeight)
         .padding(.horizontal, 12)
         .background(
             theme.tint(for: .table).opacity(0.18),
-            in: .rect(cornerRadius: 16, style: .continuous)
+            in: .rect(cornerRadius: TableGenerationLayout.cardRadius, style: .continuous)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
@@ -78,7 +78,7 @@ private struct TableGenerationExpandedOutcomeView: View {
         .padding(12)
         .background(
             theme.tint(for: .table).opacity(0.18),
-            in: .rect(cornerRadius: 16, style: .continuous)
+            in: .rect(cornerRadius: TableGenerationLayout.cardRadius, style: .continuous)
         )
     }
 }

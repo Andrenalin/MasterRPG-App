@@ -4,14 +4,13 @@ import CoreRPG
 #if !os(tvOS)
 import GeneratorRPG
 #endif
+import SwiftUI
 
 #if !os(tvOS)
 #Preview(traits: .mockData) {
     TableExtractToolBarButton(model: .preview)
 }
 #endif
-
-import SwiftUI
 
 #if !os(tvOS)
 struct TableExtractToolBarButton: View {

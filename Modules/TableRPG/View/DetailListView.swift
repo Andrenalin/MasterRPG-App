@@ -10,7 +10,7 @@ import SwiftUI
     @Previewable @Environment(TableRootModel.self) var root
     DetailListView(
         root: root,
-        model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items[0]),
+        model: root.itemController.itemOrEmpty(for: root.itemController.itemDataModel.items.first ?? TableModel.previewId),
         folderListController: root.folderListController
     )
 }
@@ -26,7 +26,7 @@ struct DetailListView: View {
         let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
             .toolbar {
-                toolbarContent
+                DetailListToolbarContent(root: root, model: model)
             }
             .themedSurface()
             .moduleTint(root.configurable.module)
@@ -51,7 +51,16 @@ struct DetailListView: View {
 #endif
     }
 
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+}
+
+/// Extracted from `DetailListView` so the toolbar content gets its own
+/// identity/diffing instead of living as a computed property. See
+/// CODE_AUDIT_Table §8.1.
+struct DetailListToolbarContent: ToolbarContent {
+    let root: TableRootModel
+    let model: TableModel
+
+    @ToolbarContentBuilder var body: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             if !model.specialCategory && !root.openFileWindowModel.showItem {
 #if !os(tvOS)

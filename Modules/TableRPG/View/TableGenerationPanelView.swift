@@ -33,7 +33,7 @@ struct TableGenerationPanelView: View {
             Divider()
 
             if model.isEditingOutcomeSheet, let session = model.outcomeEditingSession {
-                outcomeSheetEditor(session: session)
+                TableGenerationOutcomeSheetEditorView(session: session)
             } else {
                 TableGenerationOccurrenceListView(model: model, controller: controller)
             }
@@ -47,20 +47,28 @@ struct TableGenerationPanelView: View {
                 sendAction: sendAction
             )
         }
-        .frame(maxWidth: 760, maxHeight: 820)
+        .frame(maxWidth: TableGenerationLayout.panelWidth, maxHeight: TableGenerationLayout.panelHeight)
         .themedSurface()
         // `.shadow()` must precede `.clipShape()` — applied after, the shadow gets clipped away
         // at the same rect boundary it's meant to extend past and never renders. See CODE_AUDIT §8.1.
         .shadow(radius: 24)
-        .clipShape(.rect(cornerRadius: 28, style: .continuous))
+        .clipShape(.rect(cornerRadius: TableGenerationLayout.panelRadius, style: .continuous))
 #if os(visionOS)
-        .glassBackgroundEffect(in: .rect(cornerRadius: 28, style: .continuous))
+        .glassBackgroundEffect(in: .rect(cornerRadius: TableGenerationLayout.panelRadius, style: .continuous))
 #else
-        .glassEffectAll(.regular, in: .rect(cornerRadius: 28, style: .continuous))
+        .glassEffectAll(.regular, in: .rect(cornerRadius: TableGenerationLayout.panelRadius, style: .continuous))
 #endif
     }
 
-    private func outcomeSheetEditor(session: SimpleSheetEditingSession) -> some View {
+}
+
+/// Extracted from `TableGenerationPanelView` so this fragment gets its own
+/// `View` identity instead of living as a body-returning private function.
+/// See CODE_AUDIT_Table §8.2.
+private struct TableGenerationOutcomeSheetEditorView: View {
+    let session: SimpleSheetEditingSession
+
+    var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 4) {
                 SheetRootEditorView(

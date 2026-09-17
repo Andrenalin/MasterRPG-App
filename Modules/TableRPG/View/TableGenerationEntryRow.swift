@@ -113,7 +113,7 @@ struct TableGenerationEntryRow: View {
         .padding()
         .background(
             theme.tint(for: .table).opacity(isSelected ? 0.16 : 0.05),
-            in: .rect(cornerRadius: 16, style: .continuous)
+            in: .rect(cornerRadius: TableGenerationLayout.cardRadius, style: .continuous)
         )
         .onChange(of: entry.content) { _, newContent in
             contentModel.reset(text: newContent)

@@ -96,25 +96,32 @@ extension SheetController: SheetControllable {
             return
         }
         
-        let entryIds = model.entries.map { $0.id }
-        
+        // Set/dictionary lookups instead of repeated O(n) .contains/.first(where:)
+        // scans — this runs on every sheet refresh. See CODE_AUDIT_Table §7.2.
+        let entryIds = Set(model.entries.map { $0.id })
+
         // Remove deleted entries
         let removedCount = sheetModel.entries.filter { entry in
             guard let entryId = entry.source.entryId else { return false }
             return !entryIds.contains(entryId)
         }.count
-        
+
         sheetModel.entries.removeAll { entry in
             guard let entryId = entry.source.entryId else { return false }
             return !entryIds.contains(entryId)
         }
-        
+
         var updatedEntries: [SheetModel] = []
         var updatedCount = 0
         var createdCount = 0
-        
+
+        let existingSheetModelsByEntryId = Dictionary(
+            sheetModel.entries.compactMap { model in model.source.entryId.map { ($0, model) } },
+            uniquingKeysWith: { first, _ in first }
+        )
+
         for entry in model.entries {
-            if let existingSheetModel = sheetModel.entries.first(where: { $0.source.entryId == entry.id }) {
+            if let existingSheetModel = existingSheetModelsByEntryId[entry.id] {
                 unequalSet(lhs: &existingSheetModel.name, rhs: entry.name) { changed in
                     existingSheetModel.hasChanged = changed
                     if changed { updatedCount += 1 }
