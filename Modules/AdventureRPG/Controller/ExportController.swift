@@ -39,18 +39,14 @@ extension ExportController: ExportControllable {
     var hubControllable: any RootExportControllable { root }
     var itemControllable: any ItemControllable { itemController }
     
+    // See CODE_AUDIT §9.5 — loops over the shared sibling list instead of a
+    // hand-listed chain of 10 `.merge(other:)` calls (merge order doesn't matter here,
+    // since every sibling contributes disjoint module keys).
     @MainActor public func exportingAll() -> ItemModuleIds {
-        var itemIds = resolvedRootManager.audioRoot.exportControllable.exportingAll()
-        itemIds.merge(other: resolvedRootManager.diceRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.mapRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.pdfRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.photoRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.ruleRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.spaceRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.tableRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.characterRoot.exportControllable.exportingAll())
-        itemIds.merge(other: resolvedRootManager.weatherRoot.exportControllable.exportingAll())
-        itemIds.merge(other: ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }]))
+        var itemIds = ItemModuleIds(dictionary: [itemController.config.module: itemController.itemDataModel.items.filter { itemController.itemSync(for: $0)?.displayState != 2 }])
+        for sibling in root.siblingModuleRoots {
+            itemIds.merge(other: sibling.exportControllable.exportingAll())
+        }
         return itemIds
     }
     
@@ -127,47 +123,43 @@ extension ExportController: ExportControllable {
                         weatherIds.insert($0.itemId)
                     }
                 default:
-                    Logger.exportController.error("Table \(item.name, privacy: .private) export is not handling link \(String(describing: $0), privacy: .private)")
+                    Logger.exportController.error("Adventure \(item.name, privacy: .private) export is not handling link \(String(describing: $0), privacy: .private)")
                 }
             }
             return childIds
         }
 
         var allIds = finalizeExportResults(results, into: itemIds)
-        let newAudioIds = resolvedRootManager.audioRoot.exportControllable.exporting(ids: audioIds)
-        allIds.merge(other: newAudioIds)
-        let newDiceIds = resolvedRootManager.diceRoot.exportControllable.exporting(ids: diceIds)
-        allIds.merge(other: newDiceIds)
-        let newMapIds = resolvedRootManager.mapRoot.exportControllable.exporting(ids: mapIds)
-        allIds.merge(other: newMapIds)
-        let newPdfIds = resolvedRootManager.pdfRoot.exportControllable.exporting(ids: pdfIds)
-        allIds.merge(other: newPdfIds)
-        let newPhotoIds = resolvedRootManager.photoRoot.exportControllable.exporting(ids: photoIds)
-        allIds.merge(other: newPhotoIds)
-        let newRuleIds = resolvedRootManager.ruleRoot.exportControllable.exporting(ids: ruleIds)
-        allIds.merge(other: newRuleIds)
-        let newSpaceIds = resolvedRootManager.spaceRoot.exportControllable.exporting(ids: spaceIds)
-        allIds.merge(other: newSpaceIds)
-        let newTableIds = resolvedRootManager.tableRoot.exportControllable.exporting(ids: tableIds)
-        allIds.merge(other: newTableIds)
-        let newValueIds = resolvedRootManager.characterRoot.exportControllable.exporting(ids: valueIds)
-        allIds.merge(other: newValueIds)
-        let newWeatherIds = resolvedRootManager.weatherRoot.exportControllable.exporting(ids: weatherIds)
-        allIds.merge(other: newWeatherIds)
+        // See CODE_AUDIT §9.5 — collapses 9 hand-copied `let newXIds = ...; allIds.merge(other: newXIds)`
+        // pairs into a loop (merge order doesn't matter — each contributes disjoint module keys).
+        let idsByModuleRoot: [(any ExportControllable, Set<UUID>)] = [
+            (resolvedRootManager.audioRoot.exportControllable, audioIds),
+            (resolvedRootManager.diceRoot.exportControllable, diceIds),
+            (resolvedRootManager.mapRoot.exportControllable, mapIds),
+            (resolvedRootManager.pdfRoot.exportControllable, pdfIds),
+            (resolvedRootManager.photoRoot.exportControllable, photoIds),
+            (resolvedRootManager.ruleRoot.exportControllable, ruleIds),
+            (resolvedRootManager.spaceRoot.exportControllable, spaceIds),
+            (resolvedRootManager.tableRoot.exportControllable, tableIds),
+            (resolvedRootManager.characterRoot.exportControllable, valueIds),
+            (resolvedRootManager.weatherRoot.exportControllable, weatherIds)
+        ]
+        for (exportControllable, ids) in idsByModuleRoot {
+            allIds.merge(other: exportControllable.exporting(ids: ids))
+        }
         return allIds
     }
     
+    // Was a fragile chain of hand-numbered `ids1...ids9` variables, one per sibling root in
+    // a fixed order — adding/removing a module meant renumbering every subsequent variable.
+    // Rule is deliberately excluded here (exported last via `finalExport`), matching
+    // `siblingModuleRootsExcludingRule`'s doc. See CODE_AUDIT §9.5.
     public func additionalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {
-        let ids1 = try await resolvedRootManager.audioRoot.exportControllable.export(itemIds: itemIds, into: outputStream, exportModel: exportModel)
-        let ids2 = try await resolvedRootManager.diceRoot.exportControllable.export(itemIds: ids1, into: outputStream, exportModel: exportModel)
-        let ids3 = try await resolvedRootManager.mapRoot.exportControllable.export(itemIds: ids2, into: outputStream, exportModel: exportModel)
-        let ids4 = try await resolvedRootManager.pdfRoot.exportControllable.export(itemIds: ids3, into: outputStream, exportModel: exportModel)
-        let ids5 = try await resolvedRootManager.photoRoot.exportControllable.export(itemIds: ids4, into: outputStream, exportModel: exportModel)
-        let ids6 = try await resolvedRootManager.spaceRoot.exportControllable.export(itemIds: ids5, into: outputStream, exportModel: exportModel)
-        let ids7 = try await resolvedRootManager.tableRoot.exportControllable.export(itemIds: ids6, into: outputStream, exportModel: exportModel)
-        let ids8 = try await resolvedRootManager.characterRoot.exportControllable.export(itemIds: ids7, into: outputStream, exportModel: exportModel)
-        let ids9 = try await resolvedRootManager.weatherRoot.exportControllable.export(itemIds: ids8, into: outputStream, exportModel: exportModel)
-        return ids9
+        var currentIds = itemIds
+        for sibling in root.siblingModuleRootsExcludingRule {
+            currentIds = try await sibling.exportControllable.export(itemIds: currentIds, into: outputStream, exportModel: exportModel)
+        }
+        return currentIds
     }
 
     public func finalExport(itemIds: ItemModuleIds, stream outputStream: OutputStream, exportModel: ItemDataExportModel) async throws -> ItemModuleIds {

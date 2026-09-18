@@ -54,6 +54,8 @@ struct MockRootViewModifier: ViewModifier {
             .environment(root.tableRoot)
             .environment(root.weatherRoot)
 #if os(macOS)
+            // A representative Mac window size for previews — not tied to any specific
+            // app default, just large enough to show the split view meaningfully.
             .frame(width: 800, height: 600)
 #endif
             .moduleTint(root.configurable.module)

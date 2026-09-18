@@ -4,7 +4,6 @@
 
 import CoreRPG
 import AppIntents
-import CoreSpotlight
 
 public struct CreateAdventureIntent: AppIntent {
     public static let title: LocalizedStringResource = "Create Adventure"
@@ -30,15 +29,15 @@ public struct CreateAdventureIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ReturnsValue<AdventureEntity> & ProvidesDialog {
-        let storyText = story.map { String($0.characters) } ?? ""
+        // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
+        // guards `CSSearchableIndex.isIndexingAvailable()` internally.
+        let storyText = intentPlainText(from: story)
         let model = AdventureModel(id: UUID(), name: name, description: storyText)
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
 
         let entity = AdventureEntity(root: root, model: model)
-        if CSSearchableIndex.isIndexingAvailable() {
-            try await CSSearchableIndex.default().indexAppEntities([entity])
-        }
+        try await indexIntentEntities([entity])
 
         if openWhenCreated {
             await navigator.perform(route: KnownRoutes.adventures(model.id, nil))

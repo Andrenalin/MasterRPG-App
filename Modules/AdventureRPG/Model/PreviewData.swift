@@ -162,31 +162,9 @@ extension AdventureModel {
     static let entryUuid3 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x15))
     static let entryUuid4 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x16))
     static let entryUuid5 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x17))
-    static let testViewModel = AdventureModel(
-        id: previewId,
-        name: "Das Geheimnis der Goblinburg",
-        description: "DS, F2G04, Stufen 1-4, Das Geheimnis der Goblinburg von Sphärenwanderer\n\nVöllig überraschend kam eine Gruppe von Goblins, die von einigen Hobgoblins angeführt werden, aus dem Nichts und besetzte die kleine Festung des örtlichen Dorfes. Von dem Herrscher fehlt seitdem jegliche Spur. Nun werden Helden gesucht, die die Eindringlinge vertreiben.\n\nEP: Pro Raum 1EP; (besiegte Gegner EP/ SC) EP; Geheimnis gelüftet: 20 EP, Für das Abenteuer 25 EP",
-        tags: ["DS", "1-4", "Dungeon", "D2G", "Fan2Go"],
-        photoId: UUID(uuid: (0xF5, 0xAC, 0x90, 0xDF, 0x36, 0xF2, 0x41, 0x51, 0xB2, 0x83, 0xF0, 0xCF, 0x9D, 0x0B, 0xAC, 0x35)),
-        entries: [
-            AdventureEntryModel(id: entryUuid, name: "Ergeschoss", content: "Erster Raum")
-        ]
-    )
-    
+
     static let uuid2 = UUID(uuid: (0x8C, 0x94, 0x28, 0x8B, 0x4C, 0xDB, 0x41, 0x09, 0xB0, 0xAD, 0x75, 0xB1, 0x25, 0x30, 0xED, 0x84))
-    static let testViewModel2 = AdventureModel(
-        id: uuid2,
-        name: "Asche der Drachen",
-        description: "DS, D2G16, Stufen 5-8, Die Asche der Drachen, C. Kennig\n\nDer zasarische Nekromant Muhar Al’Azzrak folgt einer alten Spur und hat sich Zugang zur Gruft des Freiritters Sandor verschafft, die sich auf dem Friedhof von Crimlak befindet. Dabei entdeckte ihn die Helianovizin Kalinda, die der Zasare aber überwältigen konnte.\n\nDie Charaktere befinden sich nach Sonnenuntergang in Crimlak, vorzugsweise in einem der drei Gasthäuser.\nBruder Irdin, ein greiser Mönch aus Kloster Sonntau, betritt keuchend und mit gehetztem Blick das Gasthaus, blickt sich kurz um und kommt schließlich entschlossenen Schrittes auf die Charaktere zu:\n“Verzeiht, dass ich Euch störe, doch Kloster Sonntau braucht Euren Rat. Kalinda, eine junge Novizin unseres kleinen Ordens, war heute Nachmittag zum Friedhof gegangen und kehrte nicht wieder.”\n\n“Als der Sonnenuntergang nahte, machte ich mich auf, nach der Kleinen zu suchen. Ich kam zum Friedhof und ging den Hauptweg entlang, als ich auf einmal eine offene Gruft vor mir entdeckte! Ich bin sofort hierher gerannt, so schnell mich meine alten Füße tragen konnten.”\n\n“Ich fürchte, der Geist von Freiritter Sandor hat sich erhoben, seine Gruft geöffnet und Kalinda in sein kaltes Grab gezerrt! Jemand muss nachsehen - bitte, rettet Kalinda aus den Fängen des Geisterritters, bevor es zu spät ist!”\nAuch wenn Irdin mit seiner Vermutung vom auferstandenen Freitritter Sandor völlig falsch liegt, sollten die Charaktere seiner Bitte nachkommen und sich umgehend auf den Weg machen. Irdin kann den genauen Weg zur Gruft beschreiben, wird aber in der Nacht selbst den Friedhof nicht mehr betreten, sondern im Kloster auf die Charaktere und Kalinda warten.\nTraut man sich erst bei Tagesanbruch, hat Muhar inzwischen alle seine Skelette bei Raum 9 verloren und lauert nun versteckt auf dem Friedhof, in der Hoffnung, dass andere in die Gruft gehen und für ihn die Drachenmaulfalle unschädlich machen.",
-        tags: ["DS", "5-8", "Dungeon", "D2G", "Original"],
-        photoId: UUID(uuid: (0x22, 0x01, 0xFB, 0xB7, 0x04, 0x03, 0x4A, 0x18, 0xA3, 0x61, 0xCA, 0xD5, 0xA7, 0x6A, 0x67, 0x7D)),
-        entries: [
-            AdventureEntryModel(id: entryUuid, name: "Ergeschoss", content: "Erster Raum")
-        ]
-    )
-    
     static let uuid3 = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x13))
-    static let testViewModel3 = AdventureModel(id: uuid3, name: "New Image", description: "3rd A new Dungeon")
 
     static var previewFixtures: [AdventureModel] {
         [

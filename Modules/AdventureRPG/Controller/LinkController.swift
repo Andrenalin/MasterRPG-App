@@ -34,67 +34,28 @@ struct LinkController: Sendable {
 }
 
 extension LinkController: LinkControllable {
+    // Dispatches by looking up the target module's root via `RootManager.rootModel(for:)`
+    // instead of a hand-listed 9-case switch — matches the pattern `SheetController`
+    // already uses in this module. See CODE_AUDIT §9.5.
     @MainActor public func handleTextLink(url: URL, in text: String, shareResult: ShareValueResult?, toggler: ((UUID, NetworkModules) async -> Void)?, editAction: ((ItemRowModel) -> Bool)?) -> String {
         let module = url.moduleIdentifier
-        switch module {
-        case .audio:
-            return resolvedRootManager.audioRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .dice:
-            return resolvedRootManager.diceRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .map:
-            return resolvedRootManager.mapRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .pdf:
-            return resolvedRootManager.pdfRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .photo:
-            return resolvedRootManager.photoRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .rule:
-            return resolvedRootManager.ruleRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .space:
-            return resolvedRootManager.spaceRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .table:
-            return resolvedRootManager.tableRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .value:
-            return resolvedRootManager.characterRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .weather:
-            return resolvedRootManager.weatherRoot.linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-        case .adventure:
+        if module == .adventure {
             guard let itemId = url.itemId else { return text }
             guard let brokenLink = brokenTextLinkToggle(url: url, itemId: itemId, entryId: nil, in: text) else {
-                let linkText = toggleTextLink(linkNumber: url.linkNumber, itemId: itemId, entryId: url.childId, command: url.commandKey, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
-                return linkText
+                return toggleTextLink(linkNumber: url.linkNumber, itemId: itemId, entryId: url.childId, command: url.commandKey, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
             }
             return brokenLink
-        default:
-            return text
         }
+        guard let linkControllable = resolvedRootManager.rootModel(for: module)?.linkControllable else { return text }
+        return linkControllable.handleTextLink(url: url, in: text, shareResult: shareResult, toggler: toggler, editAction: editAction)
     }
 
     @MainActor
     public func toggleLink(module: NetworkModules, linkNumber: Int, itemId: UUID, entryId: UUID?, command: String?) -> String {
-        switch module {
-        case .audio:
-            return resolvedRootManager.audioRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .dice:
-            return resolvedRootManager.diceRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .map:
-            return resolvedRootManager.mapRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .pdf:
-            return resolvedRootManager.pdfRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .photo:
-            return resolvedRootManager.photoRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .rule:
-            return resolvedRootManager.ruleRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .space:
-            return resolvedRootManager.spaceRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .table:
-            return resolvedRootManager.tableRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .value:
-            return resolvedRootManager.characterRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        case .weather:
-            return resolvedRootManager.weatherRoot.linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
-        default:
+        guard module != .adventure, let linkControllable = resolvedRootManager.rootModel(for: module)?.linkControllable else {
             return toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
         }
+        return linkControllable.toggleLink(linkNumber: linkNumber, itemId: itemId, entryId: entryId, command: command)
     }
 
     @MainActor
@@ -147,14 +108,14 @@ extension LinkController: LinkControllable {
 
         if let photoId = replacedItem.photoId {
             if !resolvedRootManager.photoRoot.linkControllable.validateLink(itemId: photoId) {
-                Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+                Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
         }
 
         if let diceId = replacedItem.diceId {
             if !resolvedRootManager.diceRoot.linkControllable.validateLink(itemId: diceId) {
-                Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
+                Logger.linkController.warning("Adventure: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                 replacedItem.diceId = nil
             }
         }
@@ -170,7 +131,7 @@ extension LinkController: LinkControllable {
             }
         }
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Adventure: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.info("Adventure: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)
@@ -179,9 +140,26 @@ extension LinkController: LinkControllable {
 
 extension LinkController {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID] {
-        guard let item = itemController.itemSync(for: itemId) else { return [] }
+        collectLinks(of: module, from: itemId, visited: [])
+    }
+
+    /// `visited` guards against adventure-to-adventure link cycles (two adventures
+    /// linking to each other at the item level recurse through this exact function via
+    /// the `.adventure` case below), which previously crashed via stack overflow with no
+    /// base case. Threaded as a value (not `inout`) so it only ever grows within a single
+    /// traversal and never leaks across sibling calls. See CODE_AUDIT §5.1.
+    ///
+    /// Also gates photo-id collection on `module == .photo` — the function is a public
+    /// `LinkControllable` requirement any module can call with any `module` value, and
+    /// previously always collected photo links regardless of what was actually asked for.
+    /// See CODE_AUDIT §5.2.
+    @MainActor private func collectLinks(of module: NetworkModules, from itemId: UUID, visited: Set<UUID>) -> [UUID] {
+        guard !visited.contains(itemId), let item = itemController.itemSync(for: itemId) else { return [] }
+        var visited = visited
+        visited.insert(itemId)
+
         var linkIds: [UUID] = []
-        if let id = item.photoId {
+        if module == .photo, let id = item.photoId {
             linkIds.append(id)
         }
         item.entries.forEach {
@@ -189,31 +167,19 @@ extension LinkController {
             links.forEach {
                 switch $0.module {
                 case .photo:
-                    linkIds.append($0.itemId)
-                case .value:
-                    linkIds.append(contentsOf: resolvedRootManager.characterRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .map:
-                    linkIds.append(contentsOf: resolvedRootManager.mapRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .weather:
-                    linkIds.append(contentsOf: resolvedRootManager.weatherRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .audio:
-                    linkIds.append(contentsOf: resolvedRootManager.audioRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .dice:
-                    linkIds.append(contentsOf: resolvedRootManager.diceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .pdf:
-                    linkIds.append(contentsOf: resolvedRootManager.pdfRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .rule:
-                    linkIds.append(contentsOf: resolvedRootManager.ruleRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .space:
-                    linkIds.append(contentsOf: resolvedRootManager.spaceRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
-                case .table:
-                    linkIds.append(contentsOf: resolvedRootManager.tableRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                    if module == .photo {
+                        linkIds.append($0.itemId)
+                    }
                 case .adventure:
+                    // Recurse in-process (not through `linkControllable`) so the
+                    // visited-set guard above actually catches the cycle.
                     if $0.entryId == nil {
-                        linkIds.append(contentsOf: resolvedRootManager.adventureRoot.linkControllable.collectLinks(of: module, from: $0.itemId))
+                        linkIds.append(contentsOf: collectLinks(of: module, from: $0.itemId, visited: visited))
                     }
                 default:
-                    break
+                    if let linkControllable = resolvedRootManager.rootModel(for: $0.module)?.linkControllable {
+                        linkIds.append(contentsOf: linkControllable.collectLinks(of: module, from: $0.itemId))
+                    }
                 }
             }
         }

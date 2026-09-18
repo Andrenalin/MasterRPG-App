@@ -406,7 +406,13 @@ final class MasterPlayerControllerTests {
         let mapPlayer = rootPlayer.mapRoot.gameController.gameItem(for: mapId)
         let mapMaster = rootSut.mapRoot.gameController.gameItem(for: mapId)
         #expect(mapPlayer.entries[0].isShown)
-        #expect(mapPlayer.entries == mapMaster.entries)
+        #expect(mapPlayer.entries[0].content == mapMaster.entries[0].content)
+        // Fog-of-war (CODE_AUDIT_Map §6.1): a player never receives content for
+        // an entry the GM hasn't revealed, even in the structural map update.
+        for (playerEntry, masterEntry) in zip(mapPlayer.entries, mapMaster.entries) {
+            #expect(playerEntry.id == masterEntry.id)
+            #expect(playerEntry.content == (masterEntry.isShown ? masterEntry.content : ""))
+        }
         #expect(mapPlayer.mapPins.contains { $0.id == existingPhotoPin.id && $0.photoId == existingPinPhotoId })
         #expect(mapPlayer.mapPins.contains { $0.id == missingPhotoPin.id && $0.photoId == missingPinPhotoId })
 

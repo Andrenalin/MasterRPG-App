@@ -4,6 +4,11 @@ import CoreData
 import CoreRPG
 import Foundation
 
+/// The Share Extension's (`RPGShare`) write path for adding a shared adventure directly to
+/// the database — not part of the main `AdventureRootModel` controller hierarchy (unlike
+/// `ItemController`/`EditController`/`DataController`/etc., it's never constructed by
+/// `AdventureRootModel` and builds its own throwaway `DataController` internally). See
+/// CODE_AUDIT §9.13.
 @MainActor public struct AdventureDataController {
     public init() {}
 

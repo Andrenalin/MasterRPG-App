@@ -6,7 +6,6 @@ import Foundation
 import GeneratorRPG
 #endif
 import Observation
-import RegexBuilder
 import SwiftUI
 import AudioRPG
 import DiceRPG
@@ -20,15 +19,13 @@ import WeatherRPG
 
 @MainActor @Observable
 final class AdventureEditModel: Sendable {
-    let selectionAudio: ItemSelectionModel = ItemSelectionModel()
-    let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
+    // Only these 3 drive real drop-section UI (DiceDropSection/PhotoDropSection,
+    // QuickEntryEditor); the other 6 module selections this type used to carry
+    // (audio/character/map/space/table/weather) were dead state with no consumer
+    // anywhere in the module. See CODE_AUDIT §9.3.
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
-    let selectionMap: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()
-    let selectionSpace: ItemSelectionModel = ItemSelectionModel()
-    let selectionTable: ItemSelectionModel = ItemSelectionModel()
-    let selectionWeather: ItemSelectionModel = ItemSelectionModel()
 }
 
 struct LinkAdventureModuleTransferable: LinkDataTransferable {
@@ -196,7 +193,7 @@ extension EditController {
     @MainActor public func duplicate(item: any ItemDataAccessable) async {
         guard let model = editModel(for: item.id) else { return }
         let originalParentId = model.parentId
-        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true)
+        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true, visited: [model.id])
         for copy in copies {
             itemControllable.replace(model: copy, isInsert: true)
         }
@@ -209,7 +206,7 @@ extension EditController {
         // mints a new random `id` and so pointed at nothing. See
         // CODE_AUDIT_EditItem §5.3.
         if item.isFolder, let copyFolder = editModel(for: copyId) {
-            copyFolder.entries = await duplicateFolderEntries(of: item.id, newParentId: copyId)
+            copyFolder.entries = await duplicateFolderEntries(of: item.id, newParentId: copyId, visited: [item.id])
             save(updated: copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
         }
 
@@ -231,19 +228,25 @@ extension EditController {
     /// `newParentId`, and recursing into any child that is itself a folder so nested
     /// folder structures get independent copies all the way down. See
     /// CODE_AUDIT_EditItem §5.3.
-    @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID) async -> [AdventureEntryModel] {
+    ///
+    /// `visited` guards against a self-referential folder/group hierarchy (e.g. from
+    /// corrupted sync data) recursing forever — mirrors the same fix applied to
+    /// `LinkController.collectLinks`. See CODE_AUDIT §5.7.
+    @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID, visited: Set<UUID>) async -> [AdventureEntryModel] {
         guard let originalFolder = editModel(for: originalFolderId) else { return [] }
         var newEntries: [AdventureEntryModel] = []
         for entry in originalFolder.entries {
-            guard let childModel = editModel(for: entry.childId) else { continue }
-            let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false)
+            guard !visited.contains(entry.childId), let childModel = editModel(for: entry.childId) else { continue }
+            var visited = visited
+            visited.insert(entry.childId)
+            let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, visited: visited)
             for copy in childCopies {
                 itemControllable.replace(model: copy, isInsert: true)
             }
             if let childCopy = editModel(for: childCopyId) {
                 childCopy.parentId = newParentId
                 if childModel.isFolder {
-                    childCopy.entries = await duplicateFolderEntries(of: childModel.id, newParentId: childCopyId)
+                    childCopy.entries = await duplicateFolderEntries(of: childModel.id, newParentId: childCopyId, visited: visited)
                 }
                 save(updated: childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString)
             }
@@ -252,15 +255,17 @@ extension EditController {
         return newEntries
     }
 
-    @MainActor private func duplicateSubAdventure(model: AdventureModel, withCopy: Bool) -> ([AdventureModel], UUID) {
+    @MainActor private func duplicateSubAdventure(model: AdventureModel, withCopy: Bool, visited: Set<UUID>) -> ([AdventureModel], UUID) {
         let copyItem = withCopy ? model.duplicate() : model.duplicateWithoutCopy()
         var copies: [AdventureModel] = [copyItem]
         var newEntries: [AdventureEntryModel] = []
         for entry in model.entries {
             var duplicatedEntry = entry.duplicate()
-            if let adventureId = entry.adventureId,
+            if let adventureId = entry.adventureId, !visited.contains(adventureId),
                let childModel = itemControllable.itemSync(for: adventureId) as? AdventureModel {
-                let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false)
+                var visited = visited
+                visited.insert(adventureId)
+                let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, visited: visited)
                 childCopies.first?.groupId = copyItem.id
                 copies.append(contentsOf: childCopies)
                 duplicatedEntry.adventureId = childCopyId
@@ -295,12 +300,22 @@ extension EditController {
         AdventureEntryModel(id: UUID(), name: name, content: content)
     }
 
+    /// Matches by `name`, not `id`, because `entries` is freshly re-parsed from raw text on
+    /// every edit (see `QuickEntryEditorView`'s `createMultiLineEntries`) and so never
+    /// carries over the original entry's `id` — name is the only stable key available to
+    /// preserve an entry's identity across parses. Each existing entry is consumed at most
+    /// once (`remove(at:)`) so two incoming entries that happen to share a name (e.g. two
+    /// "Room" headings) don't both collapse onto the same existing `id` — previously the
+    /// second one silently overwrote the first's content under one shared id. See
+    /// CODE_AUDIT §5.4.
     @MainActor func merge(itemId: UUID, entries: [AdventureEntryModel]) -> [AdventureEntryModel] {
         guard let item = editModel(for: itemId) else { return entries }
+        var availableEntries = item.entries
         return entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.content = entry.content
-            return foundEntry ?? entry
+            guard let index = availableEntries.firstIndex(where: { $0.name == entry.name }) else { return entry }
+            var foundEntry = availableEntries.remove(at: index)
+            foundEntry.content = entry.content
+            return foundEntry
         }
     }
     // `merge(itemId:entries:recoverEntries:forceSave:)` uses `EntryDataEditable`'s

@@ -4,8 +4,8 @@
 
 import CoreRPG
 import AppIntents
-import CoreSpotlight
 import Foundation
+import os.log
 
 public enum AdventureShortcutCatalog {
     public static var all: [AppShortcut] {
@@ -89,12 +89,19 @@ public enum AdventureShortcutCatalog {
 
     @MainActor
     public static func reindexAll(root: AdventureRootModel) async {
-        guard CSSearchableIndex.isIndexingAvailable() else { return }
         let entities = root.itemController.itemDataModel.items.compactMap { id -> AdventureEntity? in
             guard let model = root.itemController.itemSync(for: id) else { return nil }
             return AdventureEntity(root: root, model: model)
         }
-        try? await CSSearchableIndex.default().indexAppEntities(entities)
+        do {
+            // `indexIntentEntities` already guards `CSSearchableIndex.isIndexingAvailable()`
+            // internally — see CODE_AUDIT §9.8.
+            try await indexIntentEntities(entities)
+        } catch {
+            // Previously `try?`-discarded with no logging, unlike every other Spotlight
+            // call in this module. See CODE_AUDIT §5.8.
+            Logger.appIntents.error("Adventure reindexAll failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 }
 

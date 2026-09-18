@@ -15,17 +15,18 @@ enum DetailRoute: Equatable, Hashable, Codable {
 extension DetailRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
-        case .viewer(let id): "viewer/\(id.uuidString)"
+        case .viewer(let id): TaggedIdRoute.rawValue(token: "viewer", id: id)
         }
     }
 
     public init?(rawValue: String) {
-        let values = rawValue.split(separator: "/")
-        guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
-        switch token {
-        case "viewer": self = .viewer(uuid)
-        default: return nil
-        }
+        guard let route = TaggedIdRoute.parse(rawValue, resolve: { token, id -> Self? in
+            switch token {
+            case "viewer": return .viewer(id)
+            default: return nil
+            }
+        }) else { return nil }
+        self = route
     }
 }
 

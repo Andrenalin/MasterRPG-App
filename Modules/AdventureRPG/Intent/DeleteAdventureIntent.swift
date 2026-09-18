@@ -4,7 +4,6 @@
 
 import CoreRPG
 import AppIntents
-import CoreSpotlight
 
 public struct DeleteAdventureIntent: DeleteIntent {
     public static let title: LocalizedStringResource = "Delete Adventure"
@@ -25,20 +24,10 @@ public struct DeleteAdventureIntent: DeleteIntent {
         }
         await root.itemController.save()
 
-        if CSSearchableIndex.isIndexingAvailable() {
-#if compiler(>=6.4)
-            if #available(iOS 27, macOS 27, visionOS 27, *) {
-                try await CSSearchableIndex.default().deleteAppEntities(
-                    identifiedBy: ids,
-                    ofType: AdventureEntity.self
-                )
-            } else {
-                try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-            }
-#else
-            try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: ids.map(\.uuidString))
-#endif
-        }
+        // Shared Spotlight glue (see CODE_AUDIT §9.8) — `deleteIntentEntities` already
+        // guards `isIndexingAvailable()` and the iOS 27 `deleteAppEntities` availability
+        // split internally.
+        try await deleteIntentEntities(ids: ids, ofType: AdventureEntity.self)
 
         let count = entities.count
         let message = AttributedString(

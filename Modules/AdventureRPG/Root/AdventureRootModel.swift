@@ -69,32 +69,36 @@ public final class AdventureRootModel {
         let folderLinkController = FolderListController(listModel: folderLinkModel, listDisplayModel: folderLinkDisplayModel, itemControllable: itemController, searchRootControllable: SearchLinkController(searchController: searchController, searchModel: searchModel.newSearchModel, listDisplayModel: folderLinkDisplayModel))
         self.folderLinkController = folderLinkController
 
+        // Every call below differs only in `allowEntrySelection` — see CODE_AUDIT §9.6.
+        func multiSelection(allowEntrySelection: Bool) -> ItemSelectionModel {
+            ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: allowEntrySelection)
+        }
         self.editorLinkModel = EditorLinkModel(
             folderListController: folderLinkController,
-            adventureSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            mapSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            ruleSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
-            weatherSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
+            adventureSelectionModel: multiSelection(allowEntrySelection: true),
+            audioSelectionModel: multiSelection(allowEntrySelection: false),
+            characterSelectionModel: multiSelection(allowEntrySelection: false),
+            diceSelectionModel: multiSelection(allowEntrySelection: false),
+            mapSelectionModel: multiSelection(allowEntrySelection: true),
+            pdfSelectionModel: multiSelection(allowEntrySelection: true),
+            photoSelectionModel: multiSelection(allowEntrySelection: false),
+            ruleSelectionModel: multiSelection(allowEntrySelection: true),
+            spaceSelectionModel: multiSelection(allowEntrySelection: false),
+            tableSelectionModel: multiSelection(allowEntrySelection: true),
+            weatherSelectionModel: multiSelection(allowEntrySelection: false),
             firstRow: [.adventure, .map, .value, .rule, .table, .weather],
             secondRow: [.audio, .dice, .pdf, .photo, .space],
             selection: .map
         )
         self.playerLinkModel = EditorLinkModel(
             folderListController: folderLinkController,
-            audioSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            characterSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            diceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            pdfSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            photoSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            spaceSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: false),
-            tableSelectionModel: ItemSelectionModel(selection: [], isSingleSelection: false, allowCollections: true, allowEntrySelection: true),
+            audioSelectionModel: multiSelection(allowEntrySelection: false),
+            characterSelectionModel: multiSelection(allowEntrySelection: false),
+            diceSelectionModel: multiSelection(allowEntrySelection: false),
+            pdfSelectionModel: multiSelection(allowEntrySelection: false),
+            photoSelectionModel: multiSelection(allowEntrySelection: false),
+            spaceSelectionModel: multiSelection(allowEntrySelection: false),
+            tableSelectionModel: multiSelection(allowEntrySelection: true),
             firstRow: [.table, .pdf, .audio, .photo, .space, .dice],
             secondRow: [],
             selection: .table
@@ -269,7 +273,7 @@ extension AdventureRootModel: RootExportControllable {
 }
 
 @MainActor
-extension AdventureRootModel: StoreManiplable {
+extension AdventureRootModel {
     public func resetData() async {
         await itemController.resetData()
         for root in siblingModuleRoots {
@@ -309,23 +313,12 @@ extension AdventureRootModel: StoreManiplable {
         AppIntentContentInvalidator.invalidate()
     }
 
-    public func validate() {
-        Task { @MainActor in
-            let report = ValidateRepairModel()
-
-            report.update(phase: .repairFolders)
-            await checkFolders(reportModel: report)
-            for root in siblingModuleRoots {
-                await root.checkFolders(reportModel: report)
-            }
-
-            report.update(phase: .validateLinks)
-            await validateLinks(reportModel: report)
-            for root in siblingModuleRoots {
-                await root.validateLinks(reportModel: report)
-            }
-        }
-    }
+    // `validate()` (the `StoreManiplable` requirement this type used to conform to) and the
+    // fire-and-forget `Task` it launched were removed — repo-wide search found zero callers.
+    // The real "Validate Folders" UI flow goes through `ValidateRepairController.start()`
+    // (RolePlayGameKit), which calls `checkFolders(reportModel:)`/`validateLinks(reportModel:)`
+    // directly per module and is properly cancellable — this method was dead, superseded
+    // code, not reachable, live behavior. See CODE_AUDIT §3.2.
 }
 
 // MARK: - Game

@@ -7,10 +7,9 @@ import Foundation
 
 /// Shared monster-pin spawning and cascade-placement math. Previously
 /// reimplemented independently in `EditController`, `MapEditController`, and
-/// `MapEditorSession` — see CODE_AUDIT §9.3/§9.4. Consolidating here also
-/// fixes the diagonal-drift bug from CODE_AUDIT §5.1: the old inline math
-/// used `CGPoint + CGFloat`, which adds the offset to both axes instead of
-/// advancing x only.
+/// `MapEditorSession` — see CODE_AUDIT §9.3/§9.4. The cascade intentionally
+/// advances both axes by the same step, so successive pins fan out
+/// diagonally rather than stacking in a single horizontal row.
 enum MapPinPlacement {
     static let maximumMonstersPerDrop = 25
 
@@ -44,9 +43,9 @@ enum MapPinPlacement {
         return pins
     }
 
-    /// Cascades unpositioned pins (`location == .zero`) in a horizontal row
-    /// starting near the entry's left-center, each offset from the previous
-    /// pin by its own width (scaled) plus `interPinGap`. Already-positioned
+    /// Cascades unpositioned pins (`location == .zero`) diagonally, starting
+    /// near the entry's left-center, each offset from the previous pin by its
+    /// own width (scaled) plus `interPinGap` on both axes. Already-positioned
     /// pins pass through unchanged.
     static func cascade(pins: [MapPinModel], in entry: MapEntryModel, pinScale: CGFloat) -> [MapPinModel] {
         var leftCenter = CGPoint(
@@ -57,9 +56,10 @@ enum MapPinPlacement {
             var updated = pin
             if updated.location == .zero {
                 updated.location = leftCenter
+                let step = updated.size.size.width * pinScale + interPinGap
                 leftCenter = CGPoint(
-                    x: leftCenter.x + updated.size.size.width * pinScale + interPinGap,
-                    y: leftCenter.y
+                    x: leftCenter.x + step,
+                    y: leftCenter.y + step
                 )
             }
             return updated

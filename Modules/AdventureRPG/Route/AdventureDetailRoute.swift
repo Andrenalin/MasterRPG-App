@@ -14,25 +14,26 @@ public enum AdventureDetailRoute: Equatable, Hashable, Codable {
 extension AdventureDetailRoute: RawRepresentable {
     public var rawValue: String {
         switch self {
-        case .folder(let id): "folder/\(id.uuidString)"
-        case .folderInline(let id): "folderInline/\(id.uuidString)"
+        case .folder(let id): TaggedIdRoute.rawValue(token: "folder", id: id)
+        case .folderInline(let id): TaggedIdRoute.rawValue(token: "folderInline", id: id)
 #if !os(tvOS)
-        case .adventureExtraction(let id): "adventureExtraction/\(id.uuidString)"
+        case .adventureExtraction(let id): TaggedIdRoute.rawValue(token: "adventureExtraction", id: id)
 #endif
         }
     }
 
     public init?(rawValue: String) {
-        let values = rawValue.split(separator: "/")
-        guard let token = values.first, let idString = values.last, let uuid = UUID(uuidString: String(idString)) else { return nil }
-        switch token {
-        case "folder": self = .folder(uuid)
-        case "folderInline": self = .folderInline(uuid)
+        guard let route = TaggedIdRoute.parse(rawValue, resolve: { token, id -> Self? in
+            switch token {
+            case "folder": return .folder(id)
+            case "folderInline": return .folderInline(id)
 #if !os(tvOS)
-        case "adventureExtraction": self = .adventureExtraction(uuid)
+            case "adventureExtraction": return .adventureExtraction(id)
 #endif
-        default: return nil
-        }
+            default: return nil
+            }
+        }) else { return nil }
+        self = route
     }
 }
 

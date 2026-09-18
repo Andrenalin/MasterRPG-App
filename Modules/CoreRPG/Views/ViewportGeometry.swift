@@ -303,16 +303,32 @@ public struct ViewportGeometry: Sendable {
         return abs(normalized) < Double.ulpOfOne * 360 ? 0 : normalized
     }
 
+    /// Sine and cosine of a rotation, exact for right-angle multiples instead of relying on
+    /// `sin`/`cos` of `.pi`-derived radians, which leave a tiny (~1e-14) residual at 90°/270°
+    /// that then propagates into "exact" sizes and coordinates like a 100pt canvas width.
+    private static func sineCosine(rotationDegrees: Double) -> (sine: CGFloat, cosine: CGFloat) {
+        let normalized = normalize(rotationDegrees: rotationDegrees)
+        switch normalized {
+        case 0: return (0, 1)
+        case 90: return (1, 0)
+        case 180: return (0, -1)
+        case 270: return (-1, 0)
+        default:
+            let radians = normalized * .pi / 180
+            return (CGFloat(sin(radians)), CGFloat(cos(radians)))
+        }
+    }
+
     public static func rotatedContentSize(_ contentSize: CGSize, rotationDegrees: Double) -> CGSize {
         guard contentSize.isValidViewportSize else {
             return .zero
         }
 
-        let radians = normalize(rotationDegrees: rotationDegrees) * .pi / 180
-        let cosine = CGFloat(abs(cos(radians)))
-        let sine = CGFloat(abs(sin(radians)))
-        let width = contentSize.width * cosine + contentSize.height * sine
-        let height = contentSize.width * sine + contentSize.height * cosine
+        let (sine, cosine) = sineCosine(rotationDegrees: rotationDegrees)
+        let absCosine = abs(cosine)
+        let absSine = abs(sine)
+        let width = contentSize.width * absCosine + contentSize.height * absSine
+        let height = contentSize.width * absSine + contentSize.height * absCosine
         return CGSize(width: width, height: height).validViewportSize
     }
 
@@ -328,9 +344,7 @@ public struct ViewportGeometry: Sendable {
             return .zero
         }
 
-        let radians = normalize(rotationDegrees: rotationDegrees) * .pi / 180
-        let cosine = CGFloat(cos(radians))
-        let sine = CGFloat(sin(radians))
+        let (sine, cosine) = sineCosine(rotationDegrees: rotationDegrees)
         let centered = CGPoint(
             x: point.x - contentSize.width / 2,
             y: point.y - contentSize.height / 2
@@ -353,9 +367,7 @@ public struct ViewportGeometry: Sendable {
             return .zero
         }
 
-        let radians = normalize(rotationDegrees: rotationDegrees) * .pi / 180
-        let cosine = CGFloat(cos(radians))
-        let sine = CGFloat(sin(radians))
+        let (sine, cosine) = sineCosine(rotationDegrees: rotationDegrees)
         let centered = CGPoint(
             x: point.x - rotatedSize.width / 2,
             y: point.y - rotatedSize.height / 2

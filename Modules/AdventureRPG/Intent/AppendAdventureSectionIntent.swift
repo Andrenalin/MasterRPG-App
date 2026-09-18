@@ -4,7 +4,6 @@
 
 import CoreRPG
 import AppIntents
-import CoreSpotlight
 
 public struct AppendAdventureSectionIntent: AppIntent {
     public static let title: LocalizedStringResource = "Append Section to Adventure"
@@ -28,16 +27,16 @@ public struct AppendAdventureSectionIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        let contentText = content.map { String($0.characters) } ?? ""
+        // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
+        // guards `CSSearchableIndex.isIndexingAvailable()` internally.
+        let contentText = intentPlainText(from: content)
         let entry = root.editController.create(name: sectionName, content: contentText)
         root.editController.add(entry: entry, itemId: target.id)
         await root.itemController.save()
 
         if let model = root.itemController.itemSync(for: target.id) {
             let updated = AdventureEntity(root: root, model: model)
-            if CSSearchableIndex.isIndexingAvailable() {
-                try await CSSearchableIndex.default().indexAppEntities([updated])
-            }
+            try await indexIntentEntities([updated])
         }
 
         return .result(dialog: "Added \"\(sectionName)\" to \"\(target.name)\".")

@@ -38,7 +38,21 @@ extension AdventureRootModel {
     /// The 10 sibling module roots — excludes `self` (the adventure/story hub, handled
     /// separately by each caller) and `generatorRoot` (optional, tvOS-gated, and doesn't
     /// participate in folder repair or game-mode toggling the way the others do).
-    var siblingModuleRoots: [any AdventureModuleRoot] {
+    // `nonisolated`: reads only `let` stored properties (already themselves
+    // nonisolated-accessible, same as `root.audioRoot` elsewhere in this module) — lets
+    // this be called from the non-`@MainActor` async functions that need it
+    // (`ImportController.additionalImport`) without forcing a MainActor hop.
+    nonisolated var siblingModuleRoots: [any AdventureModuleRoot] {
         [audioRoot, diceRoot, mapRoot, pdfRoot, photoRoot, ruleRoot, spaceRoot, tableRoot, characterRoot, weatherRoot]
+    }
+
+    /// `siblingModuleRoots` minus `ruleRoot` — Rule (the compendium/reference module) has
+    /// no per-game-session state to reset, and is deliberately exported/imported *last*
+    /// (see `ExportController.finalExport`/`ImportController.finalImport`) rather than
+    /// alongside the others. `GameController.resetGame`, `ExportController.additionalExport`,
+    /// and `ImportController.additionalImport` all loop over this instead of each hand-listing
+    /// the same 9 sibling roots by name. See CODE_AUDIT §9.5.
+    nonisolated var siblingModuleRootsExcludingRule: [any AdventureModuleRoot] {
+        siblingModuleRoots.filter { !($0 is RuleRootModel) }
     }
 }

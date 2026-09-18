@@ -92,6 +92,8 @@ extension DataController: CoreDataSnapshotPersistable {
         model.name = viewModel.$name.rawValue
         model.content = viewModel.$content.rawValue
         model.adventureUUID = viewModel.$adventureId.rawValue
-        model.index = Int16(index)
+        // `Int16(index)` traps above 32,767 entries — unlikely from normal UI use, but
+        // imported `.gmz` files are untrusted, so clamp instead of trapping. See CODE_AUDIT §5.6.
+        model.index = Int16(clamping: index)
     }
 }

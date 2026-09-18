@@ -155,19 +155,17 @@ extension AdventureModel: nonisolated ItemLinkRegistable {
 }
 
 extension AdventureModel: nonisolated ItemDiffComparable {
+    /// Folders used to merge `entries` as a union of both sides' child ids instead of the
+    /// whole-array last-write-wins used by every other property here (and by every other
+    /// category's entries) — with no tombstone for removed children, that union silently
+    /// resurrected a deletion made offline on one device once the next CloudKit merge ran.
+    /// Uses the same whole-array LWW as everything else instead: the tradeoff is that two
+    /// devices concurrently adding *different* children to the same folder while offline
+    /// will have one side's addition lost rather than both being kept — preferred over
+    /// silently undoing a user's explicit deletion. See CODE_AUDIT §5.3.
     nonisolated public func merge(_ other: AdventureModel) -> AdventureModel {
         return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
-            let mergedEntries: CRDTDataUpdate<[AdventureEntryModel]>
-            if mergedCategory.wrappedValue == .folder {
-                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-                let combined = allIds
-                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-            } else {
-                mergedEntries = entries_.merged(other: other.entries_)
-            }
             return AdventureModel(
                 id: id,
                 name: name_.merged(other: other.name_),
@@ -177,11 +175,11 @@ extension AdventureModel: nonisolated ItemDiffComparable {
                 displayState: other.displayState,
                 photoId: photoId_.merged(other: other.photoId_),
                 diceId: other.diceId,
-                entries: mergedEntries,
+                entries: entries_.merged(other: other.entries_),
                 parentId: other.parentId,
                 groupId: other.groupId
             )
-    
+
         }
     }
 
@@ -196,7 +194,7 @@ extension AdventureModel: nonisolated ItemDiffComparable {
             entries_.update == other.entries_.update &&
             parentId == other.parentId &&
             groupId == other.groupId &&
-            // santity checks
+            // sanity checks
             entries.count == other.entries.count &&
             entries.enumerated().allSatisfy { index, entry in
                 entry == other.entries[index]

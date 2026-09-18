@@ -75,15 +75,11 @@ extension GameController: AdventureStoreGameable {
     @MainActor
     func resetGame() async {
         await reset()
-        await root.audioRoot.gameControllable.reset()
-        await root.diceRoot.gameControllable.reset()
-        await root.mapRoot.gameControllable.reset()
-        await root.pdfRoot.gameControllable.reset()
-        await root.photoRoot.gameControllable.reset()
-        await root.spaceRoot.gameControllable.reset()
-        await root.tableRoot.gameControllable.reset()
-        await root.characterRoot.gameControllable.reset()
-        await root.weatherRoot.gameControllable.reset()
+        // See CODE_AUDIT §9.5 — loops over the shared sibling list instead of
+        // hand-listing each of the 9 modules.
+        for sibling in root.siblingModuleRootsExcludingRule {
+            await sibling.gameControllable.reset()
+        }
     }
 
     @MainActor

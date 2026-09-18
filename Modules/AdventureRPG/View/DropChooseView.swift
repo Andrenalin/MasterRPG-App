@@ -4,6 +4,9 @@ import CoreRPG
 
 import SwiftUI
 
+private let dropAreaCornerRadius: CGFloat = 24
+private let dropAreaHeight: CGFloat = 128
+
 struct DropChooseView: View {
     let selectionModel: ItemSelectionModel
 
@@ -21,15 +24,12 @@ struct DropChooseView: View {
                     EmptyDropButton(selectionModel: selectionModel)
                 }
             }
-            .frame(height: 128)
+            .frame(height: dropAreaHeight)
         }, dropAction: addLink(name:itemId:entryId:))
-        .containerShape(.rect(cornerRadius: 24))
-        .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.accentColor.tertiary)
-        }
+        .containerShape(.rect(cornerRadius: dropAreaCornerRadius))
+        .background(Color.accentColor.tertiary, in: .rect(cornerRadius: dropAreaCornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: dropAreaCornerRadius, style: .continuous)
                 .stroke(Color.accentColor.secondary, lineWidth: 2)
         }
         .padding(1)

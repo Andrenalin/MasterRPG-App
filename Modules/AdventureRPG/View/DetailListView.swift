@@ -24,7 +24,7 @@ struct DetailListView: View {
         let _ = Self.printViewChangesOnlyInDebug()
         DetailFolderListView(root: root, model: model, folderListController: folderListController)
             .toolbar {
-                toolbarContent
+                DetailListToolbarContent(root: root, model: model)
             }
             .themedSurface()
             .moduleTint(root.configurable.module)
@@ -49,7 +49,17 @@ struct DetailListView: View {
 #endif
     }
 
-    @ToolbarContentBuilder var toolbarContent: some ToolbarContent {
+}
+
+/// Extracted from `DetailListView` so the toolbar content gets its own
+/// identity/diffing instead of living as a computed property — mirrors the
+/// same fix already applied to TableRPG's `DetailListView` (CODE_AUDIT_Table
+/// §8.1). See CODE_AUDIT §8.3.
+struct DetailListToolbarContent: ToolbarContent {
+    let root: AdventureRootModel
+    let model: AdventureModel
+
+    @ToolbarContentBuilder var body: some ToolbarContent {
         ToolbarItemGroup(placement: .secondaryActionAll) {
             if !model.specialCategory && !root.openFileWindowModel.showItem {
                 ControlGroup {
