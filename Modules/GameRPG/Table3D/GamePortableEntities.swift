@@ -137,6 +137,16 @@ final class Board {
     }
 }
 
+// Drawn directly with Core Graphics rather than a SwiftUI `ZStack`/`Canvas` snapshotted
+// through `ImageRenderer`: the photo and the fog have genuinely different sizing rules (the
+// photo must preserve its own aspect ratio; the fog must exactly fill `coordinateSize`, the
+// plane's own aspect ratio — see `Board.updateMap`'s doc for why that can't move), and this
+// used to size the whole raster (`outputSize`) from the photo's own pixel dimensions while
+// `coordinateSize` (the map's stored width/height) sized the plane mesh — two independently
+// derived values with no guarantee of sharing an aspect ratio. Whenever they didn't, the photo
+// baked into that mismatched-aspect raster came out visibly stretched once mapped onto the
+// mesh. A plain `CGContext`, sized to `coordinateSize` throughout with the photo fit inside it,
+// removes that mismatch entirely — mirrors `GameEquipment.Board`'s visionOS equivalent.
 private enum GameTableTextureRenderer {
     /// Keeps texture upload and fog composition bounded on iPhone and Mac GPUs.
     static let maximumDimension: CGFloat = 2_048
@@ -152,206 +162,142 @@ private enum GameTableTextureRenderer {
     ) -> CGImage? {
         guard let sourceImage = GameTableImage.cgImage(from: image) else { return nil }
 
-        let sourcePixelSize = CGSize(
-            width: sourceImage.width,
-            height: sourceImage.height
-        )
-        guard sourcePixelSize.width > 0, sourcePixelSize.height > 0 else { return nil }
+        // `image.size` — not `sourceImage.width`/`.height` (the *pixel* size of whichever
+        // backing representation `GameTableImage.cgImage` happened to pick, e.g. a 2x/3x
+        // "Retina" `NSImage` representation on macOS) — matches the unit `MapModel.resetImage`
+        // measured `coordinateSize` in (`EditController.resetImageSize` reads the same `image.size`
+        // at edit time). Mixing the two here previously made the photo render at a fraction of its
+        // intended size whenever the live-fetched image's pixel/point ratio wasn't 1:1.
+        let sourceSize = image.size
+        guard sourceSize.width > 0, sourceSize.height > 0 else { return sourceImage }
 
         let normalizedDegrees = MapTableProjection.normalizedDegrees(degrees)
-        let swapsAxes = MapTableProjection.swapsAxes(for: normalizedDegrees)
-        let orientedPixelSize = swapsAxes
-            ? CGSize(width: sourcePixelSize.height, height: sourcePixelSize.width)
-            : sourcePixelSize
-        let scale = min(1, maximumDimension / max(orientedPixelSize.width, orientedPixelSize.height))
-        let sourceRenderSize = CGSize(
-            width: max(1, floor(sourcePixelSize.width * scale)),
-            height: max(1, floor(sourcePixelSize.height * scale))
-        )
-        let outputSize = swapsAxes
-            ? CGSize(width: sourceRenderSize.height, height: sourceRenderSize.width)
-            : sourceRenderSize
+        let orientedSize = MapTableProjection.orientedImageSize(sourceSize, degrees: normalizedDegrees)
 
-        let fallbackCoordinateSize = MapTableProjection.orientedImageSize(
-            image.fixedSize,
-            degrees: normalizedDegrees
-        )
+        // `coordinateSize` is the plane mesh's own aspect ratio (see `Board.updateMap`, which
+        // computes its `planeWidth`/`planeDepth` from this exact same value) — the canvas the
+        // photo and fog both render into here, so neither can end up a different aspect ratio
+        // than the mesh they're mapped onto.
         let coordinateSize: CGSize
         if let mapModel, mapModel.width > 0, mapModel.height > 0 {
             coordinateSize = CGSize(width: mapModel.width, height: mapModel.height)
         } else {
-            coordinateSize = fallbackCoordinateSize
+            coordinateSize = orientedSize
         }
-        let focusRect = GameTableModel.boardFocusRect(
-            entries: mapModel?.entries ?? [],
-            imageSize: coordinateSize,
-            panOffset: panOffset
-        )
+        guard coordinateSize.width > 0, coordinateSize.height > 0 else { return sourceImage }
 
-        let content = GameTableTextureView(
-            image: image,
-            sourceRenderSize: sourceRenderSize,
-            outputSize: outputSize,
-            coordinateSize: coordinateSize,
-            focusRect: focusRect,
-            degrees: normalizedDegrees,
-            entries: mapModel?.entries ?? [],
-            displayConfig: displayConfig,
-            isGameMaster: isGameMaster
-        )
-        let renderer = ImageRenderer(content: content)
-        renderer.scale = 1
+        let longestEdge = max(coordinateSize.width, coordinateSize.height)
+        let renderScale = longestEdge > 0 ? min(1, maximumDimension / longestEdge) : 1
+        let pixelWidth = max(1, Int((coordinateSize.width * renderScale).rounded()))
+        let pixelHeight = max(1, Int((coordinateSize.height * renderScale).rounded()))
 
-#if os(macOS)
-        guard let renderedImage = renderer.nsImage else { return sourceImage }
-        var proposedRect = CGRect(origin: .zero, size: renderedImage.size)
-        return renderedImage.cgImage(
-            forProposedRect: &proposedRect,
-            context: nil,
-            hints: nil
-        ) ?? sourceImage
-#else
-        return renderer.uiImage?.cgImage ?? sourceImage
-#endif
-    }
-}
-
-private struct GameTableTextureView: View {
-    let image: AKImage
-    let sourceRenderSize: CGSize
-    let outputSize: CGSize
-    let coordinateSize: CGSize
-    /// The `coordinateSize`-space rect the composited image+fog is framed
-    /// to — always the full map, since the 3D board never crops/zooms into
-    /// a focused room. See `GameTableModel.boardFocusRect`.
-    let focusRect: CGRect
-    let degrees: Double
-    let entries: [MapEntryModel]
-    let displayConfig: DisplayConfigModel?
-    let isGameMaster: Bool
-
-    var body: some View {
-        // Per-axis, matching `drawFog`'s own scaleX/scaleY below, rather than
-        // assuming coordinateSize and outputSize share exactly one aspect
-        // ratio (they're independently derived and only approximately equal).
-        let scaleX = coordinateSize.width > 0 ? outputSize.width / coordinateSize.width : 1
-        let scaleY = coordinateSize.height > 0 ? outputSize.height / coordinateSize.height : 1
-        let focusOrigin = CGPoint(x: focusRect.minX * scaleX, y: focusRect.minY * scaleY)
-        let focusSize = CGSize(width: focusRect.width * scaleX, height: focusRect.height * scaleY)
-        let zoomScaleX = focusSize.width > 0 ? outputSize.width / focusSize.width : 1
-        let zoomScaleY = focusSize.height > 0 ? outputSize.height / focusSize.height : 1
-
-        ZStack {
-            Image(akImage: image)
-                .resizable()
-                .frame(
-                    width: sourceRenderSize.width,
-                    height: sourceRenderSize.height
-                )
-                .rotationEffect(.degrees(degrees))
-
-            Canvas { context, size in
-                drawFog(in: &context, size: size)
-            }
+        guard let context = CGContext(
+            data: nil,
+            width: pixelWidth,
+            height: pixelHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return sourceImage
         }
-        .frame(width: outputSize.width, height: outputSize.height, alignment: .topLeading)
-        // No-ops (scale 1, offset 0) when nothing is focused — `focusRect`
-        // then equals the full `coordinateSize` rect.
-        .scaleEffect(x: zoomScaleX, y: zoomScaleY, anchor: .topLeading)
-        .offset(x: -focusOrigin.x * zoomScaleX, y: -focusOrigin.y * zoomScaleY)
-        .frame(width: outputSize.width, height: outputSize.height, alignment: .topLeading)
-        .clipped()
-    }
 
-    private func drawFog(in context: inout GraphicsContext, size: CGSize) {
-        guard coordinateSize.width > 0, coordinateSize.height > 0 else { return }
-        let scaleX = size.width / coordinateSize.width
-        let scaleY = size.height / coordinateSize.height
-        let lineScale = min(scaleX, scaleY)
+        // Maps `coordinateSize` points onto the context's actual pixel dimensions (the two
+        // differ only by `renderScale`'s GPU-budget downsampling) — a plain positive scale, so,
+        // unlike the two blocks below, this permanently active base transform never needs its own
+        // save/restore: it never flips or reflects anything.
+        context.scaleBy(x: CGFloat(pixelWidth) / coordinateSize.width, y: CGFloat(pixelHeight) / coordinateSize.height)
 
-        for entry in entries where isGameMaster || !entry.isShown {
-            guard let first = entry.coordinates.first else { continue }
-            var path = Path()
-            path.move(to: scaled(first, x: scaleX, y: scaleY))
+        // Draw the base photo scaled to exactly fill `coordinateSize` (the plane's own aspect
+        // ratio — see `Board.updateMap`'s doc) rather than fit-and-letterbox inside it:
+        // `coordinateSize` and the photo's own size are kept in lockstep by `MapModel.resetImage`,
+        // so the plane's fit-inside-the-table-minus-margin box
+        // (`MapTableProjection.maxPlaneWidth`/`maxPlaneDepth`, already reserving space for each
+        // seat's dice) is the only margin that should ever show — the photo itself should always
+        // reach every edge of it. Scaled per axis (`scaleX`/`scaleY`) rather than by one uniform
+        // factor so the photo still fills exactly even if the two sizes agree on aspect ratio but
+        // not on absolute scale; when they also agree on aspect ratio — the normal case — the two
+        // factors are equal anyway, so this never distorts the photo in practice.
+        //
+        // Runs in Core Graphics' native bottom-left-origin, +y-up space (rather than the
+        // top-left/+y-down space `entry.coordinates` below use) deliberately: `CGContext.draw(_:in:)`
+        // always maps a `CGImage`'s first (visually topmost) row to its rect's *maximum* y — the
+        // correct, right-side-up result in a +y-up space, where the rect's max-y edge is the one
+        // that's visually on top. Doing this inside the flipped space the fog block below uses
+        // would instead put that same first row at the visually *bottom* edge, rendering the photo
+        // upside down. The rotation angle is negated to compensate: a positive `degrees` here
+        // needs to still turn the photo clockwise, matching what the equivalent
+        // `.rotationEffect(.degrees(degrees))` on the (+y-down) 2D map does, and `context.rotate`
+        // turns counterclockwise for a positive angle in a +y-up space.
+        let scaleX = orientedSize.width > 0 ? coordinateSize.width / orientedSize.width : 1
+        let scaleY = orientedSize.height > 0 ? coordinateSize.height / orientedSize.height : 1
+        context.saveGState()
+        context.translateBy(x: coordinateSize.width / 2, y: coordinateSize.height / 2)
+        context.rotate(by: -CGFloat(normalizedDegrees) * .pi / 180)
+        context.scaleBy(x: scaleX, y: scaleY)
+        context.draw(
+            sourceImage,
+            in: CGRect(x: -sourceSize.width / 2, y: -sourceSize.height / 2, width: sourceSize.width, height: sourceSize.height)
+        )
+        context.restoreGState()
+
+        // Draw each room entry as a fog-of-war polygon, directly in `coordinateSize` space — the
+        // 3D board never crops/zooms into a focused room (only the 2D map does; see
+        // `GameTableModel.boardFocusRect`), so this needs no further transform beyond matching
+        // `entry.coordinates`' own top-left-origin, +y-down convention (unlike the photo above,
+        // a filled/stroked path has no "first row" to invert, so this flip can't put it upside
+        // down the way it would the photo).
+        context.saveGState()
+        context.translateBy(x: 0, y: coordinateSize.height)
+        context.scaleBy(x: 1, y: -1)
+        for entry in mapModel?.entries ?? [] where isGameMaster || !entry.isShown {
+            guard let firstPoint = entry.coordinates.first else { continue }
+            let path = CGMutablePath()
+            path.move(to: firstPoint)
             for point in entry.coordinates.dropFirst() {
-                path.addLine(to: scaled(point, x: scaleX, y: scaleY))
+                path.addLine(to: point)
             }
             path.closeSubpath()
 
             if isGameMaster {
-                context.fill(
-                    path,
-                    with: .color(.green.opacity(entry.isShown ? 0.1 : 0.5))
-                )
-                context.stroke(
-                    path,
-                    with: .color(.green.opacity(0.8)),
-                    style: StrokeStyle(
-                        lineWidth: max(1, 8 * lineScale),
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
-                )
+                context.addPath(path)
+                context.setFillColor(AKColor(Color.green.opacity(entry.isShown ? 0.1 : 0.5)).cgColor)
+                context.fillPath()
+                context.addPath(path)
+                context.setStrokeColor(AKColor(Color.green.opacity(0.8)).cgColor)
+                context.setLineWidth(8)
+                context.setLineCap(.round)
+                context.setLineJoin(.round)
+                context.strokePath()
             } else if let displayConfig {
-                context.fill(path, with: .color(displayConfig.color))
+                context.addPath(path)
+                context.setFillColor(AKColor(displayConfig.color).cgColor)
+                context.fillPath()
                 if displayConfig.hasBorder {
-                    context.stroke(
-                        path,
-                        with: .color(displayConfig.borderColor),
-                        lineWidth: max(1, displayConfig.borderThickness * lineScale)
-                    )
+                    context.addPath(path)
+                    context.setStrokeColor(AKColor(displayConfig.borderColor).cgColor)
+                    context.setLineWidth(displayConfig.borderThickness)
+                    context.strokePath()
                 }
             }
 
             // The 3D board never crops/zooms into a focused room (see
-            // `GameTableModel.boardFocusRect`) — a red border marks where
-            // the 2D map's own zoom is centered instead.
+            // `GameTableModel.boardFocusRect`) — a red border marks where the 2D map's own zoom
+            // is centered instead.
             if entry.focused {
-                context.stroke(
-                    path,
-                    with: .color(.red),
-                    style: StrokeStyle(lineWidth: max(1, 10 * lineScale), lineCap: .round, lineJoin: .round)
-                )
+                context.addPath(path)
+                context.setStrokeColor(AKColor.red.cgColor)
+                context.setLineWidth(10)
+                context.setLineCap(.round)
+                context.setLineJoin(.round)
+                context.strokePath()
             }
         }
+        context.restoreGState()
+
+        return context.makeImage() ?? sourceImage
     }
-
-    private func scaled(_ point: CGPoint, x: CGFloat, y: CGFloat) -> CGPoint {
-        CGPoint(x: point.x * x, y: point.y * y)
-    }
-}
-
-#Preview("Game table texture") {
-    let image = AKImage()
-    let room = MapEntryModel(
-        id: UUID(),
-        name: "Hidden chamber",
-        content: "Preview fog area.",
-        coordinates: [
-            CGPoint(x: 40, y: 40),
-            CGPoint(x: 280, y: 40),
-            CGPoint(x: 280, y: 200),
-            CGPoint(x: 40, y: 200)
-        ],
-        isShown: false
-    )
-    let displayConfig = DisplayConfigModel(
-        tileCoordinates: [],
-        color: .black.opacity(0.72),
-        border: DisplayBorderViewModel(thickness: 3, color: .blue)
-    )
-
-    GameTableTextureView(
-        image: image,
-        sourceRenderSize: CGSize(width: 320, height: 240),
-        outputSize: CGSize(width: 320, height: 240),
-        coordinateSize: CGSize(width: 320, height: 240),
-        focusRect: CGRect(x: 0, y: 0, width: 320, height: 240),
-        degrees: 0,
-        entries: [room],
-        displayConfig: displayConfig,
-        isGameMaster: true
-    )
 }
 
 #endif

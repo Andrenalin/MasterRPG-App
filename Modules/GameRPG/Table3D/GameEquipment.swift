@@ -164,7 +164,17 @@ final class Board {
         imagePlane.isEnabled = false
     }
     
-    // Generate a composite texture with fog of war overlays drawn on top of the base image
+    // Generate a composite texture with fog of war overlays drawn on top of the base image.
+    //
+    // Drawn directly with Core Graphics rather than a SwiftUI `ZStack`/`Canvas` snapshotted
+    // through `ImageRenderer`: the two layers here have genuinely different sizing rules (the
+    // photo must preserve its own aspect ratio; the fog must exactly fill `canvasSize`, the
+    // plane's own aspect ratio — see `updateMap`'s doc for why that can't move), and stacking
+    // that through nested SwiftUI `.frame`/`.scaleEffect` modifiers turned out to be too easy to
+    // get subtly wrong — twice: once left the photo misaligned with the fog whenever the two
+    // sizes disagreed, and the fix for that instead misaligned the *fog* against the plane. A
+    // plain `CGContext`, with each layer drawn against an explicit rect it computes itself, has
+    // no equivalent layout ambiguity.
     @MainActor private func generateCompositeTexture(
         baseImage: AKImage,
         degrees: Double,
@@ -174,138 +184,139 @@ final class Board {
         isGameMaster: Bool,
         panOffset: CGPoint
     ) -> CGImage? {
-        guard let fallbackImage = baseImage.cgImage else { return nil }
+        guard let sourceCGImage = baseImage.cgImage else { return nil }
         let normalizedDegrees = degrees.truncatingRemainder(dividingBy: 360)
         let sourceSize = baseImage.fixedSize
         let orientedSize = Self.orientedSize(for: sourceSize, degrees: normalizedDegrees)
+        guard orientedSize.width > 0, orientedSize.height > 0,
+              canvasSize.width > 0, canvasSize.height > 0 else { return sourceCGImage }
         let entriesToRender = if isGameMaster {
             mapModel?.entries ?? []
         } else {
             mapModel?.entries.filter { !$0.isShown } ?? []
         }
 
-        // Always the full map — the 3D board never crops/zooms into a
-        // focused room (only the 2D map does; see `GameTableModel.boardFocusRect`).
-        // `canvasSize` doubles as both the entries' coordinate space and the
-        // output frame here (unlike the iOS/macOS renderer, which keeps them
-        // separate), so this needs no unit conversion before use below.
-        let focusRect = GameTableModel.boardFocusRect(
-            entries: mapModel?.entries ?? [],
-            imageSize: canvasSize,
-            panOffset: panOffset
+        // The frame is already expressed in image-space pixels/points. Rendering it at 3x
+        // attempted textures up to nine times larger than necessary and stalled room toggles on
+        // the main actor. Keep the longest edge within a conservative GPU texture budget.
+        let longestEdge = max(canvasSize.width, canvasSize.height)
+        let renderScale = longestEdge > 0 ? min(1, 2_048 / longestEdge) : 1
+        let pixelWidth = max(1, Int((canvasSize.width * renderScale).rounded()))
+        let pixelHeight = max(1, Int((canvasSize.height * renderScale).rounded()))
+
+        guard let context = CGContext(
+            data: nil,
+            width: pixelWidth,
+            height: pixelHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return sourceCGImage
+        }
+
+        // Maps `canvasSize` points onto the context's actual pixel dimensions (the two differ
+        // only by `renderScale`'s GPU-budget downsampling) — a plain positive scale, so, unlike
+        // the two blocks below, this permanently active base transform never needs its own
+        // save/restore: it never flips or reflects anything.
+        context.scaleBy(x: CGFloat(pixelWidth) / canvasSize.width, y: CGFloat(pixelHeight) / canvasSize.height)
+
+        // Draw the base photo scaled to exactly fill `canvasSize` (the plane's own aspect ratio —
+        // see `updateMap`'s doc) rather than fit-and-letterbox inside it: `canvasSize` (the map's
+        // stored width/height) and `orientedSize` (the just-fetched photo's own size) are kept in
+        // lockstep by `MapModel.resetImage`, so the plane's fit-inside-the-table-minus-margin box
+        // (`MapTableProjection.maxPlaneWidth`/`maxPlaneDepth`, already reserving space for each
+        // seat's dice) is the only margin that should ever show — the photo itself should always
+        // reach every edge of it. Scaled per axis (`scaleX`/`scaleY`) rather than by one uniform
+        // factor so the photo still fills exactly even if the two sizes agree on aspect ratio but
+        // not on absolute scale; when they also agree on aspect ratio — the normal case — the two
+        // factors are equal anyway, so this never distorts the photo in practice.
+        //
+        // Runs in Core Graphics' native bottom-left-origin, +y-up space (rather than the
+        // top-left/+y-down space `entry.coordinates` below use) deliberately: `CGContext.draw(_:in:)`
+        // always maps a `CGImage`'s first (visually topmost) row to its rect's *maximum* y — the
+        // correct, right-side-up result in a +y-up space, where the rect's max-y edge is the one
+        // that's visually on top. Doing this inside the flipped space the fog block below uses
+        // would instead put that same first row at the visually *bottom* edge, rendering the photo
+        // upside down. The rotation angle is negated to compensate: a positive `degrees` here
+        // needs to still turn the photo clockwise, matching what the equivalent
+        // `.rotationEffect(.degrees(degrees))` on the (+y-down) 2D map does, and `context.rotate`
+        // turns counterclockwise for a positive angle in a +y-up space.
+        let scaleX = orientedSize.width > 0 ? canvasSize.width / orientedSize.width : 1
+        let scaleY = orientedSize.height > 0 ? canvasSize.height / orientedSize.height : 1
+        context.saveGState()
+        context.translateBy(x: canvasSize.width / 2, y: canvasSize.height / 2)
+        context.rotate(by: -CGFloat(normalizedDegrees) * .pi / 180)
+        context.scaleBy(x: scaleX, y: scaleY)
+        context.draw(
+            sourceCGImage,
+            in: CGRect(x: -sourceSize.width / 2, y: -sourceSize.height / 2, width: sourceSize.width, height: sourceSize.height)
         )
-        let zoomScaleX = focusRect.width > 0 ? canvasSize.width / focusRect.width : 1
-        let zoomScaleY = focusRect.height > 0 ? canvasSize.height / focusRect.height : 1
+        context.restoreGState()
 
-        // Create a SwiftUI view that layers the image with fog of war overlays
-        let compositeView = ZStack {
-            ZStack {
-                Image(akImage: baseImage)
-                    .resizable()
-                    .frame(width: sourceSize.width, height: sourceSize.height)
-                    .rotationEffect(.degrees(normalizedDegrees))
+        // Draw each room entry as a fog-of-war polygon, directly in `canvasSize` space — the 3D
+        // board never crops/zooms into a focused room (only the 2D map does; see
+        // `GameTableModel.boardFocusRect`), so this needs no further transform beyond matching
+        // `entry.coordinates`' own top-left-origin, +y-down convention (unlike the photo above, a
+        // filled/stroked path has no "first row" to invert, so this flip can't put it upside down
+        // the way it would the photo).
+        context.saveGState()
+        context.translateBy(x: 0, y: canvasSize.height)
+        context.scaleBy(x: 1, y: -1)
+        for entry in entriesToRender {
+            guard let firstPoint = entry.coordinates.first else { continue }
+            let path = CGMutablePath()
+            path.move(to: firstPoint)
+            for point in entry.coordinates.dropFirst() {
+                path.addLine(to: point)
             }
-            .frame(width: orientedSize.width, height: orientedSize.height)
-            .frame(width: canvasSize.width, height: canvasSize.height)
-            
-            Canvas { context, size in
-                // Draw each entry as a polygon
-                for entry in entriesToRender {
-                    guard !entry.coordinates.isEmpty else { continue }
-                    
-                    // Create a path from the entry coordinates
-                    var path = Path()
-                    let firstPoint = entry.coordinates[0]
-                    path.move(to: firstPoint)
-                    
-                    for point in entry.coordinates.dropFirst() {
-                        path.addLine(to: point)
-                    }
-                    
-                    // Close the path
-                    path.closeSubpath()
-                    
-                    if isGameMaster {
-                        // Game Master: Show transparent green with border (matching MapViewer .master mode)
-                        if entry.isShown {
-                            // Shown areas: light green (opacity 0.1) with green border
-                            context.fill(path, with: .color(Color.green.opacity(0.1)))
-                            context.stroke(
-                                path,
-                                with: .color(Color.green.opacity(0.8)),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round)
-                            )
-                        } else {
-                            // Hidden areas: semi-transparent green (opacity 0.5) with green border
-                            context.fill(path, with: .color(Color.green.opacity(0.5)))
-                            context.stroke(
-                                path,
-                                with: .color(Color.green.opacity(0.8)),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round)
-                            )
-                        }
-                    } else {
-                        // Player: Only show solid fog for hidden areas (matching MapViewer .player mode)
-                        if !entry.isShown {
-                            // Fill with the configured fog color
-                            context.fill(path, with: .color(displayConfig?.color ?? .black))
+            path.closeSubpath()
 
-                            // Draw border if configured
-                            if displayConfig?.hasBorder == true, let displayConfig {
-                                context.stroke(
-                                    path,
-                                    with: .color(displayConfig.borderColor),
-                                    lineWidth: displayConfig.borderThickness
-                                )
-                            }
-                        }
-                    }
-
-                    // The 3D board never crops/zooms into a focused room (see
-                    // `GameTableModel.boardFocusRect`) — a red border marks
-                    // where the 2D map's own zoom is centered instead.
-                    if entry.focused {
-                        context.stroke(
-                            path,
-                            with: .color(.red),
-                            style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round)
-                        )
-                    }
+            if isGameMaster {
+                // Game Master: transparent green with border (matching MapViewer .master mode) —
+                // lighter for a shown room, more solid for one still hidden from players.
+                context.addPath(path)
+                context.setFillColor(UIColor(Color.green.opacity(entry.isShown ? 0.1 : 0.5)).cgColor)
+                context.fillPath()
+                context.addPath(path)
+                context.setStrokeColor(UIColor(Color.green.opacity(0.8)).cgColor)
+                context.setLineWidth(8)
+                context.setLineCap(.round)
+                context.setLineJoin(.round)
+                context.strokePath()
+            } else if !entry.isShown {
+                // Player: only a hidden room draws solid fog (matching MapViewer .player mode).
+                context.addPath(path)
+                context.setFillColor(UIColor(displayConfig?.color ?? .black).cgColor)
+                context.fillPath()
+                if displayConfig?.hasBorder == true, let displayConfig {
+                    context.addPath(path)
+                    context.setStrokeColor(UIColor(displayConfig.borderColor).cgColor)
+                    context.setLineWidth(displayConfig.borderThickness)
+                    context.strokePath()
                 }
             }
-        }
-        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
-        // No-ops (scale 1, offset 0) when nothing is focused — `focusRect`
-        // then equals the full `canvasSize` rect.
-        .scaleEffect(x: zoomScaleX, y: zoomScaleY, anchor: .topLeading)
-        .offset(x: -focusRect.minX * zoomScaleX, y: -focusRect.minY * zoomScaleY)
-        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
-        .clipped()
 
-        // The frame is already expressed in image-space pixels/points. Rendering
-        // it at 3x attempted textures up to nine times larger than necessary and
-        // stalled room toggles on the main actor. Keep the longest edge within a
-        // conservative GPU texture budget.
-        let renderer = ImageRenderer(content: compositeView)
-        let longestEdge = max(canvasSize.width, canvasSize.height)
-        renderer.scale = longestEdge > 0 ? min(1, 2_048 / longestEdge) : 1
-        
-        #if os(macOS)
-        if let nsImage = renderer.nsImage,
-           let tiffData = nsImage.tiffRepresentation,
-           let bitmap = NSBitmapImageRep(data: tiffData),
-           let cgImage = bitmap.cgImage {
-            return cgImage
+            // The 3D board never crops/zooms into a focused room (see
+            // `GameTableModel.boardFocusRect`) — a red border marks where the 2D map's own zoom
+            // is centered instead.
+            if entry.focused {
+                context.addPath(path)
+                context.setStrokeColor(UIColor.red.cgColor)
+                context.setLineWidth(10)
+                context.setLineCap(.round)
+                context.setLineJoin(.round)
+                context.strokePath()
+            }
         }
-        #else
-        if let uiImage = renderer.uiImage,
-           let cgImage = uiImage.cgImage {
-            return cgImage
+        context.restoreGState()
+
+        guard let compositeImage = context.makeImage() else {
+            Logger.gameTable.warning("Failed to composite the board texture; using the original image")
+            return sourceCGImage
         }
-        #endif
-        
-        Logger.gameTable.warning("Failed to composite the board texture; using the original image")
-        return fallbackImage
+        return compositeImage
     }
 
     private static func orientedSize(for size: CGSize, degrees: Double) -> CGSize {

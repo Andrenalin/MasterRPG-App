@@ -45,6 +45,20 @@ extension PlayerController {
         root.mapRoot.mapGameControllable.battleRoundModel.resetNetworkSequence()
         gameModel.reset(lostMaster: true)
         gameModel.reset(sendPlayer: false)
+        // `acceptsSessionMessage` only re-pins the logical master identity
+        // from a self-consistent full broadcast while `config.master.type`
+        // is still `.notSet` — once pinned to `.master` it requires an exact
+        // `masterId` match forever. A master that fully quits and restarts
+        // (`GameRoot.startMaster()` mints a brand-new `master.id` per
+        // session) reconnects under a different id than what this device
+        // still has pinned, so without unpinning here every message from
+        // the restarted master — and, since `ready()` never re-fires the
+        // handshake broadcast that would otherwise repin it, every message
+        // this device sends back — is silently rejected forever even though
+        // the transport layer reports a successful reconnect. Reverting to
+        // `.notSet` re-opens the one-time discovery window so the next full
+        // master broadcast can re-establish authority under its new id.
+        root.gameModel.gameConfig.master.type = .notSet
         // GameMessageKey carries no session-generation nonce. Without this,
         // a rejoined session replaying/rebuilding low-numbered messages (a
         // fresh master session, or a SharePlay Journal catch-up for a
