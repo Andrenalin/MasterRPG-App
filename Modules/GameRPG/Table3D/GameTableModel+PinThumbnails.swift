@@ -21,17 +21,21 @@ extension GameTableModel {
     /// Loads the pin's photo thumbnail (2D pin pipeline) onto the 3D token.
     func loadPinThumbnail(pinId: UUID, photoId: UUID) async {
         defer {
+            // Only the load that is still current for this pin may clear its bookkeeping: a newer
+            // load for a different photo has already replaced `pendingPinPhotoIds[pinId]` and
+            // `pendingThumbnailTasks[pinId]`, and must keep both.
             if pendingPinPhotoIds[pinId] == photoId {
                 pendingPinPhotoIds[pinId] = nil
+                pendingThumbnailTasks[pinId] = nil
             }
-            pendingThumbnailTasks[pinId] = nil
         }
         guard !Task.isCancelled, let cache = photoRoot.cacheControllable else { return }
         var image = await cache.thumbnail(for: photoId)
         if image == nil {
-            guard let item = await photoRoot.itemControllable.item(for: photoId) else { return }
-            await cache.thumbnailId(for: photoId, item: item)
-            image = await cache.thumbnail(for: photoId)
+            if let item = await photoRoot.itemControllable.item(for: photoId) {
+                await cache.thumbnailId(for: photoId, item: item)
+                image = await cache.thumbnail(for: photoId)
+            }
         }
         guard !Task.isCancelled else { return }
         let currentPin = currentMapModel().flatMap { mapModel in
@@ -40,14 +44,20 @@ extension GameTableModel {
                 : mapModel.mapPins.first(where: { $0.id == pinId })
         }
         guard currentPin?.photoId == photoId,
-              let image,
               let pawn = setup.pinPawns.first(where: { $0.pinId == pinId }) else { return }
+        guard let image else {
+            // Don't retry on every map sync: wait until the pin's photo changes.
+            failedPinPhotoIds[pinId] = photoId
+            return
+        }
+        failedPinPhotoIds[pinId] = nil
         pawn.setPhotoTexture(image)
         pawn.loadedPhotoId = photoId
     }
 
     func beginPinPhotoLoad(pinId: UUID, photoId: UUID) -> Bool {
-        guard pendingPinPhotoIds[pinId] != photoId else { return false }
+        guard pendingPinPhotoIds[pinId] != photoId,
+              failedPinPhotoIds[pinId] != photoId else { return false }
         pendingPinPhotoIds[pinId] = photoId
         return true
     }

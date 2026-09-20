@@ -44,7 +44,16 @@ extension GameTableModel {
         currentMapImage = nil
         currentMapDegrees = 0
         fogSignature = nil
+        boardRenderGeneration += 1
         setup.board.clearMap()
+    }
+
+    /// Broadcasts a game-master edit unless the GM paused sharing (`isStreaming`). Every GM
+    /// mutation must go through here so hidden rooms/pins never reach players while sharing is
+    /// paused; only the explicit "Refresh Shared Map" (`sendMapUpdates`) bypasses the pause.
+    func broadcastMapEdit(for mapId: UUID) {
+        guard isStreaming else { return }
+        broadcastMapState(for: mapId)
     }
 
     func broadcastMapState(for mapId: UUID) {

@@ -36,6 +36,13 @@ protocol SharePlayControllerDelegate: AnyObject {
     /// active in the joined session. Messenger has no history, so the current
     /// presentation must be replayed directly to this transport participant.
     func sharePlayJoinedPlayer(id: UUID) async
+    /// The SharePlay participant this player device has pinned as the game master, if any of
+    /// `participantIds` is it. Used to keep the master out of the table's player-seat ranking.
+    func pinnedMasterParticipantId(among participantIds: [UUID]) async -> UUID?
+}
+
+extension SharePlayControllerDelegate {
+    func pinnedMasterParticipantId(among participantIds: [UUID]) async -> UUID? { nil }
 }
 
 // MARK: - Session / activation / tracking support types
@@ -793,20 +800,27 @@ final class RPGSharePlayController {
         _ = withObservationTracking {
             gameModel.shareState.mode
         } onChange: { [weak self] in
-            let taskId = UUID()
-            let task = Task { @MainActor [weak self] in
-                guard let self, let gameModel = self.gameModel else { return }
-                // Without tracking this Task in `tasks[]`, a burst of mode changes right
-                // before teardown could each schedule an uncancellable turn that calls
-                // `applyShareState()` against a `systemCoordinator` `reset()` may have just
-                // cleared. See CODE_AUDIT.md §3.7.
-                guard !Task.isCancelled else { return }
-                self.tasks.removeValue(forKey: taskId)
-                Logger.sharePlay.debug("Presentation mode changed to: \(gameModel.shareState.mode.rawValue, privacy: .public)")
-                self.applyShareState()
-                self.observeShareStateMode()
+            // `onChange` is a `@Sendable` closure, so the `tasks[]` bookkeeping has to happen
+            // on the main actor; hop there first, then track the presentation-mode task.
+            Task { @MainActor [weak self] in
+                self?.schedulePresentationModeUpdate()
             }
-            self?.tasks[taskId] = task
+        }
+    }
+
+    private func schedulePresentationModeUpdate() {
+        let taskId = UUID()
+        // Without tracking this Task in `tasks[]`, a burst of mode changes right
+        // before teardown could each schedule an uncancellable turn that calls
+        // `applyShareState()` against a `systemCoordinator` `reset()` may have just
+        // cleared. See CODE_AUDIT.md §3.7.
+        tasks[taskId] = Task { @MainActor [weak self] in
+            guard let self, let gameModel = self.gameModel else { return }
+            guard !Task.isCancelled else { return }
+            self.tasks.removeValue(forKey: taskId)
+            Logger.sharePlay.debug("Presentation mode changed to: \(gameModel.shareState.mode.rawValue, privacy: .public)")
+            self.applyShareState()
+            self.observeShareStateMode()
         }
     }
     #endif
@@ -828,7 +842,7 @@ final class RPGSharePlayController {
                 gameTableModel: gameTableModel
             )
         } else if let gameTableModel {
-            setupSeatAssignment(gameTableModel: gameTableModel)
+            setupLocalSeatAssignment(gameTableModel: gameTableModel)
         }
     }
 
@@ -884,7 +898,7 @@ final class RPGSharePlayController {
             self.coordinatedTabletopGame = identifier
             tabletopGame.coordinateWithSession(groupSession)
             if let gameTableModel {
-                self.setupSeatAssignment(gameTableModel: gameTableModel)
+                await self.setupSeatAssignment(gameTableModel: gameTableModel)
             } else {
                 Logger.sharePlay.debug("GameTableModel not available at session configure time — seats assigned later")
             }

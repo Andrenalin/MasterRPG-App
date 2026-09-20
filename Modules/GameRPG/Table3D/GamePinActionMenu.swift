@@ -23,7 +23,23 @@ private struct GamePinActionMenuContent: View {
     let pin: MapPinModel
 
     var body: some View {
-        HStack(spacing: 12) {
+        ViewThatFits(in: .horizontal) {
+            HStack { GamePinMenuButtons(game: game, pin: pin) }
+            ScrollView(.horizontal) { HStack { GamePinMenuButtons(game: game, pin: pin) } }
+                .scrollIndicators(.hidden)
+        }
+        .padding()
+    }
+}
+
+/// The menu's buttons, as their own `View` so both `ViewThatFits` layouts share one definition.
+@MainActor
+private struct GamePinMenuButtons: View {
+    let game: GameTableModel
+    let pin: MapPinModel
+
+    var body: some View {
+        Group {
             GamePinMenuButton(
                 title: pin.isDead
                     ? LocalizedStringResource("Revive Pin", bundle: .module)
@@ -71,7 +87,6 @@ private struct GamePinActionMenuContent: View {
                 )
             }
         }
-        .padding(12)
     }
 }
 

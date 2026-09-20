@@ -26,12 +26,13 @@ extension GameTableModel {
     ///
     /// Cancellation-safe: if the awaiting `Task` is cancelled (e.g. the view is dismissed
     /// before any frame renders), the pending continuation is resumed and the RealityKit
-    /// subscription torn down here instead of leaking for the process lifetime. See
-    /// CODE_AUDIT §3.1.
+    /// subscription torn down here instead of leaking for the process lifetime.
     func waitForFirstRenderedFrame() async {
         guard let scene = renderer.root.scene else { return }
         await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
+                // A second concurrent wait must not orphan the first one's continuation.
+                resumePendingRenderWait()
                 pendingRenderWaitContinuation = continuation
                 pendingRenderWaitSubscription = scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
                     self?.resumePendingRenderWait()

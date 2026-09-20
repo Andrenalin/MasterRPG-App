@@ -18,7 +18,6 @@ extension GameSetup {
         degrees: Double,
         isGameMaster: Bool,
         activeAttackerPinId: UUID?,
-        viewportPan: CGPoint,
         healthPercent: (MapPinModel) -> Double?
     ) -> [UUID: UUID] {
         let allPins: [MapPinModel]
@@ -39,7 +38,7 @@ extension GameSetup {
             return mapModel.map { !$0.isLocationHiddenForPlayers(pin.location) } ?? true
         }
 
-        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees, viewportPan: viewportPan)
+        let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
 
         // Same conversion the 2D map applies to a pin's base size (points ×
         // pinScale), just projected into table meters instead of screen
@@ -71,33 +70,21 @@ extension GameSetup {
                 lineupIndex += 1
             }
             let hiddenForMaster = isGameMaster && !pin.isShown
-            if let pawn = existingPawns[pin.id] {
-                pawn.update(
-                    pin: pin,
-                    position: position,
-                    hiddenForMaster: hiddenForMaster,
-                    activeAttackerPinId: activeAttackerPinId,
-                    healthPercent: healthPercent(pin),
-                    pointsToMeters: pointsToMeters
-                )
-                if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
-                    photoLoads[pin.id] = photoId
-                }
-            } else {
-                let pawn = PinPawn(pin: pin, pointsToMeters: pointsToMeters)
-                pawn.update(
-                    pin: pin,
-                    position: position,
-                    hiddenForMaster: hiddenForMaster,
-                    activeAttackerPinId: activeAttackerPinId,
-                    healthPercent: healthPercent(pin),
-                    pointsToMeters: pointsToMeters
-                )
+            let pawn = existingPawns[pin.id] ?? PinPawn(pin: pin, pointsToMeters: pointsToMeters)
+            pawn.update(
+                pin: pin,
+                position: position,
+                hiddenForMaster: hiddenForMaster,
+                activeAttackerPinId: activeAttackerPinId,
+                healthPercent: healthPercent(pin),
+                pointsToMeters: pointsToMeters
+            )
+            if existingPawns[pin.id] == nil {
                 pinPawns.append(pawn)
                 pinContainer.addChild(pawn.entity)
-                if let photoId = pin.photoId {
-                    photoLoads[pin.id] = photoId
-                }
+            }
+            if pawn.loadedPhotoId != pin.photoId, let photoId = pin.photoId {
+                photoLoads[pin.id] = photoId
             }
         }
 
@@ -112,11 +99,14 @@ extension GameSetup {
 
     /// Syncs invisible room fog hit-test volumes with the current map's
     /// entries so a room can be double-tapped/long-pressed directly on the
-    /// table. Clears every hit area when there's no map or image to project
-    /// coordinates against — the room menu still works then, only the
+    /// table. Only the game master can act on rooms, so players get no hit
+    /// volumes at all. Clears every hit area when there's no map or image to
+    /// project coordinates against — the room menu still works then, only the
     /// on-table gesture is unavailable.
-    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, viewportPan: CGPoint) {
-        guard let mapModel, let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees, viewportPan: viewportPan) else {
+    func syncRooms(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, isGameMaster: Bool) {
+        guard isGameMaster,
+              let mapModel,
+              let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees) else {
             for area in roomHitAreas {
                 area.entity.removeFromParent()
             }
@@ -149,37 +139,24 @@ extension GameSetup {
 
     /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
     /// coordinate conversion, authoritative from `MapModel` when available.
-    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double, viewportPan: CGPoint) -> MapTableProjection? {
-        if let mapModel, mapModel.width > 0, mapModel.height > 0 {
-            // MapModel is authoritative: room/pin coordinates were already
-            // normalized into this oriented canvas by the 2D editor.
-            let imageSize = CGSize(width: mapModel.width, height: mapModel.height)
-            return MapTableProjection(
-                imageSize: imageSize,
-                degrees: 0,
-                focusRect: GameTableModel.boardFocusRect(
-                    entries: mapModel.entries,
-                    imageSize: imageSize,
-                    panOffset: viewportPan
-                )
-            )
-        } else if let mapImage {
-            return MapTableProjection(imageSize: mapImage.fixedSize, degrees: degrees)
-        } else {
-            return nil
-        }
+    private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) -> MapTableProjection? {
+        guard let imageSize = MapTableProjection.coordinateSize(
+            mapWidth: mapModel?.width ?? 0,
+            mapHeight: mapModel?.height ?? 0,
+            imageSize: mapImage?.fixedSize,
+            degrees: degrees
+        ) else { return nil }
+        return MapTableProjection(imageSize: imageSize)
     }
 }
 
 extension GameTableModel {
-    @MainActor
     func resetGame() {
         syncPawnsWithMapPins()
     }
 
     /// Syncs pin tokens with the pins of the current map (may be nil — player
     /// pins then line up outside the map area) and loads missing pin photos.
-    @MainActor
     func syncPawnsWithMapPins() {
         let mapModel = currentMapModel()
         let battleRound = mapRoot.mapGameControllable.battleRoundModel
@@ -190,14 +167,13 @@ extension GameTableModel {
             degrees: currentMapDegrees,
             isGameMaster: isGameMaster,
             activeAttackerPinId: activeAttackerPinId,
-            viewportPan: manualViewportOffset,
             healthPercent: healthPercent(for:)
         )
         setup.syncRooms(
             mapModel: mapModel,
             mapImage: currentMapImage,
             degrees: currentMapDegrees,
-            viewportPan: manualViewportOffset
+            isGameMaster: isGameMaster
         )
         updateSelectedPinState(mapModel: mapModel)
         for (pinId, photoId) in photoLoads {
@@ -224,95 +200,85 @@ extension GameTableModel {
 }
 
 /// Maps the already-oriented 2D map coordinates onto the horizontal board.
-/// `MapModel.resetImage` rescales rooms and pins when the photo rotates, so the
-/// projection swaps dimensions for 90°/270° but must not rotate coordinates a
-/// second time. Shared by every platform's `GameSetup` — see CODE_AUDIT §9.1.
-struct MapTableProjection {
+/// `MapModel.resetImage` rescales rooms and pins when the photo rotates, so
+/// the projection works in the oriented canvas and must not rotate
+/// coordinates a second time. Shared by every platform's `GameSetup` and by
+/// `Board`.
+struct MapTableProjection: Equatable {
     /// The bounding box the map fits into on the board — the table's own
     /// extents inset by `GameMetrics.mapMargin` on every side, leaving that
     /// margin free for each seat's dice (see `PlayerSeat.diceLayout`). The
-    /// map's actual rendered size (`planeWidth`/`planeDepth` below) fits
-    /// inside this box preserving the source image's aspect ratio, so it
-    /// only fills both dimensions when the image's aspect ratio happens to
-    /// match the box's.
-    // `maxPlaneWidth` is the board's X-extent, `maxPlaneDepth` its Z-extent
-    // — the table's long dimension is now Z (`tableLength`), not X. See
-    // `PlayerSeat.seatPoses`'s own doc for why.
+    /// map's actual rendered size (`planeWidth`/`planeDepth`) fits inside this
+    /// box preserving the source image's aspect ratio.
+    /// `maxPlaneWidth` is the board's X-extent, `maxPlaneDepth` its Z-extent.
     static let maxPlaneWidth: Float = GameMetrics.tableWidth - (GameMetrics.mapMargin * 2)
     static let maxPlaneDepth: Float = GameMetrics.tableLength - (GameMetrics.mapMargin * 2)
     /// Token height above the board surface.
     static let pinHeight: Float = GameMetrics.tableThickness + GameMetrics.mapSurfaceClearance
     /// Pin diameter (meters) used when no map is on the table and there's no
     /// image to derive a conversion factor from — matches a "normal" 2D pin
-    /// (44pt) rendered at the table's former fixed 0.04 m default.
+    /// (44pt) rendered at a fixed 0.04 m default.
     static let fallbackPointsToMeters: Float = 0.04 / 44
 
+    /// The oriented map coordinate space, at least 1×1.
     let imageSize: CGSize
-    let degrees: Double
     let planeWidth: Float
     let planeDepth: Float
-    /// The portion of `imageSize` mapped onto the full board plane — always
-    /// the whole image today, since the 3D board never crops/zooms into a
-    /// focused room (see `GameTableModel.boardFocusRect`; only the 2D map
-    /// still does). A pin located outside this rect projects beyond the
-    /// physical table edges.
-    let focusRect: CGRect
 
-    /// Table meters per source-image point, at this projection's scale.
-    /// Multiplying a 2D pin's point size by this (and by `MapModel.pinScale`)
-    /// gives the 3D token the same size relative to the table that the pin
-    /// has relative to the map image.
-    ///
-    /// Uses `focusRect` rather than assuming it always equals `imageSize` —
-    /// `boardFocusRect` returns the full image today, but any future crop
-    /// would need pins to grow by the same magnification to stay correctly
-    /// sized relative to the map around them, matching how the 2D map's own
-    /// room-focus zoom already scales its pins along with the map image
-    /// (`MapEditorCanvas`'s `scaleEffect` covers both together).
+    /// Table meters per source-image point. Multiplying a 2D pin's point size
+    /// by this (and by `MapModel.pinScale`) gives the 3D token the same size
+    /// relative to the table that the pin has relative to the map image.
     var metersPerPoint: Float {
-        guard focusRect.width > 0 else { return 0 }
-        return planeWidth / Float(focusRect.width)
+        planeWidth / Float(imageSize.width)
     }
 
-    init(imageSize: CGSize, degrees: Double, focusRect: CGRect? = nil) {
-        let normalizedDegrees = Self.normalizedDegrees(degrees)
-        let orientedSize = Self.orientedImageSize(imageSize, degrees: normalizedDegrees)
-        let safeSize = CGSize(
-            width: max(1, orientedSize.width),
-            height: max(1, orientedSize.height)
-        )
+    /// `imageSize` must already be in the oriented coordinate space (see `coordinateSize`).
+    init(imageSize: CGSize) {
+        let safeSize = CGSize(width: max(1, imageSize.width), height: max(1, imageSize.height))
         self.imageSize = safeSize
-        self.degrees = normalizedDegrees
-        self.focusRect = focusRect ?? CGRect(origin: .zero, size: safeSize)
-        let aspectRatio = safeSize.width / safeSize.height
-        // Fit inside the (possibly non-square) `maxPlaneWidth` ×
-        // `maxPlaneDepth` box preserving aspect ratio: compare the image's
-        // aspect ratio against the box's own to find which dimension is the
-        // constraining one, rather than assuming width always is.
-        let boxAspectRatio = CGFloat(Self.maxPlaneWidth / Self.maxPlaneDepth)
+        let plane = Self.fitBox(aspectRatio: safeSize.width / safeSize.height)
+        planeWidth = plane.width
+        planeDepth = plane.depth
+    }
+
+    /// Fits a plane of the given aspect ratio inside the (possibly non-square)
+    /// `maxPlaneWidth` × `maxPlaneDepth` box, preserving the aspect ratio.
+    static func fitBox(aspectRatio: CGFloat) -> (width: Float, depth: Float) {
+        let boxAspectRatio = CGFloat(maxPlaneWidth / maxPlaneDepth)
         if aspectRatio > boxAspectRatio {
-            planeWidth = Self.maxPlaneWidth
-            planeDepth = Self.maxPlaneWidth / Float(aspectRatio)
-        } else {
-            planeDepth = Self.maxPlaneDepth
-            planeWidth = Self.maxPlaneDepth * Float(aspectRatio)
+            return (maxPlaneWidth, maxPlaneWidth / Float(aspectRatio))
         }
+        return (maxPlaneDepth * Float(aspectRatio), maxPlaneDepth)
+    }
+
+    /// The canvas size map/room/pin coordinates live in: the map's stored size when set,
+    /// otherwise the rotated photo's own size. `nil` when neither is available.
+    static func coordinateSize(
+        mapWidth: CGFloat,
+        mapHeight: CGFloat,
+        imageSize: CGSize?,
+        degrees: Double
+    ) -> CGSize? {
+        if mapWidth > 0, mapHeight > 0 {
+            return CGSize(width: mapWidth, height: mapHeight)
+        }
+        guard let imageSize else { return nil }
+        return orientedImageSize(imageSize, degrees: degrees)
     }
 
     func tablePosition(for location: CGPoint) -> SIMD3<Float> {
-        let normalizedX = (location.x - focusRect.minX) / focusRect.width
-        let normalizedY = (location.y - focusRect.minY) / focusRect.height
+        let normalizedX = location.x / imageSize.width
+        let normalizedY = location.y / imageSize.height
         let tableX = Float(normalizedX - 0.5) * planeWidth
         let tableZ = Float(normalizedY - 0.5) * planeDepth
         return SIMD3<Float>(tableX, Self.pinHeight, tableZ)
     }
 
-    /// Exact inverse of `tablePosition(for:)`, clamped to the full image
-    /// bounds (not just `focusRect`) since a pin may be dropped anywhere on
-    /// the table.
+    /// Exact inverse of `tablePosition(for:)`, clamped to the image bounds
+    /// since a pin may be dropped anywhere on the table.
     func mapLocation(for position: SIMD3<Float>) -> CGPoint {
-        let x = (CGFloat(position.x / planeWidth) + 0.5) * focusRect.width + focusRect.minX
-        let y = (CGFloat(position.z / planeDepth) + 0.5) * focusRect.height + focusRect.minY
+        let x = (CGFloat(position.x / planeWidth) + 0.5) * imageSize.width
+        let y = (CGFloat(position.z / planeDepth) + 0.5) * imageSize.height
         return CGPoint(x: min(max(x, 0), imageSize.width), y: min(max(y, 0), imageSize.height))
     }
 

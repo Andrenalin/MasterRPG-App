@@ -54,7 +54,7 @@ extension GameTableModel {
     /// potentially dozens of times per second during one drag — so the resolved pawn is
     /// cached across calls instead of re-scanning `pinPawns` (and, when the dragged pin is
     /// also the selected one, a second scan inside `updatePinMenuAttachmentPosition`) on every
-    /// tick. See CODE_AUDIT §7.3.
+    /// tick.
     func pinDragChanged(pinId: UUID, position: SIMD3<Float>) {
         guard canMovePin(pinId) else { return }
         let pawn: PinPawn
@@ -71,40 +71,30 @@ extension GameTableModel {
         }
     }
 
-    /// Pin drop: write the move back into the map model, then network it.
+    /// Pin drop: write the move back into the map model, then network it. The pawns are always
+    /// resynced afterwards, so a rejected or impossible drop snaps the token back to the model's
+    /// location instead of leaving it where it was released.
     func pinDragEnded(pinId: UUID, position: SIMD3<Float>) {
         cachedDragPawn = nil
+        defer { syncPawnsWithMapPins() }
         guard canMovePin(pinId), let mapId = currentMapId,
               let mapImage = currentMapImage,
-              let mapModel = currentMapModel() else { return }
-        let coordinateSize = mapModel.width > 0 && mapModel.height > 0
-            ? CGSize(width: mapModel.width, height: mapModel.height)
-            : MapTableProjection.orientedImageSize(
-                mapImage.fixedSize,
-                degrees: currentMapDegrees
-            )
-        // Must match whatever projection actually rendered the board (and
-        // thus whatever the user saw under their finger) — `boardFocusRect`
-        // always returns the full map now, but this keeps the two in
-        // lockstep regardless.
-        let projection = MapTableProjection(
-            imageSize: coordinateSize,
-            degrees: 0,
-            focusRect: Self.boardFocusRect(
-                entries: mapModel.entries,
-                imageSize: coordinateSize,
-                panOffset: manualViewportOffset
-            )
-        )
+              let mapModel = currentMapModel(),
+              let coordinateSize = MapTableProjection.coordinateSize(
+                  mapWidth: mapModel.width,
+                  mapHeight: mapModel.height,
+                  imageSize: mapImage.fixedSize,
+                  degrees: currentMapDegrees
+              ) else { return }
+        let projection = MapTableProjection(imageSize: coordinateSize)
         let location = projection.mapLocation(
             for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
         )
 
         if pinId == mapModel.pointer.id {
             guard mapRoot.mapGameControllable.movePointer(itemId: mapId, location: location) else { return }
-            syncPawnsWithMapPins()
             if isGameMaster {
-                broadcastMapState(for: mapId)
+                broadcastMapEdit(for: mapId)
             } else {
                 sendPlayerPointerUpdate(mapId: mapId)
             }
@@ -116,9 +106,8 @@ extension GameTableModel {
             pinId: pinId,
             location: location
         ) else { return }
-        syncPawnsWithMapPins()
         if isGameMaster {
-            broadcastMapState(for: mapId)
+            broadcastMapEdit(for: mapId)
         } else {
             sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
         }
@@ -165,7 +154,7 @@ extension GameTableModel {
               mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: pinId) else { return }
         syncPawnsWithMapPins()
         if isGameMaster {
-            broadcastMapState(for: mapId)
+            broadcastMapEdit(for: mapId)
         } else {
             sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
         }
@@ -175,7 +164,7 @@ extension GameTableModel {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.toggleDeadPin(itemId: mapId, pinId: selectedPinId) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     var canAddSelectedPinToBattleRound: Bool {
@@ -197,7 +186,7 @@ extension GameTableModel {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.togglePin(itemId: mapId, pinId: selectedPinId) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     /// Highlights (red border) the selected pin — the master's local pin
@@ -207,21 +196,21 @@ extension GameTableModel {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.toggleHighlightPin(itemId: mapId, pinId: selectedPinId, isGameMaster: isGameMaster) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     func resizeSelectedPin() {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.resizePin(itemId: mapId, pinId: selectedPinId) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     func toggleSelectedPinZoom() {
         guard isGameMaster, let mapId = currentMapId, let selectedPinId,
               mapRoot.mapGameControllable.zoomPin(itemId: mapId, pinId: selectedPinId) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     @discardableResult
@@ -235,7 +224,7 @@ extension GameTableModel {
             return false
         }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
         broadcastBattleRoundState(for: mapId)
         return true
     }

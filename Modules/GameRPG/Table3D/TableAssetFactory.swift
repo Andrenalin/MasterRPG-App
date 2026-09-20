@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if os(iOS) || os(macOS) || os(visionOS)
+import Foundation
 import RealityKit
 import RPGTabletopGameContent
 
@@ -10,25 +11,20 @@ import AppKit
 import UIKit
 #endif
 
-/// Shared RealityKit table-asset construction, used identically by both the
-/// visionOS TabletopKit-backed `GameRenderer` and the iOS/macOS camera-based
-/// `GameRenderer` — pure entity-construction code with no platform
-/// dependency. See CODE_AUDIT §9.3.
+/// Shared RealityKit table-asset construction, used identically by both the visionOS
+/// TabletopKit-backed `GameRenderer` and the iOS/macOS camera-based `GameRenderer` — pure
+/// entity-construction code with no platform dependency.
 @MainActor
 enum TableAssetFactory {
+    /// The wood materials are borrowed from the package's decorative table, whose mesh is
+    /// discarded (it contains an opening and props that don't belong on the game board). Loading
+    /// that whole entity is costly, so it happens once per process.
+    private static var cachedWoodMaterials: [any Material]?
+
     static func makePlainWoodTable() async throws -> ModelEntity {
-        // Reuse only the package's wood material. The referenced table mesh is
-        // deliberately discarded because it contains the decorative opening
-        // and props that do not belong on the game board.
-        let materialSource = try await Entity(
-            named: "table_assembly",
-            in: tabletopGameContentBundle
-        )
-        // `width`/`depth` are X/Z respectively (`generateBox`'s own
-        // convention) — the table's long dimension runs along Z
-        // (`tableLength`), not X, matching `Table.shape`'s own
-        // `.rectangular(width:height:thickness:)` for the same table. See
-        // `PlayerSeat.seatPoses`'s own doc for why.
+        // `width`/`depth` are X/Z respectively (`generateBox`'s own convention) — the table's long
+        // dimension runs along Z (`tableLength`), matching `Table.shape`'s
+        // `.rectangular(width:height:thickness:)` for the same table.
         let table = ModelEntity(
             mesh: .generateBox(
                 width: GameMetrics.tableWidth,
@@ -36,19 +32,33 @@ enum TableAssetFactory {
                 depth: GameMetrics.tableLength
             )
         )
+        table.model?.materials = try await woodMaterials()
+        table.name = "PlainWoodTable"
+        table.position.y = GameMetrics.tableThickness / 2
+        return table
+    }
+
+    private static func woodMaterials() async throws -> [any Material] {
+        if let cachedWoodMaterials {
+            return cachedWoodMaterials
+        }
+        let materialSource = try await Entity(
+            named: "table_assembly",
+            in: tabletopGameContentBundle
+        )
+        let materials: [any Material]
         if let sourceModel = firstModelComponent(in: materialSource) {
-            table.model?.materials = sourceModel.materials
+            materials = sourceModel.materials
         } else {
             var fallbackMaterial = PhysicallyBasedMaterial()
             fallbackMaterial.baseColor = .init(
                 tint: .init(red: 0.38, green: 0.2, blue: 0.08, alpha: 1)
             )
             fallbackMaterial.roughness = .init(floatLiteral: 0.75)
-            table.model?.materials = [fallbackMaterial]
+            materials = [fallbackMaterial]
         }
-        table.name = "PlainWoodTable"
-        table.position.y = GameMetrics.tableThickness / 2
-        return table
+        cachedWoodMaterials = materials
+        return materials
     }
 
     static func firstModelComponent(in entity: Entity) -> ModelComponent? {

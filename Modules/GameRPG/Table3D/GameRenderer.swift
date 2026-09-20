@@ -9,7 +9,7 @@ import RPGTabletopGameContent
 import os.log
 
 @MainActor
-class GameRenderer: TabletopGame.RenderDelegate {
+final class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
     /// Not read from the window at runtime — see `rootOffset`'s own doc for
@@ -57,8 +57,8 @@ class GameRenderer: TabletopGame.RenderDelegate {
     )
     weak var game: GameTableModel?
     private var didLoadAssets = false
+    private var isLoadingAssets = false
 
-    @MainActor
     init() {
         // Move everything down within the volume so the tabletop is easier to see.
         root = Entity()
@@ -72,21 +72,24 @@ class GameRenderer: TabletopGame.RenderDelegate {
         // initializer resource-free also supports lightweight control tests.
     }
     
-    @MainActor
+    /// Loads the table mesh. A failure is logged and can be retried by calling again; only a
+    /// successful load (or one already in flight) makes later calls no-ops.
     func loadAssets() async {
-        guard !didLoadAssets else { return }
-        didLoadAssets = true
+        guard !didLoadAssets, !isLoadingAssets else { return }
+        isLoadingAssets = true
+        defer { isLoadingAssets = false }
 
         do {
             let table = try await TableAssetFactory.makePlainWoodTable()
             table.setParent(root)
+            didLoadAssets = true
         } catch {
             Logger.gameTable.error(
                 "Failed to load the plain wood table: \(error.localizedDescription, privacy: .public)"
             )
         }
     }
-    
+
     @MainActor
     var cursorTransform: Transform? = nil {
         willSet(newValue) {
@@ -125,7 +128,7 @@ class GameRenderer: TabletopGame.RenderDelegate {
 
     /// Sets (or clears) the drag-destination cursor's transform directly — called
     /// from `GameInteraction.update(interaction:)`, which is itself already
-    /// `@MainActor`, so no actor hop is needed here. See CODE_AUDIT_9 §5.2.
+    /// `@MainActor`, so no actor hop is needed here.
     func updateCursor(_ transform: Transform?) {
         cursorTransform = transform
     }

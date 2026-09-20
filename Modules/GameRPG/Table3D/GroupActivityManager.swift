@@ -6,7 +6,7 @@ import SwiftUI
 @preconcurrency import TabletopKit
 
 @MainActor @Observable
-class GroupActivityManager {
+final class GroupActivityManager {
     var tabletopGame: TabletopGame
 
     /// `gameTableModel` is threaded through to `RPGSharePlayController.setup(tabletopGame:gameTableModel:)`

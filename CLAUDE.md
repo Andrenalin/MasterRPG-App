@@ -148,6 +148,18 @@ If CoreData is configured to use CloudKit:
 - **Route** Routes for the Navigator
 - **View** Other views
  
+## 3D Game Table (`Modules/GameRPG/Table3D`)
+Two implementations share one model (`GameTableModel`), `Board`/`BoardTextureRenderer`, `MapTableProjection`, `PinPawn` and `RoomHitArea`:
+- **visionOS**: a volumetric TabletopKit table with seats, a pre-allocated dice pool per seat (`GameDice.swift`), SharePlay seat assignment (`TableSeatAssignment`) and pinch-to-scale.
+- **iOS/macOS**: a camera-based RealityKit table (`GamePortable*`, `GameTableView+PlatformFlat`) showing map, fog and pins. It has **no dice or seats by design**. On macOS a bare mouse drag orbits the camera; on iOS it moves the table.
+
+Rules for this module:
+- Every game-master edit is broadcast through `broadcastMapEdit(for:)`, which honours the "pause sharing" toggle (`isStreaming`). Only `sendMapUpdates()` (explicit "Refresh Shared Map") calls `broadcastMapState(for:)` directly.
+- Fog/board renders go through `replaceFogOfWarTask()` / `handleMapChange` (cancel-then-replace). Never call the render pipeline directly from another module; use `refreshFogOfWar(isGameMaster:)`.
+- A closure stored on the model must never capture a SwiftUI view value (its `@State` storage holds the model).
+- Keep syncs idempotent: `PinPawn.update`, `RoomHitArea.update` and `applyDiceRoll` skip unchanged state because they run on every map sync (each TabletopKit action is a SharePlay message).
+- Put decisions that don't need TabletopKit/RealityKit in pure types (`TableSeatAssignment`, `MapTableProjection`) so they can be unit-tested on iOS.
+
 ## Platform Conditionals
 Use `#if os(iOS)`, `#if os(macOS)`, `#if os(tvOS)`, `#if os(visionOS)` for platform-specific code. Widget extensions gate extension-unavailable APIs with `#if !os(...)`/API-availability checks on a case-by-case basis — no `WIDGET_EXTENSION` Swift compilation condition is defined on any target, so don't write `#if !WIDGET_EXTENSION` expecting it to do anything (it silently evaluates as always-true).
 All modules using the bundle version of SwiftUI views for example `Text("Editor Window", bundle: .module)` for the correct Localizations.

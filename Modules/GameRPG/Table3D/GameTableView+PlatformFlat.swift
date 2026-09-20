@@ -113,10 +113,6 @@ public struct GameTableView: View {
     }
 }
 
-/// Explicit name for callers that want to distinguish the camera-based table
-/// from the volumetric visionOS TabletopKit view.
-public typealias GameTableRealityView = GameTableView
-
 @MainActor
 private struct GameTableRealityContent: View {
     let root: GameRoot
@@ -124,38 +120,17 @@ private struct GameTableRealityContent: View {
     @Binding var accessibilitySubscriptions: [any Cancellable]
     let showsEmbeddedToolbar: Bool
 
-    /// Captured on `boardDragGesture`'s first `.onChanged` call (when it's
-    /// panning, not moving the table), cleared on `.onEnded` — the pan
-    /// commits once, in a single step, rather than re-rendering the board
-    /// texture on every touch-move event.
-    @State private var viewportPanStart: SIMD3<Float>?
-    /// See `StaleGestureTracker`'s own doc — if `.onEnded` is never delivered (system
-    /// interruption, window backgrounding mid-drag), `viewportPanStart` would otherwise stay
-    /// stuck non-nil forever, wedging every future pan against a stale start position.
-    @State private var viewportPanTracker = StaleGestureTracker()
-    /// The focused room captured when the in-flight pan started — `panViewport` discards the
-    /// commit if this no longer matches the current focus by the time `.onEnded` fires. See
-    /// CODE_AUDIT §5.12.
-    @State private var viewportPanRoomId: UUID?
-    /// The running total of table-move translation applied so far this drag (`tableMoveGesture`,
-    /// or `boardDragGesture` when it's moving the table rather than panning) — `DragGesture.Value.translation`
-    /// is cumulative from the gesture's start, not per-frame, so this is what lets `.onChanged`
-    /// apply only the *new* delta each call. Reset on `.onEnded`.
+    /// The running total of table-move translation applied so far this drag (`tableMoveGesture` or
+    /// `boardDragGesture`) — `DragGesture.Value.translation` is cumulative from the gesture's start,
+    /// not per-frame, so this is what lets `.onChanged` apply only the *new* delta each call. Reset
+    /// on `.onEnded`.
     @State private var tableMoveLastTranslation: CGSize = .zero
     /// See `StaleGestureTracker`'s own doc — if `.onEnded` is never delivered,
     /// `tableMoveLastTranslation` would otherwise stay stuck non-zero forever, applying one
-    /// large, wrong jump to the table's position on the next unrelated table-move gesture. See
-    /// CODE_AUDIT §5.1.
+    /// large, wrong jump to the table's position on the next unrelated table-move gesture.
     @State private var tableMoveTracker = StaleGestureTracker()
-    /// `nil` at rest; decided once per `boardDragGesture`, on its first
-    /// `.onChanged` call, from whether a room was focused *then* — not
-    /// re-checked on every subsequent call, so a focus change arriving
-    /// mid-drag (e.g. a synced update from another participant) can't swap
-    /// behavior out from under the user's finger. `true` = panning the
-    /// viewport crop; `false` = moving the table.
-    @State private var boardDragPansViewport: Bool?
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
-    /// first instead of both racing `GameTableModel`'s fog recomposite. See CODE_AUDIT §5.5.
+    /// first instead of both racing `GameTableModel`'s fog recomposite.
     @State private var roomActionCoordinator = RoomActionCoordinator()
 
     var body: some View {
@@ -181,33 +156,16 @@ private struct GameTableRealityContent: View {
         } action: { size in
             game.renderer.updateCamera(for: size)
         }
-        // One physical one-finger drag, three possible meanings, tried in
-        // this exact order via `.exclusively(before:)` — mirrors
-        // `pinTapGesture.exclusively(before: roomTapGesture)` below, just
-        // for drags instead of taps:
-        //  1. `pinDragGesture` — a touch starting on a pin moves that pin.
-        //     Entity-targeted, so its predicate simply never matches a
-        //     touch that lands elsewhere, letting the chain fall through.
-        //  2. `boardDragGesture` — a touch starting on the map surface
-        //     either pans a focused room's zoomed viewport crop, or moves
-        //     the table (see its own doc for which, and why). Also
-        //     entity-targeted, so it's naturally disjoint from #1: pins and
-        //     room fog sit closer to the camera and win hit-testing first,
-        //     as `RoomHitArea`'s only other caller already relies on — a
-        //     room's own tap gestures below are a *separate*, tap-only
-        //     gesture chain on `RoomComponent` itself, so this never
-        //     touches those either.
-        //  3. `tableMoveGesture` — anything else (the bare wood table, or
-        //     empty space) moves the whole table instead of orbiting the
-        //     camera around it. Unlike #1/#2 this one is *not*
-        //     entity-targeted (a plain `DragGesture` matches any touch), so
-        //     without this ordering it would race #1/#2 for the exact same
-        //     touch instead of only catching what they don't.
-        .highPriorityGesture(
-            pinDragGesture
-                .exclusively(before: boardDragGesture)
-                .exclusively(before: tableMoveGesture)
-        )
+        // One physical drag, up to three meanings, tried in this order via `.exclusively(before:)`:
+        //  1. `pinDragGesture` — a touch starting on a pin moves that pin (entity-targeted, so its
+        //     predicate never matches a touch that lands elsewhere, letting the chain fall through).
+        //  2. `boardDragGesture` — a touch starting on the map surface moves the table. Also
+        //     entity-targeted; pins and room fog sit closer to the camera and win hit-testing first.
+        //  3. iOS only: `tableMoveGesture` — anything else (bare wood, empty space) also moves the
+        //     table. It is not entity-targeted, so this ordering keeps it from racing #1/#2 for the
+        //     same touch. On macOS it is left out so a mouse drag on the background orbits the
+        //     camera through `.realityViewCameraControls(.orbit)` instead of being swallowed.
+        .highPriorityGesture(dragGestureChain)
         // A pin sitting over a room's fog always wins the tap — pinTapGesture
         // is listed first, and exclusively(before:) gives it precedence; its
         // targetedToEntity predicate simply never matches when the touch
@@ -228,6 +186,18 @@ private struct GameTableRealityContent: View {
         }
     }
 
+    #if os(macOS)
+    private var dragGestureChain: some Gesture {
+        pinDragGesture.exclusively(before: boardDragGesture)
+    }
+    #else
+    private var dragGestureChain: some Gesture {
+        pinDragGesture
+            .exclusively(before: boardDragGesture)
+            .exclusively(before: tableMoveGesture)
+    }
+    #endif
+
     private var pinDragGesture: some Gesture {
         DragGesture(minimumDistance: 5)
             .targetedToEntity(where: .has(PinComponent.self))
@@ -247,64 +217,27 @@ private struct GameTableRealityContent: View {
             }
     }
 
-    /// Dragging the map surface either pans a focused room's zoomed
-    /// viewport crop — see `GameTableModel.panViewport(fromTableStart:toTableEnd:)` —
-    /// or, when no room is focused, moves the whole table instead, the
-    /// same way `tableMoveGesture` does for the bare wood table/background.
-    /// The pan is otherwise a no-op in that state today
-    /// (`GameTableModel.panViewport(by:)` guards on `focusedRoomId`), so
-    /// this fills what would otherwise be dead space for the same
-    /// one-finger drag rather than leaving the table reachable only
-    /// outside the map. Which mode applies is decided once and held in
-    /// `boardDragPansViewport` — see its own doc for why.
+    /// Dragging the map surface moves the whole table, the same way `tableMoveGesture` does for the
+    /// bare wood table/background, so the one-finger drag does the same thing wherever it starts.
     private var boardDragGesture: some Gesture {
         DragGesture(minimumDistance: 5)
             .targetedToEntity(where: .has(BoardSurfaceComponent.self))
             .onChanged { value in
-                let pansViewport = boardDragPansViewport ?? (game.focusedRoomId != nil)
-                boardDragPansViewport = pansViewport
-
-                if pansViewport {
-                    guard let position = value.tablePosition(relativeTo: game.renderer.root) else { return }
-                    if viewportPanStart == nil || viewportPanTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
-                        viewportPanStart = position
-                        viewportPanRoomId = game.focusedRoomId
-                    }
-                    viewportPanTracker.recordUpdate()
-                } else {
-                    applyTableMoveDelta(translation: value.translation)
-                }
+                applyTableMoveDelta(translation: value.translation)
             }
-            .onEnded { value in
-                defer { boardDragPansViewport = nil }
-                if boardDragPansViewport == true {
-                    defer { viewportPanStart = nil; viewportPanTracker.reset(); viewportPanRoomId = nil }
-                    guard let start = viewportPanStart,
-                          let end = value.tablePosition(relativeTo: game.renderer.root) else { return }
-                    game.panViewport(fromTableStart: start, toTableEnd: end, expectedRoomId: viewportPanRoomId)
-                } else {
-                    tableMoveLastTranslation = .zero
-                    tableMoveTracker.reset()
-                }
+            .onEnded { _ in
+                tableMoveLastTranslation = .zero
+                tableMoveTracker.reset()
             }
     }
 
-    /// Repositions the whole table — translating `game.renderer.root`, not
-    /// `.orbit`'s bundled camera rotate — for a touch that starts on
-    /// neither a pin nor the map surface; see the priority chain's own
-    /// comment at this gesture's `.highPriorityGesture` call site for why
-    /// `pinDragGesture`/`boardDragGesture` have to come first.
-    ///
-    /// Unlike those two, this isn't `.targetedToEntity` — a plain
-    /// `DragGesture` has no RealityKit ray-casting context, so this uses a
-    /// scaled screen-space delta (`applyTableMoveDelta(translation:)`)
-    /// instead of the exact table-plane ray-cast
-    /// `EntityTargetValue.tablePosition(relativeTo:)` gives the other two;
-    /// it's a freeform "nudge the table into view" convenience, not a
-    /// precise placement tool. `content.cameraTarget` (set to
-    /// `game.setup.board.entity`, itself parented under
-    /// `game.renderer.root`) keeps the camera aimed at the table as it
-    /// moves, for free.
+    #if !os(macOS)
+    /// Repositions the whole table — translating `game.renderer.root`, not `.orbit`'s bundled camera
+    /// rotate — for a touch that starts on neither a pin nor the map surface. Unlike the two above
+    /// this isn't `.targetedToEntity` (a plain `DragGesture` has no RealityKit ray-casting context),
+    /// so it uses a scaled screen-space delta: a freeform "nudge the table into view" convenience,
+    /// not a precise placement tool. `content.cameraTarget` keeps the camera aimed at the table as
+    /// it moves.
     private var tableMoveGesture: some Gesture {
         DragGesture(minimumDistance: 5)
             .onChanged { value in
@@ -315,18 +248,16 @@ private struct GameTableRealityContent: View {
                 tableMoveTracker.reset()
             }
     }
+    #endif
 
-    /// Shared by `tableMoveGesture` and `boardDragGesture` (when the latter
-    /// is moving the table rather than panning) — `translation` is each
-    /// gesture's own cumulative-since-start value, whatever its concrete
-    /// type (`DragGesture.Value` or `EntityTargetValue<DragGesture.Value>`
+    /// Shared by `tableMoveGesture` and `boardDragGesture` — `translation` is each gesture's own
+    /// cumulative-since-start value (`DragGesture.Value` and `EntityTargetValue<DragGesture.Value>`
     /// both expose it as `CGSize`), so only the value itself needs passing.
     private func applyTableMoveDelta(translation: CGSize) {
         if tableMoveTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
-            // The previous drag's `.onEnded` was likely never delivered (system
-            // interruption, window backgrounding mid-drag) — re-arm from this call's
-            // value instead of computing a delta against the stale one, mirroring
-            // `viewportPanStart`/`StaleGestureTracker`. See CODE_AUDIT §5.1.
+            // The previous drag's `.onEnded` was likely never delivered (system interruption,
+            // window backgrounding mid-drag) — re-arm from this call's value instead of computing
+            // a delta against the stale one.
             tableMoveLastTranslation = translation
         }
         let delta = CGSize(
@@ -393,12 +324,16 @@ private struct GameTableRealityContent: View {
         guard accessibilitySubscriptions.isEmpty,
               let scene = game.renderer.root.scene else { return }
 
+        // Captured directly so the event closures don't hold this view value (and, through its
+        // binding, the storage that holds these subscriptions).
+        let coordinator = roomActionCoordinator
+        let game = game
         let activate = scene.subscribe(to: AccessibilityEvents.Activate.self) { event in
             Task { @MainActor in
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    roomActionCoordinator.perform { await game.toggleRoomVisibility(roomId) }
+                    coordinator.perform { await game.toggleRoomVisibility(roomId) }
                 }
             }
         }
@@ -407,7 +342,7 @@ private struct GameTableRealityContent: View {
                 if let pinId = event.entity.components[PinComponent.self]?.pinId {
                     game.pinDoubleTapped(pinId: pinId)
                 } else if let roomId = event.entity.components[RoomComponent.self]?.roomId {
-                    roomActionCoordinator.perform { await game.toggleRoomFocus(roomId) }
+                    coordinator.perform { await game.toggleRoomFocus(roomId) }
                 }
             }
         }

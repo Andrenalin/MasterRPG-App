@@ -17,8 +17,7 @@ private typealias GameTablePlatformColor = UIColor
 
 /// Converts a game-table image to `CGImage` across every platform's `AKImage`
 /// type (`UIImage` on iOS/visionOS, `NSImage` on macOS). Shared by `PinPawn`
-/// and each platform's own board-texture rendering rather than duplicated —
-/// see CODE_AUDIT §9.1.
+/// and `BoardTextureInput` rather than duplicated.
 enum GameTableImage {
     static func cgImage(from image: AKImage) -> CGImage? {
 #if os(macOS)
@@ -62,6 +61,21 @@ final class PinPawn {
     var loadedPhotoId: UUID?
     private var currentSize: MapPinModel.MapPinSize
     private var currentPointsToMeters: Float
+    /// Everything `update(pin:...)` renders besides position, so an unchanged pin skips the
+    /// material/component writes that would otherwise run on every map sync.
+    private struct AppliedVisual: Equatable {
+        let isZoom: Bool
+        let isDead: Bool
+        let isHighlighted: Bool
+        let isActiveAttacker: Bool
+        let hiddenForMaster: Bool
+        let healthColor: Color
+        let name: String
+        let isShown: Bool
+    }
+    private var appliedVisual: AppliedVisual?
+    /// Scale a zoomed pin is drawn at.
+    private static let zoomScale: Float = 4
 
     init(pin: MapPinModel, pointsToMeters: Float) {
         pinId = pin.id
@@ -198,18 +212,31 @@ final class PinPawn {
         pointsToMeters: Float
     ) {
         entity.position = position
-        entity.scale = SIMD3<Float>(repeating: pin.isZoom ? 4.0 : 1.0)
+        entity.scale = SIMD3<Float>(repeating: pin.isZoom ? Self.zoomScale : 1)
         if pin.size != currentSize || pointsToMeters != currentPointsToMeters {
             currentSize = pin.size
             currentPointsToMeters = pointsToMeters
             applySize(pin.size, pointsToMeters: pointsToMeters)
         }
         let healthColor = MapPinModel.healthBorderColor(for: healthPercent)
+        let isActiveAttacker = pin.id == activeAttackerPinId
+        let visual = AppliedVisual(
+            isZoom: pin.isZoom,
+            isDead: pin.isDead,
+            isHighlighted: pin.isHighlighted,
+            isActiveAttacker: isActiveAttacker,
+            hiddenForMaster: hiddenForMaster,
+            healthColor: healthColor,
+            name: pin.name,
+            isShown: pin.isShown
+        )
+        guard visual != appliedVisual else { return }
+        appliedVisual = visual
+
         var baseMaterial = UnlitMaterial()
         baseMaterial.color = .init(tint: pin.isDead ? .black : GameTablePlatformColor(healthColor))
         baseModel.model?.materials = [baseMaterial]
 
-        let isActiveAttacker = pin.id == activeAttackerPinId
         let ringColor: Color = if isActiveAttacker {
             .blue
         } else if pin.isHighlighted {
@@ -288,9 +315,12 @@ final class PinPawn {
 final class RoomHitArea {
     let roomId: UUID
     let entity: Entity
+    /// The outline and projection the current collision shape was built from.
+    private var appliedGeometry: (coordinates: [CGPoint], projection: MapTableProjection)
 
     init(entry: MapEntryModel, projection: MapTableProjection) {
         roomId = entry.id
+        appliedGeometry = (entry.coordinates, projection)
         let hitEntity = Entity()
         hitEntity.name = "RoomHitArea-\(entry.name)"
         hitEntity.components.set(RoomComponent(roomId: entry.id))
@@ -306,11 +336,13 @@ final class RoomHitArea {
         entity = hitEntity
     }
 
-    /// Always rebuilds: besides the room's own outline changing, the
-    /// projection itself changes whenever a *different* room becomes focused
-    /// (or focus clears) — same coordinates, different crop — so the
-    /// `entry.coordinates` comparison alone can't gate this.
+    /// Rebuilds the convex hull only when the room's outline or the map projection changed;
+    /// this runs on every pawn sync, and building a hull is comparatively expensive.
     func update(entry: MapEntryModel, projection: MapTableProjection) {
+        guard entry.coordinates != appliedGeometry.coordinates || projection != appliedGeometry.projection else {
+            return
+        }
+        appliedGeometry = (entry.coordinates, projection)
         entity.components.set(Self.collision(for: entry.coordinates, projection: projection))
     }
 
@@ -321,7 +353,7 @@ final class RoomHitArea {
         guard coordinates.count >= 3 else {
             return CollisionComponent(shapes: [])
         }
-        let halfThickness: Float = 0.004
+        let halfThickness = GameMetrics.roomHitHalfThickness
         let points = coordinates.flatMap { point -> [SIMD3<Float>] in
             let base = projection.tablePosition(for: point)
             return [

@@ -11,7 +11,7 @@ import MapRPG
 import CoreRPG
 
 @MainActor
-class GameSetup {
+final class GameSetup {
     let root: Entity
     var setup: TableSetup
     let board: Board
@@ -106,22 +106,16 @@ class GameSetup {
             seats.append(seat)
             setup.add(seat: seat)
 
-            // A pool of `Self.maxDicePerType` D20s and the same number of
-            // D6s per seat, created up front like the seats themselves —
-            // TabletopKit equipment can't be added once `TableSetup` is
-            // frozen. `GameTableModel.applyDiceRoll` reveals exactly as many
-            // of each type as the locally focused dice set needs, repositioning
-            // them into a compact layout sized to just the active count; the
-            // rest stay parked off-table (see `Die20`/`Die.init`, and
-            // `TableVisualState.Pose2D.parkedDicePose`'s own doc for why that's
-            // a synced pose rather than a locally-disabled entity) until
-            // `applyDiceRoll` claims them. `seatControl` stays `.any`, matching
-            // the original single shared die: on-device testing showed
-            // seat-restricted equipment never rendered for *any* player,
-            // master included, and TabletopKit's docs don't fully specify
-            // whether `ControllingSeats.restricted` also affects per-device
-            // rendering (vs. only interaction). Ownership here is visual/
-            // positional only.
+            // A pool of `Self.maxDicePerType` D20s and the same number of D6s per seat, created up
+            // front like the seats themselves — TabletopKit equipment can't be added once
+            // `TableSetup` is frozen. `GameTableModel.applyDiceRoll` reveals exactly as many of each
+            // type as the locally focused dice set needs, repositioning them into a compact layout;
+            // the rest stay parked off-table (a synced pose rather than a locally-disabled entity,
+            // see `TableVisualState.Pose2D.parkedDicePose`) until `applyDiceRoll` claims them.
+            // `seatControl` stays `.any`: on-device testing showed seat-restricted equipment never
+            // rendered for any player, master included. Ownership is instead enforced at
+            // interaction time — `GameInteraction.shouldAcceptInteraction` only lets a die's owner
+            // (or the game master) pick it up.
             var d20Ids: [EquipmentIdentifier] = []
             var d6Ids: [EquipmentIdentifier] = []
             for slot in 0 ..< Self.maxDicePerType {

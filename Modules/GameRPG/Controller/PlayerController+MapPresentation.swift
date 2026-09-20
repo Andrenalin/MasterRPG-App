@@ -103,7 +103,7 @@ extension PlayerController {
         await requestMissingMapImages(itemId: itemId)
         #if !os(tvOS)
         let isGameMaster = root.gameModel.gameConfig.isMaster
-        await root.gameModel.gameTableModel?.updateFogOfWar(isGameMaster: isGameMaster)
+        await root.gameModel.gameTableModel?.refreshFogOfWar(isGameMaster: isGameMaster)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
     }

@@ -55,6 +55,14 @@ extension GameNetworkController: SharePlayControllerDelegate {
         await model.playerDelegate?.ready()
     }
 
+    func pinnedMasterParticipantId(among participantIds: [UUID]) async -> UUID? {
+        guard let playerDelegate = model.playerDelegate else { return nil }
+        for id in participantIds where await playerDelegate.isPinnedSharePlayMasterParticipant(id: id) {
+            return id
+        }
+        return nil
+    }
+
     func sharePlayJoinedPlayer(id: UUID) async {
         // `id` is a GroupActivities transport participant, not the player's
         // later in-game sender ID. Preserve that origin so replay is physically

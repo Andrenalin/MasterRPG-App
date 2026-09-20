@@ -31,7 +31,11 @@ extension GameTableModel {
 
     var pinScale: CGFloat {
         get { currentMapModel()?.pinScale ?? 1 }
-        set { currentMapModel()?.pinScale = newValue }
+        set {
+            currentMapModel()?.pinScale = newValue
+            // Token sizes derive from `pinScale` in `syncPins`, and nothing else observes it.
+            syncPawnsWithMapPins()
+        }
     }
 
     var hexScale: Double {
@@ -74,9 +78,9 @@ extension GameTableModel {
     func toggleRoomVisibility(_ roomId: UUID) async {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoom(itemId: mapId, roomId: roomId) else { return }
-        await replaceFogOfWarTask(isGameMaster: true).value
+        await replaceFogOfWarTask().value
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     /// Toggles the same "focused" flag the 2D map's room long-press uses to
@@ -88,9 +92,9 @@ extension GameTableModel {
     func toggleRoomFocus(_ roomId: UUID) async {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
-        await replaceFogOfWarTask(isGameMaster: true).value
+        await replaceFogOfWarTask().value
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     /// Shows or hides the full map with one render/sync/network transaction.
@@ -102,16 +106,16 @@ extension GameTableModel {
             roomIds: roomIds,
             isShown: isShown
         ) else { return }
-        await replaceFogOfWarTask(isGameMaster: true).value
+        await replaceFogOfWarTask().value
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     func togglePointerVisibility() {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.togglePointer(itemId: mapId) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     /// Places and reveals the pointer at the map center without requiring the
@@ -125,7 +129,7 @@ extension GameTableModel {
             : mapRoot.mapGameControllable.togglePointer(itemId: mapId)
         guard moved || revealed else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 
     /// Adds a set selected by a future platform-specific character picker.
@@ -137,7 +141,7 @@ extension GameTableModel {
                 monsters: monsters
               ) else { return }
         syncPawnsWithMapPins()
-        broadcastMapState(for: mapId)
+        broadcastMapEdit(for: mapId)
     }
 }
 

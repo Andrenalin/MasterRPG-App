@@ -1,6 +1,56 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Map %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte %@"
+          }
+        }
+      }
+    },
+    "%lld of %lld rooms hidden" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld von %2$lld Räumen verborgen"
+          }
+        }
+      }
+    },
+    "Game map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spielkarte"
+          }
+        }
+      }
+    },
+    "%lld dice results are not shown on the table" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Würfelergebnisse werden nicht auf dem Tisch angezeigt"
+          }
+        }
+      }
+    },
+    "This table has fewer seats than players (%lld). You may share a seat and its dice." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Tisch hat weniger Plätze als Spieler (%lld). Möglicherweise teilst du dir einen Platz und die Würfel."
+          }
+        }
+      }
+    },
     "" : {
 
     },

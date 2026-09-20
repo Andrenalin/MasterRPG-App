@@ -7,7 +7,7 @@ import SwiftUI
 /// Physical dimensions (in meters) of the game table, shared by every
 /// platform variant (visionOS TabletopKit table, iOS/macOS camera-based
 /// table). Purely numeric with no platform dependency, so it's declared once
-/// here instead of duplicated per platform file — see CODE_AUDIT §9.1.
+/// here instead of duplicated per platform file.
 enum GameMetrics {
     /// The table's Z-axis extent — its long dimension, seating two players a
     /// side plus one at each end (see `PlayerSeat.seatPoses`'s own doc for
@@ -24,13 +24,16 @@ enum GameMetrics {
     /// Inset from a seat's own near table edge to where its dice rest — see
     /// `PlayerSeat.diceLayout`.
     static let diceEdgeInset: Float = 0.06
+    /// Half the height of a room's hit-test volume around pin height (`RoomHitArea`).
+    static let roomHitHalfThickness: Float = 0.004
+    /// Local Y offset of the map surface's hit-test box (`Board`), putting its whole height range
+    /// clearly below `pinHeight - roomHitHalfThickness`, so a touch over a room's fog always hits the
+    /// room volume first.
+    static let boardHitTestYOffset: Float = -0.006
 }
 
-/// Marks the map surface's hit-test volume for `viewportPanGesture`
-/// (`GameTableView`), so it can be targeted separately from pins and room
-/// fog on every platform's `Board`. Shared here (rather than declared once
-/// per platform's `Board`) so iOS/macOS and visionOS gesture code can target
-/// the exact same component type. See CODE_AUDIT §8.1.
+/// Marks the map surface's hit-test volume, so the board-drag gesture can target it separately from
+/// pins and room fog. Shared so iOS/macOS and visionOS gesture code target the exact same component.
 struct BoardSurfaceComponent: Component {}
 
 /// Guard+dispatch shared by `GameTableView`'s visionOS (inline `RealityView` gesture) and
@@ -38,7 +41,7 @@ struct BoardSurfaceComponent: Component {}
 /// parent entity, then called `game.pinDragChanged`/`pinDragEnded`, differing only in how
 /// `position` was derived: visionOS has a direct 3D touch location to convert, iOS/macOS
 /// ray-casts a 2D touch onto the table plane (`tablePosition(relativeTo:)`). Each platform
-/// supplies only that one difference as `resolvePosition`. See CODE_AUDIT §9.10.
+/// supplies only that one difference as `resolvePosition`.
 @MainActor
 func withPinDragTarget(
     _ value: EntityTargetValue<DragGesture.Value>,

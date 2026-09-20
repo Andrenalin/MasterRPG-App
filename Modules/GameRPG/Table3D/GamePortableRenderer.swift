@@ -20,6 +20,7 @@ final class GameRenderer {
     let camera: Entity
     weak var game: GameTableModel?
     private var didLoadAssets = false
+    private var isLoadingAssets = false
 
     init() {
         root = Entity()
@@ -37,23 +38,19 @@ final class GameRenderer {
         updateCamera(for: CGSize(width: 1, height: 1))
     }
 
+    /// Loads the table mesh. A failure is logged and can be retried by calling again; only a
+    /// successful load (or one already in flight) makes later calls no-ops.
     func loadAssets() async {
-        guard !didLoadAssets else { return }
-        didLoadAssets = true
+        guard !didLoadAssets, !isLoadingAssets else { return }
+        isLoadingAssets = true
+        defer { isLoadingAssets = false }
 
         do {
             root.addChild(try await TableAssetFactory.makePlainWoodTable())
+            didLoadAssets = true
         } catch {
             Logger.gameTable.error("Failed to load portable wood table: \(error.localizedDescription, privacy: .public)")
         }
-    }
-
-    func applyScale(_ scale: Float) {
-        root.scale = SIMD3<Float>(repeating: scale)
-    }
-
-    func placeTable(bottomY: Float) {
-        root.position.y = bottomY
     }
 
     /// Frames the complete tabletop at a map-first viewing angle while

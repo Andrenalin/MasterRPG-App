@@ -44,31 +44,22 @@ final class GameTableModel: Sendable {
     /// Pending continuation and RealityKit subscription from `waitForFirstRenderedFrame()`.
     /// Torn down either by the scene's own next `SceneEvents.Update` or by cancellation of the
     /// awaiting `Task` — an uncancellable wait here would otherwise leak the subscription and
-    /// hang forever if the view is dismissed before any frame renders. See CODE_AUDIT §3.1.
+    /// hang forever if the view is dismissed before any frame renders.
     @ObservationIgnored
     var pendingRenderWaitContinuation: CheckedContinuation<Void, Never>?
     @ObservationIgnored
     var pendingRenderWaitSubscription: (any Cancellable)?
 
-    /// Set by `applyDiceRoll` whenever the locally focused dice set has more
-    /// dice of a type than this seat has table slots for (currently
-    /// `GameSetup.maxDicePerType`, 6, per type — see `playerD20Ids`/
-    /// `playerD6Ids`), or dice of a type the table has no mesh for at all
-    /// (only d20 and d6 are supported); `nil` when the last set mirrored
-    /// entirely. The count of dice that could not be mirrored onto the
-    /// table, so `GameTableView` can surface a "N results not shown on
-    /// table" notice instead of the drop being silent. See CODE_AUDIT §5.1.
+    /// The number of focused dice `applyDiceRoll` could not mirror onto the table: more of a type
+    /// than a seat has slots for (`GameSetup.maxDicePerType`), or a type with no mesh (only d20 and
+    /// d6 exist). `nil` when the whole set mirrored. Surfaced by `GameTableView`.
     var diceOverflowCount: Int?
 
-    /// Set by `GameTableView` to its own `applyCurrentFocusedDiceRoll(to:)`, so
-    /// `GameObserver.playerChangedSeats` can re-run it once the local player's own
-    /// seat claim actually lands. A player's seat claim (`claimSeat`/`claimAnySeat`)
-    /// is itself a synced TabletopKit action — in a SharePlay session it's only
-    /// confirmed into the snapshot asynchronously, same as any other equipment
-    /// update — so `applyDiceRoll`'s `localSeat` lookup can still read `nil` at the
-    /// moment `GameTableView` first calls it (right after `setupSeating`). Without a
-    /// later retry, that seat's dice would then never get placed or shown at all
-    /// until the next roll or focus change happened to call `applyDiceRoll` again.
+    /// Re-mirrors the focused dice set once the local player's seat claim lands. A claim is a
+    /// synced TabletopKit action that is only confirmed asynchronously, so `applyDiceRoll` can
+    /// find no `localSeat` when `GameTableView` first calls it; `GameObserver.playerChangedSeats`
+    /// runs this afterwards. The model owns this closure, so it must never capture the view (a
+    /// SwiftUI view value holds `@State` storage that holds this model — a retain cycle).
     var applyFocusedDiceRollForLocalSeat: (() -> Void)?
 #endif
 
@@ -95,7 +86,7 @@ final class GameTableModel: Sendable {
     var displayMode: MapDisplayMode = .master {
         didSet {
             guard oldValue != displayMode else { return }
-            replaceFogOfWarTask(isGameMaster: isGameMaster)
+            replaceFogOfWarTask()
         }
     }
     var lastPinScale: CGFloat = 1
@@ -104,17 +95,10 @@ final class GameTableModel: Sendable {
 
     /// The local player's own pin id (== the player's game id); nil on the master.
     var playerPinId: UUID?
-    /// Set by `assignSeatsForSharePlay` (see `GameEquipment.swift`) to the
-    /// total player count whenever the party has more players than the
-    /// table has non-master seats (currently 2; the 4th table side is
-    /// reserved for the shared die/deck, not a seat) — meaning this device's
-    /// seat, and the seat's 2 `Die20` equipment ids, may be shared with
-    /// another player. `nil` when every player has an exclusive seat.
-    /// Deliberately not a precise "shared with N others" count: which
-    /// specific players share a seat can't be determined locally (SharePlay
-    /// participants carry no host/role marker to exclude the master from
-    /// the ranking — see the method's doc comment), only that sharing is
-    /// happening somewhere. See CODE_AUDIT §5.2.
+    /// Set by `assignSeatsForSharePlay` to the party's player count whenever there are (or may be)
+    /// more players than the table's non-master seats (`PlayerSeat.seatPoses.count - 1`), meaning
+    /// this device's seat, and that seat's dice pool, may be shared with another player. `nil` when
+    /// every player has an exclusive seat. Surfaced by `GameTableView`.
     var sharedSeatPlayerCount: Int?
     /// The game master's local menu selection. Highlighting is intentionally
     /// not represented here because multiple shared pins may be highlighted.
@@ -122,46 +106,35 @@ final class GameTableModel: Sendable {
     var selectedPin: MapPinModel?
     var pinMenuAttachment: Entity?
     /// Resolved once per drag gesture by `pinDragChanged(pinId:position:)` and cleared by
-    /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns` on
-    /// every delta. See CODE_AUDIT §7.3.
+    /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns`.
     var cachedDragPawn: (pinId: UUID, pawn: PinPawn)?
     var currentPhotoId: UUID?
     var currentPhotoVersion: Int?
+    /// The photo each pin is currently loading a thumbnail for.
     var pendingPinPhotoIds: [UUID: UUID] = [:]
-    /// Tracks the `Task` spawned per pin by `syncPawnsWithMapPins()` so a
-    /// pin whose photo load is superseded (or the whole model torn down) can
-    /// have its in-flight load cancelled instead of running to completion
-    /// with no one left to apply the result. See CODE_AUDIT §3.5.
+    /// The photo whose thumbnail load last failed for a pin; not retried until the pin's photo changes.
+    var failedPinPhotoIds: [UUID: UUID] = [:]
+    /// Tracks the `Task` spawned per pin by `syncPawnsWithMapPins()` so a pin whose photo load is
+    /// superseded (or the whole model torn down) can have its in-flight load cancelled.
     var pendingThumbnailTasks: [UUID: Task<Void?, Never>] = [:]
     /// Tracks the in-flight `updateFogOfWar` `Task`, created and replaced only through
-    /// `replaceFogOfWarTask(isGameMaster:)` so every fog-affecting entry point — a
-    /// continuous drag (`panViewport(by:)`), `displayMode`'s `didSet`, room toggle/focus,
-    /// "show/hide all", and a map change — shares one cancel-then-replace point instead of
-    /// racing each other with independently-awaited direct calls. See CODE_AUDIT §5.5/§3.3.
+    /// `replaceFogOfWarTask(isGameMaster:)` so every fog-affecting entry point — `displayMode`'s
+    /// `didSet`, room toggle/focus, "show/hide all", a map change, a remote map update — shares one
+    /// cancel-then-replace point instead of racing each other.
     var fogOfWarTask: Task<Void, Never>?
     /// Tracks the in-flight `performMapChange` `Task`, created and replaced only through
     /// `replaceMapChangeTask(isGameMaster:)`. The view's initial-appear `.task` and its
-    /// `.task(id:)` map-selection watcher are two *independent* Task hierarchies on this
-    /// same model instance, so SwiftUI's automatic cancel-on-id-change only protects
-    /// re-entrant calls within one of them — this choke point protects across both,
-    /// mirroring `fogOfWarTask` above. See CODE_AUDIT_9 §3.2.
+    /// `.task(id:)` map-selection watcher are independent Task hierarchies on this model, so
+    /// SwiftUI's automatic cancel-on-id-change only protects re-entrant calls within one of them;
+    /// this choke point protects across both.
     var mapChangeTask: Task<Void, Never>?
     /// Signature of every value that affects the rendered board texture.
     /// Pin-only mapState messages can then skip a full fog recomposite.
     var fogSignature: Int?
+    /// Bumped whenever a board render starts or the board is cleared, so a slow off-main render
+    /// that a newer request has superseded is discarded instead of applied.
+    var boardRenderGeneration = 0
 
-    /// A local, per-client pan gesture value (dragging the map surface while
-    /// a room is focused — see `GameTableView.viewportPanGesture`) that
-    /// `boardFocusRect` no longer applies to anything: the 3D board never
-    /// crops/zooms into a focused room (only the 2D map does), so this stays
-    /// at whatever the gesture last wrote but has no rendering effect. Kept
-    /// so the gesture itself doesn't need touching. Not networked.
-    var manualViewportOffset: CGPoint = .zero
-    /// The room id `manualViewportOffset` was last computed against, used
-    /// only to detect a focus change mid-drag (see `panViewport(fromTableStart:toTableEnd:expectedRoomId:)`).
-    var lastFocusedRoomId: UUID?
-
-    @MainActor
     init(mapRoot: MapRootModel, photoRoot: PhotoRootModel) {
         self.mapRoot = mapRoot
         self.photoRoot = photoRoot

@@ -4,6 +4,7 @@
 import CoreGraphics
 import CoreRPG
 import Foundation
+import RealityKit
 import Testing
 
 @testable import GameRPG
@@ -29,6 +30,67 @@ struct GameTableControlTests {
         #expect(fixture.networkSpy.calls.count == 1)
         #expect(fixture.networkSpy.calls.first?.action == .mapState)
         #expect(fixture.networkSpy.calls.first?.data.id == fixture.liveMap.id)
+    }
+
+    @Test("Paused sharing keeps game-master edits local; an explicit reshare still sends")
+    func pausedSharingKeepsEditsLocal() async throws {
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Secret",
+            content: "",
+            coordinates: Self.square,
+            isShown: false
+        )
+        let fixture = try await makeFixture(entries: [room], isGameMaster: true)
+        fixture.game.isStreaming = false
+
+        await fixture.game.toggleRoomVisibility(room.id)
+        fixture.game.togglePointerVisibility()
+
+        #expect(fixture.liveMap.entries.first?.isShown == true)
+        #expect(fixture.networkSpy.calls.isEmpty)
+
+        fixture.game.sendMapUpdates()
+
+        #expect(fixture.networkSpy.calls.count == 1)
+        #expect(fixture.networkSpy.calls.first?.action == .mapState)
+    }
+
+    @Test("Only the game master gets room hit volumes")
+    func roomHitVolumesAreGameMasterOnly() async throws {
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Hall",
+            content: "",
+            coordinates: Self.square,
+            isShown: false
+        )
+        let master = try await makeFixture(entries: [room], isGameMaster: true)
+        master.game.syncPawnsWithMapPins()
+        #expect(master.game.setup.roomHitAreas.map(\.roomId) == [room.id])
+
+        let player = try await makeFixture(entries: [room], isGameMaster: false)
+        player.game.syncPawnsWithMapPins()
+        #expect(player.game.setup.roomHitAreas.isEmpty)
+    }
+
+    @Test("A drop that is not applied snaps the token back to the model's location")
+    func rejectedDropSnapsPawnBack() async throws {
+        let playerId = UUID()
+        let fixture = try await makeFixture(entries: [], isGameMaster: false)
+        fixture.game.playerPinId = playerId
+        fixture.liveMap.mapPins = [MapPinModel(id: playerId, name: "Player", isPlayer: true)]
+        fixture.game.syncPawnsWithMapPins()
+        let pawn = try #require(fixture.game.setup.pinPawns.first { $0.pinId == playerId })
+        let home = pawn.entity.position
+
+        // The fixture has no map image, so the drop cannot be applied.
+        fixture.game.pinDragChanged(pinId: playerId, position: SIMD3<Float>(0.3, 0, 0.3))
+        #expect(pawn.entity.position != home)
+        fixture.game.pinDragEnded(pinId: playerId, position: SIMD3<Float>(0.3, 0, 0.3))
+
+        #expect(pawn.entity.position == home)
+        #expect(fixture.networkSpy.calls.isEmpty)
     }
 
     @Test("Player cannot change room visibility")
