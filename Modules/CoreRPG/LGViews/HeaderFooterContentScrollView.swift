@@ -143,7 +143,7 @@ private struct FooterView<Footer: View, Background: View>: View {
                     }
                     .padding(15)
                 }
-                
+
             }
 #else
             Form {

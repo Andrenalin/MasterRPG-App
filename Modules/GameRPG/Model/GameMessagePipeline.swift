@@ -162,6 +162,13 @@ actor GameMessagePipeline {
         return .enqueued
     }
 
+    /// Lets a drain loop that bailed out on cancellation (see
+    /// `PlayerController.processMessages()`, CODE_AUDIT.md §3.4) decide whether it needs to
+    /// hand off to a fresh Task to avoid stranding whatever is still queued.
+    var hasQueuedMessages: Bool {
+        !messages.isEmpty
+    }
+
     func next() -> GameMessageEvent? {
         guard !isCancelled, !processing, !messages.isEmpty else { return nil }
         processing = true

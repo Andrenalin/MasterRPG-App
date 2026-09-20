@@ -35,7 +35,7 @@ public struct AltOpenWindowButton: View {
                                 .imageScale(.small)
                                 .foregroundStyle(.green)
                                 .padding(2)
-                                .background(.ultraThinMaterial, in: Circle())
+                                .background(.ultraThinMaterial, in: .circle)
                                 .offset(x: 8, y: -8)
                                 .opacity(isPressed ? 1 : 0)
                                 .accessibilityHidden(true)

@@ -27,7 +27,7 @@ extension View {
                 .lineLimit(1)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .background(.regularMaterial, in: .rect(cornerRadius: 8))
         }
     }
 }

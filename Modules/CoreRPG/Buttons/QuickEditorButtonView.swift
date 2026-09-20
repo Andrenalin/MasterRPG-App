@@ -60,7 +60,7 @@ public struct QuickAddButtonStyle: ButtonStyle {
             // composits shape/shadow internally, so no manual shadow is needed here. See CODE_AUDIT_9 §8.4/§8.5.
 #if os(visionOS)
             .background(.ultraThinMaterial)
-            .clipShape(Circle())
+            .clipShape(.circle)
 #else
             .glassEffectAll(.regular, in: .circle)
 #endif

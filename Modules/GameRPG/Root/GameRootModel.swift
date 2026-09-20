@@ -794,8 +794,11 @@ extension GameRoot {
     private static let demoBigRevealPace: Duration = .seconds(5)
 
     func startDemo(supporterTier: SupporterTier = .none) async {
-        await startGame(to: nil, mode: .demo, supporterTier: supporterTier)
+        // Cancel any previous demo loop before swapping `playerController` out from under it —
+        // otherwise a still-running old task keeps sending reveal/mapState messages through its
+        // own captured (now orphaned) controller, racing the new demo loop. See CODE_AUDIT.md §3.2.
         demoTask?.cancel()
+        await startGame(to: nil, mode: .demo, supporterTier: supporterTier)
 
         if let playerController = gameModel.playerController {
             demoTask = Task { @MainActor [weak self] in

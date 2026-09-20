@@ -87,7 +87,10 @@ extension PlayerController {
         // SharePlay both fan that group event out to sibling players, so equal
         // player roles are expected here; all other same-role file traffic is
         // still rejected.
-        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else { return }
+        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else {
+            Logger.networking.debug("PlayerController: FILE rejected \(model.counter, privacy: .public), same-role non-player-presentation traffic")
+            return
+        }
         await receivedProcess(model, origin: .file)
     }
 
@@ -175,7 +178,10 @@ extension PlayerController {
 
     func receivedSharePlayFile(_ model: GameNetworkModel) async {
         let receivesOppositeRole = root.gameModel.gameConfig.isMaster != model.sender.isMaster
-        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else { return }
+        guard receivesOppositeRole || model.isPlayerFilePresentationEvent else {
+            Logger.networking.debug("PlayerController: SharePlay FILE rejected \(model.counter, privacy: .public), same-role non-player-presentation traffic")
+            return
+        }
         await receivedProcess(model, origin: .file)
     }
 
@@ -187,7 +193,10 @@ extension PlayerController {
         guard model.sender.isMaster,
               !root.gameModel.gameConfig.isMaster,
               await acceptsSessionMessage(model, origin: .file)
-        else { return }
+        else {
+            Logger.networking.debug("PlayerController: SharePlay file-load-failure ignored \(model.counter, privacy: .public), sender/role/session check failed")
+            return
+        }
 
         if model.type == .reveal {
             // A reveal reference may be fully satisfied by an exact-version
@@ -491,6 +500,17 @@ extension PlayerController {
             // See CODE_AUDIT_Network §5.15.
             guard !Task.isCancelled else {
                 await messagePipeline.requeueCurrentOnCancellation()
+                // This loop is the only caller of `processMessages()`; without this, a
+                // message requeued here would strand until an unrelated future message
+                // happens to re-trigger `.enqueued`. If the ambient Task was cancelled by
+                // a genuine teardown, `messagePipeline` was also `cancelAll()`'d/`reset()`,
+                // so `next()` on this fresh Task will simply see no work and return. See
+                // CODE_AUDIT.md §3.4.
+                if await messagePipeline.hasQueuedMessages {
+                    Task { [weak self] in
+                        await self?.processMessages()
+                    }
+                }
                 return
             }
             switch await prepareForProcessing(event) {

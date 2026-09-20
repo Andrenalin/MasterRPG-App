@@ -620,6 +620,15 @@ private extension SpaceViewer {
             collisionShapeTask?.cancel()
             collisionShapeTask = Task(name: "RealityKit Collision Shapes", priority: .utility) { @MainActor in
                 guard !Task.isCancelled else { return }
+                // RealityKit's `generateCollisionShapes` is synchronous with no interrupt
+                // hook, so a cancellation requested once it starts has no effect until it
+                // finishes. This short debounce gives a rapid follow-up entity switch (the
+                // scenario this task exists to protect against) a real suspension point to
+                // cancel through *before* the expensive call starts, instead of only being
+                // checked once, immediately preceding a call nothing can then stop. See
+                // CODE_AUDIT.md §3.9.
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
                 let trace = PerformanceTrace.begin(
                     "CollisionShapeGeneration",
                     source: "SpaceViewer",

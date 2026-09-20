@@ -83,11 +83,17 @@ public extension FileUrl {
         Data(SHA256.hash(data: data)).base64EncodedString()
     }
 
+    /// Byte length taken from the SHA256 content-hash digest to derive `contentVersion`
+    /// (one `UInt64`) and, separately, `SingleReviewFilePropertyRow.reviewThumbnailKey`
+    /// (one `UUID`). Named so both sites can't silently drift if the hash algorithm's
+    /// output length ever changes. See CODE_AUDIT.md §9.5.
+    static let versionDigestByteCount = 8
+
     /// Deterministic version derived from the content hash. Unlike `hashValue` it is
     /// stable across processes and devices, so master and player agree on it over the network.
     var contentVersion: Int? {
-        guard let contentHash, let digest = Data(base64Encoded: contentHash), digest.count >= 8 else { return nil }
-        let value = digest.prefix(8).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
+        guard let contentHash, let digest = Data(base64Encoded: contentHash), digest.count >= Self.versionDigestByteCount else { return nil }
+        let value = digest.prefix(Self.versionDigestByteCount).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
         return Int(bitPattern: UInt(truncatingIfNeeded: value))
     }
 

@@ -58,7 +58,7 @@ private struct AudioPlayerMiniBarPlaybackControlsView: View {
                 .contentTransition(.symbolEffect(.replace.magic(fallback: .replace)))
                 .font(.title2)
                 .padding(8)
-                .background(.regularMaterial, in: Circle())
+                .background(.regularMaterial, in: .circle)
             }
             .accessibilityLabel(root.audioPlayerModel.isPlaying ? Text("Pause", bundle: .module) : Text("Play", bundle: .module))
             .accessibilityHint(root.audioPlayerModel.isPlaying ? Text("Pause playback", bundle: .module) : Text("Resume playback", bundle: .module))

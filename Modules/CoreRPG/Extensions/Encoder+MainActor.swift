@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import Foundation
+import os.log
 
 public extension Encoder {
     /// Runs `body`, assuming the caller is already Main-Actor-isolated.
@@ -13,11 +14,21 @@ public extension Encoder {
     ///
     /// Safe only because every real call site pre-hops to `MainActor` before invoking
     /// `encode(to:)` on one of these models (personally verified); otherwise
-    /// `MainActor.assumeIsolated` traps.
-    nonisolated func encodeOnMainActor(_ body: @MainActor (Encoder) throws -> Void) throws {
+    /// `MainActor.assumeIsolated` traps. `file`/`line` default to the caller's `encode(to:)`
+    /// so a future violation's trap/log points at the model that broke the invariant instead
+    /// of this shared wrapper. See CODE_AUDIT.md §3.6.
+    nonisolated func encodeOnMainActor(
+        file: StaticString = #fileID,
+        line: UInt = #line,
+        _ body: @MainActor (Encoder) throws -> Void
+    ) throws {
         nonisolated(unsafe) let encoder = self
-        try MainActor.assumeIsolated {
-            try body(encoder)
+        if !Thread.isMainThread {
+            // Not a substitute for the `assumeIsolated` trap below (a custom executor could in
+            // principle make this thread check imprecise) — just gives a diagnosable trace
+            // naming the actual offending call site before the trap fires.
+            Logger.codable.fault("encodeOnMainActor called off the main thread from \(file, privacy: .public):\(line, privacy: .public) — every Encodable model in this app is @MainActor; this call site needs to hop to MainActor before encoding.")
         }
+        try MainActor.assumeIsolated({ try body(encoder) }, file: file, line: line)
     }
 }

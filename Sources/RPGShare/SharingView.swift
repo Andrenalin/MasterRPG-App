@@ -283,7 +283,7 @@ private struct SharingSavingOverlayView: View {
                     .accessibilityHidden(true)
             }
             .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 12))
         }
     }
 }

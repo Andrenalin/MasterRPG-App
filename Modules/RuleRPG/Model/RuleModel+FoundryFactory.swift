@@ -1,0 +1,390 @@
+// @copyright André Trettin
+
+import CoreRPG
+import Foundation
+
+public extension RuleModel {
+    /// Maps a normalized system-compendium rule into an editable RuleRPG model.
+    /// The complete `FoundryRuleDefinition` remains available through `sourcePayload`.
+    @MainActor
+    static func foundry(
+        _ rule: FoundryRuleDefinition,
+        manifest: FoundrySystemManifest,
+        id: UUID? = nil,
+        identityNamespace: String? = nil,
+        parentId: UUID? = nil
+    ) -> RuleModel {
+        let metadata = RuleSourceMetadata(
+            sourceIdentifier: rule.id,
+            systemID: manifest.id,
+            systemTitle: FoundryTextDecoder.decodedText(manifest.title),
+            systemVersion: manifest.version,
+            packageIdentifier: "\(manifest.id).\(rule.packName)",
+            packageName: FoundryTextDecoder.decodedText(rule.packName),
+            documentID: rule.documentID,
+            documentType: FoundryTextDecoder.decodedText(rule.documentType),
+            subtype: FoundryTextDecoder.decodedText(rule.subtype),
+            ruleCategory: FoundryTextDecoder.decodedText(rule.category.rawValue),
+            imagePath: rule.imagePath ?? ""
+        )
+        let generatedEntries = foundryEntries(
+            rule: rule,
+            sourceIdentifier: identityNamespace ?? rule.id
+        )
+        let generatedTags = orderedUnique(
+            rule.tags + [rule.category.rawValue, rule.subtype, manifest.title, "Foundry VTT"]
+        )
+
+        return RuleModel(
+            id: id ?? rule.masterRPGID,
+            name: FoundryTextDecoder.decodedText(rule.name),
+            description: readableText(fromHTML: rule.descriptionHTML),
+            tags: generatedTags,
+            category: .rules,
+            entries: generatedEntries,
+            sourceMetadata: metadata,
+            sourcePayload: .foundryRule(rule),
+            parentId: parentId
+        )
+    }
+
+    /// Maps a generic Foundry Item/document projection into RuleRPG while retaining its raw JSON.
+    @MainActor
+    static func foundryDocument(
+        id: UUID,
+        name: String,
+        descriptionHTML: String?,
+        tags: [String],
+        documentType: String,
+        subtype: String,
+        rawData: FoundryJSONValue,
+        parentId: UUID?,
+        packageIdentifier: String,
+        identityNamespace: String? = nil
+    ) -> RuleModel {
+        let sourceIdentifier = rawData["_id"]?.stringValue ?? id.uuidString.lowercased()
+        let systemID = rawData.value(at: "_stats.systemId")?.stringValue ?? ""
+        let systemVersion = rawData.value(at: "_stats.systemVersion")?.stringValue ?? ""
+        let category = rawData["type"]?.stringValue ?? subtype
+        let imagePath = rawData["img"]?.stringValue ?? ""
+        let metadata = RuleSourceMetadata(
+            sourceIdentifier: sourceIdentifier,
+            systemID: systemID,
+            systemVersion: systemVersion,
+            packageIdentifier: packageIdentifier,
+            packageName: FoundryTextDecoder.decodedText(packageIdentifier),
+            documentID: sourceIdentifier,
+            documentType: FoundryTextDecoder.decodedText(documentType),
+            subtype: FoundryTextDecoder.decodedText(subtype),
+            ruleCategory: FoundryTextDecoder.decodedText(category),
+            imagePath: imagePath
+        )
+        let values = hierarchicalValues(
+            rawData["system"] ?? rawData,
+            sourceIdentifier: identityNamespace ?? sourceIdentifier
+        )
+
+        return RuleModel(
+            id: id,
+            name: FoundryTextDecoder.decodedText(name),
+            description: readableText(fromHTML: descriptionHTML),
+            tags: orderedUnique(tags + [subtype, "Foundry VTT"]),
+            category: .rules,
+            entries: values,
+            sourceMetadata: metadata,
+            sourcePayload: .foundryDocument(rawData),
+            parentId: parentId
+        )
+    }
+
+}
+
+extension RuleModel {
+    static func foundryEntries(
+        rule: FoundryRuleDefinition,
+        sourceIdentifier: String
+    ) -> [RuleEntryModel] {
+        var result = hierarchicalValues(
+            projectedRuleValues(rule.values),
+            sourceIdentifier: sourceIdentifier
+        )
+
+        result.append(contentsOf: rule.references.enumerated().map { index, reference in
+            let label = reference.label?.isEmpty == false
+                ? FoundryTextDecoder.decodedText(reference.label ?? reference.target)
+                : FoundryTextDecoder.decodedText(reference.target)
+            var details = "**Target:** \(reference.target)"
+            if let packName = reference.packName, !packName.isEmpty {
+                details += "\n\n**Pack:** \(FoundryTextDecoder.decodedText(packName))"
+            }
+            if let documentID = reference.documentID, !documentID.isEmpty {
+                details += "\n\n**Document:** \(documentID)"
+            }
+            return RuleEntryModel(
+                id: FoundryRuleIdentity.uuid(
+                    for: "\(sourceIdentifier)#reference#\(reference.sourcePath)#\(index)"
+                ),
+                name: label,
+                content: details,
+                kind: .reference
+            )
+        })
+
+        result.append(contentsOf: rule.embeddedRules.map { embedded in
+            var sections = [readableText(fromHTML: embedded.descriptionHTML)]
+                .filter { !$0.isEmpty }
+            let values = embedded.values.map {
+                "- **\(FoundryTextDecoder.decodedText($0.path)):** \(presentation($0.value))"
+            }
+            if !values.isEmpty {
+                sections.append("**Values**\n\(values.joined(separator: "\n"))")
+            }
+            if !embedded.references.isEmpty {
+                let references = embedded.references.enumerated().map { index, reference in
+                    foundryReferenceDetails(reference, index: index)
+                }
+                sections.append("**References**\n\n\(references.joined(separator: "\n\n"))")
+            }
+            if !embedded.effects.isEmpty {
+                let effects = embedded.effects.enumerated().map { index, effect in
+                    let name = effect.name.isEmpty
+                        ? "Effect \(index + 1)"
+                        : FoundryTextDecoder.decodedText(effect.name)
+                    return "**\(name)**\n\(foundryEffectDetails(effect))"
+                }
+                sections.append("**Effects**\n\n\(effects.joined(separator: "\n\n"))")
+            }
+            return RuleEntryModel(
+                id: FoundryRuleIdentity.uuid(
+                    for: "\(sourceIdentifier)#embedded#\(embedded.id)"
+                ),
+                name: FoundryTextDecoder.decodedText(embedded.name),
+                content: sections.joined(separator: "\n\n"),
+                kind: .embeddedRule
+            )
+        })
+
+        result.append(contentsOf: rule.effects.enumerated().map { index, effect in
+            return RuleEntryModel(
+                id: FoundryRuleIdentity.uuid(
+                    for: "\(sourceIdentifier)#effect#\(effect.id)"
+                ),
+                name: effect.name.isEmpty
+                    ? "Effect \(index + 1)"
+                    : FoundryTextDecoder.decodedText(effect.name),
+                content: foundryEffectDetails(effect),
+                kind: .effect
+            )
+        })
+        return result
+    }
+
+    static func foundryReferenceDetails(
+        _ reference: FoundryRuleReference,
+        index: Int
+    ) -> String {
+        let label = reference.label?.isEmpty == false
+            ? FoundryTextDecoder.decodedText(reference.label ?? reference.target)
+            : FoundryTextDecoder.decodedText(reference.target)
+        var lines = [
+            "**Reference \(index + 1): \(label)**",
+            "- **Target:** \(reference.target)",
+            "- **Type:** \(reference.kind.rawValue)",
+            "- **Source:** \(reference.sourcePath)",
+            "- **Token:** \(reference.rawToken)",
+        ]
+        if let packName = reference.packName, !packName.isEmpty {
+            lines.append("- **Pack:** \(FoundryTextDecoder.decodedText(packName))")
+        }
+        if let documentID = reference.documentID, !documentID.isEmpty {
+            lines.append("- **Document:** \(documentID)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    static func foundryEffectDetails(_ effect: FoundryRuleEffect) -> String {
+        var lines = [
+            "- **ID:** \(effect.id)",
+            "- **Disabled:** \(effect.isDisabled ? "yes" : "no")",
+            "- **Transfers to actor:** \(effect.transfersToActor ? "yes" : "no")",
+        ]
+        if !effect.statuses.isEmpty {
+            lines.append(
+                "- **Statuses:** \(effect.statuses.map(FoundryTextDecoder.decodedText).joined(separator: ", "))"
+            )
+        }
+        if let duration = effect.duration {
+            lines.append("- **Duration:** \(presentation(duration))")
+        }
+        if !effect.changes.isEmpty {
+            lines.append("**Changes**")
+            lines.append(contentsOf: effect.changes.map { change in
+                let priority = change.priority.map { ", priority \($0)" } ?? ""
+                return "- **\(change.path):** \(presentation(change.operand)) (mode \(change.mode)\(priority))"
+            })
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    static func hierarchicalValues(
+        _ value: FoundryJSONValue,
+        sourceIdentifier: String
+    ) -> [RuleEntryModel] {
+        hierarchicalValues(
+            FoundryValueHierarchy.nodes(from: value),
+            sourceIdentifier: sourceIdentifier
+        )
+    }
+
+    static func hierarchicalValues(
+        _ values: [FoundryRuleValue],
+        sourceIdentifier: String
+    ) -> [RuleEntryModel] {
+        hierarchicalValues(
+            FoundryValueHierarchy.nodes(from: values),
+            sourceIdentifier: sourceIdentifier
+        )
+    }
+
+    static func hierarchicalValues(
+        _ nodes: [FoundryValueNode],
+        sourceIdentifier: String
+    ) -> [RuleEntryModel] {
+        let maximumPresentedValues = 500
+        let valueCount = nodes.reduce(0) { $0 + $1.valueCount }
+        var remainingValues = maximumPresentedValues
+        var result = projectedValueEntries(
+            nodes,
+            sourceIdentifier: sourceIdentifier,
+            parentId: nil,
+            remainingValues: &remainingValues
+        )
+        if valueCount > maximumPresentedValues {
+            result.append(RuleEntryModel(
+                id: FoundryRuleIdentity.uuid(for: "\(sourceIdentifier)#source#remaining-values"),
+                name: "Additional source values",
+                content: "\(valueCount - maximumPresentedValues) values remain available in the lossless source payload.",
+                kind: .source
+            ))
+        }
+        return result
+    }
+
+    static func projectedValueEntries(
+        _ nodes: [FoundryValueNode],
+        sourceIdentifier: String,
+        parentId: UUID?,
+        remainingValues: inout Int
+    ) -> [RuleEntryModel] {
+        var entries: [RuleEntryModel] = []
+        for node in nodes {
+            guard remainingValues > 0 else { break }
+            let pathIdentity = valuePathIdentity(node.pathComponents)
+            if node.children.isEmpty, let value = node.value {
+                remainingValues -= 1
+                entries.append(RuleEntryModel(
+                    id: FoundryRuleIdentity.uuid(
+                        for: "\(sourceIdentifier)#value#\(pathIdentity)"
+                    ),
+                    name: FoundryTextDecoder.decodedText(node.component),
+                    content: presentation(value),
+                    kind: .value,
+                    parentId: parentId
+                ))
+                continue
+            }
+
+            let groupId = FoundryRuleIdentity.uuid(
+                for: "\(sourceIdentifier)#value-group#\(pathIdentity)"
+            )
+            var descendants: [RuleEntryModel] = []
+            if let value = node.value, remainingValues > 0 {
+                remainingValues -= 1
+                descendants.append(RuleEntryModel(
+                    id: FoundryRuleIdentity.uuid(
+                        for: "\(sourceIdentifier)#value#\(pathIdentity)#own"
+                    ),
+                    name: "value",
+                    content: presentation(value),
+                    kind: .value,
+                    parentId: groupId
+                ))
+            }
+            descendants.append(contentsOf: projectedValueEntries(
+                node.children,
+                sourceIdentifier: sourceIdentifier,
+                parentId: groupId,
+                remainingValues: &remainingValues
+            ))
+            guard !descendants.isEmpty else { continue }
+
+            entries.append(RuleEntryModel(
+                id: groupId,
+                name: FoundryTextDecoder.decodedText(node.component),
+                content: "",
+                kind: .group,
+                parentId: parentId
+            ))
+            entries.append(contentsOf: descendants)
+        }
+        return entries
+    }
+
+    static func projectedRuleValues(
+        _ values: [FoundryRuleValue]
+    ) -> [FoundryRuleValue] {
+        let paths = values.map {
+            $0.path.split(separator: ".", omittingEmptySubsequences: true).map(String.init)
+        }
+        let hasCommonTechnicalSystemRoot = !paths.isEmpty && paths.allSatisfy {
+            $0.count > 1 && $0.first == "system"
+        }
+        guard hasCommonTechnicalSystemRoot else { return values }
+        return zip(values, paths).map { value, path in
+            FoundryRuleValue(
+                path: path.dropFirst().joined(separator: "."),
+                value: value.value
+            )
+        }
+    }
+
+    static func valuePathIdentity(_ components: [String]) -> String {
+        guard !components.isEmpty else { return "root" }
+        return components.map { component in
+            "\(component.utf8.count):\(component)"
+        }.joined()
+    }
+
+    static func presentation(_ value: FoundryJSONValue) -> String {
+        switch value {
+        case .string(let value): return FoundryTextDecoder.plainText(fromHTML: value)
+        case .integer(let value): return value.formatted()
+        case .unsignedInteger(let value): return value.formatted()
+        case .number(let value): return value.formatted(.number)
+        case .bool(let value): return value ? "true" : "false"
+        case .null: return "null"
+        case .array(let values): return values.map(presentation).joined(separator: ", ")
+        case .object:
+            guard let data = try? JSONEncoder().encode(value),
+                  let text = String(data: data, encoding: .utf8) else { return "" }
+            return text
+        }
+    }
+
+    static func readableText(fromHTML html: String?) -> String {
+        FoundryTextDecoder.plainText(fromHTML: html)
+    }
+
+    static func orderedUnique(_ values: [String]) -> [String] {
+        var seen: Set<String> = []
+        var result: [String] = []
+        for value in values {
+            let decoded = FoundryTextDecoder.decodedText(value)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !decoded.isEmpty,
+                  seen.insert(decoded.localizedLowercase).inserted else { continue }
+            result.append(decoded)
+        }
+        return result
+    }
+}

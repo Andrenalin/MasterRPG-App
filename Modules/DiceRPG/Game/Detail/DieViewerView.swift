@@ -28,7 +28,7 @@ struct DieViewerView: View {
             .rotation3DEffect(.degrees(withoutResult ? 0 : die.rotation), axis: (x: 0, y: 0, z: 1))
             .padding(8)
             .background(.ultraThinMaterial)
-            .clipShape(Circle())
+            .clipShape(.circle)
             .overlay(Circle().stroke(lineWidth: 4).foregroundStyle(.white))
             .overlay(alignment: .top) {
                 if !withoutResult {
@@ -42,7 +42,7 @@ struct DieViewerView: View {
                             .foregroundStyle(color(for: index))
                             .frame(width: 44, height: 44)
                             .background(.ultraThinMaterial)
-                            .clipShape(Circle())
+                            .clipShape(.circle)
                             .overlay(Circle().stroke(lineWidth: 4).foregroundStyle(.white))
                             .offset(x: 0, y: -10 + CGFloat((index + 1) * 36))
                             .opacity(index == 0 ? 0 : 1)

@@ -1,0 +1,140 @@
+// @copyright André Trettin
+
+import Foundation
+
+// MARK: - Data Source Abstraction (ZIP / Directory)
+
+enum FoundryVTTDataSource: Sendable {
+    case archive(FoundryZIPArchive, sourceSHA256: String)
+    case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits, selectedPath: String?)
+
+    init(url: URL, limits: FoundryImportLimits) throws {
+        let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
+        if values.isDirectory == true {
+            let root = url.standardizedFileURL.resolvingSymlinksInPath()
+            let paths = try Self.directoryPaths(at: root, limits: limits)
+            self = .directory(
+                root: root,
+                paths: paths,
+                pathSet: Set(paths),
+                limits: limits,
+                selectedPath: nil
+            )
+            return
+        }
+        guard let fileSize = values.fileSize, fileSize <= limits.maximumArchiveSize else {
+            throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
+        }
+        let lowercased = url.lastPathComponent.lowercased()
+        if FoundryPackagePath.isManifest(lowercased) {
+            throw FoundryImportError.bareManifestRequiresContainer(url.lastPathComponent)
+        }
+        let isPlainFile = lowercased.hasSuffix(".json")
+            || lowercased.hasSuffix(".db")
+            || lowercased.hasSuffix(".ldb")
+            || lowercased.hasSuffix(".sst")
+            || lowercased.hasSuffix(".mrpgfoundry")
+        if isPlainFile {
+            let root = url.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath()
+            let selected = try FoundryPackagePath.normalized(url.lastPathComponent)
+            self = .directory(
+                root: root,
+                paths: [selected],
+                pathSet: [selected],
+                limits: limits,
+                selectedPath: selected
+            )
+            return
+        } else {
+            try Task.checkCancellation()
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            try Task.checkCancellation()
+            self = .archive(
+                try FoundryZIPArchive(data: data, limits: limits),
+                sourceSHA256: foundrySHA256(data)
+            )
+        }
+    }
+
+    var paths: [String] {
+        switch self {
+        case .archive(let archive, _): archive.entryPaths
+        case .directory(_, let paths, _, _, _): paths
+        }
+    }
+
+    var selectedPath: String? {
+        switch self {
+        case .archive: nil
+        case .directory(_, _, _, _, let path): path
+        }
+    }
+
+    var sourceSHA256: String? {
+        switch self {
+        case .archive(_, let hash): return hash
+        case .directory(_, _, _, _, let selectedPath):
+            guard let selectedPath, let data = try? data(forPath: selectedPath) else { return nil }
+            return foundrySHA256(data)
+        }
+    }
+
+    func contains(path: String) -> Bool {
+        switch self {
+        case .archive(let archive, _): archive.contains(path: path)
+        case .directory(_, _, let pathSet, _, _): pathSet.contains(path)
+        }
+    }
+
+    func data(forPath path: String) throws -> Data? {
+        switch self {
+        case .archive(let archive, _):
+            return try archive.data(forPath: path)
+        case .directory(let root, _, let pathSet, let limits, let selectedPath):
+            guard pathSet.contains(path) else { return nil }
+            let candidate = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
+            let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+            guard candidate.path.hasPrefix(rootPrefix) else {
+                throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")
+            }
+            let values = try candidate.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+            guard values.isRegularFile == true else { return nil }
+            let maximumSize = selectedPath == path && path.lowercased().hasSuffix(".mrpgfoundry")
+                ? limits.maximumArchiveSize
+                : limits.maximumEntrySize
+            guard let size = values.fileSize, size <= maximumSize else {
+                throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
+            }
+            return try Data(contentsOf: candidate, options: .mappedIfSafe)
+        }
+    }
+}
+
+private extension FoundryVTTDataSource {
+    static func directoryPaths(at root: URL, limits: FoundryImportLimits) throws -> [String] {
+        let canonicalRoot = root.standardizedFileURL.resolvingSymlinksInPath()
+        let rootPrefix = canonicalRoot.path.hasSuffix("/") ? canonicalRoot.path : canonicalRoot.path + "/"
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: canonicalRoot,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else { throw FoundryImportError.unsupportedSource }
+        var result: [String] = []
+        for case let fileURL as URL in enumerator {
+            try Task.checkCancellation()
+            let values = try fileURL.resourceValues(forKeys: keys)
+            guard values.isSymbolicLink != true, values.isRegularFile == true else { continue }
+            let canonical = fileURL.standardizedFileURL.resolvingSymlinksInPath()
+            guard canonical.path.hasPrefix(rootPrefix) else {
+                throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")
+            }
+            result.append(try FoundryPackagePath.normalized(String(canonical.path.dropFirst(rootPrefix.count))))
+            guard result.count <= limits.maximumDocumentCount else {
+                throw FoundryImportError.tooManyDocuments(result.count)
+            }
+        }
+        return result.sorted()
+    }
+}
+

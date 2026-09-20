@@ -80,8 +80,12 @@ extension EditController {
         let (duplicates, copyId, mapper) = duplicateSubValue(id: itemId, withCopy: withCopy)
         root.linkController.repairDuplicateLinks(models: duplicates, mapper: mapper)
         for duplicate in duplicates {
-            // TODO: this does not add the links to the link register — see CODE_AUDIT_Character §9.16.
-            itemController.replace(model: duplicate, isInsert: true)
+            // Plain `replace(model:isInsert:)` does not touch the link register — only
+            // `replaceImportedModel` and the normal `EditControllable.saveChanges` edit path
+            // do. A duplicated item's links were being repaired but never registered, so
+            // backlink/orphan-detection bookkeeping silently drifted for every duplicate.
+            // See CODE_AUDIT.md §9.4 / CODE_AUDIT_Character §9.16.
+            itemController.replaceImportedModel(model: duplicate, isInsert: true)
         }
         return copyId
     }
