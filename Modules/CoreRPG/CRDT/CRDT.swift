@@ -58,7 +58,10 @@ public struct CRDT<T: Codable> {
     }
 
     public var rawValue: String {
-        guard let data = try? JSONCoding.encoder.encode(_crdtValue), let text = String(data: data, encoding: .utf8) else { return "" }
+        guard let data = try? JSONCoding.encoder.encode(_crdtValue), let text = String(data: data, encoding: .utf8) else {
+            assertionFailure("CRDT value failed to encode; persisting an empty string would erase it")
+            return ""
+        }
         return text
     }
 

@@ -30,4 +30,23 @@ struct RawDiceLimitsTests {
         #expect(counter.min == 2)
         #expect(counter.max == 12)
     }
+
+    /// CODE_AUDIT_16 §5.4 / §5.5.
+    @Test("Double-to-Int conversion saturates instead of trapping")
+    func doubleSaturation() {
+        #expect(Double.greatestFiniteMagnitude.saturatingInt == Int.max)
+        #expect((-Double.greatestFiniteMagnitude).saturatingInt == Int.min)
+        #expect(Double.nan.saturatingInt == 0)
+        #expect(Double.infinity.saturatingInt == Int.max)
+        #expect(12.9.saturatingInt == 12)
+    }
+
+    @Test("Modifier text and dice merging never overflow")
+    func textArithmeticSaturates() {
+        let dice = RawDice(text: "+9223372036854775807+1")
+        #expect(dice.modifier == Int.max)
+        var merged = RawDice(dieCounter: RawDieCounter(die: .six, count: Int.max))
+        merged.addDie(RawDieCounter(die: .six, count: 1))
+        #expect(merged.max == Int.max)
+    }
 }

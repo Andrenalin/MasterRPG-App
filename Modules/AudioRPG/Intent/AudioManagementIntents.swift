@@ -31,6 +31,7 @@ struct CreateAudioIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<AudioEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = AudioModel(
             id: UUID(),
             name: name,
@@ -70,6 +71,7 @@ struct AddAudioNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
         let updatedDescription = appendingIntentText(
             String(note.characters),
@@ -104,6 +106,7 @@ struct SearchAudioIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.audios(nil, nil))
         return .result()
@@ -122,6 +125,7 @@ struct DeleteAudioIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

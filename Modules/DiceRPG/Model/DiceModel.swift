@@ -71,10 +71,10 @@ public final class DiceModel: nonisolated Identifiable {
         self._displayState = try container.decode(Int.self, forKey: DiceModel.CodingKeys._displayState)
         self._dice_ = try container.decode(CRDTDataUpdate<[DieModel]>.self, forKey: DiceModel.CodingKeys._dice_)
         self._sumUp = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._sumUp)
-        self._modifier = try container.decode(Double.self, forKey: DiceModel.CodingKeys._modifier)
+        self._modifier = Self.boundedValue(try container.decode(Double.self, forKey: DiceModel.CodingKeys._modifier))
         self._percentDice = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._percentDice)
         self._compareOption = try container.decode(DiceModel.CompareValue.self, forKey: DiceModel.CodingKeys._compareOption)
-        self._compareValue = try container.decode(Double.self, forKey: DiceModel.CodingKeys._compareValue)
+        self._compareValue = Self.boundedValue(try container.decode(Double.self, forKey: DiceModel.CodingKeys._compareValue))
         self._coupValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._coupValues)
         self._coupOnlyOnFirstDie = try container.decode(Bool.self, forKey: DiceModel.CodingKeys._coupOnlyOnFirstDie)
         self._fumbleValues = try container.decode([DiceModel.CoupFumbleOption].self, forKey: DiceModel.CodingKeys._fumbleValues)
@@ -348,16 +348,28 @@ extension DiceModel {
     
     var inlineText: String {
         var diceModel = RawDice(dice: dice.map { $0.die })
-        diceModel.modifier = Int(modifier)
+        diceModel.modifier = modifier.saturatingInt
         return diceModel.text
     }
     
+    /// Largest magnitude accepted for a decoded modifier or compare value; it also fits `Float`
+    /// storage. Non-finite values become 0. See CODE_AUDIT_16 §5.4.
+    nonisolated static let maximumValueMagnitude = 1_000_000_000.0
+
+    nonisolated static func boundedValue(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(max(value, -maximumValueMagnitude), maximumValueMagnitude)
+    }
+
+    /// Most dice a compare value can add. See CODE_AUDIT_16 §5.4.
+    static let maximumDiceCount = 100
+
     func resetDice() {
         guard addDiceEvery > 0 else { return }
-        var number = Int(compareValue) / addDiceEvery + (Int(compareValue) % addDiceEvery > 0 ? 1 : 0)
-        if number <= 0 {
-            number = 1
-        }
+        let compare = compareValue.saturatingInt
+        var number = compare / addDiceEvery + (compare % addDiceEvery > 0 ? 1 : 0)
+        // The compare value can come from any calculated Character value; bound the allocation.
+        number = min(max(number, 1), Self.maximumDiceCount)
         if dice.count != number, let die = dice.first {
             dice = (1 ... number).map { _ in die.duplicate() }
         }

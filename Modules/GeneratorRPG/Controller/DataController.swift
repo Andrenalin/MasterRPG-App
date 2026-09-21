@@ -42,7 +42,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.generatorCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         // Uses the shared `syncEntries` helper (CODE_AUDIT §5.4/§9.9) so entries removed from
         // the incoming snapshot are actually deleted rather than just dropped from the
         // relationship's NSSet — which previously left them as orphaned rows that leaked
@@ -85,6 +85,6 @@ extension DataController: CoreDataSnapshotPersistable {
     private func map(_ viewModel: ChildEntryModel, into entry: RPGGeneratorEntry, index: Int) {
         entry.uuid = viewModel.id
         entry.childUUID = viewModel.childId
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
     }
 }

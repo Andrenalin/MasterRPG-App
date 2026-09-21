@@ -31,6 +31,7 @@ struct CreateTableIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<TableEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = TableModel(
             id: UUID(),
             name: name,
@@ -74,6 +75,7 @@ struct AddTableRowIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let entry = root.editController.create(
             name: rowName,
             content: intentPlainText(from: content)
@@ -103,6 +105,7 @@ struct SearchTablesIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.tables(nil, nil))
         return .result()
@@ -121,6 +124,7 @@ struct DeleteTableIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

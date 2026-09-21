@@ -31,6 +31,7 @@ struct CreateRuleIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<RuleEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = RuleModel(
             id: UUID(),
             name: name,
@@ -71,6 +72,7 @@ struct AddRuleSectionIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         guard let targetModel = root.itemController.itemSync(for: target.id),
               !targetModel.specialCategory else {
             return .result(dialog: "The selected rule is no longer available.")
@@ -101,6 +103,7 @@ struct SearchRulesIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.rules(nil, nil))
         return .result()
@@ -119,6 +122,7 @@ struct DeleteRuleIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.compactMap { entity -> UUID? in
             guard let model = root.itemController.itemSync(for: entity.id),
                   !model.specialCategory else { return nil }

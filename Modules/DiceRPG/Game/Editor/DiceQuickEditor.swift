@@ -74,7 +74,7 @@ struct DiceQuickEditor: View {
         .rowEditColor(backgroundColor: .blue)
         .frame(width: valueFor(iOS: 265, macOS: 265, tvOS: 265, visionOS: 325))
         .onChange(of: root.gameController.gameItem(for: itemId).compareValue, initial: true) {
-            value = String("\(Int(root.gameController.gameItem(for: itemId).compareValue))")
+            value = String("\(root.gameController.gameItem(for: itemId).compareValue.saturatingInt)")
         }
         .onAppear {
 #if os(iOS) || os(macOS)

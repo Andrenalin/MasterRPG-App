@@ -43,6 +43,7 @@ public extension NSImage {
 }
 
 public extension AKImage {
+    @concurrent
     func resize(to targetSize: CGSize, topAligned: Bool = false) async -> AKImage? {
         let widthRatio = targetSize.width / size.width
         let heightRatio = targetSize.height / size.height
@@ -104,6 +105,7 @@ public extension Image {
 
 public extension AKImage {
     
+    @concurrent
     func resize(to targetSize: CGSize, topAligned: Bool = false) async -> AKImage? {
         let pixelScale: CGFloat = 3.0
 

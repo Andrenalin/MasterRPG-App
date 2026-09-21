@@ -50,7 +50,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.weatherCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         model.weatherUpdate <=> snapshot.weatherUpdate.rawValue
         model.time <=> Float(snapshot.time)
         model.cloudThickness <=> Int16(snapshot.cloudThickness.rawValue)
@@ -97,6 +97,6 @@ extension DataController: CoreDataSnapshotPersistable {
     private func map(_ viewModel: ChildEntryModel, into entry: RPGWeatherEntry, index: Int) {
         entry.uuid = viewModel.id
         entry.childUUID = viewModel.childId
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
     }
 }

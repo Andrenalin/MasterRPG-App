@@ -134,7 +134,17 @@ extension MasterNetworkController: MasterNetworkControllable {
         // the non-async `startStreaming`/`stopStreaming`), and clearing
         // pending entries has no ordering dependency on anything else here.
         Task { await connectionThrottle.clearAllPending() }
+        // The receive loop holds each controller strongly, so dropping the reference never
+        // reaches `deinit`; cancel explicitly or the peer stays connected and black-holed.
+        // See CODE_AUDIT_16 §3.1.
+        networkModel.connectionGeneration += 1
+        let dropped = networkModel.connections
         networkModel.connections = []
+        Task {
+            for connection in dropped {
+                await connection.cancel()
+            }
+        }
     }
 }
 
@@ -234,15 +244,39 @@ extension MasterNetworkController: ListenerManagerDelegate {
             connection.cancel()
             return
         }
+        let generation = networkModel.connectionGeneration
         guard await connectionThrottle.shouldAllow(endpoint: connection.endpoint) else {
             Logger.networking.debug("MasterNetworkController: Rejected connection attempt from throttled source")
             connection.cancel()
             return
         }
-        Logger.networking.debug("MasterNetworkController: New Connection")
         let id = UUID()
         await connectionThrottle.register(id: id, endpoint: connection.endpoint)
+        // A reset during the suspensions above already cleared the pending bookkeeping; a
+        // connection admitted now would have no owning listener. See CODE_AUDIT_16 §3.3.
+        guard generation == networkModel.connectionGeneration,
+              networkModel.connections.count < Self.maximumConnections else {
+            await connectionThrottle.clear(id: id)
+            connection.cancel()
+            return
+        }
+        Logger.networking.debug("MasterNetworkController: New Connection")
         addNew(ConnectionController(id: id, connection: connection, delegate: self))
+        enforceHandshakeDeadline(for: id)
+    }
+
+    /// Seconds an inbound connection may stay unauthenticated before it is dropped, so idle
+    /// sockets cannot hold the pending-handshake slots. See CODE_AUDIT_16 §6.2.
+    static let handshakeDeadline: Duration = .seconds(15)
+
+    private func enforceHandshakeDeadline(for id: ConnectionController.ID) {
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: Self.handshakeDeadline)
+            guard let self, await connectionThrottle.isPending(id: id) else { return }
+            Logger.networking.debug("MasterNetworkController: Handshake deadline expired")
+            guard let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
+            await stale.cancel()
+        }
     }
 
     /// Convenience accessor used by tests to inject a connection directly.

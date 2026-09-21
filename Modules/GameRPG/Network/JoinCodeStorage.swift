@@ -8,7 +8,10 @@ import Security
 /// See CODE_AUDIT §6.2.
 protocol JoinCodeStorage: Sendable {
     func string(forKey key: String) -> String?
-    func set(_ value: String, forKey key: String)
+    /// Returns whether the value was durably stored, so callers only discard a legacy copy
+    /// after a verified write. See CODE_AUDIT_16 §5.6.
+    @discardableResult
+    func set(_ value: String, forKey key: String) -> Bool
     /// Lets a code be cleared the same way it's set, rather than needing a
     /// separate storage mechanism just for deletion. See CODE_AUDIT §6.2.
     func remove(forKey key: String)
@@ -36,8 +39,9 @@ struct KeychainJoinCodeStorage: JoinCodeStorage {
         return String(data: data, encoding: .utf8)
     }
 
-    func set(_ value: String, forKey key: String) {
-        guard let data = value.data(using: .utf8) else { return }
+    @discardableResult
+    func set(_ value: String, forKey key: String) -> Bool {
+        guard let data = value.data(using: .utf8) else { return false }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -48,12 +52,12 @@ struct KeychainJoinCodeStorage: JoinCodeStorage {
         let existsStatus = SecItemCopyMatching(query as CFDictionary, nil)
         if existsStatus == errSecSuccess {
             let updateAttributes: [String: Any] = [kSecValueData as String: data]
-            SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
+            return SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary) == errSecSuccess
         } else {
             var addQuery = query
             addQuery[kSecValueData as String] = data
             addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-            SecItemAdd(addQuery as CFDictionary, nil)
+            return SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
         }
     }
 

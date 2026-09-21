@@ -37,6 +37,7 @@ public final class AppModel: Sendable {
 
     @ObservationIgnored public let optionKeyDownModel: OptionKeyDownModel
     @ObservationIgnored public var rpgSpotlightIndexer: RpgSpotlightIndexerDelegate?
+    @ObservationIgnored private var configuredContext: NSManagedObjectContext?
     @ObservationIgnored public let settingsModel: AppSettingsModel
     
     // Database
@@ -411,6 +412,10 @@ extension AppModel: ExampleUrlProvider {
 
 extension AppModel {
     @MainActor public func setupRootModels(context: NSManagedObjectContext, spotlightIndexer: RpgSpotlightIndexerDelegate?, coreDataInitModel: CoreDataInitModel?) {
+        // The scene's `.task(id: context)` and a background intent's readiness gate can both
+        // reach this for the same context.
+        guard configuredContext !== context else { return }
+        configuredContext = context
         tagController.setup(context: context)
         adventureRoot.setUp(root: root, context: context)
         gameRoot.setUpStatistics(context: context)
@@ -421,11 +426,27 @@ extension AppModel {
         self.coreDataInitModel = coreDataInitModel
 
         self.appNavigationModel.initialRouteType = .ready
+        DatabaseReadiness.markReady()
         presentPendingExternalNavigationIfNeeded()
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: Self.tipEligibilityRefreshDelay)
             self?.refreshTipEligibility()
         }
+    }
+
+    /// Starts the database and root models without a scene, for background App Intents. The
+    /// scene's iCloud-account alert is skipped: CloudKit copes with a missing account itself.
+    /// See CODE_AUDIT_16 §5.3.
+    @MainActor public func startDatabaseForBackgroundWork() {
+        if databaseModel.context == nil {
+            databaseModel.setup()
+        }
+        guard let context = databaseModel.context else { return }
+        setupRootModels(
+            context: context,
+            spotlightIndexer: databaseModel.spotlightIndexer,
+            coreDataInitModel: databaseModel.coreDataInitModel
+        )
     }
 
     /// Gives the just-`.ready` route a moment to finish settling before the first tip

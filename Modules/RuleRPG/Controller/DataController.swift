@@ -57,7 +57,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.ruleCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         model.sourceMetadata <=> snapshot.sourceMetadata.rawValue
         model.sourcePayload <=> snapshot.sourcePayload.rawValue
         // Uses the shared `syncEntries` helper instead of hand-rolling the find-or-new +
@@ -100,8 +100,8 @@ extension DataController: CoreDataSnapshotPersistable {
         model.name = entry.name
         model.content = entry.content
         model.kind = entry.kind.rawValue
-        model.displayState = Int32(entry.displayState)
+        model.displayState = Int32(clamping: entry.displayState)
         model.parentId = entry.parentId
-        model.index = Int32(index)
+        model.index = Int32(clamping: index)
     }
 }

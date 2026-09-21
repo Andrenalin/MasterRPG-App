@@ -70,6 +70,11 @@ actor ConnectionThrottleTracker {
         pendingSources.removeValue(forKey: id)
     }
 
+    /// Whether `id`'s handshake is still unresolved.
+    func isPending(id: ConnectionController.ID) -> Bool {
+        pendingSources[id] != nil
+    }
+
     /// Drops every pending (not-yet-resolved) connection, without touching
     /// the underlying throttle's recorded failures/lockouts — those persist
     /// across a streaming restart on purpose, so a bad-faith source doesn't

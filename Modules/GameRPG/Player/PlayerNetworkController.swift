@@ -62,6 +62,9 @@ final class PlayerNetworkController: Sendable {
     /// superseded and must resolve to `false` immediately instead of parking
     /// a continuation nothing will ever resume. See CODE_AUDIT_13 §3.1.
     private var joinAttemptToken: UUID?
+    /// The outcome of an attempt that resolved while `toggleConnection` was still suspended in
+    /// `start(model:)`, so no continuation was parked to receive it. See CODE_AUDIT_16 §3.7.
+    private var unclaimedJoinOutcome: (token: UUID, success: Bool)?
 
     /// Forces a stalled join to resolve after `joinTimeout` instead of
     /// hanging forever, covering `NWConnection.State.waiting` (Local Network
@@ -118,6 +121,13 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         await start(model: playerModel)
 
         guard joinAttemptToken == token else {
+            if let outcome = unclaimedJoinOutcome, outcome.token == token {
+                // `.ready` (or a failure) landed while `start` was suspended: report it
+                // instead of calling a live connection "superseded".
+                unclaimedJoinOutcome = nil
+                if outcome.success { observeRemovedConnection() }
+                return outcome.success
+            }
             Logger.playerNetworkController.debug("PlayerNetworkController: Join attempt superseded before continuation was parked")
             return false
         }
@@ -145,6 +155,9 @@ extension PlayerNetworkController: PlayerNetworkControllable {
     /// never hangs waiting on a handshake outcome that a teardown elsewhere
     /// (an explicit `stop()`, a superseded attempt) already made moot.
     private func resolvePendingConnection(success: Bool) {
+        if pendingJoinContinuation == nil, let token = joinAttemptToken {
+            unclaimedJoinOutcome = (token, success)
+        }
         joinAttemptToken = nil
         joinTimeoutTask?.cancel()
         joinTimeoutTask = nil
@@ -366,8 +379,11 @@ extension PlayerNetworkController {
         // `checkForRemoval()` scheduled by that re-registration racing this
         // one's own loop is safe: `lostConnection(for:)` is already
         // idempotent via `markLostIfCurrent`. See CODE_AUDIT_Reconnect §3.5.
+        // Take the accumulated removals before re-arming: clearing them is itself a change the
+        // tracking would otherwise report. See CODE_AUDIT_16 §3.9.
+        let removedGames = browserManager.takeRemoved()
         observeRemovedConnection()
-        for game in browserManager.removed {
+        for game in removedGames {
             let endpoint = browserManager.nwEndpoint(for: game)
             await removedConnection(endpoint: endpoint)
         }

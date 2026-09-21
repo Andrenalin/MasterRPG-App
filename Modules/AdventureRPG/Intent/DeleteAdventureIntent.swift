@@ -17,6 +17,7 @@ public struct DeleteAdventureIntent: DeleteIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

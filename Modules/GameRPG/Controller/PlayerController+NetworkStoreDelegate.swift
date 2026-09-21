@@ -548,6 +548,13 @@ extension PlayerController {
                 await messagePipeline.processed(success: true)
             } catch is CancellationError {
                 await messagePipeline.processed(success: false)
+                // The in-hand event is dropped on purpose (its side effects may have run), but
+                // the rest of the backlog must not strand. See CODE_AUDIT_16 §3.2.
+                if await messagePipeline.hasQueuedMessages {
+                    Task { [weak self] in
+                        await self?.processMessages()
+                    }
+                }
                 return
             } catch {
                 // GameNetworkModel.debugDescription embeds sender.name — private. See CODE_AUDIT_Game §6.3.

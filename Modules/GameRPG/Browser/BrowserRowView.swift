@@ -183,10 +183,10 @@ private struct GameJoinCodeEntrySheet: View {
 #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", role: .cancel) { dismiss() }
+                    Button(role: .cancel) { dismiss() } label: { Text("Cancel", bundle: .module) }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Join", role: .confirm, action: submitIfValid)
+                    Button(role: .confirm, action: submitIfValid) { Text("Join", bundle: .module) }
                         .disabled(!GameJoinCodeModel.isValidCode(code))
                 }
             }

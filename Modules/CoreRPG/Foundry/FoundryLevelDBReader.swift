@@ -132,6 +132,9 @@ private extension FoundryLevelDBTableReader {
         }
     }
 
+    /// Foundry document keys are short ids; anything beyond this is treated as corrupt.
+    static let maximumKeyLength = 4_096
+
     func decodeEntries(in block: [UInt8]) throws -> [BlockEntry] {
         guard block.count >= MemoryLayout<UInt32>.size else {
             throw FoundryImportError.corruptLevelDB("A data block has no restart table.")
@@ -178,6 +181,9 @@ private extension FoundryLevelDBTableReader {
         var entries: [BlockEntry] = []
         let restartOffsetSet = Set(restartOffsets)
         var decodedEntryOffsets = Set<Int>()
+        // Prefix sharing lets a few bytes per entry reconstruct a full-length key, so bound the
+        // key length and the cumulative reconstructed bytes. See CODE_AUDIT_16 §6.1.
+        var decodedBytes = 0
         while cursor < restartOffset {
             let entryOffset = cursor
             let sharedLength = try block.readVarint32(cursor: &cursor, limit: restartOffset)
@@ -198,6 +204,15 @@ private extension FoundryLevelDBTableReader {
             let keyEnd = cursor + unsharedCount
             guard valueCount <= restartOffset - keyEnd else {
                 throw FoundryImportError.corruptLevelDB("A block value is truncated.")
+            }
+
+            let keyLength = Int(sharedLength) + unsharedCount
+            guard keyLength <= Self.maximumKeyLength else {
+                throw FoundryImportError.corruptLevelDB("A block key is too long.")
+            }
+            decodedBytes += keyLength + valueCount
+            guard decodedBytes <= limits.maximumRuleDataSize else {
+                throw FoundryImportError.corruptLevelDB("A data block expands beyond the import limit.")
             }
 
             var key = Array(previousKey.prefix(Int(sharedLength)))

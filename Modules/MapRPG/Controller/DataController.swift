@@ -64,7 +64,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.mapCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
             // Deleting a dropped entry cascades to its coordinates.
             model.entryModels = model.syncEntries(
@@ -182,7 +182,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.uuid = viewModel.id
         model.name = viewModel.$name.rawValue
         model.content = viewModel.$content.rawValue
-        model.index = Int16(index)
+        model.index = Int16(clamping: index)
         model.isHexGrid = viewModel.isHexGrid
         model.isShown = viewModel.isShown
         unequalSet(lhs: &model.coordinatesUpdate, rhs: viewModel.$coordinates.$update.rawValue) {
@@ -209,7 +209,7 @@ extension DataController: CoreDataSnapshotPersistable {
         }
         model.xPos = viewModel.x
         model.yPos = viewModel.y
-        model.index = Int16(index)
+        model.index = Int16(clamping: index)
     }
 
     private func map(_ viewModel: DisplayConfigModel, into model: RPGDisplayConfig) {
@@ -235,7 +235,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.uuid = viewModel.id
         model.name = viewModel.name
         model.color = JSONString.encode(value: CodableColor(viewModel.color)) ?? ""
-        model.index = Int16(index)
+        model.index = Int16(clamping: index)
         model.photoUUID = viewModel.photoId
         model.characterId = viewModel.characterId
 

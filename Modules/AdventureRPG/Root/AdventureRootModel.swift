@@ -313,7 +313,7 @@ extension AdventureRootModel {
         AppIntentContentInvalidator.invalidate()
     }
 
-    // `validate()` (the `StoreManiplable` requirement this type used to conform to) and the
+    // `validate()` (the `StoreManipulable` requirement this type used to conform to) and the
     // fire-and-forget `Task` it launched were removed — repo-wide search found zero callers.
     // The real "Validate Folders" UI flow goes through `ValidateRepairController.start()`
     // (RolePlayGameKit), which calls `checkFolders(reportModel:)`/`validateLinks(reportModel:)`

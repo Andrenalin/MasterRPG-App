@@ -16,11 +16,17 @@ public enum AppIntentContentInvalidator {
         Self.reindexContent = reindexContent
     }
 
+    /// Debounces shortcut-parameter refresh and reindexing behind one tracked task. The reindex
+    /// is awaited inside it, so a newer `invalidate()` cancels a run that is still in flight
+    /// instead of piling overlapping reindexes onto the main actor during bulk edits, imports
+    /// or sync. See CODE_AUDIT_16 §3.6.
     public static func invalidate() {
-        refreshShortcutParameters?()
         reindexTask?.cancel()
-        reindexTask = delayedTask(.seconds(1)) {
-            Task { await reindexContent?() }
+        reindexTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            refreshShortcutParameters?()
+            await reindexContent?()
         }
     }
 }

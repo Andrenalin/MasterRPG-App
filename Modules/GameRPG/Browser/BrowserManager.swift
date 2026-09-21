@@ -34,6 +34,7 @@ final class BrowserManager {
 
     @ObservationIgnored private var monitorTask: Task<Void, Never>?
     @ObservationIgnored private var networkTask: Task<Void, Never>?
+    @ObservationIgnored private var runGeneration = 0
 
     init(serviceType: GameServiceType = .player) {
         self.serviceType = serviceType
@@ -56,6 +57,8 @@ final class BrowserManager {
         games = []
         removed = []
 
+        runGeneration += 1
+        let generation = runGeneration
         let controller = BrowserClientController(serviceType: serviceType)
 
         monitorTask = Task { @MainActor [weak self] in
@@ -71,15 +74,20 @@ final class BrowserManager {
             do {
                 try await controller.startBrowser()
             } catch is CancellationError {
-                self?.connectionState = .cancelled
+                // A superseded run must not overwrite the state of the run that replaced it.
+                // See CODE_AUDIT_16 §3.8.
+                guard let self, self.runGeneration == generation else { return }
+                self.connectionState = .cancelled
             } catch {
                 Logger.browserController.log("Browser error: \(error.localizedDescription)")
-                self?.connectionState = .stopped
+                guard let self, self.runGeneration == generation else { return }
+                self.connectionState = .stopped
             }
         }
     }
 
     func stop() {
+        runGeneration += 1
         cancelTasks()
         connectionState = .stopped
         games = []
@@ -111,9 +119,20 @@ final class BrowserManager {
         }
     }
 
+    /// Returns and clears the removals accumulated since the last call. An update that removes
+    /// nothing must not erase an earlier removal the consumer has not read yet.
+    /// See CODE_AUDIT_16 §3.9.
+    func takeRemoved() -> [BrowserGameModel] {
+        defer { removed = [] }
+        return removed
+    }
+
     private func updateGames(from endpoints: [Bonjour.Endpoint]) {
         let newNames = Set(endpoints.map { $0.name })
-        removed = games.filter { !newNames.contains($0.endpointName) }
+        let newlyRemoved = games.filter { !newNames.contains($0.endpointName) }
+        if !newlyRemoved.isEmpty {
+            removed.append(contentsOf: newlyRemoved)
+        }
         games.removeAll { !newNames.contains($0.endpointName) }
         let existing = Set(games.map { $0.endpointName })
         for endpoint in endpoints where !existing.contains(endpoint.name) {

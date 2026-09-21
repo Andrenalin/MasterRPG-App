@@ -42,7 +42,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.photoCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         model.degrees <=> snapshot.degrees.rawValue
         unequalSet(lhs: &model.fileUrlUpdate, rhs: snapshot.fileUrl.$update.rawValue) {
             model.fileUrl = snapshot.fileUrl.wrappedValue?.rawValue ?? ""
@@ -83,6 +83,6 @@ extension DataController: CoreDataSnapshotPersistable {
     private func map(_ viewModel: PhotoEntryModel, into entry: RPGPhotoEntry, index: Int) {
         entry.uuid = viewModel.id
         entry.photoUUID = viewModel.photoId
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
     }
 }

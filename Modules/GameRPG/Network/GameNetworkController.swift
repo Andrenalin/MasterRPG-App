@@ -81,7 +81,7 @@ final class GameNetworkController: Sendable {
         let masterStore = masterBuilder(name, self)
         let playerStore = playerBuilder(name, self)
         model.setControllers(master: masterStore, player: playerStore)
-        Logger.networking.debug("GameNetworkController: Init \(name, privacy: .public) proxy=\(proxy)")
+        Logger.networking.debug("GameNetworkController: Init \(name, privacy: .private) proxy=\(proxy)")
     }
 
     /// Convenience init for direct (non-proxy) mode.
@@ -106,7 +106,7 @@ final class GameNetworkController: Sendable {
 
     deinit {
         let name = model.name
-        Logger.networking.debug("GameNetworkController: deinit \(name, privacy: .public)")
+        Logger.networking.debug("GameNetworkController: deinit \(name, privacy: .private)")
     }
 
     /// Sets up SharePlay integration. Only meaningful in direct (non-proxy) mode.
@@ -127,7 +127,7 @@ final class GameNetworkController: Sendable {
 extension GameNetworkController {
     func startMasterGame(game: GameConfigModel, titleImage: AKImage?, passcode: String) async {
         let name = model.name
-        Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .public)")
+        Logger.networking.debug("GameNetworkController: start master game \(name, privacy: .private)")
         model.masterStore?.startStreaming(passcode: passcode)
         if !proxy && sharePlayStore.canActivateSharePlay {
             // Subscribe to sessions() before activating, so the session delivered
@@ -139,13 +139,13 @@ extension GameNetworkController {
 
     func startProxyServer(passcode: String) {
         let name = model.name
-        Logger.networking.debug("GameNetworkController: start proxy server \(name, privacy: .public)")
+        Logger.networking.debug("GameNetworkController: start proxy server \(name, privacy: .private)")
         model.masterStore?.startProxyStreaming(passcode: passcode)
     }
 
     func startPlayerGame(to model: BrowserGameModel?, passcode: String) async -> Bool {
         let name = self.model.name
-        Logger.networking.debug("GameNetworkController: start player game \(name, privacy: .public)")
+        Logger.networking.debug("GameNetworkController: start player game \(name, privacy: .private)")
         if let model {
             // Waits for the actual handshake outcome — a caller receiving
             // `true` here relies on it to mean "connected", since it goes on
@@ -162,7 +162,7 @@ extension GameNetworkController {
 
     func stopGame() async {
         let name = model.name
-        Logger.networking.debug("GameNetworkController: stop game \(name, privacy: .public)")
+        Logger.networking.debug("GameNetworkController: stop game \(name, privacy: .private)")
         if await isStreaming() {
             model.masterStore?.stopStreaming()
             await model.playerStore?.stop()

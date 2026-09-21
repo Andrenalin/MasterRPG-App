@@ -34,7 +34,7 @@ public struct RawDieCounter: Equatable, Hashable {
         // CODE_AUDIT §5.7.
         guard count != 0 else { return 0 }
         var result = 0
-        (1 ... abs(count)).forEach { _ in result += die.roll() }
+        (1 ... abs(count)).forEach { _ in result = result.saturatingSum(die.roll()) }
         if count < 0 {
             result *= -1
         }
@@ -57,6 +57,18 @@ public struct RawDieCounter: Equatable, Hashable {
             return die.text
         }
         return "\(count)\(die.text)"
+    }
+}
+
+extension Double {
+    /// The nearest `Int`, clamped to `Int.min`/`Int.max`; NaN becomes 0. `Int(_:)` traps on
+    /// finite-but-huge values. See CODE_AUDIT_16 §5.4.
+    var saturatingInt: Int {
+        guard !isNaN else { return 0 }
+        // `Double(Int.max)` is 2^63, exactly representable and one past `Int.max`.
+        if self >= Double(Int.max) { return .max }
+        if self <= Double(Int.min) { return .min }
+        return Int(self)
     }
 }
 

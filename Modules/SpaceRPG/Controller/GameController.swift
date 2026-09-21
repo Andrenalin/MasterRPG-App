@@ -249,7 +249,8 @@ extension GameController: SpaceGameControllable {
 
     @MainActor
     func isValidSpaceTransform(_ data: NetworkCodableDataType) -> Bool {
-        data.type == .space && SpaceTransformModel.decodeData(of: data.data) != nil
+        guard data.type == .space, let transform = SpaceTransformModel.decodeData(of: data.data) else { return false }
+        return transform.isPlausible
     }
 
     @MainActor
@@ -260,7 +261,8 @@ extension GameController: SpaceGameControllable {
         timestamp: TimeInterval
     ) -> Bool {
         guard data.type == .space,
-              let transform = SpaceTransformModel.decodeData(of: data.data)
+              let transform = SpaceTransformModel.decodeData(of: data.data),
+              transform.isPlausible
         else { return false }
         return spaceGameModel.applyTransform(
             itemId: data.id,

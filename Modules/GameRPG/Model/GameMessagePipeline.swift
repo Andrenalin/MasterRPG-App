@@ -100,6 +100,11 @@ struct GameMessageEvent: Sendable {
         origin.isProxy
     }
 
+    /// Payload bytes the event retains while queued.
+    var payloadBytes: Int {
+        model.data.data?.count ?? 0
+    }
+
     var deduplicationKey: GameMessageKey? {
         guard model.subType != .ok,
               model.subType != .failed
@@ -154,6 +159,13 @@ actor GameMessagePipeline {
     func enqueue(_ event: GameMessageEvent) -> GameMessageEnqueueResult {
         guard !isCancelled else { return .pipelineStopped }
         guard messages.count < maximumQueuedMessages else { return .queueFull }
+        // Count alone lets a few hundred-MB messages with distinct counters push memory into the
+        // GB range. An empty queue always admits one message, however large.
+        // See CODE_AUDIT_16 §6.3.
+        if !messages.isEmpty {
+            let queuedBytes = messages.reduce(0) { $0.saturatingAdding($1.payloadBytes) }
+            guard queuedBytes.saturatingAdding(event.payloadBytes) <= GameLimits.maximumQueuedBytes else { return .queueFull }
+        }
         if let key = event.deduplicationKey {
             guard !recentKeySet.contains(key), !pendingKeySet.contains(key) else { return .duplicate }
             pendingKeySet.insert(key)
@@ -295,4 +307,11 @@ extension GameNetworkModel: MessageMapper {
 func encodedOffMain(_ message: (any MessageMapper)?) async -> Data? {
     guard !Task.isCancelled else { return nil }
     return message?.encodeData()
+}
+
+private extension Int {
+    func saturatingAdding(_ other: Int) -> Int {
+        let (sum, overflow) = addingReportingOverflow(other)
+        return overflow ? Int.max : sum
+    }
 }

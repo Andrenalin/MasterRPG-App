@@ -19,6 +19,24 @@ struct SpaceTransformModel: Codable, Equatable, Sendable, MessageMapper {
 }
 
 extension SpaceTransformModel {
+    /// Largest position component or scale factor accepted from a peer.
+    static let maximumMagnitude: Float = 1_000
+
+    /// Whether a peer-supplied transform is safe to apply: finite everywhere, a non-zero scale
+    /// within limits and a non-degenerate rotation. NaN/infinite or zero-length values would
+    /// produce NaN transforms in the viewer. See CODE_AUDIT_16 §5.7.
+    var isPlausible: Bool {
+        let components = [position.x, position.y, position.z, scale.x, scale.y, scale.z,
+                          rotation.x, rotation.y, rotation.z, rotation.w]
+        guard components.allSatisfy(\.isFinite) else { return false }
+        guard position.x.magnitude <= Self.maximumMagnitude,
+              position.y.magnitude <= Self.maximumMagnitude,
+              position.z.magnitude <= Self.maximumMagnitude else { return false }
+        guard [scale.x, scale.y, scale.z].allSatisfy({ $0 > 0 && $0 <= Self.maximumMagnitude }) else { return false }
+        let length = (rotation.x * rotation.x + rotation.y * rotation.y + rotation.z * rotation.z + rotation.w * rotation.w).squareRoot()
+        return length > 0.001 && length.isFinite
+    }
+
     init(position: SIMD3<Float>, scale: SIMD3<Float>, orientation: simd_quatf) {
         self.init(
             position: position,

@@ -116,8 +116,9 @@ public final class GameJoinCodeModel: Sendable {
         // CODE_AUDIT §6.2) into the Keychain instead of silently generating a new one, which
         // would invalidate any code the user already shared out-of-band.
         if let legacy = legacyDefaults?.string(forKey: key), isValidCode(legacy) {
-            storage.set(legacy, forKey: key)
-            legacyDefaults?.removeObject(forKey: key)
+            if storage.set(legacy, forKey: key) {
+                legacyDefaults?.removeObject(forKey: key)
+            }
             return legacy
         }
         let generated = randomCode()
@@ -136,8 +137,9 @@ public final class GameJoinCodeModel: Sendable {
             return stored
         }
         if let legacy = legacyDefaults?.string(forKey: lastUsedMasterJoinCodeKey), isValidCode(legacy) {
-            storage.set(legacy, forKey: lastUsedMasterJoinCodeKey)
-            legacyDefaults?.removeObject(forKey: lastUsedMasterJoinCodeKey)
+            if storage.set(legacy, forKey: lastUsedMasterJoinCodeKey) {
+                legacyDefaults?.removeObject(forKey: lastUsedMasterJoinCodeKey)
+            }
             return legacy
         }
         return nil

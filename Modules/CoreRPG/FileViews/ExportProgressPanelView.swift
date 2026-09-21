@@ -45,6 +45,11 @@ public struct ExportProgressPanelView: View {
                 guard outcome != .notStarted else { return }
                 await startExport()
             }
+            .onDisappear {
+                // A system-gesture dismissal must not leave a detached export writing with no
+                // UI owner (a no-op once the export has finished). See CODE_AUDIT_16 §3.5.
+                exportTask?.cancel()
+            }
 #if !os(tvOS)
             .fileMover(isPresented: $showExporter, file: saveUrl) { result in
                 switch result {

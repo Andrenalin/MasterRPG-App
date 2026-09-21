@@ -17,7 +17,7 @@ import DiceRPG
 
 
 @MainActor
-public protocol StoreManiplable: Sendable {
+public protocol StoreManipulable: Sendable {
     func resetData() async
     func validate()
 }

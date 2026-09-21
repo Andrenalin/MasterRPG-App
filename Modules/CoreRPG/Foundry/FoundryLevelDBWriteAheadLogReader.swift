@@ -90,12 +90,16 @@ struct FoundryLevelDBPhysicalLogReader: Sendable {
                 guard var value = fragmented else {
                     throw corrupt("contains a middle fragment without a first fragment")
                 }
+                // Take the buffer out of `fragmented` first: while both hold it, `append`
+                // copies the whole accumulated record per fragment. See CODE_AUDIT_16 §7.1.
+                fragmented = nil
                 try appendFragment(payload, to: &value)
                 fragmented = value
             case .last:
                 guard var value = fragmented else {
                     throw corrupt("contains a last fragment without a first fragment")
                 }
+                fragmented = nil
                 try appendFragment(payload, to: &value)
                 try append(value, to: &result, decodedByteCount: &decodedByteCount)
                 fragmented = nil

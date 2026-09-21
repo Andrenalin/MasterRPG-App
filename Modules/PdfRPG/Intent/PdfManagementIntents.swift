@@ -31,6 +31,7 @@ struct CreatePdfIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<PdfEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = PdfModel(
             id: UUID(),
             name: name,
@@ -73,6 +74,7 @@ struct AddPdfBookmarkIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let entry = root.editController.create(
             name: bookmarkName,
             content: intentPlainText(from: content)
@@ -102,6 +104,7 @@ struct SearchPdfsIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.pdfs(nil, nil))
         return .result()
@@ -120,6 +123,7 @@ struct DeletePdfIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

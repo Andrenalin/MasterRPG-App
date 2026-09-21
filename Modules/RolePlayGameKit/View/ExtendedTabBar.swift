@@ -115,17 +115,3 @@ private extension ExtendedTabBar {
         return columns
     }
 }
-
-
-///
-/*
- func changeNavigation(selected: UUID?, navigator: Navigator, route: any NavigationDestination) {
-     if selected != nil {
-         navigator.push(route)
-     } else {
-         if navigator.count > 1 {
-             navigator.pop(to: 1)
-         }
-     }
- }
- */

@@ -31,6 +31,7 @@ struct CreateCharacterIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<CharacterEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
         // rather than silently creating a blank, unusable character.
         // See CODE_AUDIT_Character §5.6.
@@ -81,6 +82,7 @@ struct AddCharacterEntryIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         // Siri/Shortcuts can pass an empty or all-whitespace string; re-prompt
         // rather than silently adding a blank, unusable entry.
         // See CODE_AUDIT_Character §5.6.
@@ -123,6 +125,7 @@ struct SearchCharactersIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.values(nil, nil))
         return .result()
@@ -141,6 +144,7 @@ struct DeleteCharacterIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

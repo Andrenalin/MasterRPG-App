@@ -29,6 +29,7 @@ public struct CreateAdventureIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ReturnsValue<AdventureEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
         // guards `CSSearchableIndex.isIndexingAvailable()` internally.
         let storyText = intentPlainText(from: story)

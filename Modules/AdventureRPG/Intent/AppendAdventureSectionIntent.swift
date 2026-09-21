@@ -27,6 +27,7 @@ public struct AppendAdventureSectionIntent: AppIntent {
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
         // guards `CSSearchableIndex.isIndexingAvailable()` internally.
         let contentText = intentPlainText(from: content)

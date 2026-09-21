@@ -195,22 +195,10 @@ public extension FileUrlDataController {
             return try await action(url)
         }
 
-        let fullUrl = locationFileManager.absoluteUrl(
-            for: fileUrl.rawUrl,
-            at: fileUrl.location,
-            module: fileUrl.module
-        ) ?? fileUrl.rawUrl
-        let bookmarkedUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
-
-        var processUrl = bookmarkedUrl ?? fullUrl
-        if processUrl.scheme == nil {
-            processUrl = fullUrl
-        }
-
-        let securityScope = processUrl.startSecurityScopedAccess()
+        let resolved = await resolveProcessUrl(for: fileUrl)
+        let securityScope = resolved.url.startSecurityScopedAccess()
         defer { securityScope.stop() }
-        let result = try await action(processUrl)
-        return result
+        return try await action(resolved.url)
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
@@ -224,6 +212,22 @@ public extension FileUrlDataController {
             return try action(url)
         }
 
+        let resolved = await resolveProcessUrl(for: fileUrl)
+        let securityScope = resolved.url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
+        return try action(resolved.url)
+    }
+
+    private struct ResolvedProcessUrl {
+        let url: URL
+    }
+
+    /// The single resolution used by both `url(for:action:)` overloads, so the sync and async
+    /// paths cannot drift: bookmark first, then a private temp copy of staged in-memory bytes,
+    /// then the plain file location. The temp copy is written atomically, so concurrent
+    /// accesses to one file id never read a half-written file. It is deliberately not deleted
+    /// afterwards: callers may hold the URL past the action. See CODE_AUDIT_16 §5.8, §5.10.
+    private func resolveProcessUrl(for fileUrl: FileUrl) async -> ResolvedProcessUrl {
         let fullUrl = locationFileManager.absoluteUrl(
             for: fileUrl.rawUrl,
             at: fileUrl.location,
@@ -236,7 +240,7 @@ public extension FileUrlDataController {
             // Only take the temp-file path when the write actually succeeded; otherwise fall
             // through and let `loadedFileUrl` stay `nil` so `processUrl` below still falls back
             // to `fullUrl` instead of pointing at a file that was never written. See CODE_AUDIT §5.4.
-            if (try? data.write(to: tempUrl)) != nil {
+            if (try? data.write(to: tempUrl, options: .atomic)) != nil {
                 loadedFileUrl = tempUrl
             }
         }
@@ -245,12 +249,7 @@ public extension FileUrlDataController {
         if processUrl.scheme == nil {
             processUrl = fullUrl
         }
-
-        let securityScope = processUrl.startSecurityScopedAccess()
-        defer { securityScope.stop() }
-
-        let result = try action(processUrl)
-        return result
+        return ResolvedProcessUrl(url: processUrl)
     }
 }
 

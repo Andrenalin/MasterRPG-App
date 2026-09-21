@@ -163,6 +163,16 @@ struct UntrustedImportTests {
         #expect(MonotonicWallClock.now() > future)
     }
 
+    @Test("A finite far-future remote clock is capped instead of ratcheting the local clock")
+    func hugeFiniteClockIsBounded() {
+        // Pure bound check: observing it for real would raise the process-wide clock that
+        // the other tests in this suite share.
+        let now = 1_000.0
+        #expect(MonotonicWallClock.bounded(.greatestFiniteMagnitude, now: now) == now + MonotonicWallClock.maximumObservedSkew)
+        #expect(MonotonicWallClock.bounded(now + 60, now: now) == now + 60)
+        #expect(MonotonicWallClock.bounded(.greatestFiniteMagnitude, now: now).nextUp.isFinite)
+    }
+
     @Test("Non-finite remote clocks are ignored")
     func nonFiniteClockIgnored() {
         let before = MonotonicWallClock.now()

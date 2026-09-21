@@ -27,10 +27,10 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
     @State
     private var isActivationErrorViewPresented = false
     
-    let text: any StringProtocol
+    let text: LocalizedStringKey
     let activity: ActivityType
 
-    init(_ text: any StringProtocol, activity: ActivityType) {
+    init(_ text: LocalizedStringKey, activity: ActivityType) {
         self.text = text
         self.activity = activity
     }
@@ -38,11 +38,11 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
     var body: some View {
         ZStack {
 #if !os(tvOS)
-            ShareLink(item: activity, preview: SharePreview(text))
+            ShareLink(item: activity, preview: SharePreview(Text(text, bundle: .module)))
                 .hidden()
                 .accessibilityHidden(true)
 #endif
-            Button(text, systemImage: "shareplay") {
+            Button {
                 if groupStateObserver.isEligibleForGroupSession {
                     // No need to detach: this action closure is already MainActor-isolated
                     // (created inside `body`, which is @MainActor), so a plain structured
@@ -57,6 +57,12 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
                     }
                 } else {
                     isActivitySharingViewPresented = true
+                }
+            } label: {
+                Label {
+                    Text(text, bundle: .module)
+                } icon: {
+                    Image(systemName: "shareplay")
                 }
             }
             .tint(.green)

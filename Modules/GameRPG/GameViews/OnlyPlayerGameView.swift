@@ -19,7 +19,6 @@ struct OnlyPlayerGameView: View {
                     select: root.gameModel.selectedCharacter
                 )
             }
-            //.gameOverlayTabBarView(value: NetworkModules.game)
             .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
             .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)

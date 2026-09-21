@@ -63,6 +63,12 @@ struct MasterRPGApp: App {
         let generatorRootModel = appModel.generatorRoot
         AppDependencyManager.shared.add(dependency: generatorRootModel)
 
+        Task { @MainActor in
+            DatabaseReadiness.configure {
+                data.startDatabaseForBackgroundWork()
+            }
+        }
+
 #if !os(tvOS)
         let appIntentAppModel = data
         MasterRPGShortcuts.updateAppShortcutParameters()

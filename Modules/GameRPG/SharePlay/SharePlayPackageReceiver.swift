@@ -33,6 +33,7 @@ final class SharePlayPackageReceiver {
 
     init(
         maxIncompleteStreams: Int = 64,
+        maxIncompleteStreamsPerSource: Int = 16,
         maxPackagesPerStream: Int = 1_024,
         maxPackageByteCount: Int = SharePlaySingleQueuePackageSender.packageSize,
         maxStreamByteCount: Int = SharePlaySingleQueuePackageSender.maxMessageByteCount,
@@ -42,6 +43,7 @@ final class SharePlayPackageReceiver {
         sleep: @escaping Sleep = { try await Task.sleep(for: $0) }
     ) {
         self.maxIncompleteStreams = max(1, maxIncompleteStreams)
+        self.maxIncompleteStreamsPerSource = max(1, maxIncompleteStreamsPerSource)
         self.maxPackagesPerStream = max(1, maxPackagesPerStream)
         self.maxPackageByteCount = max(1, maxPackageByteCount)
         self.maxStreamByteCount = max(1, maxStreamByteCount)
@@ -54,6 +56,10 @@ final class SharePlayPackageReceiver {
     private(set) var receivedPackages: [SharePlayPackageStreamKey: PackageMessageList] = [:]
     private(set) var cumulativeIncompleteByteCount = 0
     private let maxIncompleteStreams: Int
+    /// Streams one participant may keep incomplete at once; beyond it that participant's own
+    /// oldest stream is evicted, so a flood cannot evict anyone else's transfer.
+    /// See CODE_AUDIT_16 §6.4.
+    private let maxIncompleteStreamsPerSource: Int
     private let maxPackagesPerStream: Int
     private let maxPackageByteCount: Int
     private let maxStreamByteCount: Int
@@ -125,7 +131,8 @@ final class SharePlayPackageReceiver {
             guard list.receivedByteCount <= maxStreamByteCount - additionalByteCount,
                   makeCumulativeCapacity(
                     for: additionalByteCount,
-                    excluding: streamKey
+                    excluding: streamKey,
+                    preferringSource: sourceParticipantId
                   ),
                   list.insert(package: package)
             else {
@@ -135,8 +142,8 @@ final class SharePlayPackageReceiver {
             cumulativeIncompleteByteCount += additionalByteCount
             packageList = list
         } else {
-            guard makeStreamCapacity(),
-                  makeCumulativeCapacity(for: packageData.count, excluding: nil)
+            guard makeStreamCapacity(forSource: sourceParticipantId),
+                  makeCumulativeCapacity(for: packageData.count, excluding: nil, preferringSource: sourceParticipantId)
             else {
                 scheduleNextExpiration()
                 return nil
@@ -192,31 +199,38 @@ final class SharePlayPackageReceiver {
         return expiredIds.count
     }
 
-    private func makeStreamCapacity() -> Bool {
+    private func makeStreamCapacity(forSource source: UUID) -> Bool {
+        while receivedPackages.keys.count(where: { $0.sourceParticipantId == source }) >= maxIncompleteStreamsPerSource {
+            guard evictLeastRecentlyActiveStream(preferringSource: source, onlySource: true) else { return false }
+        }
         while receivedPackages.count >= maxIncompleteStreams {
-            guard evictLeastRecentlyActiveStream() else { return false }
+            guard evictLeastRecentlyActiveStream(preferringSource: source) else { return false }
         }
         return true
     }
 
     private func makeCumulativeCapacity(
         for additionalByteCount: Int,
-        excluding key: SharePlayPackageStreamKey?
+        excluding key: SharePlayPackageStreamKey?,
+        preferringSource source: UUID
     ) -> Bool {
         while cumulativeIncompleteByteCount > maxCumulativeByteCount - additionalByteCount {
-            guard evictLeastRecentlyActiveStream(excluding: key) else { return false }
+            guard evictLeastRecentlyActiveStream(excluding: key, preferringSource: source) else { return false }
         }
         return true
     }
 
     @discardableResult
     private func evictLeastRecentlyActiveStream(
-        excluding excludedKey: SharePlayPackageStreamKey? = nil
+        excluding excludedKey: SharePlayPackageStreamKey? = nil,
+        preferringSource source: UUID? = nil,
+        onlySource: Bool = false
     ) -> Bool {
-        guard let oldestKey = activityOrder
-            .filter({ $0.key != excludedKey })
-            .min(by: { $0.value < $1.value })?
-            .key
+        let candidates = activityOrder.filter { $0.key != excludedKey }
+        // Evict from the participant making room first, so it cannot displace others' transfers.
+        let ownCandidates = candidates.filter { $0.key.sourceParticipantId == source }
+        let pool = (!ownCandidates.isEmpty || onlySource) ? ownCandidates : candidates
+        guard let oldestKey = pool.min(by: { $0.value < $1.value })?.key
         else { return false }
         removeStream(key: oldestKey)
         return true

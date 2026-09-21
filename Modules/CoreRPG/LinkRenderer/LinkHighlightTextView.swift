@@ -26,7 +26,6 @@ public struct LinkHighlightTextView: View {
                 } else {
                     plainText
                         .id(model.linkToggled)
-                        //.transition(OnboardingTextTransition(model: model))
                 }
             }
             .applyIf(model.requiresCustomRenderer) {

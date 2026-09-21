@@ -76,6 +76,18 @@ public final class ItemGameModel {
         itemData[itemId] = item
     }
     
+    /// Finds `itemId` and moves it to the front in one synchronous step, so no `await` gap can
+    /// shrink `items` between the lookup and the removal. Returns whether it was present.
+    /// See CODE_AUDIT_16 §3.10.
+    func moveToFront(itemId: UUID) -> Bool {
+        guard let index = items.firstIndex(of: itemId) else { return false }
+        if index != 0 {
+            items.remove(at: index)
+            items.insert(itemId, at: 0)
+        }
+        return true
+    }
+
     func insert(itemId: UUID, at index: Int?, removeIndex: Int?) {
         if let removeIndex {
             items.remove(at: removeIndex)
@@ -201,18 +213,8 @@ public extension GameControllable {
 
     }
 
-    @MainActor
-    private func existingGameItem(for itemId: UUID) -> (id: UUID, index: Int)? {
-        guard let index = gameModel.items.firstIndex(where: { $0 == itemId }) else { return nil }
-        return (id: gameModel.items[index], index: index)
-    }
-
     func setCurrent(itemId: UUID) async -> Bool {
-        let existing = await existingGameItem(for: itemId)
-        if let existing {
-            if existing.index != 0 {
-                await gameModel.insert(itemId: existing.id, at: 0, removeIndex: existing.index)
-            }
+        if await gameModel.moveToFront(itemId: itemId) {
             return true
         }
 

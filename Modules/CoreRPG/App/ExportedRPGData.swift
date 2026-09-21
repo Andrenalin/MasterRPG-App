@@ -123,7 +123,7 @@ public extension UTType {
         }
 
         public init(configuration: ReadConfiguration) throws {
-            if let endcoded = configuration.file.regularFileContents, let dataLoaded = try? JSONCoding.decoder.decode(ExportedRPGData.self, from: endcoded) {
+            if let encoded = configuration.file.regularFileContents, let dataLoaded = try? JSONCoding.decoder.decode(ExportedRPGData.self, from: encoded) {
                 data = dataLoaded
             } else {
                 data = ExportedRPGData()

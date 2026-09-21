@@ -31,6 +31,7 @@ struct CreateMapIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<MapEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = MapModel(
             id: UUID(),
             name: name,
@@ -73,6 +74,7 @@ struct AddMapRoomIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let entry = root.editController.create(
             name: roomName,
             content: intentPlainText(from: content)
@@ -102,6 +104,7 @@ struct SearchMapsIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.maps(nil, nil))
         return .result()
@@ -120,6 +123,7 @@ struct DeleteMapIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

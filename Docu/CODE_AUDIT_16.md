@@ -615,3 +615,15 @@ Spot-check pattern: open Xcode, command-click the `path:line` reference in this 
 - **§9.5** — run `grep -rn "BundleDecodeError\|Bundle.decode" Modules Sources Tests --include='*.swift'`; the only hit is the declaration at `Modules/CoreRPG/Extensions/Bundle+decode.swift:36`.
 
 If any finding doesn't reproduce when you visit the line, ping me with the specific reference and I'll re-investigate.
+
+---
+
+## 13. Remediation status (2026-09-21)
+
+Verified: iOS, macOS and tvOS builds succeed; CoreRPGTests, DiceRPGTests, CharacterRPGTests and GameRPGTests pass. visionOS was not built.
+
+**Fixed:** §3.1 (dropped connections cancelled), §3.2 (drain handoff on Master and Player cancel), §3.3 (connection generation re-check), §3.4 (`@concurrent` decode/resize), §3.5, §3.6, §3.7, §3.8, §3.9, §3.10, §3.11, §3.12, §3.16, §3.18, §4.2, §5.1, §5.2 (observe and decode bounded to now + 1 day; the old test that observed +1 h stays valid), §5.3 (`DatabaseReadiness` gate in management intents and entity queries; the app registers the starter), §5.4, §5.5, §5.6 (legacy copy removed only after a verified write), §5.7, §5.8, §5.10 (atomic write only), §6.1, §6.2 (15 s handshake deadline), §6.3 (768 MB queued-byte budget), §6.4 (per-source stream quota), §6.7, §7.1, §9.1 (except `GlassEffectContainerAll`, which lived in `TabBarMinimizeBehavior26.swift` and moved to `GlassEffectContainerView.swift`), §9.5, §9.6, §9.18 (typos only), §9.19 (empty `Shaders/`).
+
+**Not done (larger or needs a decision):** §3.13, §3.14, §3.15, §3.17, §3.19, §3.20, §3.21, §4.1 (AnyView), §4.3 (the chart `.cornerRadius` is the ChartContent API, not the View one), §5.9, §5.11, §5.12, §6.5, §6.6, §6.8, §7.2, §8.x, §9.2, §9.3, §9.4, §9.7-§9.17, §9.20, §9.21.
+
+**Partly done:** §5.6 does not add `kSecUseDataProtectionKeychain` on macOS (it would orphan existing items) and does not stop regeneration on `errSecInteractionNotAllowed`.

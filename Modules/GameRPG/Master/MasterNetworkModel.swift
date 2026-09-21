@@ -48,6 +48,9 @@ final class MasterNetworkModel {
     @ObservationIgnored var browserManager: BrowserManager? = nil
     @ObservationIgnored var observeConnectionsTask: Task<Void, Never>? = nil
     @ObservationIgnored var connectionStartTasks: [ConnectionController.ID: Task<Void, Never>] = [:]
+    /// Bumped by every connection reset, so an admission that suspended across the reset can
+    /// tell it is stale. See CODE_AUDIT_16 §3.3.
+    @ObservationIgnored var connectionGeneration = 0
     var browserConnections: [NWEndpoint] = []
     @ObservationIgnored var listener: (any ListenerManaging)? = nil
     

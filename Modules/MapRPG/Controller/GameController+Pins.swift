@@ -95,9 +95,19 @@ extension GameController {
         return true
     }
 
+    /// Largest pin coordinate magnitude accepted from a peer.
+    static let maximumPinCoordinate: CGFloat = 1_000_000
+
     @MainActor
     func updatePin(itemId: UUID, data: Data?, playerId: UUID) -> Bool {
         guard let data, let incomingPin = MapPinModel.decodeData(of: data) else { return false }
+        // A peer-supplied location is rebroadcast and projected by every device; reject
+        // non-finite or absurd coordinates. See CODE_AUDIT_16 §5.7.
+        guard incomingPin.location.x.isFinite, incomingPin.location.y.isFinite,
+              abs(incomingPin.location.x) <= Self.maximumPinCoordinate,
+              abs(incomingPin.location.y) <= Self.maximumPinCoordinate else {
+            return false
+        }
         let now = Date.now.timeIntervalSince1970
         guard incomingPin.timeInterval.isFinite,
               incomingPin.timeInterval <= now + Self.maximumFuturePinTimestampSkew else {

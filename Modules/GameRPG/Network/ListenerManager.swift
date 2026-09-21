@@ -45,13 +45,13 @@ final class ListenerManager: ListenerManaging {
         self.supporterTier = supporterTier
         self.serviceType = serviceType
         self.passcode = passcode
-        Logger.listenerController.debug("ListenerManager: Init \(name, privacy: .public)")
+        Logger.listenerController.debug("ListenerManager: Init \(name, privacy: .private)")
     }
 
     isolated deinit {
         cancelTasks()
         let listenerName = name
-        Logger.listenerController.debug("ListenerManager: Deinit \(listenerName, privacy: .public)")
+        Logger.listenerController.debug("ListenerManager: Deinit \(listenerName, privacy: .private)")
     }
 
     /// Identifies the current listener run. A cancelled run's tasks resume later and must not
@@ -190,10 +190,10 @@ actor ListenerServerController {
         let serviceName = serviceType.serviceName
         switch state {
         case .ready:
-            Logger.listenerController.debug("ListenerManager: \(listenerName, privacy: .public) ready on \(serviceName, privacy: .public)")
+            Logger.listenerController.debug("ListenerManager: \(listenerName, privacy: .private) ready on \(serviceName, privacy: .private)")
             continuation.yield(.ready)
         case .failed(let error):
-            Logger.listenerController.error("ListenerManager: \(listenerName, privacy: .public) failed \(error.localizedDescription, privacy: .public)")
+            Logger.listenerController.error("ListenerManager: \(listenerName, privacy: .private) failed \(error.localizedDescription, privacy: .public)")
             continuation.yield(.failed(error))
             continuation.finish()
         case .cancelled:

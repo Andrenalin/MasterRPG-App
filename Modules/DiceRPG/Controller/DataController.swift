@@ -53,7 +53,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description_.rawValue
         model.tags <=> snapshot.tags_.rawValue
         model.diceCategory <=> snapshot.category_.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         unequalSet(lhs: &model.diceUpdate, rhs: snapshot.dice_.$update.rawValue) {
             // Persisting only `die.text` ("d20") silently dropped the chosen
             // A/G skin on every reload/CloudKit merge. Appending the color
@@ -76,7 +76,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.fumbleOnlyOnFirstDie <=> snapshot.fumbleOnlyOnFirstDie
         model.rerollOptions <=> snapshot.rerollOptions.map { "\($0.number)/\($0.value)/\($0.maxDiceValue ? "1" : "0")" }.joined(separator: ",")
         model.reorderDice <=> snapshot.reorderDice
-        model.addDiceEvery <=> Int16(snapshot.addDiceEvery)
+        model.addDiceEvery <=> Int16(clamping: snapshot.addDiceEvery)
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries_.$update.rawValue) {
             model.entriesModel = model.syncEntries(
                 incoming: snapshot.entries,
@@ -157,6 +157,6 @@ extension DataController: CoreDataSnapshotPersistable {
     private func map(_ viewModel: ChildEntryModel, into entry: RPGDiceEntry, index: Int) {
         entry.uuid = viewModel.id
         entry.childUUID = viewModel.childId
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
     }
 }

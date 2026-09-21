@@ -31,6 +31,7 @@ struct CreateSpaceIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<SpaceEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = SpaceModel(
             id: UUID(),
             name: name,
@@ -73,6 +74,7 @@ struct AddSpaceNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
         let updatedDescription = appendingIntentText(
             String(note.characters),
@@ -108,6 +110,7 @@ struct SearchSpacesIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.spaces(nil, nil))
         return .result()
@@ -126,6 +129,7 @@ struct DeleteSpaceIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

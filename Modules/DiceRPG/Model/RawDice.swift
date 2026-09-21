@@ -39,7 +39,7 @@ public struct RawDice: Equatable, Hashable {
             return
         }
         var existingDie = dieCounters[existingIndex]
-        existingDie.count += dieCounter.count
+        existingDie.count = existingDie.count.saturatingSum(dieCounter.count)
         if existingDie.count == 0 {
             dieCounters.remove(at: existingIndex)
         } else {
@@ -56,7 +56,7 @@ public struct RawDice: Equatable, Hashable {
             return
         }
         var existingDie = dieCounters[existingIndex]
-        existingDie.count -= dieCounter.count
+        existingDie.count = existingDie.count.saturatingSum(dieCounter.count == .min ? .max : -dieCounter.count)
         if existingDie.count == 0 {
             dieCounters.remove(at: existingIndex)
         } else {
@@ -70,8 +70,8 @@ public struct RawDice: Equatable, Hashable {
 
     public func roll() -> Int {
         var result = 0
-        dieCounters.forEach { result += $0.roll() }
-        return result + modifier
+        dieCounters.forEach { result = result.saturatingSum($0.roll()) }
+        return result.saturatingSum(modifier)
     }
 
     // Saturating sums: counters and modifiers can come from imported text.
@@ -121,7 +121,7 @@ public struct RawDice: Equatable, Hashable {
         let modifierResults = RegularExpressionParser.parse(modifierText, with: modifierPattern, extract: ["Modifier"])
         modifierResults.forEach {
             if let number = Int($0) {
-                modifier += number
+                modifier = modifier.saturatingSum(number)
             }
         }
         return (dieCounters, modifier)

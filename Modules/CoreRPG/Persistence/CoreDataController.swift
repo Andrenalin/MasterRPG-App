@@ -22,6 +22,13 @@ final class CoreDataModel: Sendable {
         operations.withLock { $0.append(operation) }
     }
 
+    /// Puts operations that could not be applied back *in front of* anything queued since they
+    /// were drained: re-adding them behind newer edits would let the older state win the
+    /// last-wins merge of the next flush. See CODE_AUDIT_16 §3.12.
+    func restorePendingOperations(_ restored: [PendingOperation]) {
+        operations.withLock { $0.insert(contentsOf: restored, at: 0) }
+    }
+
     func clearPendingOperations() -> [PendingOperation] {
         operations.withLock { pending in
             let cleared = pending
@@ -176,27 +183,28 @@ public extension CoreDataController {
                 operationsByID[operation.id] = operation
             }
             let uniqueOperations = Array(operationsByID.values)
-            let existingUUIDs: Set<UUID>
+            // The existence check and the apply share one `perform` block: with a gap between
+            // them a CloudKit merge could delete (edit silently dropped) or create (duplicate
+            // uuid row) the record in between. See CODE_AUDIT_16 §3.11.
             do {
-                existingUUIDs = try await batchExists(uuids: uniqueOperations.map { $0.id })
+                try await context.perform {
+                    let existingUUIDs = try self.existingUUIDsInContext(uniqueOperations.map { $0.id })
+                    for operation in uniqueOperations {
+                        if existingUUIDs.contains(operation.id) {
+                            if let existing = self.fetchCoreData(uuid: operation.id) {
+                                operation.updater(operation.model, existing)
+                            }
+                        } else {
+                            let new = DataType(context: self.context)
+                            operation.updater(operation.model, new)
+                        }
+                    }
+                }
             } catch {
                 // The queue was already drained; put the operations back so a retry does not
                 // silently drop these edits. See CODE_AUDIT_15 §5.6.
-                pendingOperations.forEach { model.addPendingOperation($0) }
+                model.restorePendingOperations(pendingOperations)
                 throw error
-            }
-
-            await context.perform {
-                for operation in uniqueOperations {
-                    if existingUUIDs.contains(operation.id) {
-                        if let existing = self.fetchCoreData(uuid: operation.id) {
-                            operation.updater(operation.model, existing)
-                        }
-                    } else {
-                        let new = DataType(context: self.context)
-                        operation.updater(operation.model, new)
-                    }
-                }
             }
         }
     }
@@ -343,6 +351,18 @@ public extension CoreDataController {
     }
     
     /// Batch exists check for multiple UUIDs
+    /// Must be called on the context's queue. A failed lookup throws rather than reading as
+    /// "nothing exists".
+    func existingUUIDsInContext(_ uuids: [UUID]) throws -> Set<UUID> {
+        guard !uuids.isEmpty else { return Set() }
+        let request = NSFetchRequest<NSDictionary>(entityName: String(describing: DataType.self))
+        request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
+        request.propertiesToFetch = ["uuid"]
+        request.resultType = .dictionaryResultType
+        let results = try context.fetch(request)
+        return Set(results.compactMap { $0["uuid"] as? UUID })
+    }
+
     func batchExists(uuids: [UUID]) async throws -> Set<UUID> {
         guard !uuids.isEmpty else { return Set() }
         

@@ -42,7 +42,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.tableCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         model.tableType <=> snapshot.tableType.rawValue
         model.diceUUID <=> snapshot.diceId.rawValue
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
@@ -83,6 +83,6 @@ extension DataController: CoreDataSnapshotPersistable {
         entry.uuid = viewModel.id
         entry.content = viewModel.content
         entry.name = viewModel.name
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
     }
 }

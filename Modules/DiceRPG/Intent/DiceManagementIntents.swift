@@ -34,6 +34,7 @@ struct CreateDiceIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<DiceEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = DiceModel(
             id: UUID(),
             name: name,
@@ -74,6 +75,7 @@ struct AddDieToDiceIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let die = DieModel(id: UUID(), die: diceType.rawDie)
         root.editController.add(die: die, itemId: target.id)
         await root.itemController.save()
@@ -100,6 +102,7 @@ struct SearchDiceIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.dice(nil, nil))
         return .result()
@@ -118,6 +121,7 @@ struct DeleteDiceIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

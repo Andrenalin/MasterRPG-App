@@ -441,7 +441,7 @@ extension GameController {
                         result += resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions)
                     }
                 }
-                result += Int(item.modifier)
+                result = result.saturatingSum(item.modifier.saturatingInt)
             }
         }
         return result
@@ -511,7 +511,7 @@ extension GameController {
         let item = gameItem(for: itemId)
         let maxDieValue = item.dice.first?.die.max ?? 1
         guard item.addDiceEvery > 0 else { return maxDieValue }
-        let maxValue = Int(item.compareValue)
+        let maxValue = item.compareValue.saturatingInt
         return max(0, min((maxValue + maxDieValue) - item.addDiceEvery * index, maxDieValue))
     }
     
@@ -529,7 +529,7 @@ extension GameController {
         let item = gameItem(for: itemId)
         var compareText = ""
         if item.compareOption != .off {
-            compareText = "\(item.compareOption.rawText)\(Int(item.compareValue))"
+            compareText = "\(item.compareOption.rawText)\(item.compareValue.saturatingInt)"
         }
         var text = "\(diceResult.values)\(compareText)"
         var specialText = ""

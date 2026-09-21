@@ -43,7 +43,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.adventureCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         model.photoUUID <=> snapshot.photoId.rawValue
         model.diceId <=> snapshot.diceId
         unequalSet(lhs: &model.entriesUpdate, rhs: snapshot.entries.$update.rawValue) {
@@ -92,7 +92,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.name = viewModel.$name.rawValue
         model.content = viewModel.$content.rawValue
         model.adventureUUID = viewModel.$adventureId.rawValue
-        // `Int16(index)` traps above 32,767 entries — unlikely from normal UI use, but
+        // `Int16(clamping: index)` traps above 32,767 entries — unlikely from normal UI use, but
         // imported `.gmz` files are untrusted, so clamp instead of trapping. See CODE_AUDIT §5.6.
         model.index = Int16(clamping: index)
     }

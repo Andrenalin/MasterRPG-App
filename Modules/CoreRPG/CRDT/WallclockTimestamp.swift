@@ -38,15 +38,29 @@ public enum MonotonicWallClock {
     /// clock). Every later local write then sorts after it, so a device whose wall clock runs
     /// ahead — or a crafted payload with a far-future timestamp — can win the merge it
     /// arrived in, but can no longer freeze the item against the edits that follow.
-    /// Non-finite values are ignored. See CODE_AUDIT_15 §5.3.
+    /// Non-finite values are ignored and finite values are capped at "now plus a small skew",
+    /// so a crafted far-future clock (up to `greatestFiniteMagnitude`, whose `nextUp` is
+    /// infinity and cannot be JSON-encoded) cannot poison the process clock.
+    /// See CODE_AUDIT_15 §5.3 and CODE_AUDIT_16 §5.2.
     public static func observe(_ remoteTimestamp: TimeInterval) {
         guard remoteTimestamp.isFinite else { return }
+        let bounded = bounded(remoteTimestamp)
         lastIssued.withLock { last in
-            if remoteTimestamp > last {
-                last = remoteTimestamp
+            if bounded > last {
+                last = bounded
             }
         }
     }
+
+    /// `remoteTimestamp` capped at "now plus the allowed skew".
+    static func bounded(_ remoteTimestamp: TimeInterval, now: TimeInterval = Date().timeIntervalSinceReferenceDate) -> TimeInterval {
+        min(remoteTimestamp, now + maximumObservedSkew)
+    }
+
+    /// How far ahead of the local clock a remote timestamp may pull it (or, when decoded, be
+    /// accepted): a day covers a badly misconfigured device clock, while a crafted value can no
+    /// longer push the clock toward infinity.
+    static let maximumObservedSkew: TimeInterval = 86_400
 }
 
 /// A wall-clock timestamp for a specific actor.
@@ -96,7 +110,11 @@ extension WallclockTimestamp: Codable where ActorID: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedClock = try container.decode(TimeInterval.self, forKey: .clock)
-        clock = decodedClock.isFinite ? decodedClock : 0
+        if !decodedClock.isFinite {
+            clock = 0
+        } else {
+            clock = min(decodedClock, Date().timeIntervalSinceReferenceDate + MonotonicWallClock.maximumObservedSkew)
+        }
         actorId = try container.decode(ActorID.self, forKey: .actorId)
     }
 

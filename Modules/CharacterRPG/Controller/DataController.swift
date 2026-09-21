@@ -44,7 +44,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.valueCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         model.photoUUID <=> snapshot.photoId.rawValue
         unequalSet(lhs: &model.photosUpdate, rhs: snapshot.photos.$update.rawValue) {
             model.photoIds = model.syncEntries(
@@ -53,7 +53,7 @@ extension DataController: CoreDataSnapshotPersistable {
                 childId: { $0 },
                 map: { uuid, entry, index in
                     entry.uuid = uuid
-                    entry.index = Int16(index)
+                    entry.index = Int16(clamping: index)
                 }
             )
         }
@@ -107,7 +107,7 @@ extension DataController: CoreDataSnapshotPersistable {
         valueEntry.type <=> viewModel.$type.rawValue
         valueEntry.isGenerator <=> viewModel.$isGenerator.rawValue
         valueEntry.value <=> viewModel.$value.rawValue
-        valueEntry.index <=> Int16(index)
+        valueEntry.index <=> Int16(clamping: index)
         valueEntry.diceUUID <=> viewModel.$diceId.rawValue
         valueEntry.valueUUID <=> viewModel.$valueId.rawValue
     }

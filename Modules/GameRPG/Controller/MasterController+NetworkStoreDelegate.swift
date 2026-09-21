@@ -217,10 +217,22 @@ extension MasterController {
             // already preserved the in-hand event).
             guard !Task.isCancelled else {
                 await messagePipeline.requeueCurrentOnCancellation()
+                await handOffBacklog()
                 return
             }
             let success = await process(event)
             await messagePipeline.processed(success: success)
+        }
+    }
+
+    /// The drain runs inside whichever peer's receive task enqueued first, so cancelling that
+    /// peer (teardown) must not strand the other peers' queued messages: continue the drain on
+    /// a fresh task. If the cancellation was a genuine stop the pipeline was already reset and
+    /// the new drain finds no work. See CODE_AUDIT_16 §3.2.
+    private func handOffBacklog() async {
+        guard await messagePipeline.hasQueuedMessages else { return }
+        Task { [weak self] in
+            await self?.processMessages()
         }
     }
 

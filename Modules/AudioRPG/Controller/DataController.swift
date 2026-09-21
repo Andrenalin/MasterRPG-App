@@ -43,7 +43,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.audioCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         unequalSet(lhs: &model.fileUrlUpdate, rhs: snapshot.fileUrl.$update.rawValue) {
             model.fileUrl = snapshot.fileUrl.wrappedValue?.rawValue ?? ""
         }
@@ -82,6 +82,6 @@ extension DataController: CoreDataSnapshotPersistable {
     private func map(_ viewModel: AudioEntryModel, into entry: RPGAudioEntry, index: Int) {
         entry.uuid = viewModel.id
         entry.audioUUID = viewModel.audioId
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
     }
 }

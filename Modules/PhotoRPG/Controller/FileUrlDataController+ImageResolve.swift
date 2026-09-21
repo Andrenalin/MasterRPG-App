@@ -9,6 +9,9 @@ extension FileUrlDataController {
     /// the first one that succeeds. Consolidates a fallback chain that used to be
     /// duplicated across `CacheController.decodedImage`, `.downsampledSource`, and
     /// `PhotoRootModel.fetchPhotoThumbnailSource`. See CODE_AUDIT §9.6.
+    /// `@concurrent`: the decode closures are synchronous ImageIO work that must not run on the
+    /// caller's (usually main) actor. See CODE_AUDIT_16 §3.4.
+    @concurrent
     func resolvedImage<T: Sendable>(
         for fileUrl: FileUrl,
         decodeData: @Sendable (Data) -> T?,

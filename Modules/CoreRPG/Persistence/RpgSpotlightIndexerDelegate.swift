@@ -34,6 +34,13 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     /// See CODE_AUDIT_9 §4.4.
     private var indexingTask: Task<Void, Never>?
 
+    /// The notification sequence never finishes, so a replaced delegate (Cloud/Local switch,
+    /// recovery) would otherwise keep its loop alive for the process lifetime.
+    /// See CODE_AUDIT_16 §3.16.
+    deinit {
+        indexingTask?.cancel()
+    }
+
     public override func domainIdentifier() -> String {
         "de.andretrettin.gamemaster"
     }
@@ -43,8 +50,8 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     }
 
     public override func attributeSet(for object: NSManagedObject) -> CSSearchableItemAttributeSet? {
-        guard let objectAttritube = object as? SpotlightIndexerAttribute else { return nil }
-        return objectAttritube.attributeSet()
+        guard let objectAttribute = object as? SpotlightIndexerAttribute else { return nil }
+        return objectAttribute.attributeSet()
     }
 
     public func observeIndexing() {

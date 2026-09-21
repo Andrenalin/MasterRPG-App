@@ -66,7 +66,7 @@ extension DataController: CoreDataSnapshotPersistable {
         model.information <=> snapshot.description.rawValue
         model.tags <=> snapshot.tags.rawValue
         model.pdfCategory <=> snapshot.category.rawValue
-        model.displayState <=> Int32(snapshot.displayState)
+        model.displayState <=> Int32(clamping: snapshot.displayState)
         unequalSet(lhs: &model.fileUrlUpdate, rhs: snapshot.fileUrl.$update.rawValue) {
             model.fileUrl = snapshot.fileUrl.wrappedValue?.rawValue ?? ""
         }
@@ -111,7 +111,7 @@ extension DataController: CoreDataSnapshotPersistable {
         entry.name = viewModel.name
         entry.content = viewModel.content
         entry.pageLabel = viewModel.pageLabel
-        entry.index = Int16(index)
+        entry.index = Int16(clamping: index)
         entry.bounds = JSONString.encode(value: viewModel.bounds) ?? ""
     }
 }

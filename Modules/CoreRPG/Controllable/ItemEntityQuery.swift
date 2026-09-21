@@ -69,6 +69,7 @@ public extension ItemEntityQuery {
     func include(model: Model) -> Bool { true }
 
     func suggestedEntities() async throws -> [Entity] {
+        await DatabaseReadiness.wait()
         var results: [Entity] = []
         for id in allIds(root: root).prefix(Self.suggestedLimit) {
             guard let model = model(root: root, id: id), include(model: model) else { continue }
@@ -78,6 +79,7 @@ public extension ItemEntityQuery {
     }
 
     func entities(for identifiers: [Entity.ID]) async throws -> [Entity] {
+        await DatabaseReadiness.wait()
         var results: [Entity] = []
         for id in identifiers {
             guard let model = model(root: root, id: id), include(model: model) else { continue }
@@ -87,6 +89,7 @@ public extension ItemEntityQuery {
     }
 
     func entities(matching text: String) async throws -> [Entity] {
+        await DatabaseReadiness.wait()
         guard !text.isEmpty else { return try await suggestedEntities() }
         var results: [Entity] = []
         for id in allIds(root: root) {
@@ -98,6 +101,7 @@ public extension ItemEntityQuery {
     }
 
     func allEntities() async throws -> [Entity] {
+        await DatabaseReadiness.wait()
         var results: [Entity] = []
         for id in allIds(root: root) {
             guard let model = model(root: root, id: id), include(model: model) else { continue }

@@ -31,6 +31,7 @@ struct CreateGeneratorIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<GeneratorEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = GeneratorModel(
             id: UUID(),
             name: name,
@@ -71,6 +72,7 @@ struct AddGeneratorNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
         let updatedDescription = appendingIntentText(
             String(note.characters),
@@ -105,6 +107,7 @@ struct SearchGeneratorsIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.generators(nil, nil))
         return .result()
@@ -123,6 +126,7 @@ struct DeleteGeneratorIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {

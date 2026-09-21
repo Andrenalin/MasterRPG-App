@@ -31,6 +31,7 @@ struct CreateWeatherIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<WeatherEntity> & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let model = WeatherModel.empty(UUID())
         model.name = name
         model.description = intentPlainText(from: details)
@@ -69,6 +70,7 @@ struct AddWeatherNoteIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let currentDescription = root.itemController.itemSync(for: target.id)?.description ?? ""
         let updatedDescription = appendingIntentText(
             String(note.characters),
@@ -103,6 +105,7 @@ struct SearchWeatherIntent: ShowInAppSearchResultsIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
+        await DatabaseReadiness.wait()
         root.searchModel.searchText = criteria.term
         await navigator.perform(route: KnownRoutes.weathers(nil, nil))
         return .result()
@@ -121,6 +124,7 @@ struct DeleteWeatherIntent: DeleteIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        await DatabaseReadiness.wait()
         let ids = entities.map(\.id)
 
         for id in ids {
