@@ -33,9 +33,22 @@ struct GameControllerTests {
         let masterId = UUID()
         let matchingPlayerId = UUID()
         let mismatchingPlayerId = UUID()
+
+        // Point one item at a dedicated temp file with its own fresh fileId instead of
+        // the shared fixture's file/bookmark — other tests reset that fixture (removing
+        // its bookmarks) while this one awaits, which made the local availability check
+        // below intermittently report no local data and drop the master's version.
+        let photoId = try #require(root.itemController.itemDataModel.items.first)
+        let tempUrl = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).dat")
+        try Data("local-master-version-content".utf8).write(to: tempUrl)
+        defer { try? FileManager.default.removeItem(at: tempUrl) }
+        root.itemController.itemOrEmpty(for: photoId).fileUrl = FileUrl(
+            fileId: UUID(), url: tempUrl, location: .other, module: "photo", relativeUrl: nil
+        )
+
         let localData = await sut.photoList(allPlayers: false, with: masterId)
         let localRequest = try #require(PhotoListRequest.decodeData(of: localData.data))
-        let (photoId, masterVersion) = try #require(localRequest.list.first)
+        let masterVersion = try #require(localRequest.list[photoId])
 
         let matchingRequest = PhotoListRequest(list: [photoId: masterVersion], players: [:])
         let matchingData = NetworkCodableDataType(
