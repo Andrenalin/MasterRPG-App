@@ -10,9 +10,9 @@ import CoreRPG
 /// their linked photo. Correct maps retain their persisted logical scale;
 /// only a material aspect-ratio mismatch with image-compatible overlays uses
 /// the photo's oriented dimensions.
-struct MapCanvasGeometryResolver {
+public struct MapCanvasGeometryResolver {
     @MainActor
-    static func resolve(
+    public static func resolve(
         map: MapModel,
         mapSize: CGSize,
         imageSize: CGSize,

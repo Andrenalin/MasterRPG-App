@@ -80,6 +80,7 @@ final class Board {
             return false
         }
 
+        Logger.gameTable.debug("Board texture input: photo \(input.image.width, privacy: .public)x\(input.image.height, privacy: .public) px, size \(input.sourceSize.width, privacy: .public)x\(input.sourceSize.height, privacy: .public), degrees \(input.degrees, privacy: .public), canvas \(input.coordinateSize.width, privacy: .public)x\(input.coordinateSize.height, privacy: .public)")
         let compositeImage = await BoardTextureRenderer.render(input)
         guard !Task.isCancelled, shouldApply() else { return false }
         guard let compositeImage else {
@@ -90,7 +91,7 @@ final class Board {
 
         var material = UnlitMaterial()
         do {
-            let texture = try await TextureResource(image: compositeImage, options: .init(semantic: .color))
+            let texture = try await TextureResource(image: compositeImage, options: .init(semantic: .color, mipmapsMode: .allocateAndGenerateAll))
             material.color = .init(texture: .init(texture))
         } catch {
             Logger.gameTable.error(
@@ -101,7 +102,10 @@ final class Board {
         // The texture upload suspended too: apply only if nothing newer started meanwhile.
         guard !Task.isCancelled, shouldApply() else { return false }
 
-        let plane = MapTableProjection(imageSize: input.coordinateSize)
+        let plane = MapTableProjection(
+            imageSize: input.coordinateSize,
+            planeAspectRatio: input.displaySize.width / input.displaySize.height
+        )
         imagePlane.model?.mesh = .generatePlane(width: plane.planeWidth, depth: plane.planeDepth)
         imagePlane.components.set(Self.hitTestCollision(width: plane.planeWidth, depth: plane.planeDepth))
         imagePlane.model?.materials = [material]
@@ -148,8 +152,12 @@ struct BoardTextureInput: @unchecked Sendable {
     /// The photo's size in the map's own unit (`image.size`), which is what `MapModel.width/height` was measured in.
     let sourceSize: CGSize
     let degrees: Double
-    /// The canvas the photo and every room polygon are drawn into (the plane's own aspect ratio).
+    /// The coordinate space room polygons (and pins) are stored in.
     let coordinateSize: CGSize
+    /// The shape of the drawn texture and the plane: the photo's own aspect ratio, which can differ
+    /// from `coordinateSize` when the map's stored size is stale. Room polygons are stretched from
+    /// the canvas onto it, the same way the 2D map stretches the photo over the canvas.
+    let displaySize: CGSize
     let rooms: [Room]
     let isGameMaster: Bool
     let playerFog: PlayerFog
@@ -163,21 +171,27 @@ struct BoardTextureInput: @unchecked Sendable {
         // `image.size` — not the CGImage's pixel size — matches the unit `MapModel.resetImage`
         // measured the stored width/height in; mixing the two rendered the photo at a fraction of
         // its size on Retina `NSImage`s.
-        guard let cgImage = GameTableImage.cgImage(from: image),
-              image.size.width > 0, image.size.height > 0 else { return nil }
+        guard image.size.width > 0, image.size.height > 0 else { return nil }
         let normalizedDegrees = MapTableProjection.normalizedDegrees(degrees)
-        guard let coordinateSize = MapTableProjection.coordinateSize(
-            mapWidth: mapModel.width,
-            mapHeight: mapModel.height,
-            imageSize: image.size,
+        // The same canvas the 2D map resolves, so rooms and pins land where they do in 2D.
+        guard let coordinateSize = MapTableProjection.canvasSize(
+            map: mapModel,
+            image: image,
             degrees: normalizedDegrees
-        ), coordinateSize.width > 0, coordinateSize.height > 0 else { return nil }
+        ), coordinateSize.width > 0, coordinateSize.height > 0,
+              let cgImage = GameTableImage.cgImage(from: image) else { return nil }
 
         let displayConfig = mapModel.displayConfig
         self.image = cgImage
         self.sourceSize = image.size
         self.degrees = normalizedDegrees
         self.coordinateSize = coordinateSize
+        let displayAspect = MapTableProjection.planeAspectRatio(
+            photoSize: image.size,
+            degrees: normalizedDegrees,
+            canvasSize: coordinateSize
+        )
+        self.displaySize = CGSize(width: displayAspect, height: 1)
         self.isGameMaster = isGameMaster
         self.rooms = mapModel.entries
             .filter { isGameMaster || !$0.isShown }
@@ -215,9 +229,15 @@ enum BoardTextureRenderer {
         let canvas = input.coordinateSize
         let orientedSize = MapTableProjection.orientedImageSize(input.sourceSize, degrees: input.degrees)
 
-        let renderScale = min(1, maximumDimension / max(canvas.width, canvas.height))
-        let pixelWidth = max(1, Int((canvas.width * renderScale).rounded()))
-        let pixelHeight = max(1, Int((canvas.height * renderScale).rounded()))
+        // The texture has the photo's own shape (`displaySize`), not the stored canvas': the photo is
+        // never stretched. Its pixel budget follows the photo's own resolution (never upscaling it,
+        // never exceeding the GPU cap), so a high-resolution photo whose stored map size is small
+        // isn't squeezed into a tiny texture.
+        let displayAspect = input.displaySize.width / input.displaySize.height
+        let photoLongSide = CGFloat(max(input.image.width, input.image.height))
+        let targetLongSide = min(maximumDimension, max(1, photoLongSide))
+        let pixelWidth = max(1, Int((displayAspect >= 1 ? targetLongSide : targetLongSide * displayAspect).rounded()))
+        let pixelHeight = max(1, Int((displayAspect >= 1 ? targetLongSide / displayAspect : targetLongSide).rounded()))
 
         guard let context = CGContext(
             data: nil,
@@ -228,23 +248,25 @@ enum BoardTextureRenderer {
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
+        let pixelSize = CGSize(width: pixelWidth, height: pixelHeight)
 
-        // Maps canvas points onto the context's pixel dimensions (they differ only by the
-        // `renderScale` budget) — a plain positive scale that never flips anything.
-        context.scaleBy(x: CGFloat(pixelWidth) / canvas.width, y: CGFloat(pixelHeight) / canvas.height)
-
-        // The photo is scaled per axis to exactly fill the canvas: canvas and photo are kept in
-        // lockstep by `MapModel.resetImage`, so the fit-inside-the-table box is the only margin
-        // that should show. Drawn in Core Graphics' native bottom-left-origin space because
-        // `CGContext.draw` maps a `CGImage`'s first row to the rect's max y — right side up here,
-        // upside down in the flipped space the fog uses. The angle is negated so a positive
-        // `degrees` still turns the photo clockwise like `.rotationEffect` on the 2D map.
-        let scaleX = orientedSize.width > 0 ? canvas.width / orientedSize.width : 1
-        let scaleY = orientedSize.height > 0 ? canvas.height / orientedSize.height : 1
+        // The photo is drawn in pixel space, scaled uniformly to fit: it fills the texture exactly
+        // (its shape *is* the texture's) except for a rotation that isn't a multiple of 90°, where
+        // the canvas is a bounding box and the remainder stays dark. Drawn in Core Graphics' native
+        // bottom-left-origin space because `CGContext.draw` maps a `CGImage`'s first row to the
+        // rect's max y — right side up here, upside down in the flipped space the fog uses. The
+        // angle is negated so a positive `degrees` still turns the photo clockwise like
+        // `.rotationEffect` on the 2D map.
+        let fitScale = orientedSize.width > 0 && orientedSize.height > 0
+            ? min(pixelSize.width / orientedSize.width, pixelSize.height / orientedSize.height)
+            : 1
+        context.setFillColor(CGColor(gray: 0.1, alpha: 1))
+        context.fill(CGRect(origin: .zero, size: pixelSize))
+        context.interpolationQuality = .high
         context.saveGState()
-        context.translateBy(x: canvas.width / 2, y: canvas.height / 2)
+        context.translateBy(x: pixelSize.width / 2, y: pixelSize.height / 2)
         context.rotate(by: -CGFloat(input.degrees) * .pi / 180)
-        context.scaleBy(x: scaleX, y: scaleY)
+        context.scaleBy(x: fitScale, y: fitScale)
         context.draw(
             input.image,
             in: CGRect(
@@ -255,6 +277,10 @@ enum BoardTextureRenderer {
             )
         )
         context.restoreGState()
+
+        // Maps canvas points (where the rooms live) onto the texture's pixels — per axis, so rooms
+        // stay on the same spot of the picture even when the canvas' shape differs from the photo's.
+        context.scaleBy(x: pixelSize.width / canvas.width, y: pixelSize.height / canvas.height)
 
         guard !Task.isCancelled else { return nil }
 

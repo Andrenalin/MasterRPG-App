@@ -19,16 +19,55 @@ private typealias GameTablePlatformColor = UIColor
 /// type (`UIImage` on iOS/visionOS, `NSImage` on macOS). Shared by `PinPawn`
 /// and `BoardTextureInput` rather than duplicated.
 enum GameTableImage {
+    /// Upper bound of the long side of a macOS re-rendered bitmap.
+    private static let maximumBitmapDimension: CGFloat = 4_096
+
     static func cgImage(from image: AKImage) -> CGImage? {
 #if os(macOS)
-        var proposedRect = CGRect(origin: .zero, size: image.size)
-        return image.cgImage(
-            forProposedRect: &proposedRect,
-            context: nil,
-            hints: nil
+        // `NSImage.cgImage(forProposedRect:)` can hand back the rep's raw bitmap without its EXIF
+        // orientation, while `size` is the oriented size. Drawing the `NSImage` itself lets AppKit
+        // apply the orientation, exactly like it does on screen; the bitmap is capped to keep huge
+        // photos affordable.
+        let orientedSize = image.size
+        guard orientedSize.width > 0, orientedSize.height > 0 else { return nil }
+        let pixelLongSide = image.representations
+            .map { CGFloat(max($0.pixelsWide, $0.pixelsHigh)) }
+            .max() ?? max(orientedSize.width, orientedSize.height)
+        let longSide = min(max(1, pixelLongSide), maximumBitmapDimension)
+        let scale = longSide / max(orientedSize.width, orientedSize.height)
+        let width = max(1, Int((orientedSize.width * scale).rounded()))
+        let height = max(1, Int((orientedSize.height * scale).rounded()))
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+        image.draw(
+            in: NSRect(x: 0, y: 0, width: width, height: height),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1
         )
+        NSGraphicsContext.restoreGraphicsState()
+        return context.makeImage()
 #else
-        return image.cgImage
+        // `UIImage.cgImage` is the raw bitmap without the EXIF orientation, while `size` (which the
+        // board and the map's stored size use) is the oriented size. A sideways-stored photo — common
+        // for high-resolution camera images — would otherwise render rotated and letterboxed, so
+        // bake the orientation in.
+        guard image.imageOrientation != .up else { return image.cgImage }
+        let format = UIGraphicsImageRendererFormat.preferred()
+        format.scale = image.scale
+        format.opaque = false
+        return UIGraphicsImageRenderer(size: image.size, format: format)
+            .image { _ in image.draw(in: CGRect(origin: .zero, size: image.size)) }
+            .cgImage
 #endif
     }
 }

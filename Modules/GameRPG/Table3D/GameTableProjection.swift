@@ -8,6 +8,12 @@ import MapRPG
 import RealityKit
 import os.log
 
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+
 extension GameSetup {
     /// Syncs pin tokens (players and monsters) with the current map pins,
     /// id-matched: updates existing, creates missing, removes stale tokens.
@@ -39,6 +45,15 @@ extension GameSetup {
         }
 
         let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
+        logPinDiagnostics(
+            allPins: allPins,
+            targetPins: targetPins,
+            mapModel: mapModel,
+            mapImage: mapImage,
+            degrees: degrees,
+            projection: projection,
+            isGameMaster: isGameMaster
+        )
 
         // Same conversion the 2D map applies to a pin's base size (points ×
         // pinScale), just projected into table meters instead of screen
@@ -107,12 +122,15 @@ extension GameSetup {
         guard isGameMaster,
               let mapModel,
               let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees) else {
+            Logger.gameTable.debug("Room sync: no hit areas — isGameMaster \(isGameMaster, privacy: .public), map \(mapModel != nil, privacy: .public), image \(mapImage != nil, privacy: .public)")
             for area in roomHitAreas {
                 area.entity.removeFromParent()
             }
             roomHitAreas.removeAll()
             return
         }
+
+        logRoomDiagnostics(mapModel: mapModel, projection: projection)
 
         let existingAreas = Dictionary(
             roomHitAreas.map { ($0.roomId, $0) },
@@ -137,16 +155,90 @@ extension GameSetup {
         roomHitAreas.removeAll { !keptIds.contains($0.roomId) }
     }
 
+    /// Explains where the pins end up, for maps whose pins don't show on the board: the coordinate
+    /// spaces involved (stored canvas, photo, plane), why the visibility rules dropped a pin, and
+    /// every pin whose stored location lies outside the stored canvas (and so off the plane).
+    private func logPinDiagnostics(
+        allPins: [MapPinModel],
+        targetPins: [MapPinModel],
+        mapModel: MapModel?,
+        mapImage: AKImage?,
+        degrees: Double,
+        projection: MapTableProjection?,
+        isGameMaster: Bool
+    ) {
+        guard let mapModel else {
+            Logger.gameTable.debug("Pin diagnostics: no map model, \(allPins.count, privacy: .public) pins")
+            return
+        }
+        let photo = mapImage?.size ?? .zero
+        let canvas = projection?.imageSize ?? .zero
+        let plane = projection.map { "\($0.planeWidth)x\($0.planeDepth) m" } ?? "none (no projection)"
+        Logger.gameTable.debug("Pin diagnostics: map \(mapModel.id.uuidString, privacy: .public), GM \(isGameMaster, privacy: .public), stored size \(mapModel.width, privacy: .public)x\(mapModel.height, privacy: .public), canvas \(canvas.width, privacy: .public)x\(canvas.height, privacy: .public), photo \(photo.width, privacy: .public)x\(photo.height, privacy: .public), degrees \(degrees, privacy: .public), plane \(plane, privacy: .public), pins \(allPins.count, privacy: .public) total / \(targetPins.count, privacy: .public) shown, pinScale \(mapModel.pinScale, privacy: .public)")
+        if !isGameMaster {
+            for pin in allPins where !targetPins.contains(where: { $0.id == pin.id }) {
+                let reason = if !pin.isShown {
+                    "pin is not shown"
+                } else if !pin.isPlayer, mapModel.isLocationHiddenForPlayers(pin.location) {
+                    "monster inside a hidden room (fog)"
+                } else {
+                    "unknown"
+                }
+                Logger.gameTable.debug("Pin '\(pin.name, privacy: .public)' hidden for player: \(reason, privacy: .public)")
+            }
+        }
+        guard let projection else {
+            if !targetPins.isEmpty {
+                Logger.gameTable.error("Pins cannot be placed on the map: no projection (missing map size and photo)")
+            }
+            return
+        }
+        for pin in targetPins {
+            let position = projection.tablePosition(for: pin.location)
+            let isInsideCanvas = pin.location.x >= 0 && pin.location.y >= 0
+                && pin.location.x <= projection.imageSize.width && pin.location.y <= projection.imageSize.height
+            let isInsidePlane = abs(position.x) <= projection.planeWidth / 2
+                && abs(position.z) <= projection.planeDepth / 2
+            guard !isInsideCanvas || !isInsidePlane else { continue }
+            Logger.gameTable.error("Pin '\(pin.name, privacy: .public)' is off the map: location \(pin.location.x, privacy: .public),\(pin.location.y, privacy: .public) vs canvas \(projection.imageSize.width, privacy: .public)x\(projection.imageSize.height, privacy: .public) (inside canvas: \(isInsideCanvas, privacy: .public)), table position \(position.x, privacy: .public),\(position.z, privacy: .public) vs plane half-extent \(projection.planeWidth / 2, privacy: .public),\(projection.planeDepth / 2, privacy: .public)")
+        }
+    }
+
+    /// Explains room problems: rooms without a usable polygon and rooms whose stored polygon lies
+    /// (partly) outside the stored canvas, where neither the fog texture nor the hit area can cover
+    /// the picture.
+    private func logRoomDiagnostics(mapModel: MapModel, projection: MapTableProjection) {
+        let canvas = CGRect(origin: .zero, size: projection.imageSize)
+        Logger.gameTable.debug("Room diagnostics: \(mapModel.entries.count, privacy: .public) rooms, canvas \(canvas.width, privacy: .public)x\(canvas.height, privacy: .public)")
+        for entry in mapModel.entries {
+            let points = entry.coordinates
+            guard points.count >= 3 else {
+                Logger.gameTable.error("Room \(entry.id.uuidString, privacy: .public) has no usable polygon (\(points.count, privacy: .public) points)")
+                continue
+            }
+            guard let minX = points.map(\.x).min(), let maxX = points.map(\.x).max(),
+                  let minY = points.map(\.y).min(), let maxY = points.map(\.y).max() else { continue }
+            let bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            guard !canvas.contains(bounds) else { continue }
+            let extent = canvas.intersects(bounds) ? "partly" : "completely"
+            Logger.gameTable.error("Room \(entry.id.uuidString, privacy: .public) is \(extent, privacy: .public) outside the canvas: bounds \(bounds.minX, privacy: .public),\(bounds.minY, privacy: .public) to \(bounds.maxX, privacy: .public),\(bounds.maxY, privacy: .public) vs canvas \(canvas.width, privacy: .public)x\(canvas.height, privacy: .public)")
+        }
+    }
+
     /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
     /// coordinate conversion, authoritative from `MapModel` when available.
     private func projection(mapModel: MapModel?, mapImage: AKImage?, degrees: Double) -> MapTableProjection? {
-        guard let imageSize = MapTableProjection.coordinateSize(
-            mapWidth: mapModel?.width ?? 0,
-            mapHeight: mapModel?.height ?? 0,
-            imageSize: mapImage?.fixedSize,
-            degrees: degrees
-        ) else { return nil }
-        return MapTableProjection(imageSize: imageSize)
+        guard let imageSize = MapTableProjection.canvasSize(map: mapModel, image: mapImage, degrees: degrees) else {
+            return nil
+        }
+        return MapTableProjection(
+            imageSize: imageSize,
+            planeAspectRatio: MapTableProjection.planeAspectRatio(
+                photoSize: mapImage?.size,
+                degrees: degrees,
+                canvasSize: imageSize
+            )
+        )
     }
 }
 
@@ -233,10 +325,16 @@ struct MapTableProjection: Equatable {
     }
 
     /// `imageSize` must already be in the oriented coordinate space (see `coordinateSize`).
-    init(imageSize: CGSize) {
+    /// `planeAspectRatio` is the shape the plane takes on the table — the real photo's aspect ratio
+    /// (see `planeAspectRatio(photoSize:degrees:canvasSize:)`). It defaults to the canvas' own aspect
+    /// ratio. Positions are always normalized against `imageSize`, so pins and rooms keep their place
+    /// on the picture even when the stored canvas doesn't match the photo.
+    init(imageSize: CGSize, planeAspectRatio: CGFloat? = nil) {
         let safeSize = CGSize(width: max(1, imageSize.width), height: max(1, imageSize.height))
         self.imageSize = safeSize
-        let plane = Self.fitBox(aspectRatio: safeSize.width / safeSize.height)
+        let aspectRatio = planeAspectRatio.flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
+            ?? safeSize.width / safeSize.height
+        let plane = Self.fitBox(aspectRatio: aspectRatio)
         planeWidth = plane.width
         planeDepth = plane.depth
     }
@@ -249,6 +347,28 @@ struct MapTableProjection: Equatable {
             return (maxPlaneWidth, maxPlaneWidth / Float(aspectRatio))
         }
         return (maxPlaneDepth * Float(aspectRatio), maxPlaneDepth)
+    }
+
+    /// The canvas map/room/pin coordinates live in, resolved exactly like the 2D map does
+    /// (`MapCanvasGeometryResolver`): the stored size unless it materially disagrees with the photo
+    /// while the map's pins, rooms and walls fit the photo, in which case the photo's oriented size.
+    @MainActor
+    static func canvasSize(map: MapModel?, image: AKImage?, degrees: Double) -> CGSize? {
+        if let map, let image {
+            let size = MapCanvasGeometryResolver.resolve(
+                map: map,
+                mapSize: CGSize(width: map.width, height: map.height),
+                imageSize: image.fixedSize,
+                degrees: degrees
+            )
+            if size.width > 0, size.height > 0 { return size }
+        }
+        return coordinateSize(
+            mapWidth: map?.width ?? 0,
+            mapHeight: map?.height ?? 0,
+            imageSize: image?.fixedSize,
+            degrees: degrees
+        )
     }
 
     /// The canvas size map/room/pin coordinates live in: the map's stored size when set,
@@ -280,6 +400,21 @@ struct MapTableProjection: Equatable {
         let x = (CGFloat(position.x / planeWidth) + 0.5) * imageSize.width
         let y = (CGFloat(position.z / planeDepth) + 0.5) * imageSize.height
         return CGPoint(x: min(max(x, 0), imageSize.width), y: min(max(y, 0), imageSize.height))
+    }
+
+    /// The aspect ratio the map takes on the table: the displayed photo's own, so it is never
+    /// stretched. The map's stored canvas can disagree with its photo (the 2D map simply stretches
+    /// the photo over the canvas); rooms and pins stay aligned because they are normalized against
+    /// the canvas. Falls back to the canvas' ratio without a photo, or for a rotation that isn't a
+    /// multiple of 90° (whose canvas is the rotated bounding box).
+    static func planeAspectRatio(photoSize: CGSize?, degrees: Double, canvasSize: CGSize) -> CGFloat {
+        let normalized = normalizedDegrees(degrees)
+        let isRightAngle = [0, 90, 180, 270, 360].contains { abs(normalized - $0) < 0.001 }
+        if isRightAngle, let photoSize, photoSize.width > 0, photoSize.height > 0 {
+            let oriented = orientedImageSize(photoSize, degrees: normalized)
+            return oriented.width / oriented.height
+        }
+        return max(1, canvasSize.width) / max(1, canvasSize.height)
     }
 
     static func orientedImageSize(_ size: CGSize, degrees: Double) -> CGSize {

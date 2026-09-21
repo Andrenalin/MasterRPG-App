@@ -56,5 +56,33 @@ struct GameTableProjectionTests {
             #expect(abs(planeAspect - size.width / size.height) < 0.01)
         }
     }
+
+    @Test("The plane follows the photo's shape while positions stay normalized to the stored canvas")
+    func planeFollowsPhotoNotStaleCanvas() {
+        let canvas = CGSize(width: 1200, height: 800)
+        let aspect = MapTableProjection.planeAspectRatio(
+            photoSize: CGSize(width: 820, height: 1267), degrees: 0, canvasSize: canvas
+        )
+        #expect(abs(aspect - 820.0 / 1267.0) < 0.0001)
+
+        let projection = MapTableProjection(imageSize: canvas, planeAspectRatio: aspect)
+        #expect(abs(projection.planeDepth - MapTableProjection.maxPlaneDepth) < 0.0001)
+        let corner = projection.tablePosition(for: CGPoint(x: 1200, y: 800))
+        #expect(abs(corner.x - projection.planeWidth / 2) < 0.0001)
+        #expect(abs(corner.z - projection.planeDepth / 2) < 0.0001)
+    }
+
+    @Test("A quarter-turned photo swaps the plane's aspect; odd angles keep the canvas' aspect")
+    func planeAspectHandlesRotation() {
+        let canvas = CGSize(width: 800, height: 1200)
+        let turned = MapTableProjection.planeAspectRatio(
+            photoSize: CGSize(width: 1200, height: 800), degrees: 90, canvasSize: canvas
+        )
+        #expect(abs(turned - 800.0 / 1200.0) < 0.0001)
+        let odd = MapTableProjection.planeAspectRatio(
+            photoSize: CGSize(width: 1200, height: 800), degrees: 45, canvasSize: canvas
+        )
+        #expect(abs(odd - 800.0 / 1200.0) < 0.0001)
+    }
 }
 #endif

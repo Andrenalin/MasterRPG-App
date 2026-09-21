@@ -80,13 +80,19 @@ extension GameTableModel {
         guard canMovePin(pinId), let mapId = currentMapId,
               let mapImage = currentMapImage,
               let mapModel = currentMapModel(),
-              let coordinateSize = MapTableProjection.coordinateSize(
-                  mapWidth: mapModel.width,
-                  mapHeight: mapModel.height,
-                  imageSize: mapImage.fixedSize,
+              let coordinateSize = MapTableProjection.canvasSize(
+                  map: mapModel,
+                  image: mapImage,
                   degrees: currentMapDegrees
               ) else { return }
-        let projection = MapTableProjection(imageSize: coordinateSize)
+        let projection = MapTableProjection(
+            imageSize: coordinateSize,
+            planeAspectRatio: MapTableProjection.planeAspectRatio(
+                photoSize: mapImage.size,
+                degrees: currentMapDegrees,
+                canvasSize: coordinateSize
+            )
+        )
         let location = projection.mapLocation(
             for: SIMD3<Float>(position.x, MapTableProjection.pinHeight, position.z)
         )
