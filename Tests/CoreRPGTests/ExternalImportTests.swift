@@ -6,7 +6,12 @@ import Testing
 @testable import CoreRPG
 @testable import PhotoRPG
 
+// `.serialized`: `ExternalImportReviewSession.commit` holds a process-wide lock across its
+// suspension points on purpose (two sessions must never interleave). Swift Testing runs tests in
+// parallel, so without this every test that reaches `commit` at the same time failed with
+// `.commitAlreadyRunning`.
 @MainActor
+@Suite(.serialized)
 struct ExternalImportTests {
     @Test func stagingAndReviewDoNotLoadAttachmentOrMutateFakeLibrary() async throws {
         let root = ItemRootController.previewFixture()

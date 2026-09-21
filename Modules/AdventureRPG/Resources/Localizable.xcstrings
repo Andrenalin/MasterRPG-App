@@ -449,7 +449,14 @@
       }
     },
     "Dice" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
     },
     "Drop %@" : {
       "comment" : "A label at the top of the checkout view providing medication instructions. The argument is the instructions for taking the primary medication in the cart.",
@@ -470,10 +477,24 @@
       }
     },
     "Duplicate child" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untereintrag duplizieren"
+          }
+        }
+      }
     },
     "Duplicate folder" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordner duplizieren"
+          }
+        }
+      }
     },
     "Entries replaced" : {
       "extractionState" : "stale",
@@ -611,7 +632,14 @@
       }
     },
     "Photo" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
     },
     "Photos" : {
       "localizations" : {

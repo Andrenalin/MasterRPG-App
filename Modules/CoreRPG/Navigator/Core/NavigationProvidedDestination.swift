@@ -108,6 +108,7 @@ internal struct NavigationProvidedViewModifier<D: NavigationDestination>: ViewMo
     }
 }
 
+@MainActor
 internal final class NavigationViewProvidingSentinel<D: NavigationDestination> {
 
     internal let views: (D) -> any View
@@ -118,11 +119,9 @@ internal final class NavigationViewProvidingSentinel<D: NavigationDestination> {
         self.views = views
     }
 
-    deinit {
-        let navigator = self.navigator
-        MainActor.assumeIsolated {
-            navigator?.unregister(type: D.self)
-        }
+    // See CODE_AUDIT_15 §3.4.
+    isolated deinit {
+        navigator?.unregister(type: D.self)
     }
 
     @MainActor

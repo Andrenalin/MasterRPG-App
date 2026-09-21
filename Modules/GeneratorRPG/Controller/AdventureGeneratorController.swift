@@ -224,16 +224,6 @@ struct AdventureGeneratorController: Sendable {
         model.syncConversationState()
     }
 
-    @MainActor func generateExtractor() {
-        let instructions = """
-                Your job is to extyract the text into blocks that can be processed later as text blocks for a bigger story. 
-                """
-        let session = LanguageModelSession(instructions: instructions)
-        
-        self.model.set(extractSession: session)
-        session.prewarm()
-    }
-
     @MainActor func extract(message: String) {
         guard !model.extractSession.isResponding else { return }
         model.isExtracting = true

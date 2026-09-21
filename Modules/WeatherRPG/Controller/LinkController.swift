@@ -37,17 +37,17 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != DisplayStateMask.totalHidden.rawValue, let replacedItem = itemController.copy(of: itemId) else { return }
 
         if let photoId = replacedItem.photoId {
             if !photoRoot.linkControllable.validateLink(itemId: photoId) {
-                Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
+                Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .private) --> Photo \(photoId, privacy: .public) is gone. Reset PhotoId, no recovery possible.")
                 replacedItem.photoId = nil
             }
         }
 
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.warning("Weather: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)

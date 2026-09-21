@@ -74,16 +74,14 @@ public struct RawDice: Equatable, Hashable {
         return result + modifier
     }
 
+    // Saturating sums: counters and modifiers can come from imported text.
+    // See CODE_AUDIT_15 §5.11.
     public var min: Int {
-        var result = 0
-        dieCounters.forEach { result += $0.min }
-        return result + modifier
+        dieCounters.reduce(0) { $0.saturatingSum($1.min) }.saturatingSum(modifier)
     }
 
     public var max: Int {
-        var result = 0
-        dieCounters.forEach { result += $0.max }
-        return result + modifier
+        dieCounters.reduce(0) { $0.saturatingSum($1.max) }.saturatingSum(modifier)
     }
 
     public var text: String {

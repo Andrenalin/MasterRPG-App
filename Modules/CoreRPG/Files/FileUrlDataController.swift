@@ -6,8 +6,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import os.log
 
-extension KeyPath: @unchecked @retroactive Sendable {}
-
 @MainActor @Observable
 public final class FileUrlDataModel {
     var folders: [FileUrlViewModel] = []
@@ -70,10 +68,13 @@ public struct FileUrlDataController: Sendable {
             let model = FileUrlViewModel(id: id, name: url?.lastPathComponent ?? "Filename Unknown", path: url?.relativePath ?? "Path not set", type: .folder, hasData: false, hasAccess: true, isDownloaded: nil)
             folders.append(model)
         }
-        return folders.sorted(using: [
-            KeyPathComparator(\FileUrlViewModel.type, order: .forward),
-            KeyPathComparator(\FileUrlViewModel.name)
-        ])
+        // A plain comparison instead of `KeyPathComparator`: it needed a global
+        // `@unchecked @retroactive Sendable` on `KeyPath`, which weakened every module.
+        // See CODE_AUDIT_15 §3.17.
+        return folders.sorted { lhs, rhs in
+            if lhs.type != rhs.type { return lhs.type < rhs.type }
+            return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+        }
     }
 }
 
@@ -206,8 +207,8 @@ public extension FileUrlDataController {
             processUrl = fullUrl
         }
 
-        defer { processUrl.stopAccessingSecurityScopedResource() }
-        _ = processUrl.startAccessingSecurityScopedResource()
+        let securityScope = processUrl.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         let result = try await action(processUrl)
         return result
     }
@@ -245,8 +246,8 @@ public extension FileUrlDataController {
             processUrl = fullUrl
         }
 
-        defer { processUrl.stopAccessingSecurityScopedResource() }
-        _ = processUrl.startAccessingSecurityScopedResource()
+        let securityScope = processUrl.startSecurityScopedAccess()
+        defer { securityScope.stop() }
 
         let result = try action(processUrl)
         return result
@@ -254,7 +255,10 @@ public extension FileUrlDataController {
 }
 
 public extension FileUrlDataController {
-    /// create a fileUrl with data from an import or on validation / convert data
+    /// create a fileUrl with data from an import or on validation / convert data.
+    /// `@concurrent`: hashing and writing whole files must not run on the caller's (main) actor.
+    /// See CODE_AUDIT_15 §3.12.
+    @concurrent
     func createNewFileUrl(
         fileId: UUID,
         unconvertedFileUrl: FileUrl,
@@ -309,8 +313,8 @@ public extension FileUrlDataController {
         }
 
         // Bookmark without additional coordination (just security-scoped access)
-        let _ = fullUrl.startAccessingSecurityScopedResource()
-        defer { fullUrl.stopAccessingSecurityScopedResource() }
+        let securityScope = fullUrl.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         do {
             try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
         } catch {
@@ -320,6 +324,7 @@ public extension FileUrlDataController {
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
+    @concurrent
     func createFileUrl(fileId: UUID, url: URL, module: String, category: String?, contentHash: String? = nil) async throws -> FileUrl {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.createFileUrl(fileId:url:module:category:)", file: "FileUrlDataController.swift")
 
@@ -559,8 +564,8 @@ extension FileUrlDataController {
     }
 
     private func bookmark(url: URL, fileId: UUID) async {
-        let _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         do {
             try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
         } catch {
@@ -599,6 +604,9 @@ extension FileUrlDataController {
             : filenameExtension
     }
 
+    /// Largest remote file the device caches on behalf of a `.url` item.
+    private static let maximumRemoteFileBytes = 256_000_000
+
     private func ensureRemoteCache(for fileUrl: FileUrl) async throws -> URL? {
         guard fileUrl.location == .url,
               fileUrl.rawUrl.isSupportedRemoteFileURL else {
@@ -617,6 +625,13 @@ extension FileUrlDataController {
 
         let temporaryURL = try await remoteFileDownloader(fileUrl.rawUrl)
         try Task.checkCancellation()
+        // A remote item may come from a peer; never cache an unbounded download.
+        // See CODE_AUDIT_15 §6.3.
+        let downloadedSize = (try? temporaryURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard downloadedSize <= Self.maximumRemoteFileBytes else {
+            try? FileManager.default.removeItem(at: temporaryURL)
+            throw URLError(.dataLengthExceedsMaximum)
+        }
         try await FileManager.default.createDirectory(
             coordinatingAccessAt: cacheURL.deletingLastPathComponent(),
             withIntermediateDirectories: true

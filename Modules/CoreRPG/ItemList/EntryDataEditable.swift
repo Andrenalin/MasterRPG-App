@@ -129,10 +129,9 @@ public extension EntryDataEditable {
         var entry = item[destinationEntryId]
         var content = entry.content.trimmingCharacters(in: .whitespaces)
         
-        let nextLinkNumer = LinkReplaceController.links(for: content).filter { $0.itemId == itemId && $0.entryId == entryId }.reduce(-1) { max($0, $1.linkNumber) } + 1
+        let nextLinkNumber = LinkReplaceController.links(for: content).filter { $0.itemId == itemId && $0.entryId == entryId }.reduce(-1) { max($0, $1.linkNumber) } + 1
         
-        let entryLink = entryId == nil ? "" : "/\(entryId!.uuidString)"
-        let linkText = "\(content.isEmpty ? "" : separator)[\(link)](\(URL.appScheme)://\(module.token)/\(nextLinkNumer)/\(itemId.uuidString)\(entryLink))"
+        let linkText = "\(content.isEmpty ? "" : separator)" + LinkBuilder.markdown(name: link, module: module, linkNumber: nextLinkNumber, itemId: itemId, entryId: entryId)
         content.append(linkText)
         entry.content = content
         item[destinationEntryId] = entry
@@ -150,24 +149,6 @@ public extension EntryDataEditable {
     
     @MainActor func editEntries(for item: Model) -> [Model.Entry] {
         item.entries
-    }
-    
-    @MainActor func validateEntries(model: Model) {
-        var seenIds: Set<UUID> = []
-        guard !model.entries.allSatisfy({
-            let result = !seenIds.contains($0.id)
-            seenIds.insert($0.id)
-            return result
-        }) else { return }
-        
-        var entries: [Model.Entry] = []
-        seenIds = []
-        model.entries.forEach { entry in
-            guard !seenIds.contains(entry.id) else { return }
-            seenIds.insert(entry.id)
-            entries.append(entry)
-        }
-        model.entries = entries
     }
     
     @MainActor func addNewEntry(itemId: UUID, forceSave: Bool = false) -> UUID {

@@ -86,7 +86,21 @@ public final class ItemDataModel: Sendable {
         }
     }
 
+    /// Coalesces bursts of item changes (an import, a CloudKit sync) into one snapshot rebuild:
+    /// every mutation used to walk all items, encode, write and ask WidgetKit to reload, which is
+    /// quadratic over a bulk change and quickly exhausts WidgetKit's reload budget.
+    /// See CODE_AUDIT_15 §7.4.
     public func publishContentWidgetSnapshot() {
-        contentWidgetPublisher?()
+        guard contentWidgetPublisher != nil else { return }
+        contentWidgetPublishTask?.cancel()
+        contentWidgetPublishTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.contentWidgetPublishDelay)
+            guard !Task.isCancelled else { return }
+            self?.contentWidgetPublisher?()
+        }
     }
+
+    private static let contentWidgetPublishDelay: Duration = .milliseconds(750)
+
+    @ObservationIgnored private var contentWidgetPublishTask: Task<Void, Never>?
 }

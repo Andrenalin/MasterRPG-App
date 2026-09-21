@@ -9,11 +9,6 @@ enum LinkHighlightTextModelId: Hashable {
     case entryContent(UUID)
 }
 
-enum SheetRowGeometryID: Hashable {
-    case regular(parent: UUID, row: UUID)
-    case generated(parent: UUID, draft: UUID)
-}
-
 /// Main-actor coordinator for one recursively rendered RPG sheet.
 ///
 /// A sheet root owns the materialized ``SheetModel`` tree and coordinates

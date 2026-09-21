@@ -25,7 +25,7 @@ struct DiceRowRemoveButton: View {
             .labelStyle(.iconOnly)
         }
         .foregroundStyle(.white, .red, .red)
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
         .frame(minWidth: 44, minHeight: 44)
         .help(Text("Remove Dice", bundle: .module))
     }

@@ -51,11 +51,11 @@ extension GameController {
     }
 
     @MainActor
-    public func updatePlayer(data: NetworkCodableDataType) async throws {
+    public func updatePlayer(data: NetworkCodableDataType, policy: PeerImportPolicy?) async throws {
         guard data.type == itemControllable.config.module,
               let encodedData = data.data
         else { throw ItemGameStorableError.wrongData }
-        try await importNetwork(from: encodedData, forceSave: true)
+        try await importNetwork(from: encodedData, forceSave: true, peerPolicy: policy)
         // A full-package resync (sent on reconnect, or whenever the master's
         // cached version differs from what the player advertises) only merges
         // into the persisted library above — `gameItem(for:)`, and everything

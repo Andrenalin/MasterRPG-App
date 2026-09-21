@@ -190,7 +190,14 @@
       }
     },
     "Conversion Failed" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umwandlung fehlgeschlagen"
+          }
+        }
+      }
     },
     "Convert to 3D" : {
       "localizations" : {
@@ -467,7 +474,14 @@
       }
     },
     "Import Failed" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import fehlgeschlagen"
+          }
+        }
+      }
     },
     "Importer" : {
       "localizations" : {
@@ -574,7 +588,14 @@
       }
     },
     "OK" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
     },
     "Open %@" : {
       "localizations" : {
@@ -811,7 +832,14 @@
       }
     },
     "The dropped image could not be loaded." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das abgelegte Bild konnte nicht geladen werden."
+          }
+        }
+      }
     },
     "The image could not be loaded or is unavailable." : {
       "comment" : "A description of the error that occurs when an image cannot be loaded.",
@@ -832,7 +860,14 @@
       }
     },
     "The selected photo could not be loaded." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das ausgewählte Foto konnte nicht geladen werden."
+          }
+        }
+      }
     },
     "URL" : {
       "comment" : "A label for a photo URL input field.",

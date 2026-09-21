@@ -47,17 +47,15 @@ private struct NavigationLockedModifier: ViewModifier {
 
 }
 
+@MainActor
 private final class NavigationLockedSentinel {
 
     private let id: UUID = UUID()
     private var navigator: Navigator?
 
-    deinit {
-        let id = self.id
-        let navigator = self.navigator
-        MainActor.assumeIsolated {
-            navigator?.removeNavigationLock(id: id)
-        }
+    // See CODE_AUDIT_15 §3.4.
+    isolated deinit {
+        navigator?.removeNavigationLock(id: id)
     }
 
     @MainActor

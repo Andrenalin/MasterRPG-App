@@ -102,17 +102,24 @@ public struct TagController: Sendable {
         model.pendingAffectedModules = []
         guard let context = model.context else { return }
         await context.perform {
+            // Through the context, not `NSBatchDeleteRequest` (bypasses CloudKit mirroring).
+            // See CODE_AUDIT_15 §5.8.
             do {
-                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
-                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
+                let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
+                request.includesPropertyValues = false
+                for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
+                    context.delete(object)
+                }
+                if context.hasChanges { try context.save() }
             } catch {
+                context.rollback()
                 Logger.coreDataController.error("tag resetData error \(error.localizedDescription, privacy: .public)")
             }
         }
     }
 
     /// Persists all tag changes accumulated since the last call. Performs a delete-and-replace per affected
-    /// module: one `NSBatchDeleteRequest` then one `NSBatchInsertRequest` using the current in-memory state.
+    /// module: delete the persisted rows, then insert the current in-memory state, through the context.
     /// Call from the periodic `save()` on `AdventureRootModel`.
     @MainActor public func savePendingTags() async {
         let affectedModules = model.pendingAffectedModules
@@ -122,29 +129,30 @@ public struct TagController: Sendable {
         let currentTags = affectedModules.flatMap { model.tags[$0, default: [:]].values }
         let moduleRawValues = affectedModules.map { NSNumber(value: $0.rawValue) }
 
+        // Context-based delete + insert: `TagDataModel` is CloudKit-mirrored and batch requests
+        // bypass the export. See CODE_AUDIT_15 §5.8.
         await context.perform {
             do {
-                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
-                deleteRequest.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
-                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
-
-                var iter = currentTags.makeIterator()
-                let batchInsert = NSBatchInsertRequest(
-                    entity: TagDataModel.entity()
-                ) { (object: NSManagedObject) -> Bool in
-                    guard let tag = iter.next(), let dbModel = object as? TagDataModel else { return true }
+                let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
+                request.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
+                request.includesPropertyValues = false
+                for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
+                    context.delete(object)
+                }
+                for tag in currentTags {
+                    let dbModel = TagDataModel(context: context)
                     dbModel.module = Int16(tag.module.rawValue)
                     dbModel.title = tag.title
                     dbModel.count = Int32(tag.count)
-                    return false
                 }
-                try context.execute(batchInsert)
+                if context.hasChanges { try context.save() }
             } catch {
+                context.rollback()
                 Logger.coreDataController.error("tag save error \(error.localizedDescription, privacy: .public)")
             }
         }
     }
-    
+
     @MainActor public func sugguestionTags(module: NetworkModules, search: String) -> [String] {
         model.tags[module, default: [:]]
             .filter { $0.value.title.localizedCaseInsensitiveContains(search) }

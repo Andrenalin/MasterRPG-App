@@ -323,18 +323,6 @@ extension EditController {
         save(updated: model, message: String(localized: "Added pin", bundle: .module).localizedString)
     }
 
-    @MainActor
-    func replacePinData(pinId: UUID, with valueId: UUID, itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
-        let name = root.characterRoot.linkControllable.name(for: valueId)
-        let photoId = root.characterRoot.valueGameControllable.imageIds(for: valueId).randomElement()
-        var pin = item[MapPinId.id, pinId]
-        pin.name = name
-        pin.photoId = photoId
-        pin.characterId = valueId
-        item[MapPinId.id, pinId] = pin
-        save(updated: item, message: String(localized: "Updated pin from character", bundle: .module).localizedString)
-    }
 }
 
 // MARK: - Monster

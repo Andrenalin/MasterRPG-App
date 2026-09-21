@@ -55,7 +55,7 @@ final class GameNetworkController: Sendable {
     // MARK: Static builders
 
     static let defaultMasterStoreBuilder: (String, MasterNetworkControllerDelegate) -> any MasterNetworkControllable = { name, delegate in
-        MasterNetworkController(name: name, delegate: delegate, listnerBuilder: MasterNetworkController.gameListnerBuilder())
+        MasterNetworkController(name: name, delegate: delegate, listnerBuilder: MasterNetworkController.gameListenerBuilder())
     }
 
     static let directPlayerStoreBuilder: (String, PlayerNetworkControllerDelegate) -> any PlayerNetworkControllable = { name, delegate in

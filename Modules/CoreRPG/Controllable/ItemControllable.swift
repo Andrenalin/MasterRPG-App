@@ -91,7 +91,7 @@ public extension ItemControllable {
     @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [Model] {
         return itemDataModel.items.compactMap { itemId -> Model? in
             guard let item = itemSync(for: itemId),
-                  item.displayState == 0 && item.parentId == parentId && (item.category == (isFolder ? .folder : collectionCategory)) else { return nil }
+                  item.displayState == DisplayStateMask.fullVisible.rawValue && item.parentId == parentId && (item.category == (isFolder ? .folder : collectionCategory)) else { return nil }
             return item
         }
     }

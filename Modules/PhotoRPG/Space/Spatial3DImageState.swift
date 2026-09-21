@@ -43,8 +43,8 @@ enum Spatial3DImageState {
             return
         }
 
-        _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         
         let loadedSpatial3DImage: ImagePresentationComponent.Spatial3DImage
         do {

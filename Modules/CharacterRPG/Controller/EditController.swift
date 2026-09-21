@@ -149,8 +149,7 @@ extension EditController {
         guard let editModel = editModel(for: destinationItemId) else { return }
         var entry = editModel[destinationEntryId]
         
-        let entryLink = "/\(entryId.uuidString)"
-        let linkText = " [\(link)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString)\(entryLink))"
+        let linkText = " " + LinkBuilder.markdown(name: link, module: module, itemId: itemId, entryId: entryId)
         entry.name = linkText
         editModel[destinationEntryId] = entry
         save(updated: editModel, message: String(localized: "Add Link", bundle: .module).localizedString)

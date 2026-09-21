@@ -803,7 +803,13 @@ final class RPGSharePlayController {
             // `onChange` is a `@Sendable` closure, so the `tasks[]` bookkeeping has to happen
             // on the main actor; hop there first, then track the presentation-mode task.
             Task { @MainActor [weak self] in
-                self?.schedulePresentationModeUpdate()
+                guard let self else { return }
+                // Re-arm first: `withObservationTracking` fires once, and the scheduled update
+                // below can be cancelled by `reset()` before it runs — re-arming only from
+                // inside it left the chain broken for every later session.
+                // See CODE_AUDIT_15 §3.8.
+                self.observeShareStateMode()
+                self.schedulePresentationModeUpdate()
             }
         }
     }
@@ -820,7 +826,6 @@ final class RPGSharePlayController {
             self.tasks.removeValue(forKey: taskId)
             Logger.sharePlay.debug("Presentation mode changed to: \(gameModel.shareState.mode.rawValue, privacy: .public)")
             self.applyShareState()
-            self.observeShareStateMode()
         }
     }
     #endif

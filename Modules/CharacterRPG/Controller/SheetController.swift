@@ -43,7 +43,7 @@ extension SheetController: SheetControllable {
         let isFolded = moduleDepth >= 1 || (isEditor && level > 0)
         let entries: [SheetModel] = isFolded ? [] : sheetEntries(root: root, itemId: itemId, level: level, moduleDepth: moduleDepth, isEditor: isEditor, visited: visited)
 
-        let showHeader = model.displayState == 0
+        let showHeader = model.displayState == DisplayStateMask.fullVisible.rawValue
         return SheetModel(source: ItemRowModel(itemId: itemId, typeId: itemController.config.module), destination: destination, level: level, isShown: isShown, isFolded: isFolded, showHeader: showHeader, name: model.name, description: model.description, inlineEntries: inlineEntries, entries: entries)
     }
 

@@ -885,8 +885,7 @@ extension FoundryVTTDocumentDecoder {
     }
 
     static func component(_ value: String) -> String {
-        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
-        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+        FoundryPackagePath.encodedComponent(value)
     }
 }
 

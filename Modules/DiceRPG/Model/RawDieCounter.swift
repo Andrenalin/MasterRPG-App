@@ -20,7 +20,9 @@ public struct RawDieCounter: Equatable, Hashable {
             if results[0] == "-" {
                 count = -1
             } else if let number = Int(results[0]) {
-                count = number
+                // Notation can come from imported or peer text; an unbounded count made `roll()`
+                // loop practically forever and `abs(Int.min)` trap. See CODE_AUDIT_15 §5.11.
+                count = Swift.min(Swift.max(number, -Self.maximumCount), Self.maximumCount)
             }
         }
         die = RawDie(text: text)
@@ -39,12 +41,15 @@ public struct RawDieCounter: Equatable, Hashable {
         return result
     }
 
+    /// Largest number of dice one notation term may stand for.
+    public static let maximumCount = 1_000
+
     public var min: Int {
-        count * die.min
+        count.saturatingProduct(die.min)
     }
 
     public var max: Int {
-        count * die.max
+        count.saturatingProduct(die.max)
     }
 
     public var text: String {
@@ -52,5 +57,21 @@ public struct RawDieCounter: Equatable, Hashable {
             return die.text
         }
         return "\(count)\(die.text)"
+    }
+}
+
+extension Int {
+    /// `self * other`, clamped to `Int.min`/`Int.max` instead of trapping on overflow.
+    func saturatingProduct(_ other: Int) -> Int {
+        let (product, overflow) = multipliedReportingOverflow(by: other)
+        guard overflow else { return product }
+        return (self < 0) == (other < 0) ? Int.max : Int.min
+    }
+
+    /// `self + other`, clamped to `Int.min`/`Int.max` instead of trapping on overflow.
+    func saturatingSum(_ other: Int) -> Int {
+        let (sum, overflow) = addingReportingOverflow(other)
+        guard overflow else { return sum }
+        return other < 0 ? Int.min : Int.max
     }
 }

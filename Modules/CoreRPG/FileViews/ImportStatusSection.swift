@@ -31,6 +31,10 @@ struct ImportStatusSection: View {
                 EmptyView()
             case .finished:
                 Text("Import is finished, \(importModel.importedItems) are successfully imported.", bundle: .module)
+                if importModel.failedItems > 0 {
+                    Text("\(importModel.failedItems) items could not be imported.", bundle: .module)
+                        .foregroundStyle(.red)
+                }
             case .cancelled:
                 Text("Import is cancelled, but \(importModel.importedItems) are successfully imported.", bundle: .module)
             case .failed(let message):

@@ -65,9 +65,14 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
     }
     
     public var urlMarkDown: String {
-        let entry = destination.entryId.map { "/\($0.uuidString)" } ?? ""
-        let action = command.map { "/\($0)" } ?? ""
-        return "[\(name)](\(URL.appScheme)://\(destination.typeId.token)/\(linkNumber ?? 0)/\(destination.itemId.uuidString)\(entry)\(action))"
+        LinkBuilder.markdown(
+            name: name,
+            module: destination.typeId,
+            linkNumber: linkNumber ?? 0,
+            itemId: destination.itemId,
+            entryId: destination.entryId,
+            command: command
+        )
     }
 
     public var isSheetLink: Bool {

@@ -172,7 +172,7 @@ private struct TileCoordinatesView: View {
                             }
                             .accessibilityLabel(Text("Remove Tile", bundle: .module))
                             .frame(minWidth: 44, minHeight: 44)
-                            .borderLessTVBottonStyle()
+                            .borderLessTVButtonStyle()
                             .padding(4)
                             .contentShape(.circle)
 #if !os(visionOS)

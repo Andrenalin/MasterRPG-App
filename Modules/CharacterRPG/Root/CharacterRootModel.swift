@@ -248,7 +248,7 @@ extension CharacterRootModel {
         editController.repairCharacterContrains()
 
         for id in itemController.itemDataModel.items {
-            guard let model = await itemController.item(for: id), model.displayState != 2 && model.specialCategory == false else { continue }
+            guard let model = await itemController.item(for: id), model.displayState != DisplayStateMask.totalHidden.rawValue && model.specialCategory == false else { continue }
             var entries: [ValueEntryModel] = []
             for entry in model.entries {
                 guard let valueId = entry.valueId, let value = await itemController.item(for: valueId) else {

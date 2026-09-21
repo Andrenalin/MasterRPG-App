@@ -4,11 +4,11 @@ import SwiftUI
 
 public extension View {
     func navigationVisibility(_ visible: Bool = true) -> some View {
-        modifier(NavigationVisibiltyViewModifier(visible: visible))
+        modifier(NavigationVisibilityViewModifier(visible: visible))
     }
 }
 
-struct NavigationVisibiltyViewModifier: ViewModifier {
+struct NavigationVisibilityViewModifier: ViewModifier {
     let visible: Bool
     
     func body(content: Content) -> some View {

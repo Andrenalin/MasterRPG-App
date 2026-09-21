@@ -3,12 +3,12 @@
 import SwiftUI
 
 public extension View {
-    func borderLessTVBottonStyle(notMac: Bool = false) -> some View {
-        modifier(BorderLessTVBottonStyleViewModifer(notMac: notMac))
+    func borderLessTVButtonStyle(notMac: Bool = false) -> some View {
+        modifier(BorderLessTVButtonStyleViewModifier(notMac: notMac))
     }
 }
 
-struct BorderLessTVBottonStyleViewModifer: ViewModifier {
+struct BorderLessTVButtonStyleViewModifier: ViewModifier {
     let notMac: Bool
     
     func body(content: Content) -> some View {
@@ -28,11 +28,11 @@ struct BorderLessTVBottonStyleViewModifer: ViewModifier {
 
 public extension View {
     func switchTVToggleStyle() -> some View {
-        modifier(SwitchTVToggleStyleViewModifer())
+        modifier(SwitchTVToggleStyleViewModifier())
     }
 }
 
-struct SwitchTVToggleStyleViewModifer: ViewModifier {
+struct SwitchTVToggleStyleViewModifier: ViewModifier {
     func body(content: Content) -> some View {
 #if os(tvOS)
         content

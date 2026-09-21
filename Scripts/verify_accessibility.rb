@@ -7,9 +7,7 @@ require_relative "verify_localization"
 AccessibilityIssue = Struct.new(:path, :line, :message)
 
 ACCESSIBILITY_ROOT = Pathname(__dir__).parent.freeze
-SPECIALIZED_FIXED_FONT_FILES = [
-  "Modules/CoreRPG/Extensions/AnimatableFont.swift"
-].freeze
+SPECIALIZED_FIXED_FONT_FILES = [].freeze
 
 def accessibility_source_paths
   Dir.glob(ACCESSIBILITY_ROOT.join("{Modules,Sources}/**/*.swift"))

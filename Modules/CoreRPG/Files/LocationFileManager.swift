@@ -67,8 +67,11 @@ public extension LocationFileManager {
             guard let documentsIndex = url.pathComponents.firstIndex(of: CloudDocumentController.documentDirName) else {
                 return url
             }
-            let filePath = url.pathComponents[(documentsIndex + 1)...].joined(separator: "/")
-            let newUrl = rootLocal.appending(path: filePath)
+            var newUrl = rootLocal
+            // See CODE_AUDIT_15 §5.1: never let `..` climb out of the documents directory.
+            CloudDocumentController.safeComponents(Array(url.pathComponents[(documentsIndex + 1)...])).forEach {
+                newUrl.append(path: $0)
+            }
             return newUrl
         default:
             return url
@@ -90,10 +93,8 @@ public extension LocationFileManager {
 
 private extension LocationFileManager {
     private func add(relative url: URL, to root: URL, module: String?) -> URL {
-        var pathComponents = url.pathComponents
-        if pathComponents.first == "/" {
-            pathComponents.removeFirst()
-        }
+        // See CODE_AUDIT_15 §5.1: `..` segments of a decoded url must not leave `root`.
+        let pathComponents = CloudDocumentController.safeComponents(url.pathComponents)
         var result = root
         if let module {
             result.append(component: module)

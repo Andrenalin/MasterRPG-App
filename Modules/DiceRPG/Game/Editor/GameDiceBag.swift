@@ -20,7 +20,7 @@ struct GameDiceBag: View {
                     }
                     .accessibilityLabel(Text("Add \(die.die.text) die", bundle: .module))
                     .frame(minWidth: 44, minHeight: 44)
-                    .borderLessTVBottonStyle()
+                    .borderLessTVButtonStyle()
                 }
             }
         }

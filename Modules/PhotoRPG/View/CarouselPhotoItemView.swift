@@ -89,7 +89,7 @@ struct CarouselPhotoItemView: View {
             }
             .accessibilityLabel(Text("Remove", bundle: .module))
             .frame(minWidth: 44, minHeight: 44)
-            .borderLessTVBottonStyle()
+            .borderLessTVButtonStyle()
             .padding(4)
             .contentShape(.circle)
         }

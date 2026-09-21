@@ -68,7 +68,7 @@ extension ExportController: ExportModelBacked {
                         childIds.append($0.itemId)
                     }
                 default:
-                    Logger.exportController.error("Table \(item.name, privacy: .public) export is not handling link \($0.markDown, privacy: .public)")
+                    Logger.exportController.error("Table \(item.name, privacy: .private) export is not handling link \($0.markDown, privacy: .private)")
                 }
             }
             return childIds

@@ -65,12 +65,26 @@ actor FileBookmarkModel {
         didFetch = true
     }
 
+    private var isSaving = false
+    private var needsSave = false
+
+    /// Rewrites the whole store, coalescing changes that arrive while a write is in flight into
+    /// one follow-up write instead of one full rewrite per change. See CODE_AUDIT_15 §5.5.
     private func save() async {
-        let file = fileBookmarks
-        let folder = folderBookmarks
-        await itemController.replace(data: Bookmarks(id: Self.deviceId, bookmarks: file))
-        await itemController.replace(data: Bookmarks(id: Self.folderId, bookmarks: folder))
-        await itemController.save()
+        if isSaving {
+            needsSave = true
+            return
+        }
+        isSaving = true
+        repeat {
+            needsSave = false
+            let file = fileBookmarks
+            let folder = folderBookmarks
+            await itemController.replace(data: Bookmarks(id: Self.deviceId, bookmarks: file))
+            await itemController.replace(data: Bookmarks(id: Self.folderId, bookmarks: folder))
+            await itemController.save()
+        } while needsSave
+        isSaving = false
     }
 }
 
@@ -114,8 +128,8 @@ extension FileBookmarkController {
             let url = try URL(resolvingBookmarkData: data, options: options, relativeTo: nil, bookmarkDataIsStale: &isStale)
             if isStale {
                 Logger.bookmarkStore.info("Stale Bookmark: \(url.absoluteString, privacy: .private)")
-                let _ = url.startAccessingSecurityScopedResource()
-                defer { url.stopAccessingSecurityScopedResource() }
+                let securityScope = url.startSecurityScopedAccess()
+                defer { securityScope.stop() }
                 try await saveBookmark(fileId: fileId, fileUrl: url, folder: folder)
             }
             return url

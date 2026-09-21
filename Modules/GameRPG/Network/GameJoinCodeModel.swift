@@ -2,6 +2,7 @@
 
 import Observation
 import SwiftUI
+import Synchronization
 
 /// Per-device join codes that gate local-network pairing.
 ///
@@ -49,30 +50,33 @@ public final class GameJoinCodeModel: Sendable {
     /// `playerCode` rather than UserDefaults. See CODE_AUDIT §6.2.
     private let codeStorage: any JoinCodeStorage
 
-    /// Every other `Task.detached` fire-and-forget write in the codebase
-    /// (`MasterController.detachedGameData`, the Foundry VTT import readers,
-    /// `SpaceRPG.AppDataModel.cleanupTask`, `ResourceCache.load`) keeps a
-    /// handle to its task so a superseded write can be cancelled instead of
-    /// racing the one that replaced it. These three mirror that: one handle
-    /// per code, cancelled whenever a later write for the same code
-    /// supersedes it. See CODE_AUDIT_10 §3.4.
-    private var masterCodeWriteTask: Task<Void, Never>?
-    private var playerCodeWriteTask: Task<Void, Never>?
-    private var lastUsedMasterJoinCodeWriteTask: Task<Void, Never>?
+    /// Keychain writes are synchronous, so they happen off the main actor. Values are queued in
+    /// order on the main actor (`enqueue`) and written by `flush`, which holds one lock while it
+    /// takes and writes the pending entries — a superseded value can therefore never be written
+    /// after the newer one, which per-write detached tasks could not guarantee.
+    /// See CODE_AUDIT_15 §3.13.
+    private let writeBuffer = JoinCodeWriteBuffer()
+
+    private func persist(_ value: String?, forKey key: String) {
+        writeBuffer.enqueue(value, forKey: key)
+        let buffer = writeBuffer
+        let storage = codeStorage
+        Task.detached(priority: .utility) {
+            buffer.flush(to: storage)
+        }
+    }
 
     public var masterCode: String {
         didSet {
             guard oldValue != masterCode else { return }
-            masterCodeWriteTask?.cancel()
-            masterCodeWriteTask = Self.write(masterCode, forKey: Self.masterCodeKey, to: codeStorage)
+            persist(masterCode, forKey: Self.masterCodeKey)
         }
     }
 
     public var playerCode: String {
         didSet {
             guard oldValue != playerCode else { return }
-            playerCodeWriteTask?.cancel()
-            playerCodeWriteTask = Self.write(playerCode, forKey: Self.playerCodeKey, to: codeStorage)
+            persist(playerCode, forKey: Self.playerCodeKey)
         }
     }
 
@@ -82,17 +86,7 @@ public final class GameJoinCodeModel: Sendable {
     public var lastUsedMasterJoinCode: String? {
         didSet {
             guard oldValue != lastUsedMasterJoinCode else { return }
-            lastUsedMasterJoinCodeWriteTask?.cancel()
-            if let lastUsedMasterJoinCode {
-                lastUsedMasterJoinCodeWriteTask = Self.write(lastUsedMasterJoinCode, forKey: Self.lastUsedMasterJoinCodeKey, to: codeStorage)
-            } else {
-                let codeStorage = codeStorage
-                let key = Self.lastUsedMasterJoinCodeKey
-                lastUsedMasterJoinCodeWriteTask = Task.detached(priority: .utility) {
-                    guard !Task.isCancelled else { return }
-                    codeStorage.remove(forKey: key)
-                }
-            }
+            persist(lastUsedMasterJoinCode, forKey: Self.lastUsedMasterJoinCodeKey)
         }
     }
 
@@ -149,20 +143,6 @@ public final class GameJoinCodeModel: Sendable {
         return nil
     }
 
-    /// `codeStorage.set` performs a synchronous Keychain write; every stored
-    /// property here writes through this helper instead of calling it
-    /// directly so the write happens off the main actor rather than blocking
-    /// it during a live UI edit. See CODE_AUDIT §3.3. The caller stores the
-    /// returned handle and cancels it if a later write for the same code
-    /// supersedes it — see CODE_AUDIT_10 §3.4.
-    @discardableResult
-    private static func write(_ value: String, forKey key: String, to codeStorage: any JoinCodeStorage) -> Task<Void, Never> {
-        Task.detached(priority: .utility) {
-            guard !Task.isCancelled else { return }
-            codeStorage.set(value, forKey: key)
-        }
-    }
-
     static func isValidCode(_ code: String) -> Bool {
         code.count == Self.codeLength && code.allSatisfy(\.isNumber)
     }
@@ -173,4 +153,32 @@ public final class GameJoinCodeModel: Sendable {
     private static let masterCodeKey = "MasterRPGMasterJoinCode"
     private static let playerCodeKey = "MasterRPGPlayerJoinCode"
     private static let lastUsedMasterJoinCodeKey = "MasterRPGLastUsedMasterJoinCode"
+}
+
+/// Ordered hand-off of join-code changes to the Keychain; see `GameJoinCodeModel.persist`.
+private final class JoinCodeWriteBuffer: Sendable {
+    /// `nil` value = remove the stored code.
+    private let pending = Mutex<[String: String?]>([:])
+    private let writeLock = Mutex<Void>(())
+
+    func enqueue(_ value: String?, forKey key: String) {
+        pending.withLock { $0[key] = .some(value) }
+    }
+
+    func flush(to storage: any JoinCodeStorage) {
+        writeLock.withLock { _ in
+            let entries = pending.withLock { pending in
+                let taken = pending
+                pending.removeAll()
+                return taken
+            }
+            for (key, value) in entries {
+                if let value {
+                    storage.set(value, forKey: key)
+                } else {
+                    storage.remove(forKey: key)
+                }
+            }
+        }
+    }
 }

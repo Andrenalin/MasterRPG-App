@@ -26,7 +26,7 @@ extension GameNetworkController: PlayerNetworkControllerDelegate {
     }
 
     func playerReceived(data: Data?) async {
-        guard let gameData = GameNetworkModel.decodeData(of: data) else {
+        guard let gameData = await GameNetworkModel.decodedOffMain(of: data) else {
             Logger.networking.debug("GameNetworkController: Player received invalid game data")
             return
         }

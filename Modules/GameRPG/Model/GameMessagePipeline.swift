@@ -279,4 +279,20 @@ extension GameNetworkModel: MessageMapper {
     func encodeData() -> Data? {
         try? Self.outboundEncoder.encode(self)
     }
+
+    /// LAN messages can carry multi-megabyte Base64 attachments; decoding them on the main actor
+    /// hitched the UI on every large push. The SharePlay path already keeps the same work off
+    /// main (`RPGSharePlayController.decodedMessage`). See CODE_AUDIT_15 §3.2.
+    @concurrent
+    static func decodedOffMain(of data: Data?) async -> GameNetworkModel? {
+        guard !Task.isCancelled else { return nil }
+        return decodeData(of: data)
+    }
+}
+
+/// Encodes a message off the main actor; see `GameNetworkModel.decodedOffMain(of:)`.
+@concurrent
+func encodedOffMain(_ message: (any MessageMapper)?) async -> Data? {
+    guard !Task.isCancelled else { return nil }
+    return message?.encodeData()
 }

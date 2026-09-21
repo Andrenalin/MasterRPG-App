@@ -33,6 +33,20 @@ public enum MonotonicWallClock {
             return issued
         }
     }
+
+    /// Advances the local clock to a timestamp seen from another device (hybrid logical
+    /// clock). Every later local write then sorts after it, so a device whose wall clock runs
+    /// ahead — or a crafted payload with a far-future timestamp — can win the merge it
+    /// arrived in, but can no longer freeze the item against the edits that follow.
+    /// Non-finite values are ignored. See CODE_AUDIT_15 §5.3.
+    public static func observe(_ remoteTimestamp: TimeInterval) {
+        guard remoteTimestamp.isFinite else { return }
+        lastIssued.withLock { last in
+            if remoteTimestamp > last {
+                last = remoteTimestamp
+            }
+        }
+    }
 }
 
 /// A wall-clock timestamp for a specific actor.
@@ -70,7 +84,28 @@ public struct WallclockTimestamp<ActorID: Hashable & Comparable>: Identifiable, 
     }
 }
 
-extension WallclockTimestamp: Codable where ActorID: Codable {}
+extension WallclockTimestamp: Codable where ActorID: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case clock
+        case actorId
+    }
+
+    /// Same wire format as the synthesized conformance, except that a non-finite clock
+    /// (NaN/infinity from crafted JSON breaks the ordering the merge depends on) decodes as
+    /// the oldest possible timestamp. See CODE_AUDIT_15 §5.3.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedClock = try container.decode(TimeInterval.self, forKey: .clock)
+        clock = decodedClock.isFinite ? decodedClock : 0
+        actorId = try container.decode(ActorID.self, forKey: .actorId)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(clock, forKey: .clock)
+        try container.encode(actorId, forKey: .actorId)
+    }
+}
 
 extension WallclockTimestamp: Sendable where ActorID: Sendable {}
 

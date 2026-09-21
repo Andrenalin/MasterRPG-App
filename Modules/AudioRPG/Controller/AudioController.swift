@@ -108,6 +108,12 @@ extension AudioController {
     @MainActor
     func add(audio models: [AudioModel], replace: Bool = false) async {
         if replace {
+            // The dropped entries' temp copies would otherwise stay until the OS purges the
+            // temp folder (`removeAudio` is the only other place that frees them).
+            // See CODE_AUDIT_15 §5.13.
+            for item in model.playList {
+                try? FileManager.default.removeItem(at: item.url)
+            }
             model.playList = []
             model.isPlaybackComplete = false
         }
@@ -249,7 +255,7 @@ extension AudioController {
         let playerItem = AVPlayerItem(url: currentItem.url)
         model.player.replaceCurrentItem(with: playerItem)
         MediaPlayerCoordinator.handleItemChange(item: currentItem, index: index, count: model.playList.count)
-        Logger.audioController.debug("🎧 \(currentItem.title, privacy: .public) -> \(currentItem.artist, privacy: .public)  enqueued for playback.")
+        Logger.audioController.debug("🎧 \(currentItem.title, privacy: .private) -> \(currentItem.artist, privacy: .private)  enqueued for playback.")
     }
 }
 

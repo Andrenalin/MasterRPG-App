@@ -72,7 +72,7 @@ extension LinkController: LinkControllable {
         replacedItem.description = repairLinks(LinkReplaceController.links(for: inspectedItem.description), in: inspectedItem.description)
 
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Audio: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.info("Audio: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)

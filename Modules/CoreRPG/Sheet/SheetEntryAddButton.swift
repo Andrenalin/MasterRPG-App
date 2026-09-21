@@ -36,7 +36,7 @@ struct SheetEntryAddButton: View {
                 }
             }
             .applyIf(onlyIcon) {
-                $0.borderLessTVBottonStyle()
+                $0.borderLessTVButtonStyle()
                     .padding(4)
                     .contentShape(.circle)
             }

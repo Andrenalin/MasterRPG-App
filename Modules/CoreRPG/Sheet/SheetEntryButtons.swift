@@ -40,7 +40,7 @@ struct SheetEntryEditButton: View {
                 $0.labelStyle(.iconOnly)
             }
         }
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
         .keyboardShortcutAll("e", modifiers: .shift)
     }
 

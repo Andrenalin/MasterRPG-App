@@ -41,7 +41,7 @@ extension SearchListController: SearchRootControllable {
               item.specialCategory else { return [] }
         let results = item.entries.compactMap { entry -> SearchResult? in
             guard let child = searchController.itemControllable.itemSync(for: entry.childId),
-                  child.displayState == 0 else { return nil }
+                  child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
             let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
             var result = SearchResult(
                 itemId: child.id, itemName: child.name,
@@ -113,7 +113,7 @@ extension SearchLinkController: SearchRootControllable {
         if item.specialCategory {
             let results = item.entries.compactMap { entry -> SearchResult? in
                 guard let child = searchController.itemControllable.itemSync(for: entry.childId),
-                      child.displayState == 0 else { return nil }
+                      child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
                 let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
                 var result = SearchResult(
                     itemId: child.id, itemName: child.name,

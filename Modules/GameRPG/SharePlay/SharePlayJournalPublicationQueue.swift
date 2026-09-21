@@ -89,7 +89,7 @@ final class SharePlayJournalPublicationQueue<Attachment: Identifiable & Sendable
 where Attachment.ID == UUID {
     init(
         maxOutstandingPublications: Int = 16,
-        maxOutstandingBytes: Int = 512_000_000,
+        maxOutstandingBytes: Int = GameLimits.maximumMessageBytes,
         maxOutstandingCleanups: Int = 8
     ) {
         self.maxOutstandingPublications = max(1, maxOutstandingPublications)

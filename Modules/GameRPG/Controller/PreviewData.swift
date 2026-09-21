@@ -207,16 +207,6 @@ extension LogGameModel {
     }
 
     @MainActor
-    static var preview2: LogGameModel {
-        previewFixtures[1]
-    }
-
-    @MainActor
-    static var preview3: LogGameModel {
-        previewFixtures[2]
-    }
-
-    @MainActor
     static var previewFixtures: [LogGameModel] {
         let photo = LogGameModel(
             id: 0,

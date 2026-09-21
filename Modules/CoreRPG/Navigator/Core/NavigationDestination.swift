@@ -182,16 +182,6 @@ extension NavigationDestination {
 
 }
 
-extension NavigationDestination {
-
-    /// Convenience functions return view.
-    @available(*, deprecated, message: "Use plain value instead e.g. 'MyDestination.page2' and not 'MyDestination.page2.view'.")
-    @MainActor @ViewBuilder var view: some View {
-        body
-    }
-
-}
-
 extension View {
     /// Registers ``NavigationDestination`` types in order to enable `navigate(to:)` and `NavigationLink(value:label)` behaviors.
     /// ```swift

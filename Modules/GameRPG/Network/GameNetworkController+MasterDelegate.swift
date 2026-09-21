@@ -26,7 +26,7 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
     }
 
     func masterReceived(data: Data?, for connectionId: ConnectionController.ID, fileJournal: Bool) async {
-        guard let gameData = GameNetworkModel.decodeData(of: data) else {
+        guard let gameData = await GameNetworkModel.decodedOffMain(of: data) else {
             Logger.networking.debug("GameNetworkController: Master Received invalid game data from \(connectionId)")
             return
         }

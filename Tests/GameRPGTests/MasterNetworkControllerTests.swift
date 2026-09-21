@@ -13,7 +13,7 @@ import Testing
 struct MasterNetworkControllerTestEnvironment {
     let controller: MasterNetworkController
     let delegateSpy: MasterNetworkControllerDelegateMock
-    let listenerSpy: GameListnerAbstractionMock
+    let listenerSpy: GameListenerAbstractionMock
 
     /// Creates a MasterNetworkController with test dependencies
     static func create(
@@ -21,7 +21,7 @@ struct MasterNetworkControllerTestEnvironment {
         browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
     ) async -> MasterNetworkControllerTestEnvironment {
         let delegateSpy = MasterNetworkControllerDelegateMock()
-        let listenerSpy = GameListnerAbstractionMock()
+        let listenerSpy = GameListenerAbstractionMock()
 
         let controller = MasterNetworkController(
             name: name,

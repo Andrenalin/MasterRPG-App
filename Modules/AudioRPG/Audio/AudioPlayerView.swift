@@ -185,7 +185,7 @@ private struct AudioPlayerViewPlaySkipControlView: View {
             )
         }
         .disabled(root.audioController.model.playList.isEmpty)
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
         .padding(.bottom, 8)
     }
 

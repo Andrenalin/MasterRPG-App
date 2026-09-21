@@ -259,7 +259,7 @@ private struct OverlayGameMenuCloseView: View {
             Image(systemName: "xmark.circle")
                 .imageScale(valueFor(iOS: .large, macOS: .medium, tvOS: .small, visionOS: .large))
         }
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
         .frame(minWidth: 44, minHeight: 44)
         .padding(.horizontal, marginWidth)
         .accessibilityLabel(Text("Quit", bundle: .module))

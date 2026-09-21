@@ -54,16 +54,24 @@ final class ListenerManager: ListenerManaging {
         Logger.listenerController.debug("ListenerManager: Deinit \(listenerName, privacy: .public)")
     }
 
+    /// Identifies the current listener run. A cancelled run's tasks resume later and must not
+    /// write their outcome over the state of the run (or the `stopListening()`) that replaced
+    /// them. See CODE_AUDIT_15 §3.7.
+    private var runGeneration = 0
+
     func startListening() {
         guard state != .waitingForConnection && state != .connecting else { return }
         cancelTasks()
+        runGeneration += 1
+        let generation = runGeneration
         state = .connecting
 
         let controller = ListenerServerController(name: name, supporterTier: supporterTier, serviceType: serviceType, passcode: passcode)
 
         monitorTask = Task { @MainActor [weak self] in
             for await event in controller.events {
-                await self?.handle(event)
+                guard let self, self.runGeneration == generation else { return }
+                await self.handle(event)
             }
         }
 
@@ -74,16 +82,19 @@ final class ListenerManager: ListenerManaging {
             do {
                 try await controller.run()
             } catch is CancellationError {
-                self?.state = .cancelled
+                guard let self, self.runGeneration == generation else { return }
+                self.state = .cancelled
             } catch {
                 Logger.listenerController.error("ListenerManager: Error \(error.localizedDescription, privacy: .public)")
-                self?.state = .stopped
+                guard let self, self.runGeneration == generation else { return }
+                self.state = .stopped
             }
         }
     }
 
     func stopListening() {
         cancelTasks()
+        runGeneration += 1
         state = .stopped
     }
 

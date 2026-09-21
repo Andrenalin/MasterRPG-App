@@ -24,7 +24,7 @@ public extension SearchControllable {
             guard !Task.isCancelled else { break }
             
             guard let item = await itemControllable.item(for: itemId),
-                  item.displayState == 0 else { continue }
+                  item.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
             
             // Check if item matches search
             let itemMatches = item.filter(filter: searchText, includeEntries: false)
@@ -74,7 +74,7 @@ public extension SearchControllable {
         var results: [SearchResult] = []
         for itemId in itemIds {
             guard let item = itemControllable.itemSync(for: itemId),
-                  item.displayState == 0,
+                  item.displayState == DisplayStateMask.fullVisible.rawValue,
                   !item.specialCategory else { continue }
             guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
             results.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
@@ -146,7 +146,7 @@ public extension SearchControllable {
         guard depth < FolderTreeDepthLimit.max,
               !Task.isCancelled,
               let item = await itemControllable.item(for: itemId),
-              item.displayState == 0 else { return nil }
+              item.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
 
         let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: includeTags)
 

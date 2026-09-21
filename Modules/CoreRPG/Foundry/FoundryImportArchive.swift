@@ -149,16 +149,14 @@ public actor FoundryImportArchiveStore {
     }
 
     public func summaries() async throws -> [FoundryImportArchiveSummary] {
-        try await decodedArchives()
-            .map(FoundryImportArchiveSummary.init)
+        try await mapArchives(FoundryImportArchiveSummary.init)
             .sorted { $0.importedAt > $1.importedAt }
     }
 
     /// Provides iCloud-synced source identity hints when the small registry index is missing,
     /// for example after reinstalling the app or importing on another device.
     public func sourceRegistryEntries() async throws -> [ExternalImportSourceEntry] {
-        let archives = try await decodedArchives()
-        let entries = archives.map { archive in
+        let entries = try await mapArchives { archive in
             let scopeID = archive.sourceScopeID ?? archive.id
             let intrinsicScopeID = archive.package.manifest?.rawData
                 .value(at: "source.instanceID")?.stringValue
@@ -233,7 +231,10 @@ private extension FoundryImportArchiveStore {
     }
 
 
-    func decodedArchives() async throws -> [FoundryImportArchive] {
+    /// Decodes the stored archives one at a time and keeps only what `transform` extracts, so
+    /// the memory peak is the largest single archive instead of the sum of all of them (each
+    /// can be hundreds of megabytes of `FoundryJSONValue` tree). See CODE_AUDIT_15 §7.3.
+    func mapArchives<T>(_ transform: (FoundryImportArchive) -> T) async throws -> [T] {
         let urls: [URL]
         do {
             urls = try FileManager.default.contentsOfDirectory(
@@ -244,7 +245,7 @@ private extension FoundryImportArchiveStore {
         } catch let error as CocoaError where error.code == .fileNoSuchFile {
             return []
         }
-        var archives: [FoundryImportArchive] = []
+        var results: [T] = []
         for url in urls where url.pathExtension == "json" {
             try Task.checkCancellation()
             do {
@@ -255,7 +256,7 @@ private extension FoundryImportArchiveStore {
                 }
                 let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
                 guard data.count <= maximumEncodedByteCount else { continue }
-                archives.append(try decode(data))
+                results.append(transform(try decode(data)))
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
@@ -264,6 +265,6 @@ private extension FoundryImportArchiveStore {
                 continue
             }
         }
-        return archives
+        return results
     }
 }

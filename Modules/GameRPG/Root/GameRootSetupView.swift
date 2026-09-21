@@ -13,10 +13,10 @@ struct GameRootSetupView: View {
     @Environment(ScenesManager.self) private var scenesManager
 
 #if os(tvOS)
-    @AppStorage("lastSelectedGameType", store: .standard)
+    @AppStorage(GameStorageKeys.lastSelectedGameType, store: .standard)
     private var selectedRole: GameSetupRole = .join
 #else
-    @AppStorage("lastSelectedGameType", store: .standard)
+    @AppStorage(GameStorageKeys.lastSelectedGameType, store: .standard)
     private var selectedRole: GameSetupRole = .player
 #endif
 

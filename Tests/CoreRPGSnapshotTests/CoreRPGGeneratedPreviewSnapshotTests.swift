@@ -35,14 +35,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::HarmonicButton
-    @Test("HarmonicButton")
-    func snapshotHarmonicButton() async throws {
-        try await assertPreviewSnapshot("HarmonicButton") {
-            CoreRPG.HarmonicButton(animates: false)
-        }
-    }
-
     // snapshot-root: CoreRPG::ImageOverlayButton
     @Test("ImageOverlayButton")
     func snapshotImageOverlayButton() async throws {
@@ -87,44 +79,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
     func snapshotFileImporterViewWrapper() async throws {
         try await assertPreviewSnapshot("FileImporterViewWrapper") {
             CoreRPG.FileImporterViewWrapper(controller: FakeViewController(), itemId: .fixture1, preopen: false, layoutDown: false)
-        }
-    }
-
-    // snapshot-root: CoreRPG::CustomNavBarView
-    @Test("CustomNavBarView")
-    func snapshotCustomNavBarView() async throws {
-        try await assertPreviewSnapshot("CustomNavBarView") {
-            CoreRPG.CustomNavBarView({
-                Text(verbatim: "Adventure")
-            }, content: {
-                List {
-                    Text(verbatim: "Goblin ambush")
-                    Text(verbatim: "Hidden temple")
-                }
-            }, leading: { EmptyView() }, trailing: { EmptyView() }, background: { EmptyView() })
-        }
-    }
-
-    // snapshot-root: CoreRPG::NavBarBackground
-    @Test("NavBarBackground")
-    func snapshotNavBarBackground() async throws {
-        try await assertPreviewSnapshot("NavBarBackground") {
-            CoreRPG.NavBarBackground {
-                LinearGradient(
-                    colors: [.pink.opacity(0.8), .blue.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-                .frame(height: 120)
-        }
-    }
-
-    // snapshot-root: CoreRPG::NavBarTitleView
-    @Test("NavBarTitleView")
-    func snapshotNavBarTitleView() async throws {
-        try await assertPreviewSnapshot("NavBarTitleView") {
-            CoreRPG.NavBarTitleView(title: "Adventure")
         }
     }
 
@@ -1458,16 +1412,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::CreateNavigationStack
-    @Test("CreateNavigationStack")
-    func snapshotCreateNavigationStack() async throws {
-        try await assertPreviewSnapshot("CreateNavigationStack") {
-            CoreRPG.CreateNavigationStack(name: "Preview", sceneName: nil) { _ in
-                Text(verbatim: "Created navigation")
-            }
-        }
-    }
-
     // snapshot-root: CoreRPG::ManagedNavigationStack
     @Test("ManagedNavigationStack")
     func snapshotManagedNavigationStack() async throws {
@@ -1495,18 +1439,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
             CoreRPG.NavigationProvidedView(for: InternalRoute.removeAlert) {
                 Text(verbatim: "Navigation placeholder")
             }
-        }
-    }
-
-    // snapshot-root: CoreRPG::WrappedNavigationStack
-    @Test("WrappedNavigationStack")
-    func snapshotWrappedNavigationStack() async throws {
-        try await assertPreviewSnapshot("WrappedNavigationStack") {
-            CoreRPG.WrappedNavigationStack(
-                navigator: Navigator(owner: .stack, name: "Preview"),
-                sceneName: nil,
-                content: Text(verbatim: "Wrapped navigation")
-            )
         }
     }
 
@@ -1767,15 +1699,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::BlurText
-    @Test("BlurText")
-    func snapshotBlurText() async throws {
-        try await assertPreviewSnapshot("BlurText") {
-            CoreRPG.BlurText(text: "Critical hit!", color: .red, animates: false)
-                .padding()
-        }
-    }
-
     // snapshot-root: CoreRPG::GlassEffectContainerView
     @Test("GlassEffectContainerView")
     func snapshotGlassEffectContainerView() async throws {
@@ -1930,7 +1853,6 @@ private func assertPreviewSnapshot<Content: View>(
             .environment(ItemRootController.previewFixture())
             .cloudKitAccountChecksEnabled(false)
             .itemStateRestorationEnabled(false)
-            .navigationSceneRestorationEnabled(false)
             .meshAnimationEnabled(false)
             .deterministicSnapshotEnvironment()
             .transaction { transaction in

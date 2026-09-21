@@ -80,7 +80,7 @@ private struct SpecialValueEditorValuesView: View {
                                     .offset(y: -8)
                             }
                         }
-                        .borderLessTVBottonStyle()
+                        .borderLessTVButtonStyle()
                         .padding(4)
                     }
                 }

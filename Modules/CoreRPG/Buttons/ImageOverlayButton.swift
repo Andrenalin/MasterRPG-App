@@ -62,7 +62,7 @@ public struct ImageOverlayButton: View {
 #elseif os(visionOS)
             .buttonStyle(.bordered)
 #else
-            .borderLessTVBottonStyle()
+            .borderLessTVButtonStyle()
 #endif
         }
     }

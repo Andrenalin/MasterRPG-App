@@ -11,6 +11,13 @@ import Foundation
 /// Path-traversal-safe normalization and joining for paths referenced inside a Foundry
 /// package (world, module, system, or exported-document archive/directory).
 enum FoundryPackagePath {
+    /// Percent-encodes one identifier path component (unreserved characters only). Shared by the
+    /// world and system readers, which each carried an identical copy. See CODE_AUDIT_15 §9.10.
+    static func encodedComponent(_ value: String) -> String {
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+    }
+
     static func normalized(_ path: String) throws -> String {
         let replacedPrefix = path.hasPrefix("./") ? String(path.dropFirst(2)) : path
         guard !replacedPrefix.isEmpty, !replacedPrefix.hasPrefix("/"), !replacedPrefix.hasPrefix("\\"),

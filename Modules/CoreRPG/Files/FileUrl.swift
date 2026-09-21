@@ -149,9 +149,79 @@ public extension FileUrl {
     var isRemoteURL: Bool {
         location == .url && rawUrl.isSupportedRemoteFileURL
     }
+
+    /// A copy that is safe to resolve on this device although its description came from an
+    /// imported file or a game peer, which control every field of it.
+    ///
+    /// - Cloud/local locations keep their url unless it contains `.`/`..` segments, which are
+    ///   removed (unchanged urls stay byte-identical so item versions do not change).
+    /// - `.other` (a picked file on the *sender's* device) and `.url` values that are not a
+    ///   public http(s) address cannot be resolved here, so they become an app-owned
+    ///   `.newCloud` file named after the last path component only.
+    ///
+    /// See CODE_AUDIT_15 §5.1 and §6.3.
+    func sanitizedForImport(allowsPrivateRemoteHosts: Bool = false) -> FileUrl {
+        switch location {
+        case .url:
+            let isAllowed = allowsPrivateRemoteHosts ? rawUrl.isSupportedRemoteFileURL : rawUrl.isPublicRemoteFileURL
+            return isAllowed ? self : relocatedToAppStorage()
+        case .other:
+            return relocatedToAppStorage()
+        case .appCloud, .icloud, .local, .newCloud:
+            guard CloudDocumentController.hasTraversalComponents(_url) else { return self }
+            var copy = self
+            copy._url = Self.relativeUrl(fromComponents: CloudDocumentController.safeComponents(_url.pathComponents))
+            return copy
+        }
+    }
+
+    private func relocatedToAppStorage() -> FileUrl {
+        let name = CloudDocumentController.safeComponents(_url.pathComponents).last ?? "attachment"
+        var result = FileUrl(
+            fileId: fileId,
+            url: Self.relativeUrl(fromComponents: [name]),
+            location: .newCloud,
+            module: module,
+            relativeUrl: nil,
+            contentHash: contentHash
+        )
+        result.data = data
+        return result
+    }
+
+    private static func relativeUrl(fromComponents components: [String]) -> URL {
+        var url = URL(string: "/") ?? URL(filePath: "/")
+        components.forEach { url.append(path: $0) }
+        return url
+    }
 }
 
 public extension URL {
+    /// An http(s) url whose host is not this device or a private network. Peers can send
+    /// `FileUrl`s that make the receiving device fetch them, so loopback, link-local and
+    /// private-range hosts (probing the GM's LAN) are refused. See CODE_AUDIT_15 §6.3.
+    var isPublicRemoteFileURL: Bool {
+        guard isSupportedRemoteFileURL, let host = host()?.lowercased() else { return false }
+        if host == "localhost" || host.hasSuffix(".localhost") || host.hasSuffix(".local")
+            || host.hasSuffix(".internal") || host.hasSuffix(".lan") || !host.contains(".") && !host.contains(":") {
+            return false
+        }
+        if host.contains(":") {
+            // IPv6 literal: loopback, unspecified, unique-local, link-local, v4-mapped.
+            let value = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+            return !(value == "::1" || value == "::" || value.hasPrefix("fc") || value.hasPrefix("fd")
+                || value.hasPrefix("fe8") || value.hasPrefix("fe9") || value.hasPrefix("fea")
+                || value.hasPrefix("feb") || value.hasPrefix("::ffff:"))
+        }
+        let octets = host.split(separator: ".").compactMap { Int($0) }
+        guard octets.count == 4, octets.count == host.split(separator: ".").count else { return true }
+        switch (octets[0], octets[1]) {
+        case (0, _), (10, _), (127, _), (169, 254), (192, 168): return false
+        case (172, 16...31), (100, 64...127): return false
+        default: return true
+        }
+    }
+
     var isSupportedRemoteFileURL: Bool {
         guard let scheme = scheme?.lowercased(),
               scheme == "http" || scheme == "https",

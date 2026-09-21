@@ -29,7 +29,7 @@ struct DiceInline: View {
                     DiceInlineLabel(text: root.gameController.gameItem(for: itemId).inlineText)
                 }
                 .frame(minHeight: 44)
-                .borderLessTVBottonStyle()
+                .borderLessTVButtonStyle()
             } else {
                 MenuTV {
                     Button {

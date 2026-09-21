@@ -343,7 +343,7 @@ extension FoundryMappingState {
             .replacing("]", with: "\\]")
             .replacing("\n", with: " ")
             .replacing("\r", with: " ")
-        return "[\(escapedName)](\(URL.appScheme)://\(module.token)/0/\(itemId.uuidString))"
+        return LinkBuilder.markdown(name: escapedName, module: module, itemId: itemId)
     }
 
     func inertCodeBlock(_ source: String) -> String {

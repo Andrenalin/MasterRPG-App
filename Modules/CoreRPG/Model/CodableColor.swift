@@ -41,7 +41,4 @@ public struct CodableColor: Codable, Equatable, Hashable {
         self.opacity = opacity
     }
 
-    public func generateModel() -> String {
-        "CodableColor(red: \(red), green: \(green), blue: \(blue), opacity: \(opacity))"
-    }
 }

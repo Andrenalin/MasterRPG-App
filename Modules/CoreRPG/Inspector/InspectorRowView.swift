@@ -229,7 +229,7 @@ private struct InspectorRowViewFolderChevronView: View {
                     .glassEffect(.clear.interactive())
 #endif
             }
-            .borderLessTVBottonStyle()
+            .borderLessTVButtonStyle()
             .accessibilityLabel(Text("Toggle Folder", bundle: .module))
             .padding(.trailing, 4)
         }

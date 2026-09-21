@@ -176,7 +176,15 @@ public extension CoreDataController {
                 operationsByID[operation.id] = operation
             }
             let uniqueOperations = Array(operationsByID.values)
-            let existingUUIDs = try await batchExists(uuids: uniqueOperations.map { $0.id })
+            let existingUUIDs: Set<UUID>
+            do {
+                existingUUIDs = try await batchExists(uuids: uniqueOperations.map { $0.id })
+            } catch {
+                // The queue was already drained; put the operations back so a retry does not
+                // silently drop these edits. See CODE_AUDIT_15 §5.6.
+                pendingOperations.forEach { model.addPendingOperation($0) }
+                throw error
+            }
 
             await context.perform {
                 for operation in uniqueOperations {
@@ -255,9 +263,11 @@ public extension CoreDataController {
         let existingUUIDs = try await batchExists(uuids: allUUIDs)
 
         for chunk in snapshots.chunked(into: chunkSize) {
+            // Evaluate the key path here: a `KeyPath` is not `Sendable` and must not be captured
+            // by the `perform` closure. See CODE_AUDIT_15 §3.17.
+            let keyedChunk = chunk.map { (uuid: $0[keyPath: keyPath], snapshot: $0) }
             await context.perform {
-                for snapshot in chunk {
-                    let uuid = snapshot[keyPath: keyPath]
+                for (uuid, snapshot) in keyedChunk {
                     if existingUUIDs.contains(uuid) {
                         if let existing = fetchCoreData(uuid: uuid) {
                             updater(snapshot, existing)
@@ -287,7 +297,10 @@ public extension CoreDataController {
         guard !uuids.isEmpty else { return }
 
         for chunk in uuids.chunked(into: chunkSize) {
-            await context.perform {
+            // Errors propagate: a failed save used to be logged while "Batch deleted" was
+            // still reported and the objects stayed pending in the context.
+            // See CODE_AUDIT_15 §5.6.
+            try await context.perform {
                 let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
                 request.predicate = NSPredicate(format: "uuid IN %@", chunk as [NSUUID])
                 request.includesPropertyValues = false
@@ -295,9 +308,11 @@ public extension CoreDataController {
                 do {
                     let objects = try context.fetch(request) as? [DataType] ?? []
                     objects.forEach { context.delete($0) }
-                    saveCoreData()
+                    try saveCoreDataThrowing()
                 } catch {
                     Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
+                    context.rollback()
+                    throw error
                 }
             }
         }
@@ -331,12 +346,14 @@ public extension CoreDataController {
     func batchExists(uuids: [UUID]) async throws -> Set<UUID> {
         guard !uuids.isEmpty else { return Set() }
         
-        return await context.perform {
+        // A failed lookup must not read as "nothing exists": callers would insert every model
+        // as new and create duplicate uuid rows. See CODE_AUDIT_15 §5.6.
+        return try await context.perform {
             let request = NSFetchRequest<NSDictionary>(entityName: String(describing: DataType.self))
             request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
             request.propertiesToFetch = ["uuid"]
             request.resultType = .dictionaryResultType
-            
+
             do {
                 let results = try context.fetch(request)
                 let existingUUIDs = results.compactMap { dict in
@@ -345,7 +362,7 @@ public extension CoreDataController {
                 return Set(existingUUIDs)
             } catch {
                 Logger.coreDataController.error("Batch exists check error: \(error.localizedDescription, privacy: .public)")
-                return Set()
+                throw error
             }
         }
     }
@@ -360,9 +377,10 @@ private extension CoreDataController {
         existingUUIDs: Set<UUID>,
         updater: @escaping @Sendable (Model, DataType) -> Void
     ) async throws {
+        // See CODE_AUDIT_15 §3.17: the key path is evaluated outside the `perform` closure.
+        let keyedChunk = chunk.map { (uuid: $0[keyPath: keyPath], model: $0) }
         await context.perform {
-            for model in chunk {
-                let uuid = model[keyPath: keyPath]
+            for (uuid, model) in keyedChunk {
                 if existingUUIDs.contains(uuid) {
                     if let existing = fetchCoreData(uuid: uuid) {
                         updater(model, existing)
@@ -385,17 +403,23 @@ private extension CoreDataController {
                 Logger.coreDataController.error("fetch returned an unexpected object type; expected \(DataType.self)")
                 return []
             }
-            var seenId: Set<UUID> = []
             var foundDuplicates = false
+            // Which duplicate survives must not depend on the fetch order: pick it by a stable
+            // key, but keep the fetch (sort) order of the returned models.
+            // See CODE_AUDIT_15 §5.6.
+            var survivors: [UUID: NSManagedObjectID] = [:]
+            for item in data.sorted(by: { $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString }) {
+                guard let id = item.uuid, survivors[id] == nil else { continue }
+                survivors[id] = item.objectID
+            }
             let models = data.compactMap { item -> T? in
                 guard let id = item.uuid else { return nil }
-                guard !seenId.contains(id) else {
+                guard survivors[id] == item.objectID else {
                     Logger.coreDataController.warning("duplicate uuid \(id, privacy: .public) - delete coredata object")
                     context.delete(item)
                     foundDuplicates = true
                     return nil
                 }
-                seenId.insert(id)
                 return mapper(item)
             }
             // Save the repair right away so the deletions form their own transaction
@@ -465,14 +489,6 @@ private extension CoreDataController {
             Logger.coreDataController.error("fetch id \(uuid, privacy: .public) error \(error.localizedDescription, privacy: .public)")
         }
         return nil
-    }
-
-    func addNewCoreData(id: UUID, model: Model, updater: @escaping @Sendable (Model, DataType) -> Void) {
-        Logger.coreDataController.debug("add new \(id, privacy: .public)")
-        context.perform {
-            let new = DataType(context: context)
-            updater(model, new)
-        }
     }
 
     func deleteCoreData(id: UUID, save: Bool = true) {

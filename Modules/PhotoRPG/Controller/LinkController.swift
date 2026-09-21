@@ -46,7 +46,7 @@ extension LinkController: LinkControllable {
     }
 
     @MainActor public func validateLinks(on itemId: UUID) {
-        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != 2, let replacedItem = itemController.copy(of: itemId) else { return }
+        guard let inspectedItem = itemController.itemSync(for: itemId), inspectedItem.displayState != DisplayStateMask.totalHidden.rawValue, let replacedItem = itemController.copy(of: itemId) else { return }
 
         // Entries are single-child references (`PhotoEntryModel`) with no free-text `content`
         // of their own to repair — only the item's own `description` can embed a link.

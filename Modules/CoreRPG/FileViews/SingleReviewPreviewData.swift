@@ -3,7 +3,7 @@
 import SwiftUI
 
 @MainActor @Observable
-private final class PreviewItemModel: @unchecked Sendable {
+private final class PreviewItemModel {
     typealias Entry = EmtpyEntryViewModel
 
     nonisolated let id: UUID

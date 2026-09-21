@@ -79,37 +79,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::CustomNavBarInternalView
-    @Test("CustomNavBarInternalView")
-    func customNavBarInternalView() {
-        assertCoreSnapshot("CustomNavBarInternalView") {
-            CustomNavBarInternalView({
-                Text("Adventure")
-            }, leading: {
-                Image(systemName: "chevron.left")
-            }, trailing: {
-                Image(systemName: "ellipsis")
-            }, background: {
-                Color.blue.opacity(0.2)
-            }, offset: .constant(0))
-        }
-    }
-
-    // snapshot-root: CoreRPG::NavBarBackground
-    @Test("NavBarBackground")
-    func navBarBackground() {
-        assertCoreSnapshot("NavBarBackground") {
-            NavBarBackground {
-                LinearGradient(
-                    colors: [.pink.opacity(0.8), .blue.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-            .frame(height: 120)
-        }
-    }
-
     // snapshot-root: CoreRPG::AddTagsEditor
     @Test("AddTagsEditor")
     func addTagsEditor() {
@@ -698,7 +667,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                 .environment(ItemRootController.previewFixture())
                 .cloudKitAccountChecksEnabled(false)
                 .itemStateRestorationEnabled(false)
-                .navigationSceneRestorationEnabled(false)
                 .meshAnimationEnabled(false)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

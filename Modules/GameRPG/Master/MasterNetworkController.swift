@@ -39,7 +39,7 @@ final class MasterNetworkController: Sendable {
     // rather than a hand-rolled throttle + pending-sources dictionary here.
     private let connectionThrottle = ConnectionThrottleTracker()
 
-    static func gameListnerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging {
+    static func gameListenerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, supporterTier, proxy, passcode, delegate in
             let manager = ListenerManager(name: name, supporterTier: supporterTier, serviceType: proxy ? .proxyServer : .player, passcode: passcode)
             manager.delegate = delegate
@@ -144,7 +144,7 @@ extension MasterNetworkController {
     @discardableResult
     func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
         guard let connection = networkModel.connections.first(where: { $0.id == id }) else { return false }
-        let encodedData = data?.encodeData()
+        let encodedData = await encodedOffMain(data)
         await connection.response(type: .gameData, encodedContent: encodedData)
         return true
     }
@@ -152,7 +152,7 @@ extension MasterNetworkController {
     func sendResponse(data: MessageMapper?) async {
         let connections = networkModel.connections
         guard !connections.isEmpty else { return }
-        let encodedData = data?.encodeData()
+        let encodedData = await encodedOffMain(data)
         await withDiscardingTaskGroup { group in
             for connection in connections {
                 group.addTask {
@@ -165,7 +165,7 @@ extension MasterNetworkController {
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
         let connections = networkModel.connections.filter { $0.id != except }
         guard !connections.isEmpty else { return }
-        let encodedData = data?.encodeData()
+        let encodedData = await encodedOffMain(data)
         await withDiscardingTaskGroup { group in
             for connection in connections {
                 group.addTask {
@@ -218,12 +218,22 @@ extension MasterNetworkController: ConnectionControllerDelegate {
 // MARK: - ListenerManagerDelegate
 
 extension MasterNetworkController: ListenerManagerDelegate {
+    /// Live connections a master accepts from its listener at once.
+    static let maximumConnections = 32
+
     func listenerCancelled() async {
         await stopStreaming()
     }
 
     @MainActor
     func listenerNewConnection(_ connection: NWConnection) async {
+        // A game has a handful of players; an unbounded connection table lets one
+        // authenticated (or handshake-spamming) peer exhaust memory. See CODE_AUDIT_15 §6.1.
+        guard networkModel.connections.count < Self.maximumConnections else {
+            Logger.networking.debug("MasterNetworkController: Rejected connection, connection limit reached")
+            connection.cancel()
+            return
+        }
         guard await connectionThrottle.shouldAllow(endpoint: connection.endpoint) else {
             Logger.networking.debug("MasterNetworkController: Rejected connection attempt from throttled source")
             connection.cancel()

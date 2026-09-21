@@ -182,11 +182,11 @@ public protocol GroupableModel: ItemDataAccessable {
 public extension EditControllable where Model: GroupableModel {
     @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
         guard let item = itemControllable.itemSync(for: itemId) as? Model else { return false }
-        guard item.displayState == 1 && item.parentId == nil else { return false }
+        guard item.displayState == DisplayStateMask.groupHidden.rawValue && item.parentId == nil else { return false }
         if let groupId = item.groupId {
             // Hidden with a groupId: orphaned if the parent is gone or deleted.
             let parent = itemControllable.itemSync(for: groupId)
-            return parent == nil || parent?.displayState == 2
+            return parent == nil || parent?.displayState == DisplayStateMask.totalHidden.rawValue
         }
         return true // no parentId, no groupId → phase-1 orphan
     }
@@ -202,7 +202,7 @@ public extension EditControllable where Model: GroupableModel {
         guard let groupId = item.groupId else { return }
         // Clear groupId if the parent is deleted or no longer exists.
         if let groupItem = editModel(for: groupId) {
-            if groupItem.displayState == 2 {
+            if groupItem.displayState == DisplayStateMask.totalHidden.rawValue {
                 item.groupId = nil
             }
         } else {
@@ -216,7 +216,7 @@ public extension EditControllable where Model: GroupableModel {
 public extension EditControllable {
     @MainActor func isOrphanedHidden(itemId: UUID) -> Bool {
         guard let item = itemControllable.itemSync(for: itemId) else { return false }
-        return item.parentId == nil && item.displayState == 1
+        return item.parentId == nil && item.displayState == DisplayStateMask.groupHidden.rawValue
     }
 
     @MainActor func willRepairOrphan(itemId: UUID) {}
@@ -233,18 +233,6 @@ public extension EditControllable {
         guard item.entries.isEmpty else { return }
     }
     
-    @MainActor func checkChildrenExists(itemId: UUID) {
-        guard let model = editModel(for: itemId), model.specialCategory else { return }
-        let checkEntries = model.entries.compactMap { entry -> Model.Entry? in
-            guard let item = itemControllable.itemSync(for: entry.childId), item.displayState != 2 else { return nil }
-            return entry
-        }
-        if checkEntries != model.entries {
-            Logger.editController.warning("\(model.name, privacy: .public) has dead folder entries \(model.entries.count - checkEntries.count, privacy: .public), removing them")
-            model.entries = checkEntries
-            save(updated: model, message: String(localized: "removed dead folder entries", bundle: .module).localizedString)
-        }
-    }
 }
 
 // MARK: - Group Items / Carousel Items
@@ -542,7 +530,7 @@ public extension EditControllable {
         if item.category == .folder {
             for entry in item.entries {
                 if var entryItem = editModel(for: entry.childId) {
-                    if entryItem.displayState == 2 {
+                    if entryItem.displayState == DisplayStateMask.totalHidden.rawValue {
                         // Child is still marked for deletion — detach it from the restored folder
                         entryItem.parentId = nil
                         save(updated: entryItem, message: String(localized: "Restore parent", bundle: .module).localizedString)
@@ -556,7 +544,7 @@ public extension EditControllable {
         } else {
             willRestore(item: &item)
             // If this is a child being restored, check if its parent folder still exists and is not deleted
-            if let parentId = item.parentId, let parentItem = editModel(for: parentId), parentItem.displayState == 2 {
+            if let parentId = item.parentId, let parentItem = editModel(for: parentId), parentItem.displayState == DisplayStateMask.totalHidden.rawValue {
                 // Parent folder is deleted, move child to root level
                 item.parentId = nil
             }
@@ -624,7 +612,7 @@ public extension EditControllable {
     
     @MainActor func movedFile(itemId: UUID) {
         Task {
-            guard let fileUrlDataController, let item = editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != 2 else { return }
+            guard let fileUrlDataController, let item = editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
             let path = await folderPath(itemId: itemId)
             let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
             if let newFileUrl {
@@ -653,8 +641,8 @@ public extension EditControllable {
 
         guard let url, !isSameFilePath else { return }
 
-        _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
 
         if item.name.isEmpty {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"

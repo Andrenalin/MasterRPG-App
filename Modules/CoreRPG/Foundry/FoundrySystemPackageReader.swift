@@ -26,7 +26,7 @@ public struct FoundrySystemPackageReader: Sendable {
                 }
             }
             try Task.checkCancellation()
-            let source = try FoundryPackageDataSource(url: url, limits: limits)
+            let source = try FoundryVTTDataSource(url: url, limits: limits)
             return try Self.readSynchronously(source: source, limits: limits)
         }
         return try await withTaskCancellationHandler {
@@ -46,7 +46,7 @@ public struct FoundrySystemPackageReader: Sendable {
         let limits = limits
         let task = Task.detached(priority: .userInitiated) {
             try Task.checkCancellation()
-            let source = FoundryPackageDataSource.archive(archive, sourceSHA256: sourceSHA256)
+            let source = FoundryVTTDataSource.archive(archive, sourceSHA256: sourceSHA256)
             return try Self.readSynchronously(source: source, limits: limits)
         }
         return try await withTaskCancellationHandler {
@@ -77,7 +77,7 @@ public struct FoundrySystemPackageReader: Sendable {
                 }
             }
             try Task.checkCancellation()
-            let source = try FoundryPackageDataSource(url: url, limits: limits)
+            let source = try FoundryVTTDataSource(url: url, limits: limits)
             if let expectedSourceSHA256 = package.sourceSHA256,
                source.sourceSHA256 != expectedSourceSHA256 {
                 throw FoundryImportError.sourceMismatch
@@ -140,7 +140,7 @@ public struct FoundrySystemPackageReader: Sendable {
 // MARK: - Package Assembly Orchestration
 
 private extension FoundrySystemPackageReader {
-    static func readSynchronously(source: FoundryPackageDataSource, limits: FoundryImportLimits) throws -> FoundryRulePackage {
+    static func readSynchronously(source: FoundryVTTDataSource, limits: FoundryImportLimits) throws -> FoundryRulePackage {
         let manifestPath = try source.manifestPath()
         guard let manifestData = try source.data(forPath: manifestPath) else {
             throw FoundryImportError.missingManifest
@@ -315,76 +315,13 @@ private extension FoundrySystemPackageReader {
     }
 }
 
-// MARK: - Package Data Source Abstraction
+// MARK: - Package Data Source
 
-private enum FoundryPackageDataSource: Sendable {
-    case archive(FoundryZIPArchive, sourceSHA256: String)
-    case directory(root: URL, paths: [String], pathSet: Set<String>, limits: FoundryImportLimits)
-
-    init(url: URL, limits: FoundryImportLimits) throws {
-        let values = try url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
-        if values.isDirectory == true {
-            let root = url.standardizedFileURL.resolvingSymlinksInPath()
-            let paths = try Self.directoryPaths(at: root, limits: limits)
-            self = .directory(root: root, paths: paths, pathSet: Set(paths), limits: limits)
-            return
-        }
-
-        if url.lastPathComponent.lowercased() == "system.json" {
-            throw FoundryImportError.bareManifestRequiresContainer(url.lastPathComponent)
-        }
-
-        guard let fileSize = values.fileSize, fileSize <= limits.maximumArchiveSize else {
-            throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
-        }
-        try Task.checkCancellation()
-        let data = try Data(contentsOf: url, options: .mappedIfSafe)
-        try Task.checkCancellation()
-        let digest = foundrySHA256(data)
-        self = .archive(try FoundryZIPArchive(data: data, limits: limits), sourceSHA256: digest)
-    }
-
-    var paths: [String] {
-        switch self {
-        case .archive(let archive, _): archive.entryPaths
-        case .directory(_, let paths, _, _): paths
-        }
-    }
-
-    func contains(path: String) -> Bool {
-        switch self {
-        case .archive(let archive, _): archive.contains(path: path)
-        case .directory(_, _, let pathSet, _): pathSet.contains(path)
-        }
-    }
-
-    func data(forPath path: String) throws -> Data? {
-        switch self {
-        case .archive(let archive, _):
-            return try archive.data(forPath: path)
-        case .directory(let root, _, let pathSet, let limits):
-            guard pathSet.contains(path) else { return nil }
-            let candidate = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
-            let rootPath = root.path.hasSuffix("/") ? root.path : root.path + "/"
-            guard candidate.path.hasPrefix(rootPath) else {
-                throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")
-            }
-            let values = try candidate.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
-            guard values.isRegularFile == true else { return nil }
-            guard let fileSize = values.fileSize, fileSize <= limits.maximumEntrySize else {
-                throw FoundryImportError.fileTooLarge(values.fileSize ?? Int.max)
-            }
-            return try Data(contentsOf: candidate, options: .mappedIfSafe)
-        }
-    }
-
-    var sourceSHA256: String? {
-        switch self {
-        case .archive(_, let sourceSHA256): sourceSHA256
-        case .directory: nil
-        }
-    }
-
+// The archive/directory source is shared with the world/module import reader
+// (`FoundryVTTDataSource`): both used to carry their own copy of the symlink-safe directory walker
+// and path-containment checks, so a hardening fix in one left the other exposed.
+// See CODE_AUDIT_15 §9.10.
+private extension FoundryVTTDataSource {
     func manifestPath() throws -> String {
         let candidates = paths.filter { path in
             path.split(separator: "/").last?.lowercased() == "system.json"
@@ -404,7 +341,7 @@ private struct FoundryLocalizationDecoder {
     func decode(
         manifest: FoundrySystemManifest,
         basePath: String,
-        source: FoundryPackageDataSource,
+        source: FoundryVTTDataSource,
         totalTextResourceBytes: inout Int,
         maximumTextResourceBytes: Int
     ) throws -> [FoundryLocalizationCatalog] {
@@ -431,40 +368,6 @@ private struct FoundryLocalizationDecoder {
             ))
         }
         return catalogs.sorted { $0.languageCode < $1.languageCode }
-    }
-}
-
-// MARK: - Directory Enumeration
-
-private extension FoundryPackageDataSource {
-    static func directoryPaths(at root: URL, limits: FoundryImportLimits) throws -> [String] {
-        let canonicalRoot = root.standardizedFileURL.resolvingSymlinksInPath()
-        let canonicalRootPath = canonicalRoot.path.hasSuffix("/") ? canonicalRoot.path : canonicalRoot.path + "/"
-        let keys: [URLResourceKey] = [.isRegularFileKey, .isSymbolicLinkKey]
-        guard let enumerator = FileManager.default.enumerator(
-            at: canonicalRoot,
-            includingPropertiesForKeys: keys,
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
-        ) else {
-            throw FoundryImportError.unsupportedSource
-        }
-
-        var paths: [String] = []
-        for case let fileURL as URL in enumerator {
-            try Task.checkCancellation()
-            let values = try fileURL.resourceValues(forKeys: Set(keys))
-            guard values.isSymbolicLink != true, values.isRegularFile == true else { continue }
-            let canonicalFileURL = fileURL.standardizedFileURL.resolvingSymlinksInPath()
-            guard canonicalFileURL.path.hasPrefix(canonicalRootPath) else {
-                throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")
-            }
-            let relativePath = String(canonicalFileURL.path.dropFirst(canonicalRootPath.count))
-            paths.append(try FoundryPackagePath.normalized(relativePath))
-            guard paths.count <= limits.maximumDocumentCount else {
-                throw FoundryImportError.tooManyDocuments(paths.count)
-            }
-        }
-        return paths.sorted()
     }
 }
 

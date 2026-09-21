@@ -10,6 +10,43 @@ public enum ImportMode: Hashable, Sendable, CaseIterable {
     case merge, overwrite, manual
 }
 
+/// What a game peer's package may write into this device's library. A peer is only trusted
+/// with its own data, so an item is admitted when it is the peer's primary item, was
+/// introduced by this same peer before, or does not exist here yet — a package can never
+/// overwrite another item the device already owns. The item count is capped as well.
+/// See CODE_AUDIT_15 §5.2.
+@MainActor
+public final class PeerImportPolicy {
+    public static let defaultMaximumItems = 256
+
+    public let primaryItemId: UUID
+    public let maximumItems: Int
+    public private(set) var ownedItemIds: Set<UUID>
+    public private(set) var admittedItemIds: Set<UUID> = []
+    public private(set) var rejectedItemCount = 0
+
+    public init(primaryItemId: UUID, ownedItemIds: Set<UUID> = [], maximumItems: Int = PeerImportPolicy.defaultMaximumItems) {
+        self.primaryItemId = primaryItemId
+        self.ownedItemIds = ownedItemIds
+        self.maximumItems = maximumItems
+    }
+
+    /// Ids the peer has introduced so far, to hand back to the caller for the next package.
+    public var introducedItemIds: Set<UUID> { ownedItemIds.union(admittedItemIds) }
+
+    func admit(itemId: UUID, existsLocally: Bool) -> Bool {
+        let isAllowed = itemId == primaryItemId
+            || ownedItemIds.contains(itemId)
+            || !existsLocally
+        guard isAllowed, admittedItemIds.count < maximumItems || admittedItemIds.contains(itemId) else {
+            rejectedItemCount += 1
+            return false
+        }
+        admittedItemIds.insert(itemId)
+        return true
+    }
+}
+
 @MainActor @Observable
 public final class ItemDataImportModel {
     public init() {}
@@ -23,7 +60,28 @@ public final class ItemDataImportModel {
         self.importMode = importMode
     }
 
+    /// Set for data received from a game peer instead of a file the user picked: the sender
+    /// controls every field of it, so imported `FileUrl`s get the strictest sanitising.
+    /// See CODE_AUDIT_15 §5.1 / §6.3.
+    public convenience init(importMode: ImportMode, isUntrustedSource: Bool) {
+        self.init(importMode: importMode)
+        self.isUntrustedSource = isUntrustedSource
+    }
+
+    public private(set) var isUntrustedSource: Bool = false
+
+    /// Limits what a peer's package may write; see `PeerImportPolicy`.
+    public private(set) var peerPolicy: PeerImportPolicy?
+
+    public convenience init(importMode: ImportMode, peerPolicy: PeerImportPolicy?) {
+        self.init(importMode: importMode, isUntrustedSource: true)
+        self.peerPolicy = peerPolicy
+    }
+
     public var importedItems: Int = 0
+    /// Items of the import that could not be decoded or applied. Shown after the import so a
+    /// partly failed file no longer reads as a clean success. See CODE_AUDIT_15 §5.7.
+    public var failedItems: Int = 0
     public var totalImportingItems: Int = 0
     public var isImportRunning: Bool = false
     public var importMode: ImportMode = .merge
@@ -121,6 +179,8 @@ public extension ImportControllable {
 
         await logImport(title: "importStream", count: itemCount, importModel: importModel)
 
+        let importsFromUntrustedSource = await importModel.isUntrustedSource
+        let peerPolicy = await importModel.peerPolicy
         var currentFile: Data?
         var importedIds: Set<UUID> = []
         var locallyReusedFileIds: Set<UUID> = []
@@ -149,6 +209,9 @@ public extension ImportControllable {
                         // (no `MainActor.run` wrapper needed); the wire format is unchanged.
                         let itemVersion = version
                         let newItem = try await itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion)
+                        guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !importsFromUntrustedSource, peerPolicy: peerPolicy) else {
+                            continue
+                        }
                         if let itemFile {
                             if try await addFile(data: itemFile, to: newItem, forceSave: forceSave) {
                                 locallyReusedFileIds.insert(newItem.id)
@@ -161,6 +224,9 @@ public extension ImportControllable {
                         }
                         importedIds.insert(newItem.id)
                     } catch {
+                        // A single undecodable item is skipped (and reported); cancelling stops the import.
+                        if error is CancellationError { throw error }
+                        await recordFailedItem(importModel)
                         await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
                     }
                     break
@@ -168,7 +234,11 @@ public extension ImportControllable {
                     throw ItemDataImportableError.unsupportedDataType
                 }
             } catch {
+                // Framing errors (a truncated block, an unknown token) mean the rest of the
+                // stream cannot be trusted, so they fail the import instead of being logged
+                // while the import reports success. See CODE_AUDIT_15 §5.7.
                 await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
+                throw error
             }
         }
 
@@ -268,8 +338,8 @@ private extension ImportControllable {
     }
 
     func performImport(from url: URL, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {
-        _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         guard let inputStream = InputStream(url: url) else { throw ItemDataImportableError.openError }
 
         inputStream.open()
@@ -293,6 +363,7 @@ private extension ImportControllable {
     @MainActor
     private func beginImport(_ importModel: ItemDataImportModel, totalItems: Int) {
         importModel.importedItems = 0
+        importModel.failedItems = 0
         importModel.totalImportingItems = totalItems
         importModel.isImportRunning = true
     }
@@ -309,11 +380,35 @@ private extension ImportControllable {
     }
 
     @MainActor
+    private func recordFailedItem(_ importModel: ItemDataImportModel) {
+        importModel.failedItems += 1
+    }
+
+    @MainActor
     private func incrementImportedItems(_ importModel: ItemDataImportModel) {
         importModel.importedItems += 1
     }
 
     // MARK: - Item Application
+
+    /// Makes a freshly decoded item safe to apply: its file description came out of the imported
+    /// bytes and is never resolved as-is (CODE_AUDIT_15 §5.1), and a peer's package may only
+    /// write what its `PeerImportPolicy` admits (§5.2). Returns `false` when the item must be
+    /// skipped.
+    @MainActor
+    private func prepareDecodedItem(_ item: any ItemDataAccessable, allowsPrivateRemoteHosts: Bool, peerPolicy: PeerImportPolicy?) -> Bool {
+        var item = item
+        if let importedFileUrl = item.fileUrl {
+            item.fileUrl = importedFileUrl.sanitizedForImport(allowsPrivateRemoteHosts: allowsPrivateRemoteHosts)
+        }
+        guard let peerPolicy else { return true }
+        let existsLocally = itemControllable.itemSync(for: item.id, noGame: true) != nil
+        guard peerPolicy.admit(itemId: item.id, existsLocally: existsLocally) else {
+            Logger.importController.warning("Import skipped a peer item that is not the sender's own module=\(itemControllable.config.module.rawValue, privacy: .public) item=\(item.id, privacy: .public)")
+            return false
+        }
+        return true
+    }
 
     func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false, locallyReusedFileIds: Set<UUID> = []) async throws {
         let mode = await importModel.importMode
@@ -744,11 +839,23 @@ extension InputStream {
         guard size >= 0, size <= Self.maxSingleBlockSize else {
             throw ItemDataImportableError.notEnoughData
         }
-        var readBuffer = [UInt8](repeating: 0, count: size)
-        let readCount = read(&readBuffer, maxLength: size)
-        guard readCount == readBuffer.count else {
-            throw ItemDataImportableError.notEnoughData
+        // Read in bounded chunks instead of allocating `size` bytes up front: a truncated
+        // file with a large declared size used to allocate (and zero) up to 512 MB before
+        // the first read could fail, and a partial read was treated as a failure.
+        // See CODE_AUDIT_15 §5.7.
+        var data = Data()
+        data.reserveCapacity(min(size, Self.readChunkSize))
+        var chunk = [UInt8](repeating: 0, count: min(size, Self.readChunkSize))
+        while data.count < size {
+            let wanted = min(chunk.count, size - data.count)
+            let readCount = read(&chunk, maxLength: wanted)
+            guard readCount > 0 else {
+                throw ItemDataImportableError.notEnoughData
+            }
+            data.append(chunk, count: readCount)
         }
-        return Data(bytes: readBuffer, count: size)
+        return data
     }
+
+    private static let readChunkSize = 1_024 * 1_024
 }

@@ -5,7 +5,7 @@ import Network
 
 @testable import GameRPG
 
-final class GameListnerAbstractionMock: ListenerManaging, @unchecked Sendable {
+final class GameListenerAbstractionMock: ListenerManaging, @unchecked Sendable {
     var calledStopListening = 0
     @MainActor func stopListening() {
         calledStopListening += 1
@@ -17,7 +17,7 @@ final class GameListnerAbstractionMock: ListenerManaging, @unchecked Sendable {
     }
 }
 
-final class GameListnerDelegateMock: ListenerManagerDelegate, @unchecked Sendable {
+final class GameListenerDelegateMock: ListenerManagerDelegate, @unchecked Sendable {
     var calledCancelled = 0
     var calledNewConnection = 0
 

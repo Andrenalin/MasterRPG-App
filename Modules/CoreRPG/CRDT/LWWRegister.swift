@@ -69,6 +69,7 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
 
 extension LWWRegister: Replicable {
     public mutating func merging(with other: LWWRegister<ActorID, T>) {
+        MonotonicWallClock.observe(other._storage.clockId.clock)
         if _storage <= other._storage {
             _storage = other._storage
         }
@@ -77,9 +78,10 @@ extension LWWRegister: Replicable {
     /// Returns a new counter by merging two counter instances.
     /// - Parameter other: The counter to merge.
     public func merged(with other: LWWRegister) -> LWWRegister {
+        MonotonicWallClock.observe(other._storage.clockId.clock)
         // ternary operator, since I can never entirely remember the sequence:
         // expression ? valueIfTrue : valueIfFalse
-        _storage <= other._storage ? other : self
+        return _storage <= other._storage ? other : self
     }
 }
 
@@ -113,6 +115,7 @@ extension LWWRegister: DeltaCRDT {
     /// Returns a new instance of a register with the delta you provide merged into the current register.
     /// - Parameter delta: The incremental, partial state to merge.
     public func mergeDelta(_ delta: Metadata) -> Self {
+        MonotonicWallClock.observe(delta.clockId.clock)
         var newLWW = self
         newLWW._storage = _storage <= delta ? delta : _storage
         return newLWW
@@ -121,6 +124,7 @@ extension LWWRegister: DeltaCRDT {
     /// Merges another register into the current instance.
     /// - Parameter other: The regsister to merge.
     public mutating func mergingDelta(_ delta: Metadata) throws {
+        MonotonicWallClock.observe(delta.clockId.clock)
         if _storage <= delta {
             _storage = delta
         }

@@ -9,7 +9,7 @@ import TipKit
 struct SelectedAdventureView: View {
     let root: GameRoot
 
-    @AppStorage("lastAdventureUUID", store: .standard)
+    @AppStorage(GameStorageKeys.lastAdventureUUID, store: .standard)
     private var lastAdventureUUID: String = ""
 
     @Environment(AppWindowSizeModel.self) private var appSizeModel

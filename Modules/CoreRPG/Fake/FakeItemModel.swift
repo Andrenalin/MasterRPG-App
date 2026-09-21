@@ -3,7 +3,7 @@
 import SwiftUI
 
 @MainActor @Observable
-final class FakeItemModel: nonisolated Identifiable, @unchecked Sendable {
+final class FakeItemModel: nonisolated Identifiable {
     
     var entries: [FakeEntryModel]
     

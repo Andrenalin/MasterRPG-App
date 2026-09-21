@@ -52,7 +52,7 @@ public extension SearchControllable {
                 var results: [SearchResult] = []
                 for itemId in itemIds {
                     guard let item = itemControllable.itemSync(for: itemId),
-                          item.displayState == 0, !item.specialCategory else { continue }
+                          item.displayState == DisplayStateMask.fullVisible.rawValue, !item.specialCategory else { continue }
                     var result = makeResult(item: item, searchText: "", displayMode: displayMode)
                     result.canOpen = !item.entries.isEmpty
                     results.append(result)
@@ -64,7 +64,7 @@ public extension SearchControllable {
             var allItems: [(id: UUID, item: any ItemDataAccessable)] = []
             for itemId in itemIds {
                 guard let item = itemControllable.itemSync(for: itemId),
-                      item.displayState == 0, !item.specialCategory else { continue }
+                      item.displayState == DisplayStateMask.fullVisible.rawValue, !item.specialCategory else { continue }
                 allItems.append((itemId, item))
             }
 
@@ -176,14 +176,14 @@ public extension SearchControllable {
     /// Non-empty text: delegates to `inspectorResult` which handles folder recursion.
     @MainActor private func inspectorScopedListResults(searchText: String, focusId: UUID, displayMode: ListDisplayModel.DisplayMode) async -> [SearchResult] {
         guard let focusedItem = await itemControllable.item(for: focusId),
-              focusedItem.displayState == 0 else { return [] }
+              focusedItem.displayState == DisplayStateMask.fullVisible.rawValue else { return [] }
 
         if searchText.isEmpty {
             if focusedItem.specialCategory {
                 var results: [SearchResult] = []
                 for entry in focusedItem.entries {
                     guard let child = itemControllable.itemSync(for: entry.childId),
-                          child.displayState == 0 else { continue }
+                          child.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
                     var result = makeResult(item: child, searchText: "", displayMode: displayMode, parentEntryId: entry.id)
                     result.canOpen = !child.entries.isEmpty
                     results.append(result)

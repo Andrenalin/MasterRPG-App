@@ -82,7 +82,12 @@ extension MasterController {
         }
 
         do {
-            try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data)
+            // The package comes from a player: it may write that player's Character and
+            // items it introduces, never another item this device already owns.
+            // See CODE_AUDIT_15 §5.2.
+            let policy = root.gameModel.peerImportPolicy(senderId: model.sender.id, primaryItemId: characterId)
+            try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data, policy: policy)
+            root.gameModel.recordPeerImport(policy, senderId: model.sender.id)
         } catch {
             // Previously this throw only reached the generic catch-all in
             // `process(_:)`, which logs and sends nothing back — the player

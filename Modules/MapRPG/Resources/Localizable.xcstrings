@@ -21,6 +21,12 @@
     },
     "%@, %@" : {
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -227,7 +233,14 @@
       }
     },
     "Active Battle Attacker" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktiver Angreifer im Kampf"
+          }
+        }
+      }
     },
     "Add map area" : {
       "localizations" : {
@@ -1225,7 +1238,14 @@
       }
     },
     "Highlight Pin" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin hervorheben"
+          }
+        }
+      }
     },
     "Hit Points Value" : {
       "comment" : "A label for the hit points value.",
@@ -1688,7 +1708,14 @@
       }
     },
     "Photo" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
     },
     "Pin Scale" : {
       "localizations" : {
@@ -1707,7 +1734,14 @@
       }
     },
     "Pins" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pins"
+          }
+        }
+      }
     },
     "Player" : {
       "localizations" : {
@@ -1839,7 +1873,14 @@
       }
     },
     "Remove Pin Highlight" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin-Hervorhebung entfernen"
+          }
+        }
+      }
     },
     "Remove Point" : {
       "localizations" : {
@@ -2008,7 +2049,14 @@
       }
     },
     "Rotation" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drehung"
+          }
+        }
+      }
     },
     "Round %lld" : {
       "extractionState" : "stale",
@@ -2410,7 +2458,15 @@
       }
     },
     "Updated pin from character" : {
-
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin aus Charakter aktualisiert"
+          }
+        }
+      }
     },
     "Updated pin from charakter" : {
       "extractionState" : "stale",
@@ -2510,7 +2566,14 @@
       }
     },
     "Walls" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wände"
+          }
+        }
+      }
     },
     "What should the map be called?" : {
       "comment" : "Request value dialog for the name of a new map.",

@@ -18,7 +18,7 @@ extension SearchController {
     ///
     /// Filtering rules:
     /// - `groupId == nil` — excludes hidden sub-values that belong to a character (`groupId != nil`)
-    /// - `displayState == 0` — excludes archived/hidden items
+    /// - `displayState == DisplayStateMask.fullVisible.rawValue` — excludes archived/hidden items
     /// - `parentId` is ignored here because it is used for folder nesting; a character inside a folder
     ///   still has `groupId == nil` and must appear in search results.
     ///
@@ -37,7 +37,7 @@ extension SearchController {
             guard !Task.isCancelled else { break }
             guard let item = await itemController.item(for: itemId),
                   item.groupId == nil,      // root characters and folders only
-                  item.displayState == 0 else { continue }
+                  item.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
 
             if item.specialCategory {
                 // Folder / collection — search its children entries (global = all fields)
@@ -134,7 +134,7 @@ extension SearchController {
             guard !Task.isCancelled else { break }
             guard let item = await itemController.item(for: itemId),
                   item.groupId == nil,
-                  item.displayState == 0,
+                  item.displayState == DisplayStateMask.fullVisible.rawValue,
                   !item.specialCategory else { continue }
             guard itemMatchesFilter(item, searchText: searchText, displayMode: displayMode) else { continue }
             foundResults.append(makeResult(item: item, searchText: searchText, displayMode: displayMode))
@@ -172,7 +172,7 @@ extension SearchController {
                 guard let item = await itemController.item(for: itemId),
                       item.groupId == nil,
                       item.parentId == nil,
-                      item.displayState == 0 else { continue }
+                      item.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
                 if let node = await buildCharacterFolderNode(itemId: itemId, searchText: searchText, displayMode: displayMode, includeTags: includeTags) {
                     results.append(node)
                 }
@@ -191,7 +191,7 @@ extension SearchController {
               !Task.isCancelled,
               let item = await itemController.item(for: itemId),
               item.groupId == nil,
-              item.displayState == 0 else { return nil }
+              item.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
 
         let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: includeTags)
 
@@ -354,7 +354,7 @@ extension SearchController {
     ///
     /// - `parentId != nil`: scoped to the given character. All results carry that character's
     ///   `itemId` so the UI navigates back to the character, not into a sub-value group.
-    /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == 0`).
+    /// - `parentId == nil`: walks all root characters (`groupId == nil`, `displayState == DisplayStateMask.fullVisible.rawValue`).
     ///
     /// Empty search is handled properly:
     /// - `parentId != nil`, empty → delegates to `focusedCharacterInspector` (all entries shown)
@@ -376,7 +376,7 @@ extension SearchController {
                 guard !Task.isCancelled else { break }
                 guard let character = await itemController.item(for: itemId),
                       character.groupId == nil,
-                      character.displayState == 0 else { continue }
+                      character.displayState == DisplayStateMask.fullVisible.rawValue else { continue }
                 if searchText.isEmpty {
                     foundResults.append(makeResult(item: character, searchText: "", displayMode: displayMode))
                 } else {

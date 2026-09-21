@@ -109,9 +109,12 @@ private extension ItemProviderImporter {
             throw Error.noItems
         }
 
-        let data = try await data(from: url)
+        // Files are downsampled straight from disk and remote images are downloaded to disk
+        // first, so an oversized original is never read into memory whole (the extension is
+        // killed at ~120 MB). See CODE_AUDIT_15 §7.1.
+        let data = try await imageData(from: url)
         try Task.checkCancellation()
-        return ImageItem(imageData: downsampledIfNeeded(data))
+        return ImageItem(imageData: data)
     }
 
     /// A single large photo (ProRAW, HEIC panorama) can on its own exceed the Share
@@ -124,6 +127,43 @@ private extension ItemProviderImporter {
               let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return data
         }
+        return downsampled(source) ?? data
+    }
+
+    /// Reads the image at `url` with a bounded memory footprint: a large file is downsampled
+    /// from disk by ImageIO, only a small one is read into memory (and then passed through).
+    nonisolated static func imageData(fromFile url: URL) async throws -> Data {
+        let task = Task.detached(priority: .userInitiated) { () throws -> Data in
+            try Task.checkCancellation()
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            guard size <= maximumSourceFileByteSize else { throw Error.failedToLoad }
+            if size > maximumRawImageByteSize,
+               let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+               let downsampledData = downsampled(source) {
+                return downsampledData
+            }
+            return downsampledIfNeeded(try Data(contentsOf: url))
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    nonisolated static func imageData(from url: URL) async throws -> Data {
+        if url.isFileURL {
+            return try await imageData(fromFile: url)
+        }
+        // A shared web page URL is not an image: download to disk (not memory), require an
+        // image content type and cap the size before decoding anything.
+        let (downloadedUrl, response) = try await URLSession.shared.download(from: url)
+        defer { try? FileManager.default.removeItem(at: downloadedUrl) }
+        guard response.mimeType?.hasPrefix("image/") == true else { throw Error.failedToLoad }
+        return try await imageData(fromFile: downloadedUrl)
+    }
+
+    private nonisolated static func downsampled(_ source: CGImageSource) -> Data? {
         let thumbnailOptions: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceThumbnailMaxPixelSize: maximumDownsampledPixelDimension,
@@ -131,7 +171,7 @@ private extension ItemProviderImporter {
             kCGImageSourceShouldCacheImmediately: true,
         ]
         guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions as CFDictionary) else {
-            return data
+            return nil
         }
         let output = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(
@@ -140,7 +180,7 @@ private extension ItemProviderImporter {
             1,
             nil
         ) else {
-            return data
+            return nil
         }
         CGImageDestinationAddImage(
             destination,
@@ -148,7 +188,7 @@ private extension ItemProviderImporter {
             [kCGImageDestinationLossyCompressionQuality: JPEGQuality.downsampledImport] as CFDictionary
         )
         guard CGImageDestinationFinalize(destination) else {
-            return data
+            return nil
         }
         return output as Data
     }
@@ -156,6 +196,10 @@ private extension ItemProviderImporter {
     nonisolated static let maximumRawImageByteSize = 8 * 1_024 * 1_024
     nonisolated static let maximumDownsampledPixelDimension: CGFloat = 4_096
     nonisolated static let maximumTotalImagePayloadSize = 60 * 1_024 * 1_024
+    /// Largest image file (or download) the extension will even open.
+    nonisolated static let maximumSourceFileByteSize = 256 * 1_024 * 1_024
+    /// Text shared into an entry is small; anything larger is not text worth loading.
+    nonisolated static let maximumTextByteSize = 5 * 1_024 * 1_024
 
     nonisolated static func loadText(provider: NSItemProvider, type: UTType) async throws -> String {
         let item = try await loadItem(provider: provider, type: type)
@@ -208,8 +252,10 @@ private extension ItemProviderImporter {
 
     nonisolated static func data(from url: URL) async throws -> Data {
         if url.isFileURL {
-            let task = Task.detached(priority: .userInitiated) {
+            let task = Task.detached(priority: .userInitiated) { () throws -> Data in
                 try Task.checkCancellation()
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size <= maximumTextByteSize else { throw Error.failedToLoad }
                 return try Data(contentsOf: url)
             }
             return try await withTaskCancellationHandler {
@@ -219,7 +265,10 @@ private extension ItemProviderImporter {
             }
         }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
-        return data
+        let (downloadedUrl, _) = try await URLSession.shared.download(from: url)
+        defer { try? FileManager.default.removeItem(at: downloadedUrl) }
+        let size = try downloadedUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard size <= maximumTextByteSize else { throw Error.failedToLoad }
+        return try Data(contentsOf: downloadedUrl)
     }
 }

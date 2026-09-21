@@ -19,7 +19,7 @@ struct ImportRouteDestinationView: View {
 
     @Environment(AdventureRootModel.self) private var root
 
-    @AppStorage("lastAdventureUUID", store: .standard)
+    @AppStorage(GameStorageKeys.lastAdventureUUID, store: .standard)
     private var lastAdventureUUID: String = ""
 
     var body: some View {

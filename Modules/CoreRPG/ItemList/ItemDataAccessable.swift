@@ -129,7 +129,7 @@ public extension ItemDataAccessable {
     }
 
     func urlAdr(linkNumber: Int) -> String {
-        "\(URL.appScheme)://\(Self.typeId.token)/\(linkNumber)/\(id)"
+        LinkBuilder.address(module: Self.typeId, linkNumber: linkNumber, itemId: id)
     }
 
     func urlAdr(linkNumber: Int, entryId: UUID) -> String {

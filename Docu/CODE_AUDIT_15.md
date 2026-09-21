@@ -650,3 +650,79 @@ For the Critical and High items, these are the lines that prove the claim:
 - **Compiler baseline** — a clean `xcodebuild -workspace MasterRPG.xcworkspace -scheme MasterRPG -destination 'generic/platform=iOS Simulator' build` finished `BUILD SUCCEEDED` with no Swift warnings.
 
 If any finding doesn't reproduce when you visit the line, ping me with the specific reference and I'll re-investigate.
+
+---
+
+## 13. Remediation status (2026-09-21)
+
+Status of every numbered finding after the remediation pass. **Fixed** = changed and built on iOS, macOS, tvOS and visionOS with zero warnings; unit tests pass except the pre-existing `ExternalImportTests` race (a static commit-in-progress flag under parallel tests, verified identical on the untouched baseline). Regression tests were added for §5.1, §5.2, §5.3, §5.11, §6.1 (handshake caps), §6.3, §9.15. Items marked *not runtime-verified* need a manual check on device.
+
+| § | Status | Notes |
+|---|---|---|
+| 3.1 | Fixed | Coordinated file access is capped by a cancellable limiter (never more than `cores-1`, max 4, blocked threads). |
+| 3.2 | Fixed | LAN decode/encode run `@concurrent`. Relaying the original bytes instead of re-encoding was not done. |
+| 3.3 | Fixed | `importNetwork` is `@concurrent`; block reads are chunked (no up-front 512 MB allocation). |
+| 3.4 | Fixed | `isolated deinit` in the four Navigator classes. |
+| 3.5 | Partly | Call-site file/line now reach `assumeIsolated`; the runtime-trap contract itself remains by design. |
+| 3.6 | Fixed | Ordered `AsyncStream` state delivery, one terminal outcome, no report after a local cancel. |
+| 3.7 | Fixed | Generation token on listener runs. |
+| 3.8 | Fixed | Observation re-armed before scheduling. visionOS; *not runtime-verified*. |
+| 3.9 | Fixed | Cancellation no longer triggers an immediate cleanup. |
+| 3.10 | Deferred | Needs per-window "mounted" readiness signals on macOS/visionOS; not safe to change blind. |
+| 3.11 | Deferred | visionOS-only view-state rework; needs on-device validation. |
+| 3.12 | Fixed | `createNewFileUrl`/`createFileUrl` are `@concurrent`. |
+| 3.13 | Fixed | Ordered, lock-serialized Keychain write buffer. |
+| 3.14 | Fixed | Serialized widget write; an older roll cannot overwrite a newer one. |
+| 3.15 | No change | Verified: `handleTextLink` runs only on a link tap, so the task fires once per tap. |
+| 3.16 | Fixed | Redundant `@unchecked Sendable` removed from the `@MainActor` classes. |
+| 3.17 | Fixed | Global `KeyPath` conformance removed; two key-path captures fixed properly. |
+| 4.1 | n/a | Informational. |
+| 4.2 | Fixed | Dead OS branch, deprecated shims and unused dismiss triggers removed. |
+| 4.3 | No change | UIKit-only image crop, rule does not apply. |
+| 4.4 | Fixed | PDF load cancellation forwarded. |
+| 5.1 | Fixed | Traversal components dropped at every builder; import normalises every decoded `FileUrl`. Tests added. |
+| 5.2 | Fixed | `PeerImportPolicy`: a peer may write its own item, items it introduced and new items only, capped in size. |
+| 5.3 | Fixed | Hybrid logical clock (`MonotonicWallClock.observe`) on every merge; non-finite clocks rejected at decode. |
+| 5.4 | Fixed | Store files destroyed together; transient errors are not offered the destructive recovery. |
+| 5.5 | Fixed | Atomic writes, corrupt file kept aside, coalesced saves. |
+| 5.6 | Fixed | Failures propagate; queue restored on failure; the surviving duplicate is chosen deterministically (not "newest"). |
+| 5.7 | Fixed | Framing errors fail the import, failed items are counted and shown, export writes a temp file then replaces. |
+| 5.8 | Fixed | Links/tags written through the context instead of batch requests. *Not verified on two devices.* |
+| 5.9 | Partly | Implausible rolls are refused (size, dice count, sum bounds). Rolling on the master is a design change. |
+| 5.10 | Fixed | |
+| 5.11 | Fixed | Count clamp and saturating arithmetic. Tests added. |
+| 5.12 | Fixed | |
+| 5.13 | Fixed | |
+| 5.14 | Fixed | macOS build verified. |
+| 6.1 | Partly | Pending-handshake caps (16 total, 3 per source) and a 32-connection cap added. **The 4-digit secret is unchanged: lengthening it changes the join UI, stored codes and cross-version compatibility, which needs a product decision.** |
+| 6.2 | Fixed | |
+| 6.3 | Fixed | Peer-supplied `.url` items must be public hosts; downloads capped at 256 MB. A GM's own imports may keep LAN hosts. Explicit GM approval before fetching was not added. |
+| 6.4 | Deferred | A real fix needs chunked large-payload transport on the LAN path (protocol change). |
+| 6.5 | Fixed | User content in logs is `.private`. |
+| 7.1 | Fixed | Files downsampled from disk, downloads to disk with an image-type check and size caps. |
+| 7.2 | Deferred | Opening the store without CloudKit options in the extension needs on-device verification of history-based export. |
+| 7.3 | Fixed | Archives decoded one at a time. |
+| 7.4 | Fixed | Snapshot publishing debounced (750 ms). |
+| 8.1, 8.3 | n/a | Informational. |
+| 8.2 | No change | Documented exception (gesture extension in another file). |
+| 8.4 | Not done | Style guideline, Low. |
+| 8.5 | Partly | 88 missing German strings translated. ~250 stale keys remain: refresh the catalogs in Xcode (deleting them blindly could drop dynamically-looked-up translations). |
+| 9.1–9.3, 9.5, 9.6 | Fixed | Navigator checkpoints/flow, blur/shader files, CustomBars, `ChatViewModel`, `SwiftDataController` removed. Stale snapshot roots removed; the snapshot test target compiles again. |
+| 9.4 | Partly | 10 verified-dead files removed. Three the audit listed (`SheetFullScreenModifier`, `TabBarMinimizeBehavior26`, `GameOverlayTabViewModifier`) are still used and were kept; dead functions inside live files were not pruned. |
+| 9.7 | Mostly | 22 single-occurrence dead members plus `PackageProducts.swift` and `LinkWindowCommandsView.swift`; members with more than one reference were left. |
+| 9.8 | Fixed | Used spies moved to the test target, unreferenced ones deleted. |
+| 9.9 | Deferred | The Photo/Pdf handlers differ in real guards (`photoSharing` vs `hasLocalFileData`); unifying needs a per-module behavior decision. |
+| 9.10 | Fixed | One shared package data source and path encoder. |
+| 9.11, 9.12, 9.14 | Deferred | Large per-module consolidations (~7,000 LOC); need their own change set. |
+| 9.13 | No change | The shared tail is already centralized; remaining differences are intentional (per-module link types and content lookups). |
+| 9.15 | Fixed | `LinkBuilder`; tests added. |
+| 9.16 | Fixed | 54 comparisons use `DisplayStateMask` names. |
+| 9.17 | Fixed | `SecurityScopedAccess` keeps start/stop balanced; the unbalanced sites were a latent bug. |
+| 9.18 | Partly | `GameRoot` split out of `GameRootModel.swift`; other files unchanged. |
+| 9.19 | Fixed | |
+| 9.20 | Partly | Message limit and `@AppStorage` keys named once; retention windows left. |
+| 9.21 | Deferred | Needs a Release-configuration check. |
+| 9.22 | No change | The `print` is inside `#if DEBUG` in a `#Preview`; not shipping code. |
+| 9.23 | Fixed | |
+| 9.24, 9.25 | Deferred | Test-helper consolidation and rewriting 919 audit citations in comments. |
+

@@ -45,7 +45,7 @@ struct DropChooseView: View {
             }
             .accessibilityLabel(Text("Remove", bundle: .module))
             .frame(minWidth: 44, minHeight: 44)
-            .borderLessTVBottonStyle()
+            .borderLessTVButtonStyle()
             .padding(4)
             .contentShape(.circle)
             .opacity(selectionModel.itemId != nil ? 1.0 : 0.0)

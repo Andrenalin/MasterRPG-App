@@ -17,25 +17,18 @@ import SwiftUI
 /// }
 /// ```
 /// Navigators work with other navigators in the navigation tree to enable global operations like
-/// sending navigation values or returning to a parent's checkpoint.
-/// ```swift
-/// Button("Cancel") {
-///     navigator.returnToCheckpoint(.home)
-/// }
-/// ```
+/// sending navigation values.
 /// Navigators are accessible from the environment. Just access them from within any view contained by
 /// a ``ManagedNavigationStack``.
 /// ```swift
 /// @Environmnt(\.navigator) var navigator
 /// ```
-// @unchecked Sendable: the type is `@MainActor`-isolated (all navigation
-// state is only ever read/written on the main actor), but the `@Observable`
-// macro's synthesized `ObservationRegistrar` storage isn't itself provably
-// `Sendable`, so automatic conformance can't be derived — the `@MainActor`
-// isolation is the actual safety guarantee here, not the annotation.
+// Sendable through its `@MainActor` isolation: all navigation state is only ever read/written on
+// the main actor. (No `@unchecked` — it would keep compiling if the isolation were ever removed.
+// See CODE_AUDIT_15 §3.16.)
 @MainActor
 @Observable
-public final class Navigator: @unchecked Sendable {
+public final class Navigator {
 
     /// Identifies who owns and manages a given navigator in the tree.
     public enum Owner: Int, Sendable {
@@ -60,7 +53,6 @@ public final class Navigator: @unchecked Sendable {
     /// Navigation path for the current ManagedNavigationStack
     internal var path: NavigationPath = .init() {
         didSet {
-            cleanCheckpoints()
             isEmpty = path.isEmpty
             count = path.count
         }
@@ -71,9 +63,6 @@ public final class Navigator: @unchecked Sendable {
 
     /// Presentation trigger for .cover navigation methods.
     internal var cover: AnyNavigationDestination? = nil
-
-    /// Checkpoints managed by this navigation stack
-    internal var checkpoints: [String: AnyNavigationCheckpoint] = [:]
 
     /// Navigation locks, if any
     internal var navigationLocks: Set<UUID> = []
@@ -170,15 +159,6 @@ public final class Navigator: @unchecked Sendable {
     @ObservationIgnored
     internal var resumeTask: Task<Void, Never>?
 
-    // MARK: - Static Properties
-
-    /// The currently active navigator
-    @available(*, deprecated, renamed: "navigator.currentNavigator", message: "Static global doesn't play well in multi-scene environments.")
-    public static var current: Navigator? { _staticCurrent }
-
-    /// Backing storage for the deprecated ``current`` property.
-    private static weak var _staticCurrent: Navigator?
-
     /// Internal set/logging mechanism for current navigator
     internal func set(current: Navigator?) {
         guard let current, currentNavigator?.id != current.id else {
@@ -186,7 +166,6 @@ public final class Navigator: @unchecked Sendable {
         }
         current.log(.lifecycle(.current(current.id, name: current.name)))
         root._current = current
-        Navigator._staticCurrent = current
     }
 
     // MARK: - Computed Properties
@@ -229,14 +208,14 @@ public final class Navigator: @unchecked Sendable {
     }
 
     /// Sentinel code removes child from parent when Navigator is dismissed or deallocated.
-    deinit {
+    // `isolated deinit` runs on the main actor wherever the last reference is dropped, unlike a
+    // plain deinit whose `assumeIsolated` trapped off-main. See CODE_AUDIT_15 §3.4.
+    isolated deinit {
         let parent = self.parent
         let child = self
-        MainActor.assumeIsolated {
-            child.log(.lifecycle(.deinit))
-            child.resumeTask?.cancel()
-            parent?.removeChild(child)
-        }
+        child.log(.lifecycle(.deinit))
+        child.resumeTask?.cancel()
+        parent?.removeChild(child)
     }
 
     // MARK: - Navigation tree support

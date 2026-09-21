@@ -15,7 +15,7 @@ extension EditController {
         // editModel returns ValueModel, giving typed access to ValueEntryModel.valueId
         var valueIdOwners: [UUID: [UUID]] = [:]
         for itemId in itemIds {
-            guard let item = editModel(for: itemId), item.displayState != 2 else { continue }
+            guard let item = editModel(for: itemId), item.displayState != DisplayStateMask.totalHidden.rawValue else { continue }
             for entry in item.entries {
                 guard let valueId = entry.valueId else { continue }
                 valueIdOwners[valueId, default: []].append(itemId)
@@ -24,15 +24,15 @@ extension EditController {
 
         for itemId in itemIds {
             guard let item = itemControllable.itemSync(for: itemId) as? ValueModel,
-                  item.displayState != 2 else { continue }
+                  item.displayState != DisplayStateMask.totalHidden.rawValue else { continue }
 
             if item.isFolder && item.groupId == nil {
                 repairFolderConstraints(itemId: itemId)
-            } else if item.category == itemControllable.collectionCategory && item.displayState == 0 && item.groupId == nil {
+            } else if item.category == itemControllable.collectionCategory && item.displayState == DisplayStateMask.fullVisible.rawValue && item.groupId == nil {
                 repairCollectionConstraints(itemId: itemId)
-            } else if item.displayState == 1 {
+            } else if item.displayState == DisplayStateMask.groupHidden.rawValue {
                 repairGroupItemConstraints(itemId: itemId, valueIdOwners: valueIdOwners)
-            } else if item.displayState == 0 && item.groupId == nil && !item.specialCategory {
+            } else if item.displayState == DisplayStateMask.fullVisible.rawValue && item.groupId == nil && !item.specialCategory {
                 repairCharacterItemConstraints(itemId: itemId)
             }
         }
@@ -46,14 +46,14 @@ extension EditController {
             guard let child = itemControllable.itemSync(for: childId) else { return nil }
             let badParent = child.parentId != itemId
             let isNestedFolder = child.isFolder
-            let isHidden = child.displayState != 0
+            let isHidden = child.displayState != DisplayStateMask.fullVisible.rawValue
             guard badParent || isNestedFolder || isHidden else { return nil }
             return child.name
         }
 
         item.entries = item.entries.filter { entry in
             guard let child = itemControllable.itemSync(for: entry.childId),
-                  child.displayState == 0,
+                  child.displayState == DisplayStateMask.fullVisible.rawValue,
                   child.parentId == itemId,
                   !child.isFolder
             else { return false }
@@ -83,13 +83,13 @@ extension EditController {
             guard let child = itemControllable.itemSync(for: entry.childId) as? ValueModel else {
                 return "<missing \(entry.childId)>"
             }
-            let invalid = child.displayState != 0 || child.groupId != nil || child.specialCategory
+            let invalid = child.displayState != DisplayStateMask.fullVisible.rawValue || child.groupId != nil || child.specialCategory
             return invalid ? child.name : nil
         }
 
         item.entries = item.entries.filter { entry in
             guard let child = itemControllable.itemSync(for: entry.childId) as? ValueModel,
-                  child.displayState == 0,
+                  child.displayState == DisplayStateMask.fullVisible.rawValue,
                   child.groupId == nil,
                   !child.specialCategory
             else { return false }
@@ -109,7 +109,7 @@ extension EditController {
         // Repair 1: orphaned parentId — item not present in the folder's entries
         if let parentId = item.parentId {
             let isInFolder = itemControllable.itemSync(for: parentId).map { parent in
-                parent.displayState != 2 && parent.isFolder && parent.entries.contains { $0.childId == itemId }
+                parent.displayState != DisplayStateMask.totalHidden.rawValue && parent.isFolder && parent.entries.contains { $0.childId == itemId }
             } ?? false
             if !isInFolder {
                 let parentName = itemControllable.nameSync(itemId: parentId)
@@ -119,7 +119,7 @@ extension EditController {
             }
         }
 
-        // Repair 2: entry.valueId must only point to GroupItems (displayState == 1)
+        // Repair 2: entry.valueId must only point to GroupItems (displayState == DisplayStateMask.groupHidden.rawValue)
         var entriesChanged = false
         let cleanedEntries: [ValueEntryModel] = item.entries.map { entry in
             guard let valueId = entry.valueId else { return entry }
@@ -133,7 +133,7 @@ extension EditController {
                     diceId: entry.diceId, valueId: nil, displayState: entry.displayState
                 )
             }
-            guard target.displayState == 1 else {
+            guard target.displayState == DisplayStateMask.groupHidden.rawValue else {
                 if target.groupId == itemId, let groupItem = editModel(for: valueId) {
                     groupItem.parentId = nil
                     groupItem.displayState = 1

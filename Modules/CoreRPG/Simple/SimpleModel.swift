@@ -14,7 +14,7 @@ import Observation
 /// nothing), every mutating/comparison method here is real: `SheetRootModel`
 /// editing sessions built on this type actually apply and reflect edits.
 @MainActor @Observable
-public final class SimpleModel: nonisolated Identifiable, @unchecked Sendable {
+public final class SimpleModel: nonisolated Identifiable {
     nonisolated public init(
         id: UUID = UUID(),
         name: String = "",

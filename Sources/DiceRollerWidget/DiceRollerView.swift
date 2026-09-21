@@ -145,7 +145,7 @@ struct DiceRollerView: View {
     }
 
     private func loadHistory() {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+        let defaults = UserDefaults.appGroupDefaults
         if let data = defaults?.data(forKey: UserDefaults.DiceKeys.rollHistory),
            let history = try? JSONDecoder().decode([DiceResultModel].self, from: data) {
             // Also trims a larger history persisted before `maxRollHistoryCount`
@@ -155,7 +155,7 @@ struct DiceRollerView: View {
     }
 
     private func saveHistory() {
-        let defaults = UserDefaults(suiteName: UserDefaults.appGroupString)
+        let defaults = UserDefaults.appGroupDefaults
         if let data = try? JSONEncoder().encode(rollHistory) {
             defaults?.set(data, forKey: UserDefaults.DiceKeys.rollHistory)
         }

@@ -266,7 +266,14 @@
       }
     },
     "Close" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        }
+      }
     },
     "Confirm" : {
       "extractionState" : "stale",
@@ -372,7 +379,14 @@
       }
     },
     "Created item %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eintrag %@ erstellt"
+          }
+        }
+      }
     },
     "Delete Table" : {
       "comment" : "Intent title for deleting a table.",
@@ -531,13 +545,34 @@
       }
     },
     "Do you want to go to the item?" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Möchtest du zum Eintrag wechseln?"
+          }
+        }
+      }
     },
     "Done" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        }
+      }
     },
     "Edit as Sheet" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Bogen bearbeiten"
+          }
+        }
+      }
     },
     "Entries" : {
       "localizations" : {
@@ -679,7 +714,14 @@
       }
     },
     "No" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nein"
+          }
+        }
+      }
     },
     "No Entries" : {
       "localizations" : {
@@ -750,10 +792,24 @@
       }
     },
     "Outcome" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ergebnis"
+          }
+        }
+      }
     },
     "Outcome: %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ergebnis: %@"
+          }
+        }
+      }
     },
     "Player Roll" : {
       "extractionState" : "stale",
@@ -910,10 +966,24 @@
       }
     },
     "Save" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichern"
+          }
+        }
+      }
     },
     "Save and Share" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speichern und teilen"
+          }
+        }
+      }
     },
     "Search Tables" : {
       "comment" : "Title of the intent to search for tables.",
@@ -982,10 +1052,24 @@
       }
     },
     "Send to %@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An %@ senden"
+          }
+        }
+      }
     },
     "Send to all" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An alle senden"
+          }
+        }
+      }
     },
     "Share" : {
       "extractionState" : "stale",
@@ -1254,7 +1338,14 @@
       }
     },
     "Yes" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

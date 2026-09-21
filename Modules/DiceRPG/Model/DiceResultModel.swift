@@ -52,6 +52,22 @@ public struct DiceResultModel: Equatable, Hashable, Codable, Sendable, Identifia
 }
 
 public extension DiceResultModel {
+    /// Bounds for a roll another device reports. The master cannot re-roll a player's dice, but
+    /// it can refuse absurd values (forged sums, oversized payloads, hundreds of dice) that
+    /// would otherwise set initiative or trigger a table outcome. See CODE_AUDIT_15 §5.9.
+    static let maximumReportedValuesLength = 512
+    static let maximumReportedDiceCount = 100
+    static let maximumReportedSum = 1_000_000
+
+    /// Whether a roll reported by a peer is within sane bounds.
+    var isPlausibleReport: Bool {
+        values.count <= Self.maximumReportedValuesLength
+            && diceModel.dice.count <= Self.maximumReportedDiceCount
+            && sum.magnitude <= UInt(Self.maximumReportedSum)
+    }
+}
+
+public extension DiceResultModel {
     @MainActor
     init(diceModel: DiceModel) {
         self.init(diceModel: DiceSnapshot(diceModel))

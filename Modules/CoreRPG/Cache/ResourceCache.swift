@@ -94,15 +94,6 @@ public final class ResourceCache: Sendable {
         inFlightRequests.removeValue(forKey: key)
     }
 
-    /// Clear all cached data
-    public func clearAll() {
-        dataCache.removeAll()
-        for task in inFlightRequests.values {
-            task.cancel()
-        }
-        inFlightRequests.removeAll()
-    }
-
     /// Get current cache size
     public var cacheSize: Int {
         dataCache.values.reduce(0) { $0 + $1.count }

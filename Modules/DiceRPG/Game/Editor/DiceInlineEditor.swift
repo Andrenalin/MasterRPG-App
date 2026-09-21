@@ -29,7 +29,7 @@ struct DiceInlineEditor: View {
                         }
                         .accessibilityLabel(Text("Remove \(die.die.text) die", bundle: .module))
                         .frame(minWidth: 44, minHeight: 44)
-                        .borderLessTVBottonStyle()
+                        .borderLessTVButtonStyle()
                     }
                 }
             }

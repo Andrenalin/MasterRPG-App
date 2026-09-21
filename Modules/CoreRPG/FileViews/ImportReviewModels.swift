@@ -118,16 +118,6 @@ import SwiftUI
         selectedItemId = itemId
     }
 
-    func selectDependency(_ reference: SingleReviewReference) {
-        for module in modules {
-            if let item = module.reviewItems.first(where: { $0.id == reference.destination.itemId }) {
-                selectedModuleId = module.id
-                selectedItemId = item.id
-                return
-            }
-        }
-    }
-
     /// Model of a linked item for display: prefers the import batch (imported items are
     /// not in the database yet), then falls back to the database.
     func displayModel(for destination: ItemRowModel, preferImported: Bool, rootManager: RootManager?) -> (any ItemDataAccessable)? {

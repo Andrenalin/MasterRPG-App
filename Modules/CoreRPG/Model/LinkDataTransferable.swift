@@ -13,11 +13,7 @@ public protocol LinkDataTransferable: Sendable, Codable, Transferable {
 
 extension LinkDataTransferable {
     public var linkRepresentation: String {
-        if let entryId {
-            return "[\(name)](\(URL.appScheme)://\(module.token)/0/\(itemId)/\(entryId))"
-        } else {
-            return "[\(name)](\(URL.appScheme)://\(module.token)/0/\(itemId))"
-        }
+        LinkBuilder.markdown(name: name, module: module, itemId: itemId, entryId: entryId)
     }
     
     static func linkDataType(module: NetworkModules) -> any LinkDataTransferable {

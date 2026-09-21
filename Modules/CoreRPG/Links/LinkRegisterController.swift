@@ -137,10 +137,18 @@ public extension LinkRegisterController {
         model.pendingAffectedSourceIds = []
         guard let context = model.context else { return }
         await context.perform {
+            // Through the context, not `NSBatchDeleteRequest`: batch requests bypass the
+            // CloudKit mirroring export, so the deletions never reach other devices.
+            // See CODE_AUDIT_15 §5.8.
             do {
-                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
-                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
+                let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                request.includesPropertyValues = false
+                for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
+                    context.delete(object)
+                }
+                if context.hasChanges { try context.save() }
             } catch {
+                context.rollback()
                 Logger.coreDataController.error("link resetData error \(error.localizedDescription, privacy: .public)")
             }
         }
@@ -149,7 +157,7 @@ public extension LinkRegisterController {
 
 public extension LinkRegisterController {
     /// Persists all link changes accumulated since the last call. Performs a delete-and-replace per affected
-    /// source item ID: one `NSBatchDeleteRequest` then one `NSBatchInsertRequest` using the current in-memory state.
+    /// source item ID: delete the persisted rows, then insert the current in-memory state, through the context.
     /// Call from the periodic `save()` on `AdventureRootModel`.
     @MainActor func savePendingLinks() async {
         let affectedIds = model.pendingAffectedSourceIds
@@ -158,17 +166,20 @@ public extension LinkRegisterController {
 
         let currentLinks = model.items.values.joined().filter { affectedIds.contains($0.source.itemId) }
 
+        // Context-based delete + insert (not `NSBatchDeleteRequest`/`NSBatchInsertRequest`):
+        // `LinkReferenceDataModel` is CloudKit-mirrored and batch requests bypass the export,
+        // so deletions never reached other devices and mirrored rows duplicated rebuilt ones.
+        // See CODE_AUDIT_15 §5.8.
         await context.perform {
             do {
-                let deleteRequest: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
-                deleteRequest.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
-                try context.execute(NSBatchDeleteRequest(fetchRequest: deleteRequest))
-
-                var iter = currentLinks.makeIterator()
-                let batchInsert = NSBatchInsertRequest(
-                    entity: LinkReferenceDataModel.entity()
-                ) { (object: NSManagedObject) -> Bool in
-                    guard let link = iter.next(), let dbModel = object as? LinkReferenceDataModel else { return true }
+                let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
+                request.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
+                request.includesPropertyValues = false
+                for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
+                    context.delete(object)
+                }
+                for link in currentLinks {
+                    let dbModel = LinkReferenceDataModel(context: context)
                     dbModel.uuid = link.id
                     dbModel.name = link.name
                     dbModel.sourceId = link.source.itemId
@@ -179,10 +190,10 @@ public extension LinkRegisterController {
                     dbModel.destinationModule = Int16(link.destination.typeId.rawValue)
                     dbModel.linkNumber = Int64(link.linkNumber ?? -1)
                     dbModel.command = link.command
-                    return false
                 }
-                try context.execute(batchInsert)
+                if context.hasChanges { try context.save() }
             } catch {
+                context.rollback()
                 Logger.coreDataController.error("link save error \(error.localizedDescription, privacy: .public)")
             }
         }        

@@ -31,7 +31,7 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
     public let items: [ContentWidgetItem]
 
     public static func load(for module: NetworkModules) -> Self {
-        guard let data = UserDefaults(suiteName: UserDefaults.appGroupString)?
+        guard let data = UserDefaults.appGroupDefaults?
             .data(forKey: storageKey(for: module)),
               let snapshot = try? JSONDecoder().decode(Self.self, from: data) else {
             return Self(module: module, totalCount: 0, items: [])
@@ -43,7 +43,7 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
     public static func publish(module: NetworkModules, from dataModel: ItemDataModel) {
         let visibleItems = dataModel.items.compactMap { itemId -> ContentWidgetItem? in
             guard let item = dataModel.itemData[itemId] as? any ItemDataAccessable,
-                  item.displayState == 0,
+                  item.displayState == DisplayStateMask.fullVisible.rawValue,
                   !item.specialCategory,
                   !item.name.isEmpty else { return nil }
             return ContentWidgetItem(id: item.id, name: item.name)
@@ -54,7 +54,7 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
             items: Array(visibleItems.prefix(4))
         )
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        UserDefaults(suiteName: UserDefaults.appGroupString)?
+        UserDefaults.appGroupDefaults?
             .set(data, forKey: storageKey(for: module))
         WidgetCenter.shared.reloadTimelines(ofKind: widgetKind(for: module))
     }

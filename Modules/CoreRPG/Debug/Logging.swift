@@ -3,14 +3,6 @@
 import Foundation
 import os.log
 
-public extension NetworkModules {
-    private static let systemBundle = "de.andretrettin.gamemaster"
-
-    var logSubsystem: String {
-        "\(NetworkModules.systemBundle).\(token)"
-    }
-}
-
 public extension Logger {
     static let subsystem = Bundle.main.bundleIdentifier!
 

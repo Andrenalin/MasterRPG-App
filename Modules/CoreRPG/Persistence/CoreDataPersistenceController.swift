@@ -11,6 +11,45 @@ public enum CoreDataInitError: Equatable, Sendable {
     case creation(message: String)
 }
 
+public extension CoreDataInitError {
+    /// Classifies a failed `loadPersistentStores`. Only errors that say the store itself is
+    /// unreadable (corruption, failed migration) are offered the destructive "delete the
+    /// database" recovery; a disk-full, permission, locked or busy failure is transient and a
+    /// healthy database must survive it. See CODE_AUDIT_15 §5.4.
+    static func loadFailure(_ error: NSError) -> CoreDataInitError {
+        let errors = [error] + ((error.userInfo[NSUnderlyingErrorKey] as? NSError).map { [$0] } ?? [])
+        let transientCocoaCodes: Set<Int> = [
+            NSFileWriteOutOfSpaceError, NSFileReadNoPermissionError, NSFileWriteNoPermissionError,
+            NSFileLockingError, NSFileWriteVolumeReadOnlyError
+        ]
+        // SQLITE_BUSY, LOCKED, READONLY, IOERR, FULL, CANTOPEN, PROTOCOL
+        let transientSQLiteCodes: Set<Int> = [5, 6, 8, 10, 13, 14, 15]
+        let isTransient = errors.contains { candidate in
+            switch candidate.domain {
+            case NSCocoaErrorDomain: transientCocoaCodes.contains(candidate.code)
+            case "NSSQLiteErrorDomain": transientSQLiteCodes.contains(candidate.code)
+            default: false
+            }
+        }
+        return isTransient ? .creation(message: error.localizedDescription) : .migration(message: error.localizedDescription)
+    }
+}
+
+extension NSPersistentContainer {
+    /// Removes the store's SQLite file together with its `-wal`/`-shm` sidecars. Deleting
+    /// only the main file leaves a stale write-ahead log that SQLite can replay into the
+    /// fresh store created next. See CODE_AUDIT_15 §5.4.
+    func destroyStoreFiles(at url: URL) throws {
+        try? persistentStoreCoordinator.destroyPersistentStore(at: url, type: .sqlite, options: nil)
+        let fileManager = FileManager.default
+        for suffix in ["", "-wal", "-shm"] {
+            let file = URL(filePath: url.path(percentEncoded: false) + suffix)
+            guard fileManager.fileExists(atPath: file.path(percentEncoded: false)) else { continue }
+            try fileManager.removeItem(at: file)
+        }
+    }
+}
+
 public enum CloudKitSyncState: Sendable, Equatable {
     case notStarted
     case inProgress
@@ -19,7 +58,7 @@ public enum CloudKitSyncState: Sendable, Equatable {
 }
 
 @MainActor @Observable
-public final class CoreDataInitModel: @unchecked Sendable {
+public final class CoreDataInitModel {
     nonisolated init(inMemory: Bool, currentActor: AppPersistentActor) {
         self.inMemory = inMemory
         self.currentActor = currentActor
@@ -59,12 +98,6 @@ public final class CoreDataInitModel: @unchecked Sendable {
         }
     }
 
-    public var isSyncing: Bool {
-        if case .inProgress = cloudKitSyncState {
-            return true
-        }
-        return false
-    }
 }
 
 public struct CoreDataPersistenceController {
@@ -140,8 +173,8 @@ public struct CoreDataPersistenceController {
             let initError: CoreDataInitError
             let storeUrl: URL?
             if let error = error as NSError?, let url = storeDescription.url {
-                initError = .migration(message: error.localizedDescription)
-                storeUrl = url
+                initError = .loadFailure(error)
+                storeUrl = initError == .creation(message: error.localizedDescription) ? nil : url
             } else {
                 initError = .none
                 storeUrl = nil
@@ -158,7 +191,7 @@ public struct CoreDataPersistenceController {
     public func recoverFromError() {
         guard model.recoverableError, let url = model.containerStoreUrl, let container = model.container else { return }
         do {
-            try FileManager.default.removeItem(at: url)
+            try container.destroyStoreFiles(at: url)
             let model = model
             container.loadPersistentStores { _, error in
                 let newError: CoreDataInitError = if let error = error as NSError? {

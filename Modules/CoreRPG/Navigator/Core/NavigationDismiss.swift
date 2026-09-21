@@ -58,18 +58,8 @@ extension Navigator {
     public func dismissAnyChildren() -> Bool {
         for child in _children.values {
             if let childNavigator = child.object {
-                if #available (iOS 18.0, *) {
-                    if childNavigator.dismiss() || childNavigator.dismissAnyChildren() {
-                        return true
-                    }
-                } else {
-                    var dismissed: Bool
-                    // both functions need to execute, || would short-circuit
-                    dismissed = childNavigator.dismissAnyChildren()
-                    dismissed = childNavigator.dismiss() || dismissed
-                    if dismissed {
-                        return true
-                    }
+                if childNavigator.dismiss() || childNavigator.dismissAnyChildren() {
+                    return true
                 }
             }
         }
@@ -92,82 +82,6 @@ extension Navigator {
             throw NavigationError.navigationLocked
         }
         return root.dismissAnyChildren()
-    }
-
-}
-
-extension View {
-
-    /// Dismisses the current `ManagedNavigationStack` or `ManagedPresentationView` if presented.
-    ///
-    /// Trigger value will be reset to false on dismissal.
-    public func navigationDismiss(trigger: Binding<Bool>) -> some View {
-        self.modifier(NavigationDismissModifier(trigger: trigger, action: .dismiss))
-    }
-
-    /// Dismisses any sheets or covers presented by this navigator.
-    ///
-    /// Trigger value will be reset to false on dismissal.
-    public func navigationDismissPresented(trigger: Binding<Bool>) -> some View {
-        self.modifier(NavigationDismissModifier(trigger: trigger, action: .dismissPresentedViews))
-    }
-
-    /// Dismisses *any* `ManagedNavigationStack` or `ManagedPresentationView` presented by this Navigator or by any child of this Navigator in the current
-    ///  navigation tree.
-    ///
-    /// Trigger value will be reset to false on dismissal.
-    public func navigationDismissAnyChildren(trigger: Binding<Bool>) -> some View {
-        self.modifier(NavigationDismissModifier(trigger: trigger, action: .dismissAnyChildren))
-    }
-
-    /// Returns to the root Navigator and dismisses *any* presented `ManagedNavigationStack` or `ManagedPresentationView`.
-    ///
-    /// Trigger value will be reset to false on dismissal.
-    public func navigationDismissAny(trigger: Binding<Bool>) -> some View {
-        self.modifier(NavigationDismissModifier(trigger: trigger, action: .dismissAny))
-    }
-
-    /// Allows presented views not in a navigation stack to be dismissed using a Navigator.
-    @available(*, deprecated, renamed: "managedPresentationView", message: "Use `managedPresentationView()` instead.")
-    public func navigationDismissible() -> some View {
-        ManagedPresentationView {
-            self
-        }
-    }
-
-}
-
-private struct NavigationDismissModifier: ViewModifier {
-
-    enum Action {
-        case dismiss
-        case dismissPresentedViews
-        case dismissAnyChildren
-        case dismissAny
-    }
-
-    @Binding internal var trigger: Bool
-    var action: Action
-
-    @Environment(\.navigator) internal var navigator: Navigator
-
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: trigger) { _, trigger in
-                if trigger {
-                    self.trigger = false
-                    switch action {
-                    case .dismiss:
-                        navigator.dismiss()
-                    case .dismissPresentedViews:
-                        navigator.dismissPresentedViews()
-                    case .dismissAnyChildren:
-                        navigator.dismissAnyChildren()
-                    case .dismissAny:
-                        _ = try? navigator.dismissAny()
-                    }
-                }
-            }
     }
 
 }

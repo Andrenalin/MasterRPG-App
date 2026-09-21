@@ -47,9 +47,14 @@ extension OutputStream {
     }
 
     func append(counter: Int) throws {
+        // The format stores a 32-bit counter; `UInt32(counter)` trapped for a block above 4 GB.
+        // See CODE_AUDIT_15 §5.7.
+        guard let value = UInt32(exactly: counter) else {
+            throw ItemDataExportableError.writeError
+        }
         var readBuffer = [UInt8](repeating: 0, count: 4)
         for i in 0...3 {
-            readBuffer[i] = UInt8((UInt32(counter) >> (i * 8)) & UInt32(0xFF))
+            readBuffer[i] = UInt8((value >> (i * 8)) & UInt32(0xFF))
         }
         let written = write(&readBuffer, maxLength: readBuffer.count)
         guard written == readBuffer.count else {
@@ -63,7 +68,8 @@ extension OutputStream {
             let bytesWritten = remaining.withUnsafeBytes { buf in
                 write(buf.baseAddress!.assumingMemoryBound(to: UInt8.self), maxLength: buf.count)
             }
-            guard bytesWritten >= 0 else { throw ItemDataExportableError.streamError }
+            // 0 would never make progress and spin forever.
+            guard bytesWritten > 0 else { throw ItemDataExportableError.streamError }
             remaining = remaining.dropFirst(bytesWritten)
         }
     }

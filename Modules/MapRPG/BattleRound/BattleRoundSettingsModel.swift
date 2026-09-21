@@ -70,13 +70,6 @@ public final class BattleRoundSettingsModel: Sendable {
         }
     }
 
-    public func removeNames(at offsets: IndexSet, for kind: BattleValueKind) {
-        switch kind {
-        case .initiative: initiativeNames.remove(atOffsets: offsets)
-        case .hitPoints: hitPointsNames.remove(atOffsets: offsets)
-        }
-    }
-
     @ObservationIgnored private let defaults: UserDefaults
 
     private enum Keys {

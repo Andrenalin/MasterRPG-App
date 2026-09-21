@@ -33,12 +33,8 @@ public final class FolderListModel {
     // MARK: - Display list
     public var list: [FolderListItemModel] = []
     public var cacheListModels: [UUID: FolderListItemModel] = [:]
-    var isFirstSearch = true
-    var wasSearching = false
-    
     // MARK: - List navigation
     public var selectedParentId: UUID?
-    public var lastFolderId: UUID?
     var level: Int = 0
     var addedModelId: UUID?
     var selectionGeneration: Int = 0

@@ -341,10 +341,6 @@ public enum MasterRPGTips {
         await StartOrJoinGameTip.gameStartedOrJoined.donate()
     }
 
-    public static func donateAIAccepted() async {
-        await AskAITip.generatedContentAccepted.donate()
-    }
-
     public static func donateMapEditorOpened() async {
         await OpenMapEditorTip.mapEditorOpened.donate()
     }

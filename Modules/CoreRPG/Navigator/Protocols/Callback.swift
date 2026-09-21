@@ -32,7 +32,7 @@ import SwiftUI
 /// > since URL handlers and other deep-link mechanisms cannot synthesize
 /// > the underlying closures.
 ///
-/// In many cases, using navigation send or checkpoints with values will
+/// In many cases, using navigation send with values will
 /// produce a more robust design.
 public struct Callback<Value>: Hashable, Equatable {
 

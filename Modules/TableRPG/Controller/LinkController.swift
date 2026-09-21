@@ -70,7 +70,7 @@ extension LinkController: LinkControllable {
 
         if let diceId = replacedItem.diceId {
             if !diceRoot.linkControllable.validateLink(itemId: diceId) {
-                Logger.linkController.warning("Table: \(replacedItem.name, privacy: .public) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
+                Logger.linkController.warning("Table: \(replacedItem.name, privacy: .private) --> Dice \(diceId, privacy: .public) is gone. Reset DiceId, no recovery possible.")
                 replacedItem.diceId = nil
             }
         }
@@ -86,7 +86,7 @@ extension LinkController: LinkControllable {
             }
         }
         if !replacedItem.isSame(inspectedItem) {
-            Logger.linkController.info("Table: \(replacedItem.name, privacy: .public) will be replaced from repairing links.")
+            Logger.linkController.info("Table: \(replacedItem.name, privacy: .private) will be replaced from repairing links.")
             itemController.replace(model: replacedItem, isInsert: false)
         }
         resetLinkRegister(replacedItem)

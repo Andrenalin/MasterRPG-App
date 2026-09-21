@@ -96,8 +96,8 @@ public struct CloudKitCoreDataPersistenceController {
             let storeUrl: URL?
             var privateStore: NSPersistentStore?
             if let error = error as NSError?, let url = storeDescription.url {
-                initError = .migration(message: error.localizedDescription)
-                storeUrl = url
+                initError = .loadFailure(error)
+                storeUrl = initError == .creation(message: error.localizedDescription) ? nil : url
             } else {
                 initError = .none
                 storeUrl = nil
@@ -139,7 +139,7 @@ public struct CloudKitCoreDataPersistenceController {
     public func recoverFromError() {
         guard model.recoverableError, let url = model.containerStoreUrl, let container = model.container else { return }
         do {
-            try FileManager.default.removeItem(at: url)
+            try container.destroyStoreFiles(at: url)
             let model = model
             container.loadPersistentStores { _, error in
                 let newError: CoreDataInitError = if let error = error as NSError? {

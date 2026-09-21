@@ -35,7 +35,7 @@ struct SelectListItemViewModifier: ViewModifier {
                         .foregroundStyle(.tint)
                         .opacity(hide ? 0 : 1)
                 }
-                .borderLessTVBottonStyle()
+                .borderLessTVButtonStyle()
                 .frame(minWidth: 44, minHeight: 44)
                 .padding(.horizontal, 8)
                 .contentShape(.rect)

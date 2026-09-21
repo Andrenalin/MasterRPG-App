@@ -162,7 +162,7 @@ private struct GameOverlayCapsuleButtonStyle: ButtonStyle {
         Image(systemName: "skew")
     }
     .buttonStyle(.imageOverlay)
-    .borderLessTVBottonStyle()
+    .borderLessTVButtonStyle()
     .tint(Color.accentColor)
     .accentColor(Color.teal)
 }

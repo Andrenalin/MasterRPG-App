@@ -25,10 +25,6 @@ extension RPGMap {
         set { mapPins = NSSet(array: newValue) }
     }
 
-    func mapPinOrNew(for uuid: UUID) -> RPGMapPin {
-        childOrNew(uuid, in: mapPinModels)
-    }
-
     /// `nil` when this map has no `managedObjectContext` — it was deleted by a
     /// concurrent merge (e.g. a CloudKit sync from another device) in the
     /// window between being fetched and this running. The caller skips this

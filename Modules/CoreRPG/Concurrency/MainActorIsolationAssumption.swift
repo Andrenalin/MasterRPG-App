@@ -15,7 +15,15 @@ import Foundation
 /// Route `nonisolated` conformance bodies through this helper rather than hand-rolling
 /// `MainActor.assumeIsolated { ... }` inline, so there's exactly one place to find, audit, or
 /// harden (e.g. with tracing/assertions) every site relying on this contract. See CODE_AUDIT §3.2.
+///
+/// `file`/`line` default to the *caller's* location and are handed to `assumeIsolated`, so a
+/// trap names the conformance body that was reached off the main actor instead of this helper.
+/// See CODE_AUDIT_15 §3.5.
 @inline(__always)
-public func assumeMainActorIsolated<T: Sendable>(_ body: @MainActor () -> T) -> T {
-    MainActor.assumeIsolated(body)
+public func assumeMainActorIsolated<T: Sendable>(
+    file: StaticString = #fileID,
+    line: UInt = #line,
+    _ body: @MainActor () -> T
+) -> T {
+    MainActor.assumeIsolated(body, file: file, line: line)
 }

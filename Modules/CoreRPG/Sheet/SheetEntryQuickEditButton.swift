@@ -28,7 +28,7 @@ struct SheetEntryQuickEditButton: View {
                 $0.labelStyle(.iconOnly)
             }
         }
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
     }
 }
 

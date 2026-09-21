@@ -80,14 +80,20 @@ struct CloudDocumentController: Sendable {
         } else {
             compPath = components.filter { $0 != "/" }
         }
-        compPath.forEach {
+        // `FileUrl`s arrive from imported files and game peers, so `..` segments must never
+        // be able to climb out of `Documents/<module>`. See CODE_AUDIT_15 §5.1.
+        CloudDocumentController.safeComponents(compPath).forEach {
             nameUrl.append(path: $0)
         }
         return nameUrl
     }
 
     func fullUrl(filePath: String) -> URL {
-        moduleUrl.appending(path: filePath)
+        var url = moduleUrl
+        CloudDocumentController.safeComponents(filePath.split(separator: "/").map(String.init)).forEach {
+            url.append(path: $0)
+        }
+        return url
     }
 
     func nameUrl(fullUrl: URL) -> URL {
@@ -244,6 +250,21 @@ extension CloudDocumentController {
         }
         newFilename.append("-\(number)\(ext)")
         return newFilename
+    }
+}
+
+extension CloudDocumentController {
+    /// Drops the segments that would let a path leave the directory it is appended to
+    /// (`..`, `.`) together with empty and root segments. Every builder that turns a
+    /// decoded `FileUrl` path into a file-system URL goes through this.
+    /// See CODE_AUDIT_15 §5.1.
+    static func safeComponents(_ components: [String]) -> [String] {
+        components.filter { !$0.isEmpty && $0 != "/" && $0 != "." && $0 != ".." }
+    }
+
+    /// Whether `url` contains a segment `safeComponents(_:)` would drop as a traversal.
+    static func hasTraversalComponents(_ url: URL) -> Bool {
+        url.pathComponents.contains { $0 == ".." || $0 == "." }
     }
 }
 

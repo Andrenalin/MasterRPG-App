@@ -133,8 +133,8 @@ struct BrowserPicker: UIViewControllerRepresentable {
         }
 
         let url = URL(string: fileName)?.deletingLastPathComponent()
-        _ = url?.startAccessingSecurityScopedResource()
-        defer { url?.stopAccessingSecurityScopedResource() }
+        let securityScope = url?.startSecurityScopedAccess()
+        defer { securityScope?.stop() }
         
         picker.directoryURL = url
         picker.delegate = context.coordinator

@@ -332,7 +332,7 @@ private struct MapNeedleViewportMenuButtonsView: View {
                         height: MapAdaptiveFanGeometry.buttonSize.height
                     )
                 }
-                .borderLessTVBottonStyle()
+                .borderLessTVButtonStyle()
                 .contentShape(.circle)
                 .foregroundStyle(.white)
                 .background(type == .remove ? Color.red.opacity(0.8) : Color.teal.opacity(0.8), in: .circle)

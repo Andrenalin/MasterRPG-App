@@ -118,26 +118,3 @@ struct OnboardingTextTransition: Transition {
         }
     }
 }
-
-struct OnboardingNameTransition: Transition {
-    static var properties: TransitionProperties {
-        TransitionProperties(hasMotion: true)
-    }
-
-    func body(content: Content, phase: TransitionPhase) -> some View {
-        let duration = 2.0
-        let elapsedTime = phase.isIdentity ? duration : 0
-        let renderer = OnboardingAppearanceEffectRenderer(
-            elapsedTime: elapsedTime,
-            totalDuration: duration
-        )
-
-        content.transaction { transaction in
-            if !transaction.disablesAnimations {
-                transaction.animation = .easeInOut(duration: 2)
-            }
-        } body: { view in
-            view.textRenderer(renderer)
-        }
-    }
-}

@@ -86,9 +86,9 @@ extension NWParameters {
         guard let stringData = string.data(using: .unicode) else {
             return nil
         }
-        let dispatchData = withUnsafeBytes(of: stringData) { (ptr: UnsafeRawBufferPointer) in
-            DispatchData(bytes: UnsafeRawBufferPointer(start: ptr.baseAddress, count: stringData.count))
-        }
-        return dispatchData
+        // The bytes of the *string's data*, not of the `Data` value itself: viewing the
+        // struct's own memory read past it and sent stack/heap-pointer bytes in the clear
+        // TLS handshake. See CODE_AUDIT_15 §6.2.
+        return stringData.withUnsafeBytes { DispatchData(bytes: $0) }
     }
 }

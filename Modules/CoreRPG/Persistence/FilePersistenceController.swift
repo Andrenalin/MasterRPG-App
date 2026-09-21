@@ -46,8 +46,18 @@ extension FilePersistenceController {
             let data = try Data(contentsOf: loadUrl)
 
             let decoder = JSONDecoder()
-            let loadedData = try decoder.decode([DataModel].self, from: data)
-            return loadedData
+            do {
+                return try decoder.decode([DataModel].self, from: data)
+            } catch {
+                // Treating an undecodable file as "empty" would let the next save overwrite it and
+                // lose everything that was still recoverable; keep it aside instead.
+                // See CODE_AUDIT_15 §5.5.
+                let backupUrl = loadUrl.appendingPathExtension("corrupt")
+                try? FileManager.default.removeItem(at: backupUrl)
+                try? FileManager.default.moveItem(at: loadUrl, to: backupUrl)
+                Logger.filePersistenceController.error("Stored file is undecodable, kept as \(backupUrl.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                return []
+            }
         } catch {
             Logger.filePersistenceController.error("Error loading data \(error.localizedDescription, privacy: .public)")
         }
@@ -98,9 +108,9 @@ extension FilePersistenceController {
 
 private extension FilePersistenceController {
     static func saveModel(data: [DataModel], into fileUrl: URL) throws {
-        let encoder = JSONEncoder()
-        guard let encodedData = try? encoder.encode(data) else { return }
-        try encodedData.write(to: fileUrl)
+        let encodedData = try JSONEncoder().encode(data)
+        // Atomic: a kill mid-write must not leave a truncated file. See CODE_AUDIT_15 §5.5.
+        try encodedData.write(to: fileUrl, options: .atomic)
     }
 
     func dataUrl(for uuid: String) throws -> URL? {

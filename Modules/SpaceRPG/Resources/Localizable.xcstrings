@@ -1796,7 +1796,14 @@
       }
     },
     "Moved to Immersive Space" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In den Immersive Space verschoben"
+          }
+        }
+      }
     },
     "Name" : {
       "comment" : "Label for the name parameter in the Create 3D Object intent.",

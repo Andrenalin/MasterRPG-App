@@ -74,7 +74,7 @@ struct PlayerStartView: View {
                         }
                         .padding()
                     }
-                    .borderLessTVBottonStyle()
+                    .borderLessTVButtonStyle()
                     .overlay(
                         Capsule()
                             .stroke(Color.accentColor, lineWidth: 4)

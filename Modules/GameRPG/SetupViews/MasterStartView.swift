@@ -34,7 +34,7 @@ struct MasterStartView: View {
                 }
                 .padding()
             }
-            .borderLessTVBottonStyle()
+            .borderLessTVButtonStyle()
             .overlay {
                 MasterStartViewOverlayAnimationView(startSharePlayAnimation: startSharePlayAnimation, accessibilityReduceMotion: accessibilityReduceMotion)
             }

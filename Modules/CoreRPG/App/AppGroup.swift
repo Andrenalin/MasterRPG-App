@@ -12,6 +12,12 @@ public extension UserDefaults {
     /// to a device-local location. See CODE_AUDIT §5.1.
     @MainActor static let appGroup = UserDefaults(suiteName: appGroupString)
 
+    /// The same suite as `appGroup`, usable from any isolation. `UserDefaults` is not `Sendable`
+    /// in the SDK, so this hands out a fresh handle (all handles share one backing store) instead
+    /// of a shared global. Every site that needs the shared defaults goes through this one
+    /// accessor rather than repeating the suite name. See CODE_AUDIT_15 §9.19.
+    nonisolated static var appGroupDefaults: UserDefaults? { UserDefaults(suiteName: appGroupString) }
+
     // MARK: - UserDefaults Keys
     
     /// Keys for storing dice roller widget data

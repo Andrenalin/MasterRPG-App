@@ -32,7 +32,7 @@ import SwiftUI
 /// > URL handlers and other deep-link mechanisms cannot synthesize the
 /// > underlying binding.
 ///
-/// In many cases, using navigation send or checkpoints with values will
+/// In many cases, using navigation send with values will
 /// produce a more robust design.
 extension Binding: @retroactive Hashable, @retroactive Equatable where Value: Hashable {
 

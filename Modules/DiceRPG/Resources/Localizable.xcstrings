@@ -402,7 +402,14 @@
       }
     },
     "Add Dice Every" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel hinzufügen alle"
+          }
+        }
+      }
     },
     "Add Dice each Value" : {
       "localizations" : {
@@ -721,7 +728,14 @@
       }
     },
     "Compare" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vergleichen"
+          }
+        }
+      }
     },
     "Compare Value" : {
       "localizations" : {
@@ -788,7 +802,14 @@
       }
     },
     "Coup Values" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immersieg-Werte"
+          }
+        }
+      }
     },
     "Create Dice" : {
       "comment" : "Title of an intent that allows the user to create a new dice set.",
@@ -1223,7 +1244,14 @@
       }
     },
     "Fumble Values" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patzer-Werte"
+          }
+        }
+      }
     },
     "Hidden" : {
       "comment" : "Title for the toggle editor.",
@@ -1281,6 +1309,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Last roll — %1$@: %2$lld"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzter Wurf — %@: %lld"
           }
         }
       }
@@ -1522,7 +1556,14 @@
       }
     },
     "Percent Dice" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prozentwürfel"
+          }
+        }
+      }
     },
     "Percent dice" : {
       "localizations" : {
@@ -1685,7 +1726,14 @@
       }
     },
     "Reorder Dice" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel neu ordnen"
+          }
+        }
+      }
     },
     "Reorder dice by value" : {
       "localizations" : {
@@ -1736,7 +1784,14 @@
       }
     },
     "Rerolls" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuwürfe"
+          }
+        }
+      }
     },
     "Reset" : {
       "localizations" : {
@@ -2217,7 +2272,14 @@
       }
     },
     "Show your last dice roll" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeige deinen letzten Würfelwurf"
+          }
+        }
+      }
     },
     "Special Options" : {
       "localizations" : {
@@ -2236,7 +2298,14 @@
       }
     },
     "Sum Up" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aufsummieren"
+          }
+        }
+      }
     },
     "Sum up dice" : {
       "localizations" : {
@@ -2355,7 +2424,14 @@
       }
     },
     "You haven't rolled any dice yet." : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast noch nicht gewürfelt."
+          }
+        }
+      }
     },
     "change add dice" : {
       "localizations" : {

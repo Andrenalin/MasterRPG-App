@@ -54,7 +54,7 @@ struct RestartedMasterReconnectTests {
             return
         }
         let participantId = UUID()
-        playerController.gameModel.acceptSharePlayMasterParticipant(id: participantId, isCompleteMasterBroadcast: true)
+        _ = playerController.gameModel.acceptSharePlayMasterParticipant(id: participantId, isCompleteMasterBroadcast: true)
 
         await playerController.sharePlayParticipantLeft(id: participantId)
 

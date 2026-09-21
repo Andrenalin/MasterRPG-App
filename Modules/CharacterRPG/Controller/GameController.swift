@@ -92,7 +92,9 @@ public protocol ValueGameStorable: Sendable {
     /// combatants leave the encounter. Persistent templates are never touched.
     @MainActor func removeBattleCharacterCopies(_ gameCharacterIds: Set<UUID>)
     @MainActor func startGame(for id: UUID?) async
-    @MainActor func updatePlayer(data: NetworkCodableDataType) async throws
+    /// Imports a Character package a player sent. `policy` restricts which items of the
+    /// package may be written (see `PeerImportPolicy`); `nil` imports everything.
+    @MainActor func updatePlayer(data: NetworkCodableDataType, policy: PeerImportPolicy?) async throws
     /// Creates a new Character value from a sheet built elsewhere (e.g. a
     /// Table-generated outcome pushed by the master over the active game
     /// session — see `PlayerController+Value.handleAddItem(_:)`) and nests
@@ -218,5 +220,12 @@ extension GameController: ValueGameStorable {
         let entryId = await root.editController.addItemAsGroup(itemId: characterId, groupId: newValueId, forceSave: forceSave)
         root.editController.editorModel.gameSheetRootModel?.updateFromRoot()
         return entryId
+    }
+}
+
+public extension ValueGameStorable {
+    /// Unrestricted import, for callers that trust the package (own device, tests).
+    @MainActor func updatePlayer(data: NetworkCodableDataType) async throws {
+        try await updatePlayer(data: data, policy: nil)
     }
 }

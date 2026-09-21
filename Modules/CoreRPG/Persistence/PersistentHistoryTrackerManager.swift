@@ -37,11 +37,17 @@ public struct PersistentHistoryCleaner {
     /// between the two setup paths.
     public static func scheduleRecurringCleanup(_ cleanup: @MainActor @escaping () -> Void) -> Task<Void, Never> {
         Task {
-            try? await Task.sleep(for: initialCleanupDelay)
-            await cleanup()
-            while !Task.isCancelled {
-                try? await Task.sleep(for: recurringCleanupInterval)
+            // `try?` swallowed the cancellation, so a cancelled (replaced) task still ran a
+            // cleanup immediately. See CODE_AUDIT_15 §3.9.
+            do {
+                try await Task.sleep(for: initialCleanupDelay)
                 await cleanup()
+                while !Task.isCancelled {
+                    try await Task.sleep(for: recurringCleanupInterval)
+                    await cleanup()
+                }
+            } catch {
+                return
             }
         }
     }
@@ -86,7 +92,7 @@ private actor PersistentHistoryTimestampUpdater {
     // grant access, rather than crashing — see CODE_AUDIT §5.1. Timestamps then stay
     // per-device instead of shared across the app and its extensions, which only degrades
     // history-cleanup efficiency, not correctness.
-    private let userDefault = UserDefaults(suiteName: UserDefaults.appGroupString) ?? .standard
+    private let userDefault = UserDefaults.appGroupDefaults ?? .standard
 
     func advanceTimestamps(for actors: [AppPersistentActor], to timestamp: Date) {
         for actor in actors {
@@ -106,7 +112,7 @@ final class PersistentHistoryTrackerManager {
             container: container,
             currentActor: currentActor,
             viewBackupContext: viewBackupContext,
-            userDefaults: UserDefaults(suiteName: UserDefaults.appGroupString) ?? .standard
+            userDefaults: UserDefaults.appGroupDefaults ?? .standard
         )
         self.processor = processor
 

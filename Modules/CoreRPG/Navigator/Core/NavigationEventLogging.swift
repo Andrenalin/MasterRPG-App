@@ -79,7 +79,6 @@ extension NavigationEvent {
         case lifecycle(LifecycleEvent)
         case navigation(NavigationEvent)
         case providing(ProvidingEvent)
-        case checkpoint(CheckpointEvent)
         case send(SendEvent)
 
         case message(String)
@@ -94,8 +93,6 @@ extension NavigationEvent {
                 return "\(event)"
             case .providing(let event):
                 return "providing \(event)"
-            case .checkpoint(let event):
-                return "checkpoint \(event)"
             case .send(let event):
                 return "\(event)"
             case .message(let message):
@@ -161,14 +158,6 @@ extension NavigationEvent {
             case performing(any Hashable)
             case sending(any Hashable)
             case receiving(any Hashable)
-        }
-
-        /// Events related to adding and returning to checkpoints.
-        nonisolated public enum CheckpointEvent {
-            case adding(String)
-            case removing(String)
-            case returning(String)
-            case returningWithValue(String, Any)
         }
 
     }

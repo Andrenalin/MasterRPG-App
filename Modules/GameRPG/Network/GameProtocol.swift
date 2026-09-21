@@ -38,7 +38,7 @@ final class GameProtocol: NWProtocolFramerImplementation {
     /// `SharePlayJournalPublicationQueue`'s own outstanding-attachment budget —
     /// the largest single Map/Photo/PDF/Space/Audio attachment this app is
     /// designed to move around — rather than an arbitrary new ceiling.
-    static let maximumMessageByteCount: UInt32 = 512_000_000
+    static let maximumMessageByteCount = UInt32(GameLimits.maximumMessageBytes)
 
     /// Pulled out of `handleInput` so the length bound can be unit tested
     /// without standing up a live `NWProtocolFramer.Instance`.

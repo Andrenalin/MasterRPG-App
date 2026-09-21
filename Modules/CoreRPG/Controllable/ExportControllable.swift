@@ -58,7 +58,7 @@ public extension ExportModelBacked {
 public extension ExportControllable {
     // Overwritten in specific
     @MainActor func exportingAll() -> ItemModuleIds {
-        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.filter { itemControllable.itemSync(for: $0)?.displayState != 2 }])
+        ItemModuleIds(dictionary: [itemControllable.config.module: itemControllable.itemDataModel.items.filter { itemControllable.itemSync(for: $0)?.displayState != DisplayStateMask.totalHidden.rawValue }])
     }
 
     @MainActor func exporting(itemIds: ItemModuleIds) -> ItemModuleIds {
@@ -223,12 +223,17 @@ public extension ExportControllable {
         let exportController = rootExportController
 
         return Task.detached(priority: .userInitiated) {
-            let _ = url.startAccessingSecurityScopedResource()
-            defer { url.stopAccessingSecurityScopedResource() }
-            guard let outputStream = OutputStream(url: url, append: false) else { throw ItemDataExportableError.openError }
+            let securityScope = url.startSecurityScopedAccess()
+            defer { securityScope.stop() }
+            // Export into a temporary file and replace the destination only once the export is
+            // complete: `OutputStream(url:append:false)` truncates immediately, so a
+            // failed or cancelled export used to destroy the previous backup at `url`.
+            // See CODE_AUDIT_15 §5.7.
+            let temporaryUrl = URL.temporaryDirectory.appending(path: "export-\(UUID().uuidString).part")
+            guard let outputStream = OutputStream(url: temporaryUrl, append: false) else { throw ItemDataExportableError.openError }
 
             outputStream.open()
-            defer { outputStream.close() }
+            defer { try? FileManager.default.removeItem(at: temporaryUrl) }
 
             // `Task.detached` doesn't inherit any ambient actor isolation (unlike a plain
             // `Task { }` literal written inside a @MainActor context elsewhere in this
@@ -240,11 +245,29 @@ public extension ExportControllable {
             do {
                 try outputStream.append(fileHeader: GmzFileHeader(counter: itemIds.count, token: ExportDataToken.counter.rawValue, version: ExportDataToken.version_2024.rawValue))
                 _ = try await exportController.export(itemIds: itemIds, into: outputStream, exportModel: exportModel)
+                outputStream.close()
+                try Self.replaceExport(at: url, with: temporaryUrl)
                 await self.endExport(exportModel)
             } catch {
+                outputStream.close()
                 await self.endExport(exportModel)
                 throw error
             }
+        }
+    }
+
+    /// Moves a finished export over `destination`. Falls back to copy-over when the destination
+    /// cannot be replaced in place (a picked file whose folder is not writable).
+    private nonisolated static func replaceExport(at destination: URL, with finished: URL) throws {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: destination.path(percentEncoded: false)) else {
+            try fileManager.moveItem(at: finished, to: destination)
+            return
+        }
+        do {
+            _ = try fileManager.replaceItemAt(destination, withItemAt: finished)
+        } catch {
+            try Data(contentsOf: finished).write(to: destination, options: .atomic)
         }
     }
 

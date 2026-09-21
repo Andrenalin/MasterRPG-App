@@ -22,7 +22,9 @@ struct FilePersistenceControllerTests {
     }
 
     @Test func loadSaveInStore() async throws {
-        let sut = FilePersistenceController(name: "MegaTest", persistence: .store, dataExtension: nil)
+        // A name of its own: `FileBookmarkControllerTests` also persists to "MegaTest.json", and
+        // tests run in parallel, so sharing the file made this test's load/save race with theirs.
+        let sut = FilePersistenceController(name: "MegaTest-\(UUID().uuidString)", persistence: .store, dataExtension: nil)
         await sut.remove()
 
         #expect(await sut.load().isEmpty)

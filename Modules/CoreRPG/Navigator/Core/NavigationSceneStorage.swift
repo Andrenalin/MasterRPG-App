@@ -13,7 +13,6 @@ nonisolated internal struct NavigationSceneStorage: Codable {
     let name: String?
     let restorationKey: String
     let path: Data?
-    let checkpoints: [String: AnyNavigationCheckpoint]
     let dismissible: Bool
     let sheet: Data?
     let cover: Data?
@@ -22,7 +21,6 @@ nonisolated internal struct NavigationSceneStorage: Codable {
         name: String?,
         restorationKey: String,
         path: Data?,
-        checkpoints: [String : AnyNavigationCheckpoint] = [:],
         dismissible: Bool = false,
         sheet: Data?,
         cover: Data?
@@ -30,7 +28,6 @@ nonisolated internal struct NavigationSceneStorage: Codable {
         self.name = name
         self.restorationKey = restorationKey
         self.path = path
-        self.checkpoints = checkpoints
         self.dismissible = dismissible
         self.sheet = sheet
         self.cover = cover
@@ -53,7 +50,6 @@ extension Navigator {
             name: name,
             restorationKey: restorationKey,
             path: path ?? Data(),
-            checkpoints: checkpoints,
             dismissible: isPresented,
             sheet: try? Navigator.encoder.encode(sheet),
             cover: try? Navigator.encoder.encode(cover)
@@ -72,12 +68,6 @@ extension Navigator {
             path = NavigationPath(representation)
         } else {
             path = .init()
-        }
-        // merge checkpoint indices only
-        for (key, stored) in storage.checkpoints {
-            if let checkpoint = checkpoints[key]?.setting(index: stored.index) {
-                checkpoints[key] = checkpoint
-            }
         }
         if let data = storage.sheet {
             sheet = try? Navigator.decoder.decode(AnyNavigationDestination.self, from: data)

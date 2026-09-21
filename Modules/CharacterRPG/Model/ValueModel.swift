@@ -55,7 +55,7 @@ public final class ValueModel: nonisolated Identifiable {
         let decodedParentId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._parentId)
         self._diceId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._diceId)
         let decodedGroupId = try container.decodeIfPresent(UUID.self, forKey: ValueModel.CodingKeys._groupId)
-        // Migrate pre-groupId data: items with displayState==1 used parentId for group membership
+        // Migrate pre-groupId data: items with displayState == DisplayStateMask.groupHidden.rawValue used parentId for group membership
         if decodedGroupId == nil && decodedDisplayState == 1, let parentId = decodedParentId {
             self._parentId = nil
             self._groupId = parentId

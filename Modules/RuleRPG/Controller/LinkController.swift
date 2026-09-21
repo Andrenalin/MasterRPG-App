@@ -156,7 +156,7 @@ extension LinkController: LinkControllable {
             }
         }
         if !replacement.isSame(inspected) {
-            Logger.linkController.info("Rule links repaired for \(replacement.name, privacy: .public)")
+            Logger.linkController.info("Rule links repaired for \(replacement.name, privacy: .private)")
             itemController.replace(model: replacement, isInsert: false)
         }
         resetLinkRegister(replacement)

@@ -396,12 +396,16 @@ public extension GameControllable {
 }
 
 public extension GameControllable {
-    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge) async throws {
+    /// Runs off the caller's (usually main) actor: parsing the byte stream reads blocks of up to
+    /// 512 MB. Model creation and storage still hop to the main actor per item.
+    /// See CODE_AUDIT_15 §3.3.
+    @concurrent
+    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge, peerPolicy: PeerImportPolicy? = nil) async throws {
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }
         let importController = await exportControllable.rootImportController
-        let importModel = await ItemDataImportModel(importMode: importMode)
+        let importModel = await ItemDataImportModel(importMode: importMode, peerPolicy: peerPolicy)
         try await importController.importStream(from: stream, forceSave: forceSave, importModel: importModel)
     }
 }

@@ -170,7 +170,14 @@
       }
     },
     "Add from Generator" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus Generator hinzufügen"
+          }
+        }
+      }
     },
     "Add Link" : {
       "comment" : "Title of an action that adds a link to an entry.",
@@ -596,7 +603,14 @@
       }
     },
     "Dice" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Würfel"
+          }
+        }
+      }
     },
     "Drop %@" : {
       "comment" : "A label at the top of the checkout view providing medication instructions. The argument is the instructions for taking the primary medication in the cart.",
@@ -849,10 +863,24 @@
       }
     },
     "Photo" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
     },
     "Photos" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotos"
+          }
+        }
+      }
     },
     "prepare group" : {
       "localizations" : {

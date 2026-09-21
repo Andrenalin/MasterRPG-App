@@ -360,7 +360,14 @@
       }
     },
     "Recover" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederherstellen"
+          }
+        }
+      }
     },
     "Roll D6" : {
       "comment" : "Shortcut title for rolling a D6.",

@@ -51,6 +51,12 @@ actor ConnectionController: Identifiable {
     /// reports one terminal outcome, so this never needs to reset. See
     /// CODE_AUDIT_Reconnect §3.1.
     private var terminalOutcomeReported = false
+    /// Set by an external `cancel()` (the owner tearing the connection down on purpose). The
+    /// pending `receiveMessage` completes afterwards with a cancellation error that must not be
+    /// reported as a failure of its own. See CODE_AUDIT_15 §3.6.
+    private var wasCancelledLocally = false
+    /// Consumes `NWConnection` state updates in the order they were delivered.
+    private var stateTask: Task<Void, Never>?
 
     init(id: UUID, endpoint: NWEndpoint, passcode: String, delegate: ConnectionControllerDelegate) {
         self.id = id
@@ -69,6 +75,7 @@ actor ConnectionController: Identifiable {
     deinit {
         // Owners may drop connections without an explicit cancel() (e.g. resetConnections).
         receiveTask?.cancel()
+        stateTask?.cancel()
         connection.cancel()
     }
 }
@@ -87,18 +94,26 @@ extension ConnectionController: ConnectionControllable {
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Start")
 
-        connection.stateUpdateHandler = { [weak self] newState in
-            Task {
-                await self?.stateChanged(newState)
+        // One `Task` per state change gave no ordering guarantee (`.ready` could be processed
+        // after `.failed`/`.cancelled`); a single consumer of an `AsyncStream` keeps the order.
+        // See CODE_AUDIT_15 §3.6.
+        let (states, continuation) = AsyncStream.makeStream(of: NWConnection.State.self)
+        connection.stateUpdateHandler = { newState in
+            continuation.yield(newState)
+            if case .cancelled = newState { continuation.finish() }
+        }
+        stateTask = Task { [weak self] in
+            for await state in states {
+                guard let self else { break }
+                await self.stateChanged(state)
             }
         }
         connection.start(queue: queue)
     }
 
     func cancel() {
-        receiveTask?.cancel()
-        receiveTask = nil
-        connection.cancel()
+        wasCancelledLocally = true
+        teardown()
     }
 
     func request(type: GameMessageType, with content: MessageMapper?) {
@@ -147,70 +162,36 @@ extension ConnectionController: ConnectionControllable {
     }
 
     private func sendFailed(error: NWError) async {
+        // A send still in flight when the owner cancelled completes with an error too.
+        guard !wasCancelledLocally else { return }
         let uuid = id.uuidString
         Logger.connectionController.error("Connection: \(uuid, privacy: .public) Send failed \(error.localizedDescription, privacy: .public)")
-        cancel()
+        teardown()
         await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
     }
 }
-
-#if DEBUG
-/// Test-only spy that records the already encoded payload handed to a connection.
-actor ConnectionControllableSpyingStub: ConnectionControllable {
-    nonisolated let id: UUID
-
-    private(set) var calledStartConnection = 0
-    private(set) var calledCancel = 0
-    private(set) var requestTypes: [GameMessageType] = []
-    private(set) var responseTypes: [GameMessageType] = []
-    private(set) var requestEncodedContents: [Data?] = []
-    private(set) var responseEncodedContents: [Data?] = []
-
-    init(id: UUID = UUID()) {
-        self.id = id
-    }
-
-    func startConnection() {
-        calledStartConnection += 1
-    }
-
-    func cancel() {
-        calledCancel += 1
-    }
-
-    func request(type: GameMessageType, with content: MessageMapper?) {
-        request(type: type, encodedContent: content?.encodeData())
-    }
-
-    func response(type: GameMessageType, with content: MessageMapper?) {
-        response(type: type, encodedContent: content?.encodeData())
-    }
-
-    func request(type: GameMessageType, encodedContent: Data?) {
-        requestTypes.append(type)
-        requestEncodedContents.append(encodedContent)
-    }
-
-    func response(type: GameMessageType, encodedContent: Data?) {
-        responseTypes.append(type)
-        responseEncodedContents.append(encodedContent)
-    }
-}
-#endif
-
 private extension ConnectionController {
+    /// Stops receiving and cancels the connection without marking the cancel as the owner's.
+    func teardown() {
+        receiveTask?.cancel()
+        receiveTask = nil
+        connection.cancel()
+    }
+
     func stateChanged(_ newState: NWConnection.State) async {
         let uuid = id.uuidString
 
         switch newState {
         case .ready:
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Ready")
+            // A late `.ready` after a terminal outcome or a local cancel must not arm a receive.
+            guard !terminalOutcomeReported, !wasCancelledLocally else { return }
             startReceiveLoop()
             await connectionReady()
 
         case let .failed(error):
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(error.localizedDescription, privacy: .public)")
-            cancel()
+            teardown()
             await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
 
         case .cancelled:
@@ -263,10 +244,13 @@ private extension ConnectionController {
     }
 
     func process(content: Data?, context: NWConnection.ContentContext?, error: Error?) async {
+        // The receive that was pending when the owner cancelled completes with an error (or
+        // EOF): the teardown is already being reported through `.cancelled`.
+        guard !wasCancelledLocally else { return }
         guard error == nil else {
             let uuid = id.uuidString
             Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "", privacy: .public)")
-            cancel()
+            teardown()
             let isAuthenticationFailure = (error as? NWError).map(Self.isAuthenticationFailure) ?? false
             await connectionFailed(message: error?.localizedDescription ?? "", isAuthenticationFailure: isAuthenticationFailure)
             return
@@ -284,7 +268,7 @@ private extension ConnectionController {
             // instantly. See CODE_AUDIT_Network §5.6.
             let uuid = id.uuidString
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Peer closed the connection")
-            cancel()
+            teardown()
             // A graceful peer half-close is never evidence of a bad passcode.
             await connectionFailed(message: "Peer closed the connection", isAuthenticationFailure: false)
             return
@@ -317,6 +301,7 @@ extension ConnectionController {
         // See `terminalOutcomeReported`'s own doc — the `.cancelled` that
         // `cancel()` (called by every path that reaches this) always
         // produces afterward must not also report `lostConnection()`.
+        guard !terminalOutcomeReported else { return }
         terminalOutcomeReported = true
         await delegate?.failed(with: message, isAuthenticationFailure: isAuthenticationFailure, for: id)
     }

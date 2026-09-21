@@ -15,11 +15,13 @@ public struct RootURLHandler: NavigationURLHandler {
     let role: WindowRole
 
     @MainActor public func handles(_ url: URL, with navigator: Navigator) -> Bool {
-        if url.isVTTImportDocument {
+        // Only real files are importable documents; an `RPG://…/x.gmz` or web URL that merely
+        // ends in a document extension is not. See CODE_AUDIT_15 §5.12.
+        if url.isFileURL, url.isVTTImportDocument {
             return handleVTT(url: url, with: navigator)
         }
 
-        if url.isGmzDocument {
+        if url.isFileURL, url.isGmzDocument {
             return handleGmz(url: url, with: navigator)
         }
 

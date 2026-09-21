@@ -32,7 +32,7 @@ public struct QuickEditorButtonView<Value: Numeric>: View {
         .buttonStyle(.quickAdd)
 #elseif os(visionOS)
         .fixedSize()
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
 #endif
         .contentShape(Rectangle())
     }

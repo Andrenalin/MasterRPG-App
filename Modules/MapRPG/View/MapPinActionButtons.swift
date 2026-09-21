@@ -37,7 +37,7 @@ struct MapPinActionButtons: View {
                     height: MapAdaptiveFanGeometry.buttonSize.height
                 )
         }
-        .borderLessTVBottonStyle()
+        .borderLessTVButtonStyle()
         .foregroundStyle(.white)
         .background(type.tint(for: pin).opacity(0.78), in: .circle)
         .help(Text(type.localizedLabel(for: pin)))

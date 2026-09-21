@@ -273,7 +273,12 @@ struct GeneratorController: Sendable {
             // rebuild) — reading it here risked a spinner stuck `true` after an error, or
             // clearing prematurely while another operation on the swapped-in session was
             // still running. See CODE_AUDIT §5.16.
-            defer { model.isLoading = false }
+            // Only the newest request may clear the busy state: a superseded task finishing later
+            // used to show an idle UI while the newer request was still generating.
+            // See CODE_AUDIT_15 §5.10.
+            defer {
+                if model.currentGeneration == generation { model.isLoading = false }
+            }
             do {
                 let typeId = rootSheetModel.source.typeId
                 let response = try await model.conversationEngine.sendStreamingMessage(
@@ -345,7 +350,9 @@ struct GeneratorController: Sendable {
                 count: message.count
             )
             defer { trace?.end() }
-            defer { model.isExtracting = model.extractSession.isResponding }
+            defer {
+                if model.currentGeneration == generation { model.isExtracting = model.extractSession.isResponding }
+            }
             var isFirstPartial = true
             var stableCompletedEntries: [SheetModel] = []
             do {

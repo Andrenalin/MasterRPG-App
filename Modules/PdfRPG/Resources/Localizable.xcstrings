@@ -336,7 +336,14 @@
       }
     },
     "Cancel PDF analysis" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF-Analyse abbrechen"
+          }
+        }
+      }
     },
     "Cancel PDF extraction" : {
       "localizations" : {
@@ -371,7 +378,14 @@
       }
     },
     "Closes the analysis view without applying changes" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließt die Analyseansicht, ohne Änderungen zu übernehmen"
+          }
+        }
+      }
     },
     "Closes the extraction view without applying changes" : {
       "localizations" : {

@@ -39,6 +39,12 @@ extension MasterController {
                 Logger.networking.debug("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — not a recognized player dice group event (role: \(String(describing: model.sender.role), privacy: .public), subType: \(model.subType.debugDescription, privacy: .public), purpose: \(String(describing: model.purpose), privacy: .public), hasData: \(model.data.data != nil, privacy: .public))")
                 return nil
             }
+            // A player's report is not authoritative: refuse values no dice can produce.
+            // See CODE_AUDIT_15 §5.9.
+            if !model.sender.isMaster, let reported = DiceResultModel.decodeData(of: model.data.data), !reported.isPlausibleReport {
+                Logger.networking.warning("MasterController: Dice update from \(model.sender.id, privacy: .public) ignored — implausible roll")
+                return nil
+            }
             if let diceResult = DiceResultModel.decodeData(of: model.data.data) {
                 root.battleRoundController.recordDiceResult(
                     diceResult,

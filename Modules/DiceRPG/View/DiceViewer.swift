@@ -32,7 +32,7 @@ struct DiceViewer: View {
                         }
                         .accessibilityLabel(Text("Remove \(die.die.text) die", bundle: .module))
                         .frame(minWidth: 44, minHeight: 44)
-                        .borderLessTVBottonStyle()
+                        .borderLessTVButtonStyle()
                     } else {
                         ThumbnailDice(die: die)
                             .padding(4)

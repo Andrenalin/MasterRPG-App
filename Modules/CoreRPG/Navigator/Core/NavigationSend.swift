@@ -76,15 +76,6 @@ extension NavigationSending {
 
 extension Navigator: NavigationSending {
 
-    /// Sends a single value through the navigation system.
-    ///
-    /// This deprecated overload forwards to ``Navigator/send(values:)``.
-    @available(*, deprecated, renamed: "send", message: "Use send(...) instead.")
-    @MainActor
-    public func send(value: any Hashable) {
-        send(values: [value])
-    }
-
     /// Core implementation for broadcasting one or more values to navigation receivers.
     ///
     /// Most callers should prefer the variadic ``NavigationSending/send(_:)``
@@ -398,6 +389,7 @@ private struct NavigationResumeModifier: ViewModifier {
     }
 }
 
+@MainActor
 internal final class NavigationSendValues {
 
     internal let navigator: Navigator
@@ -414,14 +406,10 @@ internal final class NavigationSendValues {
         self.identifier = identifier
     }
 
-    deinit {
-        let navigator = self.navigator
-        let valueType = String(describing: type(of: value))
-        let consumed = self.consumed
-        MainActor.assumeIsolated {
-            if consumed == false {
-                navigator.log(.error("missing receive handler for type: \(valueType)!!!"))
-            }
+    // See CODE_AUDIT_15 §3.4.
+    isolated deinit {
+        if consumed == false {
+            navigator.log(.error("missing receive handler for type: \(String(describing: type(of: value)))!!!"))
         }
     }
 

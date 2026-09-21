@@ -37,7 +37,7 @@ nonisolated public struct NavigationConfiguration {
 
     /// Provide a restorationKey to enable state restoration in named ManagedNavigationControllers.
     ///
-    /// Increment or change the key when adding/removing checkpoints or changing destination types.
+    /// Increment or change the key when changing destination types.
     ///
     /// If no restorationKey is provided then navigation state restoration is disabled.
     public let restorationKey: String?
@@ -58,7 +58,7 @@ nonisolated public struct NavigationConfiguration {
     /// - Parameters:
     ///   - restorationKey: An optional key used to enable state restoration
     ///     for named managed navigation stacks. Change the key when you add
-    ///     or remove checkpoints or destination types.
+    ///     or remove destination types.
     ///   - logger: A closure that receives navigation events for logging.
     ///     The default implementation prints events in debug builds.
     ///   - executionDelay: Controls the timing of deep-link animations.

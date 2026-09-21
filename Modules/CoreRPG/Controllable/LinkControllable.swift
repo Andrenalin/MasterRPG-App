@@ -261,17 +261,17 @@ public extension LinkControllable {
         guard link.module == itemControllable.config.module else { return content }
         guard !validateLink(itemId: link.itemId, entryId: link.entryId) else { return content }
 
-        Logger.linkController.info("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) is gone")
+        Logger.linkController.info("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .private) is gone")
 
         if link.entryId != nil {
             // Is item available for the entry? If not recovery not possible
             guard let model = itemControllable.itemSync(for: link.itemId) else {
-                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because item is missing.")
+                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .private) cannot recover entry because item is missing.")
                 return content.replacing(link.markDown, with: link.name)
             }
 
             guard let entry = model.entries.first(where: { model.urlName(entryId: $0.id) == link.name }) else {
-                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover entry because entry name is missing.")
+                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .private) cannot recover entry because entry name is missing.")
                 return content.replacing(link.markDown, with: link.name)
             }
             return content.replacing(link.markDown, with: model.url(linkNumber: link.linkNumber, entryId: entry.id))
@@ -286,7 +286,7 @@ public extension LinkControllable {
             items.sort { $0.1 < $1.1}
 
             guard let newItem = items.first(where: { $0.0.urlName() == link.name })?.0 else {
-                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .public) cannot recover item because it is missing.")
+                Logger.linkController.warning("\(itemControllable.config.module.token, privacy: .public) \(link.markDown, privacy: .private) cannot recover item because it is missing.")
                 return content.replacing(link.markDown, with: link.name)
             }
 

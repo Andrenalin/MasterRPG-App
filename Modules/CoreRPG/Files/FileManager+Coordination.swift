@@ -88,21 +88,33 @@ extension FileManager {
     }
     
     private static func performCoordinatedFileAccess<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
-        // NSFileCoordinator is synchronous and can block while waiting on file presenters.
-        // Run it away from caller tasks so user-initiated work suspends instead of blocking its thread.
+        // NSFileCoordinator is synchronous and can block while waiting on file presenters or
+        // an iCloud download. Run it away from caller tasks so user-initiated work suspends
+        // instead of blocking its thread — and cap how many of these blocking calls hold a
+        // cooperative-pool thread at once, so a list of evicted iCloud files can never occupy
+        // every thread and starve unrelated async work (LAN receive loops, sleeps, decoding).
+        // See CODE_AUDIT_15 §3.1.
+        try await CoordinatedAccessLimiter.shared.acquire()
         let task = Task.detached(priority: .utility) {
             try operation()
         }
-        return try await withTaskCancellationHandler {
-            try await task.value
-        } onCancel: {
-            task.cancel()
+        do {
+            let result = try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
+            await CoordinatedAccessLimiter.shared.release()
+            return result
+        } catch {
+            await CoordinatedAccessLimiter.shared.release()
+            throw error
         }
     }
 
     private static func execute<T>(_ block: (URL) throws -> T, onSecurityScopedResource url: URL) throws -> T {
-        _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         return try block(url)
     }
     
@@ -183,12 +195,57 @@ extension FileManager {
     }
 
     private static func execute<T>(onSecurityScopedResource firstURL: URL, and secondURL: URL, with block: (_ firstURL: URL, _ secondURL: URL) throws -> T) throws -> T {
-        _ = firstURL.startAccessingSecurityScopedResource()
-        _ = secondURL.startAccessingSecurityScopedResource()
+        let firstScope = firstURL.startSecurityScopedAccess()
+        let secondScope = secondURL.startSecurityScopedAccess()
         defer {
-            firstURL.stopAccessingSecurityScopedResource()
-            secondURL.stopAccessingSecurityScopedResource()
+            firstScope.stop()
+            secondScope.stop()
         }
         return try block(firstURL, secondURL)
+    }
+}
+
+/// Bounds the number of blocking `NSFileCoordinator` calls running at once; further callers
+/// wait (cancellably) in FIFO order without occupying a thread. Always leaves at least one
+/// cooperative-pool thread free.
+private actor CoordinatedAccessLimiter {
+    static let shared = CoordinatedAccessLimiter(limit: max(1, min(4, ProcessInfo.processInfo.activeProcessorCount - 1)))
+
+    private let limit: Int
+    private var running = 0
+    private var waiters: [(id: UUID, continuation: CheckedContinuation<Void, any Error>)] = []
+
+    init(limit: Int) {
+        self.limit = limit
+    }
+
+    func acquire() async throws {
+        try Task.checkCancellation()
+        if running < limit {
+            running += 1
+            return
+        }
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                waiters.append((id, continuation))
+            }
+        } onCancel: {
+            Task { await self.cancelWaiter(id: id) }
+        }
+    }
+
+    func release() {
+        if waiters.isEmpty {
+            running -= 1
+        } else {
+            // The slot is handed over directly, `running` stays unchanged.
+            waiters.removeFirst().continuation.resume()
+        }
+    }
+
+    private func cancelWaiter(id: UUID) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else { return }
+        waiters.remove(at: index).continuation.resume(throwing: CancellationError())
     }
 }

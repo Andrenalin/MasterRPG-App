@@ -42,7 +42,7 @@ struct PlayListView: View {
                         }
                         .rowEditColor(backgroundColor: model.currentId == audio.id ? .teal : .blue)
                     }
-                    .borderLessTVBottonStyle()
+                    .borderLessTVButtonStyle()
 
                     Button(role: .destructive) {
                         if appGameStateModel.isGameRunning && root.audioController.model.isPlaying && root.audioController.model.currentId == audio.id {
@@ -62,7 +62,7 @@ struct PlayListView: View {
                         .foregroundStyle(.red)
                     }
                     .frame(minWidth: 44, minHeight: 44)
-                    .borderLessTVBottonStyle()
+                    .borderLessTVButtonStyle()
                 }
             }
         }

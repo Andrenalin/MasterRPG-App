@@ -29,13 +29,13 @@ public enum DiceWidgetReloader {
 // encode/decode + App-Group-UserDefaults read/write pair. See CODE_AUDIT §9.18.
 private enum AppGroupCodableStore {
     static func load<T: Codable>(_ type: T.Type, key: String) -> T? {
-        guard let data = UserDefaults(suiteName: UserDefaults.appGroupString)?.data(forKey: key) else { return nil }
+        guard let data = UserDefaults.appGroupDefaults?.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
     }
 
     static func save<T: Codable>(_ value: T, key: String) {
         guard let data = try? JSONEncoder().encode(value) else { return }
-        UserDefaults(suiteName: UserDefaults.appGroupString)?.set(data, forKey: key)
+        UserDefaults.appGroupDefaults?.set(data, forKey: key)
     }
 }
 

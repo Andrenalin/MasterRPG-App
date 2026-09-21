@@ -69,7 +69,7 @@ struct SearchItemListViewModifier: ViewModifier {
 #endif
     }
     
-    var searchScopeActivition: SearchScopeActivation {
+    var searchScopeActivation: SearchScopeActivation {
 #if os(tvOS)
         .automatic
 #else
