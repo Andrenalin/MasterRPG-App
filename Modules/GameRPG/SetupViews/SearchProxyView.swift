@@ -19,6 +19,10 @@ struct SearchProxyView: View {
                     .bold()
                     .accessibilityAddTraits(.isHeader)
 
+                if let statusController = root.networkStore.model.playerStore ?? root.networkProxyStore.model.playerStore {
+                    BrowserStatusView(browserManager: statusController.browserManager)
+                }
+
                 if empty {
 #if os(tvOS)
                     Button {
@@ -61,6 +65,13 @@ struct SearchProxyView: View {
             guard startsServices else { return }
             root.networkStore.model.playerStore?.browserManager.start()
             root.networkProxyStore.model.playerStore?.browserManager.start()
+        }
+        .onDisappear {
+            guard startsServices else { return }
+            for controller in [root.networkStore.model.playerStore, root.networkProxyStore.model.playerStore] {
+                guard let controller, controller.networkModel.playerConnectionId == nil else { continue }
+                controller.browserManager.stop()
+            }
         }
     }
     

@@ -23,12 +23,27 @@ extension NWConnection {
 }
 
 extension NWParameters {
+    /// A one-hex-digit check value of `passcode` plus its length, for debug logs: two devices whose
+    /// values differ certainly use different codes, while the value (4 bits) does not reveal the
+    /// code. Used to tell a code mismatch from a transport problem when a handshake fails with
+    /// `bad MAC`.
+    static func passcodeCheck(_ passcode: String) -> String {
+        let mac = HMAC<SHA256>.authenticationCode(for: Data("check".utf8), using: SymmetricKey(data: Data(passcode.utf8)))
+        let nibble = Array(mac).first.map { $0 & 0x0F } ?? 0
+        return "len \(passcode.count) check \(String(nibble, radix: 16))"
+    }
+
     // Create parameters for use in PeerConnection and PeerListener.
     convenience init(passcode: String) {
         // Customize TCP options to enable keepalives.
         let tcpOptions = NWProtocolTCP.Options()
+        // A probe every 2 s of idleness kept the radio busy on every idle session; probe after
+        // 15 s and give up after 3 unanswered probes 5 s apart (~30 s to notice a dead peer,
+        // instead of the OS default retry schedule). See CODE_AUDIT_Join §7.1.
         tcpOptions.enableKeepalive = true
-        tcpOptions.keepaliveIdle = 2
+        tcpOptions.keepaliveIdle = 15
+        tcpOptions.keepaliveInterval = 5
+        tcpOptions.keepaliveCount = 3
 
         // Create parameters with custom TLS and TCP options.
         self.init(tls: NWParameters.tlsOptions(passcode: passcode), tcp: tcpOptions)
@@ -82,13 +97,13 @@ extension NWParameters {
     }
 
     // Create a utility function to encode strings as pre-shared key data.
+    //
+    // UTF-8, not UTF-16 (`.unicode`): UTF-16 encodes ASCII with NUL bytes and a BOM, and the TLS
+    // stack compares a received PSK identity as a C string, so "GameMaster" as UTF-16 was cut at
+    // its first NUL and never matched the configured identity — every handshake, even with the
+    // right code, failed with "unknown PSK identity" (-9864). Also the bytes of the string's data,
+    // not of the `Data` value itself (CODE_AUDIT_15 §6.2). See CODE_AUDIT_Join.
     private static func stringToDispatchData(_ string: String) -> DispatchData? {
-        guard let stringData = string.data(using: .unicode) else {
-            return nil
-        }
-        // The bytes of the *string's data*, not of the `Data` value itself: viewing the
-        // struct's own memory read past it and sent stack/heap-pointer bytes in the clear
-        // TLS handshake. See CODE_AUDIT_15 §6.2.
-        return stringData.withUnsafeBytes { DispatchData(bytes: $0) }
+        Data(string.utf8).withUnsafeBytes { DispatchData(bytes: $0) }
     }
 }

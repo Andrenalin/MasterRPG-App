@@ -26,7 +26,7 @@ struct MasterNetworkControllerTestEnvironment {
         let controller = MasterNetworkController(
             name: name,
             delegate: delegateSpy,
-            listnerBuilder: { _, _, _, _, _ in listenerSpy as any ListenerManaging },
+            listnerBuilder: { _, _, _, _, _, _ in listenerSpy as any ListenerManaging },
             browserConnectionBuilder: browserConnectionBuilder
         )
 
@@ -367,12 +367,13 @@ struct MasterNetworkControllerTests {
                 factory.makeConnection(endpoint: endpoint)
             }
         )
+        env.controller.startProxyStreaming(passcode: "1234")
         let game = BrowserGameModel(
             id: UUID(),
             endpointName: "FallbackPlayer",
-            connectionMode: .proxy
+            connectionMode: .proxy,
+            sessionId: env.controller.networkModel.sessionId
         )
-        env.controller.startProxyStreaming(passcode: "1234")
 
         // Act
         env.controller.refresh(games: [game])
@@ -387,19 +388,86 @@ struct MasterNetworkControllerTests {
         env.controller.stopStreaming()
     }
 
-    @Test("Cancelled stops streaming")
-    func cancelled() async throws {
+    @Test("A failed listener keeps hosting, keeps players and is recreated")
+    func cancelledRestartsListener() async throws {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
+        await env.controller.newConnection(for: NWConnection(host: .init("localhost"), port: .any, using: .tcp))
+
+        // Act
+        await env.controller.listenerCancelled()
+
+        // Assert: hosting continues, the player stays, the listener is scheduled to restart
+        #expect(env.controller.networkModel.isStreaming)
+        #expect(env.controller.networkModel.connections.count == 1)
+        #expect(env.controller.networkModel.listener == nil)
+        #expect(env.controller.networkModel.listenerStatus == .restarting)
+        #expect(env.listenerSpy.calledStopListening == 1)
+
+        // The listener comes back after the first restart pause
+        try await Task.sleep(for: .seconds(1.5))
+        #expect(env.listenerSpy.calledStartListening == 2)
+        #expect(env.controller.networkModel.listenerStatus == .running)
+        env.controller.stopStreaming()
+    }
+
+    @Test("Listener failure after streaming stopped does nothing")
+    func cancelledAfterStopIsIgnored() async {
+        // Arrange
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        env.controller.startStreaming(passcode: "1234")
+        env.controller.stopStreaming()
 
         // Act
         await env.controller.listenerCancelled()
 
         // Assert
-        let isStreaming = env.controller.networkModel.isStreaming
-        #expect(!isStreaming)
-        #expect(env.controller.networkModel.connections.isEmpty)
+        #expect(!env.controller.networkModel.isStreaming)
+        #expect(env.controller.networkModel.listenerStatus == .stopped)
+    }
+
+    @Test("Only this session's reconnect services are dialed")
+    func onlyOwnSessionIsDialed() async {
+        // Arrange
+        let factory = BrowserConnectionFactorySpy()
+        let env = await MasterNetworkControllerTestEnvironment.create(
+            browserConnectionBuilder: { endpoint, _, _ in factory.makeConnection(endpoint: endpoint) }
+        )
+        env.controller.startStreaming(passcode: "1234")
+        let sessionId = env.controller.networkModel.sessionId
+        let own = BrowserGameModel(id: UUID(), endpointName: "Own", connectionMode: .proxy, sessionId: sessionId)
+        let foreign = BrowserGameModel(id: UUID(), endpointName: "Foreign", connectionMode: .proxy, sessionId: UUID().uuidString)
+        let legacy = BrowserGameModel(id: UUID(), endpointName: "Legacy", connectionMode: .proxy)
+
+        // Act
+        env.controller.refresh(games: [own, foreign, legacy])
+
+        // Assert
+        #expect(factory.endpoints.count == 1)
+        #expect(factory.endpoints.first.map { "\($0)" }?.contains("Own") == true)
+        env.controller.stopStreaming()
+    }
+
+    @Test("Outbound dials are capped and never use up the inbound join slots")
+    func outboundDialsAreCapped() async {
+        // Arrange
+        let factory = BrowserConnectionFactorySpy()
+        let env = await MasterNetworkControllerTestEnvironment.create(
+            browserConnectionBuilder: { endpoint, _, _ in factory.makeConnection(endpoint: endpoint) }
+        )
+        env.controller.startStreaming(passcode: "1234")
+
+        // Act
+        for index in 0..<(MasterNetworkController.maximumOutboundDials + 4) {
+            env.controller.connectToPlayer(endpoint: .service(name: "Fallback\(index)", type: GameServiceType.master.serviceName, domain: "local.", interface: nil))
+        }
+        await env.controller.newConnection(for: NWConnection(host: .init("localhost"), port: .any, using: .tcp))
+
+        // Assert
+        #expect(factory.endpoints.count == MasterNetworkController.maximumOutboundDials)
+        #expect(env.controller.networkModel.connections.count == MasterNetworkController.maximumOutboundDials + 1)
+        env.controller.stopStreaming()
     }
 }
 

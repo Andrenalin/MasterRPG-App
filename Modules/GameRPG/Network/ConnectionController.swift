@@ -62,7 +62,7 @@ actor ConnectionController: Identifiable {
         self.id = id
         self.connection = NWConnection.connection(endpoint: endpoint, passcode: passcode)
         self.delegate = delegate
-        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint")
+        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint (\(NWParameters.passcodeCheck(passcode), privacy: .public))")
     }
 
     init(id: UUID, connection: NWConnection, delegate: ConnectionControllerDelegate) {
@@ -211,6 +211,17 @@ private extension ConnectionController {
             guard !terminalOutcomeReported else { return }
             terminalOutcomeReported = true
             await lostConnection()
+
+        case let .waiting(error):
+            // A rejected handshake (wrong code: `-9820 bad MAC`, unknown identity: `-9864`)
+            // surfaces as `.waiting(.tls)`, never as `.failed`: the framework keeps the
+            // connection "waiting" to retry. The passcode cannot change between retries, so it is
+            // terminal here; other waiting reasons (no route, permission pending) stay
+            // transient. Without this a wrong code only showed up as a 12 s join timeout.
+            guard case .tls = error else { break }
+            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Handshake rejected \(error.localizedDescription, privacy: .public)")
+            teardown()
+            await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: true)
 
         default:
             break

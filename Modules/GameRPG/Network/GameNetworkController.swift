@@ -272,6 +272,10 @@ extension GameNetworkController {
         model.masterStore?.networkModel.isStreaming ?? false
     }
 
+    func resumeAfterActivation() {
+        model.masterStore?.resumeAfterActivation()
+    }
+
     func resetName(name: String, supporterTier: SupporterTier = .none) {
         model.masterStore?.networkModel.name = name
         model.masterStore?.networkModel.supporterTier = supporterTier

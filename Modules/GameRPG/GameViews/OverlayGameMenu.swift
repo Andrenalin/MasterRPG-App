@@ -432,9 +432,10 @@ private struct OverlayGameMenuWifiView: View {
             connectionStatus: (isMaster ? nil : playerController).map {
                 GameConnectionStatusPresentation(
                     lostMaster: $0.gameModel.lostMaster,
-                    sharePlayState: root.networkStore.sharePlayStore.connectionState
+                    sharePlayState: root.networkStore.sharePlayStore.connectionState,
+                    isReconnecting: root.isLocalNetworkReconnecting
                 )
-            }
+            } ?? root.hostingStatus(isMaster: isMaster)
         )
         .imageScale(.small)
         .padding(.leading, marginWidth)

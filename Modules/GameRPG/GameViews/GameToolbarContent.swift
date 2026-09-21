@@ -59,10 +59,11 @@ struct GameToolbarContent: ToolbarContent {
             GameJoinCodeRevealButton(
                 root: root,
                 isMaster: role == .master,
-                connectionStatus: playerController.map {
+                connectionStatus: root.hostingStatus(isMaster: role == .master) ?? playerController.map {
                     GameConnectionStatusPresentation(
                         lostMaster: $0.gameModel.lostMaster,
-                        sharePlayState: root.networkStore.sharePlayStore.connectionState
+                        sharePlayState: root.networkStore.sharePlayStore.connectionState,
+                        isReconnecting: root.isLocalNetworkReconnecting
                     )
                 }
             )

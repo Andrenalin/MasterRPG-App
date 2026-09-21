@@ -25,6 +25,8 @@ struct BrowserView: View {
                 .bold()
                 .accessibilityAddTraits(.isHeader)
 
+            BrowserStatusView(browserManager: playerNetworkControllable.browserManager)
+
             if playerNetworkControllable.browserManager.games.isEmpty {
                 Text("No hosted games found", bundle: .module)
                     .bold()
@@ -42,8 +44,34 @@ struct BrowserView: View {
             guard startsServices else { return }
             playerNetworkControllable.browserManager.start()
         }
+        .onDisappear {
+            // Discovery only runs while it is needed: leaving this screen stops it, unless a join
+            // is under way or connected (the removal of the host's service is how a lost master is
+            // noticed). See CODE_AUDIT_Join §7.2.
+            guard startsServices, playerNetworkControllable.networkModel.playerConnectionId == nil else { return }
+            playerNetworkControllable.browserManager.stop()
+        }
         .animation(accessibilityReduceMotion ? nil : .default, value: playerNetworkControllable.networkModel.isConnected)
         .animation(accessibilityReduceMotion ? nil : .default, value: playerNetworkControllable.browserManager.isBrowsing)
+    }
+}
+
+/// Explains why no games are listed when discovery is not simply empty: denied Local Network
+/// access can never work until the setting changes, and a failed browser is being restarted.
+/// See CODE_AUDIT_Join §8.2.
+struct BrowserStatusView: View {
+    let browserManager: BrowserManager
+
+    var body: some View {
+        if browserManager.isLocalNetworkAccessDenied {
+            Text("Local Network access is turned off for MasterRPG. Turn it on in Settings to find games.", bundle: .module)
+                .foregroundStyle(.red)
+                .multilineTextAlignment(.center)
+        } else if browserManager.errorMessage != nil {
+            Text("Searching for games was interrupted. Trying again…", bundle: .module)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
     }
 }
 

@@ -25,7 +25,7 @@ struct IOSGameOverlayControlField: View {
             // dial back in with the already-known passcode — a real,
             // in-progress recovery distinct from a connection that never
             // recovers. See CODE_AUDIT_Reconnect §8.1.
-            isReconnecting: root.networkStore.model.playerStore?.networkModel.connectionState == .lost
+            isReconnecting: root.isLocalNetworkReconnecting
         )
 
         HStack(spacing: spacing) {
@@ -43,7 +43,7 @@ struct IOSGameOverlayControlField: View {
             GameJoinCodeRevealButton(
                 root: root,
                 isMaster: isMaster,
-                connectionStatus: (isMaster ? nil : playerController) != nil ? presentation.connectionStatus : nil
+                connectionStatus: (isMaster ? nil : playerController) != nil ? presentation.connectionStatus : root.hostingStatus(isMaster: isMaster)
             )
 
             BatteryView()

@@ -7,6 +7,8 @@ import Foundation
 
 extension NWTXTRecord {
     static let supporterTierKey = "tier"
+    /// Identifies the game session a service belongs to. See CODE_AUDIT_Join §5.2.
+    static let sessionKey = "session"
 }
 
 fileprivate enum ListenerEvent: Sendable {
@@ -33,6 +35,7 @@ final class ListenerManager: ListenerManaging {
     let name: String
     let supporterTier: SupporterTier
     let passcode: String
+    let sessionId: String?
 
     private(set) var state: NetworkState = .cancelled
 
@@ -40,11 +43,12 @@ final class ListenerManager: ListenerManaging {
     @ObservationIgnored private var networkTask: Task<Void, Never>?
     weak var delegate: (any ListenerManagerDelegate)?
 
-    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String) {
+    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String, sessionId: String? = nil) {
         self.name = name
         self.supporterTier = supporterTier
         self.serviceType = serviceType
         self.passcode = passcode
+        self.sessionId = sessionId
         Logger.listenerController.debug("ListenerManager: Init \(name, privacy: .private)")
     }
 
@@ -66,7 +70,7 @@ final class ListenerManager: ListenerManaging {
         let generation = runGeneration
         state = .connecting
 
-        let controller = ListenerServerController(name: name, supporterTier: supporterTier, serviceType: serviceType, passcode: passcode)
+        let controller = ListenerServerController(name: name, supporterTier: supporterTier, serviceType: serviceType, passcode: passcode, sessionId: sessionId)
 
         monitorTask = Task { @MainActor [weak self] in
             for await event in controller.events {
@@ -133,6 +137,7 @@ actor ListenerServerController {
     private let supporterTier: SupporterTier
     private let serviceType: GameServiceType
     private let passcode: String
+    private let sessionId: String?
     // NWListener needs a dispatch queue for its callbacks, which immediately
     // hop into this actor via Task { await self... } below — a dedicated
     // background queue matches ConnectionController's own NWConnection
@@ -140,18 +145,24 @@ actor ListenerServerController {
     // §3.4.
     private let queue = DispatchQueue(label: "de.andretrettin.MasterRPG.ListenerServerController")
 
-    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String) {
+    init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String, sessionId: String? = nil) {
         self.name = name
         self.supporterTier = supporterTier
         self.serviceType = serviceType
         self.passcode = passcode
+        self.sessionId = sessionId
         (self.events, self.continuation) = AsyncStream.makeStream(of: ListenerEvent.self)
     }
 
     func run() async throws {
+        let passcodeCheck = NWParameters.passcodeCheck(passcode)
+        Logger.listenerController.debug("ListenerManager: Listening (\(passcodeCheck, privacy: .public))")
         let listener = try NWListener(using: NWParameters(passcode: passcode))
-        let txtRecord = NWTXTRecord([NWTXTRecord.supporterTierKey: String(supporterTier.rawValue)])
-        listener.service = NWListener.Service(name: name, type: serviceType.serviceName, txtRecord: txtRecord)
+        var txtEntries = [NWTXTRecord.supporterTierKey: String(supporterTier.rawValue)]
+        if let sessionId {
+            txtEntries[NWTXTRecord.sessionKey] = sessionId
+        }
+        listener.service = NWListener.Service(name: Self.advertisedName(from: name), type: serviceType.serviceName, txtRecord: NWTXTRecord(txtEntries))
         defer {
             listener.cancel()
             continuation.finish()
@@ -183,6 +194,23 @@ actor ListenerServerController {
         } onCancel: {
             listener.cancel()
         }
+    }
+
+    /// DNS-SD instance names are limited to 63 UTF-8 bytes, and an empty name is invalid. The
+    /// adventure title is arbitrary user text, so it is trimmed and cut on a character boundary
+    /// rather than risking a listener that refuses to start. See CODE_AUDIT_Join §5.10.
+    static func advertisedName(from name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = trimmed.isEmpty ? "MasterRPG" : trimmed
+        var result = ""
+        var byteCount = 0
+        for character in base {
+            let characterBytes = String(character).utf8.count
+            guard byteCount + characterBytes <= 63 else { break }
+            result.append(character)
+            byteCount += characterBytes
+        }
+        return result
     }
 
     private func handleState(_ state: NWListener.State) {

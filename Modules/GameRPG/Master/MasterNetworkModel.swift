@@ -14,6 +14,10 @@ protocol MasterNetworkControllerDelegate: Sendable & AnyObject {
 protocol MasterNetworkControllable: Sendable & AnyObject {
     var networkModel: MasterNetworkModel { get }
 
+    /// Re-checks hosting after the app became active: restarts a listener that failed and a
+    /// browser that stopped while the app was suspended. See CODE_AUDIT_Join §5.3.
+    @MainActor func resumeAfterActivation()
+
     @MainActor func startStreaming(passcode: String)
     @MainActor func stopStreaming()
     @MainActor func toggleStreaming(passcode: String)
@@ -28,6 +32,20 @@ protocol MasterNetworkControllable: Sendable & AnyObject {
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async
 }
 
+extension MasterNetworkControllable {
+    @MainActor func resumeAfterActivation() {}
+}
+
+/// Whether this device's game listener is accepting new joins.
+enum MasterListenerStatus: Equatable, Sendable {
+    case stopped
+    case running
+    /// The listener failed and is being recreated after a pause. Connected players stay connected.
+    case restarting
+    /// Recreating the listener kept failing; new players cannot join until hosting is restarted.
+    case failed
+}
+
 @MainActor @Observable
 final class MasterNetworkModel {
     init(name: String = "Master Device") {
@@ -38,6 +56,12 @@ final class MasterNetworkModel {
     var supporterTier: SupporterTier = .none
     var connections: [any ConnectionControllable] = []
     var isStreaming: Bool = false
+    var listenerStatus: MasterListenerStatus = .stopped
+    /// Identifies this hosting run. Advertised by the listener, and required of the reconnect
+    /// services this master dials, so a master only redials its own players.
+    /// See CODE_AUDIT_Join §5.2.
+    @ObservationIgnored var sessionId: String = UUID().uuidString
+    @ObservationIgnored var isProxyHosting = false
 
     /// The join code this session's listener was started with. Captured once
     /// at `startStreaming(passcode:)`/`startProxyStreaming(passcode:)` and

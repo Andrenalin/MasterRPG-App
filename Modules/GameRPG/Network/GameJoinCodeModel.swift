@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Observation
+import os.log
 import SwiftUI
 import Synchronization
 
@@ -26,24 +28,23 @@ import Synchronization
 /// connection failure.
 @MainActor @Observable
 public final class GameJoinCodeModel: Sendable {
-    public init() {
-        self.defaults = .standard
-        self.codeStorage = KeychainJoinCodeStorage()
-        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults)
-        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults)
-        lastUsedMasterJoinCode = Self.loadLastUsedMasterJoinCode(storage: codeStorage, legacyDefaults: defaults)
+    public convenience init() {
+        self.init(defaults: .standard, codeStorage: KeychainJoinCodeStorage())
     }
 
-    init(defaults: UserDefaults, codeStorage: any JoinCodeStorage = KeychainJoinCodeStorage()) {
+    init(defaults: UserDefaults?, codeStorage: any JoinCodeStorage = KeychainJoinCodeStorage()) {
         self.defaults = defaults
         self.codeStorage = codeStorage
-        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults)
-        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults)
-        lastUsedMasterJoinCode = Self.loadLastUsedMasterJoinCode(storage: codeStorage, legacyDefaults: defaults)
+        var unresolved: Set<String> = []
+        masterCode = Self.loadOrGenerate(key: Self.masterCodeKey, storage: codeStorage, legacyDefaults: defaults, unresolved: &unresolved)
+        playerCode = Self.loadOrGenerate(key: Self.playerCodeKey, storage: codeStorage, legacyDefaults: defaults, unresolved: &unresolved)
+        lastUsedMasterJoinCode = Self.loadOptional(key: Self.lastUsedMasterJoinCodeKey, storage: codeStorage, legacyDefaults: defaults, unresolved: &unresolved)
+        lastUsedMasterHost = Self.loadHost(storage: codeStorage, unresolved: &unresolved)
+        unresolvedKeys = unresolved
     }
 
     private let defaults: UserDefaults?
-    /// Backs all three codes below, including `lastUsedMasterJoinCode` — it
+    /// Backs all codes below, including `lastUsedMasterJoinCode` — it
     /// is still a live authentication secret (the code currently granting
     /// access to whatever game it was last used to join), so it belongs in
     /// the same Keychain-backed, non-backed-up storage as `masterCode`/
@@ -57,13 +58,30 @@ public final class GameJoinCodeModel: Sendable {
     /// See CODE_AUDIT_15 §3.13.
     private let writeBuffer = JoinCodeWriteBuffer()
 
+    /// Keys whose value could not be read or written when the model was created (keychain
+    /// locked or unavailable). Their in-memory value is provisional: a generated code is not
+    /// written, and a stored code is not yet known. `refreshFromStorage()` resolves them, so a
+    /// locked-keychain launch can never replace a code that was already shared with players.
+    /// See CODE_AUDIT_Join §5.5.
+    @ObservationIgnored private var unresolvedKeys: Set<String>
+    @ObservationIgnored private var isApplyingStoredValue = false
+
     private func persist(_ value: String?, forKey key: String) {
+        guard !isApplyingStoredValue else { return }
+        unresolvedKeys.remove(key)
         writeBuffer.enqueue(value, forKey: key)
         let buffer = writeBuffer
         let storage = codeStorage
         Task.detached(priority: .utility) {
             buffer.flush(to: storage)
         }
+    }
+
+    /// Writes any queued change now, on the calling thread. Called right before a code is put to
+    /// use (hosting/joining), so a code changed moments ago is durable even if the app is
+    /// suspended straight afterwards. See CODE_AUDIT_Join §3.3.
+    public func flushPendingWrites() {
+        writeBuffer.flush(to: codeStorage)
     }
 
     public var masterCode: String {
@@ -81,13 +99,36 @@ public final class GameJoinCodeModel: Sendable {
     }
 
     /// The code this device last used to successfully join a Game Master.
-    /// Tried automatically on the next "Connect" tap for that role before
+    /// Tried automatically on the next "Connect" tap for *that* host before
     /// falling back to prompting for a fresh code — see `BrowserRowView`.
-    public var lastUsedMasterJoinCode: String? {
+    public private(set) var lastUsedMasterJoinCode: String? {
         didSet {
             guard oldValue != lastUsedMasterJoinCode else { return }
             persist(lastUsedMasterJoinCode, forKey: Self.lastUsedMasterJoinCodeKey)
         }
+    }
+
+    /// The host `lastUsedMasterJoinCode` was accepted by. A code is only offered again for the
+    /// same host: replaying it against any other advertiser burned one of that host's failure
+    /// allowances and handed it a handshake derived from an unrelated code.
+    /// See CODE_AUDIT_Join §5.9.
+    public private(set) var lastUsedMasterHost: String? {
+        didSet {
+            guard oldValue != lastUsedMasterHost else { return }
+            persist(lastUsedMasterHost, forKey: Self.lastUsedMasterHostKey)
+        }
+    }
+
+    /// The remembered Game Master code, only if it was accepted by `host`.
+    public func rememberedMasterJoinCode(forHost host: String) -> String? {
+        guard lastUsedMasterHost == host else { return nil }
+        return lastUsedMasterJoinCode
+    }
+
+    public func rememberMasterJoinCode(_ code: String, forHost host: String) {
+        guard Self.isValidCode(code) else { return }
+        lastUsedMasterHost = host
+        lastUsedMasterJoinCode = code
     }
 
     /// A fresh, random 4-digit code (`"0000"`...`"9999"`, always zero-padded).
@@ -96,7 +137,7 @@ public final class GameJoinCodeModel: Sendable {
         return String(repeating: "0", count: Self.codeLength - digits.count) + digits
     }
 
-    /// Regenerates `masterCode` and `playerCode` and clears `lastUsedMasterJoinCode`,
+    /// Regenerates `masterCode` and `playerCode` and clears the remembered host code,
     /// replacing every code this device has stored in the Keychain. Each property's
     /// own `didSet` handles the actual Keychain write/removal — see their doc
     /// comments — so this only needs to assign new values. Exposed from
@@ -106,11 +147,58 @@ public final class GameJoinCodeModel: Sendable {
         masterCode = Self.randomCode()
         playerCode = Self.randomCode()
         lastUsedMasterJoinCode = nil
+        lastUsedMasterHost = nil
     }
 
-    private static func loadOrGenerate(key: String, storage: any JoinCodeStorage, legacyDefaults: UserDefaults?) -> String {
-        if let stored = storage.string(forKey: key), isValidCode(stored) {
+    /// Retries every value that could not be resolved at creation. Cheap no-op once everything
+    /// is resolved. Call before a code is used (hosting, joining) and when the app becomes active.
+    public func refreshFromStorage() {
+        guard !unresolvedKeys.isEmpty else { return }
+        for key in unresolvedKeys {
+            let result = codeStorage.read(forKey: key)
+            switch (key, result) {
+            case (_, .unavailable):
+                continue
+            case (Self.masterCodeKey, .found(let stored)) where Self.isValidCode(stored):
+                apply { masterCode = stored }
+            case (Self.playerCodeKey, .found(let stored)) where Self.isValidCode(stored):
+                apply { playerCode = stored }
+            case (Self.lastUsedMasterJoinCodeKey, .found(let stored)) where Self.isValidCode(stored):
+                apply { lastUsedMasterJoinCode = stored }
+            case (Self.lastUsedMasterHostKey, .found(let stored)):
+                apply { lastUsedMasterHost = stored }
+            case (Self.masterCodeKey, _):
+                guard codeStorage.set(masterCode, forKey: key) else { continue }
+            case (Self.playerCodeKey, _):
+                guard codeStorage.set(playerCode, forKey: key) else { continue }
+            default:
+                break
+            }
+            unresolvedKeys.remove(key)
+        }
+    }
+
+    private func apply(_ change: () -> Void) {
+        isApplyingStoredValue = true
+        change()
+        isApplyingStoredValue = false
+    }
+
+    private static func loadOrGenerate(
+        key: String,
+        storage: any JoinCodeStorage,
+        legacyDefaults: UserDefaults?,
+        unresolved: inout Set<String>
+    ) -> String {
+        switch storage.read(forKey: key) {
+        case .found(let stored) where isValidCode(stored):
             return stored
+        case .unavailable:
+            // Do not replace a code that may exist but cannot be read right now.
+            unresolved.insert(key)
+            return randomCode()
+        default:
+            break
         }
         // Migrate a pre-existing `UserDefaults`-stored code (this model's storage before
         // CODE_AUDIT §6.2) into the Keychain instead of silently generating a new one, which
@@ -118,43 +206,81 @@ public final class GameJoinCodeModel: Sendable {
         if let legacy = legacyDefaults?.string(forKey: key), isValidCode(legacy) {
             if storage.set(legacy, forKey: key) {
                 legacyDefaults?.removeObject(forKey: key)
+            } else {
+                unresolved.insert(key)
             }
             return legacy
         }
         let generated = randomCode()
-        storage.set(generated, forKey: key)
+        if !storage.set(generated, forKey: key) {
+            unresolved.insert(key)
+        }
         return generated
     }
 
-    /// Mirrors `loadOrGenerate` for the one code that has no "generate a
-    /// fresh one if missing" fallback — it's fine for this to simply be
-    /// unset. See CODE_AUDIT §6.2.
-    private static func loadLastUsedMasterJoinCode(
+    /// Mirrors `loadOrGenerate` for a code that has no "generate a fresh one if missing"
+    /// fallback — it's fine for this to simply be unset. See CODE_AUDIT §6.2.
+    private static func loadOptional(
+        key: String,
         storage: any JoinCodeStorage,
-        legacyDefaults: UserDefaults?
+        legacyDefaults: UserDefaults?,
+        unresolved: inout Set<String>
     ) -> String? {
-        if let stored = storage.string(forKey: lastUsedMasterJoinCodeKey), isValidCode(stored) {
+        switch storage.read(forKey: key) {
+        case .found(let stored) where isValidCode(stored):
             return stored
+        case .unavailable:
+            unresolved.insert(key)
+            return nil
+        default:
+            break
         }
-        if let legacy = legacyDefaults?.string(forKey: lastUsedMasterJoinCodeKey), isValidCode(legacy) {
-            if storage.set(legacy, forKey: lastUsedMasterJoinCodeKey) {
-                legacyDefaults?.removeObject(forKey: lastUsedMasterJoinCodeKey)
+        if let legacy = legacyDefaults?.string(forKey: key), isValidCode(legacy) {
+            if storage.set(legacy, forKey: key) {
+                legacyDefaults?.removeObject(forKey: key)
             }
             return legacy
         }
         return nil
     }
 
+    private static func loadHost(storage: any JoinCodeStorage, unresolved: inout Set<String>) -> String? {
+        switch storage.read(forKey: lastUsedMasterHostKey) {
+        case .found(let host):
+            return host
+        case .unavailable:
+            unresolved.insert(lastUsedMasterHostKey)
+            return nil
+        case .notFound:
+            return nil
+        }
+    }
+
+    /// A code is exactly four ASCII digits. Other Unicode digits (Arabic-Indic, full-width,
+    /// superscripts) are "numbers" to `Character` but encode to different bytes, so they would
+    /// derive a different key than the host's ASCII code and fail as a wrong code.
+    /// See CODE_AUDIT_Join §5.7.
     static func isValidCode(_ code: String) -> Bool {
-        code.count == Self.codeLength && code.allSatisfy(\.isNumber)
+        code.count == Self.codeLength && code.allSatisfy { $0.isASCII && $0.isNumber }
+    }
+
+    /// Normalises typed or pasted input to at most `codeLength` ASCII digits, converting other
+    /// Unicode decimal digits (e.g. from an Arabic or Persian keypad) to their ASCII value.
+    static func sanitized(_ input: String) -> String {
+        let digits = input.compactMap { character -> Character? in
+            guard let value = character.wholeNumberValue, (0...9).contains(value) else { return nil }
+            return Character(String(value))
+        }
+        return String(digits.prefix(codeLength))
     }
 
     /// Digit count for every join code. See CODE_AUDIT §9.12 — previously
     /// duplicated as a bare `4` in both `randomCode()` and `isValidCode(_:)`.
-    private static let codeLength = 4
+    static let codeLength = 4
     private static let masterCodeKey = "MasterRPGMasterJoinCode"
     private static let playerCodeKey = "MasterRPGPlayerJoinCode"
     private static let lastUsedMasterJoinCodeKey = "MasterRPGLastUsedMasterJoinCode"
+    private static let lastUsedMasterHostKey = "MasterRPGLastUsedMasterHost"
 }
 
 /// Ordered hand-off of join-code changes to the Keychain; see `GameJoinCodeModel.persist`.
@@ -175,10 +301,20 @@ private final class JoinCodeWriteBuffer: Sendable {
                 return taken
             }
             for (key, value) in entries {
-                if let value {
+                let succeeded = if let value {
                     storage.set(value, forKey: key)
                 } else {
                     storage.remove(forKey: key)
+                }
+                if !succeeded {
+                    // The key is public; the value is never logged. Keep the change queued for the
+                    // next flush unless a newer value already superseded it.
+                    Logger.networking.error("GameJoinCodeModel: Keychain write failed for \(key, privacy: .public)")
+                    pending.withLock { pending in
+                        if pending.index(forKey: key) == nil {
+                            pending[key] = .some(value)
+                        }
+                    }
                 }
             }
         }

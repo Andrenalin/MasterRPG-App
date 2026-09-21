@@ -13,11 +13,13 @@ struct IOSGameConnectionStatusView: View {
 
     init(
         playerController: PlayerController,
-        sharePlayState: SharePlayConnectionState = .inactive
+        sharePlayState: SharePlayConnectionState = .inactive,
+        isReconnecting: Bool = false
     ) {
         status = GameConnectionStatusPresentation(
             lostMaster: playerController.gameModel.lostMaster,
-            sharePlayState: sharePlayState
+            sharePlayState: sharePlayState,
+            isReconnecting: isReconnecting
         )
     }
 

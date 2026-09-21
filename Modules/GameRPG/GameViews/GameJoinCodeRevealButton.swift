@@ -70,6 +70,7 @@ private struct GameJoinCodeRevealContent: View {
                 .font(.largeTitle)
                 .fontDesign(.monospaced)
                 .bold()
+                .speechSpellsOutCharacters()
             Text("Share this code with players who want to join.", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)

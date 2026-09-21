@@ -22,6 +22,10 @@ extension MasterController {
         gameModel.resetPlayerJournalAdmissions()
         gameModel.resetPeerAvailabilitySources()
         root.logGameController.beginDeliverySession(gameModel.deliverySessionID)
+        // A code that could not be read at launch (locked keychain) is resolved, and a code changed
+        // moments ago is made durable, before it is put to use. See CODE_AUDIT_Join §5.5.
+        root.gameJoinCodeModel.refreshFromStorage()
+        root.gameJoinCodeModel.flushPendingWrites()
         await root.networkStore.startMasterGame(
             game: root.gameModel.gameConfig,
             titleImage: root.adventureRoot.titleImage(for: root.gameModel.gameConfig.master.adventureId),

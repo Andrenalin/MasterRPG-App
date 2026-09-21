@@ -29,6 +29,7 @@ struct GameRootViewer: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.appTheme) private var theme
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(ScenesManager.self) private var scenesManager
 #if os(iOS) || os(macOS)
     @Environment(AppSettingsModel.self) private var appSettingsModel
@@ -87,6 +88,12 @@ struct GameRootViewer: View {
             // could otherwise race a moment ago's true from another.
             guard newMapId != nil else { return }
             MasterRPGTips.setGameContentVisible(true)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Hosting services can stop while the app is suspended; check them when it returns.
+            // See CODE_AUDIT_Join §5.3.
+            guard phase == .active, contentType != .externalPlayer else { return }
+            root.applicationBecameActive()
         }
 #if os(visionOS)
         .onChange(of: root.photoRoot.gameControllable.gameModel.currentItemId) {
@@ -273,7 +280,7 @@ private struct EmptyGameContent: View {
                     }
                 }
                 if let joinCode {
-                    Text("Join Code: \(joinCode)", bundle: .module)
+                    Text("Join Code: \(Text(joinCode).speechSpellsOutCharacters())", bundle: .module)
                         .font(.title3)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)

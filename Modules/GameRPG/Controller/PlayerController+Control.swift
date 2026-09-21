@@ -29,6 +29,8 @@ extension PlayerController {
         if root.gameModel.gameType == .observer, model == nil {
             return false
         }
+        root.gameJoinCodeModel.refreshFromStorage()
+        root.gameJoinCodeModel.flushPendingWrites()
         if root.gameModel.gameType == .player {
             // This device also relays for further players — its own stored
             // Player code, not the code just entered to join the master.

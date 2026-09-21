@@ -16,8 +16,11 @@ struct GameJoinCodeOTPField: View {
     var onSubmit: (() -> Void)? = nil
 
     @FocusState private var isFocused: Bool
+    /// The digit boxes grow with Dynamic Type so a large digit never clips. See CODE_AUDIT_Join §8.5.
+    @ScaledMetric(relativeTo: .title2) private var boxWidth = 40
+    @ScaledMetric(relativeTo: .title2) private var boxHeight = 48
 
-    private static let digitCount = 4
+    private static let digitCount = GameJoinCodeModel.codeLength
 
     var body: some View {
         ZStack {
@@ -25,13 +28,19 @@ struct GameJoinCodeOTPField: View {
 #if os(iOS) || os(tvOS)
                 .keyboardType(.numberPad)
 #endif
+                .autocorrectionDisabled()
+#if os(iOS) || os(visionOS)
+                .textContentType(.oneTimeCode)
+#endif
                 .focused($isFocused)
                 .opacity(0.02)
                 .submitLabel(submitLabel)
                 .accessibilityLabel(Text(accessibilityLabel, bundle: .module))
-                .accessibilityValue(Text(code))
+                .accessibilityValue(Text(code).speechSpellsOutCharacters())
                 .onChange(of: code, initial: false) { _, newValue in
-                    let filtered = String(newValue.filter(\.isNumber).prefix(Self.digitCount))
+                    // ASCII digits only: other Unicode digits would derive a different key than
+                    // the host's code. See CODE_AUDIT_Join §5.7.
+                    let filtered = GameJoinCodeModel.sanitized(newValue)
                     if filtered != newValue {
                         code = filtered
                     }
@@ -70,7 +79,7 @@ struct GameJoinCodeOTPField: View {
         Text(character(at: index))
             .font(.title2)
             .fontDesign(.monospaced)
-            .frame(width: 40, height: 48)
+            .frame(width: boxWidth, height: boxHeight)
             .background(.quaternary, in: .rect(cornerRadius: 8))
             .overlay {
                 RoundedRectangle(cornerRadius: 8)

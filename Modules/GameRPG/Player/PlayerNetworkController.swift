@@ -76,6 +76,21 @@ final class PlayerNetworkController: Sendable {
     private var joinTimeoutTask: Task<Void, Never>?
     private static let joinTimeout: Duration = .seconds(12)
 
+    /// True from the moment the master connection is lost until a reconnect authenticates (or
+    /// the controller stops): the fallback listener must survive failed connection attempts
+    /// while this is set. See CODE_AUDIT_Join §5.1.
+    private var isAwaitingReconnect = false
+    private var listenerRetryTask: Task<Void, Never>?
+    private var listenerRetryAttempt = 0
+    private var reconnectDeadlineTask: Task<Void, Never>?
+    /// How long a reconnect connection may stay unauthenticated before it is dropped, so a
+    /// stalled peer cannot keep the real master out.
+    static let reconnectHandshakeDeadline: Duration = .seconds(15)
+    static let listenerRetryDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4), .seconds(8), .seconds(15), .seconds(30)]
+
+    /// Arguments: name, supporter tier, service type, passcode, session id, delegate.
+    private let makeListener: @MainActor (String, SupporterTier, GameServiceType, String, String?, any ListenerManagerDelegate) -> any ListenerManaging
+
     /// Bonjour role advertised after the outbound connection is lost. Direct
     /// players wait for the game master to reconnect, while proxy clients wait
     /// for their private proxy host.
@@ -83,7 +98,17 @@ final class PlayerNetworkController: Sendable {
         proxy ? .proxyClient : .master
     }
 
-    init(name: String, proxy: Bool = false, delegate: PlayerNetworkControllerDelegate? = nil) {
+    init(
+        name: String,
+        proxy: Bool = false,
+        delegate: PlayerNetworkControllerDelegate? = nil,
+        listenerBuilder: (@MainActor (String, SupporterTier, GameServiceType, String, String?, any ListenerManagerDelegate) -> any ListenerManaging)? = nil
+    ) {
+        self.makeListener = listenerBuilder ?? { name, supporterTier, serviceType, passcode, sessionId, delegate in
+            let manager = ListenerManager(name: name, supporterTier: supporterTier, serviceType: serviceType, passcode: passcode, sessionId: sessionId)
+            manager.delegate = delegate
+            return manager
+        }
         self.networkModel = PlayerNetworkModel(name: name)
         self.proxy = proxy
         self.delegate = PlayerNetworkControllerDelegateBox(delegate)
@@ -118,6 +143,8 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         networkModel.model = playerModel
         networkModel.playerConnectionId = model.id
         networkModel.passcode = passcode
+        networkModel.sessionId = model.sessionId
+        networkModel.joinFailure = nil
         await start(model: playerModel)
 
         guard joinAttemptToken == token else {
@@ -143,6 +170,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
             // path), which never reaches `.failed`/`.cancelled` and so
             // never calls back into this delegate on its own.
             Logger.playerNetworkController.debug("PlayerNetworkController: Join timed out waiting for a terminal connection state")
+            self.networkModel.joinFailure = .timedOut
             await self.stop()
         }
 
@@ -168,6 +196,12 @@ extension PlayerNetworkController: PlayerNetworkControllable {
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
         resolvePendingConnection(success: false)
+        isAwaitingReconnect = false
+        listenerRetryTask?.cancel()
+        listenerRetryTask = nil
+        listenerRetryAttempt = 0
+        reconnectDeadlineTask?.cancel()
+        reconnectDeadlineTask = nil
         let connectionController = networkModel.connectionController
         networkModel.observeRemovalTask?.cancel()
         networkModel.observeRemovalTask = nil
@@ -178,6 +212,9 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         networkModel.playerConnectionId = nil
         networkModel.model = nil
         networkModel.isConnected = false
+        // The join code is only needed while a session is being set up or recovered.
+        networkModel.passcode = ""
+        networkModel.sessionId = nil
         // The fallback listener (`startPlayerServer()`) is owned only by this
         // controller, not by `ConnectionController`, and is never torn down
         // by any of its own delegate callbacks when the *controller* — not
@@ -212,8 +249,38 @@ private extension PlayerNetworkController {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
         let id = UUID()
         await connectionThrottle.register(id: id, endpoint: connection.endpoint)
+        // The replaced controller's receive loop holds it alive, so it must be cancelled
+        // explicitly or its socket lingers until TCP fails. See CODE_AUDIT_Join §3.1.
+        let replaced = networkModel.connectionController
         networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
+        await replaced?.cancel()
         await networkModel.connectionController?.startConnection()
+        enforceReconnectDeadline(for: id)
+    }
+
+    /// Drops a reconnect attempt that has not authenticated in time; the resulting cancellation
+    /// returns the player to `.lost` with the listener still advertising.
+    func enforceReconnectDeadline(for id: ConnectionController.ID) {
+        reconnectDeadlineTask?.cancel()
+        reconnectDeadlineTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: Self.reconnectHandshakeDeadline)
+            guard !Task.isCancelled, let self, self.isCurrentConnection(id), self.networkModel.connectionState == .notReady else { return }
+            Logger.playerNetworkController.debug("PlayerNetworkController: Reconnect handshake deadline expired")
+            await self.networkModel.connectionController?.cancel()
+        }
+    }
+
+    /// A reconnect attempt failed before authenticating: go back to waiting for the master with
+    /// the fallback listener still up (recreating it if it was lost meanwhile), instead of ending
+    /// the session for one bad connection. See CODE_AUDIT_Join §5.1.
+    func returnToWaiting() async {
+        reconnectDeadlineTask?.cancel()
+        reconnectDeadlineTask = nil
+        networkModel.reset(isConnected: false)
+        networkModel.reset(state: .lost)
+        if networkModel.listener == nil {
+            await startPlayerServer()
+        }
     }
 
     func startPlayerServer() async {
@@ -226,8 +293,7 @@ private extension PlayerNetworkController {
         // Reuses the passcode this session's outbound connection was made
         // with — the peer on the other end already knows it, so no new code
         // entry is needed to re-admit them if they reconnect.
-        let manager = ListenerManager(name: networkModel.name, supporterTier: networkModel.supporterTier, serviceType: fallbackServiceType, passcode: networkModel.passcode)
-        manager.delegate = self
+        let manager = makeListener(networkModel.name, networkModel.supporterTier, fallbackServiceType, networkModel.passcode, networkModel.sessionId, self)
         networkModel.reset(listener: manager)
         manager.startListening()
     }
@@ -260,6 +326,11 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             } else {
                 await connectionThrottle.clear(id: id)
             }
+            if isAwaitingReconnect {
+                await returnToWaiting()
+                return
+            }
+            networkModel.joinFailure = isAuthenticationFailure ? .badCode : .unreachable
             // Also covers an outbound `start(model:)` attempt made with a bad
             // join code: the TLS/passcode handshake fails right here, so the
             // caller waiting in `toggleConnection(to:passcode:)` must be told
@@ -275,6 +346,11 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         await connectionThrottle.clear(id: id)
 
         if isCurrentConnection(id), networkModel.connectionState == .notReady {
+            if isAwaitingReconnect {
+                await returnToWaiting()
+                return
+            }
+            networkModel.joinFailure = .unreachable
             // The connection was torn down (e.g. the underlying `NWConnection`
             // reporting `.cancelled` for a rejected handshake instead of
             // `.failed`) before ever reaching `.ready`. This is an initial-join
@@ -295,6 +371,8 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             return
         }
         Logger.playerNetworkController.debug("PlayerNetworkController: Lost connection to server, start own listener")
+        isAwaitingReconnect = true
+        listenerRetryAttempt = 0
         await startPlayerServer()
         await delegate.playerLostMaster()
     }
@@ -306,6 +384,16 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
             return
         }
         await connectionThrottle.resolve(id: id, succeeded: true)
+        // The master authenticated: the fallback listener has done its job. It is retired here,
+        // not when a connection first arrives. See CODE_AUDIT_Join §5.1.
+        isAwaitingReconnect = false
+        listenerRetryTask?.cancel()
+        listenerRetryTask = nil
+        reconnectDeadlineTask?.cancel()
+        reconnectDeadlineTask = nil
+        let fallbackListener = networkModel.listener
+        networkModel.reset(listener: nil)
+        fallbackListener?.stopListening()
         resolvePendingConnection(success: true)
         await delegate.playerReady()
     }
@@ -402,10 +490,26 @@ extension PlayerNetworkController {
 // MARK: - ListenerManagerDelegate
 
 extension PlayerNetworkController: ListenerManagerDelegate {
+    /// The fallback listener failed. While the player is still waiting for its master it is
+    /// recreated after a pause; only when that keeps failing (or there is nothing to wait for)
+    /// does the controller stop. See CODE_AUDIT_Join §5.3.
+    @MainActor
     func listenerCancelled() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Listener cancelled")
-        await networkModel.reset(listener: nil)
-        await stop()
+        networkModel.reset(listener: nil)
+        guard isAwaitingReconnect, networkModel.playerConnectionId != nil,
+              listenerRetryAttempt < Self.listenerRetryDelays.count + 3 else {
+            await stop()
+            return
+        }
+        let delay = Self.listenerRetryDelays[min(listenerRetryAttempt, Self.listenerRetryDelays.count - 1)]
+        listenerRetryAttempt += 1
+        listenerRetryTask?.cancel()
+        listenerRetryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, self.isAwaitingReconnect, self.networkModel.listener == nil else { return }
+            await self.startPlayerServer()
+        }
     }
 
     @MainActor
@@ -415,23 +519,18 @@ extension PlayerNetworkController: ListenerManagerDelegate {
             connection.cancel()
             return
         }
-        networkModel.reset(listener: nil)
-        networkModel.reset(isConnected: false)
-        let shouldRestart = networkModel.connectionState == .lost
-        networkModel.reset(state: .notReady)
-        if shouldRestart {
-            Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
-            await restart(connection: connection)
-        } else {
-            // The listener that accepted this connection was just dropped
-            // above (`reset(listener: nil)`), and nothing else takes
-            // ownership of `connection` in this branch. Without an explicit
-            // cancel, the peer that just dialed in gets no response and must
-            // wait out its own OS-level connect timeout before it learns the
-            // attempt failed. See CODE_AUDIT §5.1.
+        // Only a lost player takes a connection, and only one at a time. The listener stays up
+        // either way: it is retired when a connection authenticates, so one unauthenticated or
+        // foreign connection can no longer end the reconnect. See CODE_AUDIT_Join §5.1.
+        guard networkModel.connectionState == .lost else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Dropping connection attempt outside a reconnect")
             connection.cancel()
+            return
         }
+        Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")
+        networkModel.reset(isConnected: false)
+        networkModel.reset(state: .notReady)
+        await restart(connection: connection)
     }
 }
 

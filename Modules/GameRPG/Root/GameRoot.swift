@@ -35,7 +35,7 @@ public final class GameRoot {
     let weatherRoot: WeatherRootModel
 
     let gameModel: GameRootModel
-    let gameJoinCodeModel = GameJoinCodeModel()
+    let gameJoinCodeModel: GameJoinCodeModel
     let statisticsModel: GameStatisticsModel
     let gameCenterModel: GameCenterModel
     let gameCenterController: GameCenterController
@@ -51,7 +51,8 @@ public final class GameRoot {
     /// callers onto the same in-flight task rather than tearing down twice.
     private var stopGameTask: Task<Void, Never>?
 
-    public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel) {
+    public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel, gameJoinCodeModel: GameJoinCodeModel = GameJoinCodeModel()) {
+        self.gameJoinCodeModel = gameJoinCodeModel
         self.adventureRoot = adventureRoot
         self.audioRoot = audioRoot
         self.diceRoot = diceRoot
@@ -107,8 +108,44 @@ public final class GameRoot {
     /// this device's Player code (used should it relay for further players).
     /// Always available, mirroring how the Master always sees theirs. Read by
     /// [[GameJoinCodeRevealButton]] and `GameRootViewer`'s empty state.
+    ///
+    /// While a listener is running it keeps the code it was started with even if the stored one
+    /// changes afterwards (Settings reset), so that running code is shown instead of the stored
+    /// one — otherwise players would be told a code the listener does not accept.
+    /// See CODE_AUDIT_Join §5.8.
     func ownJoinCode(isMaster: Bool) -> String? {
-        isMaster ? gameJoinCodeModel.masterCode : gameJoinCodeModel.playerCode
+        let store = isMaster ? networkStore : networkProxyStore
+        if let hosting = store.model.masterStore?.networkModel, hosting.isStreaming, !hosting.passcode.isEmpty {
+            return hosting.passcode
+        }
+        return isMaster ? gameJoinCodeModel.masterCode : gameJoinCodeModel.playerCode
+    }
+
+    /// The local-network connection was lost and this device is waiting for the master to dial back
+    /// in. Read by every connection-status indicator so none can omit it.
+    /// See CODE_AUDIT_Join §8.3.
+    var isLocalNetworkReconnecting: Bool {
+        networkStore.model.playerStore?.networkModel.connectionState == .lost
+    }
+
+    /// What the Game Master's own status icon should show when hosting is degraded; `nil` when
+    /// hosting is healthy (or this device is not the master). See CODE_AUDIT_Join §5.3.
+    func hostingStatus(isMaster: Bool) -> GameConnectionStatusPresentation? {
+        guard isMaster else { return nil }
+        switch networkStore.model.masterStore?.networkModel.listenerStatus {
+        case .restarting: return .localNetworkReconnecting
+        case .failed: return .localNetworkLost
+        default: return nil
+        }
+    }
+
+    /// Called when the app becomes active while a game is showing: resolves join codes that could
+    /// not be read earlier and restarts hosting services that stopped in the background.
+    /// See CODE_AUDIT_Join §5.3.
+    func applicationBecameActive() {
+        gameJoinCodeModel.refreshFromStorage()
+        networkStore.resumeAfterActivation()
+        networkProxyStore.resumeAfterActivation()
     }
 
     /// Replaces every join code this device has stored in the Keychain with a

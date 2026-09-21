@@ -13,21 +13,26 @@ struct BrowserRowView: View, Equatable {
 
     @State private var isEnteringCode = false
     @State private var enteredCode = ""
-    /// The code an in-flight connection attempt was made with — set right
-    /// before dialing, whether that code came from `savedMasterCode` or the
-    /// entry sheet. Watched below to save a code that worked and to fall
-    /// back to the entry sheet for one that didn't.
-    @State private var attemptedCode: String?
+    /// A join attempt is in flight. `isConnected` is already true then (the controller records
+    /// the target before the handshake), so this is what tells connecting from connected.
+    /// See CODE_AUDIT_Join §8.1.
+    @State private var isConnecting = false
+    @State private var wasCancelled = false
+    /// Why the last attempt failed, shown in the code sheet. See CODE_AUDIT_Join §8.2.
+    @State private var lastFailure: PlayerJoinFailure?
 
     var body: some View {
         if !isDeactivate {
             Button {
-                if isConnected {
+                if isConnecting {
+                    cancelConnecting()
+                } else if isConnected {
                     Task { await connect(joinCode: "") }
                 } else if let savedCode = savedMasterCode {
                     Task { await connect(joinCode: savedCode) }
                 } else {
                     enteredCode = ""
+                    lastFailure = nil
                     isEnteringCode = true
                 }
             } label: {
@@ -39,13 +44,17 @@ struct BrowserRowView: View, Equatable {
                             .foregroundStyle(.secondary)
                     }
                 } icon: {
-                    switch model.connectionMode {
-                    case .observer:
-                        SupporterCrownView(tier: model.supporterTier)
-                            .imageScale(.large)
-                    case .proxy:
-                        Image(systemName: "arrow.uturn.backward.circle.fill")
-                            .imageScale(.large)
+                    if isConnecting {
+                        ProgressView()
+                    } else {
+                        switch model.connectionMode {
+                        case .observer:
+                            SupporterCrownView(tier: model.supporterTier)
+                                .imageScale(.large)
+                        case .proxy:
+                            Image(systemName: "arrow.uturn.backward.circle.fill")
+                                .imageScale(.large)
+                        }
                     }
                 }
             }
@@ -55,49 +64,56 @@ struct BrowserRowView: View, Equatable {
                 GameJoinCodeEntrySheet(
                     deviceName: model.deviceName,
                     connectionModeLabel: connectionModeLabel,
+                    failure: lastFailure,
                     code: $enteredCode
                 ) {
                     Task { await connect(joinCode: enteredCode) }
                 }
             }
-            .onChange(of: playerNetworkControllable.networkModel.isConnected) { _, connected in
-                guard connected, let attemptedCode else { return }
-                if model.connectionMode == .observer {
-                    root.gameJoinCodeModel.lastUsedMasterJoinCode = attemptedCode
-                }
-                self.attemptedCode = nil
-            }
         }
     }
 
-    /// This device's own remembered Game Master code, tried automatically
-    /// before prompting — only meaningful for a direct-to-Master connection;
-    /// a proxy's code isn't remembered the same way since it's tied to
-    /// whichever Player is currently proxying, not a stable identity.
+    /// This device's remembered code for *this* Game Master, tried automatically before
+    /// prompting — only meaningful for a direct-to-Master connection, and only for the host
+    /// that accepted it: replaying it against any other advertiser would burn one of that host's
+    /// failure allowances and hand it a handshake derived from an unrelated code. A proxy's code
+    /// isn't remembered since it's tied to whichever Player is currently proxying.
+    /// See CODE_AUDIT_Join §5.9.
     private var savedMasterCode: String? {
         guard model.connectionMode == .observer else { return nil }
-        return root.gameJoinCodeModel.lastUsedMasterJoinCode
+        return root.gameJoinCodeModel.rememberedMasterJoinCode(forHost: model.endpointName)
+    }
+
+    private func cancelConnecting() {
+        wasCancelled = true
+        Task { await playerNetworkControllable.stop() }
     }
 
     private func connect(joinCode: String) async {
         let wasConnected = isConnected
-        attemptedCode = joinCode.isEmpty ? nil : joinCode
+        wasCancelled = false
+        lastFailure = nil
+        if !wasConnected { isConnecting = true }
         await root.startGame(
             to: model,
             mode: gameType,
             supporterTier: supporterTier,
             joinCode: joinCode
         )
-        guard !wasConnected else { return }
+        isConnecting = false
+        guard !wasConnected, !wasCancelled else { return }
+        enteredCode = ""
         if root.gameModel.gameConfig.state == .started {
+            // Saved here, where the outcome is known, rather than from a view `onChange` that may
+            // never run if this row has already left the screen. See CODE_AUDIT_Join §5.11.
+            if model.connectionMode == .observer, !joinCode.isEmpty {
+                root.gameJoinCodeModel.rememberMasterJoinCode(joinCode, forHost: model.endpointName)
+            }
             await MasterRPGTips.donateGameStartedOrJoined()
         } else if !joinCode.isEmpty {
-            // `startGame` now awaits the actual handshake outcome, so landing
-            // back here not started means the join code (saved or freshly
-            // entered) was rejected. Prompt for a fresh one instead of
-            // silently sitting back on the button.
-            attemptedCode = nil
-            enteredCode = ""
+            // `startGame` awaits the actual handshake outcome, so landing back here not started
+            // means the attempt failed: prompt again and say why.
+            lastFailure = playerNetworkControllable.networkModel.joinFailure
             isEnteringCode = true
         }
     }
@@ -110,6 +126,9 @@ struct BrowserRowView: View, Equatable {
     }
 
     private var labelText: LocalizedStringKey {
+        if isConnecting {
+            return "Connecting to: \(model.deviceName)"
+        }
         if isConnected {
             return "Disconnect from: \(model.deviceName)"
         }
@@ -152,11 +171,22 @@ private extension BrowserRowView {
     }
 }
 
+private extension PlayerJoinFailure {
+    var message: LocalizedStringKey {
+        switch self {
+        case .badCode: "That code was not accepted. Check it and try again."
+        case .unreachable: "Couldn't reach the host. Wait a few seconds and try again."
+        case .timedOut: "The host did not accept the connection in time. Check the code and that Local Network access is allowed, then try again."
+        }
+    }
+}
+
 /// Prompts for the host's join code before a new connection is attempted.
 /// Not shown for disconnecting — that needs no code, see `connect(joinCode:)`.
 private struct GameJoinCodeEntrySheet: View {
     let deviceName: String
     let connectionModeLabel: LocalizedStringKey
+    let failure: PlayerJoinFailure?
     @Binding var code: String
     let onJoin: () -> Void
 
@@ -173,6 +203,13 @@ private struct GameJoinCodeEntrySheet: View {
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, alignment: .center)
+
+                if let failure {
+                    Text(failure.message, bundle: .module)
+                        .font(.callout)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                }
 
                 GameJoinCodeField(title: "Code", code: $code, submitLabel: .join, onSubmit: submitIfValid)
             }

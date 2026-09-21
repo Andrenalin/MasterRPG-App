@@ -33,6 +33,9 @@ actor ConnectionAttemptThrottle {
     /// leaves a permanent entry for the life of the hosting session — nothing
     /// else ever prunes it. See CODE_AUDIT §6.4.
     private static let maximumTrackedSources = 256
+    /// A source that has been quiet this long starts counting from zero again, so failures from
+    /// long-past typos never add up to a lockout. See CODE_AUDIT_Join §6.3.
+    static let failureDecay: Duration = .seconds(600)
 
     private var sources: [String: State] = [:]
 
@@ -52,6 +55,10 @@ actor ConnectionAttemptThrottle {
     func recordFailure(source: String, at now: ContinuousClock.Instant? = nil) {
         let now = now ?? ContinuousClock().now
         var state = sources[source] ?? State(lastActivity: now)
+        if now - state.lastActivity > Self.failureDecay {
+            state.consecutiveFailures = 0
+            state.lockedUntil = nil
+        }
         state.consecutiveFailures += 1
         state.lastActivity = now
         if state.consecutiveFailures >= Self.failureThreshold {
@@ -60,7 +67,7 @@ actor ConnectionAttemptThrottle {
             state.lockedUntil = now.advanced(by: .seconds(lockout))
         }
         sources[source] = state
-        evictIfNeeded(excluding: source)
+        evictIfNeeded(excluding: source, at: now)
     }
 
     /// Clears any tracked failures for `source` after it authenticates successfully.
@@ -69,14 +76,18 @@ actor ConnectionAttemptThrottle {
     }
 
     /// Evicts the least-recently-active source once the tracked count exceeds
-    /// `maximumTrackedSources`. See CODE_AUDIT §6.4.
-    private func evictIfNeeded(excluding source: String) {
+    /// `maximumTrackedSources`. Sources still serving a lockout are evicted last, so flooding
+    /// the table with throwaway sources cannot lift a lockout early. See CODE_AUDIT §6.4 and
+    /// CODE_AUDIT_Join §6.3.
+    private func evictIfNeeded(excluding source: String, at now: ContinuousClock.Instant) {
         while sources.count > Self.maximumTrackedSources {
-            guard let oldest = sources
-                .filter({ $0.key != source })
-                .min(by: { $0.value.lastActivity < $1.value.lastActivity })?
-                .key
-            else { return }
+            let candidates = sources.filter { $0.key != source }
+            let unlocked = candidates.filter { entry in
+                guard let lockedUntil = entry.value.lockedUntil else { return true }
+                return lockedUntil <= now
+            }
+            let pool = unlocked.isEmpty ? candidates : unlocked
+            guard let oldest = pool.min(by: { $0.value.lastActivity < $1.value.lastActivity })?.key else { return }
             sources.removeValue(forKey: oldest)
         }
     }
@@ -85,9 +96,23 @@ actor ConnectionAttemptThrottle {
 extension NWEndpoint {
     /// A stable per-host key for connection-attempt throttling. Deliberately
     /// excludes the port: a retry from the same peer uses a new ephemeral one,
-    /// and including it would let a retry dodge the throttle entirely.
+    /// and including it would let a retry dodge the throttle entirely. An IPv6 host is keyed by
+    /// its /64 network prefix (ignoring the interface scope), because a single device can
+    /// rotate through the whole /64 with privacy addresses. See CODE_AUDIT_Join §6.3.
     var throttleSourceKey: String? {
         guard case .hostPort(let host, _) = self else { return nil }
-        return "\(host)"
+        switch host {
+        case .ipv4(let address):
+            return address.rawValue.map { String($0) }.joined(separator: ".")
+        case .ipv6(let address):
+            if let mapped = address.asIPv4 {
+                return mapped.rawValue.map { String($0) }.joined(separator: ".")
+            }
+            return "v6/" + address.rawValue.prefix(8).map { String($0, radix: 16) }.joined(separator: ":")
+        case .name(let name, _):
+            return name
+        @unknown default:
+            return "\(host)"
+        }
     }
 }

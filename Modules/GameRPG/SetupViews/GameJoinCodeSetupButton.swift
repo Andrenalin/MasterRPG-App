@@ -31,6 +31,7 @@ struct GameJoinCodeSetupButton: View {
                 Image(systemName: "wifi")
                 Text(code)
                     .fontDesign(.monospaced)
+                    .speechSpellsOutCharacters()
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -41,7 +42,7 @@ struct GameJoinCodeSetupButton: View {
         }
         .contentShape(.capsule)
         .accessibilityLabel(Text(title, bundle: .module))
-        .accessibilityValue(Text(code))
+        .accessibilityValue(Text(code).speechSpellsOutCharacters())
 #if os(tvOS)
         .sheet(isPresented: $isPresented, onDismiss: commitDraftIfValid) {
             GameJoinCodeSetupButtonPresentedContentView(title: title, draftCode: $draftCode, isPresented: $isPresented, onRandomize: randomizeDraft)
