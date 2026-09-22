@@ -2,9 +2,11 @@
 
 #if !os(tvOS)
 
+import CoreRPG
 import Foundation
 import FoundationModels
 import PDFKit
+import os.log
 
 /// Foundation Models-based PDF block extractor for table/adventure content
 struct PdfContentExtractor: Sendable {
@@ -92,19 +94,28 @@ struct PdfContentExtractor: Sendable {
                 upcomingSession = LanguageModelSession(instructions: instructions)
                 upcomingSession.prewarm()
 
-                let response = try await session.respond(
-                    to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pdfDocument.pageCount),
-                    generating: [BlockEntryGenModel].self,
-                    includeSchemaInPrompt: false
-                )
+                // A single page's `respond` failing (guardrail trip, transient context
+                // overflow, rate limit) used to rethrow out of the whole loop, discarding
+                // every block already extracted from earlier pages. Catch per page instead
+                // and keep going, so a long PDF still returns whatever it could extract
+                // plus a diagnostic for the page(s) that failed. See CODE_AUDIT_17 §5.20.
+                do {
+                    let response = try await session.respond(
+                        to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pdfDocument.pageCount),
+                        generating: [BlockEntryGenModel].self,
+                        includeSchemaInPrompt: false
+                    )
+                    blocks.append(contentsOf: response.content)
+                } catch let error as LanguageModelSession.GenerationError {
+                    Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(self.handleGenerationError(error), privacy: .public)")
+                } catch {
+                    Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                }
 
                 // Update extraction progress with accumulated blocks
-                blocks.append(contentsOf: response.content)
                 await resultModel.setExtractionProgress(blocks)
             }
             return blocks
-        } catch let error as LanguageModelSession.GenerationError {
-            throw PdfSummaryAnalysisError.generationFailed(handleGenerationError(error))
         } catch {
             throw PdfSummaryAnalysisError.generationFailed(error.localizedDescription)
         }

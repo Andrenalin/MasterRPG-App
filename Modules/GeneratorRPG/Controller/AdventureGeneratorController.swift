@@ -234,6 +234,10 @@ struct AdventureGeneratorController: Sendable {
 
     @MainActor func extract(message: String) {
         model.cancelExtraction()
+        // Fresh session per extraction — reusing `extractSession` across calls let every
+        // prior prompt/response stay in its transcript, approaching the on-device model's
+        // per-session context window after a few extractions. See CODE_AUDIT_17 §5.20.
+        model.set(extractSession: LanguageModelSession())
         model.isExtracting = true
         PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 

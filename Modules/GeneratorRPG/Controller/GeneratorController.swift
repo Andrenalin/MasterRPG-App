@@ -140,12 +140,19 @@ final class GeneratorSessionModel {
     
     // extracting
     var extractSession = LanguageModelSession()
+    /// The instructions `extractSession` was last built with — kept so `extract(message:
+    /// rootModel:generation:maxCharacters:)` can start each call with a *fresh* session built
+    /// from the same instructions, instead of reusing one session (and its growing transcript)
+    /// across every extraction. Reusing one session quickly approaches the on-device model's
+    /// 4096-token-per-session context window. See CODE_AUDIT_17 §5.20.
+    var extractInstructions: String?
     /// True while a stream is actively producing partial results. Callers that need to
     /// persist the final blocks (rather than every partial update) should watch for the
     /// true → false transition.
     var isExtracting: Bool = false
-    func set(extractSession: LanguageModelSession) {
+    func set(extractSession: LanguageModelSession, instructions: String) {
         self.extractSession = extractSession
+        self.extractInstructions = instructions
     }
     
     // response
@@ -238,7 +245,7 @@ struct GeneratorController: Sendable {
         """
 
         let session = LanguageModelSession(instructions: extractInstructions)
-        self.model.set(extractSession: session)
+        self.model.set(extractSession: session, instructions: extractInstructions)
         session.prewarm()
     }
             
@@ -329,6 +336,16 @@ struct GeneratorController: Sendable {
 
     @MainActor func extract(message: String, rootModel: SheetRootModel, generation: Int? = nil, maxCharacters: Int = 6_000) {
         model.cancelExtraction()
+        // Start this extraction on a fresh session built from the same instructions,
+        // rather than continuing to append to `extractSession`'s existing transcript —
+        // otherwise every extraction call's prompt/response stayed in the transcript and
+        // the on-device model's per-session context window filled after a few calls.
+        // See CODE_AUDIT_17 §5.20.
+        if let extractInstructions = model.extractInstructions {
+            let session = LanguageModelSession(instructions: extractInstructions)
+            model.set(extractSession: session, instructions: extractInstructions)
+            session.prewarm()
+        }
         // Inherit the caller's generation (from `request(message:rootModel:)`) when
         // given, so a newer request supersedes any in-flight extraction from an
         // older one too; a standalone call starts its own generation. See CODE_AUDIT §3.5.
