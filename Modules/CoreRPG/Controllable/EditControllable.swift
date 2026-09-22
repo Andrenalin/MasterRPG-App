@@ -431,6 +431,19 @@ public extension EditControllable {
     }
     
     @MainActor func delete(itemId: UUID) async {
+        await delete(itemId: itemId, visited: [])
+    }
+
+    /// - Parameter visited: Ids already visited on this recursive delete walk. Write-time
+    ///   cycle prevention (`addItem(itemId:parentId:)`) means a cycle should never form, but
+    ///   an import or CloudKit merge conflict could still produce one — without this guard a
+    ///   cyclic folder would recurse forever, deleting items on the way, until the process is
+    ///   killed. See CODE_AUDIT_17 §5.14.
+    @MainActor private func delete(itemId: UUID, visited: Set<UUID>) async {
+        guard !visited.contains(itemId), visited.count < FolderTreeDepthLimit.max else { return }
+        var visited = visited
+        visited.insert(itemId)
+
         await recordOperation("EditControllable.delete(itemId:)")
 
         guard let item = await itemControllable.item(for: itemId) as? Model else { return }
@@ -438,7 +451,7 @@ public extension EditControllable {
         for entry in item.entries {
             if item.category == .folder {
                 await Task.yield()
-                await delete(itemId: entry.childId)
+                await delete(itemId: entry.childId, visited: visited)
             } else if !item.specialCategory {
                 linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: item.id, entryId: entry.id, typeId: itemControllable.config.module))
                 reset(displayState: 0, itemId: entry.childId)
@@ -484,6 +497,15 @@ public extension EditControllable {
     /// now-nonexistent ids (for modules where `Entry.childId` is derived from the
     /// entry's own `id`, silently emptying the copy). See CODE_AUDIT_EditItem §5.1-§5.4.
     @MainActor private func duplicateRecursively(model: Model) async -> Model {
+        await duplicateRecursively(model: model, visited: [])
+    }
+
+    /// - Parameter visited: Ids already visited on this recursive duplicate walk — same
+    ///   cycle-defense rationale as `delete(itemId:visited:)`. See CODE_AUDIT_17 §5.14.
+    @MainActor private func duplicateRecursively(model: Model, visited: Set<UUID>) async -> Model {
+        var visited = visited
+        visited.insert(model.id)
+
         let duplicate = model.duplicate()
         itemControllable.replace(model: duplicate, isInsert: true)
 
@@ -501,8 +523,9 @@ public extension EditControllable {
         // entries to point at them.
         var newEntries: [Model.Entry] = []
         for entry in model.entries {
-            guard let childModel = editModel(for: entry.childId) else { continue }
-            var dupChild = await duplicateRecursively(model: childModel)
+            guard !visited.contains(entry.childId), visited.count < FolderTreeDepthLimit.max,
+                  let childModel = editModel(for: entry.childId) else { continue }
+            var dupChild = await duplicateRecursively(model: childModel, visited: visited)
             dupChild.parentId = duplicate.id
             itemControllable.replace(model: dupChild, isInsert: false)
             newEntries.append(Model.Entry.newChild(id: dupChild.id))
