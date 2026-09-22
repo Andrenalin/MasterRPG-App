@@ -20,11 +20,25 @@ enum MapHexGridGeometry {
         return max(widthScale, heightScale)
     }
 
+    /// Hard cap on the number of hex cells generated in one call — protects against an
+    /// unvalidated, very large map dimension with a small scale producing hundreds of
+    /// thousands of `MapEntryModel`s. See CODE_AUDIT_17 §5.16.
+    private static let maxCells = 20_000
+
     static func grid(for size: Double, in rect: CGRect) -> [MapEntryModel] {
+        // A zero/negative size or non-finite/non-positive rect dimension (an
+        // unvalidated decode or import) would otherwise divide by zero (`Int` of a
+        // NaN/inf quotient traps) or produce an invalid `0..<rows` range. See
+        // CODE_AUDIT_17 §5.16.
+        guard size.isFinite, size > 0,
+              rect.width.isFinite, rect.width > 0,
+              rect.height.isFinite, rect.height > 0 else { return [] }
+
         let hexWidth = sqrt(3) * size
         let hexHeight = 2 * size
         let columns = Int((rect.width + hexWidth / 2) / hexWidth) + 1
         let rows = Int((rect.height + size / 2) / (3 * size / 2)) + 1
+        guard columns > 0, rows > 0, columns * rows <= maxCells else { return [] }
 
         var hexes: [MapEntryModel] = []
         for row in 0..<rows {
