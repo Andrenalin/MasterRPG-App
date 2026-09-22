@@ -211,8 +211,19 @@ public extension CoreDataController {
 
     func save() async throws {
         try await flushPendingOperations()
-        try await context.perform {
-            try saveCoreDataThrowing()
+        do {
+            try await context.perform {
+                try saveCoreDataThrowing()
+            }
+        } catch {
+            // Unlike `batchDelete`, this used to leave a failed save's invalid managed
+            // objects registered in the context, so every later save re-attempted the
+            // same invalid set and failed until relaunch. Roll back so the context
+            // returns to its last-saved state instead. See CODE_AUDIT_17 §5.6.
+            await context.perform {
+                context.rollback()
+            }
+            throw error
         }
     }
 }
