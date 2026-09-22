@@ -153,9 +153,14 @@ extension AudioController {
 
         var audioAsset: PlaylistItem? = nil
         do {
-            _ = await fileUrlDataController.fileDownloaded(for: request.fileUrl)
             audioAsset = try await fileUrlDataController.url(for: request.fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
+                // Explicitly start (and wait for) the iCloud download and read through
+                // the coordinated helpers instead of reading the raw path directly —
+                // an evicted iCloud file previously raised a missing-file error here and
+                // the track was silently omitted from the playlist. See CODE_AUDIT_17 §5.21.
+                try await FileManager.default.download(coordinatingAccessAt: url)
+
                 // Copy file-to-file: AVURLAsset streams from disk, so the track never
                 // needs to be loaded into memory.
                 //
@@ -166,11 +171,10 @@ extension AudioController {
                 let tempUrl = URL.temporaryDirectory
                     .appending(path: request.id.uuidString)
                     .appendingPathExtension(url.pathExtension)
-                let fileManager = FileManager.default
                 // `copyItem` throws if the destination already exists (unlike
                 // `Data.write(to:)` below), so clear out a previous play's copy first.
-                try? fileManager.removeItem(at: tempUrl)
-                try fileManager.copyItem(at: url, to: tempUrl)
+                try? FileManager.default.removeItem(at: tempUrl)
+                try await FileManager.default.copyItem(coordinatingAccessFrom: url, to: tempUrl)
                 return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
             }
         } catch {

@@ -30,7 +30,7 @@ extension FileManager {
         }
     }
     
-    func copyItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
+    public func copyItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
         try await Self.performCoordinatedFileAccess {
             try Self.coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
                 try FileManager.default.copyItem(at: readURL, to: writeURL)
@@ -63,7 +63,7 @@ extension FileManager {
         }
     }
 
-    func download(coordinatingAccessAt url: URL) async throws {
+    public func download(coordinatingAccessAt url: URL) async throws {
         try await Self.performCoordinatedFileAccess {
             try Self.coordinate(writingItemAt: url) { newUrl in
                 try FileManager.default.startDownloadingUbiquitousItem(at: newUrl)
