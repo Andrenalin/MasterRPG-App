@@ -9,10 +9,16 @@ import SwiftUI
 private let quitAfterAlertDismissDelay: Duration = .seconds(0.1)
 
 public struct StorageOptionEditor<Sync: View>: View {
-    public init(@ViewBuilder sync: () -> Sync) {
+    /// - Parameter beforeQuit: Awaited before the process exits, so any edits still
+    ///   queued in memory (see CODE_AUDIT_17 §5.2) reach disk before the store
+    ///   switch terminates the app. Defaults to a no-op for callers with nothing to
+    ///   flush (e.g. previews). See CODE_AUDIT_17 §5.3.
+    public init(beforeQuit: @escaping @Sendable () async -> Void = {}, @ViewBuilder sync: () -> Sync) {
+        self.beforeQuit = beforeQuit
         syncView = sync()
     }
-    
+
+    let beforeQuit: @Sendable () async -> Void
     let syncView: Sync
     
     @Environment(AppSettingsModel.self) private var appSettings
@@ -46,6 +52,7 @@ public struct StorageOptionEditor<Sync: View>: View {
                     appSettings.resetCloudKit(to: useCloudKit)
                     Task {
                         try? await Task.sleep(for: quitAfterAlertDismissDelay)
+                        await beforeQuit()
                         Darwin.exit(0)
                     }
                 } label: {

@@ -67,7 +67,7 @@ public struct SettingsView: View {
             // than shown in a state the app doesn't actually implement. See
             // CODE_AUDIT_10 §5.1.
             #if !os(tvOS)
-            StorageOptionEditor {
+            StorageOptionEditor(beforeQuit: store.save) {
                 if let model = store.coreDataInitModel {
                     CloudKitSyncStatusView(syncState: model.cloudKitSyncState, lastSync: model.lastSuccessfulSync)
                 }
