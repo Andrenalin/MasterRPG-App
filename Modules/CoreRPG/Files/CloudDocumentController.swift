@@ -135,7 +135,13 @@ struct CloudDocumentController: Sendable {
             return selectedUrl
         } else {
             let filename = selectedUrl.lastPathComponent
-            let name = filename
+            // Two picked files sharing a bare name (two `map.png` picks) would
+            // otherwise collide on the same destination path: the second write
+            // silently overwrites the first item's bytes, and deleting either item
+            // then deletes the file for both. Dedupe against the destination root
+            // the same way the sibling `move(url:newCategory:)`/`move(url:newName:)`
+            // already do. See CODE_AUDIT_17 §5.4.
+            let name = try await suggestedFileName(for: "", filename: filename)
             let newFilename = try await move(sourceUrl: selectedUrl, destinationFilename: name)
             return fullUrl(filePath: newFilename)
         }

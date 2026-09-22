@@ -291,10 +291,16 @@ extension AdventureRootModel {
         #if !os(tvOS)
         await generatorRoot?.itemControllable.flushPendingOperations()
         #endif
+        // Save the flushed item edits *before* the link/tag saves below: each of those
+        // runs its own `context.save()`/`rollback()` on the same shared context, and a
+        // link or tag save failure (disk full, mirrored-store validation) must not roll
+        // back every other module's already-flushed edits along with it. Saving the item
+        // context first means a later rollback only reverts the link/tag mutations still
+        // pending in the context, not edits already committed to disk. See
+        // CODE_AUDIT_17 §5.5.
+        await itemController.save()
         await linkRegisterController.savePendingLinks()
         await searchModel.tagController.savePendingTags()
-        // One context.save() covers all flushed changes from every module above.
-        await itemController.save()
     }
 
     /// Flushes a reviewed partial import and surfaces persistence failures to the caller.

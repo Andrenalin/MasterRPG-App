@@ -162,7 +162,7 @@ public extension LinkRegisterController {
     @MainActor func savePendingLinks() async {
         let affectedIds = model.pendingAffectedSourceIds
         guard !affectedIds.isEmpty, let context = model.context else { return }
-        model.pendingAffectedSourceIds = []
+        model.pendingAffectedSourceIds.removeAll()
 
         let currentLinks = model.items.values.joined().filter { affectedIds.contains($0.source.itemId) }
 
@@ -195,8 +195,14 @@ public extension LinkRegisterController {
             } catch {
                 context.rollback()
                 Logger.coreDataController.error("link save error \(error.localizedDescription, privacy: .public)")
+                // Restore the affected-source set cleared above so the next `save()`
+                // retries this batch instead of silently dropping the pending link
+                // change. See CODE_AUDIT_17 §5.5.
+                Task { @MainActor in
+                    self.model.pendingAffectedSourceIds.formUnion(affectedIds)
+                }
             }
-        }        
+        }
     }
 }
 

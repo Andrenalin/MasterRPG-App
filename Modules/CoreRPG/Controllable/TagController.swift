@@ -149,6 +149,12 @@ public struct TagController: Sendable {
             } catch {
                 context.rollback()
                 Logger.coreDataController.error("tag save error \(error.localizedDescription, privacy: .public)")
+                // Restore the affected-module set cleared above so the next `save()`
+                // retries this batch instead of silently dropping the pending tag
+                // change. See CODE_AUDIT_17 §5.5.
+                Task { @MainActor in
+                    self.model.pendingAffectedModules.formUnion(affectedModules)
+                }
             }
         }
     }
