@@ -14,6 +14,11 @@ import WeatherRPG
 import PdfRPG
 import SpaceRPG
 
+struct MapRecoveryThrottleKey: Hashable {
+    let playerId: UUID
+    let itemId: UUID
+}
+
 // MARK: - Map Messages
 
 extension MasterController {
@@ -205,10 +210,21 @@ extension MasterController {
     /// capture-window) export failure, e.g. an undownloaded iCloud
     /// background image. `CancellationError` still propagates so callers'
     /// own cancellation handling is unaffected. See CODE_AUDIT_Network §5.11.
+    /// Cool-down between full map-recovery bundles served to the same (player, map)
+    /// pair. See CODE_AUDIT_17 §6.7.
+    private static let mapRecoveryCooldown: Duration = .seconds(10)
+
     private func recoverMapBundleOrFail(
         for model: GameNetworkModel,
         origin: GameMessageOrigin?
     ) async throws -> MapRecoveryBundle? {
+        let throttleKey = MapRecoveryThrottleKey(playerId: model.sender.id, itemId: model.data.id)
+        if let last = gameModel.lastMapRecoveryServed[throttleKey],
+           ContinuousClock.now - last < Self.mapRecoveryCooldown {
+            Logger.networking.debug("MasterController: Throttling repeated map recovery request from \(model.sender.id, privacy: .public) for \(model.data.id, privacy: .public)")
+            return nil
+        }
+        gameModel.lastMapRecoveryServed[throttleKey] = ContinuousClock.now
         do {
             return try await stableMapRecoveryBundle(for: model.data.id)
         } catch is CancellationError {

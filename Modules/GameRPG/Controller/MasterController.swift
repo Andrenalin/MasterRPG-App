@@ -193,6 +193,15 @@ final class MasterControllerModel {
     /// replayed. See CODE_AUDIT_Network §5.18.
     private var pendingValueUpdatesAwaitingOwnership: [UUID: GameNetworkModel] = [:]
 
+    /// Last time a full map-recovery bundle (up to three detached full
+    /// `createMapGameData` exports) was served to a given (player, map) pair. A map
+    /// `.reveal`/data-less `.update .generic` request has no per-player rate limit
+    /// otherwise, and distinct message ids defeat the pipeline's own de-duplication,
+    /// so one player could keep the GM re-exporting multi-hundred-MB map packages.
+    /// Not `private` — read/written from `MasterController+MapMessages.swift`, a
+    /// different file. See CODE_AUDIT_17 §6.7.
+    var lastMapRecoveryServed: [MapRecoveryThrottleKey: ContinuousClock.Instant] = [:]
+
     func deferValueUpdateAwaitingOwnership(_ model: GameNetworkModel) {
         pendingValueUpdatesAwaitingOwnership[model.sender.id] = model
     }
@@ -328,6 +337,7 @@ final class MasterControllerModel {
         // ever lands, and would incorrectly replay against a future, unrelated sender
         // that reuses the same id. See CODE_AUDIT_17 §5.25.
         pendingValueUpdatesAwaitingOwnership.removeValue(forKey: playerId)
+        lastMapRecoveryServed = lastMapRecoveryServed.filter { $0.key.playerId != playerId }
         for index in peerAvailabilitySources.indices {
             peerAvailabilitySources[index].pendingRecipients.remove(playerId)
         }
