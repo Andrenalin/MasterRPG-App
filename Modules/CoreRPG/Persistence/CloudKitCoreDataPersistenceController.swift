@@ -216,6 +216,13 @@ public struct CloudKitCoreDataPersistenceController {
                     if event.succeeded {
                         Logger.persistenceController.info("CloudKit setup succeeded")
                         update = .none
+                    } else if let error = event.error {
+                        // A `succeeded == false` setup event with an attached error is a
+                        // real failure (quota, not-authenticated, schema), not just "still
+                        // in progress" — surface it instead of masking it as `.inProgress`.
+                        // See CODE_AUDIT_17 §5.8.
+                        Logger.persistenceController.error("CloudKit setup failed: \(error.localizedDescription, privacy: .public)")
+                        update = .syncState(.failed(error.localizedDescription))
                     } else {
                         Logger.persistenceController.info("CloudKit setup in progress")
                         update = .syncState(.inProgress)
@@ -237,10 +244,14 @@ public struct CloudKitCoreDataPersistenceController {
                         Logger.persistenceController.info("CloudKit export succeeded")
                         update = .exportSucceeded(Date())
                     } else if let error = event.error {
+                        // A failed export previously mapped to `.none` (logged only), so the
+                        // UI kept showing "succeeded" from the last import while local edits
+                        // never reached iCloud. Surface it the same way import failures are.
+                        // See CODE_AUDIT_17 §5.8.
                         Logger.persistenceController.error("CloudKit export error: \(error.localizedDescription, privacy: .public)")
-                        update = .none
+                        update = .syncState(.failed(error.localizedDescription))
                     } else {
-                        update = .none
+                        update = .syncState(.inProgress)
                     }
 
                 @unknown default:
@@ -258,6 +269,9 @@ public struct CloudKitCoreDataPersistenceController {
                     model.cloudKitSyncState = .succeeded
                     model.lastSuccessfulSync = date
                 case .exportSucceeded(let date):
+                    // Clear a previously-surfaced failed/in-progress state now that an
+                    // export has actually succeeded. See CODE_AUDIT_17 §5.8.
+                    model.cloudKitSyncState = .succeeded
                     model.lastSuccessfulSync = date
                 }
             }

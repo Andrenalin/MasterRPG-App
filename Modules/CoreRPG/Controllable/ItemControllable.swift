@@ -324,7 +324,17 @@ public extension ItemControllable {
     @MainActor func mergeUpdates(model: ModelType) {
         guard let model = model as? Model, let original = self.itemSync(for: model.id, noGame: true) else { return }
         let resort = original.name != model.name
+        // Re-derive the in-memory link register from the merged value, mirroring
+        // `replaceImportedModel`'s pattern. Without this, a CloudKit-synced merge
+        // (this method, called from `SyncDataControllable.updateFromSync`) never
+        // touched the link register at all, so links added or changed on another
+        // device stayed invisible to "used by" lookups on this device until the
+        // user happened to re-save the item locally. See CODE_AUDIT_17 §5.9.
+        let previous = original.copy()
         if original.replace(with: model) {
+            let changes = original.changedLinkRegisterModels(oldValue: previous)
+            linkRegisterController.deregister(links: changes.removed)
+            linkRegisterController.register(links: changes.added)
             if resort {
                 resortItem(changed: original)
             }
