@@ -331,10 +331,20 @@ public extension ItemControllable {
         // device stayed invisible to "used by" lookups on this device until the
         // user happened to re-save the item locally. See CODE_AUDIT_17 §5.9.
         let previous = original.copy()
+        let previousContentHash = previous.fileUrl?.contentHash
         if original.replace(with: model) {
             let changes = original.changedLinkRegisterModels(oldValue: previous)
             linkRegisterController.deregister(links: changes.removed)
             linkRegisterController.register(links: changes.added)
+            // Another device's replacement of this item's file (same id, new content
+            // hash) previously left the image/thumbnail cache serving the stale bytes
+            // across relaunches, since only local editors dropped the cache. See
+            // CODE_AUDIT_17 §5.13.
+            if original.fileUrl?.contentHash != previousContentHash {
+                Task { @MainActor in
+                    await self.cacheControllable?.remove(itemId: original.id)
+                }
+            }
             if resort {
                 resortItem(changed: original)
             }
