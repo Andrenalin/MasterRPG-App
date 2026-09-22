@@ -62,7 +62,7 @@ actor ConnectionController: Identifiable {
         self.id = id
         self.connection = NWConnection.connection(endpoint: endpoint, passcode: passcode)
         self.delegate = delegate
-        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint (\(NWParameters.passcodeCheck(passcode), privacy: .public))")
+        Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint (\(NWParameters.passcodeCheck(passcode), privacy: .private))")
     }
 
     init(id: UUID, connection: NWConnection, delegate: ConnectionControllerDelegate) {

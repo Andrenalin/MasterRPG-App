@@ -192,7 +192,7 @@ final class SharePlayPackageReceiver {
                 // vanished here with zero evidence it ever happened; at
                 // minimum, surface it so a real support/debug session can
                 // see it occurred. See CODE_AUDIT_Network §5.2.
-                Logger.sharePlay.warning("Chunked ✕: package \(list.id, privacy: .public) from \(key.sourceParticipantId, privacy: .public) expired incomplete: \(list.packageCounter, privacy: .public)/\(list.total, privacy: .public) packages, \(list.receivedByteCount, privacy: .public) bytes received")
+                Logger.sharePlay.warning("Chunked ✕: package \(list.id, privacy: .public) from \(key.sourceParticipantId, privacy: .private) expired incomplete: \(list.packageCounter, privacy: .public)/\(list.total, privacy: .public) packages, \(list.receivedByteCount, privacy: .public) bytes received")
             }
             removeStream(key: key)
         }

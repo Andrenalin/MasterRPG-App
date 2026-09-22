@@ -169,7 +169,7 @@ actor ListenerServerController {
 
     func run() async throws {
         let passcodeCheck = NWParameters.passcodeCheck(passcode)
-        Logger.listenerController.debug("ListenerManager: Listening (\(passcodeCheck, privacy: .public))")
+        Logger.listenerController.debug("ListenerManager: Listening (\(passcodeCheck, privacy: .private))")
         let listener = try NWListener(using: NWParameters(passcode: passcode))
         var txtEntries = [NWTXTRecord.supporterTierKey: String(supporterTier.rawValue)]
         if let sessionId {

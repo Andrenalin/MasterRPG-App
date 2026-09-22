@@ -184,7 +184,7 @@ extension GameSetup {
                 } else {
                     "unknown"
                 }
-                Logger.gameTable.debug("Pin '\(pin.name, privacy: .public)' hidden for player: \(reason, privacy: .public)")
+                Logger.gameTable.debug("Pin '\(pin.name, privacy: .private)' hidden for player: \(reason, privacy: .public)")
             }
         }
         guard let projection else {
@@ -200,7 +200,7 @@ extension GameSetup {
             let isInsidePlane = abs(position.x) <= projection.planeWidth / 2
                 && abs(position.z) <= projection.planeDepth / 2
             guard !isInsideCanvas || !isInsidePlane else { continue }
-            Logger.gameTable.error("Pin '\(pin.name, privacy: .public)' is off the map: location \(pin.location.x, privacy: .public),\(pin.location.y, privacy: .public) vs canvas \(projection.imageSize.width, privacy: .public)x\(projection.imageSize.height, privacy: .public) (inside canvas: \(isInsideCanvas, privacy: .public)), table position \(position.x, privacy: .public),\(position.z, privacy: .public) vs plane half-extent \(projection.planeWidth / 2, privacy: .public),\(projection.planeDepth / 2, privacy: .public)")
+            Logger.gameTable.error("Pin '\(pin.name, privacy: .private)' is off the map: location \(pin.location.x, privacy: .public),\(pin.location.y, privacy: .public) vs canvas \(projection.imageSize.width, privacy: .public)x\(projection.imageSize.height, privacy: .public) (inside canvas: \(isInsideCanvas, privacy: .public)), table position \(position.x, privacy: .public),\(position.z, privacy: .public) vs plane half-extent \(projection.planeWidth / 2, privacy: .public),\(projection.planeDepth / 2, privacy: .public)")
         }
     }
 

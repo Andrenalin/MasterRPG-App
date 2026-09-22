@@ -326,7 +326,7 @@ extension RPGSharePlayController {
                     localParticipantId: groupSession.localParticipant.id,
                     sessionIsJoined: self.isActive
                 )
-                Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .public) added: \(change.added.debugDescription, privacy: .public) removed: \(change.removed.debugDescription, privacy: .public)")
+                Logger.sharePlay.debug("Session Participants active: \(activeParticipants.debugDescription, privacy: .private) added: \(change.added.debugDescription, privacy: .private) removed: \(change.removed.debugDescription, privacy: .private)")
                 for participantId in change.removed.sorted(by: { $0.uuidString < $1.uuidString }) {
                     guard await self.performSessionCallback(sessionId: groupSession.id, operation: {
                         await self.delegate?.sharePlayLostPlayer(id: participantId)
