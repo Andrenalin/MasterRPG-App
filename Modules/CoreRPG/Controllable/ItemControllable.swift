@@ -419,7 +419,13 @@ public extension ItemControllable {
         let sortedModelIds = Set(sortedModels.map(\.id))
         let deletedIds = itemDataModel.items.filter { !sortedModelIds.contains($0) }
         for id in deletedIds {
-            await delete(itemId: id)
+            // Full-table reconciliation (a store swap, or the once-at-launch initial
+            // fetch) must stay memory-only, matching `updateFromSync`'s incremental
+            // deletion path: an id missing from the freshly fetched list may just be
+            // an in-memory id from the old store, not a real deletion, so this must
+            // never touch the binary file or issue a database delete. See
+            // CODE_AUDIT_17 §5.1.
+            await delete(itemId: id, withFileData: false, withDatabase: false)
         }
         var updatedItems: [UUID] = []
         for item in sortedModels {

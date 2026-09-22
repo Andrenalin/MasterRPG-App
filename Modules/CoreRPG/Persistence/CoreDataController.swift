@@ -98,7 +98,7 @@ public extension CoreDataController {
     }
 
     func fetch(mapper: @escaping @Sendable (DataType) -> Model) async throws -> [Model] {
-        await context.perform {
+        try await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
             // Prefetch relationships to avoid N+1 queries.
             // No fetchBatchSize here — batched fetches disable relationship prefetching,
@@ -108,7 +108,7 @@ public extension CoreDataController {
             }
             // Disable faulting to force immediate hydration and avoid lazy loading overhead
             request.returnsObjectsAsFaults = false
-            return fetchAndDelete(request: request, mapper: mapper)
+            return try fetchAndDelete(request: request, mapper: mapper)
         }
     }
 
@@ -226,7 +226,7 @@ public extension CoreDataController {
 public extension CoreDataController {
     /// Mirrors fetch(mapper:) including relationship prefetching and duplicate repair.
     func fetchSnapshots<Snapshot: Sendable>(mapper: @escaping @Sendable (DataType) -> Snapshot) async throws -> [Snapshot] {
-        await context.perform {
+        try await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
             // Prefetch relationships to avoid N+1 queries.
             // No fetchBatchSize here — batched fetches disable relationship prefetching,
@@ -235,7 +235,7 @@ public extension CoreDataController {
                 request.relationshipKeyPathsForPrefetching = relationshipKeyPaths
             }
             request.returnsObjectsAsFaults = false
-            return fetchAndDelete(request: request, mapper: mapper)
+            return try fetchAndDelete(request: request, mapper: mapper)
         }
     }
 
@@ -417,7 +417,12 @@ private extension CoreDataController {
 // MARK: - Core Data Background Task (Existing)
 
 private extension CoreDataController {
-    func fetchAndDelete<T>(request: NSFetchRequest<NSFetchRequestResult>, mapper: @escaping @Sendable (DataType) -> T?) -> [T] {
+    // Rethrows rather than swallowing a fetch failure into an empty `[]` result: the
+    // full-table reconciliation caller (`SyncDataControllable.fetchUpdates()`) treats
+    // an empty result as "everything was deleted", which would otherwise wipe the
+    // in-memory item list (and previously the files too, see §5.1) on a transient
+    // fetch failure. See CODE_AUDIT_17 §5.1.
+    func fetchAndDelete<T>(request: NSFetchRequest<NSFetchRequestResult>, mapper: @escaping @Sendable (DataType) -> T?) throws -> [T] {
         do {
             guard let data = try self.context.fetch(request) as? [DataType] else {
                 Logger.coreDataController.error("fetch returned an unexpected object type; expected \(DataType.self)")
@@ -450,8 +455,8 @@ private extension CoreDataController {
             return models
         } catch {
             Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
+            throw error
         }
-        return []
     }
 
     func fetchId(request: NSFetchRequest<NSFetchRequestResult>) -> [UUID] {
