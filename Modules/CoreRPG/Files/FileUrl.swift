@@ -201,7 +201,11 @@ public extension URL {
     /// `FileUrl`s that make the receiving device fetch them, so loopback, link-local and
     /// private-range hosts (probing the GM's LAN) are refused. See CODE_AUDIT_15 §6.3.
     var isPublicRemoteFileURL: Bool {
-        guard isSupportedRemoteFileURL, let host = host()?.lowercased() else { return false }
+        guard isSupportedRemoteFileURL, var host = host()?.lowercased() else { return false }
+        // A trailing "." is a legal DNS root label — "localhost." resolves identically to
+        // "localhost" but previously missed every suffix/equality check below. See
+        // CODE_AUDIT_17 §6.10.
+        if host.hasSuffix(".") { host.removeLast() }
         if host == "localhost" || host.hasSuffix(".localhost") || host.hasSuffix(".local")
             || host.hasSuffix(".internal") || host.hasSuffix(".lan") || !host.contains(".") && !host.contains(":") {
             return false
@@ -214,12 +218,20 @@ public extension URL {
                 || value.hasPrefix("feb") || value.hasPrefix("::ffff:"))
         }
         let octets = host.split(separator: ".").compactMap { Int($0) }
-        guard octets.count == 4, octets.count == host.split(separator: ".").count else { return true }
-        switch (octets[0], octets[1]) {
-        case (0, _), (10, _), (127, _), (169, 254), (192, 168): return false
-        case (172, 16...31), (100, 64...127): return false
-        default: return true
+        if octets.count == 4, octets.count == host.split(separator: ".").count {
+            switch (octets[0], octets[1]) {
+            case (0, _), (10, _), (127, _), (169, 254), (192, 168): return false
+            case (172, 16...31), (100, 64...127): return false
+            default: return true
+            }
         }
+        // Not a clean 4-octet dotted-quad. A host made only of digits, dots and hex/octal
+        // prefixes (e.g. "127.1", "0x7f.0.0.1", a bare decimal like "2130706433") is a
+        // shorthand IPv4 literal `getaddrinfo` still resolves, not a real DNS name —
+        // refuse it rather than assume "not 4 octets" means "safe hostname". A real
+        // hostname always contains at least one non-hex letter. See CODE_AUDIT_17 §6.10.
+        let looksLikeNumericIPLiteral = host.allSatisfy { $0.isHexDigit || $0 == "." || $0 == "x" }
+        return !looksLikeNumericIPLiteral
     }
 
     var isSupportedRemoteFileURL: Bool {
