@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import SwiftUI
 
 struct NumericOnlyViewModifier: ViewModifier {
@@ -12,13 +11,16 @@ struct NumericOnlyViewModifier: ViewModifier {
         #if !os(macOS)
         .keyboardType(includeDecimal ? .decimalPad : .numberPad)
         #endif
-        .onReceive(Just(text)) { newValue in
+        // Two-parameter `onChange` fires only when `text` actually changes, unlike
+        // `onReceive(Just(text))`, which re-fired on every body evaluation. See
+        // CODE_AUDIT_17 §4.4.
+        .onChange(of: text) { _, newValue in
             var numbers = "-0123456789"
-            let decimnalSeparator: String = Locale.current.decimalSeparator ?? "."
+            let decimalSeparator: String = Locale.current.decimalSeparator ?? "."
             if includeDecimal {
-                numbers += decimnalSeparator
+                numbers += decimalSeparator
             }
-            if newValue.components(separatedBy: decimnalSeparator).count - 1 > 1 {
+            if newValue.components(separatedBy: decimalSeparator).count - 1 > 1 {
                 let filtered = newValue
                 text = String(filtered.dropLast())
             } else {

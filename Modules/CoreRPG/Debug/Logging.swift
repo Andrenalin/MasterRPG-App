@@ -16,6 +16,7 @@ public extension Logger {
     static let fileStore = Logger(subsystem: subsystem, category: "FileStore")
     static let folderListControllable = Logger(subsystem: subsystem, category: "FolderListControllable")
     static let gameController = Logger(subsystem: subsystem, category: "GameController")
+    static let generatorRPG = Logger(subsystem: subsystem, category: "GeneratorRPG")
     static let importController = Logger(subsystem: subsystem, category: "ImportController")
     static let itemController = Logger(subsystem: subsystem, category: "ItemController")
     static let linkController = Logger(subsystem: subsystem, category: "LinkController")

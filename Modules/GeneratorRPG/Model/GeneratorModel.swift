@@ -188,7 +188,7 @@ extension GeneratorModel: nonisolated ItemDataAccessable {
     }
     
     public func filter(filter: String, includeEntries: Bool) -> Bool {
-        (filter.isEmpty || name.localizedCaseInsensitiveContains(filter) || description.localizedCaseInsensitiveContains(filter))
+        (filter.isEmpty || name.localizedStandardContains(filter) || description.localizedStandardContains(filter))
     }
     
     public func isEqual(other: GeneratorModel) -> Bool {

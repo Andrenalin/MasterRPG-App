@@ -3,6 +3,7 @@
 import CoreRPG
 import PDFKit
 import SwiftUI
+import os.log
 
 /// View for analyzing and displaying PDF summary
 public struct PdfSummaryAnalysisView: View {
@@ -172,9 +173,7 @@ private struct AnalyzingView: View {
     if let url = PreviewAssetFixture.url(.pdf),
        let pdfDocument = PDFDocument(url: url) {
         PdfSummaryAnalysisView(pdfDocument: pdfDocument) { content in
-#if DEBUG
-            print("Analyzed: \(content.title)")
-#endif
+            Logger.generatorRPG.debug("Analyzed: \(content.title, privacy: .public)")
         }
     } else {
         Text(verbatim: "PDF fixture is available in Debug previews")

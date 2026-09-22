@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import Foundation
+import os.log
 
 /// Imports the shared example-adventure package (`exampleFirstData.gmz`)
 /// used to build each module's `previewWithData` fixture.
@@ -22,7 +23,7 @@ public enum PreviewFixtureLoader {
     public static func importFirstExample(url: URL?, into importController: any ImportControllable) async -> Bool {
 #if DEBUG
         guard let url else {
-            print("Preview fixture resource URL was nil")
+            Logger.bootStrap.debug("Preview fixture resource URL was nil")
             return false
         }
         let task = importController.importUrl(from: url)
