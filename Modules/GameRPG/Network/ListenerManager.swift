@@ -19,6 +19,10 @@ fileprivate enum ListenerEvent: Sendable {
 }
 
 protocol ListenerManagerDelegate: AnyObject, Sendable {
+    /// The listener actually reached `.ready` — the only point `listenerStatus` should
+    /// be derived from as "really running", rather than the caller assuming success
+    /// right after calling `startListening()`. See CODE_AUDIT_17 §5.22.
+    func listenerReady() async
     func listenerCancelled() async
     func listenerNewConnection(_ connection: NWConnection) async
 }
@@ -92,6 +96,14 @@ final class ListenerManager: ListenerManaging {
                 Logger.listenerController.error("ListenerManager: Error \(error.localizedDescription, privacy: .public)")
                 guard let self, self.runGeneration == generation else { return }
                 self.state = .stopped
+                // `run()` throwing (e.g. `NWListener(using:)` itself failing) previously
+                // only set `state` here and never told the delegate, while the caller had
+                // already set `listenerStatus = .running` right after starting — the GM
+                // saw a healthy game while nobody could join, and the restart-with-backoff
+                // wired to `listenerCancelled()` never ran for this failure. Route it
+                // through the same delegate path as the `.failed` event. See
+                // CODE_AUDIT_17 §5.22.
+                await self.delegate?.listenerCancelled()
             }
         }
     }
@@ -113,6 +125,7 @@ final class ListenerManager: ListenerManaging {
         switch event {
         case .ready:
             state = .waitingForConnection
+            await delegate?.listenerReady()
         case .failed(let error):
             Logger.listenerController.error("ListenerManager: Failed \(error.localizedDescription, privacy: .public)")
             state = .stopped

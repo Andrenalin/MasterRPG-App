@@ -118,7 +118,8 @@ extension MasterNetworkController: MasterNetworkControllable {
             self
         )
         networkModel.listener?.startListening()
-        networkModel.listenerStatus = .running
+        // `listenerStatus` becomes `.running` only once `listenerReady()` fires for the
+        // listener's real `.ready` event — see §5.22.
         listenerStartedAt = ContinuousClock.now
     }
 
@@ -288,6 +289,15 @@ extension MasterNetworkController: ListenerManagerDelegate {
     /// the listener is recreated with a growing pause, so new and reconnecting players can still
     /// join. If it keeps failing the status becomes `.failed` for the UI to show.
     /// See CODE_AUDIT_Join §5.3.
+    /// The only point `listenerStatus` is set to `.running` from — derived from the
+    /// listener's real `.ready` state, not assumed right after `startListener()` calls
+    /// `startListening()`. See CODE_AUDIT_17 §5.22.
+    @MainActor
+    func listenerReady() async {
+        guard networkModel.isStreaming else { return }
+        networkModel.listenerStatus = .running
+    }
+
     @MainActor
     func listenerCancelled() async {
         guard networkModel.isStreaming else { return }

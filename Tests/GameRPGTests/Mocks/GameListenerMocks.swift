@@ -20,6 +20,11 @@ final class GameListenerAbstractionMock: ListenerManaging, @unchecked Sendable {
 final class GameListenerDelegateMock: ListenerManagerDelegate, @unchecked Sendable {
     var calledCancelled = 0
     var calledNewConnection = 0
+    var calledReady = 0
+
+    func listenerReady() async {
+        calledReady += 1
+    }
 
     func listenerCancelled() async {
         calledCancelled += 1

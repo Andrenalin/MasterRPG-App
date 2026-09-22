@@ -490,6 +490,9 @@ extension PlayerNetworkController {
 // MARK: - ListenerManagerDelegate
 
 extension PlayerNetworkController: ListenerManagerDelegate {
+    @MainActor
+    func listenerReady() async {}
+
     /// The fallback listener failed. While the player is still waiting for its master it is
     /// recreated after a pause; only when that keeps failing (or there is nothing to wait for)
     /// does the controller stop. See CODE_AUDIT_Join §5.3.
