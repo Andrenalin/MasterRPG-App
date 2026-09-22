@@ -71,11 +71,22 @@ final class GameRootModel: Sendable {
     public var isSharePlayActive: Bool { shareState.isSharePlayActive }
     #endif
 
+    /// Longest a peer-controlled player name is allowed to be. An authenticated peer
+    /// can otherwise send a name up to the frame limit, which is then echoed in every
+    /// master broadcast (the v1-compatible encoder writes the roster three times per
+    /// message) and persisted per statistics event. See CODE_AUDIT_17 §6.9.
+    static let maxPlayerNameLength = 64
+
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
         // A claimed player model whose id doesn't match the sender is a failed
         // roster lookup (PlayerGameModel.empty carries a random id) — writing it
         // would orphan the roster entry and lose the player's name for good.
         guard playerModel.id == playerId else { return false }
+
+        var playerModel = playerModel
+        if playerModel.name.count > Self.maxPlayerNameLength {
+            playerModel.name = String(playerModel.name.prefix(Self.maxPlayerNameLength))
+        }
 
         let isNewPlayer: Bool
         if let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) {
