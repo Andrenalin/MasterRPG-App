@@ -86,12 +86,16 @@ public final class DataBaseModel {
     
     @MainActor public func setup() {
         if hasCloudKit {
+            // Stop the outgoing local controller's tasks before dropping it, so its
+            // container doesn't leak for the rest of the process. See §3.9.
+            localPersistence?.model.stop()
             localPersistence = nil
             if cloudPersistence == nil {
                 cloudPersistence = CloudKitCoreDataPersistenceController(inMemory: false, currentActor: currentActor)
             }
             cloudPersistence?.loadDatabase(bundles: Self.rpgModuleBundles)
         } else {
+            cloudPersistence?.model.stop()
             cloudPersistence = nil
             if localPersistence == nil {
                 localPersistence = CoreDataPersistenceController(inMemory: false, currentActor: currentActor)

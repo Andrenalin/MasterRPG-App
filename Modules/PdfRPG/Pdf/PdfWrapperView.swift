@@ -135,8 +135,12 @@ struct PdfWrapperView: CustomViewRepresentable {
             pdfView?.document?.beginFindString(searchText, withOptions: .caseInsensitive)
         }
 
+        // Called by PDFKit off the main actor while a `beginFindString` scan is in
+        // flight. Only append to `pendingMatches` here — PDFKit delivers these
+        // sequentially for one scan, so the plain array is safe — and defer every
+        // `PDFSelection.color` mutation to `documentDidEndDocumentFind`, which hops
+        // to the main actor before touching it. See CODE_AUDIT_17 §3.8.
         func didMatchString(_ instance: PDFSelection) {
-            instance.color = AKColor.yellow
             pendingMatches.append(instance)
         }
 
@@ -146,6 +150,9 @@ struct PdfWrapperView: CustomViewRepresentable {
             let searchModel = parent.searchModel
             Task { @MainActor in
                 guard let pdfView else { return }
+                for match in matches {
+                    match.color = AKColor.yellow
+                }
                 if let match = matches.first {
                     pdfView.go(to: match)
                 }
@@ -159,7 +166,7 @@ struct PdfWrapperView: CustomViewRepresentable {
                     var updatedMatches = matches
                     updatedMatches[index] = selection
                     pdfView.highlightedSelections = updatedMatches
-                    Task {
+                    Task { @MainActor in
                         try? await Task.sleep(for: PdfWrapperView.pdfViewNavigationDelay)
                         selection.color = AKColor.yellow
                         updatedMatches[index] = selection

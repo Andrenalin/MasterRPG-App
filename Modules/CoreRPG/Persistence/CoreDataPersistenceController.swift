@@ -98,6 +98,17 @@ public final class CoreDataInitModel {
         }
     }
 
+    /// Cancels this model's long-lived monitoring tasks. Call before dropping the
+    /// reference to this model (e.g. a store swap in `DataBaseModel.setup()`), so
+    /// the old `NSPersistentCloudKitContainer` and its never-finishing
+    /// `eventChangedNotification` sequence don't outlive the controller for the
+    /// rest of the process. See CODE_AUDIT_17 §3.9.
+    public func stop() {
+        cleanupTask?.cancel()
+        cleanupTask = nil
+        cloudKitEventMonitoringTask?.cancel()
+        cloudKitEventMonitoringTask = nil
+    }
 }
 
 public struct CoreDataPersistenceController {
