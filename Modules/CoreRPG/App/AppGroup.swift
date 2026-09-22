@@ -54,6 +54,19 @@ public extension FileManager {
     /// limitation, not a bug, unless that decision changes.
     static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: cloudContainerIdentifier)
 
+    /// Touches `cloudURL` (and `groupURL`) from a background context so the one-time
+    /// resolution cost — Apple advises against calling
+    /// `url(forUbiquityContainerIdentifier:)` on the main thread — lands there instead
+    /// of on whichever thread happens to touch `preferredRootUrl` first, which in
+    /// practice was usually the main thread during early app/window setup. Call once,
+    /// early, off the main actor; `static let` resolves at most once regardless of how
+    /// many times or from where this is called. See CODE_AUDIT_17 §5.19.
+    @concurrent
+    static func prewarmCloudUrls() async {
+        _ = cloudURL
+        _ = groupURL
+    }
+
     /// The preferred storage root, in order: the iCloud ubiquity container,
     /// then the App Group container, then `URL.documentsDirectory` — falls
     /// back rather than crashing when neither iCloud nor the App Group is

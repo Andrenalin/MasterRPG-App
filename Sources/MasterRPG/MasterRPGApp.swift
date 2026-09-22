@@ -26,6 +26,11 @@ struct MasterRPGApp: App {
     
     init() {
         MasterRPGTips.configure()
+        // Off-main so the one-time iCloud/App Group container resolution doesn't
+        // land on the main thread during early app/window setup. See §5.19.
+        Task.detached(priority: .utility) {
+            await FileManager.prewarmCloudUrls()
+        }
 #if !os(tvOS)
         // Register custom RealityKit components
         RealityKitInit.registerRealityKitComponents()
