@@ -37,6 +37,10 @@ public extension CoreDataSnapshotPersistable {
         dataController.queueReplace(uuid: id, snapshot: snapshot, updater: applySnapshot(_:into:))
     }
 
+    func removePendingOperations(for id: UUID) async {
+        dataController.model.removePendingOperations(for: id)
+    }
+
     func replace(id: UUID, with viewModel: any ModelType) async throws {
         guard let viewModel = viewModel as? Model else { return }
         // `makeSnapshot(from:)` is itself `@MainActor` — `await` alone hops there, no

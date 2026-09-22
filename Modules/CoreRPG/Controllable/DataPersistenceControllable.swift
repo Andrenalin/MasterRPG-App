@@ -19,4 +19,8 @@ public protocol DataPersistenceControllable: Sendable {
     /// Flush pending operations into the context without calling `context.save()`.
     /// Called by `AdventureRootModel.save()` for each module root before the single consolidated save.
     func flushPendingOperations() async throws
+    /// Drops any not-yet-flushed queued edit for `id`. Called on every item delete
+    /// (local or sync-reported) so a pending edit queued just before the deletion
+    /// can't resurrect the item on the next flush. See CODE_AUDIT_17 §5.7.
+    func removePendingOperations(for id: UUID) async
 }

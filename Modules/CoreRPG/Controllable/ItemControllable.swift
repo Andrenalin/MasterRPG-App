@@ -132,7 +132,15 @@ public extension ItemControllable {
         for entry in entries {
             await cacheControllable?.remove(itemId: entry.id)
         }
-        
+
+        // Drop any not-yet-flushed queued edit for this id — including on the
+        // memory-only sync-deletion path (`withDatabase == false`), which
+        // otherwise never touches the pending-operations queue at all: a local
+        // edit queued just before a remote deletion notification arrives would
+        // resurrect the item as a fresh insert on the next flush. See
+        // CODE_AUDIT_17 §5.7.
+        await dataControllable?.removePendingOperations(for: itemId)
+
         if withDatabase {
             await CloudKitOperationCounter.shared.recordOperation(
                 function: "ItemControllable.delete(itemId:withFileData:\(withFileData))",

@@ -37,6 +37,14 @@ final class CoreDataModel: Sendable {
         }
     }
 
+    /// Drops any queued edit for `id`. Called when the sync layer reports the item
+    /// deleted elsewhere, so a pending local edit made just before the remote
+    /// deletion arrived can't resurrect the item on the next flush (insert, since
+    /// its id is no longer found to exist). See CODE_AUDIT_17 §5.7.
+    func removePendingOperations(for id: UUID) {
+        operations.withLock { $0.removeAll { $0.id == id } }
+    }
+
     /// Runs `work` only after any previously-chained flush has finished, atomically swapping
     /// in the new task under one lock acquisition so two concurrent `flushPendingOperations()`/
     /// `save()` calls on this controller (e.g. an autosave debounce racing an explicit save)
