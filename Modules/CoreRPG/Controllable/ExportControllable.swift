@@ -344,9 +344,15 @@ public extension ExportControllable {
             // Codable implementation (wire format) stays untouched.
             let data = try await encoded(item)
 
-            if await !exportModel.exportWithoutFileData, let fileData = await inlineFiles(for: itemId) {
-                try outputStream.append(counter: fileData.count, token: ExportDataToken.file.rawValue)
-                try outputStream.write(data: fileData)
+            if await !exportModel.exportWithoutFileData {
+                if let fileData = await inlineFiles(for: itemId) {
+                    try outputStream.append(counter: fileData.count, token: ExportDataToken.file.rawValue)
+                    try outputStream.write(data: fileData)
+                } else if await hasFileData(for: itemId) {
+                    // The item has a file, but reading it failed — record it instead of
+                    // silently writing a backup that looks complete. See §5.10.
+                    await recordMissingFileData(for: itemId, exportModel: exportModel)
+                }
             }
             try outputStream.append(counter: data.count, token: ExportDataToken.item.rawValue)
             try outputStream.write(data: data)
@@ -367,12 +373,20 @@ public extension ExportControllable {
 
     @MainActor private func inlineFiles(for itemId: UUID) async -> Data? {
         guard let fileUrlDataController, let item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl else { return nil }
-        if let data = try? await fileUrlDataController.loadData(for: fileUrl) {
-            return data
-        }
-        guard itemControllable.config.module == .photo,
-              let image = await itemControllable.cacheControllable?.photo(for: itemId) else { return nil }
-        return image.jpegData(compressionQuality: JPEGQuality.export)
+        // Previously fell back to the cached thumbnail re-encoded as JPEG for photos —
+        // that silently changes the exported format (transparency and original bytes
+        // lost, hashes differ) while still reporting the export as successful. Report
+        // the read failure instead of substituting different bytes. See §5.10.
+        return try? await fileUrlDataController.loadData(for: fileUrl)
+    }
+
+    @MainActor private func hasFileData(for itemId: UUID) async -> Bool {
+        await itemControllable.item(for: itemId)?.fileUrl != nil
+    }
+
+    @MainActor private func recordMissingFileData(for itemId: UUID, exportModel: ItemDataExportModel) {
+        exportModel.itemsWithMissingFileData.insert(itemId)
+        Logger.exportController.error("ExportControllable: failed to read file data for item \(itemId, privacy: .public); exporting without it.")
     }
 
     @MainActor private func token() async -> NetworkModules {

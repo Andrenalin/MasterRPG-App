@@ -13,6 +13,12 @@ public final class ItemDataExportModel {
     public var isExportRunning: Bool = false
     
     public var exportWithoutFileData: Bool = false
+
+    /// Item ids whose file data could not be read during this export (evicted iCloud
+    /// file, coordination timeout, permission) — the export otherwise wrote (and
+    /// reported success for) a backup missing those binaries with no trace of why.
+    /// See CODE_AUDIT_17 §5.10.
+    public var itemsWithMissingFileData: Set<UUID> = []
 }
 
 public enum ItemDataExportableError: Error {
