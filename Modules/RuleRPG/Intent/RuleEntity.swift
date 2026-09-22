@@ -80,7 +80,9 @@ struct RuleEntityQuery: ItemEntityQuery {
     func makeEntity(root: RuleRootModel, model: RuleModel) -> RuleEntity { RuleEntity(root: root, model: model) }
     func allIds(root: RuleRootModel) -> [UUID] { root.itemController.itemDataModel.items }
     func model(root: RuleRootModel, id: UUID) -> RuleModel? { root.itemController.itemSync(for: id) }
-    func include(model: RuleModel) -> Bool { !model.specialCategory }
+    func include(model: RuleModel) -> Bool {
+        !model.specialCategory && model.displayState != DisplayStateMask.totalHidden.rawValue
+    }
 
     func suggestedEntities() async throws -> [RuleEntity] {
         await DatabaseReadiness.wait()

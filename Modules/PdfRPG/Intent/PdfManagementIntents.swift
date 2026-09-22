@@ -127,7 +127,7 @@ struct DeletePdfIntent: DeleteIntent {
         let ids = entities.map(\.id)
 
         for id in ids {
-            await root.editController.delete(itemId: id)
+            await root.editController.markForDeletion(itemId: id)
         }
         await root.itemController.save()
 

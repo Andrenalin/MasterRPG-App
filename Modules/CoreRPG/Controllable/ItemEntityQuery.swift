@@ -66,7 +66,13 @@ public extension ItemEntityQuery {
         model.name.localizedStandardContains(text) || model.description.localizedStandardContains(text)
     }
 
-    func include(model: Model) -> Bool { true }
+    /// Excludes items the user already moved to the trash by default — Siri and
+    /// Shortcuts could otherwise list, open, append to or delete an item that's
+    /// already marked for deletion (only `RuleEntity` used to override this).
+    /// See CODE_AUDIT_17 §5.12.
+    func include(model: Model) -> Bool {
+        model.displayState != DisplayStateMask.totalHidden.rawValue
+    }
 
     func suggestedEntities() async throws -> [Entity] {
         await DatabaseReadiness.wait()
