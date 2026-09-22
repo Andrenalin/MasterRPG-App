@@ -69,7 +69,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
 extension DieModel {
     public enum ColorCode: String {
         case Random
-        case A, G
+        case A, B, G
     }
     
     // The setter is a required no-op, not dead code: `EntryDataAccessable`
@@ -92,6 +92,7 @@ extension DieModel {
         let code = DieModel.resolvedColor(color, for: die)
         return switch die.sides {
         case .two: "D2\(code)-\(number)"
+        case .three: "D3\(code)-\(number)"
         case .four: "D4\(code)-\(number)"
         case .six: "D6\(code)-\(number)"
         case .eight: "D8\(code)-\(number)"
@@ -187,6 +188,9 @@ extension DieModel {
 
     public static var die2: DieModel { die2(color: .Random) }
     public static func die2(color: ColorCode) -> DieModel { die(.two, color: color) }
+
+    public static var die3: DieModel { die3(color: .Random) }
+    public static func die3(color: ColorCode) -> DieModel { die(.three, color: color) }
 
     public static var die4: DieModel { die4(color: .Random) }
     public static func die4(color: ColorCode) -> DieModel { die(.four, color: color) }

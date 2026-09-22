@@ -17,6 +17,10 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
         RawDie(.two)
     }
 
+    public static var three: RawDie {
+        RawDie(.three)
+    }
+
     public static var four: RawDie {
         RawDie(.four)
     }
@@ -77,6 +81,7 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
 
     public enum Sides: Equatable, Hashable, Codable, Sendable {
         case two
+        case three
         case four
         case six
         case eight
@@ -89,6 +94,8 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
             switch self {
             case .two:
                 return 2
+            case .three:
+                return 3
             case .four:
                 return 4
             case .six:
@@ -119,6 +126,8 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
             switch number {
             case 2:
                 return .two
+            case 3:
+                return .three
             case 4:
                 return .four
             case 6:

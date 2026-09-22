@@ -11,7 +11,7 @@ struct DiceBag: View {
     // `.dieN(color:)` call) on every `DiceBag` re-init, churning `ForEach`
     // identity on every unrelated parent redraw. See CODE_AUDIT §7.2.
     private static let diceBagA: [DieModel] = [.die4(color: .A), .die20(color: .A)]
-    private static let diceBagG: [DieModel] = [.die2(color: .G), .die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
+    private static let diceBagG: [DieModel] = [.die2(color: .G), .die3(color: .G), .die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
 
     @Environment(DiceRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
