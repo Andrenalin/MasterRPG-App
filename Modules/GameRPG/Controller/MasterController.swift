@@ -157,6 +157,11 @@ final class MasterControllerModel {
     var asProxy = false
     var pendingAudioPlays: [UUID: NetworkCodableDataType] = [:]
     var audioTransferPlayers: [UUID: Set<UUID>] = [:]
+    /// Number of retries already attempted per pending audio play, so a
+    /// permanently failing export stops retrying instead of resurrecting
+    /// itself every `audioPlayRetryDelay` for the rest of the session.
+    /// See CODE_AUDIT_17 §3.6.
+    var audioPlayRetryAttempts: [UUID: Int] = [:]
     private var lastAudioListCounters: [UUID: Int] = [:]
     private var lastPhotoListCounters: [UUID: Int] = [:]
     private var lastPdfListCounters: [UUID: Int] = [:]

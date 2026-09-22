@@ -141,6 +141,8 @@ struct DiceEntityQuery: ItemEntityQuery {
     }
 
     func suggestedEntities() async throws -> [DiceEntity] {
+        await DatabaseReadiness.wait()
+
         // Return cached entities if still valid
         if Date().timeIntervalSince(Self.lastCacheUpdate) < Self.cacheValidityDuration {
             return Self.cachedEntities
@@ -152,6 +154,10 @@ struct DiceEntityQuery: ItemEntityQuery {
             guard let model = model(root: root, id: id) else { continue }
             entities.append(makeEntity(root: root, model: model))
         }
+
+        // Never cache an empty result from before the database was ready: it would
+        // otherwise be served for the full cacheValidityDuration. See CODE_AUDIT_17 §3.2.
+        guard !entities.isEmpty || DatabaseReadiness.isReady else { return entities }
 
         // Update cache
         Self.cachedEntities = entities

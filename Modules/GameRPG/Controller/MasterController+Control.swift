@@ -42,6 +42,7 @@ extension MasterController {
             task.cancel()
         }
         audioPlayRetryTasks.removeAll()
+        gameModel.audioPlayRetryAttempts.removeAll()
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()
         gameModel.sentGameItems.removeAll()

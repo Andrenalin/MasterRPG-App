@@ -47,10 +47,17 @@ final class AdventureSessionModel {
 
     // Task management for cancellation
     var currentTask: Task<Void, Never>?
+    var currentExtractionTask: Task<Void, Never>?
 
     func cancel() {
         currentTask?.cancel()
         currentTask = nil
+        conversationEngine.cancelActiveResponse()
+    }
+
+    func cancelExtraction() {
+        currentExtractionTask?.cancel()
+        currentExtractionTask = nil
     }
             
     // MARK: - Generation Options
@@ -160,7 +167,8 @@ struct AdventureGeneratorController: Sendable {
     
     @MainActor func tearDown() {
         model.conversationEngine.cancelActiveResponse()
-        model.currentTask?.cancel()
+        model.cancel()
+        model.cancelExtraction()
     }
 
     static let defaultInstructions = """
@@ -225,11 +233,11 @@ struct AdventureGeneratorController: Sendable {
     }
 
     @MainActor func extract(message: String) {
-        guard !model.extractSession.isResponding else { return }
+        model.cancelExtraction()
         model.isExtracting = true
         PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 
-        Task(name: "Foundation Extraction") {
+        model.currentExtractionTask = Task(name: "Foundation Extraction") {
             let trace = PerformanceTrace.begin(
                 "FoundationExtraction",
                 source: "extraction",

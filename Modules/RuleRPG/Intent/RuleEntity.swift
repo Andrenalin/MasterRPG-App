@@ -83,6 +83,7 @@ struct RuleEntityQuery: ItemEntityQuery {
     func include(model: RuleModel) -> Bool { !model.specialCategory }
 
     func suggestedEntities() async throws -> [RuleEntity] {
+        await DatabaseReadiness.wait()
         let entities: [RuleEntity] = allIds(root: root).compactMap { id -> RuleEntity? in
             guard let model = model(root: root, id: id), include(model: model) else { return nil }
             return makeEntity(root: root, model: model)

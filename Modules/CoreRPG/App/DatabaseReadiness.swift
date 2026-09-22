@@ -29,18 +29,22 @@ public enum DatabaseReadiness {
 
     /// Returns once the database and root models are ready, or after `timeout`.
     public static func wait() async {
-        // Without a registered starter (tests, previews) nothing could ever make it ready.
-        guard !isReady, let starter else { return }
-        starter()
         guard !isReady else { return }
+        starter?()
+        guard !isReady else { return }
+        // No registered starter (tests, previews, or a starter that has not been
+        // configured yet) still waits for `markReady`/the timeout rather than
+        // returning immediately, so a starter racing this call cannot be skipped.
+        // See CODE_AUDIT_17 §3.3.
         let id = UUID()
-        Task { @MainActor in
+        let timeoutTask = Task { @MainActor in
             try? await Task.sleep(for: timeout)
             waiters.removeValue(forKey: id)?.resume()
         }
         await withCheckedContinuation { continuation in
             waiters[id] = continuation
         }
+        timeoutTask.cancel()
     }
 
     private static func resumeAll() {

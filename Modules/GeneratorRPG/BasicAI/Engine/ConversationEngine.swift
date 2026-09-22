@@ -17,6 +17,7 @@ public final class ConversationEngine {
     private var configuration: ConversationConfiguration
     private var model: SystemLanguageModel
     private var activeStreamingTask: Task<String, Error>?
+    private var activeStreamingTaskId: UUID?
 
     init(configuration: ConversationConfiguration) {
         self.configuration = configuration
@@ -63,6 +64,7 @@ public final class ConversationEngine {
     public func cancelActiveResponse() {
         activeStreamingTask?.cancel()
         activeStreamingTask = nil
+        activeStreamingTaskId = nil
     }
 
     public func prewarm(promptPrefix: Prompt? = nil) {
@@ -235,9 +237,23 @@ private extension ConversationEngine {
             return latest.isEmpty ? self.latestResponseText() : latest
         }
 
+        let taskId = UUID()
         activeStreamingTask = task
-        defer { activeStreamingTask = nil }
-        return try await task.value
+        activeStreamingTaskId = taskId
+        defer {
+            // Only clear the handle if a newer call has not already replaced it,
+            // so a superseded call's cleanup cannot drop the current task's handle.
+            // See CODE_AUDIT_17 §3.4.
+            if activeStreamingTaskId == taskId {
+                activeStreamingTask = nil
+                activeStreamingTaskId = nil
+            }
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     func respond(

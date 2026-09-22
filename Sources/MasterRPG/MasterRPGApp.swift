@@ -63,10 +63,11 @@ struct MasterRPGApp: App {
         let generatorRootModel = appModel.generatorRoot
         AppDependencyManager.shared.add(dependency: generatorRootModel)
 
-        Task { @MainActor in
-            DatabaseReadiness.configure {
-                data.startDatabaseForBackgroundWork()
-            }
+        // Registered synchronously: `init` already runs on the main actor, and a
+        // background intent racing an unstructured Task could otherwise find no
+        // starter registered yet and skip waiting entirely. See CODE_AUDIT_17 §3.3.
+        DatabaseReadiness.configure {
+            data.startDatabaseForBackgroundWork()
         }
 
 #if !os(tvOS)

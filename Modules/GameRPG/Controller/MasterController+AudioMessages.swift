@@ -125,6 +125,7 @@ extension MasterController {
         if missingPlayers.isEmpty {
             gameModel.pendingAudioPlays[id] = nil
             gameModel.audioTransferPlayers[id] = nil
+            gameModel.audioPlayRetryAttempts[id] = nil
             await broadcastAudioPlay(data)
             return
         }
@@ -159,12 +160,29 @@ extension MasterController {
     }
 
     private static let audioPlayRetryDelay: Duration = .seconds(5)
+    /// Caps the bounded retry so a permanently failing export (missing or
+    /// corrupt file) stops re-exporting after this many attempts instead of
+    /// retrying every `audioPlayRetryDelay` for the rest of the session.
+    /// See CODE_AUDIT_17 §3.6.
+    private static let maxAudioPlayRetryAttempts = 5
 
     /// Schedules one bounded retry of `fulfillPendingAudioPlay(id:data:)`
     /// after `audioPlayRetryDelay`, replacing any retry already scheduled
     /// for this item — so a persistently failing export doesn't pile up
     /// concurrent attempts. See CODE_AUDIT_Network §5.13.
     private func scheduleAudioPlayRetry(id: UUID) {
+        let attempts = (gameModel.audioPlayRetryAttempts[id] ?? 0) + 1
+        gameModel.audioPlayRetryAttempts[id] = attempts
+        guard attempts <= Self.maxAudioPlayRetryAttempts else {
+            Logger.networking.error("MasterController: Dropping pending audio \(id, privacy: .public) after \(attempts, privacy: .public) failed attempts.")
+            audioPlayRetryTasks[id]?.cancel()
+            audioPlayRetryTasks[id] = nil
+            gameModel.pendingAudioPlays[id] = nil
+            gameModel.audioTransferPlayers[id] = nil
+            gameModel.audioPlayRetryAttempts[id] = nil
+            return
+        }
+
         audioPlayRetryTasks[id]?.cancel()
         audioPlayRetryTasks[id] = Task { [weak self] in
             try? await Task.sleep(for: Self.audioPlayRetryDelay)
