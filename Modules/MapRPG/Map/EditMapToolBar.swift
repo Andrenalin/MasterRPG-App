@@ -26,6 +26,8 @@ struct EditToolBarViewModifier: ViewModifier {
 
     @Namespace private var pinSpace
 
+    private static let autoCommitInterval: Duration = .seconds(30)
+
     @ViewBuilder
     func body(content: Content) -> some View {
         if editorModel.mapMode != .edit {
@@ -149,6 +151,20 @@ struct EditToolBarViewModifier: ViewModifier {
                     mapEditController.addMonsters(entryId: entryId, location: nil, monsters: monsters, number: 1, editorModel: editorModel)
                 }
                 selectedPin.resetSelection(itemId: nil, entryId: nil)
+            }
+            // The working copy otherwise commits only on Save or `.onDisappear` — a crash,
+            // force-quit or macOS quit with the editor open discarded the whole drawing
+            // session, since the app-level exit save only ever saved the un-updated stored
+            // model. A periodic auto-commit while this view is on screen gives the same
+            // crash resilience without needing every app-exit path to know about an open
+            // map editor. See CODE_AUDIT_17 §5.17.
+            .task(id: editorModel.workingCopy?.id) {
+                guard editorModel.workingCopy != nil else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: EditToolBarViewModifier.autoCommitInterval)
+                    guard !Task.isCancelled else { return }
+                    mapEditController.commitChanges(editorModel: editorModel)
+                }
             }
             .onDisappear() {
                 guard !exitReady else { return }
