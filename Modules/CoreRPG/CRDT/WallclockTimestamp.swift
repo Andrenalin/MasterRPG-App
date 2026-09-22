@@ -107,14 +107,19 @@ extension WallclockTimestamp: Codable where ActorID: Codable {
     /// Same wire format as the synthesized conformance, except that a non-finite clock
     /// (NaN/infinity from crafted JSON breaks the ordering the merge depends on) decodes as
     /// the oldest possible timestamp. See CODE_AUDIT_15 §5.3.
+    ///
+    /// The decoded clock is otherwise stored unchanged — it used to also be capped at "now
+    /// plus the allowed skew" here, but "now" is decode time, not observation time: decoding
+    /// the same stored value again later (or on another device, at a different moment)
+    /// produced a *different* clamped value, so two far-future writes could tie differently
+    /// per replica and replicas would not converge. Skew clamping now happens only once, when
+    /// the timestamp is actually observed into the local hybrid clock (`MonotonicWallClock
+    /// .observe(_:)`, called from the CRDT merge path), not on every decode. See
+    /// CODE_AUDIT_17 §5.15.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedClock = try container.decode(TimeInterval.self, forKey: .clock)
-        if !decodedClock.isFinite {
-            clock = 0
-        } else {
-            clock = min(decodedClock, Date().timeIntervalSinceReferenceDate + MonotonicWallClock.maximumObservedSkew)
-        }
+        clock = decodedClock.isFinite ? decodedClock : 0
         actorId = try container.decode(ActorID.self, forKey: .actorId)
     }
 
