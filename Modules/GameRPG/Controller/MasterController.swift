@@ -323,6 +323,11 @@ final class MasterControllerModel {
         lastSpaceListCounters[playerId] = nil
         lastSpaceTransformCounters = lastSpaceTransformCounters.filter { $0.key.playerId != playerId }
         removePlayerJournalAdmissions(for: playerId)
+        // Otherwise a `.valueUpdate` deferred while waiting for this sender's ownership
+        // binding stays queued forever once the sender disconnects before that binding
+        // ever lands, and would incorrectly replay against a future, unrelated sender
+        // that reuses the same id. See CODE_AUDIT_17 §5.25.
+        pendingValueUpdatesAwaitingOwnership.removeValue(forKey: playerId)
         for index in peerAvailabilitySources.indices {
             peerAvailabilitySources[index].pendingRecipients.remove(playerId)
         }

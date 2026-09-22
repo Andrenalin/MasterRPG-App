@@ -66,6 +66,12 @@ extension GameTableModel {
     func toggleHexMap() {
         guard let mapId = currentMapId else { return }
         _ = mapRoot.toggleHexMap(itemId: mapId)
+        // `syncAfterExternalEdit()` only syncs pawns/hit areas and broadcasts map state —
+        // unlike every other fog-affecting entry point it never called
+        // `replaceFogOfWarTask()`, so the board texture (which draws every entry,
+        // including the hex grid) stayed stale until an unrelated fog change.
+        // See CODE_AUDIT_17 §5.24.
+        replaceFogOfWarTask()
         syncAfterExternalEdit()
     }
 

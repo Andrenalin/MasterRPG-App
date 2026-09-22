@@ -240,6 +240,10 @@ private struct AudioPlayerViewPlayTimeControlView: View {
     }
 
     private var totalTime: Double {
-        root.audioController.model.currentItem?.duration.seconds ?? 0
+        // An indefinite (NaN/infinite) duration otherwise violates the `Slider`
+        // range precondition and makes `Int(...)` in the accessibility value trap.
+        // See CODE_AUDIT_17 §5.25.
+        let seconds = root.audioController.model.currentItem?.duration.seconds ?? 0
+        return seconds.isFinite && seconds > 0 ? seconds : 0.001
     }
 }
