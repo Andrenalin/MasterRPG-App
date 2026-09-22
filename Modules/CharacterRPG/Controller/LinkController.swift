@@ -164,6 +164,11 @@ extension LinkController {
     }
 }
 
+private struct LinkMemoKey: Hashable {
+    let itemId: UUID
+    let entryId: UUID
+}
+
 extension LinkController {
     @MainActor
     func linkText(model: ValueModel, entry: ValueEntryModel, withoutName: Bool = false) -> String {
@@ -182,19 +187,41 @@ extension LinkController {
 
     @MainActor
     func calculate(entry: ValueEntryModel, deep: Int = 0) -> String? {
+        // One memo per top-level call, keyed by (itemId, entryId), threaded through the
+        // recursion below. A diamond-shaped link fan-out (several entries linking to the
+        // same shared entry) previously re-evaluated that shared entry once per path —
+        // b^10 evaluations at the full recursion depth — instead of once. See
+        // CODE_AUDIT_17 §5.18.
+        var memo: [LinkMemoKey: String?] = [:]
+        return calculate(entry: entry, deep: deep, memo: &memo)
+    }
+
+    @MainActor
+    private func calculate(entry: ValueEntryModel, deep: Int, memo: inout [LinkMemoKey: String?]) -> String? {
         guard entry.canCalculate else { return nil }
         let links = entry.links(for: entry.value)
         var result = entry.value
         var valid = true
 
-        links.forEach { link in
+        for link in links {
             guard link.module == .value, let entryId = link.entryId else {
                 valid = false
-                return
+                continue
             }
-            guard deep < RecursionLimits.maxValueLinkDepth, let linkValue = calculate(itemId: link.itemId, entryId: entryId, deep: deep + 1) else {
+            let key = LinkMemoKey(itemId: link.itemId, entryId: entryId)
+            let linkValue: String?
+            if let cached = memo[key] {
+                linkValue = cached
+            } else if deep < RecursionLimits.maxValueLinkDepth {
+                let computed = calculate(itemId: link.itemId, entryId: entryId, deep: deep + 1, memo: &memo)
+                memo[key] = computed
+                linkValue = computed
+            } else {
+                linkValue = nil
+            }
+            guard let linkValue else {
                 valid = false
-                return
+                continue
             }
             let linkTable = itemController.itemOrEmpty(for: link.itemId)
             result = result.replacing(linkTable.url(linkNumber: link.linkNumber, entryId: entryId), with: "\(linkValue)")
@@ -213,9 +240,9 @@ extension LinkController {
     }
 
     @MainActor
-    private func calculate(itemId: UUID, entryId: UUID, deep: Int) -> String? {
+    private func calculate(itemId: UUID, entryId: UUID, deep: Int, memo: inout [LinkMemoKey: String?]) -> String? {
         let entry = itemController.itemOrEmpty(for: itemId)[entryId]
-        return calculate(entry: entry, deep: deep)
+        return calculate(entry: entry, deep: deep, memo: &memo)
     }
 }
 
