@@ -10,7 +10,9 @@ struct DiceBag: View {
     // properties these were rebuilt (with fresh random `UUID`s from each
     // `.dieN(color:)` call) on every `DiceBag` re-init, churning `ForEach`
     // identity on every unrelated parent redraw. See CODE_AUDIT §7.2.
-    private static let diceBagA: [DieModel] = [.die4(color: .A), .die20(color: .A)]
+    private static let diceBagA: [DieModel] = [.die3(color: .A), .die4(color: .A), .die6(color: .A), .die8(color: .A), .die10(color: .A), .die12(color: .A), .die20(color: .A)]
+    private static let diceBagB: [DieModel] = [.die3(color: .B), .die20(color: .B)]
+    private static let diceBagC: [DieModel] = [.die20(color: .C)]
     private static let diceBagG: [DieModel] = [.die2(color: .G), .die3(color: .G), .die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
 
     @Environment(DiceRootModel.self) private var root
@@ -22,6 +24,14 @@ struct DiceBag: View {
                 HStack(spacing: 8) {
                     diceBagView(for: Self.diceBagA)
                 }
+                HStack(spacing: 8) {
+                    diceBagView(for: Self.diceBagB)
+                }
+
+                HStack(spacing: 8) {
+                    diceBagView(for: Self.diceBagC)
+                }
+
                 HStack(spacing: 8) {
                     diceBagView(for: Self.diceBagG)
                 }

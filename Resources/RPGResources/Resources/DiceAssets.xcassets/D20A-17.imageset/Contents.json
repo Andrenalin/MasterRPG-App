@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "D20-17@1x.png",
+      "filename" : "D20A-17.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "D20-17@2x.png",
+      "filename" : "D20A-17x2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "D20-17@3x.png",
+      "filename" : "D20A-17x3.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
