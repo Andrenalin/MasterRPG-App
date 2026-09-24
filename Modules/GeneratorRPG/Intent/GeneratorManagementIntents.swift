@@ -130,7 +130,7 @@ struct DeleteGeneratorIntent: DeleteIntent {
         let ids = entities.map(\.id)
 
         for id in ids {
-            await root.editController.markForDeletion(itemId: id)
+            root.editController.markForDeletion(itemId: id)
         }
         await root.itemController.save()
 

@@ -19,9 +19,10 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
     }
 
     private static func resolvedColor(_ color: String, for die: RawDie) -> String {
-        //guard die.sides == .four || die.sides == .twenty else { return ColorCode.G.rawValue }
         guard color == ColorCode.Random.rawValue || color.isEmpty else { return color }
-        return RawDie(.number(2)).roll() == 1 ? ColorCode.A.rawValue : ColorCode.G.rawValue
+        let codes = die.colorCodes
+        let index = RawDie(.number(codes.count)).roll() - 1
+        return codes[index].rawValue
     }
     
     public let id: UUID
@@ -69,7 +70,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
 extension DieModel {
     public enum ColorCode: String {
         case Random
-        case A, B, C, G
+        case A, B, C, D, G
     }
     
     // The setter is a required no-op, not dead code: `EntryDataAccessable`
@@ -102,7 +103,7 @@ extension DieModel {
         case .number: "D20\(code)-1"
         }
     }
-
+    
     public func diceImage(for number: Int) -> Image {
         Image(name(for: number), bundle: RPGResources.Resources.bundle)
     }

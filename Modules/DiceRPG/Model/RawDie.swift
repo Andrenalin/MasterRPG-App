@@ -79,6 +79,20 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
         "d\(sides.number())"
     }
 
+    public var colorCodes: [DieModel.ColorCode] {
+        switch sides {
+        case .two: [.G]
+        case .three: [.A, .B, .G]
+        case .four: [.A, .B, .C, .G]
+        case .six: [.A, .B, .G]
+        case .eight: [.A, .B, .G]
+        case .ten: [.A, .B, .G]
+        case .twelve: [.A, .B, .C, .G]
+        case .twenty: [.A, .B, .C, .D, .G]
+        case .number: [.G]
+        }
+    }
+
     public enum Sides: Equatable, Hashable, Codable, Sendable {
         case two
         case three

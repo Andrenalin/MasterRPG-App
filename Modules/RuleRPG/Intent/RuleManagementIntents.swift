@@ -129,7 +129,7 @@ struct DeleteRuleIntent: DeleteIntent {
             return entity.id
         }
         for id in ids {
-            await root.editController.markForDeletion(itemId: id)
+            root.editController.markForDeletion(itemId: id)
         }
         await root.itemController.save()
         try await deleteRuleEntities(ids: ids)
