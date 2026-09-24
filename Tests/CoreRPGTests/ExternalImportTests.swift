@@ -447,4 +447,6 @@ private struct PersistenceFailureStub: DataPersistenceControllable {
 
     func save() async throws {}
     func flushPendingOperations() async throws {}
+
+    func removePendingOperations(for id: UUID) async {}
 }
