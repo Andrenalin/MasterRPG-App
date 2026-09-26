@@ -224,6 +224,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** An `invalidate()` that fires before the Task runs finds nil closures and does nothing, and transactions are not observed during launch or when no window exists.
 - **Action:** Configure the invalidator synchronously in `init`, and start the transaction listener from `App.init`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `AppIntentContentInvalidator.configure` (and the initial `invalidate()`) now run synchronously in `MasterRPGApp.init`, which is main-actor. `InAppController.startObservingTransactionUpdates()` is public, idempotent and started from `App.init`; the window's `.task` call stays as a no-op fallback.
 
 ### 3.21 Recursive `withObservationTracking` re-arming instead of `Observations`
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:386-409`; `Modules/GameRPG/Player/PlayerNetworkController.swift:439-470`; `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:797-827`
@@ -231,6 +232,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Two unstructured hops per change, and this chain has broken before when an early return skipped the re-arm (CODE_AUDIT_15 §3.8).
 - **Action:** Replace each with one stored `for await … in Observations { … }` task.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `MasterNetworkController.observeConnections` and `PlayerNetworkController.observeRemovedConnection` each run one stored `for await … in Observations` task (cancelled by the existing teardown paths). On visionOS, `RPGSharePlayController.observeShareStateMode` uses a lifetime `modeChangeTask` that survives `reset()` and is cancelled in `deinit`, replacing the re-arm-plus-`schedulePresentationModeUpdate` chain.
 
 ---
 

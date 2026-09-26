@@ -446,21 +446,20 @@ private extension PlayerNetworkController {
 // MARK: - Observe BrowserManager for Lost Connection
 
 extension PlayerNetworkController {
+    /// One stored `Observations` loop instead of re-arming `withObservationTracking` per
+    /// change. It delivers every change for the task's lifetime, so a removal landing while
+    /// an earlier batch is still being torn down is not missed. See CODE_AUDIT_18 §3.21.
     func observeRemovedConnection() {
         guard networkModel.model != nil else { return }
-        _ = withObservationTracking {
-            browserManager.removed
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.scheduleRemovalCheck()
-            }
-        }
-    }
-
-    private func scheduleRemovalCheck() {
+        let browser = browserManager
         networkModel.observeRemovalTask?.cancel()
         networkModel.observeRemovalTask = Task { @MainActor [weak self] in
-            await self?.checkForRemoval()
+            for await removed in Observations({ browser.removed }) {
+                guard let self, !Task.isCancelled else { return }
+                // `takeRemoved()` below empties the list, which is itself a change.
+                guard !removed.isEmpty else { continue }
+                await self.checkForRemoval()
+            }
         }
     }
 
@@ -477,10 +476,7 @@ extension PlayerNetworkController {
         // `checkForRemoval()` scheduled by that re-registration racing this
         // one's own loop is safe: `lostConnection(for:)` is already
         // idempotent via `markLostIfCurrent`. See CODE_AUDIT_Reconnect §3.5.
-        // Take the accumulated removals before re-arming: clearing them is itself a change the
-        // tracking would otherwise report. See CODE_AUDIT_16 §3.9.
         let removedGames = browserManager.takeRemoved()
-        observeRemovedConnection()
         for game in removedGames {
             let endpoint = browserManager.nwEndpoint(for: game)
             await removedConnection(endpoint: endpoint)

@@ -413,21 +413,18 @@ extension MasterNetworkController: ListenerManagerDelegate {
 // MARK: - Observe BrowserManager for Connections
 
 extension MasterNetworkController {
+    /// One stored `Observations` loop instead of re-arming `withObservationTracking` per
+    /// change (two unstructured hops each, and the chain broke whenever an early return
+    /// skipped the re-arm). See CODE_AUDIT_18 §3.21.
     func observeConnections() {
-        guard networkModel.browserManager != nil else { return }
-        _ = withObservationTracking {
-            networkModel.browserManager?.games
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.scheduleConnectionCheck()
-            }
-        }
-    }
-
-    private func scheduleConnectionCheck() {
+        guard let browser = networkModel.browserManager else { return }
         networkModel.observeConnectionsTask?.cancel()
         networkModel.observeConnectionsTask = Task { @MainActor [weak self] in
-            self?.checkForConnections()
+            for await games in Observations({ browser.games }) {
+                guard let self, !Task.isCancelled,
+                      self.networkModel.browserManager === browser else { return }
+                self.refresh(games: games)
+            }
         }
     }
 
@@ -435,7 +432,6 @@ extension MasterNetworkController {
         guard networkModel.browserManager != nil else { return }
         let games = networkModel.browserManager?.games ?? []
         refresh(games: games)
-        observeConnections()
     }
 
     func refresh(games: [BrowserGameModel]) {

@@ -80,18 +80,21 @@ struct MasterRPGApp: App {
 #if !os(tvOS)
         let appIntentAppModel = data
         MasterRPGShortcuts.updateAppShortcutParameters()
-        Task { @MainActor in
-            AppIntentContentInvalidator.configure(
-                refreshShortcutParameters: {
-                    MasterRPGShortcuts.updateAppShortcutParameters()
-                },
-                reindexContent: {
-                    await MasterRPGSpotlightIndexer.reindexAll(appModel: appIntentAppModel)
-                }
-            )
-            AppIntentContentInvalidator.invalidate()
-        }
+        // Configured synchronously (`init` runs on the main actor): an `invalidate()` that
+        // fired before an unstructured configure Task ran found no closures and did nothing.
+        // See CODE_AUDIT_18 §3.20.
+        AppIntentContentInvalidator.configure(
+            refreshShortcutParameters: {
+                MasterRPGShortcuts.updateAppShortcutParameters()
+            },
+            reindexContent: {
+                await MasterRPGSpotlightIndexer.reindexAll(appModel: appIntentAppModel)
+            }
+        )
+        AppIntentContentInvalidator.invalidate()
 #endif
+        // Observe StoreKit transaction updates from launch. See CODE_AUDIT_18 §3.20.
+        data.inAppController.startObservingTransactionUpdates()
         PerformanceTrace.event("AppInitialized")
     }
 

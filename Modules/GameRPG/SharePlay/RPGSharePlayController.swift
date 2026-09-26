@@ -756,6 +756,12 @@ final class RPGSharePlayController {
         Logger.sharePlay.debug("SharePlay: init")
     }
 
+    #if os(visionOS)
+    /// Lifetime observer of the presentation mode; like `eligibilityTask`, it survives a
+    /// session `reset()`. See CODE_AUDIT_18 §3.21.
+    var modeChangeTask: Task<Void, Never>?
+    #endif
+
     isolated deinit {
         // `isolated deinit` (matching `ListenerManager`/`BrowserManager`/`GameTableModel` in
         // this module) runs on the actor, so it can self-clean instead of relying on every
@@ -766,6 +772,9 @@ final class RPGSharePlayController {
         reset()
         eligibilityTask?.cancel()
         joinTask?.cancel()
+        #if os(visionOS)
+        modeChangeTask?.cancel()
+        #endif
         Logger.sharePlay.debug("SharePlay: deinit")
     }
 
@@ -783,13 +792,9 @@ final class RPGSharePlayController {
         }
 
         #if os(visionOS)
-        // Observe presentation mode changes and apply configuration. Uses the
-        // same recursive `withObservationTracking` idiom as
-        // `MasterNetworkController.observeConnections()`/
-        // `PlayerNetworkController.observeRemovedConnection()` instead of a
-        // Combine `PassthroughSubject` — `GameShareStateModel.mode` is
-        // already `@Observable`, so no separate change-notification
-        // mechanism is needed on top of it. See CODE_AUDIT §4.2.
+        // Observe presentation mode changes and apply configuration.
+        // `GameShareStateModel.mode` is `@Observable`, so an `Observations` loop is
+        // enough (no Combine subject). See CODE_AUDIT §4.2 and CODE_AUDIT_18 §3.21.
         observeShareStateMode()
         #endif
     }
@@ -797,35 +802,20 @@ final class RPGSharePlayController {
     #if os(visionOS)
     func observeShareStateMode() {
         guard let gameModel else { return }
-        _ = withObservationTracking {
-            gameModel.shareState.mode
-        } onChange: { [weak self] in
-            // `onChange` is a `@Sendable` closure, so the `tasks[]` bookkeeping has to happen
-            // on the main actor; hop there first, then track the presentation-mode task.
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                // Re-arm first: `withObservationTracking` fires once, and the scheduled update
-                // below can be cancelled by `reset()` before it runs — re-arming only from
-                // inside it left the chain broken for every later session.
-                // See CODE_AUDIT_15 §3.8.
-                self.observeShareStateMode()
-                self.schedulePresentationModeUpdate()
+        modeChangeTask?.cancel()
+        modeChangeTask = Task { @MainActor [weak self] in
+            var isInitialValue = true
+            for await mode in Observations({ gameModel.shareState.mode }) {
+                // `Observations` also yields the current value; only changes apply.
+                if isInitialValue {
+                    isInitialValue = false
+                    continue
+                }
+                guard let self, !Task.isCancelled else { return }
+                Logger.sharePlay.debug("Presentation mode changed to: \(mode.rawValue, privacy: .public)")
+                // `applyShareState()` itself returns early once `reset()` cleared the coordinator.
+                self.applyShareState()
             }
-        }
-    }
-
-    private func schedulePresentationModeUpdate() {
-        let taskId = UUID()
-        // Without tracking this Task in `tasks[]`, a burst of mode changes right
-        // before teardown could each schedule an uncancellable turn that calls
-        // `applyShareState()` against a `systemCoordinator` `reset()` may have just
-        // cleared. See CODE_AUDIT.md §3.7.
-        tasks[taskId] = Task { @MainActor [weak self] in
-            guard let self, let gameModel = self.gameModel else { return }
-            guard !Task.isCancelled else { return }
-            self.tasks.removeValue(forKey: taskId)
-            Logger.sharePlay.debug("Presentation mode changed to: \(gameModel.shareState.mode.rawValue, privacy: .public)")
-            self.applyShareState()
         }
     }
     #endif

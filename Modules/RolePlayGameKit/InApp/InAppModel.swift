@@ -80,7 +80,10 @@ public struct InAppController {
         model.hasPrepared = true
     }
 
-    func startObservingTransactionUpdates() {
+    /// Idempotent. Started from `App.init` so transactions are observed from launch on, even
+    /// before (or without) a window — StoreKit warns when `Transaction.updates` isn't observed
+    /// early. The window's `.task` call remains as a no-op fallback. See CODE_AUDIT_18 §3.20.
+    public func startObservingTransactionUpdates() {
         guard model.transactionUpdatesTask == nil else { return }
         model.transactionUpdatesTask = Task { @MainActor [weak model] in
             for await update in StoreKit.Transaction.updates {
