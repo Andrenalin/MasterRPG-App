@@ -89,6 +89,10 @@ struct ImagePresentationView: View {
                 windowScene.requestGeometryUpdate(.Vision(resizingRestrictions: .uniform))
             }
             .onDisappear {
+                // The RealityKit subscription keeps firing (and holding the content) until it
+                // is cancelled. See CODE_AUDIT_18 §3.19.
+                sceneUpdateSubscription?.cancel()
+                sceneUpdateSubscription = nil
                 frameSyncContinuation?.finish()
                 frameSyncTask?.cancel()
             }

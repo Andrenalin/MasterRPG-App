@@ -216,6 +216,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Each is a narrow race: a lost widget roll, a leaked RealityKit subscription, a shared-image mutation, or a stale timeout.
 - **Action:** Apply the CODE_AUDIT_16 actions; use `.task(id:)` for the feedback button.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Widget vs. app: both now write the last roll through one `DiceConfiguration.recordLastRoll(_:)` (in-process lock plus newest-timestamp-wins), so a widget roll can no longer overwrite a newer app roll. A write interleaving across the two processes inside the read/write window remains theoretically possible and is documented. `ImagePresentationView` cancels `sceneUpdateSubscription` on disappear. `ImageCacheControllable.photo(for:)` returns a size-reset copy (`sizeResetCopy()`, which shares the representations) instead of mutating the shared cached `NSImage`; the unused `resetSize()` was removed. `SendFeedbackButton` drives its animation and timeout with `.task(id:)`, and a cancelled timeout no longer resets state.
 
 ### 3.20 App-level wiring started from unstructured Tasks
 - **Location:** `Sources/MasterRPG/MasterRPGApp.swift:78-90`; `Modules/RolePlayGameKit/View/AppEnvironmentSetUpViewModifier.swift:63-66`; `Modules/RolePlayGameKit/InApp/InAppModel.swift:83-86`

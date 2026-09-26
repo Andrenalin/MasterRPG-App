@@ -48,11 +48,8 @@ private enum DiceIntentPerformer {
             timeStamp: Date()
         )
 
-        var config = DiceConfiguration.loadFromUserDefaults()
-        config.lastRoll = rollResult
-        config.selectedDice = diceModel
-        config.save()
-
+        // Same newest-wins write as the app. See CODE_AUDIT_18 §3.19.
+        guard DiceConfiguration.recordLastRoll(rollResult) else { return }
         DiceWidgetReloader.reloadDiceWidgets()
     }
 }

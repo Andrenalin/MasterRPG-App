@@ -612,8 +612,6 @@ extension GameController {
         }
     }
 
-    private static let widgetWriteLock = Mutex<Void>(())
-
     nonisolated private func diceUpdateWidget(diceResult: DiceResultModel) async {
 #if !os(tvOS)
         // A newer roll's task cancels the previous one (see the call site),
@@ -626,19 +624,7 @@ extension GameController {
         // Update widget. Two overlapping tasks (the cancel above only stops one that has not
         // started yet) must not interleave their read-modify-write, and an older roll must
         // never overwrite a newer one. See CODE_AUDIT_15 §3.14.
-        let didWrite = Self.widgetWriteLock.withLock { _ -> Bool in
-            var config = DiceConfiguration.loadFromUserDefaults()
-            if let savedTimestamp = config.lastRoll?.timestamp,
-               let rollTimestamp = diceResult.timestamp,
-               savedTimestamp > rollTimestamp {
-                return false
-            }
-            config.lastRoll = diceResult
-            config.selectedDice = diceResult.diceModel
-            config.save()
-            return true
-        }
-        guard didWrite else { return }
+        guard DiceConfiguration.recordLastRoll(diceResult) else { return }
 
         // Reload widgets
         DiceWidgetReloader.reloadDiceWidgets()

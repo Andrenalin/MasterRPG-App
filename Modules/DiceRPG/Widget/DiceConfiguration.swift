@@ -2,6 +2,7 @@
 
 #if !os(tvOS)
 import CoreRPG
+import Synchronization
 import WidgetKit
 
 // MARK: - Widget Constants
@@ -218,6 +219,30 @@ public struct DiceConfiguration: Codable {
     public func save() {
         AppGroupCodableStore.save(self, key: UserDefaults.DiceKeys.diceConfiguration)
         DiceWidgetSnapshot(configuration: self).save()
+    }
+
+    private static let lastRollWriteLock = Mutex<Void>(())
+
+    /// Records `roll` as the last roll unless a newer roll is already stored. The one
+    /// read-modify-write used by both the app and the widget extension: the widget used to
+    /// overwrite unconditionally, so a widget roll racing an app roll could replace the newer
+    /// result (and the in-process lock only ever covered the app). Returns whether it wrote.
+    /// Two processes can still interleave inside the tiny read-write window; the timestamp
+    /// check keeps the newest roll in every other case. See CODE_AUDIT_18 §3.19.
+    @discardableResult
+    public static func recordLastRoll(_ roll: DiceResultModel) -> Bool {
+        lastRollWriteLock.withLock { _ -> Bool in
+            var config = DiceConfiguration.loadFromUserDefaults()
+            if let savedTimestamp = config.lastRoll?.timestamp,
+               let rollTimestamp = roll.timestamp,
+               savedTimestamp > rollTimestamp {
+                return false
+            }
+            config.lastRoll = roll
+            config.selectedDice = roll.diceModel
+            config.save()
+            return true
+        }
     }
 }
 

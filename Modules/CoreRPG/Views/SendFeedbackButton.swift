@@ -41,7 +41,8 @@ struct SendFeedbackButton: View {
     }
     
     func responseTimeout() async {
-        try? await Task.sleep(for: Self.sendingResponseTimeout)
+        // A cancelled (superseded) timeout must not reset the newer send's state.
+        guard (try? await Task.sleep(for: Self.sendingResponseTimeout)) != nil else { return }
         isSending = false
         isUpdating = false
     }
@@ -98,18 +99,18 @@ private struct SendFeedbackButtonButtonView: View {
         )
         .onChange(of: isSending) {
             guard isSending else { return }
-            if !accessibilityReduceMotion {
-                Task {
-                    await changeVariableValue()
-                }
-            }
             withAnimation(accessibilityReduceMotion ? nil : .default) { isUpdating = true }
         }
-        .onChange(of: isUpdating) {
+        // `.task(id:)` instead of unstructured Tasks: a new send cancels the previous send's
+        // animation and timeout, so an earlier timeout can no longer reset a later send's
+        // state. See CODE_AUDIT_18 §3.19.
+        .task(id: isSending) {
+            guard isSending, !accessibilityReduceMotion else { return }
+            await changeVariableValue()
+        }
+        .task(id: isUpdating) {
             guard isUpdating else { return }
-            Task {
-                await responseTimeout()
-            }
+            await responseTimeout()
         }
     }
 }

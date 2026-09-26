@@ -53,8 +53,7 @@ extension ImageCacheControllable {
             kind: "full",
             source: "memory"
         )
-        image?.resetSize()
-        return image
+        return image?.sizeResetCopy()
     }
     
     public func thumbnail(for itemId: UUID) async -> AKImage? {

@@ -87,8 +87,13 @@ public extension AKImage {
         return CGSize(width: width, height: height)
     }
     
-    func resetSize() {
-        size = fixedSize
+    /// A copy with its size reset to the pixel size. Cached images are shared between
+    /// callers, so resetting the size of the shared instance raced other readers; the copy
+    /// shares the image representations and is cheap. See CODE_AUDIT_18 §3.19.
+    func sizeResetCopy() -> AKImage {
+        let copy = (self.copy() as? NSImage) ?? self
+        copy.size = copy.fixedSize
+        return copy
     }
 }
 
@@ -143,8 +148,8 @@ public extension AKImage {
         size
     }
     
-    func resetSize() {
-        // nothing to do
+    func sizeResetCopy() -> AKImage {
+        self
     }
 }
 
