@@ -41,10 +41,10 @@ extension Binding: @retroactive Hashable, @retroactive Equatable where Value: Ha
         wrappedValue.hash(into: &hasher)
     }
 
-    /// Two bindings are considered equal when their wrapped values have
-    /// the same hash value.
+    /// Two bindings are considered equal when their wrapped values are equal. Comparing hash
+    /// values made colliding values compare equal. See CODE_AUDIT_18 §4.6.
     public static func == (lhs: Binding<Value>, rhs: Binding<Value>) -> Bool {
-        lhs.wrappedValue.hashValue == rhs.wrappedValue.hashValue
+        lhs.wrappedValue == rhs.wrappedValue
     }
 
 }

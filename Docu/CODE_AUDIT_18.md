@@ -276,6 +276,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** This bridging is the source of the ordering issues in §3.15/§3.16.
 - **Action:** Evaluate `NetworkConnection`/`NetworkListener` (async, framer-capable) for the LAN transport.
 - **Severity:** Low
+- **Status (2026-09-26):** DEFERRED (evaluated). A move to `NetworkConnection`/`NetworkListener` is a rewrite of the LAN transport (framer, TLS-PSK parameters, receive loop, listener supervision), which falls under the structural refactors deferred for this pass. The ordering problems this finding tied to the bridging were fixed directly (§3.15 ordered sends, §3.16 ordered listener events).
 
 ### 4.6 Navigator identity and equality derived from `hashValue`
 - **Location:** `Modules/CoreRPG/Navigator/Core/NavigationDestination.swift:173-181`; `Modules/CoreRPG/Navigator/Protocols/Binding+Extension.swift:46-48`
@@ -283,6 +284,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A hash collision makes different destinations compare equal (SwiftUI may then skip a navigation), and ids change on every launch if they are ever restored.
 - **Action:** Base `==` on the underlying values and use a stable id.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The `NavigationDestination` default `==` (which compared `hashValue`s) was removed, so conforming types use their synthesized, value-based equality; `Binding ==` compares wrapped values. The `hashValue`-based `id` stays as in-memory view identity: scene restoration encodes destinations through `Codable` (`NavigationSceneStorage`), never through `id`.
 
 ---
 

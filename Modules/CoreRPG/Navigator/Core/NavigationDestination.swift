@@ -170,14 +170,10 @@ extension NavigationDestination {
 
 extension NavigationDestination {
 
-    /// Default implementation of Identifiable id.
+    /// Default implementation of Identifiable id. Only used as in-memory view identity (never
+    /// persisted or restored), where a per-launch hash is fine.
     public nonisolated var id: Int {
         self.hashValue
-    }
-
-    /// Equatable conformance.
-    public nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id
     }
 
 }
