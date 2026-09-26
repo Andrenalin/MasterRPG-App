@@ -3,7 +3,7 @@
 import CoreRPG
 #if !os(tvOS)
 import GeneratorRPG
-@preconcurrency import PDFKit
+import PDFKit
 #endif
 import SwiftUI
 

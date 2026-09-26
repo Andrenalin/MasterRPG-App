@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import Combine
-@preconcurrency import CoreData
+import CoreData
 import Foundation
 import os.log
 
@@ -65,12 +65,12 @@ public struct PersistentHistoryCleaner {
         // mirroring transactions (author = NSCloudKitMirroringDelegate) are also cleaned.
         // The timestamp is capped at 7 days ago (see lastCommonTransactionTimestamp),
         // which is what protects transactions the mirroring delegate has not exported yet.
-        let deleteHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: timestamp)
-
         let allActors = appActors
         let cleanupTimestamp = timestamp
         container.performBackgroundTask { context in
             do {
+                // Built on the background queue: the request isn't `Sendable`.
+                let deleteHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: cleanupTimestamp)
                 try context.execute(deleteHistoryRequest)
                 Logger.persistentHistory.info("Cleaned history before \(cleanupTimestamp, privacy: .public)")
 
@@ -209,8 +209,12 @@ private actor PersistentHistoryProcessor {
         let backgroundContext = backgroundContext
 
         do {
+            // Converted to Sendable object-ID snapshots on the background queue: the
+            // `NSPersistentHistoryTransaction` objects themselves must not cross into the view
+            // context's queue. See CODE_AUDIT_18 §3.18.
             let transactions = try await backgroundContext.perform {
                 try Self.fetcher(date: fromDate, currentActor: currentActor, backgroundContext: backgroundContext)
+                    .map(HistoryChanges.init)
             }
             if transactions.isEmpty {
                 // Update timestamp to now even when empty, so we don't keep checking from distantPast
@@ -265,8 +269,28 @@ private actor PersistentHistoryProcessor {
         userDefaults.lastHistoryTransactionTimestamp(for: currentActor) ?? Date.distantPast
     }
 
+    /// The object IDs a history transaction changed, extracted on the fetching queue.
+    private struct HistoryChanges: Sendable {
+        let inserted: Set<NSManagedObjectID>
+        let updated: Set<NSManagedObjectID>
+        let deleted: Set<NSManagedObjectID>
+        let timestamp: Date
+
+        init(_ transaction: NSPersistentHistoryTransaction) {
+            let userInfo = transaction.objectIDNotification().userInfo ?? [:]
+            inserted = userInfo[NSInsertedObjectIDsKey] as? Set<NSManagedObjectID> ?? []
+            updated = userInfo[NSUpdatedObjectIDsKey] as? Set<NSManagedObjectID> ?? []
+            deleted = userInfo[NSDeletedObjectIDsKey] as? Set<NSManagedObjectID> ?? []
+            timestamp = transaction.timestamp
+        }
+
+        var remoteSaveUserInfo: [AnyHashable: Any] {
+            [NSInsertedObjectIDsKey: inserted, NSUpdatedObjectIDsKey: updated, NSDeletedObjectIDsKey: deleted]
+        }
+    }
+
     private static func merge(
-        transactions: [NSPersistentHistoryTransaction],
+        transactions: [HistoryChanges],
         into viewBackupContext: NSManagedObjectContext?,
         userDefaults: UserDefaults,
         currentActor: AppPersistentActor
@@ -274,8 +298,7 @@ private actor PersistentHistoryProcessor {
         guard let viewContext = viewBackupContext else { return }
         await viewContext.perform {
             transactions.forEach { transaction in
-                let userInfo = transaction.objectIDNotification().userInfo ?? [:]
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: userInfo, into: [viewContext])
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: transaction.remoteSaveUserInfo, into: [viewContext])
             }
         }
 

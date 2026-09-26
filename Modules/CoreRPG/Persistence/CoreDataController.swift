@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import Combine
-@preconcurrency import CoreData
+import CoreData
 import os.log
 import SwiftUI
 import Synchronization

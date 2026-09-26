@@ -134,8 +134,9 @@ final class Board {
 }
 
 /// Immutable snapshot of everything the board texture depends on, captured on the main actor so
-/// the composite can run elsewhere. `CGImage`/`CGColor` are immutable, so sharing them is safe.
-struct BoardTextureInput: @unchecked Sendable {
+/// the composite can run elsewhere. `CGImage`/`CGColor` are `Sendable`, so this is checked.
+/// See CODE_AUDIT_18 §3.18.
+struct BoardTextureInput: Sendable {
     struct Room {
         let coordinates: [CGPoint]
         let isShown: Bool

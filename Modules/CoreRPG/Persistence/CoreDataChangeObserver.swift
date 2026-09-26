@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 import Combine
-@preconcurrency import CoreData
+import CoreData
 import Foundation
 import os.log
 
@@ -29,6 +29,9 @@ public final class CoreDataChangeObserver: @unchecked Sendable {
     public func observeCoreDataChanges(from context: NSManagedObjectContext, entity: NSEntityDescription, handler: @escaping @Sendable ([UUID], [UUID], [UUID]) -> Void) {
         precondition(observer == nil, "observeCoreDataChanges(from:entity:handler:) must only be called once per CoreDataChangeObserver instance.")
         let localCtx = context
+        // The entity's name (a `String`) crosses into the `@Sendable` closure instead of the
+        // non-Sendable `NSEntityDescription`. See CODE_AUDIT_18 §3.18.
+        let entityName = entity.name
         observer = NotificationCenter.default
             .publisher(for: NSManagedObjectContext.didMergeChangesObjectIDsNotification, object: localCtx)
             .compactMap { notification -> (deleted: [UUID], inserted: [UUID], updated: [UUID])? in
@@ -44,9 +47,9 @@ public final class CoreDataChangeObserver: @unchecked Sendable {
                 // Resolve UUIDs inside the context's queue — NSManagedObjects must
                 // never escape it; only the value-type UUIDs leave the block.
                 return localCtx.performAndWait {
-                    let deleted = Self.uuids(for: idsByType[.deleted], type: .deleted, context: localCtx, entity: entity)
-                    let inserted = Self.uuids(for: idsByType[.inserted], type: .inserted, context: localCtx, entity: entity)
-                    let updated = Self.uuids(for: idsByType[.updated], type: .updated, context: localCtx, entity: entity)
+                    let deleted = Self.uuids(for: idsByType[.deleted], type: .deleted, context: localCtx, entityName: entityName)
+                    let inserted = Self.uuids(for: idsByType[.inserted], type: .inserted, context: localCtx, entityName: entityName)
+                    let updated = Self.uuids(for: idsByType[.updated], type: .updated, context: localCtx, entityName: entityName)
                     guard !deleted.isEmpty || !inserted.isEmpty || !updated.isEmpty else { return nil }
                     return (deleted, inserted, updated)
                 }
@@ -72,9 +75,9 @@ private extension CoreDataChangeObserver {
     }
 
     /// Must run on the context's queue.
-    static func uuids(for objectIDs: Set<NSManagedObjectID>?, type: ChangeType, context: NSManagedObjectContext, entity: NSEntityDescription) -> [UUID] {
+    static func uuids(for objectIDs: Set<NSManagedObjectID>?, type: ChangeType, context: NSManagedObjectContext, entityName: String?) -> [UUID] {
         guard let objectIDs else { return [] }
-        return objectIDs.filter { $0.entity == entity }.map { objectID in
+        return objectIDs.filter { $0.entity.name == entityName }.map { objectID in
             if let registered = context.registeredObject(for: objectID), !registered.isFault,
                let data = registered as? DataType, let uuid = data.uuid {
                 return uuid

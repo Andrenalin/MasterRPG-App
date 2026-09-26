@@ -2,6 +2,7 @@
 
 import CryptoKit
 import Foundation
+import Synchronization
 
 /// A lossless, concurrency-safe representation of a value stored in a Foundry document.
 ///
@@ -164,11 +165,15 @@ extension CodingUserInfoKey {
 /// plain local variable can't observe depth across those calls — `userInfo` is
 /// the only channel threaded through the whole recursive decode, and it needs a
 /// reference type since `Decoder` only exposes it for reading.
-// @unchecked Sendable: confined to a single, single-threaded `JSONDecoder.decode(_:from:)`
-// call — a fresh instance is created per decode and never shared across threads or retained
-// beyond it, so its unsynchronized mutable `depth` never actually races. See CODE_AUDIT §3.5.
-final class FoundryJSONDepthCounter: @unchecked Sendable {
-    var depth = 0
+// Checked `Sendable`: the depth lives in a `Mutex` instead of an unsynchronized `var`
+// justified only by how it is used. See CODE_AUDIT §3.5 and CODE_AUDIT_18 §3.18.
+final class FoundryJSONDepthCounter: Sendable {
+    private let storage = Mutex(0)
+
+    var depth: Int {
+        get { storage.withLock { $0 } }
+        set { storage.withLock { $0 = newValue } }
+    }
 }
 
 private enum FoundryJSONNumericType: String, Codable {

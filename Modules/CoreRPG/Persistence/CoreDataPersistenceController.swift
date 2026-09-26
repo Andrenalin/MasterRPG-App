@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-@preconcurrency import CoreData
+import CoreData
 import os.log
 
 public enum CoreDataInitError: Equatable, Sendable {
@@ -233,7 +233,7 @@ public struct CoreDataPersistenceController {
         // Setup main background context for regular operations
         let context = container.newBackgroundContext()
         context.name = "background_context"
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         context.transactionAuthor = model.currentActor.rawValue
         context.automaticallyMergesChangesFromParent = true
         model.context = context
@@ -253,10 +253,9 @@ public struct CoreDataPersistenceController {
     }
 }
 
-// @unchecked Sendable: a bare, stateless subclass of Apple's
-// `NSPersistentContainer` — it adds no stored properties of its own, so there
-// is nothing here for the compiler to actually race on; the annotation only
-// bypasses `NSPersistentContainer` itself predating `Sendable`.
+// `NSPersistentContainer` is `@unchecked Sendable` in the SDK, and Swift requires a subclass
+// to restate that inherited conformance. This subclass adds no stored state.
+// See CODE_AUDIT_18 §3.18.
 final class RPGPersistentContainer: NSPersistentContainer, @unchecked Sendable {}
 
 /// Runs `work` on the main actor. `loadPersistentStores`'s completion handler is
