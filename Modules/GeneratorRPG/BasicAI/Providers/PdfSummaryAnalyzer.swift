@@ -38,7 +38,9 @@ struct PdfSummaryAnalyzer: Sendable {
         }
 
         let pageLimit = min(maxPages, pdfDocument.pageCount)
-        let pageTexts = extractPageTexts(from: pdfDocument, pageLimit: pageLimit)
+        // Off the main actor, see `PdfPageTextReader` (CODE_AUDIT_18 §3.5).
+        let pageTexts = try await PdfPageTextReader.pages(of: .init(document: pdfDocument), pageLimit: pageLimit).map(\.text)
+        let pageCount = pdfDocument.pageCount
         let limitedText = FoundationModelInputLimiter.limitedCombinedText(
             pages: pageTexts,
             maxPages: maxPages,
@@ -57,7 +59,7 @@ struct PdfSummaryAnalyzer: Sendable {
             session.prewarm()
 
             let stream = session.streamResponse(
-                to: buildPrompt(with: limitedText, pageCount: pdfDocument.pageCount, outputLanguage: outputLanguage),
+                to: buildPrompt(with: limitedText, pageCount: pageCount, outputLanguage: outputLanguage),
                 generating: PdfSummaryAnalysis.self
             )
 
@@ -128,22 +130,6 @@ struct PdfSummaryAnalyzer: Sendable {
         - Major sections or chapters
         - The document type (rulebook, adventure, supplement, etc.)
         """
-    }
-
-    private func extractPageTexts(from pdfDocument: PDFDocument, pageLimit: Int) -> [String] {
-        var pages: [String] = []
-        pages.reserveCapacity(pageLimit)
-
-        for pageIndex in 0..<pageLimit {
-            guard let page = pdfDocument.page(at: pageIndex),
-                  let pageText = page.string,
-                  !pageText.isEmpty else {
-                continue
-            }
-            pages.append(pageText)
-        }
-
-        return pages
     }
 
     private func handleGenerationError(_ error: LanguageModelSession.GenerationError) -> String {

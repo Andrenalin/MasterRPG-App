@@ -9,6 +9,9 @@ public struct TableSummaryAnalysisView: View {
 
     @State private var model = TableSummaryAnalysisModel()
     @State private var selectedLanguage: OutputLanguage = OutputLanguage.forCurrentLocale()
+    /// Owned so dismissing the sheet cancels the on-device model work instead of leaving it
+    /// running (and writing results) in the background. See CODE_AUDIT_18 §3.6.
+    @State private var analysisTask: Task<Void, Never>?
     let entriesText: String
     let onAnalysisCompleted: (TableSummaryAnalysis) -> Void
 
@@ -34,6 +37,7 @@ public struct TableSummaryAnalysisView: View {
             }
             .padding()
         }
+        .onDisappear { analysisTask?.cancel() }
     }
 
     // MARK: - Subviews
@@ -63,10 +67,10 @@ public struct TableSummaryAnalysisView: View {
 
     private func analyze() {
         guard !model.isAnalyzing else { return }
-        Task {
-            if let content = await model.analyze(entriesText: entriesText, outputLanguage: selectedLanguage.englishName) {
-                onAnalysisCompleted(content)
-            }
+        analysisTask = Task {
+            let content = await model.analyze(entriesText: entriesText, outputLanguage: selectedLanguage.englishName)
+            guard !Task.isCancelled, let content else { return }
+            onAnalysisCompleted(content)
         }
     }
 }

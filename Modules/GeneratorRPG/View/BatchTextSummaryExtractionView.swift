@@ -24,6 +24,9 @@ public struct BatchTextSummaryExtractionView: View {
     @State private var selectedLanguage: OutputLanguage = .forCurrentLocale()
     @State private var statuses: [UUID: BatchItemStatus] = [:]
     @State private var isRunning = false
+    /// Owned so Cancel/dismiss stops the batch instead of it continuing to analyze and
+    /// write into items after the sheet is gone. See CODE_AUDIT_18 §3.6.
+    @State private var batchTask: Task<Void, Never>?
     @State private var resultModel = TableSummaryAnalyzerResultModel()
 
     @Environment(\.dismiss) private var dismiss
@@ -66,12 +69,12 @@ public struct BatchTextSummaryExtractionView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
+                        batchTask?.cancel()
                         dismiss()
                     } label: {
                         Image(systemName: "xmark")
                     }
                     .accessibilityLabel(Text("Cancel", bundle: .module))
-                    .disabled(isRunning)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isRunning {
@@ -93,6 +96,7 @@ public struct BatchTextSummaryExtractionView: View {
             }
             .moduleTint(module)
         }
+        .onDisappear { batchTask?.cancel() }
     }
 
     // MARK: - Subviews
@@ -195,7 +199,7 @@ public struct BatchTextSummaryExtractionView: View {
     private func runBatch() {
         guard !isRunning, !ids.isEmpty else { return }
         isRunning = true
-        Task {
+        batchTask = Task {
             await performBatch()
             isRunning = false
         }
@@ -204,6 +208,7 @@ public struct BatchTextSummaryExtractionView: View {
     private func performBatch() async {
         let analyzer = TableSummaryAnalyzer()
         for id in ids {
+            guard !Task.isCancelled else { return }
             let entriesText = await itemController.compactText(for: id)
             guard !entriesText.isEmpty else {
                 statuses[id] = .completed
@@ -217,6 +222,7 @@ public struct BatchTextSummaryExtractionView: View {
                     resultModel: resultModel,
                     outputLanguage: selectedLanguage.englishName
                 )
+                guard !Task.isCancelled else { return }
                 applyResult(result, to: id)
                 statuses[id] = .completed
             } catch {

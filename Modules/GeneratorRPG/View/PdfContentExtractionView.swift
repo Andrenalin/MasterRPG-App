@@ -7,6 +7,9 @@ import PDFKit
 public struct PdfContentExtractionView: View {
 
     @State private var model = PdfContentExtractionModel()
+    /// Owned so dismissing the sheet cancels the on-device model work instead of leaving it
+    /// running (and writing results) in the background. See CODE_AUDIT_18 §3.6.
+    @State private var analysisTask: Task<Void, Never>?
     let pdfDocument: PDFDocument
     let onContentExtracted: ([BlockEntryGenModel]) -> Void
     
@@ -30,14 +33,16 @@ public struct PdfContentExtractionView: View {
             }
             .padding()
         }
+        .onDisappear { analysisTask?.cancel() }
     }
 
     // MARK: - Subviews
 
     private func analyze() {
         guard !model.isExtracting else { return }
-        Task {
+        analysisTask = Task {
             let content = await model.extractWithProgress(from: pdfDocument)
+            guard !Task.isCancelled else { return }
             onContentExtracted(content)
         }
     }

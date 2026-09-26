@@ -10,6 +10,9 @@ public struct PdfSummaryAnalysisView: View {
 
     @State private var model = PdfSummaryAnalysisModel()
     @State private var selectedLanguage: OutputLanguage = OutputLanguage.forCurrentLocale()
+    /// Owned so dismissing the sheet cancels the on-device model work instead of leaving it
+    /// running (and writing results) in the background. See CODE_AUDIT_18 §3.6.
+    @State private var analysisTask: Task<Void, Never>?
     let pdfDocument: PDFDocument
     let onAnalysisCompleted: (PdfSummaryAnalysis) -> Void
 
@@ -35,16 +38,17 @@ public struct PdfSummaryAnalysisView: View {
             }
             .padding()
         }
+        .onDisappear { analysisTask?.cancel() }
     }
 
     // MARK: - Subviews
 
     private func analyze() {
         guard !model.isAnalyzing else { return }
-        Task {
-            if let content = await model.analyzeWithProgress(from: pdfDocument, outputLanguage: selectedLanguage.englishName) {
-                onAnalysisCompleted(content)
-            }
+        analysisTask = Task {
+            let content = await model.analyzeWithProgress(from: pdfDocument, outputLanguage: selectedLanguage.englishName)
+            guard !Task.isCancelled, let content else { return }
+            onAnalysisCompleted(content)
         }
     }
 

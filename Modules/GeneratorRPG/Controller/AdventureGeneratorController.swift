@@ -48,6 +48,9 @@ final class AdventureSessionModel {
     // Task management for cancellation
     var currentTask: Task<Void, Never>?
     var currentExtractionTask: Task<Void, Never>?
+    /// Bumped per extraction so a superseded task's cleanup can't clear the busy flag of the
+    /// extraction that replaced it. See CODE_AUDIT_18 §5.20.
+    var extractionGeneration = 0
 
     func cancel() {
         currentTask?.cancel()
@@ -239,6 +242,8 @@ struct AdventureGeneratorController: Sendable {
         // per-session context window after a few extractions. See CODE_AUDIT_17 §5.20.
         model.set(extractSession: LanguageModelSession())
         model.isExtracting = true
+        model.extractionGeneration += 1
+        let generation = model.extractionGeneration
         PerformanceTrace.event("FoundationRequest", source: "extraction", count: message.count)
 
         model.currentExtractionTask = Task(name: "Foundation Extraction") {
@@ -248,7 +253,9 @@ struct AdventureGeneratorController: Sendable {
                 count: message.count
             )
             defer { trace?.end() }
-            defer { model.isExtracting = false }
+            defer {
+                if model.extractionGeneration == generation { model.isExtracting = false }
+            }
             do {
                 let prompt = Prompt {
                     "\(message)"

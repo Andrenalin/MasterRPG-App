@@ -50,8 +50,9 @@ struct PdfContentExtractor: Sendable {
         
         let pageLimit = min(maxPages, pdfDocument.pageCount)
         
-        // Extract text from PDF
-        let extractedText = try extractText(from: pdfDocument, pageLimit: pageLimit)
+        // Extract text from PDF (off the main actor, see `PdfPageTextReader`)
+        let extractedText = try await extractText(from: pdfDocument, pageLimit: pageLimit)
+        let pageCount = pdfDocument.pageCount
         
         guard !extractedText.isEmpty else {
             throw PdfSummaryAnalysisError.textExtractionFailed
@@ -84,6 +85,9 @@ struct PdfContentExtractor: Sendable {
         upcomingSession.prewarm()
         
         for page in extractedText {
+            // A cancelled extraction stops here instead of walking (and building a
+            // session for) every remaining page. See CODE_AUDIT_18 §3.4.
+            try Task.checkCancellation()
             // Report progress for current page. `setPageProgress` is itself `@MainActor`
             // — `await` alone hops there, no `MainActor.run` wrapper needed (a cross-actor
             // property *write*, unlike a read, can't compose as `await obj.property = value`).
@@ -100,11 +104,15 @@ struct PdfContentExtractor: Sendable {
             // plus a diagnostic for the page(s) that failed. See CODE_AUDIT_17 §5.20.
             do {
                 let response = try await session.respond(
-                    to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pdfDocument.pageCount),
+                    to: buildPrompt(with: page.text, pageNumber: page.pageNumber, pageCount: pageCount),
                     generating: [BlockEntryGenModel].self,
                     includeSchemaInPrompt: false
                 )
                 blocks.append(contentsOf: response.content)
+            } catch is CancellationError {
+                // Cancellation ends the whole extraction; only real per-page failures
+                // are skipped (CODE_AUDIT_17 §5.20). See CODE_AUDIT_18 §3.4.
+                throw CancellationError()
             } catch let error as LanguageModelSession.GenerationError {
                 Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(self.handleGenerationError(error), privacy: .public)")
             } catch {
@@ -119,28 +127,16 @@ struct PdfContentExtractor: Sendable {
     
     // MARK: - Private Methods
     
-    private func extractText(from pdfDocument: PDFDocument, pageLimit: Int) throws -> [FoundationModelInputLimiter.PageText] {
-        var result: [FoundationModelInputLimiter.PageText] = []
-        result.reserveCapacity(pageLimit)
-        
-        for pageIndex in 0..<pageLimit {
-            guard let page = pdfDocument.page(at: pageIndex),
-                  let pageText = page.string,
-                  !pageText.isEmpty else {
-                continue
-            }
-            
-            let limited = FoundationModelInputLimiter.limitedText(pageText, maxCharacters: maxCharacters)
-            result.append(
-                FoundationModelInputLimiter.PageText(
-                    pageNumber: pageIndex + 1,
-                    text: limited,
-                    wasTruncated: limited != pageText
-                )
+    private func extractText(from pdfDocument: PDFDocument, pageLimit: Int) async throws -> [FoundationModelInputLimiter.PageText] {
+        let pages = try await PdfPageTextReader.pages(of: .init(document: pdfDocument), pageLimit: pageLimit)
+        return pages.map { page in
+            let limited = FoundationModelInputLimiter.limitedText(page.text, maxCharacters: maxCharacters)
+            return FoundationModelInputLimiter.PageText(
+                pageNumber: page.pageNumber,
+                text: limited,
+                wasTruncated: limited != page.text
             )
         }
-        
-        return result
     }
     
     private func buildPrompt(with text: String, pageNumber: Int, pageCount: Int) -> String {

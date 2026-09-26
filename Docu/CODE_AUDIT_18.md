@@ -94,6 +94,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A cancelled extraction keeps walking every remaining page, creating and prewarming a new `LanguageModelSession` per page, logging spurious failures and returning partial blocks as if it had succeeded.
 - **Action:** Check cancellation at the top of each iteration and rethrow `CancellationError` before the generic per-page catch.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. The loop checks cancellation at the top of every page, and the per-page error handling rethrows `CancellationError` before the generic catch, so a cancelled extraction stops instead of walking every page.
 
 ### 3.5 PDF text extraction for FoundationModels runs on the main actor
 - **Location:** `Modules/GeneratorRPG/BasicAI/Providers/PdfContentExtractor.swift:37-54,122-145`; `PdfSummaryAnalyzer.swift:~130-145`; caller `Modules/GeneratorRPG/BasicAI/Model/PdfContentExtractionModel.swift:25-41`
@@ -101,6 +102,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A large PDF causes a visible UI hitch before generation even starts.
 - **Action:** Mark the text-extraction step (or the analyzer entry point) `@concurrent`.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Page-text reading for both `PdfContentExtractor` and `PdfSummaryAnalyzer` moved into the new `@concurrent` `PdfPageTextReader.pages(of:pageLimit:)` (cancellation-aware). `PDFDocument` crosses in a documented read-only `@unchecked Sendable` box, since the analysis only reads it.
 
 ### 3.6 On-device LLM view actions run in unowned Tasks that outlive the sheet
 - **Location:** `Modules/GeneratorRPG/View/TableSummaryAnalysisView.swift:64-71`; `PdfSummaryAnalysisView.swift:42-49`; `PdfContentExtractionView.swift:37-43`; `BatchTextSummaryExtractionView.swift:195-225`
@@ -108,6 +110,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Dismissing the sheet leaves multi-page FoundationModels work running, and the batch loop keeps writing results into items through `applyResult` after the user has left.
 - **Action:** Store the task in the model (or drive it with `.task(id:)`) and cancel it on disappear.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `TableSummaryAnalysisView`, `PdfSummaryAnalysisView` and `PdfContentExtractionView` store their task and cancel it `onDisappear`, and skip the completion callback when cancelled. `BatchTextSummaryExtractionView` stores its batch task, Cancel is enabled while running and cancels it (as does disappearing), and `performBatch` checks cancellation before each item and before `applyResult`.
 
 ### 3.7 Audio playlist replacement is re-entrant across its await, and concurrent loads share temp filenames
 - **Location:** `Modules/AudioRPG/Controller/AudioController.swift:109-146` (callers `:198-210`, `:365-369`; `Modules/AudioRPG/Controller/GameController.swift:189,196`; `SharingActionView.swift:45`)
@@ -414,6 +417,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** The UI shows idle while the newer extraction is still streaming.
 - **Action:** Mirror `GeneratorController`: clear `isExtracting` only if the finishing task is still the current one.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `AdventureGeneratorController` got the same generation guard as `GeneratorController`: `extractionGeneration` is bumped per extraction and a task only clears `isExtracting` if it is still the current one.
 
 ### 5.21 Roll-result haptic uses a `Bool` trigger, so repeated identical outcomes are silent
 - **Location:** `Modules/DiceRPG/Game/Detail/DiceGameActionBar.swift:50-55`
