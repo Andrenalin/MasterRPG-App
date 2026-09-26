@@ -37,7 +37,7 @@ public struct EditorLinkView: View {
             .frame(maxWidth: .infinity, alignment: .top)
             .transition(.opacity)
         }
-#if !os(tvOS) //&& !os(visionOS)
+#if !os(tvOS)
         .popoverTip(selectionMode ? MasterRPGTips.linkContent : nil)
 #endif
         .applyIf(selectionMode) {

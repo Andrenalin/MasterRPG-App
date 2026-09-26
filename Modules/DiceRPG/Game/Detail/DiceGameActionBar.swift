@@ -93,7 +93,6 @@ struct DiceGameActionBar: View {
                                     Image(systemName: "person.2")
                                 }
                                 .labelStyle(.iconOnly)
-                                .frame(minWidth: 44, minHeight: 44)
                             }
                             .gameOverlayControlStyle(isSelected: diceDisplayModel.showPlayerDice)
                         }
@@ -113,7 +112,6 @@ struct DiceGameActionBar: View {
                                 Image(systemName: "switch.2")
                             }
                             .labelStyle(.iconOnly)
-                            .frame(minWidth: 44, minHeight: 44)
                         }
                         .gameOverlayControlStyle()
                         
@@ -132,7 +130,6 @@ struct DiceGameActionBar: View {
                                 Image(systemName: "house")
                             }
                             .labelStyle(.iconOnly)
-                            .frame(minWidth: 44, minHeight: 44)
                         }
                         .gameOverlayControlStyle()
                     }

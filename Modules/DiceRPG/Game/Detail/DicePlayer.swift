@@ -60,7 +60,9 @@ struct DicePlayer: View {
             playerLabel(playerId: playerId)
                 .padding(8)
                 .contentShape(.capsule)
+#if !os(visionOS)
                 .glassEffect(.regular.interactive(), in: .capsule)
+#endif
         }
     }
 

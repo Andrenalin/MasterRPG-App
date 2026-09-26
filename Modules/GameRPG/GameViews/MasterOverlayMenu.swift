@@ -53,4 +53,5 @@ struct MasterOverlayMenu: View {
         playerController: PlayerController(root: root, asGameMaster: true)
     )
     .environment(GameScreenModel())
+    .environment(AppFocusModel())
 }

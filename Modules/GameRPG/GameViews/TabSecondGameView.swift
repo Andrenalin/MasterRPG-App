@@ -12,7 +12,10 @@ struct TabSecondGameView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: false)
+        NavigationStack {
+            root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: false)
+                .navigationVisibility(true)
+        }
             .frame(
                 maxWidth: gameScreenModel.sideBarWidth,
                 maxHeight: .infinity,

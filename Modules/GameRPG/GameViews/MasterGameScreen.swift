@@ -206,4 +206,5 @@ private extension MasterGameScreen {
         adventureId: GamePreviewData.adventureID
     )
     .setAppSizeMode()
+    .environment(AppFocusModel())
 }
