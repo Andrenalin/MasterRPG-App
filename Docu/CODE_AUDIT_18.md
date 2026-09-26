@@ -508,6 +508,7 @@ The rule scan against CLAUDE.md was clean: no `foregroundColor`, `cornerRadius()
 - **Why:** A large-scale body-size symbol plus 16 pt of padding comes out below the 44 × 44 pt HIG minimum, which affects game-time controls on iPhone. The same action bar now also mixes two button sizes.
 - **Action:** Put `minWidth/minHeight: 44` back into both styles (keeping the new padding) and remove the per-button frames so all overlay buttons size alike.
 - **Severity:** Medium (agent C rated Low; raised because it is an HIG/accessibility regression across every overlay control)
+- **Status (2026-09-26):** FIXED. The compact visual size (`.imageScale(.large).padding(8)`) is kept; both styles now hit-test through a private `MinimumHitAreaShape` content shape that is centred on the control and at least 44×44 pt, so the tappable area grows without changing layout. The per-button label frames in `DiceGameActionBar` were removed in 9156df35, so every overlay button in the bar renders at the same size.
 
 ### 8.2 `SharePlayButton` owns a `GroupStateObserver` through `@ObservedObject`
 - **Location:** `Modules/GameRPG/SetupViews/SharePlayButton.swift:21-22` (a second observer at `Modules/GameRPG/SharePlay/RPGSharePlayController.swift:713,776-783`)
