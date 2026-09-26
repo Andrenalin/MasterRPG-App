@@ -9,7 +9,10 @@ struct DiceGameActionBar: View {
     let canShowPlayer: Bool
     let hideOwnDice: Bool
     
-    @State private var diceRollResult: Bool = false
+    /// Bumped on every roll so each roll gets a haptic, even when two in a row have the same
+    /// outcome (a `Bool` trigger only fired when the outcome flipped). See CODE_AUDIT_18 §5.21.
+    @State private var rollFeedbackCount = 0
+    @State private var lastRollChecked = false
     
     @Environment(DiceRootModel.self) private var root
     @Environment(DiceDisplayModel.self) var diceDisplayModel
@@ -49,10 +52,13 @@ struct DiceGameActionBar: View {
                         // so the compare-value haptic never fired. See
                         // CODE_AUDIT §5.6.
                         .onChange(of: root.gameController.gameItem(for: itemId).dice) {
-                            diceRollResult = root.gameController.result(itemId: itemId).checked
+                            lastRollChecked = root.gameController.result(itemId: itemId).checked
+                            rollFeedbackCount += 1
                         }
 #if !os(visionOS)
-                        .sensoryFeedback(diceRollResult ? .success : .error, trigger: diceRollResult)
+                        .sensoryFeedback(trigger: rollFeedbackCount) { _, _ in
+                            lastRollChecked ? .success : .error
+                        }
 #endif
                         
                         Button {

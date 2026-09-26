@@ -326,6 +326,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Any device still on a build without `.three` fails to decode every dice set or character containing a d3. That covers CloudKit-synced rows and LAN/SharePlay payloads during a mixed-version rollout. Relevant only if a build without `.three` is in users' hands.
 - **Action:** Keep encoding 3 as `.number(3)` (custom `Codable` or map `.three` only for display), and add a decode test for the legacy shape.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `RawDie.Sides` has a custom `Codable` that writes `.three` in the legacy `.number(3)` shape and decodes that shape back to `.three`; every other case keeps its synthesized format. Covered by `RawDieCodingTests`.
 
 ### 5.9 Dice colour/art mismatches: a bag entry with no art, no validation of stored colours, and a mis-cased asset **[verified]**
 - **Location:** `Modules/DiceRPG/View/DiceBag.swift:15` (`.die12(color: .D)`); `Modules/DiceRPG/Model/RawDie.swift:82-94` (`colorCodes`); `Modules/DiceRPG/Model/DieModel.swift:21-26,90-106`; `Resources/RPGResources/Resources/DiceAssets.xcassets/D20c-1.imageset` (PNG files named `D20-1@Nx.png`)
@@ -333,6 +334,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** The D12-D bag entry renders a blank die. A colour carried over after a sides change, or from import or a peer, renders blank. A natural 1 on a colour-C d20 may render blank if the lookup is case-sensitive, and the naming is inconsistent either way.
 - **Action:** Build the bag rows from `colorCodes` (and remove `.die12(color: .D)`), fall back to a valid code in `resolvedColor` when the colour isn't in `die.colorCodes`, and rename the imageset (and its PNGs) to the shared scheme.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Removed `.die12(color: .D)` from the dice bag. `DieModel.resolvedColor` now falls back to G (or the first code with art) when an explicit colour isn't in `die.colorCodes`, which also covers decoded/imported/peer colours through `name(for:)`. `D20c-1.imageset` was renamed to `D20C-1.imageset` (its PNGs already used the shared `D20-n@Nx` scheme). Covered by `RawDieCodingTests.unsupportedColourFallsBack`.
 
 ### 5.10 `DiceEntityQuery.invalidateCache()` is never called, though its doc says it is **[verified]**
 - **Location:** `Modules/DiceRPG/Intent/DiceEntity.swift:169-175` (cache read at `:146-149`)
@@ -419,6 +421,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Two successes (or two failures) in a row produce no haptic on the second roll, so the feedback looks random to the player.
 - **Action:** Trigger on a roll counter or the dice value (which already drives the `onChange`) and pick success/error from the result.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The haptic is triggered by a roll counter (`rollFeedbackCount`) with the closure-based `sensoryFeedback(trigger:_:)` picking success/error from the last roll, so every roll gets feedback.
 
 ---
 

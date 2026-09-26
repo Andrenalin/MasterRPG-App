@@ -93,7 +93,7 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
         }
     }
 
-    public enum Sides: Equatable, Hashable, Codable, Sendable {
+    public enum Sides: Equatable, Hashable, Sendable {
         case two
         case three
         case four
@@ -158,5 +158,45 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
                 return .number(number)
             }
         }
+    }
+}
+
+// A d3 used to be `.number(3)`; the `.three` case (c2d185f2) would change its synthesized
+// encoding to `{"three":{}}`, which builds without that case can't decode (CloudKit-synced
+// exports and LAN/SharePlay payloads during a mixed-version rollout). Encode `.three` in the
+// legacy shape and map the legacy shape back to `.three` on decode. See CODE_AUDIT_18 §5.8.
+extension RawDie.Sides: Codable {
+    /// Mirrors the synthesized wire format of the cases every shipped build knows.
+    private enum WireShape: Codable {
+        case two, four, six, eight, ten, twelve, twenty
+        case number(Int)
+    }
+
+    public init(from decoder: any Decoder) throws {
+        switch try WireShape(from: decoder) {
+        case .two: self = .two
+        case .four: self = .four
+        case .six: self = .six
+        case .eight: self = .eight
+        case .ten: self = .ten
+        case .twelve: self = .twelve
+        case .twenty: self = .twenty
+        case let .number(sides): self = sides == 3 ? .three : .number(sides)
+        }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        let shape: WireShape = switch self {
+        case .two: .two
+        case .three: .number(3)
+        case .four: .four
+        case .six: .six
+        case .eight: .eight
+        case .ten: .ten
+        case .twelve: .twelve
+        case .twenty: .twenty
+        case let .number(sides): .number(sides)
+        }
+        try shape.encode(to: encoder)
     }
 }

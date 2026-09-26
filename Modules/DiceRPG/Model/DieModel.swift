@@ -19,8 +19,16 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
     }
 
     private static func resolvedColor(_ color: String, for die: RawDie) -> String {
-        guard color == ColorCode.Random.rawValue || color.isEmpty else { return color }
         let codes = die.colorCodes
+        guard color == ColorCode.Random.rawValue || color.isEmpty else {
+            // A stored or passed colour with no art for this die (carried over after a
+            // sides change, or from an import or a peer) would render a blank image. Fall
+            // back to a colour that has art. See CODE_AUDIT_18 §5.9.
+            if codes.contains(where: { $0.rawValue == color }) {
+                return color
+            }
+            return (codes.contains(.G) ? ColorCode.G : codes.first ?? .G).rawValue
+        }
         let index = RawDie(.number(codes.count)).roll() - 1
         return codes[index].rawValue
     }

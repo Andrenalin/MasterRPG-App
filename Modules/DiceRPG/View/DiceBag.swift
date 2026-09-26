@@ -12,7 +12,7 @@ struct DiceBag: View {
     // identity on every unrelated parent redraw. See CODE_AUDIT §7.2.
     private static let diceBagA: [DieModel] = [.die3(color: .A), .die4(color: .A), .die6(color: .A), .die8(color: .A), .die10(color: .A), .die12(color: .A), .die20(color: .A)]
     private static let diceBagB: [DieModel] = [.die3(color: .B), .die4(color: .B), .die6(color: .B), .die8(color: .B), .die10(color: .B), .die12(color: .B), .die20(color: .B)]
-    private static let diceBagC: [DieModel] = [.die2(color: .G), .die10(color: .C), .die10(color: .D), .die12(color: .C), .die12(color: .D)]
+    private static let diceBagC: [DieModel] = [.die2(color: .G), .die10(color: .C), .die10(color: .D), .die12(color: .C)]
     private static let diceBagD: [DieModel] = [.die6(color: .C), .die6(color: .D), .die6(color: .E), .die6(color: .F), .die6(color: .H), .die6(color: .I)]
     private static let diceBagE: [DieModel] = [.die20(color: .C), .die20(color: .D), .die20(color: .F), .die20(color: .H)]
     private static let diceBagG: [DieModel] = [.die3(color: .G), .die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
