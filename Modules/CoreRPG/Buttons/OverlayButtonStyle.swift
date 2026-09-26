@@ -119,7 +119,8 @@ private struct GameOverlayControlButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .frame(minWidth: 44, minHeight: 44)
+            .imageScale(.large)
+            .padding(8)
             .contentShape(.circle)
             .glassEffect(glass, in: .circle)
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
@@ -140,8 +141,8 @@ private struct GameOverlayCapsuleButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .padding(.horizontal, 12)
-            .frame(minHeight: 44)
+            .imageScale(.large)
+            .padding(8)
             .contentShape(.capsule)
             .glassEffect(glass, in: .capsule)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)

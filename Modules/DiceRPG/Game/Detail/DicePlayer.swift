@@ -52,13 +52,15 @@ struct DicePlayer: View {
                 ? Text("Show \(playerName(playerId: playerId)) dice", bundle: .module)
                 : Text("Hide \(playerName(playerId: playerId)) dice", bundle: .module)
             )
-            .frame(minHeight: 44)
             .gameOverlayCapsuleControlStyle(
                 isSelected: !root.gameController.isPlayerHidden(playerId: playerId)
             )
             .opacity(0.75)
         } else {
             playerLabel(playerId: playerId)
+                .padding(8)
+                .contentShape(.capsule)
+                .glassEffect(.regular.interactive(), in: .capsule)
         }
     }
 

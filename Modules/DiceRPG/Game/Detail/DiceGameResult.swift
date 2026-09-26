@@ -78,5 +78,8 @@ private struct DiceGameResultResultView: View {
         DiceGameResult(itemId: DiceModel.previewId, canShowPlayer: true, isTrailing: false)
             .environment(DiceRootModel.preview)
             .environment(DiceDisplayModel())
+            .environment(AppGameStateModel())
     }
+    .frame(width: 120)
+    .padding()
 }
