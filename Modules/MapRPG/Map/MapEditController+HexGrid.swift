@@ -39,7 +39,14 @@ extension MapEditController {
 
     @MainActor
     func updateHexScale(_ scale: Double, editorModel: MapEditorSession) {
-        guard let copy = editorModel.workingCopy, scale > 0, scale != copy.hexMapScale else { return }
+        guard let copy = editorModel.workingCopy, scale > 0 else { return }
+        // Never go below the size whose grid fits the cell cap: the slider snaps up to it
+        // instead of the grid silently disappearing. See CODE_AUDIT_18 §5.6.
+        let scale = MapHexGridGeometry.fittedSize(scale, width: copy.width, height: copy.height)
+        guard scale != copy.hexMapScale else {
+            editorModel.hexScale = scale
+            return
+        }
         copy.hexMapScale = scale
         editorModel.hexScale = scale
         MapHexGridGeometry.replaceGrid(

@@ -311,6 +311,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Dragging the hex slider low on a large battle map makes the grid, and its per-cell reveal state, disappear without a message (`isHexMap` flips to false). `Int(...)` of a huge finite quotient and `columns * rows` can also still overflow and trap.
 - **Action:** Clamp the scale up to the smallest size that fits the cap (and reflect that in the slider) instead of returning `[]`, and use checked conversions (`Int(exactly:)`, `multipliedReportingOverflow`).
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. New `MapHexGridGeometry.fittedSize` raises a requested size to the smallest one whose grid fits `maxCells`. `initialSize` (toggle and `EditController.createHexMap`) and `MapEditController.updateHexScale` use it, so the slider snaps up instead of the grid disappearing. `dimensions`/`cellCount` use checked conversions (`Int(exactly:)`, `addingReportingOverflow`, `multipliedReportingOverflow`), so huge quotients return no grid instead of trapping. Covered by `MapHexGridGeometryTests`.
 
 ### 5.7 Audio playlist: new unconditional iCloud download step (likely fails for non-iCloud files), write lock, and eager copies **[REGRESSION / INCOMPLETE FIX of CODE_AUDIT_17 §5.21, c46ecb28]**
 - **Location:** `Modules/AudioRPG/Controller/AudioController.swift:133-146,156-179`; `Modules/CoreRPG/Files/FileManager+Coordination.swift:66-72`

@@ -14,31 +14,76 @@ enum MapHexGridGeometry {
 
     @MainActor
     static func initialSize(for model: MapModel, requestedSize: Double) -> Double {
-        guard requestedSize < 10 else { return requestedSize }
-        let widthScale = model.width / (defaultHexesAcrossShortSide * sqrt(3))
-        let heightScale = model.height / (defaultHexesAcrossShortSide * 1.5)
-        return max(widthScale, heightScale)
+        let size: Double
+        if requestedSize < 10 {
+            let widthScale = model.width / (defaultHexesAcrossShortSide * sqrt(3))
+            let heightScale = model.height / (defaultHexesAcrossShortSide * 1.5)
+            size = max(widthScale, heightScale)
+        } else {
+            size = requestedSize
+        }
+        return fittedSize(size, width: model.width, height: model.height)
     }
 
     /// Hard cap on the number of hex cells generated in one call — protects against an
     /// unvalidated, very large map dimension with a small scale producing hundreds of
     /// thousands of `MapEntryModel`s. See CODE_AUDIT_17 §5.16.
-    private static let maxCells = 20_000
+    static let maxCells = 20_000
+
+    /// Column and row count for a grid of `size` over `width × height`, or `nil` when the
+    /// input is invalid or the counts don't fit in `Int` (checked conversions instead of a
+    /// trapping `Int(_:)` of a huge quotient). See CODE_AUDIT_18 §5.6.
+    static func dimensions(for size: Double, width: Double, height: Double) -> (columns: Int, rows: Int)? {
+        guard size.isFinite, size > 0,
+              width.isFinite, width > 0,
+              height.isFinite, height > 0 else { return nil }
+        let hexWidth = sqrt(3) * size
+        guard let columns = Int(exactly: ((width + hexWidth / 2) / hexWidth).rounded(.down)),
+              let rows = Int(exactly: ((height + size / 2) / (3 * size / 2)).rounded(.down)) else { return nil }
+        let (safeColumns, columnsOverflow) = columns.addingReportingOverflow(1)
+        let (safeRows, rowsOverflow) = rows.addingReportingOverflow(1)
+        guard !columnsOverflow, !rowsOverflow, safeColumns > 0, safeRows > 0 else { return nil }
+        return (safeColumns, safeRows)
+    }
+
+    static func cellCount(for size: Double, width: Double, height: Double) -> Int? {
+        guard let dimensions = dimensions(for: size, width: width, height: height) else { return nil }
+        let (count, overflow) = dimensions.columns.multipliedReportingOverflow(by: dimensions.rows)
+        return overflow ? nil : count
+    }
+
+    /// The smallest hex size at or above `size` whose grid stays within `maxCells`. A size
+    /// below that used to make `grid(for:in:)` return no cells, and `replaceGrid` then
+    /// erased the existing grid (and its per-cell reveal state) without a message.
+    /// See CODE_AUDIT_18 §5.6.
+    static func fittedSize(_ size: Double, width: Double, height: Double) -> Double {
+        guard size.isFinite, size > 0, width.isFinite, width > 0, height.isFinite, height > 0 else { return size }
+        if let count = cellCount(for: size, width: width, height: height), count <= maxCells {
+            return size
+        }
+        // Area-based estimate (each hex covers √3·s × 1.5·s), then step up to absorb the
+        // partial rows/columns at the edges.
+        var fitted = max(size, sqrt(width * height / (Double(maxCells) * sqrt(3) * 1.5)))
+        for _ in 0..<200 {
+            if let count = cellCount(for: fitted, width: width, height: height), count <= maxCells {
+                return fitted.rounded(.up)
+            }
+            fitted *= 1.02
+        }
+        return fitted.rounded(.up)
+    }
 
     static func grid(for size: Double, in rect: CGRect) -> [MapEntryModel] {
         // A zero/negative size or non-finite/non-positive rect dimension (an
         // unvalidated decode or import) would otherwise divide by zero (`Int` of a
         // NaN/inf quotient traps) or produce an invalid `0..<rows` range. See
         // CODE_AUDIT_17 §5.16.
-        guard size.isFinite, size > 0,
-              rect.width.isFinite, rect.width > 0,
-              rect.height.isFinite, rect.height > 0 else { return [] }
+        guard let (columns, rows) = dimensions(for: size, width: rect.width, height: rect.height),
+              let count = cellCount(for: size, width: rect.width, height: rect.height),
+              count <= maxCells else { return [] }
 
         let hexWidth = sqrt(3) * size
         let hexHeight = 2 * size
-        let columns = Int((rect.width + hexWidth / 2) / hexWidth) + 1
-        let rows = Int((rect.height + size / 2) / (3 * size / 2)) + 1
-        guard columns > 0, rows > 0, columns * rows <= maxCells else { return [] }
 
         var hexes: [MapEntryModel] = []
         for row in 0..<rows {
