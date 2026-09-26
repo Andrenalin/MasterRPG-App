@@ -13,25 +13,32 @@ import SwiftUI
     }
 
 #if os(iOS) || os(visionOS)
-    private var backgroundFlushTaskId: UIBackgroundTaskIdentifier = .invalid
+    /// One background-task identifier per flush, so a second background entry can't
+    /// overwrite (and leak) the assertion of a flush that is still running.
+    private var backgroundFlushTasks: [UUID: UIBackgroundTaskIdentifier] = [:]
 
     /// `AppExitNotificationsViewModifier`'s resign-active save can be suspended
     /// mid-flight before it reaches disk. A background-task assertion buys the
     /// extra seconds the OS grants to actually finish the flush instead of racing
-    /// suspension. See CODE_AUDIT_17 §5.2.
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        backgroundFlushTaskId = application.beginBackgroundTask(withName: "FlushPendingSaves") { [weak self] in
-            guard let self else { return }
-            application.endBackgroundTask(self.backgroundFlushTaskId)
-            self.backgroundFlushTaskId = .invalid
+    /// suspension. Called from the app's aggregate `scenePhase == .background`:
+    /// UIKit never calls `applicationDidEnterBackground` in a scene-based app.
+    /// See CODE_AUDIT_17 §5.2 and CODE_AUDIT_18 §3.1.
+    func beginBackgroundFlush() {
+        let token = UUID()
+        let taskId = UIApplication.shared.beginBackgroundTask(withName: "FlushPendingSaves") { [weak self] in
+            self?.endBackgroundFlush(token)
         }
-        guard backgroundFlushTaskId != .invalid else { return }
+        guard taskId != .invalid else { return }
+        backgroundFlushTasks[token] = taskId
         Task { @MainActor [weak self] in
             await AppModel.shared.save()
-            guard let self, self.backgroundFlushTaskId != .invalid else { return }
-            application.endBackgroundTask(self.backgroundFlushTaskId)
-            self.backgroundFlushTaskId = .invalid
+            self?.endBackgroundFlush(token)
         }
+    }
+
+    private func endBackgroundFlush(_ token: UUID) {
+        guard let taskId = backgroundFlushTasks.removeValue(forKey: token) else { return }
+        UIApplication.shared.endBackgroundTask(taskId)
     }
 #endif
 
@@ -44,13 +51,5 @@ import SwiftUI
         }
         return sceneConfig
     }
-    
-#if os(iOS)
-    func application(_ application: UIApplication, handleOpen url: URL) -> Bool {
-        let appModel = AppModel.shared
-        return RootURLHandler(appModel: appModel, role: .game)
-            .handles(url, with: appModel.gameNavigator)
-    }
-#endif
 }
 #endif

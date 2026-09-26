@@ -23,6 +23,8 @@ struct MasterRPGApp: App {
 #if os(macOS)
     @NSApplicationDelegateAdaptor private var appDelegate: MacAppDelegate
 #endif
+    /// App-level (aggregate) phase: `.background` only once every scene is in the background.
+    @Environment(\.scenePhase) private var scenePhase
     
     init() {
         MasterRPGTips.configure()
@@ -118,6 +120,13 @@ struct MasterRPGApp: App {
         }
 #if os(macOS)
         .keyboardShortcut("G", modifiers: [.command, .shift, .option])
+#endif
+#if os(iOS) || os(visionOS)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                appDelegate.beginBackgroundFlush()
+            }
+        }
 #endif
         
         // Editor Window - moved from WindowViewerList for better multi-window support

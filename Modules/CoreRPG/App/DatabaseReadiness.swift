@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import Foundation
+import Synchronization
 
 /// Lets background App Intents wait until the Core Data stack and the root models exist.
 ///
@@ -13,7 +14,15 @@ public enum DatabaseReadiness {
     /// Longest an intent waits before continuing anyway (e.g. an iCloud account alert is pending).
     public static let timeout: Duration = .seconds(20)
 
-    public private(set) static var isReady = false
+    /// Ready once the root models exist *and* every module's initial load (the
+    /// `SyncDataControllable.start()` full fetch) has finished. Marking ready right after the
+    /// root models were set up let a cold-launch intent see (and cache) empty item lists.
+    /// See CODE_AUDIT_18 §3.2.
+    public static var isReady: Bool {
+        rootModelsReady && InitialLoadTracker.shared.isIdle
+    }
+
+    private static var rootModelsReady = false
     private static var starter: (@MainActor () -> Void)?
     private static var waiters: [UUID: CheckedContinuation<Void, Never>] = [:]
 
@@ -23,11 +32,19 @@ public enum DatabaseReadiness {
     }
 
     public static func markReady() {
-        isReady = true
+        rootModelsReady = true
+        resumeIfReady()
+    }
+
+    /// Called when a module's initial load finished.
+    static func resumeIfReady() {
+        guard isReady else { return }
         resumeAll()
     }
 
-    /// Returns once the database and root models are ready, or after `timeout`.
+    /// Returns once the database and root models are ready, after `timeout`, or when the
+    /// calling task is cancelled (a cancelled intent must not stay parked for the full
+    /// timeout, CODE_AUDIT_18 §3.12).
     public static func wait() async {
         guard !isReady else { return }
         starter?()
@@ -41,8 +58,18 @@ public enum DatabaseReadiness {
             try? await Task.sleep(for: timeout)
             waiters.removeValue(forKey: id)?.resume()
         }
-        await withCheckedContinuation { continuation in
-            waiters[id] = continuation
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                guard !Task.isCancelled else {
+                    continuation.resume()
+                    return
+                }
+                waiters[id] = continuation
+            }
+        } onCancel: {
+            Task { @MainActor in
+                waiters.removeValue(forKey: id)?.resume()
+            }
         }
         timeoutTask.cancel()
     }
@@ -51,5 +78,33 @@ public enum DatabaseReadiness {
         let pending = waiters
         waiters.removeAll()
         pending.values.forEach { $0.resume() }
+    }
+}
+
+/// Counts the module initial loads that are still running. Nonisolated and lock-based so
+/// `SyncDataControllable.start()` can register a load synchronously, before the root setup
+/// that called it marks the root models ready. See CODE_AUDIT_18 §3.2.
+final class InitialLoadTracker: Sendable {
+    static let shared = InitialLoadTracker()
+
+    private let running = Mutex<Set<UUID>>([])
+
+    var isIdle: Bool {
+        running.withLock { $0.isEmpty }
+    }
+
+    func begin() -> UUID {
+        let token = UUID()
+        running.withLock { _ = $0.insert(token) }
+        return token
+    }
+
+    func end(_ token: UUID) async {
+        let isIdle = running.withLock { running -> Bool in
+            running.remove(token)
+            return running.isEmpty
+        }
+        guard isIdle else { return }
+        await DatabaseReadiness.resumeIfReady()
     }
 }

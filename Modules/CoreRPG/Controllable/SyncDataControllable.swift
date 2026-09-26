@@ -33,8 +33,12 @@ public extension SyncDataControllable {
     /// Returns the running sync task so the caller can store/cancel it — this itself stays
     /// non-actor-isolated so the task keeps running off the main actor, same as before.
     nonisolated func start() -> Task<Void, Never> {
-        Task(priority: .userInitiated) {
+        // Registered synchronously so `DatabaseReadiness` can't report ready before this
+        // module's items are loaded. See CODE_AUDIT_18 §3.2.
+        let loadToken = InitialLoadTracker.shared.begin()
+        return Task(priority: .userInitiated) {
             await fetchUpdates()
+            await InitialLoadTracker.shared.end(loadToken)
         }
     }
 

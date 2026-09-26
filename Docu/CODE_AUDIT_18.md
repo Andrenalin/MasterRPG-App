@@ -71,6 +71,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** On iOS and visionOS no background-task assertion is ever taken, so the resign-active save can still be suspended mid-flight and recent edits lost. If the method did run, a second background entry would also overwrite `backgroundFlushTaskId` and leak the first assertion.
 - **Action:** Start the assertion from a `scenePhase == .background` handler (or `sceneDidEnterBackground` in `IosSceneDelegate`) and keep one identifier per flush, ending that same identifier.
 - **Severity:** High
+- **Status (2026-09-26):** FIXED. The background-task flush moved to `IosAppDelegate.beginBackgroundFlush()`, triggered from the app-level (aggregate) `scenePhase == .background` in `MasterRPGApp`. Each flush keeps its own identifier (keyed by a token), so overlapping flushes no longer overwrite and leak an assertion.
 
 ### 3.2 Database readiness is signalled before any module has loaded its items **[verified]** **[INCOMPLETE FIX of CODE_AUDIT_17 §3.2]**
 - **Location:** `Modules/RolePlayGameKit/Model/AppModel.swift:414-435` (`markReady()` at `:428`); `Modules/CoreRPG/Controllable/SyncDataControllable.swift:35-39,109-119`; `Modules/DiceRPG/Intent/DiceEntity.swift:143-163`
@@ -78,6 +79,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A cold-launch intent passes the gate and still sees empty `items`. Because `isReady` is already true, the new "don't cache an empty result before ready" guard in `suggestedEntities()` does cache it, and serves it for 60 s.
 - **Action:** Mark ready only after every module's initial sync task has finished (await the stored tasks), and never cache an empty Dice result on the first load.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `SyncDataControllable.start()` registers each module's initial load synchronously with the new `InitialLoadTracker`; `DatabaseReadiness.isReady` is now `rootModelsReady && every initial load finished`, and waiters resume only then. The Dice result cache that stored the empty list was removed (§5.10).
 
 ### 3.3 The cloud-URL prewarm doesn't keep resolution off the main thread, and never re-resolves **[INCOMPLETE FIX of CODE_AUDIT_17 §5.19]**
 - **Location:** `Sources/MasterRPG/MasterRPGApp.swift:29-33`; `Modules/CoreRPG/App/AppGroup.swift:55-68`; `Modules/CoreRPG/Files/LocationFileManager.swift:12-19`; `Modules/CoreRPG/Files/FileUrlDataController.swift:37-46`
@@ -141,6 +143,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A save stuck on file coordination or a Core Data `perform` makes Cmd-Q do nothing. The user then has to force-quit, which loses exactly the data the change was meant to protect.
 - **Action:** Race the save against a short deadline (a few seconds), always reply, and log when the save didn't finish.
 - **Severity:** Medium (agent C rated Low, agent A Medium; kept Medium because it blocks quitting)
+- **Status (2026-09-26):** FIXED. `applicationShouldTerminate` still returns `.terminateLater`, but always replies within `terminationSaveDeadline` (5 s): a guarded reply from the save task or the deadline task, whichever comes first, with an error log when the deadline wins.
 
 ### 3.12 Continuations that ignore caller cancellation
 - **Location:** `Modules/CoreRPG/App/DatabaseReadiness.swift:31-48`; `Modules/GameRPG/Player/PlayerNetworkController.swift:125-179`
@@ -148,6 +151,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A cancelled App Intent or a dismissed join sheet keeps its task alive for up to 20 s / 12 s.
 - **Action:** Wrap each in `withTaskCancellationHandler` that removes and resumes the stored continuation.
 - **Severity:** Low
+- **Status (2026-09-26):** PARTLY FIXED. `DatabaseReadiness.wait()` now resumes on task cancellation (`withTaskCancellationHandler`). `PlayerNetworkController.toggleConnection` is handled with the network items (see its own status).
 
 ### 3.13 `CoreDataInitModel.stop()` leaves the Spotlight indexer running on the replaced store **[INCOMPLETE FIX of CODE_AUDIT_17 §3.9]**
 - **Location:** `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:106-111` (indexer started at `:174,235`; `CloudKitCoreDataPersistenceController.swift:84,172`)
@@ -334,6 +338,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Siri/Shortcuts/Spotlight suggestions serve stale dice for the full 60 s TTL, and the comment makes readers think this is handled. It combines with §3.2.
 - **Action:** Call it from the dice add/rename/delete paths, or delete it and fix the comment.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. The never-invalidated 60 s cache (and `invalidateCache()`) was removed; `DiceEntityQuery` now uses the shared `ItemEntityQuery.suggestedEntities()`, which also applies the trashed-item filter the override skipped.
 
 ### 5.11 SharePlay seat ranks depend on when each player learns who the master is
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+TableCoordination.swift:23-70`; `Modules/GameRPG/Table3D/TableSeatAssignment.swift:27-50`; `Modules/GameRPG/Table3D/GameTableModel+Seating.swift:66-121`

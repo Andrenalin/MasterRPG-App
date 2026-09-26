@@ -113,22 +113,18 @@ extension DiceEntity: URLRepresentableEntity {
 }
 
 // See `ItemEntityQuery`'s own doc for why this is a shared CoreRPG base
-// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3. Dice is one
-// of the two modules that needs real overrides: `suggestedEntities()` keeps
-// its own 60s result cache (a protocol *requirement*'s own witness always
-// wins over `ItemEntityQuery`'s extension default, so this override is
-// still honored from every call site, including `entities(matching:)`'s
-// empty-string fallback below), and `matches(model:text:)` widens the
+// rather than hand-duplicated per module — CODE_AUDIT_10 §9.3. Dice widens the
 // shared name/description predicate to also search tags.
+//
+// The former 60 s `suggestedEntities()` result cache was removed: nothing ever
+// invalidated it, so Siri/Shortcuts/Spotlight served stale (or, on a cold launch,
+// empty) dice for the whole TTL, and it skipped the shared trashed-item filter.
+// Building the suggestions from the in-memory models is cheap. See CODE_AUDIT_18
+// §5.10 and §3.2.
 @MainActor
 struct DiceEntityQuery: ItemEntityQuery {
     typealias Entity = DiceEntity
     @Dependency var root: DiceRootModel
-
-    // iOS 18+: Cache for better performance
-    private static var cachedEntities: [DiceEntity] = []
-    private static var lastCacheUpdate: Date = .distantPast
-    private static let cacheValidityDuration: TimeInterval = 60 // 1 minute
 
     func makeEntity(root: DiceRootModel, model: DiceModel) -> DiceEntity { DiceEntity(root: root, model: model) }
     func allIds(root: DiceRootModel) -> [UUID] { root.itemController.itemDataModel.items }
@@ -138,40 +134,6 @@ struct DiceEntityQuery: ItemEntityQuery {
         model.name.localizedStandardContains(text) ||
             model.description.localizedStandardContains(text) ||
             model.tags.contains(where: { $0.localizedStandardContains(text) })
-    }
-
-    func suggestedEntities() async throws -> [DiceEntity] {
-        await DatabaseReadiness.wait()
-
-        // Return cached entities if still valid
-        if Date().timeIntervalSince(Self.lastCacheUpdate) < Self.cacheValidityDuration {
-            return Self.cachedEntities
-        }
-
-        // Fetch fresh entities
-        var entities: [DiceEntity] = []
-        for id in allIds(root: root).prefix(Self.suggestedLimit) {
-            guard let model = model(root: root, id: id) else { continue }
-            entities.append(makeEntity(root: root, model: model))
-        }
-
-        // Never cache an empty result from before the database was ready: it would
-        // otherwise be served for the full cacheValidityDuration. See CODE_AUDIT_17 §3.2.
-        guard !entities.isEmpty || DatabaseReadiness.isReady else { return entities }
-
-        // Update cache
-        Self.cachedEntities = entities
-        Self.lastCacheUpdate = Date()
-
-        return entities
-    }
-
-    // iOS 18+: Invalidate cache when data changes. Called from ItemController
-    // whenever a dice set is added, renamed, or deleted, so Siri/Shortcuts/Spotlight
-    // suggestions never serve stale entities for the full 60s TTL. See CODE_AUDIT §5.2.
-    static func invalidateCache() {
-        cachedEntities = []
-        lastCacheUpdate = .distantPast
     }
 }
 
