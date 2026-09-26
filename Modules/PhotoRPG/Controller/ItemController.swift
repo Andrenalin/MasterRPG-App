@@ -2,6 +2,7 @@
 
 import CoreRPG
 import Foundation
+import Synchronization
 import UniformTypeIdentifiers
 
 #if os(macOS)
@@ -50,17 +51,34 @@ extension ItemController {
         for type in importImageTypes {
             let typeIdentifier = type.identifier
             guard provider.hasItemConformingToTypeIdentifier(typeIdentifier) else { continue }
-            return try await withCheckedThrowingContinuation { continuation in
-                provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume(returning: data)
+            // `loadDataRepresentation` has no async overload (it returns a `Progress`); the load
+            // is cancelled through that progress when the calling task is. See CODE_AUDIT_18 §4.3.
+            let progressBox = ProgressBox()
+            return try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { continuation in
+                    progressBox.progress = provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume(returning: data)
+                        }
                     }
                 }
+            } onCancel: {
+                progressBox.progress?.cancel()
             }
         }
         return nil
+    }
+
+    /// Holds the load's `Progress` so the cancellation handler can reach it.
+    private final class ProgressBox: Sendable {
+        private let storage = Mutex<Progress?>(nil)
+
+        var progress: Progress? {
+            get { storage.withLock { $0 } }
+            set { storage.withLock { $0 = newValue } }
+        }
     }
 #endif
 }

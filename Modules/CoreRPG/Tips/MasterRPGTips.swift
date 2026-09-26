@@ -129,9 +129,9 @@ public enum MasterRPGTips {
     public static let showJoinCode = ShowJoinCodeTip()
 
     public static let importCampaignActionId = "import-campaign"
-    public static let importCampaignRequested = Notification.Name(
-        "de.andretrettin.MasterRPG.importCampaignRequested"
-    )
+    /// Set by the app to present its import screen. A direct handler instead of a string-named
+    /// `Notification` used as an in-app event bus. See CODE_AUDIT_18 §4.2.
+    @MainActor public static var importCampaignHandler: (@MainActor () -> Void)?
 
     private static var allTips: [any Tip] {
         [
@@ -271,7 +271,7 @@ public enum MasterRPGTips {
 
     @MainActor
     public static func requestImportCampaign() {
-        NotificationCenter.default.post(name: importCampaignRequested, object: nil)
+        importCampaignHandler?()
     }
 
     @MainActor

@@ -192,7 +192,7 @@ public struct CloudKitCoreDataPersistenceController {
             // Run cleanup on launch (after a delay to not block startup)
             localModel.cleanupTask?.cancel()
             localModel.cleanupTask = PersistentHistoryCleaner.scheduleRecurringCleanup { [weak localModel] in
-                localModel?.persistentHistoryCleaner?.clean()
+                await localModel?.persistentHistoryCleaner?.clean()
             }
         }
     }

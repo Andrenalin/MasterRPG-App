@@ -308,35 +308,29 @@ private extension AudioController {
     @MainActor func observePlayback() {
         guard model.subscriptions.isEmpty else { return }
 
-        var subscriptions: Set<AnyCancellable> = []
-        model.player.publisher(for: \.timeControlStatus)
-            .removeDuplicates()
-            .sink { [weak self] status in
-                Task { @MainActor [weak self] in
-                    self?.model.isPlaying = status == .playing
-                }
+        // One ordered consumer per source instead of a `Task` per event, which could apply
+        // `timeControlStatus` changes out of order. The tasks are wrapped in
+        // `AnyCancellable`s so the existing subscription teardown cancels them.
+        // See CODE_AUDIT_18 §4.2.
+        let player = model.player
+        let statusTask = Task { @MainActor [weak self] in
+            for await status in player.publisher(for: \.timeControlStatus).removeDuplicates().values {
+                guard let self else { return }
+                self.model.isPlaying = status == .playing
             }
-            .store(in: &subscriptions)
-
-        var notifications: Set<AnyCancellable> = []
-        NotificationCenter.default
-            .publisher(for: .AVPlayerItemDidPlayToEndTime)
-            .sink { [weak self] notification in
-                // The notification fires for every AVPlayerItem in the process —
-                // extract the (Sendable) identity here and match it against our
-                // current item on the main actor before advancing the playlist.
-                let endedItem = (notification.object as? AVPlayerItem).map(ObjectIdentifier.init)
-                Task { @MainActor [weak self] in
-                    guard let self, let endedItem,
-                          let current = self.model.player.currentItem,
-                          ObjectIdentifier(current) == endedItem else { return }
-                    self.resetPlaylist(complete: true)
-                }
+        }
+        let endOfItemTask = Task { @MainActor [weak self] in
+            for await notification in NotificationCenter.default.notifications(named: .AVPlayerItemDidPlayToEndTime) {
+                // The notification fires for every AVPlayerItem in the process — match it
+                // against our current item before advancing the playlist.
+                guard let self,
+                      let endedItem = notification.object as? AVPlayerItem,
+                      let current = self.model.player.currentItem,
+                      current === endedItem else { continue }
+                self.resetPlaylist(complete: true)
             }
-            .store(in: &notifications)
-
-        model.add(subscriptions: subscriptions)
-        model.add(subscriptions: notifications)
+        }
+        model.add(subscriptions: [AnyCancellable { statusTask.cancel() }, AnyCancellable { endOfItemTask.cancel() }])
 
         addTimeObserver()
     }
@@ -344,9 +338,10 @@ private extension AudioController {
     @MainActor private func addTimeObserver() {
         removeTimeObserver()
         let timeInterval = CMTime(value: 1, timescale: 1)
-        // Using nil queue - callback will be on player's internal queue, then hop to MainActor
-        model.timeObserver = model.player.addPeriodicTimeObserver(forInterval: timeInterval, queue: nil) { [weak self] time in
-            Task { @MainActor [weak self] in
+        // Delivered on the main queue, so the update runs in order without allocating a
+        // `Task` per tick. See CODE_AUDIT_18 §4.2.
+        model.timeObserver = model.player.addPeriodicTimeObserver(forInterval: timeInterval, queue: .main) { [weak self] time in
+            assumeMainActorIsolated {
                 self?.updateCurrentTime(time: time)
             }
         }

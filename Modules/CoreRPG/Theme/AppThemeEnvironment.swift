@@ -50,6 +50,9 @@ private struct ModuleTintViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .tint(theme.tint(for: module))
+            // Kept despite the soft deprecation: `.tint` doesn't change `Color.accentColor`,
+            // and ~75 views read `Color.accentColor` for the per-module theme colour; this is
+            // the only way to scope it to a subtree. See CODE_AUDIT_18 §4.1.
             .accentColor(theme.tint(for: module))
     }
 }

@@ -244,6 +244,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Deprecation noise, plus one dead URL-handling path that looks live.
 - **Action:** Use `.tint`, `.textInputAutocapitalization(.never)`, `.autocorrectionDisabled()` and `.statusBarHidden()`; delete `handleOpen` (the scene's `openURLContexts` already handles URLs).
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `.textInputAutocapitalization(.never)`, `.autocorrectionDisabled()` and `.statusBarHidden()` replace the deprecated forms; the dead `application(_:handleOpen:)` was removed (with §3.1); the preview's `.accentColor` became `.tint`. `AppThemeEnvironment` keeps `.accentColor` next to `.tint` on purpose (commented): about 75 views read `Color.accentColor` for the per-module theme colour, and `.tint` doesn't set it.
 
 ### 4.2 Combine and closure-based notification observers remain *(partly still open from CODE_AUDIT_17 §4.4)*
 - **Location:** `Modules/CoreRPG/Persistence/CoreDataChangeObserver.swift:32-57`; `PersistentHistoryTrackerManager.swift:72-84,119-125`; `Modules/AudioRPG/Controller/AudioController.swift:289-315,327-331`; `Modules/AudioRPG/Audio/AudioPlayerSession.swift:94-114`; `Modules/RolePlayGameKit/View/AppEnvironmentSetUpViewModifier.swift:56-62` with the string-named notification at `Modules/CoreRPG/Tips/MasterRPGTips.swift:132,274`
@@ -251,6 +252,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Per-event Task hops lose ordering (for example `timeControlStatus` updates), and untyped notifications bypass isolation checking.
 - **Action:** Move to `NotificationCenter.notifications(named:)` or typed messages, `addPeriodicTimeObserver(queue: .main)`, and `await container.performBackgroundTask`; replace the tip notification with a direct model call.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Audio: `timeControlStatus` and `AVPlayerItemDidPlayToEndTime` are each consumed by one ordered main-actor loop (async `values` / `notifications(named:)`) instead of a `Task` per event, and the periodic time observer runs on `.main` with `assumeMainActorIsolated` instead of allocating a `Task` per tick. Persistent history: one `notifications(named:object:)` loop replaces the Combine sink with its per-event `Task`, and `PersistentHistoryCleaner.clean()` uses async `performBackgroundTask` (no nested `Task`). The tip's string-named notification is replaced by a direct `MasterRPGTips.importCampaignHandler`. `CoreDataChangeObserver` keeps its Combine chain: it delivers synchronously on the posting thread with no per-event `Task`, so ordering is already correct. `AudioPlayerSession`'s `queue: .main` observers were already ordered.
 
 ### 4.3 NSItemProvider and DropDelegate completion wrappers *(still open from CODE_AUDIT_17 §4.4)*
 - **Location:** `Modules/PhotoRPG/Controller/ItemController.swift:47-63`; `Sources/RPGShare/ItemProviderImporter.swift:224-251`; `Modules/CoreRPG/Files/FileDropDelegate.swift:31-47`
@@ -258,6 +260,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** None is cancellable, while async overloads and `.dropDestination(for:)` exist on the deployment target.
 - **Action:** Use the async `NSItemProvider` overloads and `dropDestination`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED where the SDK allows. RPGShare uses the async `loadItem(forTypeIdentifier:)`. `loadDataRepresentation`, `loadObject(ofClass:)` and `loadTransferable` have no async overloads in the iOS/macOS 27 SDK (they return `Progress`), so Photo's drop import now cancels the load through that `Progress` when the task is cancelled. `FileDropDelegate`'s one-shot callback stays.
 
 ### 4.4 Hand-rolled `Task.detached` + cancellation-handler boilerplate at 16 sites *(still open from CODE_AUDIT_17 §3.12)*
 - **Location:** `Modules/CoreRPG/Foundry/FoundrySystemPackageReader.swift:21,47,72`; `FoundryVTTImportReader.swift:28,90,194`; `UniversalVTTReader.swift:165,187`; `Modules/RolePlayGameKit/Import/Foundry/FoundryMediaNormalizer.swift:30`; `FoundryRuleImportModel.swift:105`; `Modules/CoreRPG/Files/FileManager+Coordination.swift:98`; `FileUrlDataController.swift:674`; `Modules/GameRPG/Controller/MasterController+Messaging.swift:151`; `Modules/PdfRPG/Controller/ItemController.swift:59`; `Sources/RPGShare/ItemProviderImporter.swift:136,255`

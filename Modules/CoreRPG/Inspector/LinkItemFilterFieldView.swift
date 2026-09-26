@@ -18,7 +18,7 @@ struct LinkItemFilterFieldView: View {
                 prompt
             }
             .textInputAutocapitalizationAll(.never)
-            .disableAutocorrection(true)
+            .autocorrectionDisabled()
             .labelsHidden()
             .submitLabel(.return)
             .textFieldStyle(.plain)

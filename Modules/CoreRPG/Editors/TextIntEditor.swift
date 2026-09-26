@@ -71,10 +71,10 @@ private struct TextIntEditorTextField: View {
             Text(title, bundle: bundle)
         }
 #if os(iOS) || os(visionOS)
-            .autocapitalization(.none)
+            .textInputAutocapitalization(.never)
             .keyboardType(.numbersAndPunctuation)
 #endif
-            .disableAutocorrection(true)
+            .autocorrectionDisabled()
             .numericInput($text, includeDecimal: false)
             .labelsHidden()
             .submitLabel(.next)

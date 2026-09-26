@@ -42,10 +42,10 @@ private struct AddTagInputView: View {
                     Text("Tag", bundle: .module)
                 }
 #if os(iOS) || os(visionOS)
-                .autocapitalization(.none)
+                .textInputAutocapitalization(.never)
                 .textContentType(.name)
 #endif
-                .disableAutocorrection(true)
+                .autocorrectionDisabled()
                 .focused(focusState)
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 14)

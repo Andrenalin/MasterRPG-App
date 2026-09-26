@@ -35,7 +35,7 @@ public struct PersistentHistoryCleaner {
     /// Shared by both `CoreDataPersistenceController` and
     /// `CloudKitCoreDataPersistenceController` so the schedule can't drift
     /// between the two setup paths.
-    public static func scheduleRecurringCleanup(_ cleanup: @MainActor @escaping () -> Void) -> Task<Void, Never> {
+    public static func scheduleRecurringCleanup(_ cleanup: @MainActor @escaping () async -> Void) -> Task<Void, Never> {
         Task {
             // `try?` swallowed the cancellation, so a cancelled (replaced) task still ran a
             // cleanup immediately. See CODE_AUDIT_15 §3.9.
@@ -52,7 +52,7 @@ public struct PersistentHistoryCleaner {
         }
     }
 
-    public func clean() {
+    public func clean() async {
         guard let userDefault else {
             Logger.persistentHistory.error("Skipping history cleanup: App Group container is unavailable")
             return
@@ -67,20 +67,19 @@ public struct PersistentHistoryCleaner {
         // which is what protects transactions the mirroring delegate has not exported yet.
         let allActors = appActors
         let cleanupTimestamp = timestamp
-        container.performBackgroundTask { context in
-            do {
+        // Async `performBackgroundTask` instead of the completion form with a nested,
+        // unowned `Task` for the timestamp update. See CODE_AUDIT_18 §4.2.
+        do {
+            try await container.performBackgroundTask { context in
                 // Built on the background queue: the request isn't `Sendable`.
                 let deleteHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: cleanupTimestamp)
                 try context.execute(deleteHistoryRequest)
-                Logger.persistentHistory.info("Cleaned history before \(cleanupTimestamp, privacy: .public)")
-
-                Task {
-                    await PersistentHistoryTimestampUpdater.shared.advanceTimestamps(for: allActors, to: cleanupTimestamp)
-                    Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors to \(cleanupTimestamp, privacy: .public)")
-                }
-            } catch {
-                Logger.persistentHistory.error("Clean History error: \(error.localizedDescription, privacy: .public)")
             }
+            Logger.persistentHistory.info("Cleaned history before \(cleanupTimestamp, privacy: .public)")
+            await PersistentHistoryTimestampUpdater.shared.advanceTimestamps(for: allActors, to: cleanupTimestamp)
+            Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors to \(cleanupTimestamp, privacy: .public)")
+        } catch {
+            Logger.persistentHistory.error("Clean History error: \(error.localizedDescription, privacy: .public)")
         }
     }
 }
@@ -116,17 +115,17 @@ final class PersistentHistoryTrackerManager {
         )
         self.processor = processor
 
-        NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange, object: container.persistentStoreCoordinator)
-            .sink { _ in
-                Task {
-                    await processor.schedule()
-                }
+        // One ordered consumer instead of a `Task` per notification. See CODE_AUDIT_18 §4.2.
+        let coordinator = container.persistentStoreCoordinator
+        remoteChangeTask = Task {
+            for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange, object: coordinator) {
+                await processor.schedule()
             }
-            .store(in: &cancellables)
+        }
     }
 
     deinit {
-        cancellables.removeAll()
+        remoteChangeTask?.cancel()
         let processor = processor
         Task {
             await processor.cancel()
@@ -134,7 +133,7 @@ final class PersistentHistoryTrackerManager {
     }
 
     private let processor: PersistentHistoryProcessor
-    private var cancellables: Set<AnyCancellable> = []
+    private var remoteChangeTask: Task<Void, Never>?
 }
 
 private actor PersistentHistoryProcessor {

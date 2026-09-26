@@ -223,31 +223,20 @@ private extension ItemProviderImporter {
 
     nonisolated static func loadItem(provider: NSItemProvider, type: UTType) async throws -> LoadedItem {
         try Task.checkCancellation()
-        return try await withCheckedThrowingContinuation { continuation in
-            provider.loadItem(forTypeIdentifier: type.identifier) { item, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                guard let item else {
-                    continuation.resume(throwing: Error.noItems)
-                    return
-                }
-                if let data = item as? Data {
-                    continuation.resume(returning: .data(data))
-                } else if let data = item as? NSData {
-                    continuation.resume(returning: .data(data as Data))
-                } else if let text = item as? String {
-                    continuation.resume(returning: .text(text))
-                } else if let text = item as? NSString {
-                    continuation.resume(returning: .text(text as String))
-                } else if let url = item as? URL {
-                    continuation.resume(returning: .url(url))
-                } else {
-                    continuation.resume(throwing: Error.noItems)
-                }
-            }
+        // The SDK's async overload instead of a hand-written continuation. See CODE_AUDIT_18 §4.3.
+        let item = try await provider.loadItem(forTypeIdentifier: type.identifier)
+        if let data = item as? Data {
+            return .data(data)
+        } else if let data = item as? NSData {
+            return .data(data as Data)
+        } else if let text = item as? String {
+            return .text(text)
+        } else if let text = item as? NSString {
+            return .text(text as String)
+        } else if let url = item as? URL {
+            return .url(url)
         }
+        throw Error.noItems
     }
 
     nonisolated static func data(from url: URL) async throws -> Data {

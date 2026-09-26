@@ -126,10 +126,10 @@ private struct TextDoubleEditorTextField: View {
             Text(title, bundle: bundle)
         }
 #if os(iOS) || os(visionOS)
-        .autocapitalization(.none)
+        .textInputAutocapitalization(.never)
         .keyboardType(.numbersAndPunctuation)
 #endif
-        .disableAutocorrection(true)
+        .autocorrectionDisabled()
         .numericInput($text, includeDecimal: true)
         .labelsHidden()
         .submitLabel(.next)

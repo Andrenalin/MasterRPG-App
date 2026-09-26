@@ -179,6 +179,5 @@ private struct GameOverlayCapsuleButtonStyle: ButtonStyle {
     }
     .buttonStyle(.imageOverlay)
     .borderLessTVButtonStyle()
-    .tint(Color.accentColor)
-    .accentColor(Color.teal)
+    .tint(Color.teal)
 }

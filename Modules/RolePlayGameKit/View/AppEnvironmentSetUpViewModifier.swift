@@ -53,14 +53,11 @@ struct AppEnvironmentSetUpViewModifier: ViewModifier {
             .environment(appModel.spaceRoot)
             .environment(appModel.tableRoot)
             .environment(appModel.weatherRoot)
-            .onReceive(
-                NotificationCenter.default.publisher(
-                    for: MasterRPGTips.importCampaignRequested
-                )
-            ) { _ in
-                appModel.presentImportScreen()
-            }
             .task {
+                // `appModel` is the app-wide singleton, so the handler may hold it strongly.
+                MasterRPGTips.importCampaignHandler = {
+                    appModel.presentImportScreen()
+                }
                 await appModel.inAppController.prepare()
                 appModel.inAppController.startObservingTransactionUpdates()
             }

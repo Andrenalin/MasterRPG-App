@@ -15,7 +15,7 @@ public struct ExternalGameRootView: View {
             if let playerController = root.gameModel.playerController {
                 GameRootViewer(root: root, playerController: playerController, emptyTitle: "Waiting for Gamemaster", contentType: .externalPlayer)
                 #if os(iOS) || os(visionOS)
-                    .statusBar(hidden: true)
+                    .statusBarHidden()
                 #endif
             } else {
                 Color.blue

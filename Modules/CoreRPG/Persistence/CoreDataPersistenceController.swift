@@ -248,7 +248,7 @@ public struct CoreDataPersistenceController {
 
         model.cleanupTask?.cancel()
         model.cleanupTask = PersistentHistoryCleaner.scheduleRecurringCleanup { [weak model] in
-            model?.persistentHistoryCleaner?.clean()
+            await model?.persistentHistoryCleaner?.clean()
         }
     }
 }
