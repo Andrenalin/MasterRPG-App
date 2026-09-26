@@ -25,24 +25,22 @@ struct FoundryMediaNormalizationPlan: Equatable, Sendable {
     fileprivate let sourceFilenameExtension: String
 
     func normalize(_ data: Data) async throws -> Data {
-        let kind = kind
-        let sourceFilenameExtension = sourceFilenameExtension
-        let conversion = Task.detached(priority: .userInitiated) {
-            try Task.checkCancellation()
-            switch kind {
-            case .image:
-                return try FoundryMediaNormalizer.makeJPEG(from: data)
-            case .audio:
-                return try await FoundryMediaNormalizer.makeMPEG4Audio(
-                    from: data,
-                    sourceFilenameExtension: sourceFilenameExtension
-                )
-            }
-        }
-        return try await withTaskCancellationHandler {
-            try await conversion.value
-        } onCancel: {
-            conversion.cancel()
+        try await Self.convert(data, kind: kind, sourceFilenameExtension: sourceFilenameExtension)
+    }
+
+    /// Off the caller's executor and structured, so cancellation propagates without a
+    /// detached task and handler. See CODE_AUDIT_18 §4.4.
+    @concurrent
+    private static func convert(_ data: Data, kind: Kind, sourceFilenameExtension: String) async throws -> Data {
+        try Task.checkCancellation()
+        switch kind {
+        case .image:
+            return try FoundryMediaNormalizer.makeJPEG(from: data)
+        case .audio:
+            return try await FoundryMediaNormalizer.makeMPEG4Audio(
+                from: data,
+                sourceFilenameExtension: sourceFilenameExtension
+            )
         }
     }
 }

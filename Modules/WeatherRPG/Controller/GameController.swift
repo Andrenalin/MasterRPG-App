@@ -43,7 +43,8 @@ public protocol WeatherGameControllable: Sendable {
     /// immutable during a game, so only its linked Photo asset participates.
     func weatherVersion(for itemId: UUID) async -> Int
     func shareWeather(id: UUID) async -> NetworkCodableDataType
-    func createWeatherGameData(for itemId: UUID) async throws -> NetworkCodableDataType
+    /// `@concurrent`, like `createGameData`. See CODE_AUDIT_18 §7.1.
+    @concurrent func createWeatherGameData(for itemId: UUID) async throws -> NetworkCodableDataType
 
     @MainActor func isWeatherAvailable(itemId: UUID, version: Int) -> Bool
     @MainActor func markWeatherAvailable(itemId: UUID, version: Int)
@@ -103,7 +104,7 @@ extension GameController: WeatherGameControllable {
         )
     }
 
-    func createWeatherGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
+    @concurrent func createWeatherGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
         // Resolve the Photo version before exporting. The Photo controller can
         // lazily backfill a legacy file's content hash, and the subsequent
         // archive must carry that same stable metadata to the receiver.

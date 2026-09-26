@@ -162,20 +162,9 @@ public struct UniversalVTTReader: Sendable {
 
     public func read(from url: URL) async throws -> UniversalVTTDocument {
         let limits = limits
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = url.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
-            }
-            try Task.checkCancellation()
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await url.withSecurityScopedAccess { url in
             return try Self.readSynchronously(from: url, limits: limits)
-        }
-        return try await withTaskCancellationHandler {
-            let document = try await task.value
-            try Task.checkCancellation()
-            return document
-        } onCancel: {
-            task.cancel()
         }
     }
 
@@ -184,12 +173,8 @@ public struct UniversalVTTReader: Sendable {
         from url: URL
     ) async throws -> FoundryPackageResourceData {
         let limits = limits
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = url.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
-            }
-            try Task.checkCancellation()
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await url.withSecurityScopedAccess { url in
             let data = try Self.imageDataSynchronously(from: url, limits: limits)
             guard resource == (try Self.resource(for: data)),
                   resource.byteCount == data.count,
@@ -197,13 +182,6 @@ public struct UniversalVTTReader: Sendable {
                 throw FoundryImportError.resourceIntegrityFailure(resource.logicalPath)
             }
             return FoundryPackageResourceData(resource: resource, data: data)
-        }
-        return try await withTaskCancellationHandler {
-            let result = try await task.value
-            try Task.checkCancellation()
-            return result
-        } onCancel: {
-            task.cancel()
         }
     }
 }

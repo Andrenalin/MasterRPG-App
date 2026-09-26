@@ -164,7 +164,10 @@ public protocol GameControllable: Sendable {
 
     // network game data
     func networkVersion(for itemId: UUID) async -> Int
-    func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType
+    /// `@concurrent`: the export streams multi-MB file bytes; as a plain nonisolated async
+    /// requirement it ran on the (main-actor) caller's executor at ~15 call sites. It hops to
+    /// the main actor itself where it has to. See CODE_AUDIT_18 §7.1.
+    @concurrent func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType
     func share(id: UUID) async -> NetworkCodableDataType
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool) async throws
@@ -252,7 +255,7 @@ public extension GameControllable {
         await gameModel.focus(on:focusIds)
     }
 
-    func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
+    @concurrent func createGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
         // `exporting(ids:)` silently drops an id it cannot find instead of
         // failing, so an absent item would otherwise export as an empty-but-
         // valid payload. Callers such as MasterController's reveal handlers

@@ -95,14 +95,16 @@ extension FileManager {
         // every thread and starve unrelated async work (LAN receive loops, sleeps, decoding).
         // See CODE_AUDIT_15 §3.1.
         try await CoordinatedAccessLimiter.shared.acquire()
-        let task = Task.detached(priority: .utility) {
-            try operation()
-        }
+        // The blocking call runs on a dedicated `OperationQueue` thread, not a cooperative-pool
+        // thread: waiting on an iCloud download used to pin up to 4 pool threads (most of the
+        // pool on a 6-core device). The limiter above keeps this queue from building a backlog.
+        // The operation itself isn't cancellation-aware (neither was the former detached task).
+        // See CODE_AUDIT_18 §7.3.
         do {
-            let result = try await withTaskCancellationHandler {
-                try await task.value
-            } onCancel: {
-                task.cancel()
+            let result = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, any Error>) in
+                coordinationQueue.addOperation {
+                    continuation.resume(with: Result { try operation() })
+                }
             }
             await CoordinatedAccessLimiter.shared.release()
             return result
@@ -111,6 +113,14 @@ extension FileManager {
             throw error
         }
     }
+
+    private static let coordinationQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "FileManager.coordination"
+        queue.qualityOfService = .utility
+        queue.maxConcurrentOperationCount = CoordinatedAccessLimiter.maximumConcurrentAccesses
+        return queue
+    }()
 
     private static func execute<T>(_ block: (URL) throws -> T, onSecurityScopedResource url: URL) throws -> T {
         let securityScope = url.startSecurityScopedAccess()
@@ -209,7 +219,8 @@ extension FileManager {
 /// wait (cancellably) in FIFO order without occupying a thread. Always leaves at least one
 /// cooperative-pool thread free.
 private actor CoordinatedAccessLimiter {
-    static let shared = CoordinatedAccessLimiter(limit: max(1, min(4, ProcessInfo.processInfo.activeProcessorCount - 1)))
+    static let maximumConcurrentAccesses = max(1, min(4, ProcessInfo.processInfo.activeProcessorCount - 1))
+    static let shared = CoordinatedAccessLimiter(limit: maximumConcurrentAccesses)
 
     private let limit: Int
     private var running = 0

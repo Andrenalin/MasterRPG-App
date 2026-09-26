@@ -670,28 +670,21 @@ extension FileUrlDataController {
         return cachedFileURL
     }
 
+    /// Off the caller's executor and structured. See CODE_AUDIT_18 §4.4.
+    @concurrent
     private func writeRemoteCache(_ data: Data, to cacheURL: URL) async throws {
-        let task = Task.detached(priority: .utility) {
-            try FileManager.default.createDirectory(
-                at: cacheURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try data.write(to: cacheURL, options: .atomic)
-        }
-        try await withTaskCancellationHandler {
-            try await task.value
-        } onCancel: {
-            task.cancel()
-        }
+        try Task.checkCancellation()
+        try FileManager.default.createDirectory(
+            at: cacheURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try data.write(to: cacheURL, options: .atomic)
     }
 
+    /// Redirects to non-public hosts are refused and the size cap is enforced during the
+    /// transfer. See CODE_AUDIT_18 §6.5.
     private static func downloadRemoteFile(from url: URL) async throws -> URL {
-        let (temporaryURL, response) = try await URLSession.shared.download(from: url)
-        if let response = response as? HTTPURLResponse,
-           !(200...299).contains(response.statusCode) {
-            throw URLError(.badServerResponse)
-        }
-        return temporaryURL
+        try await GuardedRemoteDownload.download(from: url, maximumBytes: maximumRemoteFileBytes)
     }
 
     @MainActor

@@ -133,21 +133,21 @@ private extension ItemProviderImporter {
     /// Reads the image at `url` with a bounded memory footprint: a large file is downsampled
     /// from disk by ImageIO, only a small one is read into memory (and then passed through).
     nonisolated static func imageData(fromFile url: URL) async throws -> Data {
-        let task = Task.detached(priority: .userInitiated) { () throws -> Data in
-            try Task.checkCancellation()
+        // Structured (CODE_AUDIT_18 §4.4). A file above the raw-image cap is only ever
+        // downsampled from disk: if ImageIO can't read it, the import fails instead of
+        // falling back to reading up to 256 MB into the extension's ~120 MB memory budget.
+        // See CODE_AUDIT_18 §6.4.
+        try await runOffCallerExecutor { () throws -> Data in
             let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             guard size <= maximumSourceFileByteSize else { throw Error.failedToLoad }
-            if size > maximumRawImageByteSize,
-               let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-               let downsampledData = downsampled(source) {
+            if size > maximumRawImageByteSize {
+                guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let downsampledData = downsampled(source) else {
+                    throw Error.failedToLoad
+                }
                 return downsampledData
             }
             return downsampledIfNeeded(try Data(contentsOf: url))
-        }
-        return try await withTaskCancellationHandler {
-            try await task.value
-        } onCancel: {
-            task.cancel()
         }
     }
 
@@ -241,20 +241,20 @@ private extension ItemProviderImporter {
 
     nonisolated static func data(from url: URL) async throws -> Data {
         if url.isFileURL {
-            let task = Task.detached(priority: .userInitiated) { () throws -> Data in
-                try Task.checkCancellation()
+            return try await runOffCallerExecutor { () throws -> Data in
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
                 guard size <= maximumTextByteSize else { throw Error.failedToLoad }
                 return try Data(contentsOf: url)
             }
-            return try await withTaskCancellationHandler {
-                try await task.value
-            } onCancel: {
-                task.cancel()
-            }
         }
 
-        let (downloadedUrl, _) = try await URLSession.shared.download(from: url)
+        // Capped while downloading (the user shared this URL, so private hosts stay allowed).
+        // See CODE_AUDIT_18 §6.4.
+        let downloadedUrl = try await GuardedRemoteDownload.download(
+            from: url,
+            maximumBytes: maximumTextByteSize,
+            allowsPrivateHosts: true
+        )
         defer { try? FileManager.default.removeItem(at: downloadedUrl) }
         let size = try downloadedUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         guard size <= maximumTextByteSize else { throw Error.failedToLoad }

@@ -598,8 +598,8 @@ private extension ExternalImportSourceRegistry {
     }
 
     static func aliases(for url: URL) -> SourceAliases {
-        let hasSecurityScope = url.startAccessingSecurityScopedResource()
-        defer { if hasSecurityScope { url.stopAccessingSecurityScopedResource() } }
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
         // URL resource values may remain cached on a reused security-scoped URL even after the
         // file at that path has been removed and replaced. Resolve metadata through a fresh file
         // URL so a replacement cannot inherit the previous file's physical identity and silently

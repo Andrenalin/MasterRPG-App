@@ -106,6 +106,12 @@ struct UntrustedImportTests {
         ("https://nas/a.png", false),
         ("https://printer.local/a.png", false),
         ("https://[::1]/a.png", false),
+        // CODE_AUDIT_18 §6.5: shorthand IPv4 literals stay refused, hex-letter hostnames are real names.
+        ("https://127.1/a.png", false),
+        ("https://0x7f.0.0.1/a.png", false),
+        ("https://2130706433/a.png", false),
+        ("https://cafe.be/a.png", true),
+        ("https://dead.beef.com/a.png", true),
     ])
     func publicRemoteHosts(urlString: String, isPublic: Bool) throws {
         let url = try #require(URL(string: urlString))

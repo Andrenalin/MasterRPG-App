@@ -25,25 +25,14 @@ public struct FoundryVTTImportReader: Sendable {
         }
         await zipDataSourceCache.invalidate(sourceURL: url)
         let limits = limits
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = url.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
-            }
-            try Task.checkCancellation()
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        let (decodedPackage, decodedSource) = try await url.withSecurityScopedAccess { url in
             // Parse the source once and hand it to the decoder, instead of letting
             // `decode(from:)` reparse it internally — the parsed source is reused below to
             // avoid a second full read+parse of the same (up to 1 GiB) archive. See CODE_AUDIT_9 §7.3.
             let source = try FoundryVTTDataSource(url: url, limits: limits)
             let package = try FoundryVTTDecoder(limits: limits).decode(source: source)
             return (package: package, source: source)
-        }
-        let (decodedPackage, decodedSource) = try await withTaskCancellationHandler {
-            let decoded = try await task.value
-            try Task.checkCancellation()
-            return decoded
-        } onCancel: {
-            task.cancel()
         }
         var package = decodedPackage
 
@@ -87,11 +76,8 @@ public struct FoundryVTTImportReader: Sendable {
         let limits = limits
         let bridgeResourceCache = bridgeResourceCache
         let zipDataSourceCache = zipDataSourceCache
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = url.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope { url.stopAccessingSecurityScopedResource() }
-            }
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await url.withSecurityScopedAccess { url in
             let source = try await zipDataSourceCache.dataSource(for: url)
             if let expectedSHA256 = package.sourceSHA256,
                source.sourceSHA256 != expectedSHA256 {
@@ -161,13 +147,6 @@ public struct FoundryVTTImportReader: Sendable {
             }
             return result
         }
-        return try await withTaskCancellationHandler {
-            let result = try await task.value
-            try Task.checkCancellation()
-            return result
-        } onCancel: {
-            task.cancel()
-        }
     }
 
     public func readResource(
@@ -191,11 +170,8 @@ public struct FoundryVTTImportReader: Sendable {
         let limits = limits
         let bridgeResourceCache = bridgeResourceCache
         let zipDataSourceCache = zipDataSourceCache
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = sourceURL.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope { sourceURL.stopAccessingSecurityScopedResource() }
-            }
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await sourceURL.withSecurityScopedAccess { sourceURL in
             guard resource.location == .packaged,
                   let expectedSize = resource.byteCount,
                   let expectedSHA256 = resource.sha256 else {
@@ -228,13 +204,6 @@ public struct FoundryVTTImportReader: Sendable {
                 throw FoundryImportError.resourceIntegrityFailure(resource.logicalPath)
             }
             return FoundryPackageResourceData(resource: resource, data: data)
-        }
-        return try await withTaskCancellationHandler {
-            let result = try await task.value
-            try Task.checkCancellation()
-            return result
-        } onCancel: {
-            task.cancel()
         }
     }
 }

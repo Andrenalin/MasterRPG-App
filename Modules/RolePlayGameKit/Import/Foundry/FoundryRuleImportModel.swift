@@ -102,15 +102,9 @@ final class FoundryImportModel {
         loadState = .loading
         do {
             let detector = detector
-            let detectionTask = Task.detached(priority: .userInitiated) {
-                let hasAccess = requestedURL.startAccessingSecurityScopedResource()
-                defer { if hasAccess { requestedURL.stopAccessingSecurityScopedResource() } }
-                return try detector.detect(at: requestedURL)
-            }
-            let detected = try await withTaskCancellationHandler {
-                try await detectionTask.value
-            } onCancel: {
-                detectionTask.cancel()
+            // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+            let detected = try await requestedURL.withSecurityScopedAccess { url in
+                try detector.detect(at: url)
             }
             try Task.checkCancellation()
             guard selectionID == requestedSelectionID, selectedURL == requestedURL else { return }

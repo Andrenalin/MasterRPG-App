@@ -91,72 +91,23 @@ extension MasterController {
         }
     }
 
-    /// `createGameData`/`createMapGameData`/`createWeatherGameData` are
-    /// `nonisolated async` protocol requirements — under this project's
-    /// approachable-concurrency setting they otherwise run on the *caller's*
-    /// actor (see CODE_AUDIT_Game §3.1's mechanism), which for every call
-    /// site of this dispatcher is the main actor. `Task.detached` here gives
-    /// the export an explicit off-main starting point, matching the pattern
-    /// `ImportControllable.importUrl` already uses; the implementation still
-    /// hops back to the main actor itself for whatever pieces genuinely need
-    /// it. Each controllable is fetched on the main actor first and handed
-    /// into the detached task by value, rather than capturing `root` itself
-    /// (a plain, non-`Sendable` class). See CODE_AUDIT_Game §3.5.
+    /// The export requirements are `@concurrent`, so they run off the main actor by
+    /// themselves and inherit this task's cancellation; the former `detachedGameData`
+    /// wrapper is gone. See CODE_AUDIT_18 §7.1 and §4.4.
     private func createGameData(for idType: NetworkCodableDataType) async throws -> NetworkCodableDataType? {
         switch idType.type {
         case .map:
-            let controllable = root.mapRoot.mapGameControllable
-            return try await detachedGameData {
-                try await controllable.createMapGameData(for: idType.id)
-            }
+            return try await root.mapRoot.mapGameControllable.createMapGameData(for: idType.id)
         case .photo:
-            let controllable = root.photoRoot.gameControllable
-            return try await detachedGameData {
-                try await controllable.createGameData(for: idType.id)
-            }
+            return try await root.photoRoot.gameControllable.createGameData(for: idType.id)
         case .pdf:
-            let controllable = root.pdfRoot.gameControllable
-            return try await detachedGameData {
-                try await controllable.createGameData(for: idType.id)
-            }
+            return try await root.pdfRoot.gameControllable.createGameData(for: idType.id)
         case .space:
-            let controllable = root.spaceRoot.gameControllable
-            return try await detachedGameData {
-                try await controllable.createGameData(for: idType.id)
-            }
+            return try await root.spaceRoot.gameControllable.createGameData(for: idType.id)
         case .weather:
-            let controllable = root.weatherRoot.weatherGameControllable
-            return try await detachedGameData {
-                try await controllable.createWeatherGameData(for: idType.id)
-            }
+            return try await root.weatherRoot.weatherGameControllable.createWeatherGameData(for: idType.id)
         default:
             return nil
-        }
-    }
-
-    /// Runs `operation` on a detached, off-main task and propagates
-    /// cancellation of the *caller's* task into it, matching the pattern
-    /// used everywhere else in the codebase a detached task wraps an
-    /// awaited result (e.g. `FoundrySystemPackageReader.read`,
-    /// `FoundryVTTImportReader`, `ImportControllable.importUrl`). Without
-    /// this, cancelling a reveal/repair/recovery left the detached export
-    /// running to completion regardless. See CODE_AUDIT_9 §3.1.
-    ///
-    /// Not `private` because `MasterController+MapMessages.swift`'s
-    /// `stableMapRecoveryBundle(for:)` also uses it, from a different file.
-    func detachedGameData<Value: Sendable>(
-        priority: TaskPriority = .userInitiated,
-        _ operation: @Sendable @escaping () async throws -> Value
-    ) async throws -> Value {
-        let task = Task.detached(priority: priority) {
-            try await operation()
-        }
-        return try await withTaskCancellationHandler {
-            let value = try await task.value
-            try Task.checkCancellation()
-            return value
-        } onCancel: {
-            task.cancel()
         }
     }
 

@@ -498,13 +498,8 @@ private extension SpaceViewer {
             }
 
             // Keep security-scoped resource access active during entire loading process
-            let hasAccess = url.startAccessingSecurityScopedResource()
-
-            defer {
-                if hasAccess {
-                    url.stopAccessingSecurityScopedResource()
-                }
-            }
+            let securityScope = url.startSecurityScopedAccess()
+            defer { securityScope.stop() }
 
             // Load entity from USDZ file
             let loadedEntity = try await Entity(contentsOf: url, withName: "3DMaster")

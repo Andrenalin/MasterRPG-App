@@ -18,23 +18,10 @@ public struct FoundrySystemPackageReader: Sendable {
 
     public func read(from url: URL) async throws -> FoundryRulePackage {
         let limits = limits
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = url.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope {
-                    url.stopAccessingSecurityScopedResource()
-                }
-            }
-            try Task.checkCancellation()
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await url.withSecurityScopedAccess { url in
             let source = try FoundryVTTDataSource(url: url, limits: limits)
             return try Self.readSynchronously(source: source, limits: limits)
-        }
-        return try await withTaskCancellationHandler {
-            let package = try await task.value
-            try Task.checkCancellation()
-            return package
-        } onCancel: {
-            task.cancel()
         }
     }
 
@@ -44,17 +31,10 @@ public struct FoundrySystemPackageReader: Sendable {
     /// memory, so no file access — and no security-scoped resource — is needed here. See CODE_AUDIT_9 §7.3.
     func read(reusingArchive archive: FoundryZIPArchive, sourceSHA256: String) async throws -> FoundryRulePackage {
         let limits = limits
-        let task = Task.detached(priority: .userInitiated) {
-            try Task.checkCancellation()
+        // Structured; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await runOffCallerExecutor {
             let source = FoundryVTTDataSource.archive(archive, sourceSHA256: sourceSHA256)
             return try Self.readSynchronously(source: source, limits: limits)
-        }
-        return try await withTaskCancellationHandler {
-            let package = try await task.value
-            try Task.checkCancellation()
-            return package
-        } onCancel: {
-            task.cancel()
         }
     }
 
@@ -69,14 +49,8 @@ public struct FoundrySystemPackageReader: Sendable {
             throw FoundryImportError.duplicateResourceRequest
         }
         let limits = limits
-        let task = Task.detached(priority: .userInitiated) {
-            let hasSecurityScope = url.startAccessingSecurityScopedResource()
-            defer {
-                if hasSecurityScope {
-                    url.stopAccessingSecurityScopedResource()
-                }
-            }
-            try Task.checkCancellation()
+        // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
+        return try await url.withSecurityScopedAccess { url in
             let source = try FoundryVTTDataSource(url: url, limits: limits)
             if let expectedSourceSHA256 = package.sourceSHA256,
                source.sourceSHA256 != expectedSourceSHA256 {
@@ -115,13 +89,6 @@ public struct FoundrySystemPackageReader: Sendable {
                 result.append(FoundryPackageResourceData(resource: resource, data: data))
             }
             return result
-        }
-        return try await withTaskCancellationHandler {
-            let resources = try await task.value
-            try Task.checkCancellation()
-            return resources
-        } onCancel: {
-            task.cancel()
         }
     }
 

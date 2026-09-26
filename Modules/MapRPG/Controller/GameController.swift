@@ -87,7 +87,8 @@ public protocol MapGameStorable: Sendable {
     @MainActor func recordAuthoritativeMapGeneration(_ data: NetworkCodableDataType)
     @MainActor func refreshAuthoritativeMapContentVersion(for itemId: UUID)
     func shareMap(id: UUID) async -> NetworkCodableDataType
-    func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType
+    /// `@concurrent`, like `createGameData`. See CODE_AUDIT_18 §7.1.
+    @concurrent func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType
     func networkMapContentUpdate(for itemId: UUID) async -> NetworkCodableDataType
     @MainActor func applyMapContentUpdate(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
 
@@ -346,7 +347,7 @@ extension GameController: MapGameStorable {
         )
     }
 
-    func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
+    @concurrent func createMapGameData(for itemId: UUID) async throws -> NetworkCodableDataType {
         // Export suspends while dependent assets are collected. Validate the
         // generation on both sides of that suspension so the bytes and their
         // advertised fingerprints cannot describe two different map edits.

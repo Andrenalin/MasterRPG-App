@@ -225,12 +225,19 @@ public extension URL {
             default: return true
             }
         }
-        // Not a clean 4-octet dotted-quad. A host made only of digits, dots and hex/octal
-        // prefixes (e.g. "127.1", "0x7f.0.0.1", a bare decimal like "2130706433") is a
-        // shorthand IPv4 literal `getaddrinfo` still resolves, not a real DNS name —
-        // refuse it rather than assume "not 4 octets" means "safe hostname". A real
-        // hostname always contains at least one non-hex letter. See CODE_AUDIT_17 §6.10.
-        let looksLikeNumericIPLiteral = host.allSatisfy { $0.isHexDigit || $0 == "." || $0 == "x" }
+        // Not a clean 4-octet dotted-quad. A host whose every label is a numeric IPv4 part
+        // (decimal/octal digits, or `0x`-prefixed hex — e.g. "127.1", "0x7f.0.0.1", a bare
+        // decimal like "2130706433") is a shorthand IPv4 literal `getaddrinfo` still
+        // resolves, not a real DNS name — refuse it (CODE_AUDIT_17 §6.10). Labels made of
+        // hex *letters* without the `0x` prefix (e.g. "cafe.be") are real hostnames and are
+        // allowed. See CODE_AUDIT_18 §6.5.
+        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        let looksLikeNumericIPLiteral = !labels.isEmpty && labels.allSatisfy { label in
+            if label.hasPrefix("0x") {
+                return label.dropFirst(2).allSatisfy(\.isHexDigit)
+            }
+            return !label.isEmpty && label.allSatisfy { $0.isASCII && $0.isNumber }
+        }
         return !looksLikeNumericIPLiteral
     }
 

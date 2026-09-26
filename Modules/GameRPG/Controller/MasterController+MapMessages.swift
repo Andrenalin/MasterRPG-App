@@ -324,13 +324,9 @@ extension MasterController {
             try Task.checkCancellation()
             let full: NetworkCodableDataType
             do {
-                // Off-main starting point for the expensive capture — same
-                // reasoning as the `createGameData(for:)` dispatcher above,
-                // including cancellation propagation into the detached task.
-                // See CODE_AUDIT_Game §3.5, CODE_AUDIT_9 §3.1.
-                full = try await detachedGameData {
-                    try await mapControllable.createMapGameData(for: itemId)
-                }
+                // `createMapGameData` is `@concurrent`: off the main actor and
+                // cancellable with this task. See CODE_AUDIT_18 §7.1.
+                full = try await mapControllable.createMapGameData(for: itemId)
             } catch is CancellationError {
                 throw CancellationError()
             } catch {

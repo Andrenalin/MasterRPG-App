@@ -268,6 +268,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** `@concurrent` functions give the same result with structured cancellation and no escaping capture; the copies are error-prone (see §9.10 for the security-scope variant).
 - **Action:** Convert each site to an `@concurrent` function.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. New structured helpers in CoreRPG: `URL.withSecurityScopedAccess` (sync and async closure variants, `@concurrent`, scope-balanced) and `runOffCallerExecutor`. They replace the detached-task-plus-cancellation-handler wrappers in `FoundrySystemPackageReader` (3), `FoundryVTTImportReader` (3), `UniversalVTTReader` (2), `FoundryRuleImportModel`, and RPGShare's `imageData`/`data(from:)`. `FoundryMediaNormalizer`, `FileUrlDataController.writeRemoteCache` and PdfRPG's document load (§3.9) are now `@concurrent` functions, and `detachedGameData` is gone (§7.1). File coordination runs on a dedicated `OperationQueue` (§7.3).
 
 ### 4.5 NWConnection/NWListener bridged through DispatchQueues where iOS 26 structured Network APIs exist
 - **Location:** `Modules/GameRPG/Network/ConnectionController.swift:34-112,239-255`; `Modules/GameRPG/Network/ListenerManager.swift:142-210`
@@ -487,6 +488,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** Share extensions have a memory limit of roughly 120 MB, so an undecodable large file gets the extension killed. Remote URLs are still downloaded in full with no host check *(still open from CODE_AUDIT_17 §6.12)*.
 - **Action:** Throw instead of falling back above the raw-image cap, and use a capped, delegate-based download.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. A file above the raw-image cap is only downsampled from disk; if ImageIO can't read it the import fails instead of falling back to `Data(contentsOf:)` of up to 256 MB. Remote URLs go through `GuardedRemoteDownload` with the text cap enforced during the transfer (private hosts stay allowed, since the user shared the URL).
 
 ### 6.5 Remote file download validation gaps *(still open from CODE_AUDIT_17 §6.10)*, plus a new false positive
 - **Location:** `Modules/CoreRPG/Files/FileUrlDataController.swift:609-695`; `Modules/CoreRPG/Files/FileUrl.swift:228-234`
@@ -494,6 +496,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** A public URL can still redirect to a private host or stream an unbounded body, and some legitimate hosts are now refused.
 - **Action:** Validate each redirect in a `URLSessionTaskDelegate`, cap the bytes received, and restrict the hex-host rule to labels that actually parse as numeric IPv4.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. New `GuardedRemoteDownload` (used by `FileUrlDataController.downloadRemoteFile`): every redirect target must pass `isPublicRemoteFileURL`, and the 256 MB cap cancels the transfer as soon as it is exceeded or announced. (The redirect callback uses the completion-handler form because the async `@objc` form crashes the Swift 6.4 compiler.) The numeric-host rule now treats a label as numeric only if it is decimal digits or `0x`-prefixed hex, so hex-letter hostnames like `cafe.be` are allowed again while `127.1`, `0x7f.0.0.1` and `2130706433` stay refused (new cases in `UntrustedImportTests`). Checking what a hostname resolves to (DNS rebinding) is still not done: it needs a resolver step before connecting.
 
 ---
 
@@ -505,6 +508,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** Main-thread hitches proportional to file size during reveals and repairs, and two inconsistent patterns for the same call.
 - **Action:** Mark `createGameData`/`createMapGameData`/`createWeatherGameData` `@concurrent` and delete `detachedGameData`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `createGameData`, `createMapGameData` and `createWeatherGameData` are `@concurrent` requirements and implementations, so every call site (audio/PDF/space/dice paths included) exports off the main actor; the `detachedGameData` wrapper was removed and its callers await directly (cancellation propagates).
 
 ### 7.2 `AVAudioSession.setCategory` runs synchronously on the main actor
 - **Location:** `Modules/AudioRPG/Audio/AudioPlayerSession.swift:45-51,57-78`
@@ -520,6 +524,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** Up to 4 cooperative threads (most of the pool on a 6-core device) can sit blocked waiting on iCloud downloads.
 - **Action:** Use `NSFileCoordinator.coordinate(with:queue:byAccessor:)` bridged by a continuation, so the wait happens on an `OperationQueue`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `performCoordinatedFileAccess` runs the blocking `NSFileCoordinator` call on a dedicated `OperationQueue` (width = the limiter's limit) bridged by a continuation, so waiting on an iCloud download no longer pins cooperative-pool threads. The existing limiter still bounds concurrency and provides cancellation while waiting.
 
 ### 7.4 Bookmark JSON load/save on the caller's actor, and an unused `priority` parameter
 - **Location:** `Modules/CoreRPG/Files/FileUrlDataController.swift:55-59`; `Modules/CoreRPG/Persistence/FilePersistenceController.swift:16-29,34-60`; `Modules/CoreRPG/Files/FileDataController.swift:46-72`
@@ -658,6 +663,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Unbalanced start/stop scope calls are a known bug class here, and each copy must get cancellation right on its own.
 - **Action:** Add `SecurityScopedAccess` as an `@concurrent` helper and move all 12 sites onto it (combine with §4.4).
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The detached/scope wrappers are replaced by `URL.withSecurityScopedAccess` (see §4.4), and `ExternalImportSourceRegistry.aliases` and `SpaceViewer`'s load use `startSecurityScopedAccess()`. Two sites stay hand-written on purpose: `AppModel.presentImport` keeps a long-lived scope across the import flow, and `FileUrlDataController.hasAccess` is a start/stop probe.
 
 ### 9.11 Master and Player Photo/PDF/Space message handlers are near-copies *(still open from CODE_AUDIT_17 §9.10)*
 - **Location:** `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift`, `+PdfMessages.swift` (169 LOC each, 36 lines differ), `+SpaceMessages.swift`; `Modules/GameRPG/Controller/PlayerController+Photo.swift`, `+Pdf.swift`, `+Space.swift`
