@@ -202,6 +202,86 @@ extension MasterController {
         return nil
     }
 
+    /// Cool-down between full map-recovery bundles served to the same (player, map)
+    /// pair. See CODE_AUDIT_17 §6.7.
+    private static let mapRecoveryCooldown: Duration = .seconds(10)
+    /// Per-player budget across all maps: at most `mapRecoveryBudget` full bundles per
+    /// `mapRecoveryWindow`. See CODE_AUDIT_18 §6.1.
+    private static let mapRecoveryWindow: Duration = .seconds(30)
+    private static let mapRecoveryBudget = 3
+    /// Deferred repairs a single player may have waiting; further throttled requests are
+    /// answered with `.failed` instead of queuing more exports.
+    private static let maximumDeferredMapRecoveriesPerPlayer = 2
+
+    /// How long `playerId` must wait before `itemId` may be served again, or `nil` if it
+    /// may be served now.
+    private func mapRecoveryDelay(for key: MapRecoveryThrottleKey, now: ContinuousClock.Instant) -> Duration? {
+        var delay: Duration = .zero
+        if let last = gameModel.lastMapRecoveryServed[key] {
+            delay = max(delay, Self.mapRecoveryCooldown - (now - last))
+        }
+        let recent = (gameModel.mapRecoveryHistory[key.playerId] ?? []).filter { now - $0 < Self.mapRecoveryWindow }
+        if recent.count >= Self.mapRecoveryBudget, let oldest = recent.first {
+            delay = max(delay, Self.mapRecoveryWindow - (now - oldest))
+        }
+        return delay > .zero ? delay : nil
+    }
+
+    private func recordMapRecoveryServed(_ key: MapRecoveryThrottleKey) {
+        let now = ContinuousClock.now
+        gameModel.lastMapRecoveryServed[key] = now
+        var recent = (gameModel.mapRecoveryHistory[key.playerId] ?? []).filter { now - $0 < Self.mapRecoveryWindow }
+        recent.append(now)
+        gameModel.mapRecoveryHistory[key.playerId] = recent
+    }
+
+    /// Serves a throttled repair once its window opens instead of dropping it: the player
+    /// tracks one pending repair per map and would otherwise wait forever. Coalesced per
+    /// (player, map); the re-run goes through `handleMap` so it re-checks the throttle and
+    /// the current map generation. See CODE_AUDIT_18 §6.1.
+    private func deferMapRecovery(
+        _ model: GameNetworkModel,
+        origin: GameMessageOrigin?,
+        key: MapRecoveryThrottleKey,
+        after delay: Duration
+    ) async {
+        guard gameModel.deferredMapRecoveries[key] == nil else { return }
+        let pendingForPlayer = gameModel.deferredMapRecoveries.keys.filter { $0.playerId == key.playerId }.count
+        guard pendingForPlayer < Self.maximumDeferredMapRecoveriesPerPlayer else {
+            await sendMapRecoveryFailed(for: model, origin: origin)
+            return
+        }
+        gameModel.deferredMapRecoveries[key] = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard let self, !Task.isCancelled else { return }
+            self.gameModel.deferredMapRecoveries[key] = nil
+            do {
+                if let result = try await self.handleMap(model, origin: origin) {
+                    await self.send(
+                        type: model.type,
+                        subtype: model.subType,
+                        updated: result,
+                        origin: origin,
+                        playerId: model.sender.id
+                    )
+                }
+            } catch {
+                Logger.networking.error("MasterController: Deferred map recovery failed for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    private func sendMapRecoveryFailed(for model: GameNetworkModel, origin: GameMessageOrigin?) async {
+        await send(
+            type: model.type,
+            subtype: .failed,
+            updated: NetworkCodableDataType(id: model.data.id, type: .map, version: model.data.version, data: nil),
+            origin: origin,
+            playerId: model.sender.id,
+            authoritativeMaster: true
+        )
+    }
+
     /// Wraps `stableMapRecoveryBundle`, converting an exhausted-retries
     /// failure into an explicit `.failed` response sent to the requester
     /// instead of letting it propagate to the generic catch-all in
@@ -210,35 +290,27 @@ extension MasterController {
     /// capture-window) export failure, e.g. an undownloaded iCloud
     /// background image. `CancellationError` still propagates so callers'
     /// own cancellation handling is unaffected. See CODE_AUDIT_Network §5.11.
-    /// Cool-down between full map-recovery bundles served to the same (player, map)
-    /// pair. See CODE_AUDIT_17 §6.7.
-    private static let mapRecoveryCooldown: Duration = .seconds(10)
-
     private func recoverMapBundleOrFail(
         for model: GameNetworkModel,
         origin: GameMessageOrigin?
     ) async throws -> MapRecoveryBundle? {
         let throttleKey = MapRecoveryThrottleKey(playerId: model.sender.id, itemId: model.data.id)
-        if let last = gameModel.lastMapRecoveryServed[throttleKey],
-           ContinuousClock.now - last < Self.mapRecoveryCooldown {
-            Logger.networking.debug("MasterController: Throttling repeated map recovery request from \(model.sender.id, privacy: .public) for \(model.data.id, privacy: .public)")
+        if let delay = mapRecoveryDelay(for: throttleKey, now: .now) {
+            Logger.networking.debug("MasterController: Deferring throttled map recovery request from \(model.sender.id, privacy: .public) for \(model.data.id, privacy: .public)")
+            await deferMapRecovery(model, origin: origin, key: throttleKey, after: delay)
             return nil
         }
-        gameModel.lastMapRecoveryServed[throttleKey] = ContinuousClock.now
         do {
-            return try await stableMapRecoveryBundle(for: model.data.id)
+            let bundle = try await stableMapRecoveryBundle(for: model.data.id)
+            // Counted only once an export actually succeeded, so a failed export doesn't
+            // throttle the player's retry. See CODE_AUDIT_18 §6.1.
+            recordMapRecoveryServed(throttleKey)
+            return bundle
         } catch is CancellationError {
             throw CancellationError()
         } catch {
             Logger.networking.error("MasterController: Map recovery failed for \(model.data.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            await send(
-                type: model.type,
-                subtype: .failed,
-                updated: NetworkCodableDataType(id: model.data.id, type: .map, version: model.data.version, data: nil),
-                origin: origin,
-                playerId: model.sender.id,
-                authoritativeMaster: true
-            )
+            await sendMapRecoveryFailed(for: model, origin: origin)
             return nil
         }
     }

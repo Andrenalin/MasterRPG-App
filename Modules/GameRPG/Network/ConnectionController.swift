@@ -2,6 +2,7 @@
 
 import Foundation
 import Network
+import Security
 import os.log
 import CoreRPG
 
@@ -221,7 +222,9 @@ private extension ConnectionController {
             guard case .tls = error else { break }
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Handshake rejected \(error.localizedDescription, privacy: .public)")
             teardown()
-            await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: true)
+            // Classified like the `.failed` path: a transient TLS close/abort on flaky
+            // Wi-Fi must not count toward the wrong-code lockout. See CODE_AUDIT_18 §5.18.
+            await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
 
         default:
             break
@@ -323,9 +326,20 @@ extension ConnectionController {
     /// (`.posix`, `.dns`, `.quic`) is a transport-layer failure (Wi-Fi drop,
     /// timeout, unreachable/firewalled peer) that says nothing about whether
     /// the passcode was even checked yet. See CODE_AUDIT_Reconnect §6.1.
+    /// TLS statuses that end a handshake for transport reasons (the connection closed,
+    /// aborted or timed out), not because the join code was wrong. See CODE_AUDIT_18 §5.18.
+    nonisolated static let transientTLSStatuses: Set<OSStatus> = [
+        errSSLClosedGraceful,
+        errSSLClosedAbort,
+        errSSLClosedNoNotify,
+        errSSLConnectionRefused,
+        errSSLWouldBlock,
+        errSSLNetworkTimeout
+    ]
+
     nonisolated static func isAuthenticationFailure(_ error: NWError) -> Bool {
-        if case .tls = error { return true }
-        return false
+        guard case let .tls(status) = error else { return false }
+        return !transientTLSStatuses.contains(status)
     }
 
     func receivedMessage(content: Data?, message: NWProtocolFramer.Message) async {

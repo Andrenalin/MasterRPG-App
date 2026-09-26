@@ -174,8 +174,18 @@ extension PlayerNetworkController: PlayerNetworkControllable {
             await self.stop()
         }
 
-        return await withCheckedContinuation { continuation in
-            pendingJoinContinuation = continuation
+        // A cancelled caller (dismissed join sheet) abandons the attempt instead of staying
+        // parked until the join timeout. `stop()` resolves the continuation.
+        // See CODE_AUDIT_18 §3.12.
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                pendingJoinContinuation = continuation
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in
+                guard let self, self.joinAttemptToken == token else { return }
+                await self.stop()
+            }
         }
     }
 

@@ -16,6 +16,16 @@ struct GameSenderModel: Equatable, Codable, Sendable {
 
     var isMaster: Bool { role == .master }
 
+    /// Longest a peer-controlled sender name is allowed to be. Clamped once, when a message
+    /// is decoded, so every consumer (roster, sharing controls, statistics, participant
+    /// names, the pipeline's queue) sees the bounded value. See CODE_AUDIT_17 §6.9 and
+    /// CODE_AUDIT_18 §6.3.
+    static let maxNameLength = 64
+
+    static func clampedName(_ name: String) -> String {
+        name.count > maxNameLength ? String(name.prefix(maxNameLength)) : name
+    }
+
     var playerModel: PlayerGameModel {
         PlayerGameModel(
             id: id,
@@ -40,7 +50,7 @@ extension GameSenderModel {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         role = try container.decode(GameType.self, forKey: .role)
-        name = try container.decode(String.self, forKey: .name)
+        name = Self.clampedName(try container.decode(String.self, forKey: .name))
         characterId = try container.decodeIfPresent(UUID.self, forKey: .characterId)
         supporterTier = try container.decodeIfPresent(
             SupporterTier.self,
@@ -363,7 +373,7 @@ struct GameNetworkModel: Codable, Sendable {
             let sender = GameSenderModel(
                 id: config.id,
                 role: .master,
-                name: config.master.name,
+                name: GameSenderModel.clampedName(config.master.name),
                 characterId: nil,
                 supporterTier: config.master.supporterTier
             )
@@ -391,7 +401,7 @@ struct GameNetworkModel: Codable, Sendable {
         let sender = GameSenderModel(
             id: config.id,
             role: role,
-            name: name,
+            name: GameSenderModel.clampedName(name),
             characterId: player?.characterId,
             supporterTier: player?.supporterTier ?? .none
         )

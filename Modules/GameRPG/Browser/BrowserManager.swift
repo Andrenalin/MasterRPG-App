@@ -55,6 +55,12 @@ final class BrowserManager {
         connectionState == .waitingForConnection || connectionState == .connecting
     }
 
+    /// Started and not explicitly stopped: the supervisor recreates the browser after a pause
+    /// even while `isBrowsing` is briefly false. See CODE_AUDIT_18 §5.14.
+    var isSupervising: Bool {
+        supervisorTask != nil
+    }
+
     var connectionMode: BrowserConnectionMode { serviceType.connectionMode }
 
     func start() {

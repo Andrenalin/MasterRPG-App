@@ -13,6 +13,7 @@ extension NWTXTRecord {
 
 fileprivate enum ListenerEvent: Sendable {
     case ready
+    case waiting(NWError)
     case failed(NWError)
     case cancelled
     case newConnection(NWConnection)
@@ -25,6 +26,13 @@ protocol ListenerManagerDelegate: AnyObject, Sendable {
     func listenerReady() async
     func listenerCancelled() async
     func listenerNewConnection(_ connection: NWConnection) async
+    /// The listener is up but can't accept yet (local-network permission prompt, no
+    /// interface). See CODE_AUDIT_18 §5.15.
+    func listenerWaiting(_ error: NWError) async
+}
+
+extension ListenerManagerDelegate {
+    func listenerWaiting(_ error: NWError) async {}
 }
 
 /// Testable surface for ListenerManager — lets tests inject a mock.
@@ -126,6 +134,9 @@ final class ListenerManager: ListenerManaging {
         case .ready:
             state = .waitingForConnection
             await delegate?.listenerReady()
+        case .waiting(let error):
+            Logger.listenerController.debug("ListenerManager: Waiting \(error.localizedDescription, privacy: .public)")
+            await delegate?.listenerWaiting(error)
         case .failed(let error):
             Logger.listenerController.error("ListenerManager: Failed \(error.localizedDescription, privacy: .public)")
             state = .stopped
@@ -181,13 +192,19 @@ actor ListenerServerController {
             continuation.finish()
         }
 
-        listener.stateUpdateHandler = { [weak self] state in
-            guard let self else { return }
-            Task { await self.handleState(state) }
+        // Yield straight into the ordered event stream from the listener's queue: one `Task`
+        // per callback gave no ordering guarantee (`.ready` could be handled after
+        // `.failed`/`.cancelled`, a connection before `.ready`), and since CODE_AUDIT_17 §5.22
+        // that order drives `listenerStatus`. Same pattern as `ConnectionController`.
+        // See CODE_AUDIT_18 §3.16.
+        let continuation = self.continuation
+        let listenerName = name
+        let serviceName = serviceType.serviceName
+        listener.stateUpdateHandler = { state in
+            Self.yield(state, to: continuation, listenerName: listenerName, serviceName: serviceName)
         }
-        listener.newConnectionHandler = { [weak self] connection in
-            guard let self else { return }
-            Task { await self.handleNewConnection(connection) }
+        listener.newConnectionHandler = { connection in
+            continuation.yield(.newConnection(connection))
         }
 
         listener.start(queue: queue)
@@ -226,13 +243,18 @@ actor ListenerServerController {
         return result
     }
 
-    private func handleState(_ state: NWListener.State) {
-        let listenerName = name
-        let serviceName = serviceType.serviceName
+    private static func yield(
+        _ state: NWListener.State,
+        to continuation: AsyncStream<ListenerEvent>.Continuation,
+        listenerName: String,
+        serviceName: String
+    ) {
         switch state {
         case .ready:
             Logger.listenerController.debug("ListenerManager: \(listenerName, privacy: .private) ready on \(serviceName, privacy: .private)")
             continuation.yield(.ready)
+        case .waiting(let error):
+            continuation.yield(.waiting(error))
         case .failed(let error):
             Logger.listenerController.error("ListenerManager: \(listenerName, privacy: .private) failed \(error.localizedDescription, privacy: .public)")
             continuation.yield(.failed(error))
@@ -243,10 +265,6 @@ actor ListenerServerController {
         default:
             break
         }
-    }
-
-    private func handleNewConnection(_ connection: NWConnection) {
-        continuation.yield(.newConnection(connection))
     }
 }
 

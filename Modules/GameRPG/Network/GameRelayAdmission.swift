@@ -35,6 +35,12 @@ actor GameRelayAdmission {
     private var order: [GameRelayAdmissionKey] = []
     private var keys: Set<GameRelayAdmissionKey> = []
     private var admittedAt: [GameRelayAdmissionKey: ContinuousClock.Instant] = [:]
+    /// Bytes relayed per sender inside `byteBudgetWindow`, oldest first. The GM fans each
+    /// relayed frame out to every other player, so one sender's traffic is amplified N−1
+    /// times; the budget bounds that. See CODE_AUDIT_18 §6.2.
+    private var relayedBytes: [UUID: [(at: ContinuousClock.Instant, count: Int)]] = [:]
+    static let byteBudgetWindow: Duration = .seconds(60)
+    static let byteBudgetPerSender = 512 * 1_024 * 1_024
 
     init(limit: Int = 512, retentionWindow: Duration = .seconds(120), clock: ContinuousClock = ContinuousClock()) {
         self.limit = limit
@@ -80,10 +86,26 @@ actor GameRelayAdmission {
         }
     }
 
+    /// Records `count` relayed bytes for `sender`; `false` once the sender exceeded its
+    /// budget for the current window (the frame is then not relayed).
+    func admitBytes(_ count: Int, from sender: UUID) -> Bool {
+        let now = clock.now
+        var history = (relayedBytes[sender] ?? []).filter { now - $0.at < Self.byteBudgetWindow }
+        let used = history.reduce(0) { $0 + $1.count }
+        guard used + count <= Self.byteBudgetPerSender else {
+            relayedBytes[sender] = history
+            return false
+        }
+        history.append((now, count))
+        relayedBytes[sender] = history
+        return true
+    }
+
     func reset() {
         order.removeAll()
         keys.removeAll()
         admittedAt.removeAll()
+        relayedBytes.removeAll()
     }
 }
 

@@ -54,6 +54,13 @@ struct KeychainJoinCodeStorage: JoinCodeStorage {
         case .found(let value):
             return .found(value)
         case .unavailable:
+            // `set` falls back to the legacy keychain when the data-protection keychain is
+            // unavailable to the build (e.g. `errSecMissingEntitlement`); reading must do the
+            // same, or codes written there could never be read back. A real "locked" state
+            // makes the legacy read unavailable too. See CODE_AUDIT_18 §5.17.
+            if case .found(let value) = read(forKey: key, dataProtection: false) {
+                return .found(value)
+            }
             return .unavailable
         case .notFound:
             let legacy = read(forKey: key, dataProtection: false)

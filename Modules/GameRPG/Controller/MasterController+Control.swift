@@ -43,6 +43,8 @@ extension MasterController {
         }
         audioPlayRetryTasks.removeAll()
         gameModel.lastMapRecoveryServed.removeAll()
+        gameModel.mapRecoveryHistory.removeAll()
+        gameModel.cancelDeferredMapRecoveries()
         gameModel.audioPlayRetryAttempts.removeAll()
         gameModel.pendingAudioPlays.removeAll()
         gameModel.audioTransferPlayers.removeAll()

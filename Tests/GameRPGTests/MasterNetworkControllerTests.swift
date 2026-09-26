@@ -405,9 +405,12 @@ struct MasterNetworkControllerTests {
         #expect(env.controller.networkModel.listenerStatus == .restarting)
         #expect(env.listenerSpy.calledStopListening == 1)
 
-        // The listener comes back after the first restart pause
+        // The listener comes back after the first restart pause; it reads as restarting
+        // until the new listener reports `.ready` (CODE_AUDIT_17 §5.22, CODE_AUDIT_18 §5.15).
         try await Task.sleep(for: .seconds(1.5))
         #expect(env.listenerSpy.calledStartListening == 2)
+        #expect(env.controller.networkModel.listenerStatus == .restarting)
+        await env.controller.listenerReady()
         #expect(env.controller.networkModel.listenerStatus == .running)
         env.controller.stopStreaming()
     }
@@ -425,6 +428,22 @@ struct MasterNetworkControllerTests {
         // Assert
         #expect(!env.controller.networkModel.isStreaming)
         #expect(env.controller.networkModel.listenerStatus == .stopped)
+    }
+
+    @Test("A waiting listener shows as waiting, not stopped")
+    func waitingListenerStatus() async {
+        // Arrange
+        let env = await MasterNetworkControllerTestEnvironment.create()
+        env.controller.startStreaming(passcode: "1234")
+
+        // Act
+        await env.controller.listenerWaiting(.posix(.ENETDOWN))
+
+        // Assert (CODE_AUDIT_18 §5.15)
+        #expect(env.controller.networkModel.listenerStatus == .waiting)
+        await env.controller.listenerReady()
+        #expect(env.controller.networkModel.listenerStatus == .running)
+        env.controller.stopStreaming()
     }
 
     @Test("Only this session's reconnect services are dialed")

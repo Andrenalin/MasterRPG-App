@@ -156,6 +156,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Action:** Wrap each in `withTaskCancellationHandler` that removes and resumes the stored continuation.
 - **Severity:** Low
 - **Status (2026-09-26):** PARTLY FIXED. `DatabaseReadiness.wait()` now resumes on task cancellation (`withTaskCancellationHandler`). `PlayerNetworkController.toggleConnection` is handled with the network items (see its own status).
+- **Status (2026-09-26):** FIXED. `DatabaseReadiness.wait()` resumes on cancellation, and `PlayerNetworkController.toggleConnection` wraps its continuation in `withTaskCancellationHandler`, which stops the attempt (resolving the continuation) when the caller is cancelled.
 
 ### 3.13 `CoreDataInitModel.stop()` leaves the Spotlight indexer running on the replaced store **[INCOMPLETE FIX of CODE_AUDIT_17 §3.9]**
 - **Location:** `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:106-111` (indexer started at `:174,235`; `CloudKitCoreDataPersistenceController.swift:84,172`)
@@ -177,6 +178,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A pin or map-state update can arrive before the map it refers to. A cancelled send (for example a `scheduleNetworkAction` cancelled by `stopGame`) can disconnect players.
 - **Action:** Skip the send when the encoded payload is nil, and serialize outbound frames per connection (an ordered send queue owned by `ConnectionController` that also does the encoding).
 - **Severity:** Low (the empty-frame → EOF path is plausible from reading; confirm with a LAN test)
+- **Status (2026-09-26):** FIXED. `MasterNetworkController` sends through one ordered chain (`sendOrdered`): each send encodes off the main actor and hands its frame to the connections only after the previous send did. A nil encoding is logged and skipped instead of going out as an empty frame.
 
 ### 3.16 NWListener callbacks are still unordered per-event Tasks *(still open from CODE_AUDIT_17 §3.11)*
 - **Location:** `Modules/GameRPG/Network/ListenerManager.swift:184-191`
@@ -184,6 +186,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** `.ready` can be processed after `.failed`/`.cancelled`, and since 031194aa that ordering drives `listenerStatus`.
 - **Action:** Yield raw events into an `AsyncStream` continuation directly from the handlers, as `ConnectionController.swift:100-110` does.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The listener's state and new-connection handlers yield directly into the ordered `AsyncStream` from its queue (as `ConnectionController` does), with no Task per event.
 
 ### 3.17 Fixed `Task.sleep` delays still used as readiness synchronisation *(still open from CODE_AUDIT_17 §3.7)*
 - **Location:** `Modules/RolePlayGameKit/Model/AppModel.swift:535-556,602-604,645-648`; `Modules/RolePlayGameKit/Route/WindowRouter.swift:187-190`; `Modules/CoreRPG/Controllable/FolderListControllable.swift` (5 sleeps); `Modules/SpaceRPG/Space/SpaceViewer.swift:630`
@@ -377,6 +380,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** If a `games` change lands during a supervised restart, the GM stops auto-redialing returning players for the rest of the session.
 - **Action:** Keep `browserManager` while it is only restarting, and recreate it in `resumeAfterActivation` if it is nil.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `BrowserManager.isSupervising`: `refresh(games:)` keeps a browser that is only in its supervised restart pause, and `resumeAfterActivation` recreates a missing browser while hosting.
 
 ### 5.15 GM hosting status reads "stopped" while the listener is starting or waiting **[REGRESSION of CODE_AUDIT_17 §5.22]**
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:97-124,295-299`; `Modules/GameRPG/Network/ListenerManager.swift:229-245`
@@ -384,6 +388,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** While hosting is active, the UI says "stopped" instead of "starting" or "waiting for permission", and waiting never becomes `.restarting`/`.failed`.
 - **Action:** Add a `.starting` status and map `.waiting(error)` to a visible degraded status.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. New `MasterListenerStatus.starting` (set by `startListener` unless a restart is already showing `.restarting`) and `.waiting` (from a new `listenerWaiting` delegate callback that `ListenerManager` forwards for `.waiting`). `hostingStatus` shows both as reconnecting. `MasterNetworkControllerTests` covers it; the restart test's stale expectation (a mock never reports `.ready`) was updated to simulate the ready event.
 
 ### 5.16 A provisional join code can replace the displayed code after hosting has started
 - **Location:** `Modules/GameRPG/Network/GameJoinCodeModel.swift:155-179,187-200`; `Modules/GameRPG/Root/GameRoot.swift:143-147`
@@ -391,6 +396,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** The code on screen no longer matches the listener, so every join fails as "bad code".
 - **Action:** Refuse to host while the key is unresolved, or don't apply a resolved code while a listener is running on the provisional one.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `GameJoinCodeModel.refreshFromStorage(keepingMasterCode:)`: `GameRoot.applicationBecameActive` passes `true` while hosting, so a stored master code resolved later doesn't replace the (provisional) code the listener is running with; it is applied once hosting ends. (`ownJoinCode` already shows the running passcode.)
 
 ### 5.17 On macOS, `.unavailable` from the data-protection keychain skips the legacy fallback on read
 - **Location:** `Modules/GameRPG/Network/JoinCodeStorage.swift:51-68`
@@ -398,6 +404,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** In builds without data-protection keychain access, codes are written but never read back, so they regenerate on every launch, contradicting the doc comment at `:43-47`.
 - **Action:** Also read the legacy keychain when the data-protection read fails with a missing-entitlement status.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. On macOS a data-protection read that returns `.unavailable` now falls back to the legacy keychain before reporting unavailable, matching `set`.
 
 ### 5.18 Every `.waiting(.tls)` counts as a wrong join code
 - **Location:** `Modules/GameRPG/Network/ConnectionController.swift:215-224`
@@ -405,6 +412,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Transient handshake errors on flaky Wi-Fi count toward the 3-strike lockout, so a legitimate reconnecting player can lock themselves out.
 - **Action:** Route the TLS status through the same classifier (bad MAC / unknown PSK identity only).
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The `.waiting(.tls)` path uses `isAuthenticationFailure(_:)`, which now treats closed/abort/refused/timeout TLS statuses as transient, so they don't count toward the lockout.
 
 ### 5.19 3D hex toggle has no GM guard and sends no structural update **[INCOMPLETE FIX of CODE_AUDIT_17 §5.24]**
 - **Location:** `Modules/GameRPG/Table3D/GameTableModel+ToolBar.swift:66-76`
@@ -441,6 +449,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** A malicious player cycles through map ids (any library id is accepted, see CODE_AUDIT_17 §6.3) and still gets unlimited full exports. An honest player whose repair lands inside the 10 s window gets no answer, even when the earlier export failed.
 - **Action:** Add a per-player budget across all maps, record the timestamp only after a successful export, and reply `.failed` (or a retry-after) when throttling.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Besides the (player, map) cool-down there is now a per-player budget across all maps (3 full bundles per 30 s, `mapRecoveryHistory`), so cycling map ids no longer bypasses it. A throttled request is no longer dropped: it is deferred until its window opens (coalesced per player and map, at most 2 per player; beyond that the player gets `.failed`) and then re-runs `handleMap`, which re-checks the throttle and the current generation. The timestamp is recorded only after a successful export. Deferred tasks are cancelled when the player leaves and when the game stops.
 
 ### 6.2 The LAN relay now forwards raw player frames, including junk padding **[REGRESSION of CODE_AUDIT_17 §7.2]**
 - **Location:** `Modules/GameRPG/Network/GameNetworkController+MasterDelegate.swift:42-51`; `Modules/GameRPG/Model/GameMessagePipeline.swift:305-312`
@@ -448,6 +457,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** A player can pad a tiny group event (dice, pin) with up to about 100 MB of ignored JSON, and the GM amplifies it to N−1 players; `GameRelayAdmission` has no byte budget. The LAN and SharePlay copies of the same message also now differ.
 - **Action:** Forward raw bytes only when the frame is close to the decoded payload size (or re-encode small control messages), and add a per-sender byte budget to relay admission.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Raw bytes are relayed only when the frame size matches the decoded payload (base64 4/3 plus a 64 KB envelope, `relayForwardsReceivedBytes`); otherwise the decoded model is re-encoded, which drops padding. `GameRelayAdmission.admitBytes` enforces a per-sender budget of 512 MB per 60 s on relayed bytes.
 
 ### 6.3 The player-name clamp covers only the roster **[INCOMPLETE FIX of CODE_AUDIT_17 §6.9]**
 - **Location:** `Modules/GameRPG/Root/GameRootModel.swift:74-90`; `Modules/GameRPG/Controller/MasterController+NetworkStoreDelegate.swift:254`; `Modules/GameRPG/Statistics/Controller/GameStatisticsController.swift:32,60-65`; `Modules/GameRPG/Model/GameMessagePipeline.swift:104-106,162-168`
@@ -455,6 +465,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** An authenticated peer's huge name is still stored in every statistics event (up to 100 buffered) and in sharing controls, and it bypasses the 300 MB queue budget.
 - **Action:** Clamp `sender.name` once at decode/admission, and count name bytes in the queue budget.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `GameSenderModel` clamps `name` to 64 characters in `init(from:)` and in the legacy identity path, so every consumer (sharing controls, statistics, participant names, the queue) sees the bounded value. `GameRootModel.maxPlayerNameLength` now refers to the same constant.
 
 ### 6.4 Share-extension image fallback can read up to 256 MB into memory
 - **Location:** `Sources/RPGShare/ItemProviderImporter.swift:133-147`

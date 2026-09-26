@@ -133,7 +133,7 @@ public final class GameRoot {
     func hostingStatus(isMaster: Bool) -> GameConnectionStatusPresentation? {
         guard isMaster else { return nil }
         switch networkStore.model.masterStore?.networkModel.listenerStatus {
-        case .restarting: return .localNetworkReconnecting
+        case .restarting, .starting, .waiting: return .localNetworkReconnecting
         case .failed: return .localNetworkLost
         default: return nil
         }
@@ -143,7 +143,8 @@ public final class GameRoot {
     /// not be read earlier and restarts hosting services that stopped in the background.
     /// See CODE_AUDIT_Join §5.3.
     func applicationBecameActive() {
-        gameJoinCodeModel.refreshFromStorage()
+        let isHosting = networkStore.model.masterStore?.networkModel.isStreaming == true
+        gameJoinCodeModel.refreshFromStorage(keepingMasterCode: isHosting)
         networkStore.resumeAfterActivation()
         networkProxyStore.resumeAfterActivation()
     }

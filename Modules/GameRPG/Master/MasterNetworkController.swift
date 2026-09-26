@@ -48,6 +48,11 @@ final class MasterNetworkController: Sendable {
     private var listenerRestartTask: Task<Void, Never>?
     private var listenerRestartAttempt = 0
     private var listenerStartedAt: ContinuousClock.Instant?
+    /// Serializes outbound sends: each send encodes off the main actor and only hands its
+    /// frame to the connections after the previous send did, so a small message sent after
+    /// a large one can no longer overtake it (a pin/map-state arriving before its map).
+    /// See CODE_AUDIT_18 §3.15.
+    private var outboundChain: Task<Void, Never>?
 
     static func gameListenerBuilder() -> @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging {
         return { name, supporterTier, proxy, passcode, sessionId, delegate in
@@ -119,7 +124,11 @@ extension MasterNetworkController: MasterNetworkControllable {
         )
         networkModel.listener?.startListening()
         // `listenerStatus` becomes `.running` only once `listenerReady()` fires for the
-        // listener's real `.ready` event — see §5.22.
+        // listener's real `.ready` event — see §5.22. Until then hosting reads as starting
+        // (not "stopped"); a restart keeps showing `.restarting`. See CODE_AUDIT_18 §5.15.
+        if networkModel.listenerStatus != .restarting {
+            networkModel.listenerStatus = .starting
+        }
         listenerStartedAt = ContinuousClock.now
     }
 
@@ -133,8 +142,16 @@ extension MasterNetworkController: MasterNetworkControllable {
             listenerRestartAttempt = 0
             startListener()
         }
-        if let browser = networkModel.browserManager, !browser.isBrowsing {
-            browser.start()
+        if let browser = networkModel.browserManager {
+            if !browser.isBrowsing {
+                browser.start()
+            }
+        } else {
+            // Recreate a browser that was dropped while hosting, so returning players are
+            // redialed again. See CODE_AUDIT_18 §5.14.
+            networkModel.browserManager = BrowserManager(serviceType: networkModel.isProxyHosting ? .proxyClient : .master)
+            networkModel.browserManager?.start()
+            observeConnections()
         }
     }
 
@@ -195,35 +212,42 @@ extension MasterNetworkController {
     @discardableResult
     func sendResponse(data: MessageMapper?, id: ConnectionController.ID) async -> Bool {
         guard let connection = networkModel.connections.first(where: { $0.id == id }) else { return false }
-        let encodedData = await encodedOffMain(data)
-        await connection.response(type: .gameData, encodedContent: encodedData)
+        await sendOrdered(data, to: [connection])
         return true
     }
 
     func sendResponse(data: MessageMapper?) async {
         let connections = networkModel.connections
         guard !connections.isEmpty else { return }
-        let encodedData = await encodedOffMain(data)
-        await withDiscardingTaskGroup { group in
-            for connection in connections {
-                group.addTask {
-                    await connection.response(type: .gameData, encodedContent: encodedData)
-                }
-            }
-        }
+        await sendOrdered(data, to: connections)
     }
 
     func sendResponse(data: MessageMapper?, except: ConnectionController.ID) async {
         let connections = networkModel.connections.filter { $0.id != except }
         guard !connections.isEmpty else { return }
-        let encodedData = await encodedOffMain(data)
-        await withDiscardingTaskGroup { group in
-            for connection in connections {
-                group.addTask {
-                    await connection.response(type: .gameData, encodedContent: encodedData)
+        await sendOrdered(data, to: connections)
+    }
+
+    private func sendOrdered(_ data: MessageMapper?, to connections: [any ConnectionControllable]) async {
+        let previous = outboundChain
+        let send = Task { @MainActor in
+            await previous?.value
+            // A nil encoding (encode failure) used to go out as a zero-length frame, which
+            // the receiver treats as the peer closing the connection. See CODE_AUDIT_18 §3.15.
+            guard let encodedData = await encodedOffMain(data) else {
+                Logger.networking.error("MasterNetworkController: Skipped sending a message that could not be encoded")
+                return
+            }
+            await withDiscardingTaskGroup { group in
+                for connection in connections {
+                    group.addTask {
+                        await connection.response(type: .gameData, encodedContent: encodedData)
+                    }
                 }
             }
         }
+        outboundChain = send
+        await send.value
     }
 }
 
@@ -296,6 +320,12 @@ extension MasterNetworkController: ListenerManagerDelegate {
     func listenerReady() async {
         guard networkModel.isStreaming else { return }
         networkModel.listenerStatus = .running
+    }
+
+    @MainActor
+    func listenerWaiting(_ error: NWError) async {
+        guard networkModel.isStreaming else { return }
+        networkModel.listenerStatus = .waiting
     }
 
     @MainActor
@@ -410,6 +440,10 @@ extension MasterNetworkController {
 
     func refresh(games: [BrowserGameModel]) {
         guard let manager = networkModel.browserManager, manager.isBrowsing else {
+            // A browser inside its supervised restart pause is only briefly not browsing:
+            // keep it (and its dialed connections) instead of dropping auto-redial for the
+            // rest of the session. See CODE_AUDIT_18 §5.14.
+            if networkModel.browserManager?.isSupervising == true { return }
             networkModel.browserManager = nil
             networkModel.browserConnections = []
             browserConnectionEndpoints = [:]

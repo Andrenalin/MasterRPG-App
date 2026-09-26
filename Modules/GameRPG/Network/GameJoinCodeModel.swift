@@ -152,9 +152,15 @@ public final class GameJoinCodeModel: Sendable {
 
     /// Retries every value that could not be resolved at creation. Cheap no-op once everything
     /// is resolved. Call before a code is used (hosting, joining) and when the app becomes active.
-    public func refreshFromStorage() {
+    ///
+    /// `keepingMasterCode`: a listener is running with the current (possibly provisional)
+    /// master code. Replacing it with the stored code now would make the code the setup
+    /// screens show differ from the one the listener accepts, so its resolution waits until
+    /// hosting ends. See CODE_AUDIT_18 §5.16.
+    public func refreshFromStorage(keepingMasterCode: Bool = false) {
         guard !unresolvedKeys.isEmpty else { return }
         for key in unresolvedKeys {
+            if keepingMasterCode, key == Self.masterCodeKey { continue }
             let result = codeStorage.read(forKey: key)
             switch (key, result) {
             case (_, .unavailable):

@@ -201,6 +201,20 @@ final class MasterControllerModel {
     /// Not `private` — read/written from `MasterController+MapMessages.swift`, a
     /// different file. See CODE_AUDIT_17 §6.7.
     var lastMapRecoveryServed: [MapRecoveryThrottleKey: ContinuousClock.Instant] = [:]
+    /// Full map-recovery bundles served per player across *all* maps, newest last, so a
+    /// player can't bypass the (player, map) cool-down by cycling map ids.
+    /// See CODE_AUDIT_18 §6.1.
+    var mapRecoveryHistory: [UUID: [ContinuousClock.Instant]] = [:]
+    /// Throttled repairs that are served once their throttle window opens, coalesced per
+    /// (player, map), instead of being dropped without an answer. See CODE_AUDIT_18 §6.1.
+    var deferredMapRecoveries: [MapRecoveryThrottleKey: Task<Void, Never>] = [:]
+
+    func cancelDeferredMapRecoveries(for playerId: UUID? = nil) {
+        for (key, task) in deferredMapRecoveries where playerId == nil || key.playerId == playerId {
+            task.cancel()
+            deferredMapRecoveries[key] = nil
+        }
+    }
 
     func deferValueUpdateAwaitingOwnership(_ model: GameNetworkModel) {
         pendingValueUpdatesAwaitingOwnership[model.sender.id] = model
@@ -341,6 +355,8 @@ final class MasterControllerModel {
         // that reuses the same id. See CODE_AUDIT_17 §5.25.
         pendingValueUpdatesAwaitingOwnership.removeValue(forKey: playerId)
         lastMapRecoveryServed = lastMapRecoveryServed.filter { $0.key.playerId != playerId }
+        mapRecoveryHistory[playerId] = nil
+        cancelDeferredMapRecoveries(for: playerId)
         for index in peerAvailabilitySources.indices {
             peerAvailabilitySources[index].pendingRecipients.remove(playerId)
         }

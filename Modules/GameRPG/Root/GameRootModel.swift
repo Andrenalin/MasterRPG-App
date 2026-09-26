@@ -75,7 +75,7 @@ final class GameRootModel: Sendable {
     /// can otherwise send a name up to the frame limit, which is then echoed in every
     /// master broadcast (the v1-compatible encoder writes the roster three times per
     /// message) and persisted per statistics event. See CODE_AUDIT_17 §6.9.
-    static let maxPlayerNameLength = 64
+    static let maxPlayerNameLength = GameSenderModel.maxNameLength
 
     func add(playerId: UUID, playerModel: PlayerGameModel, sharingModel: SharingControlModel) -> Bool {
         // A claimed player model whose id doesn't match the sender is a failed

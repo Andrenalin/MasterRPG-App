@@ -30,6 +30,16 @@ final class GameNetworkController: Sendable {
     /// Only accepted peer-visible events cross a transport bridge. Reports,
     /// acknowledgements, repair requests, screens, and canonicalization inputs
     /// are master-only and must stop at the game master.
+    /// Allowance for the JSON envelope around a relayed payload (ids, names, counters).
+    nonisolated static let relayFrameOverheadAllowance = 64 * 1_024
+
+    /// Whether a received frame may be relayed byte-for-byte: its size must be consistent
+    /// with the decoded payload (base64 in JSON is 4/3 of the raw bytes) plus the envelope.
+    /// See CODE_AUDIT_18 §6.2.
+    nonisolated static func relayForwardsReceivedBytes(frameByteCount: Int, payloadByteCount: Int) -> Bool {
+        frameByteCount <= payloadByteCount / 3 * 4 + 4 + relayFrameOverheadAllowance
+    }
+
     nonisolated static func shouldRelayToLAN(_ model: GameNetworkModel) -> Bool {
         guard !model.isJournalAdmissionOnly else { return false }
         if model.sender.isMaster {

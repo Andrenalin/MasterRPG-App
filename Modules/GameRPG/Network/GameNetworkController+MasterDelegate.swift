@@ -40,9 +40,24 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
                 return
             }
             if Self.shouldRelayToLAN(gameData), await relayAdmission.admit(gameData) {
-                // Forward the received bytes as they are: re-encoding the decoded model doubled
-                // peak memory and CPU per relayed presentation. See CODE_AUDIT_17 §7.2.
-                let relayed: any MessageMapper = data.map { PreEncodedMessage(bytes: $0) } ?? gameData
+                // Forward the received bytes as they are when their size matches the decoded
+                // payload: re-encoding the decoded model doubled peak memory and CPU per
+                // relayed presentation (CODE_AUDIT_17 §7.2). A frame much larger than its
+                // payload carries ignored padding, which would be amplified to every player,
+                // so it is re-encoded (dropping unknown keys) instead. See CODE_AUDIT_18 §6.2.
+                let payloadByteCount = gameData.data.data?.count ?? 0
+                let relayed: any MessageMapper = if let data,
+                    Self.relayForwardsReceivedBytes(frameByteCount: data.count, payloadByteCount: payloadByteCount) {
+                    PreEncodedMessage(bytes: data)
+                } else {
+                    gameData
+                }
+                let relayedByteCount = data.map { min($0.count, payloadByteCount / 3 * 4 + Self.relayFrameOverheadAllowance) } ?? payloadByteCount
+                guard await relayAdmission.admitBytes(relayedByteCount, from: gameData.sender.id) else {
+                    Logger.networking.error("GameNetworkController: Relay byte budget exceeded by \(gameData.sender.id, privacy: .public); not relaying")
+                    await model.masterDelegate?.received(gameData, origin: origin)
+                    return
+                }
                 await model.masterStore?.sendResponse(data: relayed, except: connectionId)
                 let useFileJournal = fileJournal || gameData.usesFileJournal
                 // `sendData` is itself `@MainActor` (and `@discardableResult`) — `await`

@@ -39,6 +39,11 @@ extension MasterNetworkControllable {
 /// Whether this device's game listener is accepting new joins.
 enum MasterListenerStatus: Equatable, Sendable {
     case stopped
+    /// Hosting started; the listener hasn't reached `.ready` yet. See CODE_AUDIT_18 §5.15.
+    case starting
+    /// The listener is up but can't accept players yet (local-network permission prompt, no
+    /// network interface). See CODE_AUDIT_18 §5.15.
+    case waiting
     case running
     /// The listener failed and is being recreated after a pause. Connected players stay connected.
     case restarting
