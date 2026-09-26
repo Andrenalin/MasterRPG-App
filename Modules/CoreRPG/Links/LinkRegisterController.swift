@@ -148,7 +148,7 @@ public extension LinkRegisterController {
                 }
                 if context.hasChanges { try context.save() }
             } catch {
-                context.rollback()
+                context.rollbackRestoringFlushedOperations()
                 Logger.coreDataController.error("link resetData error \(error.localizedDescription, privacy: .public)")
             }
         }
@@ -159,7 +159,7 @@ public extension LinkRegisterController {
     /// Persists all link changes accumulated since the last call. Performs a delete-and-replace per affected
     /// source item ID: delete the persisted rows, then insert the current in-memory state, through the context.
     /// Call from the periodic `save()` on `AdventureRootModel`.
-    @MainActor func savePendingLinks() async {
+    @MainActor func savePendingLinks() async throws {
         let affectedIds = model.pendingAffectedSourceIds
         guard !affectedIds.isEmpty, let context = model.context else { return }
         model.pendingAffectedSourceIds.removeAll()
@@ -170,15 +170,20 @@ public extension LinkRegisterController {
         // `LinkReferenceDataModel` is CloudKit-mirrored and batch requests bypass the export,
         // so deletions never reached other devices and mirrored rows duplicated rebuilt ones.
         // See CODE_AUDIT_15 §5.8.
-        await context.perform {
-            do {
+        do {
+            try await context.perform {
                 // Diff against the persisted rows instead of delete-and-reinsert: only changed rows
                 // reach the CloudKit export and concurrent devices no longer duplicate rows.
                 // See CODE_AUDIT_17 §7.7.
                 let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                 request.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
                 var existing: [UUID: LinkReferenceDataModel] = [:]
-                for object in try context.fetch(request) as? [LinkReferenceDataModel] ?? [] {
+                // Keep the duplicate with the lowest object-ID URI, not whichever the unsorted
+                // fetch returned first: two devices then keep the same row instead of each
+                // deleting the other's. See CODE_AUDIT_18 §5.13.
+                let fetched = (try context.fetch(request) as? [LinkReferenceDataModel] ?? [])
+                    .sorted { $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString }
+                for object in fetched {
                     if let id = object.uuid, existing[id] == nil {
                         existing[id] = object
                     } else {
@@ -194,17 +199,20 @@ public extension LinkRegisterController {
                 for (id, object) in existing where !currentIds.contains(id) {
                     context.delete(object)
                 }
-                if context.hasChanges { try context.save() }
-            } catch {
-                context.rollback()
-                Logger.coreDataController.error("link save error \(error.localizedDescription, privacy: .public)")
-                // Restore the affected-source set cleared above so the next `save()`
-                // retries this batch instead of silently dropping the pending link
-                // change. See CODE_AUDIT_17 §5.5.
-                Task { @MainActor in
-                    self.model.pendingAffectedSourceIds.formUnion(affectedIds)
+                do {
+                    if context.hasChanges { try context.save() }
+                } catch {
+                    context.rollbackRestoringFlushedOperations()
+                    throw error
                 }
             }
+        } catch {
+            Logger.coreDataController.error("link save error \(error.localizedDescription, privacy: .public)")
+            // Restore the affected-source set cleared above so the next `save()`
+            // retries this batch instead of silently dropping the pending link
+            // change. See CODE_AUDIT_17 §5.5.
+            model.pendingAffectedSourceIds.formUnion(affectedIds)
+            throw error
         }
     }
 }

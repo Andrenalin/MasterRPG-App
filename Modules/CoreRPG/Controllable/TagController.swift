@@ -112,7 +112,7 @@ public struct TagController: Sendable {
                 }
                 if context.hasChanges { try context.save() }
             } catch {
-                context.rollback()
+                context.rollbackRestoringFlushedOperations()
                 Logger.coreDataController.error("tag resetData error \(error.localizedDescription, privacy: .public)")
             }
         }
@@ -121,7 +121,7 @@ public struct TagController: Sendable {
     /// Persists all tag changes accumulated since the last call. Performs a delete-and-replace per affected
     /// module: delete the persisted rows, then insert the current in-memory state, through the context.
     /// Call from the periodic `save()` on `AdventureRootModel`.
-    @MainActor public func savePendingTags() async {
+    @MainActor public func savePendingTags() async throws {
         let affectedModules = model.pendingAffectedModules
         guard !affectedModules.isEmpty, let context = model.context else { return }
         model.pendingAffectedModules = []
@@ -131,14 +131,18 @@ public struct TagController: Sendable {
 
         // Context-based delete + insert: `TagDataModel` is CloudKit-mirrored and batch requests
         // bypass the export. See CODE_AUDIT_15 §5.8.
-        await context.perform {
-            do {
+        do {
+            try await context.perform {
                 // Upsert by (module, title) instead of delete-and-reinsert: only changed rows reach
                 // the CloudKit export. See CODE_AUDIT_17 §7.7.
                 let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
                 request.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
                 var existing: [String: TagDataModel] = [:]
-                for object in try context.fetch(request) as? [TagDataModel] ?? [] {
+                // Deterministic survivor (lowest object-ID URI) so two devices keep the same
+                // duplicate. See CODE_AUDIT_18 §5.13.
+                let fetched = (try context.fetch(request) as? [TagDataModel] ?? [])
+                    .sorted { $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString }
+                for object in fetched {
                     let key = "\(object.module)|\(object.title ?? "")"
                     if existing[key] == nil {
                         existing[key] = object
@@ -158,17 +162,20 @@ public struct TagController: Sendable {
                 for (key, object) in existing where !currentKeys.contains(key) {
                     context.delete(object)
                 }
-                if context.hasChanges { try context.save() }
-            } catch {
-                context.rollback()
-                Logger.coreDataController.error("tag save error \(error.localizedDescription, privacy: .public)")
-                // Restore the affected-module set cleared above so the next `save()`
-                // retries this batch instead of silently dropping the pending tag
-                // change. See CODE_AUDIT_17 §5.5.
-                Task { @MainActor in
-                    self.model.pendingAffectedModules.formUnion(affectedModules)
+                do {
+                    if context.hasChanges { try context.save() }
+                } catch {
+                    context.rollbackRestoringFlushedOperations()
+                    throw error
                 }
             }
+        } catch {
+            Logger.coreDataController.error("tag save error \(error.localizedDescription, privacy: .public)")
+            // Restore the affected-module set cleared above so the next `save()`
+            // retries this batch instead of silently dropping the pending tag
+            // change. See CODE_AUDIT_17 §5.5.
+            model.pendingAffectedModules.formUnion(affectedModules)
+            throw error
         }
     }
 

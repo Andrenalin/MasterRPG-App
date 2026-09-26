@@ -72,7 +72,14 @@ public extension SyncDataControllable {
                     // contract ("consumers diff against fetched ids") assumes. See CODE_AUDIT §3.2.
                     if !deletedIds.isEmpty {
                         let currentIds = Set(try await dataControllable.fetchIds())
-                        let staleIds = itemControllable.itemDataModel.items.filter { !currentIds.contains($0) }
+                        // An item created on this device whose insert is still queued is not in
+                        // Core Data yet either: it must not be mistaken for a remote deletion,
+                        // or deleting it would also drop its queued insert for good.
+                        // See CODE_AUDIT_18 §5.2.
+                        let unsavedInsertIds = await dataControllable.unsavedInsertIds()
+                        let staleIds = itemControllable.itemDataModel.items.filter {
+                            !currentIds.contains($0) && !unsavedInsertIds.contains($0)
+                        }
                         for staleId in staleIds {
                             await itemControllable.delete(itemId: staleId, withFileData: false, withDatabase: false)
                         }

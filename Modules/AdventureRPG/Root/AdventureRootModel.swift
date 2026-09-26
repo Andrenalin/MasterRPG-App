@@ -299,8 +299,9 @@ extension AdventureRootModel {
         // pending in the context, not edits already committed to disk. See
         // CODE_AUDIT_17 §5.5.
         await itemController.save()
-        await linkRegisterController.savePendingLinks()
-        await searchModel.tagController.savePendingTags()
+        // Failures are logged and the pending sets restored for the next save.
+        try? await linkRegisterController.savePendingLinks()
+        try? await searchModel.tagController.savePendingTags()
     }
 
     /// Flushes a reviewed partial import and surfaces persistence failures to the caller.
@@ -313,9 +314,14 @@ extension AdventureRootModel {
         #if !os(tvOS)
         try await generatorRoot?.itemControllable.dataControllable?.flushPendingOperations()
         #endif
-        await linkRegisterController.savePendingLinks()
-        await searchModel.tagController.savePendingTags()
+        // Items first, as in `save()`: the item save is the import's commit point and its
+        // failure is thrown so the review session rolls back. A link/tag save failing after
+        // that only rolls back its own derived rows (the flushed import is already on disk),
+        // and its pending set is restored and retried by the next periodic save, so it must
+        // not report the committed import as failed. See CODE_AUDIT_18 §5.4.
         try await itemController.dataControllable?.save()
+        try? await linkRegisterController.savePendingLinks()
+        try? await searchModel.tagController.savePendingTags()
         AppIntentContentInvalidator.invalidate()
     }
 

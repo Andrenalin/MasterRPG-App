@@ -41,6 +41,14 @@ public extension CoreDataSnapshotPersistable {
         dataController.model.removePendingOperations(for: id)
     }
 
+    @MainActor func markUnsavedInsert(id: UUID) {
+        dataController.model.markUnsavedInsert(id)
+    }
+
+    func unsavedInsertIds() async -> Set<UUID> {
+        dataController.model.unsavedInsertIds()
+    }
+
     func replace(id: UUID, with viewModel: any ModelType) async throws {
         guard let viewModel = viewModel as? Model else { return }
         // `makeSnapshot(from:)` is itself `@MainActor` — `await` alone hops there, no

@@ -17,6 +17,14 @@ public protocol CoreDataId {
 final class CoreDataModel: Sendable {
     private let operations = Mutex<[PendingOperation]>([])
     private let flushChain = Mutex<Task<Void, Error>?>(nil)
+    /// Operations already applied to the shared context by a flush but not yet committed by a
+    /// `context.save()`. A rollback of the shared context (any module's failed save) discards
+    /// them from the context, so they are put back in the queue instead of being lost.
+    /// See CODE_AUDIT_18 §5.3.
+    private let inFlight = Mutex<[PendingOperation]>([])
+    /// Ids of items created locally whose insert has not been committed yet. The sync-deletion
+    /// diff must never treat these as remotely deleted. See CODE_AUDIT_18 §5.2.
+    private let unsavedInserts = Mutex<Set<UUID>>([])
 
     func addPendingOperation(_ operation: PendingOperation) {
         operations.withLock { $0.append(operation) }
@@ -43,6 +51,47 @@ final class CoreDataModel: Sendable {
     /// its id is no longer found to exist). See CODE_AUDIT_17 §5.7.
     func removePendingOperations(for id: UUID) {
         operations.withLock { $0.removeAll { $0.id == id } }
+        inFlight.withLock { $0.removeAll { $0.id == id } }
+        unsavedInserts.withLock { _ = $0.remove(id) }
+    }
+
+    func markUnsavedInsert(_ id: UUID) {
+        unsavedInserts.withLock { _ = $0.insert(id) }
+    }
+
+    func unsavedInsertIds() -> Set<UUID> {
+        unsavedInserts.withLock { $0 }
+    }
+
+    /// Records operations that a flush applied to the context. Call on the context's queue so
+    /// the record is ordered with the context's own save/rollback.
+    func markInFlight(_ applied: [PendingOperation]) {
+        inFlight.withLock { $0.append(contentsOf: applied) }
+    }
+
+    /// The context committed: everything flushed so far is on disk.
+    func commitInFlight() {
+        let committedIds = inFlight.withLock { flushed -> Set<UUID> in
+            let ids = Set(flushed.map(\.id))
+            flushed.removeAll()
+            return ids
+        }
+        guard !committedIds.isEmpty else { return }
+        let stillQueued = Set(operations.withLock { $0.map(\.id) })
+        unsavedInserts.withLock { inserts in
+            inserts.subtract(committedIds.subtracting(stillQueued))
+        }
+    }
+
+    /// The context rolled back: re-queue what the rollback discarded, in front of newer edits.
+    func restoreInFlight() {
+        let restored = inFlight.withLock { flushed -> [PendingOperation] in
+            let restored = flushed
+            flushed.removeAll()
+            return restored
+        }
+        guard !restored.isEmpty else { return }
+        restorePendingOperations(restored)
     }
 
     /// Runs `work` only after any previously-chained flush has finished, atomically swapping
@@ -88,6 +137,7 @@ public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & C
         self.context = context
         self.relationshipKeyPaths = relationshipKeyPaths
         model = CoreDataModel()
+        ContextFlushLedger.shared.register(model, for: context)
     }
 }
 
@@ -121,9 +171,9 @@ public extension CoreDataController {
     }
 
     func fetchIds() async throws -> [UUID] {
-        await context.perform {
+        try await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
-            return fetchId(request: request)
+            return try fetchId(request: request)
         }
     }
 
@@ -207,6 +257,10 @@ public extension CoreDataController {
                             operation.updater(operation.model, new)
                         }
                     }
+                    // Recorded on the context queue, ordered with any save/rollback of the
+                    // shared context, so a later rollback can re-queue exactly these.
+                    // See CODE_AUDIT_18 §5.3.
+                    model.markInFlight(uniqueOperations)
                 }
             } catch {
                 // The queue was already drained; put the operations back so a retry does not
@@ -227,9 +281,11 @@ public extension CoreDataController {
             // Unlike `batchDelete`, this used to leave a failed save's invalid managed
             // objects registered in the context, so every later save re-attempted the
             // same invalid set and failed until relaunch. Roll back so the context
-            // returns to its last-saved state instead. See CODE_AUDIT_17 §5.6.
+            // returns to its last-saved state instead (CODE_AUDIT_17 §5.6), and re-queue
+            // every module's flushed-but-unsaved edits the rollback discarded, so they are
+            // retried instead of lost (CODE_AUDIT_18 §5.3).
             await context.perform {
-                context.rollback()
+                context.rollbackRestoringFlushedOperations()
             }
             throw error
         }
@@ -338,7 +394,7 @@ public extension CoreDataController {
                     try saveCoreDataThrowing()
                 } catch {
                     Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
-                    context.rollback()
+                    context.rollbackRestoringFlushedOperations()
                     throw error
                 }
             }
@@ -478,11 +534,14 @@ private extension CoreDataController {
         }
     }
 
-    func fetchId(request: NSFetchRequest<NSFetchRequestResult>) -> [UUID] {
+    /// Rethrows a fetch failure: the sync-deletion diff treats a missing id as a remote
+    /// deletion, so an empty result on error would empty the whole module in memory and drop
+    /// every pending edit in it. See CODE_AUDIT_18 §5.2.
+    func fetchId(request: NSFetchRequest<NSFetchRequestResult>) throws -> [UUID] {
         do {
             guard let data = try self.context.fetch(request) as? [DataType] else {
                 Logger.coreDataController.error("fetch returned an unexpected object type; expected \(DataType.self)")
-                return []
+                throw CocoaError(.coderReadCorrupt)
             }
             var seenId: Set<UUID> = []
             var foundDuplicates = false
@@ -503,8 +562,8 @@ private extension CoreDataController {
             return ids
         } catch {
             Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
+            throw error
         }
-        return []
     }
 
     func fetch(uuid: UUID) async throws -> DataType? {

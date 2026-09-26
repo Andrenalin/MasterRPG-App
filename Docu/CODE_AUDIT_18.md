@@ -275,6 +275,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** An item duplicated, imported (peer character, intent, Foundry review) or created on this device within the autosave window disappears for good as soon as any remote deletion arrives for the same module. Before the fix it vanished from memory but came back on the next flush or relaunch. Because `fetchId` swallows fetch errors and returns `[]`, a single failed id fetch empties the whole module in memory and drops all of its pending edits.
 - **Action:** Build the "stale" set only from ids that were persisted before (exclude ids with a pending insert), make `fetchIds` throw instead of returning `[]`, and call `removePendingOperations` only for confirmed remote deletions.
 - **Severity:** High
+- **Status (2026-09-26):** FIXED. `CoreDataModel` tracks locally created items whose insert is queued (`markUnsavedInsert`, set from `ItemControllable.replace(isInsert:)` and `replaceForExternalImport`) until a save commits them. Both the incremental sync diff (`SyncDataControllable.updateFromSync`) and the full reconciliation (`ItemControllable.updates(_:)`) exclude those ids, so `removePendingOperations` only runs for real remote deletions. `fetchIds`/`fetchId(request:)` now throw instead of returning `[]`. Covered by `PendingOperationLedgerTests`.
 
 ### 5.3 A failed save rolls back the shared context but never re-queues the drained edits **[verified]** **[INCOMPLETE FIX of CODE_AUDIT_17 §5.6]**
 - **Location:** `Modules/CoreRPG/Persistence/CoreDataController.swift:184-236` (rollback at `:228-233`)
@@ -282,6 +283,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** One invalid object in any module rolls back every module's flushed edits. The in-memory models still show them, the next save succeeds with nothing to write, and the edits are gone after relaunch with no sign.
 - **Action:** Keep the drained operations for the duration of the call, re-queue them after the rollback, and surface the error visibly.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Flushed operations are recorded as in-flight on the context queue. The new `ContextFlushLedger` clears them on every `NSManagedObjectContextDidSave` of the shared context and, through `rollbackRestoringFlushedOperations()` (used at every rollback site: `CoreDataController.save`/`batchDelete`, `LinkRegisterController`, `TagController`), re-queues every module's in-flight edits in front of newer ones. Covered by `PendingOperationLedgerTests.rollbackOfTheSharedContextRequeuesFlushedEdits`.
 
 ### 5.4 `saveExternalImport` still saves links/tags first, so a rolled-back import reports success **[INCOMPLETE FIX of CODE_AUDIT_17 §5.5]**
 - **Location:** `Modules/AdventureRPG/Root/AdventureRootModel.swift:309-320`; `Modules/CoreRPG/Links/LinkRegisterController.swift:172-205`; `Modules/CoreRPG/Controllable/TagController.swift:131-162`
@@ -289,6 +291,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** A link/tag failure during a Foundry/UniversalVTT import rolls back the whole flushed import while the call returns success, and the review session doesn't roll back its installed attachments.
 - **Action:** Apply the `save()` ordering here too (items first), and turn a link/tag failure into a thrown error.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `saveExternalImport` now saves items first (its failure is thrown so the review session rolls back). `savePendingLinks`/`savePendingTags` are now `throws` and restore their pending sets on failure; after the items are committed, a link/tag failure only rolls back its own derived rows and is retried by the next save, so it deliberately doesn't report the committed import as failed.
 
 ### 5.5 One far-future CRDT timestamp now freezes a field permanently **[verified]** **[REGRESSION of CODE_AUDIT_17 §5.15]**
 - **Location:** `Modules/CoreRPG/CRDT/WallclockTimestamp.swift:106-125` (decode), `:45-58` (`observe`); `Modules/CoreRPG/CRDT/LWWRegister.swift:70-84`
@@ -352,6 +355,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Two devices saving the same module at the same time can each keep a different row and delete the other, and after sync both rows are gone until that module is saved again.
 - **Action:** Choose the survivor deterministically (for example the lowest object-ID URI, as `CoreDataController.fetchAndDelete` does).
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Both upserts sort the fetched rows by object-ID URI before de-duplicating, so every device keeps the same survivor.
 
 ### 5.14 GM can lose its browser for good during the browser's restart pause
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:128-139,411-417`; `Modules/GameRPG/Browser/BrowserManager.swift:125-135`

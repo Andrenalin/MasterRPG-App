@@ -193,6 +193,7 @@ public extension ItemControllable {
             if isInsert {
                 do {
                     try dataControllable?.replaceSync(id: model.id, with: model.copy())
+                    dataControllable?.markUnsavedInsert(id: model.id)
                 } catch {
                     ItemPersistenceFailureScope.reporter?.record(error)
                 }
@@ -256,6 +257,9 @@ public extension ItemControllable {
         let existing = itemSync(for: snapshot.id, noGame: true)
         if existing != nil || isInsert {
             try dataControllable?.replaceSync(id: snapshot.id, with: snapshot)
+            if existing == nil {
+                dataControllable?.markUnsavedInsert(id: snapshot.id)
+            }
         }
 
         if let existing {
@@ -445,7 +449,10 @@ public extension ItemControllable {
         // O(n) set membership instead of an O(n·m) nested `.contains` scan — this runs on
         // every full CloudKit sync reconciliation. See CODE_AUDIT_EditItem §7.1.
         let sortedModelIds = Set(sortedModels.map(\.id))
-        let deletedIds = itemDataModel.items.filter { !sortedModelIds.contains($0) }
+        // Locally created items whose insert is still queued are not in the store yet; they
+        // are not deletions. See CODE_AUDIT_18 §5.2.
+        let unsavedInsertIds = await dataControllable?.unsavedInsertIds() ?? []
+        let deletedIds = itemDataModel.items.filter { !sortedModelIds.contains($0) && !unsavedInsertIds.contains($0) }
         for id in deletedIds {
             // Full-table reconciliation (a store swap, or the once-at-launch initial
             // fetch) must stay memory-only, matching `updateFromSync`'s incremental
