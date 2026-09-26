@@ -5,7 +5,7 @@ import AVFoundation
 import CoreRPG
 import Combine
 import Foundation
-@preconcurrency import GroupActivities
+import GroupActivities
 import os.log
 import SwiftUI
 

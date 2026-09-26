@@ -365,6 +365,12 @@ private struct OnNavigationReceiveModifier<T: Hashable>: ViewModifier {
     }
     func body(content: Content) -> some View {
         content
+            // A receiver just mounted: deliver sends that arrived before any receiver was
+            // subscribed (e.g. a route performed right after opening this window).
+            // See CODE_AUDIT_18 §3.17.
+            .task {
+                navigator.root.replayUndeliveredSends()
+            }
             .onReceive(navigator.publisher) { values in
                 if let value: T = values.consume() {
                     navigator.log(.send(.receiving(value)))
@@ -410,6 +416,9 @@ internal final class NavigationSendValues {
     isolated deinit {
         if consumed == false {
             navigator.log(.error("missing receive handler for type: \(String(describing: type(of: value)))!!!"))
+            if identifier == nil {
+                navigator.root.stashUndeliveredSend([value] + values)
+            }
         }
     }
 
@@ -439,4 +448,32 @@ extension NavigationSendValues {
         self.init(navigator: navigator, value: value, values: [], identifier: identifier)
     }
 
+}
+
+extension Navigator {
+    @MainActor
+    internal func stashUndeliveredSend(_ values: [any Hashable]) {
+        pruneUndeliveredSends()
+        undeliveredSends.append((values, .now))
+        if undeliveredSends.count > Self.maximumUndeliveredSends {
+            undeliveredSends.removeFirst(undeliveredSends.count - Self.maximumUndeliveredSends)
+        }
+    }
+
+    @MainActor
+    internal func replayUndeliveredSends() {
+        pruneUndeliveredSends()
+        guard !undeliveredSends.isEmpty else { return }
+        let pending = undeliveredSends
+        undeliveredSends.removeAll()
+        for send in pending {
+            self.send(values: send.values)
+        }
+    }
+
+    @MainActor
+    private func pruneUndeliveredSends() {
+        let now = ContinuousClock.now
+        undeliveredSends.removeAll { now - $0.at > Self.undeliveredSendLifetime }
+    }
 }

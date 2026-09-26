@@ -5,7 +5,7 @@ import AVFoundation
 import CoreRPG
 import Combine
 import Foundation
-@preconcurrency import GroupActivities
+import GroupActivities
 import os.log
 import SwiftUI
 
@@ -387,17 +387,19 @@ extension RPGSharePlayController {
         // Calling join() establishes the ordering guarantee documented by
         // GroupActivities: synchronization requested after this call is queued
         // until the session reaches .joined.
-        // Called via Task.detached to avoid blocking the main thread while the
-        // audio session is active (SessionCore warning).
+        // `GroupSession` is not `Sendable`: joining it from a detached task raced the
+        // main-actor tasks above that read its `$state`/`activeParticipants` (hidden by
+        // `@preconcurrency`). It is joined on the main actor instead, in a deferred turn
+        // (as the TabletopKit coordination does), after this setup has finished; `reset()`
+        // runs on the main actor too, so a cancelled join can no longer race the join
+        // itself. See CODE_AUDIT_18 §3.8.
         let sessionToJoin = groupSession
-        let sessionJoinTask = Task.detached {
-            guard !Task.isCancelled else { return }
+        let sessionJoinTask = Task { @MainActor [weak self] in
+            guard !Task.isCancelled,
+                  let self,
+                  self.sessionLifecycle.isCurrent(sessionId: sessionToJoin.id)
+            else { return }
             sessionToJoin.join()
-            if Task.isCancelled {
-                // Cancellation can race the synchronous join after its preflight
-                // check. Restore the reset postcondition for the obsolete session.
-                sessionToJoin.leave()
-            }
         }
         // reset() now owns cancellation of a delayed join for this session.
         tasks[UUID()] = sessionJoinTask

@@ -533,9 +533,8 @@ extension AppModel {
 #endif
 
         Task { @MainActor in
-            if target !== navigator {
-                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
-            }
+            // A route sent before the target window's stack mounted is buffered and replayed
+            // when it mounts (CODE_AUDIT_18 §3.17), so no fixed cross-window delay is needed.
             target.perform(route: KnownRoutes.settings)
             try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
             target.navigate(to: SettingsRoute.importData, method: .managedCover)
@@ -627,9 +626,8 @@ extension AppModel {
     }
 
     /// Opens the window that owns `module` (if needed) and performs the corresponding `KnownRoutes`
-    /// route on that window's root navigator. On multi-window platforms, waits 150ms after opening
-    /// so the navigation stack has time to mount before the route is sent — performing the route
-    /// before the stack subscribes drops it on the floor.
+    /// route on that window's root navigator. A route sent before the new window's stack has
+    /// subscribed is buffered by the navigator and replayed once it mounts (CODE_AUDIT_18 §3.17).
     ///
     /// Detail navigation rides through the route as a deep link: when `itemId` is non-nil the
     /// router emits `[.send(RootRoute.X), .reset, .send(ModuleRoute.detail(itemId))]`, and each
@@ -639,16 +637,11 @@ extension AppModel {
     @MainActor public func routeToModule(_ module: NetworkModules, itemId: UUID? = nil, entryId: UUID? = nil) {
         guard module != .none else { return }
         let route = KnownRoutes.route(module: module, itemId: itemId, entryId: entryId)
-        let opening = scenesManager.openWindow(for: module)
-        let rootNavigator = navigator(for: module)
-        if opening {
-            Task { @MainActor in
-                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
-                rootNavigator.perform(route: route)
-            }
-        } else {
-            rootNavigator.perform(route: route)
-        }
+        _ = scenesManager.openWindow(for: module)
+        // When this opened a window, the route is buffered by the navigator until the new
+        // window's stack has mounted, instead of a fixed delay that dropped it on slow
+        // devices. See CODE_AUDIT_18 §3.17.
+        navigator(for: module).perform(route: route)
     }
 }
 

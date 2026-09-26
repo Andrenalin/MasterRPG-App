@@ -17,14 +17,6 @@ typealias CustomViewRepresentable = NSViewRepresentable
 typealias CustomViewRepresentable = UIViewRepresentable
 #endif
 
-// `@unchecked` because PDFKit doesn't declare Sendable itself, but this is relied on
-// deliberately: `ItemController.pdfDocument(for:)` decodes `PDFDocument(url:)` inside a
-// `Task.detached` to keep it off the MainActor, which requires the value to cross that
-// isolation boundary. All decode/mutation of these types elsewhere in this module stays
-// on the MainActor. See CODE_AUDIT_Pdf §3.1/§7.1.
-extension PDFDocument: @unchecked @retroactive Sendable {}
-extension PDFSelection: @unchecked @retroactive Sendable {}
-
 struct PdfWrapperView: CustomViewRepresentable {
     /// Settle delay before navigating `PDFView` to a page or re-highlighting a search
     /// match — gives PDFKit's own layout/scroll a moment before driving it further.
@@ -120,36 +112,51 @@ struct PdfWrapperView: CustomViewRepresentable {
     final class Coordinator: NSObject, PDFViewDelegate, PDFDocumentDelegate {
         let parent: PdfWrapperView
         weak var pdfView: PDFView?
-        /// Accumulated across `didMatchString(_:)` calls for the search currently
-        /// in flight; PDFKit delivers these as one sequential scan, so a plain
-        /// (non-actor-isolated) array is safe here — no two matches for the same
-        /// search arrive concurrently. See CODE_AUDIT_9 §5.4.
+        /// Accumulated across `didMatchString(_:)` calls for the search currently in flight.
+        /// PDFKit appends from its search thread while `beginSearch` resets it on the main
+        /// thread, so it is lock-protected; `beginSearch` also cancels the previous scan so
+        /// its late matches can't leak into the new one. See CODE_AUDIT_9 §5.4 and
+        /// CODE_AUDIT_18 §3.9.
+        private let pendingMatchesLock = NSLock()
         private var pendingMatches: [PDFSelection] = []
+
+        /// Hands a finished scan's matches from PDFKit's search thread to the main actor.
+        /// `PDFSelection` isn't `Sendable`; this is sound because nothing touches the
+        /// selections off the main actor after the handoff (the scan has ended and the
+        /// buffer is cleared). Replaces the former app-wide retroactive conformances on
+        /// PDFKit types. See CODE_AUDIT_18 §3.9.
+        private struct MatchHandoff: @unchecked Sendable {
+            let selections: [PDFSelection]
+        }
 
         init(parent: PdfWrapperView) {
             self.parent = parent
         }
 
         @MainActor func beginSearch(_ searchText: String) {
-            pendingMatches = []
+            pdfView?.document?.cancelFindString()
+            pendingMatchesLock.withLock { pendingMatches.removeAll() }
             pdfView?.document?.beginFindString(searchText, withOptions: .caseInsensitive)
         }
 
         // Called by PDFKit off the main actor while a `beginFindString` scan is in
-        // flight. Only append to `pendingMatches` here — PDFKit delivers these
-        // sequentially for one scan, so the plain array is safe — and defer every
+        // flight. Only append to `pendingMatches` here, and defer every
         // `PDFSelection.color` mutation to `documentDidEndDocumentFind`, which hops
         // to the main actor before touching it. See CODE_AUDIT_17 §3.8.
         func didMatchString(_ instance: PDFSelection) {
-            pendingMatches.append(instance)
+            pendingMatchesLock.withLock { pendingMatches.append(instance) }
         }
 
         func documentDidEndDocumentFind(_ notification: Notification) {
-            let matches = pendingMatches
+            let handoff = pendingMatchesLock.withLock {
+                defer { pendingMatches.removeAll() }
+                return MatchHandoff(selections: pendingMatches)
+            }
             let pdfView = pdfView
             let searchModel = parent.searchModel
             Task { @MainActor in
                 guard let pdfView else { return }
+                let matches = handoff.selections
                 for match in matches {
                     match.color = AKColor.yellow
                 }
@@ -159,7 +166,11 @@ struct PdfWrapperView: CustomViewRepresentable {
                 pdfView.highlightedSelections = matches
                 searchModel.matches = matches
                 searchModel.currentIndex = 0
-                searchModel.setSearchMatch = { matches, index in
+                // Weak: the closure is stored on `searchModel`, which can outlive the viewer;
+                // a strong capture kept the `PDFView` and its whole document alive.
+                // See CODE_AUDIT_18 §3.9.
+                searchModel.setSearchMatch = { [weak pdfView] matches, index in
+                    guard let pdfView, matches.indices.contains(index) else { return }
                     let selection = matches[index]
                     pdfView.go(to: selection)
                     selection.color = AKColor.clear

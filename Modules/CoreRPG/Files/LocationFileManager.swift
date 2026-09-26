@@ -2,20 +2,31 @@
 
 import Foundation
 
+/// The roots are read lazily, not captured at init: every module's file controller builds
+/// one from `@MainActor` initializers during `AppModel` setup, which used to resolve the iCloud
+/// container synchronously on the main thread at launch (racing the off-main prewarm), and a
+/// captured value also never followed an iCloud identity change. See CODE_AUDIT_18 §3.3.
 public struct LocationFileManager: Sendable {
-    let rootAppCloud: URL?
-    let rootLocal: URL?
-    let rootICloud: URL?
-    let rootNewCloud: URL
     let moduleFolder: String
+
+    var rootAppCloud: URL? {
+        FileManager.cloudURL?.appending(path: CloudDocumentController.documentDirName)
+    }
+
+    var rootLocal: URL? {
+        URL.documentsDirectory
+    }
+
+    var rootICloud: URL? {
+        FileManager.cloudURL?.deletingLastPathComponent().appending(path: "com~apple~CloudDocs/")
+    }
+
+    var rootNewCloud: URL {
+        FileManager.preferredRootUrl.appending(path: CloudDocumentController.documentDirName)
+    }
 
     public init(moduleFolder: String) {
         self.moduleFolder = moduleFolder
-        let cloud = FileManager.cloudURL
-        self.rootAppCloud = cloud?.appending(path: CloudDocumentController.documentDirName)
-        self.rootICloud = cloud?.deletingLastPathComponent().appending(path: "com~apple~CloudDocs/")
-        self.rootLocal = URL.documentsDirectory
-        self.rootNewCloud = FileManager.preferredRootUrl.appending(path: CloudDocumentController.documentDirName)
     }
 }
 

@@ -80,5 +80,7 @@ public final class RpgSpotlightIndexerDelegate {
     public let model: RpgSpotlightIndexerModel = RpgSpotlightIndexerModel()
     
     public func observeIndexing() {}
+
+    public func stopSpotlightIndexing() {}
 }
 #endif

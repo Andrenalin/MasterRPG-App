@@ -3,7 +3,7 @@
 #if os(visionOS)
 import CoreRPG
 import Foundation
-@preconcurrency import GroupActivities
+import GroupActivities
 import TabletopKit
 import os.log
 

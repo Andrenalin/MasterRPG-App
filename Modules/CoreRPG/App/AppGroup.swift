@@ -52,17 +52,23 @@ public extension FileManager {
     /// `groupURL` below there, so an item saved on tvOS won't appear on a
     /// player's other devices and vice versa — an accepted platform
     /// limitation, not a bug, unless that decision changes.
-    static let cloudURL = FileManager.default.url(forUbiquityContainerIdentifier: cloudContainerIdentifier)
+    ///
+    /// Cached, and re-resolved after the iCloud account or iCloud Drive availability changes
+    /// (`NSUbiquityIdentityDidChange`): a `static let` kept the value from launch, so a
+    /// session started while iCloud was unavailable wrote to the group container for its
+    /// whole lifetime. See CODE_AUDIT_18 §3.3.
+    static var cloudURL: URL? {
+        CloudContainerCache.shared.url
+    }
 
-    /// Touches `cloudURL` (and `groupURL`) from a background context so the one-time
-    /// resolution cost — Apple advises against calling
-    /// `url(forUbiquityContainerIdentifier:)` on the main thread — lands there instead
-    /// of on whichever thread happens to touch `preferredRootUrl` first, which in
-    /// practice was usually the main thread during early app/window setup. Call once,
-    /// early, off the main actor; `static let` resolves at most once regardless of how
-    /// many times or from where this is called. See CODE_AUDIT_17 §5.19.
+    /// Resolves `cloudURL` (and `groupURL`) off the main thread — Apple advises against
+    /// calling `url(forUbiquityContainerIdentifier:)` there — and starts watching for
+    /// iCloud identity changes. Call once, early. The file controllers read the roots lazily
+    /// (see `LocationFileManager`), so the first main-thread read no longer races this at
+    /// launch. See CODE_AUDIT_17 §5.19 and CODE_AUDIT_18 §3.3.
     @concurrent
     static func prewarmCloudUrls() async {
+        CloudContainerCache.shared.startObservingIdentityChanges()
         _ = cloudURL
         _ = groupURL
     }

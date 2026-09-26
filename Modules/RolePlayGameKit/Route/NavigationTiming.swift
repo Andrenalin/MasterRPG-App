@@ -11,7 +11,9 @@ import Foundation
 /// Settings window is not tracked by ScenesManager, and (b) the scene being onscreen
 /// doesn't guarantee its Navigator has subscribed yet.
 enum NavigationTiming {
-    /// Delay between opening a window and performing a route on that window's navigator.
+    /// Settle delay between two steps of one navigation sequence (e.g. presenting Settings,
+    /// then its import cover). Routes into a window that is still opening no longer use it:
+    /// the navigator buffers sends until a receiver mounts. See CODE_AUDIT_18 §3.17.
     static let crossWindowRouteDelay: Duration = .milliseconds(150)
 
     /// Delay between switching tabs/columns and delivering a route to the newly selected

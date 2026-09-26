@@ -108,6 +108,13 @@ public final class CoreDataInitModel {
         cleanupTask = nil
         cloudKitEventMonitoringTask?.cancel()
         cloudKitEventMonitoringTask = nil
+        // The old Spotlight delegate would otherwise keep indexing the replaced store's
+        // coordinator into the shared index (keeping that container alive), and the history
+        // tracker would keep merging its remote changes. See CODE_AUDIT_18 §3.13.
+        spotlightIndexer?.stopSpotlightIndexing()
+        spotlightIndexer = nil
+        persistentHistoryTracker = nil
+        persistentHistoryCleaner = nil
     }
 }
 

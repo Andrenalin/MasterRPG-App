@@ -87,6 +87,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** The `static let` initializer is guarded by a once-lock, so the main thread either resolves `url(forUbiquityContainerIdentifier:)` itself or blocks waiting for the detached task: the launch hitch remains. A session started while iCloud was unavailable also keeps writing to the group container for its whole lifetime.
 - **Action:** Resolve the container roots through an explicit async step that callers await before the first file access, and re-resolve when `NSUbiquityIdentityDidChange` fires.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `FileManager.cloudURL` is now backed by `CloudContainerCache` (Mutex, resolved outside the lock), which drops the cached URL on `NSUbiquityIdentityDidChange` and re-resolves it off the main thread; `prewarmCloudUrls()` starts that observation. `LocationFileManager` reads its roots lazily instead of capturing them in the `@MainActor` initializers that `AppModel` setup runs at launch, so launch no longer resolves the container on the main thread.
 
 ### 3.4 PDF extraction swallows cancellation and reports partial output as success **[verified]** **[REGRESSION, cfa35bdb]**
 - **Location:** `Modules/GeneratorRPG/BasicAI/Providers/PdfContentExtractor.swift:86-117`
@@ -126,6 +127,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** This is a data race the compiler cannot report, because `@preconcurrency` suppresses the diagnostic.
 - **Action:** Call `join()` on the main actor in a deferred turn (as the TabletopKit path does), and drop `@preconcurrency` from the GroupActivities imports to surface other crossings.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `join()` now runs on the main actor in a deferred turn (guarded by cancellation and `sessionLifecycle.isCurrent`), so it no longer races the main-actor readers, and `reset()` (also main actor) can't race it. `@preconcurrency` was removed from all 7 GroupActivities imports; iOS builds with no new diagnostics.
 
 ### 3.9 PDF find: `pendingMatches` race, strong `PDFView` capture, global retroactive `Sendable` *(still open from CODE_AUDIT_17 §3.8)*
 - **Location:** `Modules/PdfRPG/Pdf/PdfWrapperView.swift:20-26,118-176`
@@ -133,6 +135,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** An unsynchronized Swift array race when a new search starts; the `PDFView` and its document stay alive as long as the search model does; and Sendable checking is off for PDFKit in every importing module.
 - **Action:** Call `cancelFindString()` before resetting, hop `didMatchString` to the main actor (or guard the buffer with a `Mutex`), capture `pdfView` weakly, and replace the detached document load with an `@concurrent` function so the retroactive conformances can go.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `beginSearch` calls `cancelFindString()` before starting a scan; matches are buffered under an `NSLock` and handed to the main actor through a narrowly scoped `MatchHandoff` box; `setSearchMatch` captures `pdfView` weakly and bounds-checks the index. The app-wide `@unchecked @retroactive Sendable` conformances on `PDFDocument`/`PDFSelection` were removed: `ItemController.pdfDocument(for:)` loads through an `@concurrent` function returning `sending PDFDocument?`.
 
 ### 3.10 Statistics batch flush is not serialized, and a failed batch is dropped **[REGRESSION, 16109934]**
 - **Location:** `Modules/GameRPG/Statistics/Model/GameStatisticsModel.swift:151-186` (callers `:77-103`, `:188-219`)
@@ -140,6 +143,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** The in-flight roster checkpoint can land on an already-finished session, and its `lastCheckpointedRosterIds` assignment can overwrite `beginSession`'s reset. A save failure, which can come from another module's invalid object on the shared context, drops up to 100 events.
 - **Action:** Chain flushes through one stored task that `finishSession`/`beginSession` await, and re-queue the batch on failure (with a retry cap).
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Flushes are chained through `flushChain`, so `beginSession`/`finishSession`/`checkpoint` await a flush that is still in flight. A failed batch is put back in front of newer events and retried up to 3 times, then dropped with an error log.
 
 ### 3.11 macOS quit can hang indefinitely on `.terminateLater` **[REGRESSION, e9dc72fa]**
 - **Location:** `Sources/MasterRPG/macOS/macOSAppDelegate.swift:14-20`
@@ -164,6 +168,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** After a local↔CloudKit swap, the old `NSCoreDataCoreSpotlightDelegate` keeps indexing the old coordinator into the same index and keeps that container alive.
 - **Action:** Stop the indexer and release the tracker and indexer in `stop()`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `CoreDataInitModel.stop()` also calls `stopSpotlightIndexing()` and releases the indexer, history tracker (whose deinit cancels its processor and subscription) and cleaner. The tvOS stub got a no-op `stopSpotlightIndexing()`.
 
 ### 3.14 Persistent-history `process()` can overlap itself *(still open from CODE_AUDIT_17 §3.11)*
 - **Location:** `Modules/CoreRPG/Persistence/PersistentHistoryTrackerManager.swift:167-215`
@@ -171,6 +176,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** The same transactions are merged twice.
 - **Action:** Keep an `isProcessing` flag or chain passes, and check cancellation between fetch and merge.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `PersistentHistoryProcessor.process()` is serialized with `isProcessing`/`needsAnotherPass`: a request arriving mid-pass runs exactly one more pass afterwards instead of a concurrent one from the same `loadDate()`.
 
 ### 3.15 LAN sends: reordering across `encodedOffMain`, and a nil encode sent as an empty frame
 - **Location:** `Modules/GameRPG/Master/MasterNetworkController.swift:196-227`; `Modules/GameRPG/Model/GameMessagePipeline.swift:314-318`; `Modules/GameRPG/Network/ConnectionController.swift:127-141,269-285`
@@ -194,6 +200,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** On slow devices or cold visionOS scenes the route is silently dropped.
 - **Action:** Replace with a pending-route queue that is drained when the receiving navigator registers.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED (cross-window part). `Navigator` keeps sends that reached no receiver on its root for up to 5 s (at most 8) and replays them when an `onNavigationReceive` handler mounts. `routeToModule`, `presentVTTImport` and the macOS Settings forward now perform the route directly when opening a window instead of sleeping 150 ms. The remaining `crossWindowRouteDelay` uses sequence two steps inside one navigator (present Settings, then its import cover), not window mounting, and the `FolderListControllable`/`SpaceViewer` delays are UI settle/debounce timings, so they stay.
 
 ### 3.18 Isolation escape hatches: stale `@unchecked Sendable` and blanket `@preconcurrency` *(partly still open from CODE_AUDIT_17 §3.10)*
 - **Location:** `@unchecked Sendable`: `Modules/CoreRPG/Instrumentation/PerformanceTrace.swift:23`, `Modules/GameRPG/Table3D/GameBoard.swift:138`, `Modules/CoreRPG/Foundry/FoundryRuleModels.swift:170`, `Modules/CoreRPG/Persistence/CoreDataPersistenceController.swift:253`, `CloudKitCoreDataPersistenceController.swift:293`. `@preconcurrency import CoreData`: `CoreDataController.swift:4`, `CoreDataChangeObserver.swift:4`, `CoreDataPersistenceController.swift:3`, `CloudKitCoreDataPersistenceController.swift:3`, `PersistentHistoryTrackerManager.swift:4`. `nonisolated(unsafe)`: `Modules/CoreRPG/Extensions/Encoder+MainActor.swift:25`.

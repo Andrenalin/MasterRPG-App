@@ -53,17 +53,18 @@ extension ItemController {
         // See CODE_AUDIT_Pdf §7.1.
         return await fileUrlDataController?.url(for: fileUrl) { url async -> PDFDocument? in
             guard let url else { return nil }
-            // Cancellation is forwarded so a cancelled request neither keeps the detached
-            // task alive as an orphan nor hands a document to a caller that has gone away.
-            // See CODE_AUDIT_15 §4.4.
-            let loader = Task.detached { PDFDocument(url: url) }
-            let document = await withTaskCancellationHandler {
-                await loader.value
-            } onCancel: {
-                loader.cancel()
-            }
+            // Structured instead of a detached task, so cancellation propagates on its own
+            // and the document is handed back as a `sending` result — no retroactive
+            // `Sendable` conformance on PDFKit types needed. See CODE_AUDIT_18 §3.9.
+            let document = await Self.loadDocument(at: url)
             return Task.isCancelled ? nil : document
         }
+    }
+
+    @concurrent
+    private static func loadDocument(at url: URL) async -> sending PDFDocument? {
+        guard !Task.isCancelled else { return nil }
+        return PDFDocument(url: url)
     }
 #endif
 }

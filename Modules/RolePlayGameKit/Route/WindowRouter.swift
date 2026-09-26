@@ -184,10 +184,8 @@ private extension WindowRouter {
         // Settings has its own SwiftUI Settings scene, so request that scene before routing.
         if module == .setting {
             appModel.scenesManager.openSettingsWindow()
-            Task { @MainActor in
-                try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
-                appModel.navigator(for: module).perform(route: route)
-            }
+            // Buffered until the Settings stack mounts. See CODE_AUDIT_18 §3.17.
+            appModel.navigator(for: module).perform(route: route)
             return []
         }
 #endif

@@ -4,6 +4,7 @@ import CoreData
 import CoreRPG
 import Foundation
 import Observation
+import os.log
 
 @MainActor @Observable
 final class GameStatisticsModel: Sendable {
@@ -36,6 +37,12 @@ final class GameStatisticsModel: Sendable {
     @ObservationIgnored private var pendingRoster: [GameStatisticParticipantDraft]?
     @ObservationIgnored private var lastCheckpointedRosterIds: Set<UUID> = []
     @ObservationIgnored private var flushTask: Task<Void, Never>?
+    /// Serializes flushes: `finishSession`/`beginSession` await any flush still in flight
+    /// instead of finding an empty buffer and running ahead of it. See CODE_AUDIT_18 §3.10.
+    @ObservationIgnored private var flushChain: Task<Void, Never>?
+    /// Consecutive failed flushes of the same batch; after `maximumFlushRetries` it is dropped.
+    @ObservationIgnored private var failedFlushAttempts = 0
+    private static let maximumFlushRetries = 3
     private static let flushInterval: Duration = .seconds(2)
     private static let maximumBufferedEvents = 100
     @ObservationIgnored private let defaults: UserDefaults
@@ -164,6 +171,16 @@ final class GameStatisticsModel: Sendable {
     func flushPendingEvents() async {
         flushTask?.cancel()
         flushTask = nil
+        let previous = flushChain
+        let flush = Task { @MainActor [weak self] in
+            await previous?.value
+            await self?.performFlush()
+        }
+        flushChain = flush
+        await flush.value
+    }
+
+    private func performFlush() async {
         let batch = pendingEvents
         let roster = pendingRoster
         pendingEvents = []
@@ -180,8 +197,20 @@ final class GameStatisticsModel: Sendable {
                 )
                 lastCheckpointedRosterIds = Set(roster.map(\.participantId))
             }
+            failedFlushAttempts = 0
         } catch {
             errorMessage = error.localizedDescription
+            // The shared context can fail because of another module's object; put the batch
+            // back (in front of newer events) and retry, instead of losing it, up to a cap.
+            // See CODE_AUDIT_18 §3.10.
+            failedFlushAttempts += 1
+            if failedFlushAttempts <= Self.maximumFlushRetries {
+                pendingEvents.insert(contentsOf: batch, at: 0)
+                if pendingRoster == nil { pendingRoster = roster }
+            } else {
+                Logger.statistics.error("Dropped \(batch.count, privacy: .public) statistics events after \(Self.maximumFlushRetries, privacy: .public) failed saves")
+                failedFlushAttempts = 0
+            }
         }
     }
 
@@ -351,4 +380,8 @@ final class GameStatisticsModel: Sendable {
             errorMessage = error.localizedDescription
         }
     }
+}
+
+extension Logger {
+    static let statistics = Logger(subsystem: subsystem, category: "GameStatistics")
 }

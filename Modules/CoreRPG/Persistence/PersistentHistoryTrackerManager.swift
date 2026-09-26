@@ -159,6 +159,12 @@ private actor PersistentHistoryProcessor {
     private let userDefaults: UserDefaults
     private let backgroundContext: NSManagedObjectContext
     private var debounceTask: Task<Void, Never>?
+    /// A pass already past its debounce sleep ignores the next `schedule()`'s cancellation,
+    /// and actor reentrancy at `perform`/merge let a second pass start from the same
+    /// `loadDate()` and merge the same transactions twice. Passes are serialized instead; a
+    /// request that arrives mid-pass runs one more pass afterwards. See CODE_AUDIT_18 §3.14.
+    private var isProcessing = false
+    private var needsAnotherPass = false
 
     /// Debounce before processing a burst of remote-change notifications into one history
     /// fetch/merge pass, rather than one per notification. See CODE_AUDIT §9.14.
@@ -183,6 +189,19 @@ private actor PersistentHistoryProcessor {
     }
 
     private func process() async {
+        guard !isProcessing else {
+            needsAnotherPass = true
+            return
+        }
+        isProcessing = true
+        repeat {
+            needsAnotherPass = false
+            await processPass()
+        } while needsAnotherPass
+        isProcessing = false
+    }
+
+    private func processPass() async {
         let fromDate = loadDate()
         let currentActor = currentActor
         let userDefaults = userDefaults

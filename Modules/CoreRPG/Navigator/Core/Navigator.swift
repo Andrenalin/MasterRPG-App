@@ -119,6 +119,15 @@ public final class Navigator {
     @ObservationIgnored
     internal var publisher: PassthroughSubject<NavigationSendValues, Never> = .init()
 
+    /// Sends that reached no receive handler — typically a route performed on a window's
+    /// navigator right after opening that window, before its stack mounted and subscribed.
+    /// Kept briefly on the root and replayed when a receiver mounts, instead of callers
+    /// guessing a fixed "window has mounted" delay. See CODE_AUDIT_18 §3.17.
+    @ObservationIgnored
+    internal var undeliveredSends: [(values: [any Hashable], at: ContinuousClock.Instant)] = []
+    internal static let undeliveredSendLifetime: Duration = .seconds(5)
+    internal static let maximumUndeliveredSends = 8
+
     /// Registered view providers
     @ObservationIgnored
     internal var navigationProviders: [ObjectIdentifier : Any] = [:]

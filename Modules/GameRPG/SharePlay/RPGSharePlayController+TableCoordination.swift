@@ -4,7 +4,7 @@
 import Combine
 import CoreRPG
 import Foundation
-@preconcurrency import GroupActivities
+import GroupActivities
 import os.log
 
 // MARK: - SharePlay Coordination Extension
