@@ -41,7 +41,8 @@ struct TextSummaryUpdateView: View {
                 Section {
                     Toggle(isOn: $selectedProperties.applyTags) {
                         FlowLayout(spacing: 8) {
-                            ForEach(content.tags, id: \.self) { tag in
+                            ForEach(content.tags.occurrenceKeyed()) { keyed in
+                                let tag = keyed.element
                                 Text(verbatim: tag)
                                     .font(.caption)
                                     .padding(.horizontal, 12)

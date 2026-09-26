@@ -19,6 +19,9 @@ struct TableGenerationViewController: ItemGenerationControllable, Sendable {
                 sessionStore: sessionStore,
                 dismissAction: dismissAction
             )
+            // A different table gets fresh state (the model is built once per identity).
+            // See CODE_AUDIT_18 §8.5.
+            .id(itemId)
         )
     }
 }

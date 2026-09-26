@@ -16,7 +16,8 @@ public struct TagItemRow: View {
     let tags: [String]
 
     public var body: some View {
-        ForEach(tags, id: \.self) { tag in
+        ForEach(tags.occurrenceKeyed()) { keyed in
+            let tag = keyed.element
             Text(tag)
                 .rowColoredTag(backgroundColor: Color.accentColor)
                 .foregroundStyle(Color.primary)

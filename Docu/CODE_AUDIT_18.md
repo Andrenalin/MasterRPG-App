@@ -575,6 +575,7 @@ The rule scan against CLAUDE.md was clean: no `foregroundColor`, `cornerRadius()
 - **Why:** Each re-init starts a new system observer whose eligibility can briefly read `false`, so the button falls back to the share sheet. `@ObservedObject` must not own its object; CODE_AUDIT_17's note that it "can stay" missed this.
 - **Action:** Use `@StateObject` (there is still no `@Observable` alternative for `GroupStateObserver`), or read the controller's existing `canActivateSharePlay` from the environment.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `SharePlayButton` no longer owns a `GroupStateObserver`: eligibility is injected from `RPGSharePlayController.canActivateSharePlay`, which already observes it for the app's lifetime. No `@StateObject` was needed. The two identical wrapper views were merged into one `GameSharePlayButton` (part of §9.14).
 
 ### 8.3 Fixed frames clip text at large Dynamic Type sizes
 - **Location:** `Modules/GameRPG/BattleRound/BattleRollResults.swift:28` (`.frame(width: 76, height: 25)` around `.caption2` text); icon-only toolbar buttons with fixed `height: 24` at `Modules/MapRPG/Map/GameToolBar.swift:59,78,165,188`, `Modules/GameRPG/GameViews/GameMainTabToggleButtonView.swift:22`, `Modules/CoreRPG/List/ShareListItemModifier.swift:60`
@@ -582,6 +583,7 @@ The rule scan against CLAUDE.md was clean: no `foregroundColor`, `cornerRadius()
 - **Why:** At accessibility text sizes the battle roll totals are clipped vertically, and toolbar symbols stay at the base size.
 - **Action:** Use `@ScaledMetric` for these dimensions, or `minHeight` instead of a fixed height.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `BattleRollResults` sizes its strip with `@ScaledMetric(relativeTo: .caption2)`. The 24 pt icon frames in `GameToolBar` (and its subviews), `GameMainTabToggleButtonView` and `ShareItemViewModifier` use `@ScaledMetric` `iconSize`, so they grow with Dynamic Type.
 
 ### 8.4 `ForEach(id: \.self)` over content that can contain duplicates
 - **Location:** `Modules/GeneratorRPG/Root/CharacterGenView.swift:25` (AI-generated entries); tag lists at `Modules/CoreRPG/ItemViews/TagItemRow.swift:19`, `Modules/CoreRPG/Editors/RemoveTagsEditor.swift:26`, `Modules/PdfRPG/View/SummaryPdfUpdateView.swift:58`, `Modules/GeneratorRPG/View/TextSummaryUpdateView.swift:44`
@@ -589,6 +591,7 @@ The rule scan against CLAUDE.md was clean: no `foregroundColor`, `cornerRadius()
 - **Why:** Duplicate ids give undefined `ForEach` diffing (rows swap or vanish, with a runtime warning).
 - **Action:** De-duplicate tags at the model layer, and key generated entries by index-plus-content or a wrapper id assigned after generation.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. New CoreRPG `occurrenceKeyed()` pairs each value with its occurrence number (the n-th "Dagger" is always ("Dagger", n)), giving unique ids that stay stable when distinct values reorder. It is used by `CharacterGenView`, `TagItemRow`, `RemoveTagsEditor`, `SummaryPdfUpdateView` and `TextSummaryUpdateView`.
 
 ### 8.5 `@State` seeded from init parameters in views that can receive new inputs
 - **Location:** `Modules/TableRPG/View/TableGenerationRootView.swift:16` (`controller.makeModel(itemId:)` on every init); `Modules/CoreRPG/LGViews/ItemHeaderEditorView.swift:21-24`; `Modules/RuleRPG/View/RuleQuickEntryEditor.swift:17`; `Modules/CoreRPG/Sheet/SheetEntryConvertToGroupView.swift:36`
@@ -596,6 +599,7 @@ The rule scan against CLAUDE.md was clean: no `foregroundColor`, `cornerRadius()
 - **Why:** If the parent reuses the view identity with a different `itemId`/model, the view keeps showing the old state; the wasted model construction costs work on each parent update.
 - **Action:** Add `.id(itemId)` at the call sites (or build the model in `.task(id:)`), and document the editors as "snapshot on open" where that is intended.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `TableGenerationRootView` builds its model lazily, once per view identity (`LazyGenerationModel`), and the view is keyed by `.id(itemId)` at its only call site. `RuleQuickEntryEditor` and `SheetEntryConvertToGroupView` are keyed by their item/source at their routes. `ItemHeaderEditorView` was already keyed by `.id(editingItem.id)`. The seeded editors are intentionally snapshot-on-open.
 
 ---
 

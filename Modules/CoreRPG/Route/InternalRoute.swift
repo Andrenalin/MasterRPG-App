@@ -40,7 +40,10 @@ struct InternalRouteDestinationView: View {
                 ids: ids
             ) ?? AnyView(EmptyView())
         case .convertGroup(let source):
+            // Snapshots its candidates on open; a different source needs fresh state.
+            // See CODE_AUDIT_18 §8.5.
             SheetEntryConvertToGroupView(rootModel: root.editControllable.editorModel.sheetRootModel, source: source)
+                .id(source)
         }
     }
 }

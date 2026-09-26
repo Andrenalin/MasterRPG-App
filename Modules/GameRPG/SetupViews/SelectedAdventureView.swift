@@ -117,7 +117,7 @@ private struct SelectedAdventureViewOptionView: View {
                     SelectedAdventureViewImportOrClearButtonView(root: root)
 #if !os(tvOS)
                     if root.gameModel.selectedAdventure != nil {
-                        SelectedAdventureViewSharePlayButtonView(root: root)
+                        GameSharePlayButton(root: root)
                     }
 #endif
                 }
@@ -138,7 +138,7 @@ private struct SelectedAdventureViewOptionView: View {
                 SelectedAdventureViewImportOrClearButtonView(root: root)
 #if !os(tvOS)
                 if root.gameModel.selectedAdventure != nil {
-                    SelectedAdventureViewSharePlayButtonView(root: root)
+                    GameSharePlayButton(root: root)
                     SelectedAdventureViewMasterJoinCodeButtonView(root: root)
                 }
 #endif
@@ -183,20 +183,6 @@ private struct SelectedAdventureViewImportOrClearButtonView: View {
 }
 
 #if !os(tvOS)
-private struct SelectedAdventureViewSharePlayButtonView: View {
-    let root: GameRoot
-
-    private var sharePlayStore: RPGSharePlayController {
-        root.networkStore.sharePlayStore
-    }
-
-    var body: some View {
-        SharePlayButton("Play RPG Online", activity: RPGActivity())
-            .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
-            .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
-            .accessibilityHidden(sharePlayStore.canActivateSharePlay)
-    }
-}
 
 private struct SelectedAdventureViewMasterJoinCodeButtonView: View {
     let root: GameRoot

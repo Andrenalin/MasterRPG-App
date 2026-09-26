@@ -39,6 +39,8 @@ public extension View {
 // MARK: - Extracted subviews (CODE_AUDIT §8.3)
 
 private struct ShareItemViewModifierButtonView: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     let allReported: Bool
     let module: NetworkModules
     let secondActionIcon: String?
@@ -57,7 +59,7 @@ private struct ShareItemViewModifierButtonView: View {
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(allReported ? .teal : .white, .white)
             #if !os(macOS)
-                .frame(height: 24)
+                .frame(height: iconSize)
             #endif
         }
         .selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)

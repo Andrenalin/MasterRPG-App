@@ -9,6 +9,8 @@ import CharacterRPG
 /// buttons, and button actions render for both, so the game master sees one
 /// consistent set of controls regardless of which representation is on screen.
 struct GameToolBar<Session: GameToolBarSession>: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     let editController: EditController
     let model: Session
     let isMaster: Bool
@@ -56,7 +58,7 @@ struct GameToolBar<Session: GameToolBarSession>: View {
                 } label: {
                     Image(systemName: showToolBar ? "arrow.left.square.fill" : "arrow.right.square")
                         .contentTransition(.symbolEffect(.replace.downUp))
-                        .frame(height: 24)
+                        .frame(height: iconSize)
                 }
                 .selectedRoundButton(
                     title: String(localized: toggleToolBarTitle),
@@ -75,7 +77,7 @@ struct GameToolBar<Session: GameToolBarSession>: View {
                             } label: {
                                 Image(systemName: model.displayMode.toolBarIcon)
                                     .contentTransition(.symbolEffect(.replace.byLayer))
-                                    .frame(width: 28, height: 24)
+                                    .frame(width: iconSize * 28 / 24, height: iconSize)
                                     .accessibilityValue(displayModeAccessibilityValue)
                             }
                             .selectedRoundButton(
@@ -144,6 +146,8 @@ struct GameToolBar<Session: GameToolBarSession>: View {
 // of `GameToolBar`'s body did.
 
 private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     let model: Session
 
     @Environment(MapRootModel.self) private var root
@@ -162,7 +166,7 @@ private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
             let symbolName = "person.2\(model.isStreaming ? ".fill" : ".slash")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                .frame(height: 24)
+                .frame(height: iconSize)
                 .accessibilityValue(
                     model.isStreaming
                         ? Text("Enabled", bundle: .module)
@@ -185,7 +189,7 @@ private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
             let symbolName = "hand.point.up.left\(model.isPointing ? ".fill" : "")"
             Image(systemName: symbolName)
                 .contentTransition(.symbolEffect(.replace.offUp))
-                .frame(height: 24)
+                .frame(height: iconSize)
                 .accessibilityValue(
                     model.isPointing
                         ? Text("Enabled", bundle: .module)
@@ -248,6 +252,8 @@ private struct GameToolBarPinScaleView<Session: GameToolBarSession>: View {
 }
 
 private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     let model: Session
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -265,7 +271,7 @@ private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
                 let symbolName = model.isHexMap ? "hexagon.fill" : "hexagon"
                 Image(systemName: symbolName)
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                    .frame(width: 24, height: 24)
+                    .frame(width: iconSize, height: iconSize)
                     .accessibilityLabel(Text("Hex Grid", bundle: .module))
                     .accessibilityValue(
                         model.isHexMap
@@ -290,6 +296,8 @@ private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
 }
 
 private struct GameToolBarHideScaleButtonView: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     @Binding var hideScales: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -301,7 +309,7 @@ private struct GameToolBarHideScaleButtonView: View {
         } label: {
             let symbolName = "square.arrowtriangle.4.outward"
             Image(systemName: symbolName)
-                .frame(width: 24, height: 24)
+                .frame(width: iconSize, height: iconSize)
         }
         .selectedRoundButton(
             title: String(localized: "Toggle Scale Controls", bundle: .module),
@@ -312,6 +320,8 @@ private struct GameToolBarHideScaleButtonView: View {
 }
 
 private struct GameToolBarReshareButtonView<Session: GameToolBarSession>: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     let model: Session
 
     @Environment(MapRootModel.self) private var root
@@ -332,7 +342,7 @@ private struct GameToolBarReshareButtonView<Session: GameToolBarSession>: View {
         } label: {
             let symbolName = "square.and.arrow.up"
             Image(systemName: symbolName)
-                .frame(width: 24, height: 24)
+                .frame(width: iconSize, height: iconSize)
         }
         .disabled(!model.canReshare)
         .opacity(model.canReshare ? 1 : 0)

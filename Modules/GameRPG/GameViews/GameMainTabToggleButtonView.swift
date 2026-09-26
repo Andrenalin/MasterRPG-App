@@ -5,6 +5,8 @@ import SwiftUI
 
 /// Simple toggle button for iOS, iPadOS, and tvOS (show/hide only).
 struct GameMainTabToggleButtonView: View {
+    /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric private var iconSize: CGFloat = 24
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     let isMaster: Bool
@@ -19,7 +21,7 @@ struct GameMainTabToggleButtonView: View {
         } label: {
             Image(systemName: NetworkModules.game.icon)
 #if os(iOS)
-                .frame(height: 24)
+                .frame(height: iconSize)
 #endif
         }
         .selectedBorderedStype(isSelected: isShown)

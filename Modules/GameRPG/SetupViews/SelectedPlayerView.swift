@@ -123,7 +123,7 @@ private struct SelectedPlayerViewSharePlayStartView: View {
 
         return layout {
 #if !os(tvOS)
-            SelectedPlayerViewSharePlayButtonView(root: root)
+            GameSharePlayButton(root: root)
             if isCompactLayout {
                 Spacer()
             }
@@ -135,20 +135,6 @@ private struct SelectedPlayerViewSharePlayStartView: View {
 }
 
 #if !os(tvOS)
-private struct SelectedPlayerViewSharePlayButtonView: View {
-    let root: GameRoot
-
-    private var sharePlayStore: RPGSharePlayController {
-        root.networkStore.sharePlayStore
-    }
-
-    var body: some View {
-        SharePlayButton("Play RPG Online", activity: RPGActivity())
-            .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
-            .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
-            .accessibilityHidden(sharePlayStore.canActivateSharePlay)
-    }
-}
 
 private struct SelectedPlayerViewPlayerJoinCodeButtonView: View {
     let root: GameRoot

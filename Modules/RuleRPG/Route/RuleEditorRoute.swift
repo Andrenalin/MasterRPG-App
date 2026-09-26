@@ -30,7 +30,10 @@ private struct RuleEditorRouteDestinationView: View {
     var body: some View {
         switch route {
         case .quickEditor(let itemId):
+            // The editor snapshots the model's entries on open; a different item needs a
+            // fresh editor, not reused state. See CODE_AUDIT_18 §8.5.
             RuleQuickEntryEditor(model: root.itemController.itemOrEmpty(for: itemId))
+                .id(itemId)
         case .linkSelection(let itemRowModel):
             EditorLinkView(
                 root: root.rootController,

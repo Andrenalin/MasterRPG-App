@@ -14,13 +14,38 @@ import UIKit
 #endif
 
 #Preview {
-    SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"))
+    SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"), isEligibleForGroupSession: false)
+}
+
+/// The setup screens' SharePlay entry, shown only while this device can't start a group
+/// session directly. Shared by the adventure and player setup views (they had identical
+/// copies). See CODE_AUDIT_18 §9.14.
+struct GameSharePlayButton: View {
+    let root: GameRoot
+
+    private var sharePlayStore: RPGSharePlayController {
+        root.networkStore.sharePlayStore
+    }
+
+    var body: some View {
+        SharePlayButton(
+            "Play RPG Online",
+            activity: RPGActivity(),
+            isEligibleForGroupSession: sharePlayStore.canActivateSharePlay
+        )
+        .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
+        .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
+        .accessibilityHidden(sharePlayStore.canActivateSharePlay)
+    }
 }
 
 struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: View {
-    @ObservedObject
-    private var groupStateObserver = GroupStateObserver()
-    
+    /// Injected from `RPGSharePlayController.canActivateSharePlay`, which already observes
+    /// `GroupStateObserver` for the app's lifetime. The view used to own an observer through
+    /// `@ObservedObject`, which recreated it (and briefly read `false`) on every parent
+    /// re-render. See CODE_AUDIT_18 §8.2.
+    let isEligibleForGroupSession: Bool
+
     @State
     private var isActivitySharingViewPresented = false
     
@@ -30,9 +55,10 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
     let text: LocalizedStringKey
     let activity: ActivityType
 
-    init(_ text: LocalizedStringKey, activity: ActivityType) {
+    init(_ text: LocalizedStringKey, activity: ActivityType, isEligibleForGroupSession: Bool) {
         self.text = text
         self.activity = activity
+        self.isEligibleForGroupSession = isEligibleForGroupSession
     }
 
     var body: some View {
@@ -43,7 +69,7 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
                 .accessibilityHidden(true)
 #endif
             Button {
-                if groupStateObserver.isEligibleForGroupSession {
+                if isEligibleForGroupSession {
                     // No need to detach: this action closure is already MainActor-isolated
                     // (created inside `body`, which is @MainActor), so a plain structured
                     // Task inherits that isolation — no nested Task needed to set the flag.

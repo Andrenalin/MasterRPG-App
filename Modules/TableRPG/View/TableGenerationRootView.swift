@@ -10,17 +10,24 @@ struct TableGenerationRootView: View {
         sessionStore: TableGenerationSessionStore,
         dismissAction: @MainActor @escaping @Sendable () -> Void
     ) {
+        self.itemId = itemId
         self.controller = controller
         self.sessionStore = sessionStore
         self.dismissAction = dismissAction
-        _model = State(initialValue: controller.makeModel(itemId: itemId))
     }
 
+    let itemId: UUID
     let controller: TableGenerationController
     let sessionStore: TableGenerationSessionStore
     let dismissAction: @MainActor @Sendable () -> Void
 
-    @State private var model: TableGenerationModel
+    /// Built once per view identity (the call site keys the view by `itemId`): seeding `@State`
+    /// in `init` ran `makeModel` — which walks the whole nested table tree — on every parent
+    /// re-render and threw the result away. See CODE_AUDIT_18 §8.5.
+    @State private var modelStore = LazyGenerationModel()
+    private var model: TableGenerationModel {
+        modelStore.model { controller.makeModel(itemId: itemId) }
+    }
     @State private var createdValueItemId: UUID?
     @State private var createdValueName = ""
     @State private var isShowingCreatedAlert = false
@@ -151,6 +158,18 @@ struct TableGenerationRootView: View {
             playerId
         )
         closeSession()
+    }
+}
+
+@MainActor
+private final class LazyGenerationModel {
+    private var model: TableGenerationModel?
+
+    func model(_ make: () -> TableGenerationModel) -> TableGenerationModel {
+        if let model { return model }
+        let made = make()
+        model = made
+        return made
     }
 }
 

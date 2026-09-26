@@ -23,7 +23,8 @@ private struct RemoveTagsListView: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack {
-                ForEach(tags, id: \.self) { tag in
+                ForEach(tags.occurrenceKeyed()) { keyed in
+                    let tag = keyed.element
                     Text(verbatim: tag)
                         .rowColoredTag(backgroundColor: Color.accentColor)
                         .removeItemImage {

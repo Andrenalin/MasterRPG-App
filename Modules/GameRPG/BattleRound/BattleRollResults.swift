@@ -7,6 +7,11 @@ struct BattleRollResults: View {
     let results: [BattleRollResult]
     let tint: Color
 
+    /// The strip scales with the `.caption2` totals it shows instead of clipping them at
+    /// accessibility text sizes. See CODE_AUDIT_18 §8.3.
+    @ScaledMetric(relativeTo: .caption2) private var stripWidth: CGFloat = 76
+    @ScaledMetric(relativeTo: .caption2) private var stripHeight: CGFloat = 25
+
     var body: some View {
         if !results.isEmpty {
             ScrollView(.horizontal) {
@@ -25,7 +30,7 @@ struct BattleRollResults: View {
                 }
             }
             .scrollIndicators(.hidden)
-            .frame(width: 76, height: 25)
+            .frame(width: stripWidth, height: stripHeight)
             .accessibilityLabel(Text("Dice results", bundle: .module))
         }
     }
