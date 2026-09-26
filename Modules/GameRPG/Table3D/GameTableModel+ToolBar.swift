@@ -64,7 +64,9 @@ extension GameTableModel {
     /// `MapRootModel.toggleHexMap(itemId:)`), then re-syncs the board so the
     /// grid appears immediately.
     func toggleHexMap() {
-        guard let mapId = currentMapId else { return }
+        // Game-master only, like the sibling toolbar actions: a player must never edit its own
+        // game copy of the map. See CODE_AUDIT_18 §5.19.
+        guard isGameMaster, let mapId = currentMapId else { return }
         _ = mapRoot.toggleHexMap(itemId: mapId)
         // `syncAfterExternalEdit()` only syncs pawns/hit areas and broadcasts map state —
         // unlike every other fog-affecting entry point it never called
@@ -72,7 +74,10 @@ extension GameTableModel {
         // including the hex grid) stayed stale until an unrelated fog change.
         // See CODE_AUDIT_17 §5.24.
         replaceFogOfWarTask()
-        syncAfterExternalEdit()
+        syncPawnsWithMapPins()
+        // The new/removed hex entries go out as a structural content update before the map
+        // state (`syncAfterExternalEdit` only sent the state). See CODE_AUDIT_18 §5.19.
+        broadcastMapContentEdit(for: mapId)
     }
 
     func sendMapUpdates() {

@@ -375,6 +375,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Two players can compute the same seat, one before and one after learning the master, and then share one seat and dice pool until the roster changes.
 - **Action:** Re-run `assignSeatsForSharePlay` when the master becomes known, or rank only by ids every device already agrees on; add a `TableSeatAssignment` unit test for this ordering.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. When a player newly binds (or rebinds) the SharePlay master participant, `PlayerController` calls `RPGSharePlayController.masterParticipantDidChange()` (visionOS), which recomputes the seat for the table tracked in `seatingGameTableModel`. Seats no longer depend on whether the master was known when the roster last changed. (visionOS-only code: covered by the final visionOS build, not by a unit test.)
 
 ### 5.12 Synced links get a new random UUID on each device, so link rows churn **[INCOMPLETE FIX of CODE_AUDIT_17 §5.9]**
 - **Location:** `Modules/CoreRPG/Controllable/ItemControllable.swift:324-352`; `Modules/CoreRPG/Links/LinkRegisterListModel.swift:8-38`; `Modules/CoreRPG/Links/LinkRegisterController.swift:176-194`
@@ -382,6 +383,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Each device deletes the other device's row for the same link and inserts its own, so every synced link change becomes a CloudKit delete + insert per device, and "used by" rows flap.
 - **Action:** Derive a deterministic link id (for example a hash of source, entry, destination and link number), or diff by that identity tuple.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `LinkRegisterModel.id` defaults to a deterministic name-based UUID of the occurrence (source, destination, link number, command; SHA-256, v5 layout), so every device derives the same id for the same link. Rows loaded from the store keep their persisted id, and legacy random ids are replaced once on their source's next save. Covered by `LinkRegisterOccurrenceIdTests`.
 
 ### 5.13 Tag and link de-duplication keeps an arbitrary survivor
 - **Location:** `Modules/CoreRPG/Controllable/TagController.swift:136-145`; `Modules/CoreRPG/Links/LinkRegisterController.swift:179-185`
@@ -437,6 +439,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Players receive a state that references entries they don't have, and each must run a repair round trip, which §6.1's throttle can now drop.
 - **Action:** Add `guard isGameMaster` and broadcast the structural (`.generic`) update through a `broadcastMapEdit` variant, per the CLAUDE.md Table3D rules.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `toggleHexMap` is guarded by `isGameMaster` and broadcasts through a new `broadcastMapContentEdit(for:)`: the structural `.generic` content update first, then the state via `broadcastMapEdit`, honouring "pause sharing" per the CLAUDE.md Table3D rules.
 
 ### 5.20 In `AdventureGeneratorController`, a superseded extraction clears the newer one's busy flag **[INCOMPLETE FIX of CODE_AUDIT_17 §3.5]**
 - **Location:** `Modules/GeneratorRPG/Controller/AdventureGeneratorController.swift:235-253`

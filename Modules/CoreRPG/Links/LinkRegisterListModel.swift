@@ -1,12 +1,18 @@
 // @copyright André Trettin
 
 import CoreData
+import CryptoKit
 import Foundation
 
 /// A directional link from one item/entry to another, stored in the register keyed by `destination.itemId`.
 public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
+    /// `id` defaults to an id derived from the occurrence (source, destination, link number,
+    /// command) instead of a random one: links re-derived during sync (`mergeUpdates`) got a
+    /// new random id on each device, so every device deleted the other's row for the same link
+    /// and inserted its own. Rows loaded from the store keep their persisted id; legacy random
+    /// ids are replaced once, on their source's next save. See CODE_AUDIT_18 §5.12.
     public init(
-        id: UUID = UUID(),
+        id: UUID? = nil,
         name: String,
         source: ItemRowModel,
         destination: ItemRowModel,
@@ -14,7 +20,7 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
         command: String? = nil,
         markDown: String? = nil
     ) {
-        self.id = id
+        self.id = id ?? Self.occurrenceId(source: source, destination: destination, linkNumber: linkNumber, command: command)
         self.name = name
         self.source = source
         self.destination = destination
@@ -77,6 +83,20 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
 
     public var isSheetLink: Bool {
         command == nil
+    }
+
+    /// A name-based (v5-style, SHA-256) UUID of the occurrence, identical on every device.
+    static func occurrenceId(source: ItemRowModel, destination: ItemRowModel, linkNumber: Int?, command: String?) -> UUID {
+        let key = [
+            source.itemId.uuidString, source.entryId?.uuidString ?? "-", String(source.typeId.rawValue),
+            destination.itemId.uuidString, destination.entryId?.uuidString ?? "-", String(destination.typeId.rawValue),
+            linkNumber.map(String.init) ?? "-", command ?? "-"
+        ].joined(separator: "|")
+        var bytes = Array(SHA256.hash(data: Data(key.utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x50 // version 5 (name-based)
+        bytes[8] = (bytes[8] & 0x3F) | 0x80 // RFC 4122 variant
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
     }
 
     func isSameOccurrence(as other: LinkRegisterModel) -> Bool {

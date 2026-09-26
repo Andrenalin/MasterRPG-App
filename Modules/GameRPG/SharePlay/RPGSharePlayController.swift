@@ -750,6 +750,9 @@ final class RPGSharePlayController {
 
 #if os(visionOS)
     weak var tabletopGame: TabletopGame?
+    /// The table whose seats follow this session, so a late master pin can re-seat it.
+    /// See CODE_AUDIT_18 §5.11.
+    weak var seatingGameTableModel: GameTableModel?
 #endif
 
     init() {

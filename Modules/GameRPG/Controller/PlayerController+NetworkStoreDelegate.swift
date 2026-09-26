@@ -291,12 +291,21 @@ extension PlayerController {
             id: participantId,
             isCompleteMasterBroadcast: model.masterState != nil
         ) {
-        case .newlyBound, .alreadyBound:
+        case .alreadyBound:
+            return true
+        case .newlyBound:
+            #if os(visionOS)
+            // Seats rank players without the master once it is known. See CODE_AUDIT_18 §5.11.
+            root.networkStore.sharePlayStore.masterParticipantDidChange()
+            #endif
             return true
         case .rebound:
             // The GroupSession can survive while the master's participant ID
             // changes. Re-announce availability and Character exactly as on a
             // fresh session so the rejoined master rebuilds its reports.
+            #if os(visionOS)
+            root.networkStore.sharePlayStore.masterParticipantDidChange()
+            #endif
             await ready()
             return true
         case .rejected:

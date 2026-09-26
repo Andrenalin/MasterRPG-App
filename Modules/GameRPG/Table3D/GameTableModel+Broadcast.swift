@@ -56,6 +56,21 @@ extension GameTableModel {
         broadcastMapState(for: mapId)
     }
 
+    /// A structural edit (entries added/removed, e.g. the hex grid) needs the content update
+    /// first — a map state that references entries a player doesn't have forces every player
+    /// through a repair round trip — then the map state. Honours "pause sharing" like
+    /// `broadcastMapEdit`. See CODE_AUDIT_18 §5.19.
+    func broadcastMapContentEdit(for mapId: UUID) {
+        guard isStreaming else { return }
+        let mapRoot = mapRoot
+        Task { [weak self] in
+            let content = await mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
+            guard let self, self.isStreaming else { return }
+            self.networkActions?.game(content, .generic, nil)
+            self.broadcastMapEdit(for: mapId)
+        }
+    }
+
     func broadcastMapState(for mapId: UUID) {
         networkActions?.game(
             mapRoot.mapGameControllable.networkMapUpdate(for: mapId),
