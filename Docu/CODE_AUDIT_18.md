@@ -118,6 +118,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Both calls append, so the playlist ends up mixed or duplicated. Both also copy to `temporaryDirectory/<id>.<ext>`, so one call can delete a file that the other's `AVURLAsset` is still loading.
 - **Action:** Serialize playlist replacement (a generation token checked after the await, or one chained task) and give each load a unique temp name.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `AudioPlayerModel.playListGeneration` is bumped on every replacement; `add(audio:replace:)` captures it before loading and discards (and deletes the temp files of) items whose playlist was replaced during the await. Each load now writes its own temp file (`<id>-<uuid>.<ext>`), so overlapping loads of one track no longer delete each other's file.
 
 ### 3.8 `GroupSession.join()` runs in `Task.detached`, with the Sendable diagnostic hidden by `@preconcurrency import`
 - **Location:** `Modules/GameRPG/SharePlay/RPGSharePlayController+SessionLifecycle.swift:386-403` (`@preconcurrency import GroupActivities` at `:8` and in 5 other files)
@@ -322,6 +323,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** If `startDownloadingUbiquitousItem` throws for non-ubiquitous URLs (local store, app-group fallback, tvOS; confirm on device), every track is silently left out of the playlist for users without iCloud Drive. The write lock contends with sync for no benefit, and large playlists double disk usage.
 - **Action:** Drop the explicit download step (a coordinated read downloads on demand) or run it only when `isUbiquitousItem == true` as a read with `.withoutChanges`; fix the comment; copy only the current and next tracks, or cap the group's concurrency.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. The explicit `download(coordinatingAccessAt:)` step (write lock, no wait, possible failure for non-ubiquitous files) was removed: the coordinated `copyItem` read waits for an evicted iCloud file and works for local and app-group files. The comment was corrected, and track loading is capped at 3 concurrent loads (`maxConcurrentTrackLoads`).
 
 ### 5.8 New `RawDie.Sides.three` case changes the encoded form of every d3 **[verified]**
 - **Location:** `Modules/DiceRPG/Model/RawDie.swift:95-104,139-158` (added in c2d185f2); decoded via `Modules/DiceRPG/Model/DieModel.swift:50`
@@ -485,6 +487,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** `setCategory` is the SessionCore call the SharePlay code documents as blocking the main thread during an active call.
 - **Action:** Move `setCategory` into the same `@concurrent` step, before `setActive`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `initSession` registers the notifications on the main actor and then runs `@concurrent configureAndActivate()`, which calls `setCategory` followed by `setActive` off the main actor.
 
 ### 7.3 Blocking `NSFileCoordinator` calls occupy cooperative-pool threads
 - **Location:** `Modules/CoreRPG/Files/FileManager+Coordination.swift:90-113,121-195,211-250`

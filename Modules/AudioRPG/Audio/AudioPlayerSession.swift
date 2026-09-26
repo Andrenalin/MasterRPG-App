@@ -45,9 +45,8 @@ final class AudioPlayerSession: Sendable {
     @MainActor
     func initSession() {
 #if !os(macOS)
-        setCategory()
         registerSessionNotifications()
-        Task { await setActive() }
+        Task { await configureAndActivate() }
 #endif
     }
 }
@@ -75,6 +74,15 @@ private extension AudioPlayerSession {
         } catch {
             Logger.audioController.error("An error occurred setting the audio session category: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    /// Both `setCategory` and `setActive` are blocking AVAudioSession (SessionCore) calls
+    /// that can stall the main thread while a FaceTime/SharePlay call is active, so both
+    /// run off the main actor, category first. See CODE_AUDIT_18 §7.2.
+    @concurrent
+    func configureAndActivate() async {
+        setCategory()
+        await setActive()
     }
 
     @concurrent

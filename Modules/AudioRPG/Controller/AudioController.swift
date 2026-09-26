@@ -105,6 +105,11 @@ extension AudioController {
         let fileUrl: FileUrl
     }
 
+    /// How many tracks are copied/loaded at the same time. Unbounded fan-out used to queue
+    /// every track of a large playlist behind the file-coordination limiter at once.
+    /// See CODE_AUDIT_18 §5.7.
+    private static let maxConcurrentTrackLoads = 3
+
     @MainActor
     func add(audio models: [AudioModel], replace: Bool = false) async {
         if replace {
@@ -116,7 +121,12 @@ extension AudioController {
             }
             model.playList = []
             model.isPlaybackComplete = false
+            model.playListGeneration += 1
         }
+        // Another replacement can interleave during the loading await below (shared-audio
+        // observation, `loadAndPlay`, a game reveal). Items loaded for a playlist that has
+        // been replaced since are discarded, not appended. See CODE_AUDIT_18 §3.7.
+        let generation = model.playListGeneration
 
         let requests = models.compactMap { item -> AudioAssetRequest? in
             guard let fileUrl = item.fileUrl else { return nil }
@@ -131,16 +141,27 @@ extension AudioController {
         // Load concurrently (each request is an independent file copy + duration
         // load off the main actor), then reassemble in the original request order.
         let loaded = await withTaskGroup(of: (Int, PlaylistItem?).self) { group in
-            for (index, request) in requests.enumerated() {
+            var pending = requests.enumerated().makeIterator()
+            for _ in 0..<Self.maxConcurrentTrackLoads {
+                guard let (index, request) = pending.next() else { break }
                 group.addTask { (index, await self.audioAsset(for: request)) }
             }
             var results = [Int: PlaylistItem?]()
             for await (index, playItem) in group {
                 results[index] = playItem
+                if let (nextIndex, nextRequest) = pending.next() {
+                    group.addTask { (nextIndex, await self.audioAsset(for: nextRequest)) }
+                }
             }
             return results
         }
         let playItems = requests.indices.compactMap { loaded[$0] ?? nil }
+        guard model.playListGeneration == generation else {
+            for item in playItems {
+                try? FileManager.default.removeItem(at: item.url)
+            }
+            return
+        }
         // Single mutation: one observation change instead of one per item.
         model.playList.append(contentsOf: playItems)
     }
@@ -155,25 +176,21 @@ extension AudioController {
         do {
             audioAsset = try await fileUrlDataController.url(for: request.fileUrl) { url -> PlaylistItem? in
                 guard let url else { return nil }
-                // Explicitly start (and wait for) the iCloud download and read through
-                // the coordinated helpers instead of reading the raw path directly —
-                // an evicted iCloud file previously raised a missing-file error here and
-                // the track was silently omitted from the playlist. See CODE_AUDIT_17 §5.21.
-                try await FileManager.default.download(coordinatingAccessAt: url)
-
+                // Read through the coordinated copy instead of the raw path: a coordinated
+                // read of an evicted iCloud file waits for its download (CODE_AUDIT_17
+                // §5.21), and works unchanged for local and app-group files. The former
+                // explicit `startDownloadingUbiquitousItem` step took a coordinated *write*
+                // lock, didn't wait, and could fail for non-ubiquitous files.
+                // See CODE_AUDIT_18 §5.7.
+                //
                 // Copy file-to-file: AVURLAsset streams from disk, so the track never
                 // needs to be loaded into memory.
                 //
-                // Stable per-item filename (no per-play UUID suffix) so replaying —
-                // or switching playlists back and forth over — the same track
-                // overwrites its own temp copy instead of leaking a fresh file every
-                // time. See CODE_AUDIT §7.1.
-                let tempUrl = URL.temporaryDirectory
-                    .appending(path: request.id.uuidString)
-                    .appendingPathExtension(url.pathExtension)
-                // `copyItem` throws if the destination already exists (unlike
-                // `Data.write(to:)` below), so clear out a previous play's copy first.
-                try? FileManager.default.removeItem(at: tempUrl)
+                // One temp file per load: two overlapping loads of the same track used to
+                // share `<id>.<ext>`, so one could delete the file the other's asset was
+                // still loading. Replacing/removing a playlist entry deletes its file, and
+                // a discarded load deletes its own. See CODE_AUDIT_18 §3.7 (and §7.1).
+                let tempUrl = Self.temporaryTrackUrl(for: request.id, pathExtension: url.pathExtension)
                 try await FileManager.default.copyItem(coordinatingAccessFrom: url, to: tempUrl)
                 return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
             }
@@ -183,9 +200,7 @@ extension AudioController {
 
         do {
             if audioAsset == nil, let data = request.fileUrl.data {
-                let tempUrl = URL.temporaryDirectory
-                    .appending(path: request.id.uuidString)
-                    .appendingPathExtension(itemController.config.filenameExtension)
+                let tempUrl = Self.temporaryTrackUrl(for: request.id, pathExtension: itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
                 return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
             }
@@ -193,6 +208,12 @@ extension AudioController {
             Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
         }
         return audioAsset
+    }
+
+    private static func temporaryTrackUrl(for id: UUID, pathExtension: String) -> URL {
+        URL.temporaryDirectory
+            .appending(path: "\(id.uuidString)-\(UUID().uuidString)")
+            .appendingPathExtension(pathExtension)
     }
 
     @MainActor func loadAndPlay(id: UUID) {

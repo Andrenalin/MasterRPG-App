@@ -24,6 +24,10 @@ public final class AudioPlayerModel: Sendable {
 
     // MARK: player list
     var playList: [PlaylistItem] = []
+    /// Bumped whenever the playlist is replaced, so an `add` whose loading straddled a
+    /// newer replacement discards its now-stale items instead of mixing them in.
+    /// See CODE_AUDIT_18 §3.7.
+    var playListGeneration = 0
     var currentItem: PlaylistItem?
     var currentIndex: Int? {
         guard let currentItem else { return nil }
