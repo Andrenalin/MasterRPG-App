@@ -26,7 +26,7 @@ struct DiceInline: View {
                     }
                     rollAndShareDiceResult()
                 } label: {
-                    DiceInlineLabel(text: root.gameController.gameItem(for: itemId).inlineText)
+                    DiceInlineLabel(dice: root.gameController.gameItem(for: itemId))
                 }
                 .frame(minHeight: 44)
                 .borderLessTVButtonStyle()
@@ -79,7 +79,7 @@ struct DiceInline: View {
                         Label { Text("Reset", bundle: .module) } icon: { Image(systemName: "trash.circle") }
                     }
                 } label: {
-                    DiceInlineLabel(text: root.gameController.gameItem(for: itemId).inlineText)
+                    DiceInlineLabel(dice: root.gameController.gameItem(for: itemId))
                 }
                 .frame(minHeight: 44)
                 #if !os(tvOS)
@@ -119,17 +119,27 @@ struct DiceInline: View {
 /// Shared label style for `DiceInline`'s plain-button and menu-button
 /// branches — was duplicated verbatim between the two; see CODE_AUDIT_13 §8.11.
 private struct DiceInlineLabel: View {
-    let text: String
+    let dice: DiceModel
 
     var body: some View {
         HStack {
-            Text(verbatim: text)
+            Label {
+                Text(verbatim: dice.inlineText)
+            } icon: {
+                die.diceImage(for: die.die.max)
+                    .resizable()
+                    .frame(width: 32, height: 32)
+            }
         }
         .padding(4)
         .foregroundStyle(.white)
         .background {
             Color.accentColor.clipShape(.rect(cornerRadius: 8))
         }
+    }
+    
+    var die: DieModel {
+        dice.dice.first ?? .empty
     }
 }
 

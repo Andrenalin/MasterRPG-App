@@ -84,11 +84,11 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
         case .two: [.G]
         case .three: [.A, .B, .G]
         case .four: [.A, .B, .C, .G]
-        case .six: [.A, .B, .G]
+        case .six: [.A, .B, .C, .D, .E, .F, .G, .H, .I]
         case .eight: [.A, .B, .G]
-        case .ten: [.A, .B, .G]
+        case .ten: [.A, .B, .C, .D, .G]
         case .twelve: [.A, .B, .C, .G]
-        case .twenty: [.A, .B, .C, .D, .G]
+        case .twenty: [.A, .B, .C, .D, .F, .G, .H]
         case .number: [.G]
         }
     }

@@ -70,7 +70,7 @@ public struct DieModel: Equatable, Hashable, Identifiable, Codable, Sendable {
 extension DieModel {
     public enum ColorCode: String {
         case Random
-        case A, B, C, D, G
+        case A, B, C, D, E, F, G, H, I
     }
     
     // The setter is a required no-op, not dead code: `EntryDataAccessable`
