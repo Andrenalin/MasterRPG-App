@@ -547,6 +547,10 @@ extension GameRoot {
                 guard let self else { return }
                 while !Task.isCancelled && gameModel.gameConfig.state != .stopped {
                     let photos = photoRoot.itemControllable.itemDataModel.items
+                    let weathers = weatherRoot.itemControllable.itemDataModel.items
+                    let maps = mapRoot.itemControllable.itemDataModel.items
+                    // With nothing to show no iteration would ever suspend, freezing the main actor.
+                    guard !photos.isEmpty || !weathers.isEmpty || !maps.isEmpty else { return }
                     for photo in photos {
                         do {
                             try await Task.sleep(for: Self.demoRevealPace)
@@ -559,7 +563,6 @@ extension GameRoot {
                         await playerController.receivedProcess(gameNetworkModel)
                     }
                     
-                    let weathers = weatherRoot.itemControllable.itemDataModel.items
                     for weather in weathers {
                         do {
                             try await Task.sleep(for: Self.demoBigRevealPace)
@@ -572,7 +575,6 @@ extension GameRoot {
                         await playerController.receivedProcess(gameNetworkModel)
                     }
                     
-                    let maps = mapRoot.itemControllable.itemDataModel.items
                     for map in maps {
                         do {
                             try await Task.sleep(for: Self.demoBigRevealPace)

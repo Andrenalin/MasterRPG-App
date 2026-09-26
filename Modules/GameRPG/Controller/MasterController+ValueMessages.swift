@@ -82,6 +82,9 @@ extension MasterController {
         }
 
         do {
+            // INTENDED (CODE_AUDIT_17 §6.1, won't fix): a player may overwrite its own existing
+            // Character on the master to update values; connections are already gated (PIN /
+            // GM-approved / SharePlay call), so do not restrict the primary id here.
             // The package comes from a player: it may write that player's Character and
             // items it introduces, never another item this device already owns.
             // See CODE_AUDIT_15 §5.2.

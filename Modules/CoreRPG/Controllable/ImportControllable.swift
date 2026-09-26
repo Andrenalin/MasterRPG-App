@@ -34,6 +34,11 @@ public final class PeerImportPolicy {
     /// Ids the peer has introduced so far, to hand back to the caller for the next package.
     public var introducedItemIds: Set<UUID> { ownedItemIds.union(admittedItemIds) }
 
+    /// INTENDED BEHAVIOR — do not "fix" (CODE_AUDIT_17 §6.1, decided won't fix): the peer's
+    /// primary item (its own Character) is admitted even when it already exists locally, so a
+    /// player can overwrite that Character on the master to update its values. Reaching this
+    /// path needs a connected peer: LAN is PIN-protected, unknown connections are only accepted
+    /// if the game master allows them, and SharePlay is a real FaceTime call.
     func admit(itemId: UUID, existsLocally: Bool) -> Bool {
         let isAllowed = itemId == primaryItemId
             || ownedItemIds.contains(itemId)

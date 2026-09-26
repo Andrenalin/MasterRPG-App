@@ -213,6 +213,9 @@ final class MasterControllerModel {
         pendingValueUpdatesAwaitingOwnership.removeValue(forKey: senderId)
     }
 
+    /// INTENDED (CODE_AUDIT_17 §6.1, won't fix): the claimed id may be an existing Character
+    /// on the master — players update their Character this way. Access is gated at connection
+    /// time (PIN / GM-approved / SharePlay call), so do not add a library-existence check here.
     /// Binds `senderId` to `characterId` if this is their first claim, or
     /// confirms it matches their existing binding. Rejects the claim if a
     /// *different* sender already owns this Character. Call only from the
