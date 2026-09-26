@@ -159,6 +159,37 @@ public extension AKImage {
         public let scale: CGFloat
     }
 
+    /// Longest edge, in pixels, a full-size image is decoded at. A 16k x 16k battle map would be
+    /// roughly a 1 GB bitmap; 8192 keeps it near 256 MB. See CODE_AUDIT_17 §7.6.
+    static let maximumDecodedPixelSize: CGFloat = 8192
+
+    /// Decodes at full size but never beyond `maximumDecodedPixelSize`, and forces the bitmap decode
+    /// now (on the calling, off-main, context) instead of lazily on first draw on the main thread.
+    static func boundedDecode(from data: Data, maxPixelSize: CGFloat = maximumDecodedPixelSize) -> AKImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return boundedDecode(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    /// File-URL variant of `boundedDecode(from:maxPixelSize:)`.
+    static func boundedDecode(from url: URL, maxPixelSize: CGFloat = maximumDecodedPixelSize) -> AKImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary) else {
+            return nil
+        }
+        return boundedDecode(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    private static func boundedDecode(from source: CGImageSource, maxPixelSize: CGFloat) -> AKImage? {
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let width = (properties?[kCGImagePropertyPixelWidth] as? CGFloat) ?? 0
+        let height = (properties?[kCGImagePropertyPixelHeight] as? CGFloat) ?? 0
+        let longestEdge = max(width, height)
+        // Unknown dimensions: let the platform decoder handle it as before.
+        guard longestEdge > 0 else { return nil }
+        return downsampledThumbnail(from: source, maxPixelSize: min(longestEdge, maxPixelSize))?.image
+    }
+
     /// Decodes a thumbnail straight from image data via ImageIO, downsampling during
     /// decode instead of fully decoding the source at native resolution first.
     static func downsampledThumbnail(from data: Data, maxPixelSize: CGFloat) -> AKImage? {

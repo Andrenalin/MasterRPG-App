@@ -57,6 +57,12 @@ extension NWParameters {
     }
 
     // Create TLS options using a passcode to derive a pre-shared key.
+    //
+    // ACCEPTED RISK — CODE_AUDIT_17 §6.6, decided won't fix: the constant PSK identity and the
+    // 4-digit code are knowingly kept. Only app users can complete this handshake and send valid
+    // game messages, and a stranger on a public Wi-Fi gets a single attempt at most (online
+    // guessing is throttled by `ConnectionAttemptThrottle`), so offline brute force is not a
+    // realistic threat for a local-network tabletop game. Do not raise as a finding again.
     private static func tlsOptions(passcode: String) -> NWProtocolTLS.Options {
         let tlsOptions = NWProtocolTLS.Options()
 

@@ -222,6 +222,9 @@ public protocol MapGameStorable: Sendable {
     @MainActor @discardableResult func updateMap(for itemId: UUID, with data: NetworkCodableDataType) -> Bool
     @MainActor func mapUpdateResult(for itemId: UUID) -> String
     @MainActor func networkMapUpdate(for itemId: UUID) -> NetworkCodableDataType
+    /// Envelope carrying only the map's version fingerprint (no payload) — use for comparisons
+    /// instead of `networkMapUpdate`, which serialises every entry and pin. See CODE_AUDIT_17 §7.3.
+    @MainActor func networkMapGeneration(for itemId: UUID) -> NetworkCodableDataType
     @MainActor func saveAll() -> ItemModuleIds
     
     @MainActor func demoNextMap(itemId: UUID, restart: Bool) -> NetworkCodableDataType?

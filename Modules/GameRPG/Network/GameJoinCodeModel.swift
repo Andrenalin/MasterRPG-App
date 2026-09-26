@@ -276,6 +276,7 @@ public final class GameJoinCodeModel: Sendable {
 
     /// Digit count for every join code. See CODE_AUDIT §9.12 — previously
     /// duplicated as a bare `4` in both `randomCode()` and `isValidCode(_:)`.
+    /// Deliberately 4 digits — CODE_AUDIT_17 §6.6 (won't fix): see `NWParameter+GameMaster.tlsOptions`.
     static let codeLength = 4
     private static let masterCodeKey = "MasterRPGMasterJoinCode"
     private static let playerCodeKey = "MasterRPGPlayerJoinCode"

@@ -45,6 +45,9 @@ extension GameSetup {
         }
 
         let projection = projection(mapModel: mapModel, mapImage: mapImage, degrees: degrees)
+        // Diagnostics loop every pin/room and build strings regardless of log level, so they are
+        // compiled out of release builds. See CODE_AUDIT_17 §7.4.
+        #if DEBUG
         logPinDiagnostics(
             allPins: allPins,
             targetPins: targetPins,
@@ -54,6 +57,7 @@ extension GameSetup {
             projection: projection,
             isGameMaster: isGameMaster
         )
+        #endif
 
         // Same conversion the 2D map applies to a pin's base size (points ×
         // pinScale), just projected into table meters instead of screen
@@ -130,7 +134,9 @@ extension GameSetup {
             return
         }
 
+        #if DEBUG
         logRoomDiagnostics(mapModel: mapModel, projection: projection)
+        #endif
 
         let existingAreas = Dictionary(
             roomHitAreas.map { ($0.roomId, $0) },
@@ -158,6 +164,7 @@ extension GameSetup {
     /// Explains where the pins end up, for maps whose pins don't show on the board: the coordinate
     /// spaces involved (stored canvas, photo, plane), why the visibility rules dropped a pin, and
     /// every pin whose stored location lies outside the stored canvas (and so off the plane).
+    #if DEBUG
     private func logPinDiagnostics(
         allPins: [MapPinModel],
         targetPins: [MapPinModel],
@@ -224,6 +231,7 @@ extension GameSetup {
             Logger.gameTable.error("Room \(entry.id.uuidString, privacy: .public) is \(extent, privacy: .public) outside the canvas: bounds \(bounds.minX, privacy: .public),\(bounds.minY, privacy: .public) to \(bounds.maxX, privacy: .public),\(bounds.maxY, privacy: .public) vs canvas \(canvas.width, privacy: .public)x\(canvas.height, privacy: .public)")
         }
     }
+    #endif
 
     /// Shared by `syncPins` and `syncRooms`: the map/image → table-plane
     /// coordinate conversion, authoritative from `MapModel` when available.

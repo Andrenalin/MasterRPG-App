@@ -50,86 +50,25 @@ private extension OverlayGameMenu {
         appWindowSizeModel.mode == .compact ? 4 : 8
     }
 
-    /// Handles the simple show/hide toggle for iOS/tvOS
+    /// Menu-mode logic lives in `GameScreenModel` (testable); these only supply the environment.
+    /// See CODE_AUDIT_17 §8.4.
     func handleMainTabToggle(isShown: Bool, isMaster: Bool) {
-        // Save the state to UserDefaults
-        if isMaster {
-            appSettingsModel.autoShowMasterMainTab = isShown
-        } else {
-            appSettingsModel.autoShowPlayerMainTab = isShown
-        }
-
-        // Update the display
-        withAnimation(accessibilityReduceMotion ? nil : .default) {
-            if isShown {
-                gameScreenModel.showMainTab = isMaster ? .game : .value
-            } else {
-                gameScreenModel.showMainTab = .none
-            }
-        }
+        gameScreenModel.applyMainTabToggle(
+            isShown: isShown,
+            isMaster: isMaster,
+            settings: appSettingsModel,
+            animated: !accessibilityReduceMotion
+        )
     }
 
-    /// Handles the three-state main tab display mode changes
     func handleMainTabDisplayModeChange(oldValue: GameMainTabDisplayMode, newValue: GameMainTabDisplayMode, isMaster: Bool) {
-        // Save the display mode to UserDefaults
-        if isMaster {
-            appSettingsModel.masterMainTabDisplayMode = newValue.rawValue
-        } else {
-            appSettingsModel.playerMainTabDisplayMode = newValue.rawValue
-        }
-
-        switch newValue {
-        case .hidden:
-            // Hide the game view
-            gameScreenModel.showMainTab = .none
-
-            // Close the appropriate window if it was open
-            if isMaster {
-                // Master: Close adventure viewer window
-                if scenesManager.getSceneState(for: SceneId.adventureViewer) == .opened {
-                    scenesManager.dismissWindow(SceneId.adventureViewer)
-                }
-            } else {
-                // Player: Close character viewer window
-                if scenesManager.getSceneState(for: SceneId.valueViewer) == .opened {
-                    scenesManager.dismissWindow(SceneId.valueViewer)
-                }
-            }
-
-        case .inline:
-            // Show game view inline
-            gameScreenModel.showMainTab = isMaster ? .game : .value
-
-            // Close the window if it was open
-            if isMaster {
-                if scenesManager.getSceneState(for: SceneId.adventureViewer) == .opened {
-                    scenesManager.dismissWindow(SceneId.adventureViewer)
-                }
-            } else {
-                if scenesManager.getSceneState(for: SceneId.valueViewer) == .opened {
-                    scenesManager.dismissWindow(SceneId.valueViewer)
-                }
-            }
-
-        case .window:
-            // Hide inline view
-            gameScreenModel.showMainTab = .none
-
-            // Open as separate window with appropriate content
-            #if os(macOS) || os(visionOS)
-            if isMaster {
-                // Master: Open adventure viewer with current adventure
-                if scenesManager.getSceneState(for: SceneId.adventureViewer) == .closed, let adventureId = root.gameModel.selectedAdventure {
-                    scenesManager.openWindow(SceneId.viewerId(for: .adventure), selection: WindowItemSelection(itemId: adventureId))
-                }
-            } else {
-                // Player: Open character viewer with current character
-                if scenesManager.getSceneState(for: SceneId.valueViewer) == .closed, let characterId = root.gameModel.selectedCharacter {
-                    scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
-                }
-            }
-            #endif
-        }
+        gameScreenModel.applyMainTabDisplayMode(
+            newValue,
+            isMaster: isMaster,
+            settings: appSettingsModel,
+            scenes: scenesManager,
+            selectedItemId: isMaster ? root.gameModel.selectedAdventure : root.gameModel.selectedCharacter
+        )
     }
 }
 

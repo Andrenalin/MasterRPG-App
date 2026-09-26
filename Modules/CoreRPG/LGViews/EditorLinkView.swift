@@ -124,7 +124,9 @@ private struct PickerAllView: View {
     }
 
     private func buttonPicker(module: NetworkModules) -> some View {
+        // Icon-only segment: VoiceOver needs the module name. See CODE_AUDIT_17 §8.3.
         Image(systemName: module.icon)
+            .accessibilityLabel(module.title)
             .tag(module)
     }
 }

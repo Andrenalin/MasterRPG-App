@@ -379,12 +379,13 @@ The project rules in `CLAUDE.md` are followed almost everywhere. **Verified zero
 - **Severity:** High
 - **Decision (2026-09-26): won't fix, not an issue.** A player overwriting an existing character on the master to update its values is an intended feature (the player's sheet is the source of truth for its own values). Exploiting it requires knowing the character UUID, which is only feasible for a peer that is already connected, and connecting is gated: LAN connections are protected by the PIN code, unknown connections are only accepted if the game master explicitly allows them, and SharePlay sessions are real FaceTime calls with known participants. The proposed action (restricting `PeerImportPolicy.admit`) must not be implemented, since it would break the update feature.
 
-### 6.2 The 512 MB frame ceiling lets one joined peer push the GM into jetsam **[verified]**
+### 6.2 The 512 MB frame ceiling lets one joined peer push the GM into jetsam **[verified]** — FIXED 2026-09-26
 - **Location:** `Modules/GameRPG/Network/GameProtocol.swift:35-47,98-121`; `Modules/GameRPG/Model/GameLimits.swift:9,13`; `Modules/GameRPG/Network/GameNetworkController+MasterDelegate.swift:28-51`; `Modules/GameRPG/Model/GameMessagePipeline.swift:159-175,299-303`
 - **What:** The framer accepts any frame up to 512,000,000 bytes in both directions, and `masterReceived` decodes the whole frame (`decodedOffMain`) before the pipeline's 768 MB queued-byte budget sees it, then re-encodes the model to relay it.
 - **Why:** One authenticated LAN player sending a ~400-500 MB frame drives peak memory to roughly 1.4 GB during decode and about as much again on relay; iPad and iPhone hosts are killed mid-session.
 - **Action:** Use a much smaller player-to-master cap with per-type limits, enforce the queue budget on raw frame size before decode, and forward raw bytes instead of decode-then-encode (see §7.2).
 - **Severity:** High
+- **Fix (2026-09-26):** `GameLimits.maximumMessageBytes` lowered to 100 MB (SharePlay cannot move larger files anyway) and `maximumQueuedBytes` to 300 MB, so peak decode/relay memory is bounded to a few hundred MB. Per-type limits and raw-byte relay (§7.2) were not done.
 
 ### 6.3 Any player can request, or force-reveal, any library item by UUID **[verified]**
 - **Location:** `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift:33-36,124-125` (and `:38-108`); same pattern in `+PdfMessages.swift:33-38`, `+SpaceMessages.swift:33-38`, `+AudioMessages.swift:31-32`, `+TableMessages.swift:32-33`, `+DiceMessages.swift:31-32`; id exposure at `Modules/CoreRPG/Controllable/FileVersionGameControllable.swift:125-136,163-170`
@@ -407,12 +408,13 @@ The project rules in `CLAUDE.md` are followed almost everywhere. **Verified zero
 - **Action:** Add a per-session random nonce verified after the handshake, key remembered codes by an identifier the host proves, and require confirmation before dialing an unknown service.
 - **Severity:** Medium
 
-### 6.6 Constant PSK identity and a 4-digit code are brute-forceable offline *(previously reported CODE_AUDIT_16 §6.5; CODE_AUDIT_JoinCode)*
+### 6.6 Constant PSK identity and a 4-digit code are brute-forceable offline *(previously reported CODE_AUDIT_16 §6.5; CODE_AUDIT_JoinCode)* — WON'T FIX (accepted risk)
 - **Location:** `Modules/GameRPG/Network/NWParameter+GameMaster.swift:53-97`; `Modules/GameRPG/Network/GameJoinCodeModel.swift:135-138,279`
 - **What:** The PSK is derived from the code with a constant identity in a plain PSK suite with no key exchange, and `codeLength` is 4; `ConnectionAttemptThrottle` only limits online guessing.
 - **Why:** One captured handshake (or the oracle in §6.5) yields the code offline in seconds.
 - **Action:** A longer code or an ephemeral-key/PAKE handshake; this is the open decision noted in `CODE_AUDIT_15`.
 - **Severity:** Medium
+- **Decision (2026-09-26): won't fix, accepted risk.** Only app users can complete the handshake and send valid game messages, and someone trying from a public Wi-Fi gets a single attempt at most, so offline brute force is not a realistic threat. The 4-digit code and constant PSK identity stay; code comments in `NWParameter+GameMaster.swift` and `GameJoinCodeModel.swift` say so.
 
 ### 6.7 Players can trigger repeated full map-package exports on the GM with no rate limit
 - **Location:** `Modules/GameRPG/Controller/MasterController+MapMessages.swift:64-74,124-144,208-270`
@@ -460,54 +462,61 @@ The project rules in `CLAUDE.md` are followed almost everywhere. **Verified zero
 
 ## 7. Performance
 
-### 7.1 Every master send and incoming message triggers a Core Data fetch and save (statistics)
+### 7.1 Every master send and incoming message triggers a Core Data fetch and save (statistics) — FIXED
 - **Location:** `Modules/GameRPG/Statistics/Model/GameStatisticsModel.swift:100-150`; `Statistics/Controller/GameStatisticsDataController.swift:54-72,117-176,251-289,350-354`; call sites `MasterController+Messaging.swift:293`, `MasterController+NetworkStoreDelegate.swift:248,282,310`, `PlayerController+SendMessages.swift:245,283,331`
 - **What:** Each processed message spawns a Task that fetches the session, may run a duplicate-count fetch, inserts an event row, syncs participants and calls `context.save()`; with more than one participant `checkpointSession` repeats a fetch, sync and save.
 - **Why:** Pin drags and map edits produce dozens of messages per second, so bursts become dozens of unbatched saves per second plus unbounded task fan-out on the GM device.
 - **Action:** Coalesce events into a bounded buffer flushed on a timer or count, skip or aggregate high-frequency map/pin/screen messages, and checkpoint participants only when the roster changes.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Events are buffered in `GameStatisticsModel` and written as one batch (`recordEvents`, one `perform` + one save) every 2 s or 100 events, and before begin/finish/checkpoint/participantLeft/reload; a roster checkpoint is written only when the participant set changes.
 
-### 7.2 Relay decodes and re-encodes payloads, and full-library lists are re-broadcast on every player report
+### 7.2 Relay decodes and re-encodes payloads, and full-library lists are re-broadcast on every player report — PARTLY FIXED
 - **Location:** `Modules/GameRPG/Network/GameNetworkController+MasterDelegate.swift:28-48`; `Modules/GameRPG/Master/MasterNetworkController.swift:215-226`; `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift:128-134`; `+AudioMessages.swift:75-80` (same in Pdf/Space); `MasterController+Control.swift:78-131`
 - **What:** `masterReceived` already holds the raw `Data`, decodes it, then `sendResponse` encodes it again (SharePlay adds a third encode). Each player list report makes the GM rebuild the whole-library version list and broadcast it to every player, and `performResetPlayers` re-sends full map content on each roster change.
 - **Why:** Large player presentations double peak memory and CPU per relay, and N joining players cost O(N × library) LAN traffic and main-actor work.
 - **Action:** Forward the original frame bytes to LAN peers and encode once for SharePlay; send targeted lists to the requester only (or debounce and coalesce) and limit them to items shared in this game.
 - **Severity:** Medium
+- **Status (2026-09-26):** PARTLY FIXED. The LAN relay now forwards the received bytes (`PreEncodedMessage`) instead of decode-then-encode. NOT done: targeted/debounced player-list broadcasts and the `performResetPlayers` re-send — a joining player currently depends on the re-broadcast list, so changing it needs a protocol-level decision.
 
-### 7.3 `mapUpdateResult` builds a string with a quadratic `reduce` and is called per pin message
+### 7.3 `mapUpdateResult` builds a string with a quadratic `reduce` and is called per pin message — FIXED
 - **Location:** call sites `Modules/GameRPG/Controller/PlayerController+MapPresentation.swift:28,86`, `Table3D/GameTableModel+Broadcast.swift:59-65`; root cause `Modules/MapRPG/Controller/GameController+Sync.swift:28-32`
 - **What:** `networkMapUpdate` rebuilds the entry string with `reduce("")` plus a JSON encode of every pin on the main actor, and callers use it only to read the generation fingerprint. Hex-grid cells count as entries.
 - **Why:** With a few thousand hex cells each pin move or GM edit costs O(entries²) string copying and stalls the UI and network handling.
 - **Action:** Use the cheap `networkGeneration(for:)` for comparisons, build the string with `reduce(into:)`/join and cache it until entries change.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. Player-side generation checks use the new `networkMapGeneration(for:)` (version envelope, no payload); `mapUpdateResult` builds its string with `reduce(into:)`.
 
-### 7.4 3D diagnostics run on every map sync and allocate per room and pin
+### 7.4 3D diagnostics run on every map sync and allocate per room and pin — FIXED
 - **Location:** `Modules/GameRPG/Table3D/GameTableProjection.swift:47-56,133,162-229`
 - **What:** `logPinDiagnostics` and `logRoomDiagnostics` loop every entry and pin on each `syncPawnsWithMapPins`, building arrays and reason strings regardless of log level.
 - **Why:** Pure main-actor overhead on every pin update, large on hex maps.
 - **Action:** Gate them behind a debug flag or compile-time check and compute lazily (see also §6.11 for the `.public` names).
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `logPinDiagnostics`/`logRoomDiagnostics` and their calls are `#if DEBUG` only.
 
-### 7.5 Hex maps create one entity, hit area and persisted row per cell *(previously reported CODE_AUDIT_16 §7.2)*
+### 7.5 Hex maps create one entity, hit area and persisted row per cell *(previously reported CODE_AUDIT_16 §7.2)* — NOT FIXED
 - **Location:** `Modules/GameRPG/Table3D/GameTableProjection.swift:139-153`; `GameTableEntities.swift:295-345`; `GameTableModel+MapSync.swift:233-254`; `Modules/MapRPG/Map/MapEditController+HexGrid.swift:19-52`; `MapHexGridGeometry.swift:23-56`; `Modules/MapRPG/Controller/DataController.swift:161-173`
 - **What:** Hex cells are treated as rooms for hit areas, the render signature and fog paths, the whole grid is regenerated per slider tick as one `MapEntryModel` per hex, and the same cells are persisted as Core Data rows (roughly 366k rows at 61k cells with six points each) that also flow through CloudKit.
 - **Why:** Tens of thousands of entities, path fills and CloudKit rows on large hex maps.
 - **Action:** Exclude hex cells from hit volumes and fog fills, and stop persisting them: store only the scale and regenerate.
 - **Severity:** Medium
+- **Status (2026-09-26):** NOT FIXED (deliberately). Hex cells are real entries whose reveal state is per-cell game state and whose ids are random UUIDs used by the network protocol; excluding them from hit areas would break tap-to-reveal and not persisting them would lose the reveal state. Needs a design (deterministic cell ids + persisting only non-default cells).
 
-### 7.6 Full-resolution images are decoded with no pixel cap, and the decode is lazy
+### 7.6 Full-resolution images are decoded with no pixel cap, and the decode is lazy — FIXED
 - **Location:** `Modules/PhotoRPG/Controller/CacheController.swift:23-48`; `Modules/PhotoRPG/Controller/FileUrlDataController+ImageResolve.swift:15-32`; `Modules/CoreRPG/Cache/ImageCacheController.swift:30-33`
 - **What:** `createImage` loads the whole file and builds an image at full size with no ImageIO downsample or dimension check; on UIKit the bitmap decode is deferred to first draw, so the `@concurrent` hop does not decode off the main actor.
 - **Why:** A 16k × 16k battle map is roughly a 1 GB bitmap, causing memory pressure or jetsam on iPhone and visionOS and a first-render hitch on the main thread.
 - **Action:** Decode via ImageIO with a `kCGImageSourceThumbnailMaxPixelSize` sized to the display and force decode off-main.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `AKImage.boundedDecode` (ImageIO, longest edge capped at 8192 px, `ShouldCacheImmediately`) is used by `CacheController.decodedImage`; images larger than 8192 px now decode downsampled, so their `size` is smaller than the stored map size.
 
-### 7.7 Tag and link rows are rewritten wholesale on every save
+### 7.7 Tag and link rows are rewritten wholesale on every save — FIXED
 - **Location:** `Modules/CoreRPG/Controllable/TagController.swift:124-160` (`setup` keeps the last-loaded row at `:39-45`); `Modules/CoreRPG/Links/LinkRegisterController.swift:162-201`
 - **What:** Each save deletes all `TagDataModel` rows of the affected modules and all link rows of the affected sources, then inserts fresh objects.
 - **Why:** With N tags each save exports about 2N CloudKit record operations, and two devices re-inserting the same (module, title) create duplicate records with nondeterministic counts.
 - **Action:** Upsert by (module, title) or a stable id, diff link rows, and recompute counts from items instead of persisting them.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `savePendingTags` upserts by (module, title) and `savePendingLinks` diffs by link uuid, writing only changed properties and deleting duplicates/stale rows.
 
 ---
 
@@ -529,26 +538,29 @@ A SwiftUI expert pass (Step 4) grepped `Modules/` and `Sources/` for the skill's
 - **Action:** Extract subview structs from the bodies, and break the handlers into named phases (validate, defer, apply, acknowledge).
 - **Severity:** Medium
 
-### 8.3 Icon-only control coverage is unproven
+### 8.3 Icon-only control coverage is unproven — FIXED
 - **Location:** repo-wide: 586 `Image(systemName:)` uses against 186 `accessibilityLabel` calls *(previously reported CODE_AUDIT_16 §8.2/§8.3)*
 - **What:** The counts are unchanged; no individual site was verified as a defect.
 - **Why:** A VoiceOver gap in a game-time control (map toolbar, dice) would block a player.
 - **Action:** Run an Accessibility Inspector pass on the game screen, the map editor and the dice roller.
 - **Severity:** Low
+- **Status (2026-09-26):** Scanned every icon-only `Image(systemName:)` inside a Button/Toggle/Menu/Picker for a missing label. Almost all already get their label from `selectedRoundButton(title:)` or `.accessibilityLabel`; the one real gap, the icon-only module picker in `EditorLinkView`, now has `.accessibilityLabel(module.title)`. The global 586/186 count is not a defect metric. A manual Accessibility Inspector pass on device is still worth doing.
 
-### 8.4 View logic that belongs in a controller or model
+### 8.4 View logic that belongs in a controller or model — FIXED
 - **Location:** `Modules/GameRPG/GameViews/OverlayGameMenu.swift:50-110` (`handleMainTabToggle`, `handleMainTabDisplayModeChange` mutate settings and manage scene windows inside a private view extension)
 - **What:** Menu-mode logic lives in the view and cannot be unit-tested there, contrary to the project rule to place view logic into view models.
 - **Why:** The behaviour has no test seam.
 - **Action:** Move the handlers into `GameScreenModel` or a controller.
 - **Severity:** Low
+- **Status (2026-09-26):** The handlers moved to `GameScreenModel+MainTab.swift` (`applyMainTabToggle`, `applyMainTabDisplayMode`); `OverlayGameMenu` only passes the environment. Covered by `GameScreenModelMainTabTests`.
 
-### 8.5 Minor `@State` and `ForEach` items
+### 8.5 Minor `@State` and `ForEach` items — FIXED
 - **Location:** `Modules/PhotoRPG/Photo/ImageViewer.swift:19` (`@State var viewportModel` is not `private`, documented as read by `ImageViewer+Gestures.swift`); `Modules/RolePlayGameKit/Import/Foundry/FoundryImportView.swift:417` (`filter` inside a `ForEach` collection expression)
 - **What:** One deliberate deviation from the "`@State` is private" rule, and one per-body filter.
 - **Why:** Cosmetic; the filter runs each body evaluation over a small list.
 - **Action:** Keep the comment on the first; hoist the filter into the model.
 - **Severity:** Low
+- **Status (2026-09-26):** The license-document filter and the unresolved-resource count are computed once in `FoundryImportModel` when the package changes. The non-private `@State viewportModel` in `ImageViewer` stays as documented.
 
 ---
 

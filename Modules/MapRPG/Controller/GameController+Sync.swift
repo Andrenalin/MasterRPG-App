@@ -27,7 +27,9 @@ extension GameController {
     @MainActor
     func mapUpdateResult(for itemId: UUID) -> String {
         let model = gameItem(for: itemId)
-        let first = model.entries.reduce("") { $0 + "\($1.id):\($1.isShown):\($1.focused)|" }
+        // `reduce(into:)` appends in place; `reduce("")` copied the whole string per entry
+        // (quadratic on hex maps). See CODE_AUDIT_17 §7.3.
+        let first = model.entries.reduce(into: "") { $0 += "\($1.id):\($1.isShown):\($1.focused)|" }
         return first + (JSONString.encode(value: [model.pointer] + model.mapPins) ?? "")
     }
 
@@ -39,6 +41,11 @@ extension GameController {
             generation: networkGeneration(for: itemId),
             data: Data(mapUpdateResult(for: itemId).utf8)
         )
+    }
+
+    @MainActor
+    func networkMapGeneration(for itemId: UUID) -> NetworkCodableDataType {
+        Self.mapNetworkData(id: itemId, generation: networkGeneration(for: itemId), data: Data())
     }
 
     @MainActor

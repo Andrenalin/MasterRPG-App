@@ -172,24 +172,27 @@ public extension LinkRegisterController {
         // See CODE_AUDIT_15 §5.8.
         await context.perform {
             do {
+                // Diff against the persisted rows instead of delete-and-reinsert: only changed rows
+                // reach the CloudKit export and concurrent devices no longer duplicate rows.
+                // See CODE_AUDIT_17 §7.7.
                 let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                 request.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
-                request.includesPropertyValues = false
-                for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
-                    context.delete(object)
+                var existing: [UUID: LinkReferenceDataModel] = [:]
+                for object in try context.fetch(request) as? [LinkReferenceDataModel] ?? [] {
+                    if let id = object.uuid, existing[id] == nil {
+                        existing[id] = object
+                    } else {
+                        context.delete(object)
+                    }
                 }
+                var currentIds: Set<UUID> = []
                 for link in currentLinks {
-                    let dbModel = LinkReferenceDataModel(context: context)
-                    dbModel.uuid = link.id
-                    dbModel.name = link.name
-                    dbModel.sourceId = link.source.itemId
-                    dbModel.sourceEntryId = link.source.entryId
-                    dbModel.sourceModule = Int16(link.source.typeId.rawValue)
-                    dbModel.destinationId = link.destination.itemId
-                    dbModel.destinationEntryId = link.destination.entryId
-                    dbModel.destinationModule = Int16(link.destination.typeId.rawValue)
-                    dbModel.linkNumber = Int64(link.linkNumber ?? -1)
-                    dbModel.command = link.command
+                    currentIds.insert(link.id)
+                    let dbModel = existing[link.id] ?? LinkReferenceDataModel(context: context)
+                    Self.assign(link, to: dbModel)
+                }
+                for (id, object) in existing where !currentIds.contains(id) {
+                    context.delete(object)
                 }
                 if context.hasChanges { try context.save() }
             } catch {
@@ -203,6 +206,26 @@ public extension LinkRegisterController {
                 }
             }
         }
+    }
+}
+
+private extension LinkRegisterController {
+    /// Writes `link` into `dbModel`, touching only properties that differ so an unchanged row
+    /// stays clean and produces no CloudKit export.
+    nonisolated static func assign(_ link: LinkRegisterModel, to dbModel: LinkReferenceDataModel) {
+        func set<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<LinkReferenceDataModel, T>, _ value: T) {
+            if dbModel[keyPath: keyPath] != value { dbModel[keyPath: keyPath] = value }
+        }
+        set(\.uuid, link.id)
+        set(\.name, link.name)
+        set(\.sourceId, link.source.itemId)
+        set(\.sourceEntryId, link.source.entryId)
+        set(\.sourceModule, Int16(link.source.typeId.rawValue))
+        set(\.destinationId, link.destination.itemId)
+        set(\.destinationEntryId, link.destination.entryId)
+        set(\.destinationModule, Int16(link.destination.typeId.rawValue))
+        set(\.linkNumber, Int64(link.linkNumber ?? -1))
+        set(\.command, link.command)
     }
 }
 

@@ -119,59 +119,85 @@ struct GameStatisticsDataController: Sendable {
         participant: GameStatisticParticipantDraft?,
         in context: NSManagedObjectContext
     ) async throws {
+        try await recordEvents([(draft, participant)], in: context)
+    }
+
+    /// Inserts a whole batch with one `perform` and one save, so a burst of pin/map messages
+    /// costs one Core Data round trip instead of a fetch and save per message.
+    /// See CODE_AUDIT_17 §7.1.
+    func recordEvents(
+        _ batch: [(draft: GameStatisticEventDraft, participant: GameStatisticParticipantDraft?)],
+        in context: NSManagedObjectContext
+    ) async throws {
+        guard !batch.isEmpty else { return }
         try await context.perform {
-            guard let session = try self.fetchSession(id: draft.sessionId, in: context), !session.isComplete else { return }
+            var sessions: [UUID: RPGGameStatisticSession] = [:]
+            var seenKeys: Set<String> = []
+            for (draft, participant) in batch {
+                let session: RPGGameStatisticSession
+                if let cached = sessions[draft.sessionId] {
+                    session = cached
+                } else if let fetched = try self.fetchSession(id: draft.sessionId, in: context) {
+                    sessions[draft.sessionId] = fetched
+                    session = fetched
+                } else {
+                    continue
+                }
+                guard !session.isComplete else { continue }
 
-            if !draft.deduplicationKey.isEmpty {
-                let duplicateRequest = NSFetchRequest<RPGGameStatisticEvent>(entityName: "RPGGameStatisticEvent")
-                duplicateRequest.predicate = NSPredicate(
-                    format: "sessionID == %@ AND deduplicationKey == %@",
-                    draft.sessionId as NSUUID,
-                    draft.deduplicationKey
+                if !draft.deduplicationKey.isEmpty {
+                    let scopedKey = "\(draft.sessionId.uuidString)|\(draft.deduplicationKey)"
+                    guard seenKeys.insert(scopedKey).inserted else { continue }
+                    let duplicateRequest = NSFetchRequest<RPGGameStatisticEvent>(entityName: "RPGGameStatisticEvent")
+                    duplicateRequest.predicate = NSPredicate(
+                        format: "sessionID == %@ AND deduplicationKey == %@",
+                        draft.sessionId as NSUUID,
+                        draft.deduplicationKey
+                    )
+                    duplicateRequest.fetchLimit = 1
+                    guard try context.count(for: duplicateRequest) == 0 else { continue }
+                }
+
+                let event = RPGGameStatisticEvent(context: context)
+                event.uuid = draft.id
+                event.sessionID = draft.sessionId
+                event.occurredAt = draft.occurredAt
+                event.kindRaw = draft.kind.rawValue
+                event.directionRaw = draft.direction.rawValue
+                event.originRaw = draft.origin.rawValue
+                event.actorID = draft.actorId
+                event.actorCharacterID = draft.actorCharacterId
+                event.actorName = draft.actorName
+                event.targetID = draft.targetId
+                event.itemID = draft.itemId
+                event.itemName = draft.itemName
+                event.moduleRaw = Int16(clamping: draft.module.rawValue)
+                event.messageTypeRaw = draft.messageTypeRaw
+                event.actionRaw = draft.actionRaw
+                event.outcomeRaw = draft.outcome.rawValue
+                event.quantity = draft.quantity
+                event.numericValue = draft.numericValue
+                event.resultValues = draft.resultValues
+                event.checked = draft.checked
+                event.payloadByteCount = draft.payloadByteCount
+                event.messageCounter = draft.messageCounter
+                event.proxyCounter = draft.proxyCounter
+                event.dataVersion = draft.dataVersion
+                event.success = draft.success
+                event.deduplicationKey = draft.deduplicationKey
+                event.session = session
+
+                let lastActivityAt = max(session.lastActivityAt ?? draft.occurredAt, draft.occurredAt)
+                session.lastActivityAt = lastActivityAt
+                session.durationSeconds = max(
+                    session.durationSeconds,
+                    max(0, lastActivityAt.timeIntervalSince(session.startedAt ?? lastActivityAt))
                 )
-                duplicateRequest.fetchLimit = 1
-                guard try context.count(for: duplicateRequest) == 0 else { return }
-            }
+                session.transportMask |= Int32(1 << Int(draft.origin.rawValue))
 
-            let event = RPGGameStatisticEvent(context: context)
-            event.uuid = draft.id
-            event.sessionID = draft.sessionId
-            event.occurredAt = draft.occurredAt
-            event.kindRaw = draft.kind.rawValue
-            event.directionRaw = draft.direction.rawValue
-            event.originRaw = draft.origin.rawValue
-            event.actorID = draft.actorId
-            event.actorCharacterID = draft.actorCharacterId
-            event.actorName = draft.actorName
-            event.targetID = draft.targetId
-            event.itemID = draft.itemId
-            event.itemName = draft.itemName
-            event.moduleRaw = Int16(clamping: draft.module.rawValue)
-            event.messageTypeRaw = draft.messageTypeRaw
-            event.actionRaw = draft.actionRaw
-            event.outcomeRaw = draft.outcome.rawValue
-            event.quantity = draft.quantity
-            event.numericValue = draft.numericValue
-            event.resultValues = draft.resultValues
-            event.checked = draft.checked
-            event.payloadByteCount = draft.payloadByteCount
-            event.messageCounter = draft.messageCounter
-            event.proxyCounter = draft.proxyCounter
-            event.dataVersion = draft.dataVersion
-            event.success = draft.success
-            event.deduplicationKey = draft.deduplicationKey
-            event.session = session
-
-            let lastActivityAt = max(session.lastActivityAt ?? draft.occurredAt, draft.occurredAt)
-            session.lastActivityAt = lastActivityAt
-            session.durationSeconds = max(
-                session.durationSeconds,
-                max(0, lastActivityAt.timeIntervalSince(session.startedAt ?? lastActivityAt))
-            )
-            session.transportMask |= Int32(1 << Int(draft.origin.rawValue))
-
-            if let participant {
-                try self.synchronizeParticipants([participant], sessionID: draft.sessionId, session: session, at: draft.occurredAt, in: context)
+                if let participant {
+                    try self.synchronizeParticipants([participant], sessionID: draft.sessionId, session: session, at: draft.occurredAt, in: context)
+                }
             }
             try self.saveIfNeeded(context)
         }

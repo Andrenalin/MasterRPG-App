@@ -30,6 +30,14 @@ final class GameStatisticsModel: Sendable {
     @ObservationIgnored private var activeLocalParticipantID: UUID?
     @ObservationIgnored private let dataController = GameStatisticsDataController()
     @ObservationIgnored private let statisticsController = GameStatisticsController()
+    /// Events waiting for the next batched write, and the roster last written to the store.
+    /// See CODE_AUDIT_17 §7.1.
+    @ObservationIgnored private var pendingEvents: [(draft: GameStatisticEventDraft, participant: GameStatisticParticipantDraft?)] = []
+    @ObservationIgnored private var pendingRoster: [GameStatisticParticipantDraft]?
+    @ObservationIgnored private var lastCheckpointedRosterIds: Set<UUID> = []
+    @ObservationIgnored private var flushTask: Task<Void, Never>?
+    private static let flushInterval: Duration = .seconds(2)
+    private static let maximumBufferedEvents = 100
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var achievementReporter: (@MainActor @Sendable (GameStatisticsSummary) async -> Void)?
 
@@ -68,6 +76,8 @@ final class GameStatisticsModel: Sendable {
 
     func beginSession(_ draft: GameStatisticSessionDraft) async {
         guard isCollectionEnabled, !draft.isDemo, let context else { return }
+        await flushPendingEvents()
+        lastCheckpointedRosterIds = []
         do {
             if let activeSessionID {
                 try await dataController.finishSession(id: activeSessionID, at: draft.startedAt, reason: .interrupted, in: context)
@@ -83,6 +93,8 @@ final class GameStatisticsModel: Sendable {
 
     func checkpoint(participants: [GameStatisticParticipantDraft], at date: Date = .now) async {
         guard let context, let activeSessionID else { return }
+        await flushPendingEvents()
+        lastCheckpointedRosterIds = Set(participants.map(\.participantId))
         do {
             try await dataController.checkpointSession(id: activeSessionID, participants: participants, at: date, in: context)
         } catch {
@@ -115,7 +127,7 @@ final class GameStatisticsModel: Sendable {
         at date: Date
     ) async {
         guard isCollectionEnabled,
-              let context,
+              context != nil,
               let activeSessionID,
               let activeLocalParticipantID
         else { return }
@@ -129,20 +141,44 @@ final class GameStatisticsModel: Sendable {
             occurredAt: date
         )
         let participants = statisticsController.participants(from: model, localParticipantId: activeLocalParticipantID)
+        pendingEvents.append((draft, participants.first(where: { $0.participantId == model.sender.id })))
+        // Only a changed roster needs a checkpoint; the per-event participant sync already
+        // keeps the sender's row current.
+        if participants.count > 1, Set(participants.map(\.participantId)) != lastCheckpointedRosterIds {
+            pendingRoster = participants
+        }
 
+        if pendingEvents.count >= Self.maximumBufferedEvents {
+            await flushPendingEvents()
+        } else if flushTask == nil {
+            flushTask = Task { [weak self] in
+                try? await Task.sleep(for: Self.flushInterval)
+                guard !Task.isCancelled else { return }
+                await self?.flushPendingEvents()
+            }
+        }
+    }
+
+    /// Writes every buffered event (and a changed roster) with one save. Called on a timer, when
+    /// the buffer fills, and before anything that reads or closes the session.
+    func flushPendingEvents() async {
+        flushTask?.cancel()
+        flushTask = nil
+        let batch = pendingEvents
+        let roster = pendingRoster
+        pendingEvents = []
+        pendingRoster = nil
+        guard let context, !batch.isEmpty || roster != nil else { return }
         do {
-            try await dataController.recordEvent(
-                draft,
-                participant: participants.first(where: { $0.participantId == model.sender.id }),
-                in: context
-            )
-            if participants.count > 1 {
+            try await dataController.recordEvents(batch, in: context)
+            if let roster, let sessionId = batch.last?.draft.sessionId ?? activeSessionID {
                 try await dataController.checkpointSession(
-                    id: activeSessionID,
-                    participants: participants,
-                    at: draft.occurredAt,
+                    id: sessionId,
+                    participants: roster,
+                    at: batch.last?.draft.occurredAt ?? .now,
                     in: context
                 )
+                lastCheckpointedRosterIds = Set(roster.map(\.participantId))
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -151,6 +187,7 @@ final class GameStatisticsModel: Sendable {
 
     func participantLeft(id: UUID, at date: Date = .now) async {
         guard let context, let activeSessionID else { return }
+        await flushPendingEvents()
         do {
             try await dataController.participantLeft(
                 sessionID: activeSessionID,
@@ -168,6 +205,7 @@ final class GameStatisticsModel: Sendable {
         at date: Date = .now
     ) async {
         guard let context, let activeSessionID else { return }
+        await flushPendingEvents()
         do {
             try await dataController.finishSession(id: activeSessionID, at: date, reason: reason, in: context)
             lastCompletedSessionID = activeSessionID
@@ -182,6 +220,7 @@ final class GameStatisticsModel: Sendable {
 
     func reload(now: Date = .now, calendar: Calendar = .autoupdatingCurrent) async {
         guard let context else { return }
+        await flushPendingEvents()
         isLoading = true
         defer { isLoading = false }
         do {

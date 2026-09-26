@@ -302,6 +302,15 @@ extension GameNetworkModel: MessageMapper {
     }
 }
 
+/// Wraps bytes that are already encoded, so a relay can forward a received frame untouched
+/// instead of decoding and re-encoding it. See CODE_AUDIT_17 §7.2.
+struct PreEncodedMessage: MessageMapper {
+    let bytes: Data
+
+    func encodeData() -> Data? { bytes }
+    static func decodeData(of data: Data?) -> PreEncodedMessage? { data.map(PreEncodedMessage.init(bytes:)) }
+}
+
 /// Encodes a message off the main actor; see `GameNetworkModel.decodedOffMain(of:)`.
 @concurrent
 func encodedOffMain(_ message: (any MessageMapper)?) async -> Data? {

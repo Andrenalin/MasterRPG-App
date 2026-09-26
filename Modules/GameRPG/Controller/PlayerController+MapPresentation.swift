@@ -29,7 +29,7 @@ extension PlayerController {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == model.data.id else {
             return .awaitingMapGeneration
         }
-        let generation = root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id)
+        let generation = root.mapRoot.mapGameControllable.networkMapGeneration(for: model.data.id)
         guard model.data.version == generation.version,
               model.data.assetVersion == generation.assetVersion,
               model.data.contentVersion == generation.contentVersion
@@ -74,7 +74,7 @@ extension PlayerController {
 
     func retryDeferredMapPins(itemId: UUID) {
         guard root.mapRoot.gameControllable.gameModel.currentItemId == itemId else { return }
-        let generation = root.mapRoot.mapGameControllable.networkMapUpdate(for: itemId)
+        let generation = root.mapRoot.mapGameControllable.networkMapGeneration(for: itemId)
         let deferred = gameModel.consumeDeferredMapPins(for: itemId, matching: generation)
         var didApplyPin = false
         for model in deferred {

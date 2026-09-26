@@ -39,8 +39,11 @@ extension CacheController: ImageCacheControllable {
     private static func decodedImage(for fileUrl: FileUrl, fileUrlDataController: FileUrlDataController) async -> AKImage? {
         await fileUrlDataController.resolvedImage(
             for: fileUrl,
-            decodeData: { AKImage(data: $0) },
-            decodeUrl: { AKImage(contentsOfFile: $0.relativePath) }
+            // Bounded ImageIO decode (forced off-main, capped pixel size); the plain platform
+            // decoder stays as the fallback for formats ImageIO cannot report dimensions for.
+            // See CODE_AUDIT_17 §7.6.
+            decodeData: { AKImage.boundedDecode(from: $0) ?? AKImage(data: $0) },
+            decodeUrl: { AKImage.boundedDecode(from: $0) ?? AKImage(contentsOfFile: $0.relativePath) }
         )
     }
 

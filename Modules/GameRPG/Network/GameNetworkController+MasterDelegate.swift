@@ -40,7 +40,10 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
                 return
             }
             if Self.shouldRelayToLAN(gameData), await relayAdmission.admit(gameData) {
-                await model.masterStore?.sendResponse(data: gameData, except: connectionId)
+                // Forward the received bytes as they are: re-encoding the decoded model doubled
+                // peak memory and CPU per relayed presentation. See CODE_AUDIT_17 §7.2.
+                let relayed: any MessageMapper = data.map { PreEncodedMessage(bytes: $0) } ?? gameData
+                await model.masterStore?.sendResponse(data: relayed, except: connectionId)
                 let useFileJournal = fileJournal || gameData.usesFileJournal
                 // `sendData` is itself `@MainActor` (and `@discardableResult`) — `await`
                 // alone hops there, no `MainActor.run` wrapper needed.

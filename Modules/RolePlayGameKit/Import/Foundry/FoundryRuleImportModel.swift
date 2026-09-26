@@ -23,7 +23,16 @@ final class FoundryImportModel {
     private(set) var selectedURL: URL?
     private(set) var selectionID = UUID()
     private(set) var artifact: FoundryArtifact?
-    private(set) var package: FoundryVTTImportPackage?
+    private(set) var package: FoundryVTTImportPackage? {
+        didSet {
+            licenseDocuments = package?.textResources.filter(\.isLicenseDocument) ?? []
+            unresolvedResourceCount = package?.resources.count { $0.location != .packaged } ?? 0
+        }
+    }
+    /// The package's license documents, filtered once when the package changes instead of on every
+    /// view body evaluation. See CODE_AUDIT_17 §8.5.
+    private(set) var licenseDocuments: [FoundryPackageTextResource] = []
+    private(set) var unresolvedResourceCount = 0
     private(set) var universalVTT: UniversalVTTDocument?
     private(set) var mappedImport: FoundryMappedImport?
     private(set) var reviewSession: ExternalImportReviewSession?
@@ -441,3 +450,12 @@ final class FoundryImportModel {
         }
     }
 }
+
+extension FoundryPackageTextResource {
+    var isLicenseDocument: Bool {
+        path.localizedStandardContains("license")
+            || path.localizedStandardContains("copying")
+            || path.localizedStandardContains("ogl")
+    }
+}
+

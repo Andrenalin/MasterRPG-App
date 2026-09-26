@@ -403,18 +403,17 @@ private struct FoundryImportReportSection: View {
                 Image(systemName: "checkmark.shield")
             }
             if let package = model.package {
-                let unresolved = package.resources.filter { $0.location != .packaged }
-                if !unresolved.isEmpty {
+                if model.unresolvedResourceCount > 0 {
                     Label {
                         Text(
-                            "\(unresolved.count.formatted()) assets are remote, installation-relative, or missing and will not be fetched automatically.",
+                            "\(model.unresolvedResourceCount.formatted()) assets are remote, installation-relative, or missing and will not be fetched automatically.",
                             bundle: .module
                         )
                     } icon: {
                         Image(systemName: "exclamationmark.triangle")
                     }
                 }
-                ForEach(package.textResources.filter(\.isLicenseDocument)) { document in
+                ForEach(model.licenseDocuments) { document in
 #if os(tvOS)
                     VStack(alignment: .leading) {
                         Text(document.path)
@@ -704,14 +703,6 @@ private extension ExternalImportConflictStatus {
         case .unchanged: String(localized: "Already up to date", bundle: .module)
         case .changed: String(localized: "Changes existing item", bundle: .module)
         }
-    }
-}
-
-private extension FoundryPackageTextResource {
-    var isLicenseDocument: Bool {
-        path.localizedStandardContains("license")
-            || path.localizedStandardContains("copying")
-            || path.localizedStandardContains("ogl")
     }
 }
 

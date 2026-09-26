@@ -133,17 +133,30 @@ public struct TagController: Sendable {
         // bypass the export. See CODE_AUDIT_15 §5.8.
         await context.perform {
             do {
+                // Upsert by (module, title) instead of delete-and-reinsert: only changed rows reach
+                // the CloudKit export. See CODE_AUDIT_17 §7.7.
                 let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
                 request.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
-                request.includesPropertyValues = false
-                for object in try context.fetch(request) as? [NSManagedObject] ?? [] {
-                    context.delete(object)
+                var existing: [String: TagDataModel] = [:]
+                for object in try context.fetch(request) as? [TagDataModel] ?? [] {
+                    let key = "\(object.module)|\(object.title ?? "")"
+                    if existing[key] == nil {
+                        existing[key] = object
+                    } else {
+                        context.delete(object)
+                    }
                 }
+                var currentKeys: Set<String> = []
                 for tag in currentTags {
-                    let dbModel = TagDataModel(context: context)
-                    dbModel.module = Int16(tag.module.rawValue)
-                    dbModel.title = tag.title
-                    dbModel.count = Int32(tag.count)
+                    let key = "\(Int16(tag.module.rawValue))|\(tag.title)"
+                    currentKeys.insert(key)
+                    let dbModel = existing[key] ?? TagDataModel(context: context)
+                    if dbModel.module != Int16(tag.module.rawValue) { dbModel.module = Int16(tag.module.rawValue) }
+                    if dbModel.title != tag.title { dbModel.title = tag.title }
+                    if dbModel.count != Int32(tag.count) { dbModel.count = Int32(tag.count) }
+                }
+                for (key, object) in existing where !currentKeys.contains(key) {
+                    context.delete(object)
                 }
                 if context.hasChanges { try context.save() }
             } catch {
