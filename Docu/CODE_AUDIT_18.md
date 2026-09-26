@@ -537,6 +537,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** Small synchronous I/O at launch, plus dead configuration left from the previous `Task.detached(priority:)` design.
 - **Action:** Make load/save `@concurrent` and remove the `priority` parameters.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. `FilePersistenceController.load/save/remove` are `@concurrent`, so bookmark file I/O and JSON decoding no longer run on the caller's (main) actor at launch. The unused `priority` parameter was removed from `FilePersistenceController` and `FileDataController` (`FileBookmarkController` keeps its own, which it does use).
 
 ### 7.5 Image resize renders at a fixed 3× on top of the screen scale
 - **Location:** `Modules/CoreRPG/Extensions/Image+AKImage.swift:108-140`
@@ -544,6 +545,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** Thumbnails come out at up to 9× the needed pixel area on iPhone, wasting memory and decode time.
 - **Action:** Use an ImageIO thumbnail (as `boundedDecode` already does) or `byPreparingThumbnail(ofSize:)`, or set `format.scale = 1`.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The iOS `resize` renderer uses a format with `scale = 1`: the rect is already in 3× pixel units, so the result keeps its point size with a ninth of the pixels on a 3× screen. (macOS draws into an `NSImage` of the target size and was unaffected.)
 
 ### 7.6 Items still open by decision
 - **Location:** CODE_AUDIT_17 §7.2 (targeted player-list broadcasts) and §7.5 (hex cells as entries)
@@ -551,6 +553,7 @@ Entitlements were checked for all targets: Debug/Release pairs are consistent, t
 - **Why:** Listed so they aren't forgotten; they need the protocol/design decisions recorded there.
 - **Action:** None beyond the recorded decisions.
 - **Severity:** Low
+- **Status (2026-09-26):** No change, as recorded in CODE_AUDIT_17: both items need the protocol/design decisions noted there.
 
 ---
 

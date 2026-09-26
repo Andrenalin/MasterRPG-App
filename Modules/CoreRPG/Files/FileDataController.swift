@@ -46,12 +46,11 @@ actor FileDataModel<Datatype: Codable & Storeable & Sendable> {
 public struct FileDataController<Datatype: Codable & Storeable & Sendable>: Sendable {
     private let model: FileDataModel<Datatype>
     private let persistence: FilePersistenceController
-    private let priority: TaskPriority
 
-    public init(name: String, type: FilePersistenceType = .store, dataExtension: String? = nil, priority: TaskPriority = .userInitiated) {
-        persistence = FilePersistenceController(name: name, persistence: type, dataExtension: dataExtension, priority: priority)
+    /// The former `priority` parameter was stored but never used. See CODE_AUDIT_18 §7.4.
+    public init(name: String, type: FilePersistenceType = .store, dataExtension: String? = nil) {
+        persistence = FilePersistenceController(name: name, persistence: type, dataExtension: dataExtension)
         model = FileDataModel()
-        self.priority = priority
     }
 }
 

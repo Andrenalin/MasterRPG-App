@@ -5,7 +5,7 @@ import os.log
 
 actor FileBookmarkModel {
     init(name: String, priority: TaskPriority) {
-        let itemController = FileDataController<Bookmarks>(name: name, priority: priority)
+        let itemController = FileDataController<Bookmarks>(name: name)
         self.itemController = itemController
         fetchTask = Task(priority: priority) {
             await itemController.fetch()

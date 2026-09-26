@@ -18,20 +18,21 @@ struct FilePersistenceController: Sendable {
     private let type: FilePersistenceType
     private let dataExtension: String?
     private let model: FilePersistenceModel
-    private let priority: TaskPriority
 
-    init(name: String, persistence: FilePersistenceType, dataExtension: String? = nil, priority: TaskPriority = .userInitiated) {
+    init(name: String, persistence: FilePersistenceType, dataExtension: String? = nil) {
         self.name = name
         self.dataExtension = dataExtension
         self.type = persistence
         self.model = FilePersistenceModel()
-        self.priority = priority
     }
 }
 
 // MARK: Manage Data
 
+// `@concurrent`: file I/O and JSON decoding used to run on the (often main-actor) caller's
+// executor at launch, once per file module. See CODE_AUDIT_18 §7.4.
 extension FilePersistenceController {
+    @concurrent
     func load() async -> [DataModel] {
         guard type != .memory else { return await model.cache }
         let oldUrl = oldFileUrl
@@ -64,6 +65,7 @@ extension FilePersistenceController {
         return []
     }
 
+    @concurrent
     func save(data: [DataModel]) async {
         guard type != .memory else {
             await model.setCache(update: data)
@@ -77,6 +79,7 @@ extension FilePersistenceController {
         }
     }
 
+    @concurrent
     func remove() async {
         guard type != .memory else {
             await model.setCache(update: [])

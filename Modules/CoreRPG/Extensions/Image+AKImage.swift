@@ -136,8 +136,13 @@ public extension AKImage {
         }
         
         let rect = CGRect(origin: .zero, size: targetSize * pixelScale)
-        
-        let renderer = UIGraphicsImageRenderer(size: rect.size)
+
+        // `rect` is already in pixels (× `pixelScale`); the default format multiplied it by the
+        // screen scale again, producing up to 9× the needed pixel area. Same point size as
+        // before, a ninth of the pixels on a 3× screen. See CODE_AUDIT_18 §7.5.
+        let format = UIGraphicsImageRendererFormat.preferred()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: rect.size, format: format)
         
         return renderer.image { _ in
             draw(in: sourceRect)
