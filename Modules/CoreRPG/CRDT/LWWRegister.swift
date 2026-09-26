@@ -37,6 +37,16 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
             // functionally equivalent to say rhs instance is ordered after lhs instance
             lhs.clockId <= rhs.clockId
         }
+
+        /// Whether this atom's clock is within "now plus the allowed skew". A clock beyond it
+        /// (a badly skewed device or a crafted payload) must not win a merge: local writes are
+        /// themselves bounded by the same skew, so a stored far-future clock would beat every
+        /// later edit on every replica and freeze the field. Rejecting (instead of clamping,
+        /// which depends on each replica's merge time) keeps replicas convergent.
+        /// See CODE_AUDIT_18 §5.5.
+        var isAdmissible: Bool {
+            clockId.clock <= MonotonicWallClock.bounded(clockId.clock)
+        }
     }
 
     private var _storage: Metadata
@@ -48,6 +58,11 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
             _storage.value
         }
         set {
+            // A local write overwrites what this replica currently holds, so it must order
+            // after it even when the stored clock came from another device (or a previous
+            // launch) and is ahead of this device's clock. `observe` bounds the jump.
+            // See CODE_AUDIT_18 §5.5.
+            MonotonicWallClock.observe(_storage.clockId.clock)
             _storage = Metadata(value: newValue, id: selfId)
         }
     }
@@ -69,19 +84,31 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
 
 extension LWWRegister: Replicable {
     public mutating func merging(with other: LWWRegister<ActorID, T>) {
-        MonotonicWallClock.observe(other._storage.clockId.clock)
-        if _storage <= other._storage {
-            _storage = other._storage
-        }
+        _storage = Self.mergedStorage(_storage, other._storage)
     }
 
     /// Returns a new counter by merging two counter instances.
     /// - Parameter other: The counter to merge.
     public func merged(with other: LWWRegister) -> LWWRegister {
-        MonotonicWallClock.observe(other._storage.clockId.clock)
-        // ternary operator, since I can never entirely remember the sequence:
-        // expression ? valueIfTrue : valueIfFalse
-        return _storage <= other._storage ? other : self
+        var result = self
+        result._storage = Self.mergedStorage(_storage, other._storage)
+        return result
+    }
+
+    /// Last-writer-wins, except that an atom whose clock is beyond the allowed skew loses to
+    /// an admissible one (on either side, so a far-future value stored before this fix heals
+    /// on its next merge too). See CODE_AUDIT_18 §5.5.
+    static func mergedStorage(_ local: Metadata, _ remote: Metadata) -> Metadata {
+        switch (local.isAdmissible, remote.isAdmissible) {
+        case (true, false):
+            return local
+        case (false, true):
+            MonotonicWallClock.observe(remote.clockId.clock)
+            return remote
+        default:
+            MonotonicWallClock.observe(remote.clockId.clock)
+            return local <= remote ? remote : local
+        }
     }
 }
 
@@ -115,19 +142,15 @@ extension LWWRegister: DeltaCRDT {
     /// Returns a new instance of a register with the delta you provide merged into the current register.
     /// - Parameter delta: The incremental, partial state to merge.
     public func mergeDelta(_ delta: Metadata) -> Self {
-        MonotonicWallClock.observe(delta.clockId.clock)
         var newLWW = self
-        newLWW._storage = _storage <= delta ? delta : _storage
+        newLWW._storage = Self.mergedStorage(_storage, delta)
         return newLWW
     }
 
     /// Merges another register into the current instance.
     /// - Parameter other: The regsister to merge.
     public mutating func mergingDelta(_ delta: Metadata) throws {
-        MonotonicWallClock.observe(delta.clockId.clock)
-        if _storage <= delta {
-            _storage = delta
-        }
+        _storage = Self.mergedStorage(_storage, delta)
     }
 }
 

@@ -195,4 +195,32 @@ struct UntrustedImportTests {
         let merged = attacker.merged(with: mine)
         #expect(merged.value == "edited")
     }
+
+    /// CODE_AUDIT_18 §5.5: a clock far beyond the allowed skew (here ~100 years) used to be
+    /// stored raw and win every later merge, freezing the field.
+    @Test("A far-future clock loses to admissible values and cannot freeze a field")
+    func farFutureClockDoesNotFreezeField() {
+        let farFuture = MonotonicWallClock.now() + 100 * 365 * 86_400
+        let attacker = LWWRegister("attacker", actorID: "a", timestamp: farFuture)
+
+        var honest = LWWRegister("old", actorID: "b")
+        honest.merging(with: attacker)
+        #expect(honest.value == "old")
+        #expect(honest.merged(with: attacker).value == "old")
+
+        // A replica that stored the far-future value before the fix heals on its next merge.
+        var poisoned = attacker
+        honest.value = "edited"
+        poisoned.merging(with: honest)
+        #expect(poisoned.value == "edited")
+    }
+
+    @Test("A local write orders after the value it overwrites")
+    func localWriteOrdersAfterStoredValue() {
+        let aheadWithinSkew = MonotonicWallClock.now() + 3_600
+        var register = LWWRegister("remote", actorID: "a", timestamp: aheadWithinSkew)
+        register.value = "local"
+        let stale = LWWRegister("remote", actorID: "a", timestamp: aheadWithinSkew)
+        #expect(register.merged(with: stale).value == "local")
+    }
 }

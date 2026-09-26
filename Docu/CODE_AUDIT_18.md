@@ -303,6 +303,7 @@ The compiler reports nothing (see the ground-truth table), so everything here is
 - **Why:** Every later local write is at most now + 1 day, so it loses that merge on every replica, and the field stays frozen until real time catches up. A skewed device or a crafted peer payload (players can write characters) triggers this. CODE_AUDIT_16 §5.2 had closed it.
 - **Action:** Clamp the incoming clock once at merge time (observe-time now + skew) and store the clamped value, with a deterministic tie-break (actor id, then value), rather than re-clamping on decode.
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. `LWWRegister` merges (`merging`, `merged`, `mergeDelta`, `mergingDelta`) go through one `mergedStorage` rule: an atom whose clock is beyond now + skew (`Metadata.isAdmissible`) loses to an admissible one on either side, so replicas converge and a far-future value stored before the fix heals on its next merge. Clamping at merge time was tried and rejected because it depends on each replica's merge time. A local write now calls `observe` on the stored clock first, so it always orders after the value it overwrites, including after a relaunch. Covered by two new tests in `UntrustedImportTests`.
 
 ### 5.6 The hex-grid cell cap silently erases the grid on large maps **[verified]** **[REGRESSION of CODE_AUDIT_17 §5.16]**
 - **Location:** `Modules/MapRPG/Map/MapHexGridGeometry.swift:26,37-41`; `Modules/MapRPG/Map/MapEditController+HexGrid.swift:41-51`; `Modules/MapRPG/Map/MapEditorScaleRanges.swift:13`
