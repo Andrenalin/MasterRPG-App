@@ -84,7 +84,7 @@ import SwiftUI
     public func updateNameLinks() {
         nameUpdateTask?.cancel()
 
-        nameUpdateTask = delayedTask(.milliseconds(100)) { [self] in
+        nameUpdateTask = delayedTask(.settleDelay) { [self] in
             guard linkRegisterController != nil else {
                 name = String(attributedName.characters)
                 return
@@ -100,7 +100,7 @@ import SwiftUI
         updateTask?.cancel()
 
         // Debounce updates to avoid excessive AttributedString recalculation
-        updateTask = delayedTask(.milliseconds(100)) { [self] in
+        updateTask = delayedTask(.settleDelay) { [self] in
             guard linkRegisterController != nil else { return }
 
             resetText()

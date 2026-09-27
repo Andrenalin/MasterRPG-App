@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import GameKit
 import Observation
 import SwiftUI
@@ -122,20 +123,20 @@ struct GameCenterAchievementProgress: Hashable, Sendable {
 
 struct GameCenterAchievementEvaluator: Sendable {
     enum Identifier {
-        static let firstGame = "de.andretrettin.masterrpg.achievement.first_game"
-        static let regularAdventurer = "de.andretrettin.masterrpg.achievement.regular_adventurer"
-        static let veteranAdventurer = "de.andretrettin.masterrpg.achievement.veteran_adventurer"
-        static let storyteller = "de.andretrettin.masterrpg.achievement.storyteller"
-        static let loyalHero = "de.andretrettin.masterrpg.achievement.loyal_hero"
-        static let campaigner = "de.andretrettin.masterrpg.achievement.campaigner"
-        static let wellTravelled = "de.andretrettin.masterrpg.achievement.well_travelled"
-        static let diceInitiate = "de.andretrettin.masterrpg.achievement.dice_initiate"
-        static let diceLegend = "de.andretrettin.masterrpg.achievement.dice_legend"
-        static let criticalMoment = "de.andretrettin.masterrpg.achievement.critical_moment"
-        static let unluckyHero = "de.andretrettin.masterrpg.achievement.unlucky_hero"
-        static let multimediaMaestro = "de.andretrettin.masterrpg.achievement.multimedia_maestro"
-        static let fullParty = "de.andretrettin.masterrpg.achievement.full_party"
-        static let epicSession = "de.andretrettin.masterrpg.achievement.epic_session"
+        static let firstGame = "\(BundleIds.achievement).first_game"
+        static let regularAdventurer = "\(BundleIds.achievement).regular_adventurer"
+        static let veteranAdventurer = "\(BundleIds.achievement).veteran_adventurer"
+        static let storyteller = "\(BundleIds.achievement).storyteller"
+        static let loyalHero = "\(BundleIds.achievement).loyal_hero"
+        static let campaigner = "\(BundleIds.achievement).campaigner"
+        static let wellTravelled = "\(BundleIds.achievement).well_travelled"
+        static let diceInitiate = "\(BundleIds.achievement).dice_initiate"
+        static let diceLegend = "\(BundleIds.achievement).dice_legend"
+        static let criticalMoment = "\(BundleIds.achievement).critical_moment"
+        static let unluckyHero = "\(BundleIds.achievement).unlucky_hero"
+        static let multimediaMaestro = "\(BundleIds.achievement).multimedia_maestro"
+        static let fullParty = "\(BundleIds.achievement).full_party"
+        static let epicSession = "\(BundleIds.achievement).epic_session"
     }
 
     private enum DurationGoal {

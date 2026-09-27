@@ -197,7 +197,7 @@ private extension ItemProviderImporter {
     nonisolated static let maximumDownsampledPixelDimension: CGFloat = 4_096
     nonisolated static let maximumTotalImagePayloadSize = 60 * 1_024 * 1_024
     /// Largest image file (or download) the extension will even open.
-    nonisolated static let maximumSourceFileByteSize = 256 * 1_024 * 1_024
+    nonisolated static let maximumSourceFileByteSize = ByteLimits.maximumSourceFileBytes
     /// Text shared into an entry is small; anything larger is not text worth loading.
     nonisolated static let maximumTextByteSize = 5 * 1_024 * 1_024
 

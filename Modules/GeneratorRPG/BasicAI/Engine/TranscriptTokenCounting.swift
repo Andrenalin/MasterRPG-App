@@ -95,7 +95,7 @@ public extension Transcript {
 
     func foundationLabIsApproachingLimit(
         threshold: Double = 0.70,
-        maxTokens: Int = 4096,
+        maxTokens: Int,
         using model: SystemLanguageModel = .default
     ) async -> Bool {
         let currentTokens = await foundationLabSafeTokenCount(using: model)

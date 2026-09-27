@@ -117,7 +117,7 @@ public actor FoundryImportArchiveStore {
     private let directoryURL: URL
     private let maximumEncodedByteCount: Int
 
-    public init(directoryURL: URL? = nil, maximumEncodedByteCount: Int = 536_870_912) {
+    public init(directoryURL: URL? = nil, maximumEncodedByteCount: Int = 512 * ByteUnit.mebibyte) {
         self.directoryURL = directoryURL ?? Self.defaultDirectoryURL
         self.maximumEncodedByteCount = maximumEncodedByteCount
     }

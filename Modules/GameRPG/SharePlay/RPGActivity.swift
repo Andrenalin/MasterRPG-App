@@ -14,7 +14,7 @@ public struct RPGActivity: GroupActivity, Sendable {
         self.activationId = activationId
     }
     
-    public static let activityIdentifier = "de.andretrettin.MasterRPG.play-rpg-together"
+    public static let activityIdentifier = BundleIds.app("play-rpg-together")
     @MainActor static var titleImage: CGImage?
 
     var adventureTitle: String = String(

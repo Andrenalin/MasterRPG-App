@@ -340,11 +340,11 @@ extension MasterNetworkController: ListenerManagerDelegate {
         if let startedAt = listenerStartedAt, ContinuousClock.now - startedAt > Self.listenerHealthyDuration {
             listenerRestartAttempt = 0
         }
-        guard listenerRestartAttempt < Self.listenerRestartDelays.count + Self.extraListenerRestartAttempts else {
+        guard GameLimits.allowsListenerRestart(attempt: listenerRestartAttempt) else {
             networkModel.listenerStatus = .failed
             return
         }
-        let delay = Self.listenerRestartDelays[min(listenerRestartAttempt, Self.listenerRestartDelays.count - 1)]
+        let delay = GameLimits.networkRestartDelay(forAttempt: listenerRestartAttempt)
         listenerRestartAttempt += 1
         networkModel.listenerStatus = .restarting
         listenerRestartTask?.cancel()
@@ -355,9 +355,6 @@ extension MasterNetworkController: ListenerManagerDelegate {
         }
     }
 
-    static let listenerRestartDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4), .seconds(8), .seconds(15), .seconds(30)]
-    /// Attempts made at the longest pause before giving up.
-    static let extraListenerRestartAttempts = 4
     static let listenerHealthyDuration: Duration = .seconds(120)
 
     @MainActor
@@ -390,13 +387,11 @@ extension MasterNetworkController: ListenerManagerDelegate {
         enforceHandshakeDeadline(for: id)
     }
 
-    /// Seconds an inbound connection may stay unauthenticated before it is dropped, so idle
-    /// sockets cannot hold the pending-handshake slots. See CODE_AUDIT_16 §6.2.
-    static let handshakeDeadline: Duration = .seconds(15)
-
+    /// Drops an inbound connection still unauthenticated after `GameLimits.handshakeDeadline`, so
+    /// idle sockets cannot hold the pending-handshake slots. See CODE_AUDIT_16 §6.2.
     private func enforceHandshakeDeadline(for id: ConnectionController.ID) {
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: Self.handshakeDeadline)
+            try? await Task.sleep(for: GameLimits.handshakeDeadline)
             guard let self, await connectionThrottle.isPending(id: id) else { return }
             Logger.networking.debug("MasterNetworkController: Handshake deadline expired")
             guard let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
@@ -511,11 +506,11 @@ private extension MasterNetworkController {
         }
     }
 
-    /// Cancels a dial that has not connected after `handshakeDeadline`, so a peer that accepts the
+    /// Cancels a dial that has not connected after `GameLimits.handshakeDeadline`, so a peer that accepts the
     /// connection and then stalls cannot hold its slot forever.
     func enforceDialDeadline(for id: ConnectionController.ID) {
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: Self.handshakeDeadline)
+            try? await Task.sleep(for: GameLimits.handshakeDeadline)
             guard let self, !establishedConnectionIds.contains(id),
                   let stale = networkModel.connections.first(where: { $0.id == id }) else { return }
             Logger.networking.debug("MasterNetworkController: Dial deadline expired")

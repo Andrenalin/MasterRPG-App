@@ -83,10 +83,6 @@ final class PlayerNetworkController: Sendable {
     private var listenerRetryTask: Task<Void, Never>?
     private var listenerRetryAttempt = 0
     private var reconnectDeadlineTask: Task<Void, Never>?
-    /// How long a reconnect connection may stay unauthenticated before it is dropped, so a
-    /// stalled peer cannot keep the real master out.
-    static let reconnectHandshakeDeadline: Duration = .seconds(15)
-    static let listenerRetryDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4), .seconds(8), .seconds(15), .seconds(30)]
 
     /// Arguments: name, supporter tier, service type, passcode, session id, delegate.
     private let makeListener: @MainActor (String, SupporterTier, GameServiceType, String, String?, any ListenerManagerDelegate) -> any ListenerManaging
@@ -273,7 +269,7 @@ private extension PlayerNetworkController {
     func enforceReconnectDeadline(for id: ConnectionController.ID) {
         reconnectDeadlineTask?.cancel()
         reconnectDeadlineTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: Self.reconnectHandshakeDeadline)
+            try? await Task.sleep(for: GameLimits.handshakeDeadline)
             guard !Task.isCancelled, let self, self.isCurrentConnection(id), self.networkModel.connectionState == .notReady else { return }
             Logger.playerNetworkController.debug("PlayerNetworkController: Reconnect handshake deadline expired")
             await self.networkModel.connectionController?.cancel()
@@ -507,11 +503,11 @@ extension PlayerNetworkController: ListenerManagerDelegate {
         Logger.playerNetworkController.debug("PlayerNetworkController: Listener cancelled")
         networkModel.reset(listener: nil)
         guard isAwaitingReconnect, networkModel.playerConnectionId != nil,
-              listenerRetryAttempt < Self.listenerRetryDelays.count + 3 else {
+              GameLimits.allowsListenerRestart(attempt: listenerRetryAttempt) else {
             await stop()
             return
         }
-        let delay = Self.listenerRetryDelays[min(listenerRetryAttempt, Self.listenerRetryDelays.count - 1)]
+        let delay = GameLimits.networkRestartDelay(forAttempt: listenerRetryAttempt)
         listenerRetryAttempt += 1
         listenerRetryTask?.cancel()
         listenerRetryTask = Task { @MainActor [weak self] in

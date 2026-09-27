@@ -9,7 +9,7 @@ import os
 /// Instruments alongside SwiftUI, Swift Tasks, CPU, and hang diagnostics.
 /// `OSSignposter.isEnabled` keeps the disabled-path overhead intentionally small.
 public enum PerformanceTrace {
-    public static let subsystem = "de.andretrettin.MasterRPG.performance"
+    public static let subsystem = BundleIds.app("performance")
 
     private static let signposter = OSSignposter(
         subsystem: subsystem,

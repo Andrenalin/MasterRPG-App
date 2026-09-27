@@ -3,7 +3,7 @@
 import Foundation
 
 public extension UserDefaults {
-    static let appGroupString = "group.de.andretrettin.MasterRPG"
+    static let appGroupString = "group.\(BundleIds.app)"
 
     /// `nil` when the App Group entitlement/provisioning profile doesn't grant access to
     /// `appGroupString` — an entitlement/signing mismatch across the 5 targets that share
@@ -37,7 +37,7 @@ public extension FileManager {
     /// Shared iCloud container identifier — also used by
     /// `CloudKitCoreDataPersistenceController` for its
     /// `NSPersistentCloudKitContainerOptions`.
-    static let cloudContainerIdentifier = "iCloud.de.andretrettin.gamemaster"
+    static let cloudContainerIdentifier = "iCloud.\(BundleIds.product)"
 
     /// `nil` when the App Group entitlement/provisioning profile doesn't grant access —
     /// see `UserDefaults.appGroup` and CODE_AUDIT §5.1. Callers must not force-unwrap this.

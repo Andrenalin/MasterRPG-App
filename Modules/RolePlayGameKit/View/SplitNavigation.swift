@@ -49,10 +49,8 @@ struct SplitNavigation: View {
     }
     
     var selectedModule: NetworkModules {
-        (appModel.selectedModule ?? SplitNavigation.defaultTab).module
+        (appModel.selectedModule ?? RootRoute.defaultRoute).module
     }
-    
-    static let defaultTab: RootRoute = .game
 }
 
 #Preview {
@@ -66,7 +64,7 @@ struct SplitNavigation: View {
 
 private struct SplitNavigationRestorationModifier: ViewModifier {
     @AppStorage("MasterRPGCustomization") private var customization: TabViewCustomization
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = SplitNavigation.defaultTab
+    @SceneStorage(RootRoute.sceneStorageKey) private var storedTab: RootRoute = RootRoute.defaultRoute
 
     let appModel: AppModel
 

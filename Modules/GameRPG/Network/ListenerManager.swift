@@ -167,7 +167,7 @@ actor ListenerServerController {
     // background queue matches ConnectionController's own NWConnection
     // wrapper rather than routing through the main queue. See CODE_AUDIT_9
     // §3.4.
-    private let queue = DispatchQueue(label: "de.andretrettin.MasterRPG.ListenerServerController")
+    private let queue = DispatchQueue(label: BundleIds.app("ListenerServerController"))
 
     init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String, sessionId: String? = nil) {
         self.name = name

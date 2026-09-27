@@ -19,19 +19,19 @@ extension LinkDataTransferable {
 }
 
 extension UTType {
-    public static var adventureLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Adventure") }
-    public static var audioLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Audio") }
-    public static var characterLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Character") }
-    public static var diceLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Dice") }
-    public static var mapLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Map") }
-    public static var pdfLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Pdf") }
-    public static var photoLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Photo") }
-    public static var ruleLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Rule") }
-    public static var spaceLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Space") }
-    public static var tableLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Table") }
-    public static var weatherLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Weather") }
+    public static var adventureLink: UTType { UTType(exportedAs: BundleIds.app("Link.Adventure")) }
+    public static var audioLink: UTType { UTType(exportedAs: BundleIds.app("Link.Audio")) }
+    public static var characterLink: UTType { UTType(exportedAs: BundleIds.app("Link.Character")) }
+    public static var diceLink: UTType { UTType(exportedAs: BundleIds.app("Link.Dice")) }
+    public static var mapLink: UTType { UTType(exportedAs: BundleIds.app("Link.Map")) }
+    public static var pdfLink: UTType { UTType(exportedAs: BundleIds.app("Link.Pdf")) }
+    public static var photoLink: UTType { UTType(exportedAs: BundleIds.app("Link.Photo")) }
+    public static var ruleLink: UTType { UTType(exportedAs: BundleIds.app("Link.Rule")) }
+    public static var spaceLink: UTType { UTType(exportedAs: BundleIds.app("Link.Space")) }
+    public static var tableLink: UTType { UTType(exportedAs: BundleIds.app("Link.Table")) }
+    public static var weatherLink: UTType { UTType(exportedAs: BundleIds.app("Link.Weather")) }
     
-    public static var entryLink: UTType { UTType(exportedAs: "de.andretrettin.MasterRPG.Link.Entry") }
+    public static var entryLink: UTType { UTType(exportedAs: BundleIds.app("Link.Entry")) }
 }
 
 /// Empty link transferable for modules that don't support entry editor

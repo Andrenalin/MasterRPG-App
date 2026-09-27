@@ -604,7 +604,7 @@ extension FileUrlDataController {
     }
 
     /// Largest remote file the device caches on behalf of a `.url` item.
-    private static let maximumRemoteFileBytes = 256_000_000
+    private static let maximumRemoteFileBytes = ByteLimits.maximumSourceFileBytes
 
     private func ensureRemoteCache(for fileUrl: FileUrl) async throws -> URL? {
         guard fileUrl.location == .url,

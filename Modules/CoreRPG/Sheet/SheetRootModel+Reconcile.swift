@@ -32,7 +32,7 @@ extension SheetRootModel {
     func scheduleParentReconcile(_ parentModel: SheetModel) {
         let parentId = parentModel.id
         pendingParentReconcileTasks[parentId]?.cancel()
-        pendingParentReconcileTasks[parentId] = delayedTask(.milliseconds(100)) { [self] in
+        pendingParentReconcileTasks[parentId] = delayedTask(.settleDelay) { [self] in
             pendingParentReconcileTasks[parentId] = nil
             updateParent(parentModel)
         }

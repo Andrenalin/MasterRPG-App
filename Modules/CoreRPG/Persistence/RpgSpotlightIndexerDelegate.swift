@@ -42,7 +42,7 @@ public final class RpgSpotlightIndexerDelegate: NSCoreDataCoreSpotlightDelegate 
     }
 
     public override func domainIdentifier() -> String {
-        "de.andretrettin.gamemaster"
+        BundleIds.product
     }
 
     public override func indexName() -> String? {

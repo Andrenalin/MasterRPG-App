@@ -40,7 +40,7 @@ public final class DebouncerModel<T: Sendable>: Sendable {
 /// one, same as any other stored `Task`:
 /// ```swift
 /// myTask?.cancel()
-/// myTask = delayedTask(.milliseconds(100)) { doSomething() }
+/// myTask = delayedTask(.settleDelay) { doSomething() }
 /// ```
 /// A free function rather than a `Task` extension: inside `extension Task
 /// where Success == Void, Failure == Never`, an unqualified `Task` inside
@@ -55,4 +55,10 @@ public func delayedTask(_ delay: Duration, operation: @escaping @MainActor () ->
         guard !Task.isCancelled else { return }
         operation()
     }
+}
+
+public extension Duration {
+    /// The short pause the editors and sheet use to coalesce a burst of edits (typing, drag
+    /// moves, reconciles) into one update. See CODE_AUDIT_18 §9.17.
+    static let settleDelay: Duration = .milliseconds(100)
 }

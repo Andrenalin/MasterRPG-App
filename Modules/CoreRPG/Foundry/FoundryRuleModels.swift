@@ -152,10 +152,10 @@ public enum FoundryJSONValue: Codable, Equatable, Sendable {
 
 extension CodingUserInfoKey {
     static let masterRPGFoundrySourceJSON = Self(
-        rawValue: "de.andretrettin.MasterRPG.decodeFoundrySourceJSON"
+        rawValue: BundleIds.app("decodeFoundrySourceJSON")
     )!
     static let masterRPGFoundryJSONDepth = Self(
-        rawValue: "de.andretrettin.MasterRPG.decodeFoundryJSONDepth"
+        rawValue: BundleIds.app("decodeFoundryJSONDepth")
     )!
 }
 
@@ -738,10 +738,10 @@ public struct FoundryImportLimits: Equatable, Sendable {
     public let maximumUniversalVTTPixelDimension: Double
 
     public init(
-        maximumArchiveSize: Int = 1_073_741_824,
-        maximumEntrySize: Int = 67_108_864,
-        maximumRuleDataSize: Int = 536_870_912,
-        maximumResourceBatchSize: Int = 536_870_912,
+        maximumArchiveSize: Int = ByteUnit.gibibyte,
+        maximumEntrySize: Int = 64 * ByteUnit.mebibyte,
+        maximumRuleDataSize: Int = 512 * ByteUnit.mebibyte,
+        maximumResourceBatchSize: Int = 512 * ByteUnit.mebibyte,
         maximumDocumentCount: Int = 100_000,
         maximumRecordCount: Int = 400_000,
         maximumDiagnosticCount: Int = 1_000,

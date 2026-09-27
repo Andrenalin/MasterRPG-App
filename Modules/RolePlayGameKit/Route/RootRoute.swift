@@ -4,6 +4,14 @@ import CoreRPG
 import SwiftUI
 
 public enum RootRoute: Hashable, Codable {
+    /// The `@SceneStorage` key every root navigation layout restores its selected route from.
+    /// See CODE_AUDIT_18 §9.17.
+    static let sceneStorageKey = "RootRoute"
+    /// The first route of a new scene.
+    static var defaultRoute: RootRoute { .game }
+    /// The first route of a new scene in `TabSidebar`, which has no Game tab.
+    static var defaultSidebarRoute: RootRoute { .adventures }
+
     case adventures
     case audios
     case dice

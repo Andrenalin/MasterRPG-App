@@ -121,7 +121,7 @@ private struct PhoneTabBottomAccessoryModifier<Accessory: View>: ViewModifier {
 }
 
 private struct TabbedNavigationRestorationModifier: ViewModifier {
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .game
+    @SceneStorage(RootRoute.sceneStorageKey) private var storedTab: RootRoute = RootRoute.defaultRoute
 
     let appModel: AppModel
 

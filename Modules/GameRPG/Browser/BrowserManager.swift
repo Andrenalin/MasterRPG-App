@@ -40,9 +40,6 @@ final class BrowserManager {
     @ObservationIgnored private var monitorTask: Task<Bool, Never>?
     @ObservationIgnored private var runGeneration = 0
 
-    /// Pauses between browser restarts after it stops on its own; the last value repeats.
-    static let restartDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4), .seconds(8), .seconds(15), .seconds(30)]
-
     init(serviceType: GameServiceType = .player) {
         self.serviceType = serviceType
     }
@@ -133,7 +130,7 @@ final class BrowserManager {
 
             if connectionState != .stopped { connectionState = .stopped }
             if sawReady { attempt = 0 }
-            let delay = Self.restartDelays[min(attempt, Self.restartDelays.count - 1)]
+            let delay = GameLimits.networkRestartDelay(forAttempt: attempt)
             attempt += 1
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled, runGeneration == generation else { return }

@@ -5,6 +5,8 @@ import Foundation
 import Observation
 import StoreKit
 
+/// Raw values must be literals; they are `BundleIds.product` + `.supporter.<tier>` as registered
+/// in App Store Connect.
 enum SupporterProduct: String, CaseIterable, Sendable {
     case bronze = "de.andretrettin.gamemaster.supporter.bronze"
     case silver = "de.andretrettin.gamemaster.supporter.silver"

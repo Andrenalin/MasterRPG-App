@@ -89,7 +89,7 @@ private struct TabSidebarAllTabsView: View {
 }
 
 private struct TabSidebarRestorationModifier: ViewModifier {
-    @SceneStorage("RootRoute") private var storedTab: RootRoute = .adventures
+    @SceneStorage(RootRoute.sceneStorageKey) private var storedTab: RootRoute = RootRoute.defaultSidebarRoute
 
     let appModel: AppModel
 

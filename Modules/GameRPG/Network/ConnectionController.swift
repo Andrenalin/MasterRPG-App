@@ -36,7 +36,7 @@ actor ConnectionController: Identifiable {
     nonisolated let id: UUID
     private let connection: NWConnection
     // NWConnection needs a dispatch queue; callbacks hop from it into the actor.
-    private let queue = DispatchQueue(label: "de.andretrettin.MasterRPG.ConnectionController")
+    private let queue = DispatchQueue(label: BundleIds.app("ConnectionController"))
     private weak var delegate: (any ConnectionControllerDelegate)?
     private var receiveTask: Task<Void, Never>?
     /// Set the moment `connectionFailed(message:isAuthenticationFailure:)`

@@ -17,7 +17,7 @@ public actor ObjectCache<Object: AnyObject & Sendable> {
     private lazy var objectCache: NSCache<AnyObject, AnyObject> = {
         let cache = NSCache<AnyObject, AnyObject>()
         cache.countLimit = countLimit
-        cache.totalCostLimit = 256_000_000
+        cache.totalCostLimit = 256 * ByteUnit.mebibyte
         return cache
     }()
 

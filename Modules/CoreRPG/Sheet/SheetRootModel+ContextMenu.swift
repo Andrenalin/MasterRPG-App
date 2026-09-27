@@ -141,7 +141,7 @@ extension SheetRootModel {
               let editable = entryDataEditable(for: entryModel.source) else { return }
         editable.move(itemId: entryModel.source.itemId, sourceEntryId: entryId, into: folder, forceSave: persistsEdits)
         pendingGroupMoveTask?.cancel()
-        pendingGroupMoveTask = delayedTask(.milliseconds(100)) { [self] in
+        pendingGroupMoveTask = delayedTask(.settleDelay) { [self] in
             updateParent(parentModel)
         }
     }
@@ -161,7 +161,7 @@ extension SheetRootModel {
               let editable = entryDataEditable(for: entryModel.source) else { return }
         editable.moveOutOfGroup(itemId: entryModel.source.itemId, sourceEntryId: entryId, parent: parent, forceSave: persistsEdits)
         pendingGroupMoveTask?.cancel()
-        pendingGroupMoveTask = delayedTask(.milliseconds(100)) { [self] in
+        pendingGroupMoveTask = delayedTask(.settleDelay) { [self] in
             updateParent(parentModel)
         }
     }

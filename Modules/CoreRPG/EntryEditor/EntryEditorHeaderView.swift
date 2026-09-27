@@ -98,7 +98,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
         
         // Enhancement 3: Success haptic after drop
 #if os(iOS)
-        delayedTask(.milliseconds(100)) {
+        delayedTask(.settleDelay) {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
 #endif

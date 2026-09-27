@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 import Security
 import Synchronization
@@ -46,7 +47,7 @@ extension JoinCodeStorage {
 /// keychain is unavailable to the build (missing entitlement), the legacy keychain keeps
 /// working. See CODE_AUDIT_Join §5.6.
 struct KeychainJoinCodeStorage: JoinCodeStorage {
-    private let service = "de.andretrettin.MasterRPG.joinCode"
+    private let service = BundleIds.app("joinCode")
 
     func read(forKey key: String) -> JoinCodeReadResult {
         #if os(macOS)
