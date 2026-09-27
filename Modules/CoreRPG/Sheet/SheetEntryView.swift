@@ -150,13 +150,15 @@ private func resolvedRowViewer(
     for viewController: ViewControllable?,
     source: ItemRowModel,
     destination: ItemRowModel,
-    rootModel: SheetRootModel
+    rootModel: SheetRootModel,
+    isShareable: Bool = true
 ) -> AnyView? {
     viewController?.rowViewer(
         source: source,
         destination: destination,
         sourceModel: resolvedModel(for: source, rootModel: rootModel),
-        destinationModel: resolvedModel(for: destination, rootModel: rootModel)
+        destinationModel: resolvedModel(for: destination, rootModel: rootModel),
+        isShareable: isShareable
     )
 }
 
@@ -284,7 +286,10 @@ private struct SheetEntryBeforeInlineView: View {
                 switch inlineSheet.sheetType {
                 case .photo:
                     // Use inlineSheet.source (the photo item) not entryModel.source (the parent entry)
-                    resolvedRowViewer(for: resolvedViewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel)
+                    // for viewer resolution — but entryModel.source.typeId (the containing entry, e.g.
+                    // the Map) is what decides whether this inline photo may show its own share button.
+                    // A photo embedded in a Map shares only through the Map itself.
+                    resolvedRowViewer(for: resolvedViewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel, isShareable: inlineSheet.isShareable)
                         .frame(height: 96)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .clipShape(.rect(cornerRadius: 16))

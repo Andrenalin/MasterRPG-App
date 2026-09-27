@@ -177,7 +177,8 @@ private struct SheetInlineRowsView: View {
                     source: inlineEntry.source,
                     destination: inlineEntry.destination,
                     sourceModel: resolvedModel(for: inlineEntry.source, rootManager: rootModel.rootManager),
-                    destinationModel: resolvedModel(for: inlineEntry.destination, rootManager: rootModel.rootManager)
+                    destinationModel: resolvedModel(for: inlineEntry.destination, rootManager: rootModel.rootManager),
+                    isShareable: inlineEntry.isShareable
                 )
             }
             .applyIf(inlineEntry.sheetType == .photo) {

@@ -7333,7 +7333,7 @@
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game.";
-				INFOPLIST_KEY_NSHandsTrackingUsageDescription = "MasterRPG uses handtracking for rolling the dice during the game.";
+				INFOPLIST_KEY_NSHandsTrackingUsageDescription = "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";
@@ -7409,7 +7409,7 @@
 				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "MasterRPG reads from the Desktop folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "MasterRPG reads from the Documents folder if the user select files like pdfs, images or audio for the game.";
 				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "MasterRPG reads from the Download folder if the user select files like pdfs, images or audio for the game.";
-				INFOPLIST_KEY_NSHandsTrackingUsageDescription = "MasterRPG uses handtracking for rolling the dice during the game.";
+				INFOPLIST_KEY_NSHandsTrackingUsageDescription = "MasterRPG uses hand tracking to let you resize the 3D game table by pinching with both hands.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant.";

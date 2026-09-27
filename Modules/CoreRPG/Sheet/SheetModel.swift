@@ -8,7 +8,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         hasher.combine(id)
     }
     
-    public init(id: UUID = UUID(), source: ItemRowModel, destination: ItemRowModel? = nil, linkNumber: Int? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
+    public init(id: UUID = UUID(), source: ItemRowModel, destination: ItemRowModel? = nil, linkNumber: Int? = nil, level: Int = 0, type: SheetModelType = .item, isShown: Bool = true, isFolded: Bool = false, isShareable: Bool = true, canAdd: Bool = true, editType: SheetModelEditType = .none, showHeader: Bool = true, name: String, description: String, inlineEntries: [SheetModel] = [], entries: [SheetModel]) {
         self.id = id
         self.source = source
         self.destination = destination ?? source
@@ -17,6 +17,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
         self.sheetType = type
         self.isShown = isShown
         self.isFolded = isFolded
+        self.isShareable = isShareable
         self.name = name
         self.description = description
         self.inlineEntries = inlineEntries
@@ -46,6 +47,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     public var lastIsShown: Bool = false
     public var isHidden: Bool = false
     public var isFolded: Bool = false
+    public var isShareable: Bool = true
     
     public var name: String
     public var description: String

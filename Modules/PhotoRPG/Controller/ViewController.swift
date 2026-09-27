@@ -23,6 +23,10 @@ extension ViewController: ViewControllable {
     @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView {
         AnyView(InlineRowViewer(source: source, destination: destination, sourceModel: sourceModel).equatable())
     }
+
+    @MainActor public func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?, isShareable: Bool) -> AnyView {
+        AnyView(InlineRowViewer(source: source, destination: destination, sourceModel: sourceModel, isShareable: isShareable).equatable())
+    }
 }
 
 // MARK: - External Views

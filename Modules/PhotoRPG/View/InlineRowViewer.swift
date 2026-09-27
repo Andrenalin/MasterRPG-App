@@ -4,10 +4,11 @@ import CoreRPG
 import SwiftUI
 
 struct InlineRowViewer: View, Equatable {
-    init(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)? = nil) {
+    init(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)? = nil, isShareable: Bool = true) {
         self.source = source
         self.destination = destination
         self.sourceModel = sourceModel
+        self.isShareable = isShareable
     }
 
     let source: ItemRowModel
@@ -17,6 +18,9 @@ struct InlineRowViewer: View, Equatable {
     /// `itemSync` lookup when nil, so this stays correct for any call site
     /// that hasn't been updated to pass it.
     let sourceModel: (any ModelType)?
+    /// False when this row is embedded inside a Map entry, which shares only
+    /// through the Map itself, not per-photo.
+    let isShareable: Bool
 
     @Environment(PhotoRootModel.self) private var root
 
@@ -25,7 +29,7 @@ struct InlineRowViewer: View, Equatable {
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-        GameShareView(root: root.rootController, itemId: source.itemId) {
+        GameShareView(root: root.rootController, itemId: source.itemId, isShareable: isShareable) {
             HStack {
                 InlineRowPhotoContentView(source: source, sourceModel: sourceModel)
                     .background {
@@ -64,7 +68,7 @@ struct InlineRowViewer: View, Equatable {
     }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.source == rhs.source
+        lhs.source == rhs.source && lhs.isShareable == rhs.isShareable
     }
     
     var isPresented: Bool {

@@ -83,7 +83,7 @@ struct DiceInline: View {
                 }
                 .frame(minHeight: 44)
                 #if !os(tvOS)
-                .menuStyle(.borderlessButton)
+                .menuStyle(.button)
                 #endif
                 #if os(macOS)
                 .fixedSize()

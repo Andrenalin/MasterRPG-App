@@ -78,6 +78,12 @@ public protocol ViewControllable: Sendable {
     /// 2-parameter version (ignoring both models) so conformers that don't
     /// override this keep working exactly as before.
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView
+    /// Same as `rowViewer(source:destination:sourceModel:destinationModel:)`, but lets
+    /// the caller tell the row whether it may offer its own share affordance — e.g. a
+    /// Photo entry embedded inside a Map should never show its own share button, only
+    /// the Map's. Defaults to `true` so conformers that don't override this keep
+    /// working exactly as before.
+    @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?, isShareable: Bool) -> AnyView
     @MainActor func batchExtractionView(itemController: any ItemControllable, editController: any EditControllable, ids: [UUID]) -> AnyView?
 }
 
@@ -94,6 +100,9 @@ public extension ViewControllable {
     @MainActor func inlineEditRowViewer(source: ItemRowModel, destination: ItemRowModel) -> AnyView { AnyView(EmptyView()) }
     @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?) -> AnyView {
         rowViewer(source: source, destination: destination)
+    }
+    @MainActor func rowViewer(source: ItemRowModel, destination: ItemRowModel, sourceModel: (any ModelType)?, destinationModel: (any ModelType)?, isShareable: Bool) -> AnyView {
+        rowViewer(source: source, destination: destination, sourceModel: sourceModel, destinationModel: destinationModel)
     }
 
     var supportsBatchExtraction: Bool { false }

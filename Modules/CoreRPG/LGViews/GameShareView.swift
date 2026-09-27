@@ -3,14 +3,19 @@
 import SwiftUI
 
 public struct GameShareView<Content: View>: View {
-    public init(root: any ItemRootControllable, itemId: UUID, @ViewBuilder content: () -> Content = EmptyView.init) {
+    public init(root: any ItemRootControllable, itemId: UUID, isShareable: Bool = true, @ViewBuilder content: () -> Content = EmptyView.init) {
         self.root = root
         self.itemId = itemId
+        self.isShareable = isShareable
         self.content = content()
     }
 
     let root: any ItemRootControllable
     let itemId: UUID
+    /// False suppresses the share affordance regardless of `canShare`'s own game-state
+    /// logic — e.g. a Photo row embedded inside a Map entry, which shares only through
+    /// the Map itself. See CODE_AUDIT: Photo-in-Map share toggle.
+    let isShareable: Bool
     let content: Content
 
     @Environment(AppGameStateModel.self) private var appGameStateModel
@@ -45,6 +50,7 @@ public struct GameShareView<Content: View>: View {
     }
 
     var canShare: Bool {
+        guard isShareable else { return false }
         if appGameStateModel.gameModus == .player {
             let features = sharingFeatureActions.features()
             switch root.configurable.module {
