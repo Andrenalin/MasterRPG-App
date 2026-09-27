@@ -85,10 +85,6 @@ public extension FileDataController {
 // MARK: - External data files
 
 public extension FileDataController {
-    func fetchData(for uuid: String) async throws -> Data? {
-        try await persistence.loadData(for: uuid)
-    }
-
 
     func saveData(_ data: Data, for dataModel: Datatype) async throws {
         try await persistence.saveData(data, for: dataModel.id.uuidString)

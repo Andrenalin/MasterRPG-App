@@ -11,13 +11,6 @@ extension MapEditorSession {
             || lastIsHexMap != isHexMap
     }
 
-    func resetScales(from map: MapModel) {
-        pinScale = map.pinScale
-        hexScale = map.hexMapScale
-        isHexMap = map.entries.contains(where: { $0.isHexGrid })
-        resetReshare()
-    }
-
     func resetReshare() {
         lastPinScale = pinScale
         lastHexScale = hexScale

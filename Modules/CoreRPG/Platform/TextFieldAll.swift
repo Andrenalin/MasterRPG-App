@@ -18,9 +18,6 @@ public extension View {
         self.modifier(TextInputAutocapitalizationAllViewModifier(type: autocapitalization))
     }
     
-    @inlinable nonisolated func textContentTypeAll(_ textContentType: TextContentTypeAll?) -> some View {
-        self.modifier(TextContentTypeAllViewModifier(type: textContentType))
-    }
 }
 
 struct TextInputAutocapitalizationAllViewModifier: ViewModifier {

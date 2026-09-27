@@ -12,22 +12,6 @@ extension View {
 #endif
     }
     
-    nonisolated public func listRowSeparatorAll(_ visibility: Visibility, edges: VerticalEdge.Set = .all) -> some View {
-#if os(tvOS)
-        self
-#else
-        listRowSeparator(visibility, edges: edges)
-#endif
-    }
-    
-    nonisolated public func swipeActionsAll<T>(edge: HorizontalEdge = .trailing, allowsFullSwipe: Bool = true, @ViewBuilder content: () -> T) -> some View where T : View {
-#if os(tvOS)
-        self
-#else
-        swipeActions(edge: edge, allowsFullSwipe: allowsFullSwipe, content: content)
-#endif
-    }
-
     nonisolated public func glassEffectAll() -> some View {
 #if os(visionOS)
         self
@@ -76,33 +60,6 @@ extension View {
 #endif
     }
 
-    /// Applies file importer on platforms that support it (excludes tvOS)
-    nonisolated public func fileImporterAll(isPresented: Binding<Bool>, allowedContentTypes: [UTType], onCompletion: @escaping (Result<URL, Error>) -> Void) -> some View {
-#if os(tvOS)
-        self
-#else
-        fileImporter(isPresented: isPresented, allowedContentTypes: allowedContentTypes, onCompletion: onCompletion)
-#endif
-    }
-
-    /// Applies file mover on platforms that support it (excludes tvOS)
-    nonisolated public func fileMoverAll(isPresented: Binding<Bool>, file: URL?, onCompletion: @escaping (Result<URL, Error>) -> Void) -> some View {
-#if os(tvOS)
-        self
-#else
-        fileMover(isPresented: isPresented, file: file, onCompletion: onCompletion)
-#endif
-    }
-
-    /// Applies scroll dismisses keyboard on platforms that support it (excludes visionOS)
-    nonisolated public func scrollDismissesKeyboardAll(_ mode: ScrollDismissesKeyboardModeAll) -> some View {
-#if os(visionOS)
-        self
-#else
-        scrollDismissesKeyboard(mode.mode)
-#endif
-    }
-    
     nonisolated public func navigationBarTitleDisplayModeAll(_ displayMode: TitleDisplayModeAll) -> some View {
 #if os(iOS)
         navigationBarTitleDisplayMode(displayMode.mode)
@@ -112,26 +69,6 @@ extension View {
 
     }
 
-}
-
-public enum ScrollDismissesKeyboardModeAll : Sendable {
-
-    case automatic
-    case immediately
-    case interactively
-    case never
-    
-#if !os(visionOS)
-    var mode: ScrollDismissesKeyboardMode {
-        switch self {
-        case .automatic: .automatic
-        case .immediately: .immediately
-        case .interactively: .interactively
-        case .never: .never
-        }
-    }
-#endif
-    
 }
 
 public enum TitleDisplayModeAll : Sendable {

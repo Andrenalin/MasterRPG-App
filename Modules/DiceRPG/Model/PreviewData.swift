@@ -95,12 +95,6 @@ extension ItemController {
     @MainActor
     static let preview = DiceRootModel.preview.itemController
     
-    @MainActor
-    static func setPreviewData(for controller: ItemController) async {
-        for model in DiceModel.previewFixtures {
-            controller.replace(model: model, isInsert: true)
-        }
-    }
 }
 
 extension EditController {
@@ -257,10 +251,6 @@ extension DiceModel {
         [previewSnapshot.makeModel(), diceCoC.copy(), diceERPS.copy()]
     }
 
-    @MainActor
-    static var diceList: [DiceModel] {
-        previewFixtures
-    }
 }
 
 extension DieModel {

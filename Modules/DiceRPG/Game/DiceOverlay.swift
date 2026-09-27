@@ -17,8 +17,6 @@ struct DiceOverlay: View {
     @Environment(DiceDisplayModel.self) var diceDisplayModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var overlayHeight: CGFloat = 100
-
     var itemId: UUID {
         item.model.entryId ?? item.model.itemId
     }

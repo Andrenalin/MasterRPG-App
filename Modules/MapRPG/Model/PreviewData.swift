@@ -42,7 +42,6 @@ public extension MapRootModel {
         let itemController = root.itemController
         let importController = root.importController
         let editController = root.editController
-        let photoCon = root.photoRoot.itemControllable
 #if DEBUG
         let url = RPGResources.Resources.bundle.url(forResource: RPGResources.Resources.exampleFirstData, withExtension: "gmz")
         Task(priority: .userInitiated) {

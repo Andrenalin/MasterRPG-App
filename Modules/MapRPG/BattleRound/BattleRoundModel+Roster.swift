@@ -53,17 +53,6 @@ extension BattleRoundModel {
 // MARK: - Character assignment & reset
 
 extension BattleRoundModel {
-    func retainedGameCharacterId(
-        forPlayerPinId pinId: UUID,
-        sourceCharacterId: UUID?
-    ) -> UUID? {
-        guard let retained = retainedPlayerCombatants[pinId],
-              retained.sourceCharacterId == sourceCharacterId else {
-            return nil
-        }
-        return retained.gameCharacterId
-    }
-
     @discardableResult
     func assignCharacter(
         combatantId: UUID,

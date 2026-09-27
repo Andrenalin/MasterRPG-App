@@ -157,49 +157,4 @@ public final class LinkReplaceController: Sendable {
             return LinkReplaceModel(name: "🔗[\(displayName)]", module: $0.module, linkNumber: $0.linkNumber, itemId: $0.itemId, entryId: $0.entryId, markDown: $0.markDown, command: $0.command, range: $0.range)
         }
     }
-
-    public init(getter: @escaping () -> String, setter: @escaping (String) -> Void) {
-        self.getter = getter
-        self.setter = setter
-        self.links = Self.linkDetailModels(for: getter())
-    }
-
-    private let getter: () -> String
-    private let setter: (String) -> Void
-    private var links: [LinkReplaceModel] = []
-
-
-    public var editValue: Binding<String> {
-        Binding { [weak self] in
-            self?.getValue() ?? ""
-        } set: { [weak self] updatedValue in
-            self?.setValue(updatedValue)
-        }
-    }
-    
-    public func reset() {
-        links = []
-    }
-
-    private func getValue() -> String {
-        var value = getter()
-        links.forEach {
-            value = value.replacing($0.markDown, with: $0.name)
-        }
-        return value
-    }
-
-    private func setValue(_ updatedValue: String) {
-        var value = updatedValue
-        let newLinks = Self.linkDetailModels(for: value).filter { !links.contains($0) }
-        if !newLinks.isEmpty {
-            links.append(contentsOf: newLinks)
-        }
-        links.forEach {
-            value = value.replacing($0.name, with: $0.markDown)
-        }
-        if getter() != value {
-            setter(value)
-        }
-    }
 }

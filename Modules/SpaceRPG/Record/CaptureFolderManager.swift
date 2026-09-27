@@ -107,13 +107,6 @@ final class CaptureFolderManager {
         return id
     }
 
-    // Returns the basename for file with the given `id`.
-    static func imageIdString(for id: UInt32) -> String {
-        let rawIdentifier = String(id)
-        let padding = String(repeating: "0", count: max(0, 4 - rawIdentifier.count))
-        return imageStringPrefix + padding + rawIdentifier
-    }
-
     /// Creates a new Scans directory based on the current timestamp in the top level Documents
     /// folder.
     /// - Returns: The new Scans folder's file URL, or `nil` on error.

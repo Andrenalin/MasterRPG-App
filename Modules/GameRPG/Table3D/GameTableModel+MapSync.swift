@@ -12,13 +12,6 @@ import os.log
 extension GameTableModel {
     // MARK: - Map Sync & Fog of War
 
-    /// Refreshes the standalone tabletop from the current game selection. The method deliberately
-    /// rechecks the same map id because mapState updates can alter its photo, rooms, pins, or role
-    /// without changing navigation.
-    func refreshCurrentMap(isGameMaster: Bool) async {
-        await handleMapChange(isGameMaster: isGameMaster)
-    }
-
     /// Applies the current game map to the table and waits until the *newest* request has finished.
     /// A request superseded by a newer one is cancelled, so this keeps waiting for its successor
     /// instead of returning while the table still shows the previous map. The work belongs to the

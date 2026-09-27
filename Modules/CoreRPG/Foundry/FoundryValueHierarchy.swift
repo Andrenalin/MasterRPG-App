@@ -25,10 +25,6 @@ public struct FoundryValueNode: Equatable, Sendable {
         pathComponents.joined(separator: ".")
     }
 
-    public var isGroup: Bool {
-        !children.isEmpty
-    }
-
     public var valueCount: Int {
         (value == nil ? 0 : 1) + children.reduce(0) { $0 + $1.valueCount }
     }

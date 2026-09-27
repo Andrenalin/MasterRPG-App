@@ -16,23 +16,6 @@ extension LinkDataTransferable {
         LinkBuilder.markdown(name: name, module: module, itemId: itemId, entryId: entryId)
     }
     
-    static func linkDataType(module: NetworkModules) -> any LinkDataTransferable {
-        switch module {
-        case .adventure: LinkAdventureData(itemId: UUID(), name: "")
-        case .audio: LinkAudioData(itemId: UUID(), name: "")
-        case .value: LinkCharacterData(itemId: UUID(), name: "")
-        case .dice: LinkDiceData(itemId: UUID(), name: "")
-        case .editor: LinkEntryData(itemId: UUID(), name: "", module: module)
-        case .map: LinkMapData(itemId: UUID(), name: "")
-        case .pdf: LinkPdfData(itemId: UUID(), name: "")
-        case .photo: LinkPhotoData(itemId: UUID(), name: "")
-        case .rule: LinkRuleData(itemId: UUID(), name: "")
-        case .space: LinkSpaceData(itemId: UUID(), name: "")
-        case .table: LinkTableData(itemId: UUID(), name: "")
-        case .weather: LinkWeatherData(itemId: UUID(), name: "")
-        default: LinkAdventureData(itemId: UUID(), name: "")
-        }
-    }
 }
 
 extension UTType {

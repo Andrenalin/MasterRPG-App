@@ -428,12 +428,6 @@ extension MasterNetworkController {
         }
     }
 
-    func checkForConnections() {
-        guard networkModel.browserManager != nil else { return }
-        let games = networkModel.browserManager?.games ?? []
-        refresh(games: games)
-    }
-
     func refresh(games: [BrowserGameModel]) {
         guard let manager = networkModel.browserManager, manager.isBrowsing else {
             // A browser inside its supervised restart pause is only briefly not browsing:

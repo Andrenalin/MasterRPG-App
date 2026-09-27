@@ -12,10 +12,7 @@ import SwiftUI
     public var selectedEntryId: UUID?
 
     @ObservationIgnored public var navigator: Navigator?
-    @ObservationIgnored public var folderModels: [UUID: FolderListModel] = [:]
 
-    // Inspector
-    public var selectedInspectorItemId: UUID?
     public var showInspector: Bool = false
 
     // Trigger flags — set to true to fire the corresponding action for the current item

@@ -5,7 +5,6 @@ import Foundation
 import CoreGraphics
 
 public extension PdfRootModel {
-    static let previewPdfId = PdfModel.previewId
     static let previewSpaceId = PdfModel.previewId
     
     @MainActor

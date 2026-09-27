@@ -46,15 +46,6 @@ final class FoundationManager {
         return isModelAvailable
     }
     
-    func minimizeMarkDown(_ content: String) -> String {
-        let tags = ["#", "##", "###", "####", "---"]
-        var content = content
-        tags.forEach { tag in
-            content = content.replacing(tag, with: "")
-        }
-        return content
-    }
-    
     func checkLanguageSupport(for locale: Locale) {
         isLanguageSupported = SystemLanguageModel.default.supportsLocale(locale)
     }

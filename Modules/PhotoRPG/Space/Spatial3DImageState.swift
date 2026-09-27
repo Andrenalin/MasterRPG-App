@@ -19,8 +19,6 @@ enum Spatial3DImageState {
 @MainActor @Observable public final class ImagePresentationModel {
     public var selectedItemId: UUID?
 
-    var imageIndex: Int = 0
-    var imageURL: URL? = nil
     var imageAspectRatio: CGFloat = 1.0
     var contentEntity: Entity = Entity()
     var spatial3DImageState: Spatial3DImageState = .notGenerated

@@ -27,9 +27,6 @@ struct BorderLessTVButtonStyleViewModifier: ViewModifier {
 }
 
 public extension View {
-    func switchTVToggleStyle() -> some View {
-        modifier(SwitchTVToggleStyleViewModifier())
-    }
 }
 
 struct SwitchTVToggleStyleViewModifier: ViewModifier {

@@ -61,12 +61,6 @@ final class GameScreenModel {
             searchBarVisibleModel.isVisible = showMainTab != .none
         }
     }
-    func resetToMainTab(toggle: Bool = true) {
-        if toggle || showMainTab == .none {
-            showMainTab = showMainTab == .game ? .none : .game
-        }
-        showSettingTab = .none
-    }
 
     var showSettingTab: NetworkModules = .none {
         didSet {
@@ -82,8 +76,6 @@ final class GameScreenModel {
         showMainTab = .none
     }
 
-    var showGameType: NetworkModules = .none
-    var showSettingsType: NetworkModules = .none
     
     // Game main tab display mode (for macOS/visionOS three-state button)
     var gameMainTabDisplayMode: GameMainTabDisplayMode = .hidden

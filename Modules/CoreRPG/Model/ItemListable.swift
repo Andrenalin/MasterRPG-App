@@ -40,17 +40,6 @@ public extension ItemDataAccessable {
         (displayState & DisplayStateMask.groupHidden.rawValue) > 0
     }
 
-    @MainActor var hideName: Bool {
-        (displayState & DisplayStateMask.nameHidden.rawValue) > 0
-    }
-
-    @MainActor var hideDescription: Bool {
-        (displayState & DisplayStateMask.descriptionHidden.rawValue) > 0
-    }
-
-    @MainActor var hideOther: Bool {
-        (displayState & DisplayStateMask.otherHidden.rawValue) > 0
-    }
 }
 
 // Duplicating item models reads MainActor-owned observable state. Entry value

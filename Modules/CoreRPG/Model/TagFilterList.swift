@@ -29,19 +29,6 @@ public struct TagFilterSelection: Equatable, Hashable, Sendable {
         }
     }
 
-    func nextState() -> TagFilterSelection {
-        let newState: Status
-        switch state {
-        case .selected:
-            newState = .deselected
-        case .deselected:
-            newState = .deactive
-        case .deactive:
-            newState = .selected
-        }
-        return TagFilterSelection(tag: tag, state: newState)
-    }
-
     public static func filter(for tags: [String], with filters: [TagFilterSelection], exclude: String) -> Bool {
         var result = true
         for filter in filters {

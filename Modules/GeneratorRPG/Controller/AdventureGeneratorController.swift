@@ -182,7 +182,6 @@ struct AdventureGeneratorController: Sendable {
     """
 
     let model: AdventureSessionModel
-    let llm = SystemLanguageModel.default
     
     @MainActor func generate() async {
         model.conversationEngine.prewarm()

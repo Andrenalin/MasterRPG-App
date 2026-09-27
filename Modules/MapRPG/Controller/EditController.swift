@@ -11,8 +11,6 @@ import SwiftUI
 
 @MainActor @Observable
 final class MapEditModel: Sendable {
-    let selectionAudio: ItemSelectionModel = ItemSelectionModel()
-    let selectionCharacter: ItemSelectionModel = ItemSelectionModel()
     let selectionDice: ItemSelectionModel = ItemSelectionModel()
     let selectionPdf: ItemSelectionModel = ItemSelectionModel()
     let selectionPhoto: ItemSelectionModel = ItemSelectionModel()

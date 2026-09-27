@@ -32,14 +32,6 @@ public struct DisplayConfigModel: Identifiable, Equatable, Hashable, Sendable {
         set { border.thickness = CGFloat(newValue) }
     }
 
-    public var borderText: String {
-        get { String("\(border.thickness)") }
-        set {
-            let value = Double(newValue) ?? 0
-            border.thickness = CGFloat(value)
-        }
-    }
-
     public var hasBorder: Bool {
         get { borderThickness > 0 }
         set {

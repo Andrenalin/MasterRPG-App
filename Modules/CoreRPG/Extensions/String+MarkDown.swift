@@ -25,32 +25,6 @@ public extension String {
     }
 
 
-    func isRangeInsideLink(_ range: Range<String.Index>) -> Bool {
-        guard range.lowerBound > startIndex else { return false }
-        var currentIndex = range.lowerBound
-        repeat {
-            currentIndex = index(before: currentIndex)
-
-            switch self[currentIndex] {
-            case "(":
-                let previousIndex = index(before: currentIndex)
-                if previousIndex != startIndex && self[previousIndex] == "]" {
-                    return true
-                }
-                return false
-            case  ")":
-                return false
-            case "[":
-                return true
-            case "]":
-                return false
-            default:
-                break
-            }
-        } while currentIndex != startIndex
-        return false
-    }
-
     func withoutLink() -> String {
         var result = self
         result = result.replacing("`", with: "")

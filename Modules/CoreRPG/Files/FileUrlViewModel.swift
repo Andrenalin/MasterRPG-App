@@ -28,22 +28,4 @@ struct FileUrlViewModel: Equatable, Hashable, Identifiable, Sendable {
     var isDownloaded: Bool?
     var fileUrl: FileUrl?
 
-    var hasDataText: String {
-        hasData ? "Yes" : "No"
-    }
-
-    var hasDataLabel: LocalizedStringResource {
-        hasData
-            ? LocalizedStringResource("Yes", bundle: .module)
-            : LocalizedStringResource("No", bundle: .module)
-    }
-
-    var isDownloadedIcon: String {
-        guard let isDownloaded else { return "icloud.slash" }
-        return isDownloaded ? "checkmark.icloud" : "xmark.icloud"
-    }
-
-    var hasAccessIcon: String {
-        hasAccess ? "lock.open" : "lock"
-    }
 }

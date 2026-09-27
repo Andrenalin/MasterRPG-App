@@ -336,11 +336,6 @@ final class SingleItemImportModel {
         return firstProperty.value(item.item(for: firstProperty.decision))
     }
 
-    func hasOverride(for property: SingleReviewItemProperty) -> Bool {
-        let hasDecision = properties.first(where: { $0.id == property.id })?.decision ?? .merge
-        return hasDecision != decision
-    }
-
     private func cascade(_ prop: SingleReviewItemProperty, parent: SingleReviewDecision) {
         prop.decision = defaultDecision(for: prop, given: parent)
     }

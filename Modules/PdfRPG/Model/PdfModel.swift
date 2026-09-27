@@ -100,10 +100,6 @@ public final class PdfModel: nonisolated Identifiable {
 }
 
 extension PdfModel: nonisolated Comparable {
-    public var hasPdf: Bool {
-        fileUrl != nil
-    }
-
     nonisolated public static func < (lhs: PdfModel, rhs: PdfModel) -> Bool {
         return assumeMainActorIsolated {
             lhs.name < rhs.name

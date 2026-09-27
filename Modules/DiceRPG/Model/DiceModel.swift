@@ -331,16 +331,6 @@ extension DiceModel {
         }
     }
 
-    var canFumbleOnFirstDiceOnly: Bool {
-        guard !fumbleValues.contains(where: { $0.isResult }) else { return false }
-        return fumbleOnlyOnFirstDie
-    }
-    
-    var canCoupOnFirstDiceOnly: Bool {
-        guard !coupValues.contains(where: { $0.isResult }) else { return false }
-        return coupOnlyOnFirstDie
-    }
-    
     var canPercentDice: Bool {
         guard dice.count == 2 else { return false }
         return dice[0].die.sides == .ten && dice[1].die.sides == .ten

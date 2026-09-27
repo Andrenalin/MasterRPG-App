@@ -176,9 +176,4 @@ public enum SheetInsertionPosition: Equatable, Hashable, Sendable {
 }
 
 public extension SheetModel {
-    var hasGenerationContent: Bool {
-        guard !isGeneratedAnswer else { return false }
-        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
 }

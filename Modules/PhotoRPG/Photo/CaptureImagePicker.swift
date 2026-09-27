@@ -23,12 +23,6 @@ import SwiftUI
             Coordinator(parent: self, shown: $shown, updateImage: updateImage)
         }
 
-        @MainActor
-        static var isCameraAvailable: Bool {
-            UIImagePickerController.isCameraDeviceAvailable(.rear)
-                || UIImagePickerController.isCameraDeviceAvailable(.front)
-        }
-
         class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
             let parent: CaptureImagePicker
             let shown: Binding<Bool>

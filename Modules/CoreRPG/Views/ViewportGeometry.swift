@@ -142,23 +142,6 @@ public struct ViewportGeometry: Sendable {
         return ViewportTransform(scale: scale, offset: clampedOffset(transform.offset, at: scale))
     }
 
-    public func panned(from transform: ViewportTransform, translation: CGSize) -> ViewportTransform {
-        let baseline = constrained(transform)
-        guard translation.isFinite else {
-            return baseline
-        }
-
-        return constrained(
-            ViewportTransform(
-                scale: baseline.scale,
-                offset: CGPoint(
-                    x: baseline.offset.x + translation.width,
-                    y: baseline.offset.y + translation.height
-                )
-            )
-        )
-    }
-
     public func zoomed(
         from transform: ViewportTransform,
         toScale proposedScale: CGFloat,

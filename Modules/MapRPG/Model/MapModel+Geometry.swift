@@ -171,10 +171,6 @@ extension MapModel {
         }
     }
 
-    var mapIdealSize: CGSize {
-        CGSize(width: width + 100, height: height + 100)
-    }
-
     var children: [MapModel] {
         [self]
     }

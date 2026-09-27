@@ -146,10 +146,6 @@ public extension FileUrl {
         _url.pathExtension
     }
 
-    var isRemoteURL: Bool {
-        location == .url && rawUrl.isSupportedRemoteFileURL
-    }
-
     /// A copy that is safe to resolve on this device although its description came from an
     /// imported file or a game peer, which control every field of it.
     ///

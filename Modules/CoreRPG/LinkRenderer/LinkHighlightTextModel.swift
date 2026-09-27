@@ -33,7 +33,6 @@ public final class LinkHighlightTextModel {
     var linkLocations: LinkHighLightLocations
 
     var updated: UUID = UUID()
-    @ObservationIgnored var lastUpdated: UUID = UUID()
     
     var linkToggled: Bool = false
 

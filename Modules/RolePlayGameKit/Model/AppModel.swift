@@ -605,19 +605,6 @@ extension AppModel {
     }
 
 
-    @MainActor var externalRouter: any NavigationRouting<KnownRoutes> {
-        NavigationRouter(gameNavigator) { route in
-            switch route {
-            case .adventures:
-                self.navigator(for: .adventure).perform(route: KnownRoutes.adventures(nil, nil))
-            case .audios:
-                self.navigator(for: .audio).perform(route: KnownRoutes.audios(nil, nil))
-            default:
-                break
-            }
-        }
-    }
-
     @MainActor public var routeActions: RouteActions {
         RouteActions(id: .object(ObjectIdentifier(self))) { [weak self] module, itemId, entryId in
             guard let self, module != .none else { return }

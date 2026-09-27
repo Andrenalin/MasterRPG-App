@@ -109,31 +109,6 @@ extension SingleItemImportModel {
         return model
     }
 
-    static var previewNewImport: SingleItemImportModel {
-        var lore = EmtpyEntryViewModel.empty
-        lore.name = "Lore"
-        lore.content = "The Crimson Codex is an ancient tome sealed with three locks, each requiring a different key held by a different faction. Its pages shift language depending on who reads them, and every third moon it whispers the name of someone who will soon die."
-
-        var spells = EmtpyEntryViewModel.empty
-        spells.name = "Spell List"
-        spells.content = "Fireball (3rd), Chain Lightning (6th), Meteor Swarm (9th), Time Stop (9th), Wish (9th). Requires attunement by a wizard of 15th level or higher."
-
-        let snapshot = PreviewItemModel(
-            name: "Crimson Codex",
-            category: .photo,
-            description: "A legendary artifact of immense power, sought by wizards across three continents. Its pages are said to contain forbidden knowledge of the primordial age - spells erased from all other records after the Sundering.",
-            tags: ["artifact", "legendary", "magic", "tome", "attunement"],
-            entries: [lore, spells]
-        )
-        let reviewItem = SingleReviewItem(existing: snapshot, imported: snapshot, merged: snapshot)
-        let model = SingleItemImportModel.from(item: reviewItem)
-        model.references = [
-            SingleReviewReference(itemName: "The Vault of Eternity", destination: ItemRowModel(itemId: UUID(), typeId: .adventure), status: .resolved),
-            SingleReviewReference(itemName: "Elara the Archivist", destination: ItemRowModel(itemId: UUID(), typeId: .value), status: .missing)
-        ]
-        return model
-    }
-
     static var previewConflictingEntries: SingleItemImportModel {
         var existingHistory = EmtpyEntryViewModel.empty
         existingHistory.name = "History"

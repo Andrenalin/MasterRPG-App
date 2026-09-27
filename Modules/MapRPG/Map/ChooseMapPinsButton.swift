@@ -71,14 +71,6 @@ struct ChooseMapPinsButton: View {
 /// to MapRPG, so other modules (GameRPG's 3D table toolbar) reach
 /// `ChooseMapPinsButton` through this instead of constructing it directly.
 public extension ViewController {
-    @MainActor @ViewBuilder
-    func choosePinsButton(
-        root: MapRootModel,
-        focusedRoomId: UUID?,
-        onMonstersAdded: @escaping () -> Void
-    ) -> some View {
-        ChooseMapPinsButton(root: root, focusedRoomId: focusedRoomId, onMonstersAdded: onMonstersAdded)
-    }
 }
 
 #Preview {

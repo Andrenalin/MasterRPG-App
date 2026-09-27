@@ -28,7 +28,6 @@ struct InlineImporterView: View, Equatable {
 #if !os(tvOS)
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
     @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var selectedImage: Image? = nil
 #endif
     
     @Namespace var glassNamespace

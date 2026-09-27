@@ -103,12 +103,6 @@ public final class SpaceModel: nonisolated Identifiable {
     public var players: [UUID] = []
 }
 
-extension SpaceModel {
-    var hasSpace: Bool {
-        fileUrl != nil
-    }
-}
-
 extension SpaceModel: nonisolated Comparable {
     nonisolated public static func < (lhs: SpaceModel, rhs: SpaceModel) -> Bool {
         return assumeMainActorIsolated {

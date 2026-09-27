@@ -106,14 +106,6 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
 }
 
 private extension View {
-    @ViewBuilder
-    func entryDropGlass() -> some View {
-#if os(visionOS)
-        self
-#else
-        glassEffectAll(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
-#endif
-    }
 }
 
 #Preview {
