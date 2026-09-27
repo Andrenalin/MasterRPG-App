@@ -47,10 +47,18 @@ public struct LinkHighlightTextView: View {
 
     var plainText: Text {
         let _ = model.updated
-        return model.displayText.reduce(Text(verbatim: "")) {
-            partialResult, component in
-            return Text("\(partialResult)\(component.text)", bundle: .module)
+        // Build one flat LocalizedStringKey with all components as sibling interpolation arguments.
+        // Folding components pairwise (via reduce with either `+` or nested string interpolation)
+        // builds an N-deep nested Text, and resolving that recurses one stack frame per component —
+        // verified to stack-overflow past a few thousand components, which long/link-dense rule
+        // descriptions can reach. No localization is needed here either way — components are
+        // already-resolved Text values, this is purely a concatenation mechanism.
+        let components = model.displayText
+        var interpolation = LocalizedStringKey.StringInterpolation(literalCapacity: 0, interpolationCount: components.count)
+        for component in components {
+            interpolation.appendInterpolation(component.text)
         }
+        return Text(LocalizedStringKey(stringInterpolation: interpolation))
     }
 
     func overlays(foreground: Bool) -> some View {
