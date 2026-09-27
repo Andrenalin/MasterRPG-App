@@ -612,6 +612,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - Ghost entries `DiceRollerWidgetDiceRollerExamples.swift`, `FavoriteDiceManagementView.swift` in `MasterRPG.xcodeproj/project.pbxproj:1888-1894`: the files don't exist.
 - `Modules/CoreRPG/App/ExportedRPGData.swift:71-144` (keep the `UTType` constants at `:94-99` in a file named for them); the two identical `StoreManipulable` protocols (`Modules/CoreRPG/FileViews/SettingsView.swift:1-10`, `Modules/RolePlayGameKit/View/SettingsView.swift:20-24`); `AppRouter` (`Modules/CoreRPG/App/AppTabBarViewModifier.swift:5`); test-only `Modules/CoreRPG/Cache/ResourceCache.swift`; empty `registerRealityKitComponents()` (`Sources/MasterRPG/RealityKitInit.swift:11-16`, call at `MasterRPGApp.swift:36`); `Scripts/print_wan_ip.sh`; unused `PhotographyTips`/`Reticle` imagesets in `Modules/SpaceRPG/Resources/Assets.xcassets`.
 - **Severity:** Medium (~900 LOC and several misleading project entries removed)
+- **Status (2026-09-26):** FIXED. Deleted the two never-compiled widget files and their four `membershipExceptions` entries (two of them pointed at files that no longer existed); `ExportedRPGData`/`RPGJsonFile` (the file is now `ItemModuleIds.swift`, and the `UTType` constants moved to `UTType+RPGDocuments.swift`); both `StoreManipulable` protocols; `AppRouter` (its `ExtendedTabRoute` conformance dropped, the members stay); the test-only `ResourceCache` with its test; the empty `RealityKitInit` and its call and pbxproj entries; `Scripts/print_wan_ip.sh`; the unused `PhotographyTips`/`Reticle` image sets; and the widget catalog's 50 stale keys. Other catalogs' stale keys were left: those can be looked up with runtime-built keys, which the "stale" flag doesn't account for.
 
 ### 9.2 Project references a deleted `MasterRPG.entitlements`
 - **Location:** `MasterRPG.xcodeproj/project.pbxproj:1868` (file reference), `:2752` (Resources group)
@@ -619,6 +620,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** It shows as a red missing file and misleads anyone looking for the app's entitlements.
 - **Action:** Remove the reference and group entry.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Removed the `MasterRPG.entitlements` file reference and its Resources-group entry from `project.pbxproj` (`plutil -lint` OK).
 
 ### 9.3 About 95 members with exactly one repo-wide occurrence *(still open from CODE_AUDIT_17 §9.3, with new entries)*
 - **Location:** New since audit 17: `Modules/GameRPG/GameViews/GameScreenModel.swift:64` (`resetToMainTab`), `:85-86`; `Modules/GameRPG/Table3D/GameTableModel+MapSync.swift:18` (`refreshCurrentMap`, next to the sanctioned `refreshFogOfWar`); `Modules/MapRPG/BattleRound/BattleRoundModel+Roster.swift:56`; `Modules/DiceRPG/Model/DiceModel.swift:334,339`; `Modules/PdfRPG/Model/PdfModel.swift:103`; `Modules/SpaceRPG/Model/SpaceModel.swift:107`; `Modules/GeneratorRPG/BasicAI/Engine/FoundationManager.swift:49`; `Modules/GeneratorRPG/BasicAI/Model/Transcript+TextExtraction.swift:6`. Still open: `Modules/CoreRPG/App/PlatformModifiers.swift:15,23,80,89,98`, `Modules/CoreRPG/ViewModifiers/FocusModifiers.swift:10,14`, `Modules/CoreRPG/Extensions/PlatformHelpers.swift:23,41,50`, `Modules/CoreRPG/Files/FileUrlViewModel.swift:31-46`, `Modules/CoreRPG/Model/ItemListable.swift:43-51`, `Modules/CoreRPG/Links/ReferenceScanner.swift:26`, `Modules/RuleRPG/Resources/Localization+Extensions.swift` (whole file)
@@ -633,6 +635,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** A future caller could send main-actor models into `@Sendable` queue closures.
 - **Action:** Delete them and point their docs at the snapshot APIs.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Removed `fetch(mapper:)`, `fetch(uuid:mapper:)`, `replace(uuid:with:updater:)`, `queueReplace(uuid:with:updater:)`, `batchReplace(models:keyPath:updater:)` and the private `processBatchChunk` they used; the snapshot APIs' docs no longer refer to them.
 
 ### 9.5 Preview scaffolding and a SwiftData model ship in release *(still open from CODE_AUDIT_17 §9.4)*
 - **Location:** `Modules/CoreRPG/Model/LinkDataModel.swift:1-11`; 13 × `Modules/*/Model/MockData.swift`; 17 of 20 files in `Modules/CoreRPG/Fake/`; `Modules/GameRPG/Statistics/Model/GameStatisticsTypes.swift:439-620` (fixtures)

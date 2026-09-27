@@ -50,7 +50,7 @@ public enum ExtendedTabRoute: String, Hashable, Codable {
     }
 }
 
-extension ExtendedTabRoute: AppRouter {
+extension ExtendedTabRoute {
     public var title: String {
         String(module.title)
     }

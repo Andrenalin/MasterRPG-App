@@ -155,61 +155,11 @@ public extension CoreDataController {
         }
     }
 
-    func fetch(mapper: @escaping @Sendable (DataType) -> Model) async throws -> [Model] {
-        try await context.perform {
-            let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
-            // Prefetch relationships to avoid N+1 queries.
-            // No fetchBatchSize here — batched fetches disable relationship prefetching,
-            // and the result set is mapped in full right away anyway.
-            if !relationshipKeyPaths.isEmpty {
-                request.relationshipKeyPathsForPrefetching = relationshipKeyPaths
-            }
-            // Disable faulting to force immediate hydration and avoid lazy loading overhead
-            request.returnsObjectsAsFaults = false
-            return try fetchAndDelete(request: request, mapper: mapper)
-        }
-    }
-
     func fetchIds() async throws -> [UUID] {
         try await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
             return try fetchId(request: request)
         }
-    }
-
-    func fetch(uuid: UUID, mapper: @escaping @Sendable (DataType) -> Model) async throws -> Model? {
-        await context.perform {
-            guard let data = fetchCoreData(uuid: uuid) else { return nil }
-            return mapper(data)
-        }
-    }
-
-    func replace(uuid: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) async throws {
-        await context.perform {
-            if let current = fetchCoreData(uuid: uuid) {
-                updater(viewModel, current)
-            } else {
-                Logger.coreDataController.debug("add new \(uuid, privacy: .public)")
-                let new = DataType(context: context)
-                updater(viewModel, new)
-            }
-        }
-    }
-
-    /// Queue a replace operation to be executed later during save.
-    /// Synchronous on purpose: callers rely on the operation being enqueued in call
-    /// order and being visible to any subsequent `save()`/`flushPendingOperations()`.
-    func queueReplace(uuid: UUID, with viewModel: Model, updater: @escaping @Sendable (Model, DataType) -> Void) {
-        let operation = PendingOperation(
-            id: uuid,
-            model: viewModel,
-            updater: { model, nsObject in
-                guard let typedModel = model as? Model,
-                      let typedObject = nsObject as? DataType else { return }
-                updater(typedModel, typedObject)
-            }
-        )
-        model.addPendingOperation(operation)
     }
 
     /// Snapshot variant: queue a replace whose payload is a plain Sendable value,
@@ -299,7 +249,7 @@ public extension CoreDataController {
 // models are @MainActor and therefore must not be touched on the Core Data queue.
 
 public extension CoreDataController {
-    /// Mirrors fetch(mapper:) including relationship prefetching and duplicate repair.
+    /// Fetches every row as a snapshot, with relationship prefetching and duplicate repair.
     func fetchSnapshots<Snapshot: Sendable>(mapper: @escaping @Sendable (DataType) -> Snapshot) async throws -> [Snapshot] {
         try await context.perform {
             let request: NSFetchRequest<NSFetchRequestResult> = DataType.fetchRequest()
@@ -333,7 +283,7 @@ public extension CoreDataController {
         }
     }
 
-    /// Mirrors batchReplace(models:...) — single upfront existence check, chunked apply, one save.
+    /// Single upfront existence check, chunked apply, one save.
     func batchReplace<Snapshot: Sendable>(
         snapshots: [Snapshot],
         keyPath: KeyPath<Snapshot, UUID>,
@@ -402,28 +352,6 @@ public extension CoreDataController {
         Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
     }
     
-    /// Batch replace/insert operations with automatic chunking
-    func batchReplace(
-        models: [Model],
-        keyPath: KeyPath<Model, UUID>,
-        updater: @escaping @Sendable (Model, DataType) -> Void,
-        chunkSize: Int = 100
-    ) async throws {
-        guard !models.isEmpty else { return }
-
-        // Single existence check for all models upfront — avoids one SQL query per chunk.
-        let allUUIDs = models.map { $0[keyPath: keyPath] }
-        let existingUUIDs = try await batchExists(uuids: allUUIDs)
-
-        let chunks = models.chunked(into: chunkSize)
-        for chunk in chunks {
-            try await processBatchChunk(chunk: chunk, keyPath: keyPath, existingUUIDs: existingUUIDs, updater: updater)
-        }
-
-        // Save once after all chunks are processed
-        try await save()
-        Logger.coreDataController.info("Batch replaced \(models.count) objects in \(chunks.count) chunks")
-    }
     
     /// Batch exists check for multiple UUIDs
     /// Must be called on the context's queue. A failed lookup throws rather than reading as
@@ -458,32 +386,6 @@ public extension CoreDataController {
             } catch {
                 Logger.coreDataController.error("Batch exists check error: \(error.localizedDescription, privacy: .public)")
                 throw error
-            }
-        }
-    }
-}
-
-// MARK: - Private Batch Helpers
-
-private extension CoreDataController {
-    func processBatchChunk(
-        chunk: [Model],
-        keyPath: KeyPath<Model, UUID>,
-        existingUUIDs: Set<UUID>,
-        updater: @escaping @Sendable (Model, DataType) -> Void
-    ) async throws {
-        // See CODE_AUDIT_15 §3.17: the key path is evaluated outside the `perform` closure.
-        let keyedChunk = chunk.map { (uuid: $0[keyPath: keyPath], model: $0) }
-        await context.perform {
-            for (uuid, model) in keyedChunk {
-                if existingUUIDs.contains(uuid) {
-                    if let existing = fetchCoreData(uuid: uuid) {
-                        updater(model, existing)
-                    }
-                } else {
-                    let new = DataType(context: context)
-                    updater(model, new)
-                }
             }
         }
     }

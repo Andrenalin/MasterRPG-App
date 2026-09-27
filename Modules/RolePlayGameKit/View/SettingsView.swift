@@ -15,13 +15,6 @@ import WeatherRPG
 import DiceRPG
 
 
-
-@MainActor
-public protocol StoreManipulable: Sendable {
-    func resetData() async
-    func validate()
-}
-
 public struct SettingsView: View {
     public init(store: AppModel) {
         self.store = store

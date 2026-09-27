@@ -33,10 +33,6 @@ struct MasterRPGApp: App {
         Task.detached(priority: .utility) {
             await FileManager.prewarmCloudUrls()
         }
-#if !os(tvOS)
-        // Register custom RealityKit components
-        RealityKitInit.registerRealityKitComponents()
-#endif
 
         let data = appModel
         AppDependencyManager.shared.add(dependency: data)

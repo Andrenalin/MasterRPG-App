@@ -69,9 +69,6 @@
 		59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */; };
 		59D30AED2E937CEB005AE77B /* MenuMainCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */; };
 		59DC213D2BD75537001140B1 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 59DC213C2BD75537001140B1 /* Localizable.xcstrings */; };
-		59E299062F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
-		59E299072F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
-		59E299082F75313D00700934 /* RealityKitInit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E299052F75313D00700934 /* RealityKitInit.swift */; };
 		59E2991B2F75438C00700934 /* GeneratorRPG.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DCAD02E8E30C00056E46C /* GeneratorRPG.framework */; platformFilters = (ios, macos, xros, ); };
 		59F140402F87BF940072927B /* RPGShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		59F140462F87C0E40072927B /* RPGShare.appex in Embed Extensions */ = {isa = PBXBuildFile; fileRef = 8E13A3FE2BCE88BB00B2FCD4 /* RPGShare.appex */; platformFilters = (ios, xros, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -1791,7 +1788,6 @@
 		59CE1E9C2E84F011009C6CB5 /* GameRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = GameRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		59D30AEA2E937CEB005AE77B /* MenuMainCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuMainCommand.swift; sourceTree = "<group>"; };
 		59DC213C2BD75537001140B1 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		59E299052F75313D00700934 /* RealityKitInit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealityKitInit.swift; sourceTree = "<group>"; };
 		59F400022FA0000000000001 /* RuleRPG.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RuleRPG.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		59F401022FA0000000000001 /* RuleRPGTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RuleRPGTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		68FC61BA0212A2876399734F /* PhotoRPGSnapshotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhotoRPGSnapshotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1865,7 +1861,6 @@
 		8EC4E48828DDAAF300D0279F /* iOSSceneDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = iOSSceneDelegate.swift; sourceTree = "<group>"; };
 		8EC4E48928DDAAF300D0279F /* MasterRPGApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MasterRPGApp.swift; sourceTree = "<group>"; };
 		8EC4E48B28DDAAF300D0279F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		8EC4E48E28DDAAF300D0279F /* MasterRPG.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = MasterRPG.entitlements; sourceTree = "<group>"; };
 		8EC4E48F28DDAAF300D0279F /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8ED3AB992E2B45AE00FF3AE8 /* RolePlayGameKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RolePlayGameKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EEB00E32FC5411B004B78D8 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
@@ -1886,10 +1881,6 @@
 		8E0DCFC22F8722C90045FE8D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				DiceRollerView.swift,
-				DiceRollerWidgetConfiguration.swift,
-				DiceRollerWidgetDiceRollerExamples.swift,
-				FavoriteDiceManagementView.swift,
 				Info.plist,
 			);
 			target = 8E0DCFB02F8722C80045FE8D /* DiceRollerWidgetExtension */;
@@ -2713,7 +2704,6 @@
 				59A110052F88000000000001 /* MasterRPGSpotlightIndexer.swift */,
 				5978B4142F7E613F00818159 /* Menu */,
 				8E83E4CA2E841B4400A1095C /* MyAppPackage.swift */,
-				59E299052F75313D00700934 /* RealityKitInit.swift */,
 				5978B4242F7E618500818159 /* visionOS */,
 				5978B4152F7E614400818159 /* Window */,
 			);
@@ -2749,7 +2739,6 @@
 				8E8809CC2BC8B45E00186C7A /* InfoTVPlist.xcstrings */,
 				8E668C742B5AB7A5005BA45F /* Localizable.xcstrings */,
 				8E7093AC3008B8F000BB7EED /* AppShortcuts.xcstrings */,
-				8EC4E48E28DDAAF300D0279F /* MasterRPG.entitlements */,
 				8E6F3F322BC4C7FC00600556 /* PrivacyInfo.xcprivacy */,
 				8E4B274E2CD79E7D009AB4D1 /* RPGResources */,
 				8E8EE7012CD8E3E10010A25B /* RPGResourcesDebug */,
@@ -4994,7 +4983,6 @@
 				8E190DA62B8F6C340084B0F4 /* ExternalPlayerWindow.swift in Sources */,
 				59A110002F88000000000001 /* MasterRPGShortcuts.swift in Sources */,
 				59A110012F88000000000001 /* MasterRPGSpotlightIndexer.swift in Sources */,
-				59E299062F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E83E4CB2E841B4400A1095C /* MyAppPackage.swift in Sources */,
 				8E190DA22B8F6C190084B0F4 /* MasterRPGApp.swift in Sources */,
 				8E6A8A9E2F6E538E00149E06 /* WindowVisionList.swift in Sources */,
@@ -5026,7 +5014,6 @@
 				8E6BC9CE2AFB0B2300E5E098 /* MasterTVApp.swift in Sources */,
 				8E6BC9E12AFB0BCF00E5E098 /* iOSAppDelegate.swift in Sources */,
 				8E4B6E072FC678330066FA9F /* WindowUtilityList.swift in Sources */,
-				59E299072F75313D00700934 /* RealityKitInit.swift in Sources */,
 				59D30AEC2E937CEB005AE77B /* MenuMainCommand.swift in Sources */,
 				8E83E4DB2E841B7200A1095C /* MenuBarView.swift in Sources */,
 				5997CAF92B4D494C0021BACB /* ExternalPlayerWindow.swift in Sources */,
@@ -5183,7 +5170,6 @@
 				8EC4E49828DDAAF400D0279F /* MasterRPGApp.swift in Sources */,
 				59A110022F88000000000001 /* MasterRPGShortcuts.swift in Sources */,
 				59A110032F88000000000001 /* MasterRPGSpotlightIndexer.swift in Sources */,
-				59E299082F75313D00700934 /* RealityKitInit.swift in Sources */,
 				8E83E4DD2E841B7200A1095C /* MenuBarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
