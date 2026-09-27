@@ -86,7 +86,6 @@ struct LinkHighlightTextRenderer: TextRenderer {
                     }
                 } else {
                     let copy = context
-                    //copy.opacity = UnitCurve.easeIn.value(at: elapsedTime / 0.2)
                     copy.draw(run)
                 }
             }

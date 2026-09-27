@@ -20,7 +20,6 @@ public extension View {
     static func printViewChangesOnlyInDebug() {
         #if DEBUG
             let _ = Self._printChanges()
-            //let _ = Self._logChanges()
         #endif
     }
 

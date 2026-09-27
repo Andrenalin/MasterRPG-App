@@ -61,7 +61,6 @@ public enum UserActivity {
             let attributes = CSSearchableItemAttributeSet(contentType: UTType.plainText)
 
             attributes.contentDescription = "An item from MasterRPG"
-            //attributes.thumbnailData = store.photoRoot.fetchPhotoImage(for: store[itemId].photoId)?.pngData()
             userActivity.contentAttributeSet = attributes
         #endif
     }

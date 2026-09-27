@@ -80,7 +80,6 @@ private struct FormEditorContentView<Editor: View>: View {
 
                 editor
             }
-            //.scrollTargetLayout()
             .padding()
         }
         .scrollPosition($scrollPosition, anchor: .center)

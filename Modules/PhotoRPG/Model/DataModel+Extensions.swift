@@ -23,7 +23,6 @@ extension RPGPhoto: SpotlightIndexerAttribute {
         attributeSet.displayName = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.title = CRDT(wrappedValue: name ?? "").wrappedValue
         attributeSet.textContent = CRDT(wrappedValue: information ?? "").wrappedValue
-        //attributeSet.thumbnailData =
         let convertedTags = CRDT(string: tags ?? "", defaultValue: "")
         convertedTags.wrappedValue.split(separator: ",").forEach {
             if attributeSet.keywords != nil {

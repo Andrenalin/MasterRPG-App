@@ -204,7 +204,6 @@ private struct ToolbarItemListSecondaryActionMenuView: View {
                 addItemButton(for: .folder, showTip: false, root: root, listController: listController)
                     .disabled(parentModel?.category == root.itemControllable.collectionCategory)
                 addItemButton(for: .collection, showTip: false, root: root, listController: listController)
-                    //.popoverTip(MasterRPGTips.organizeContent)
             }
         }
         ControlGroup {

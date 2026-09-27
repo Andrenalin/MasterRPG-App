@@ -644,6 +644,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** About 1,200 LOC of preview/test scaffolding and an `import SwiftData` stack are linked into release frameworks.
 - **Action:** Replace `LinkDataModel.ID` with `UUID`, delete the model, and move MockData/Fake/fixtures under `#if DEBUG`.
 - **Severity:** Medium
+- **Status (2026-09-26):** DEFERRED. Not mechanical after all. The 13 `MockData` preview modifiers and the `Fake` helpers are referenced by `#Preview` blocks, which also compile in Release, so an `#if DEBUG` gate needs those previews gated too. `LinkDataModel` (with `import SwiftData`) backs the `ModelContainer` that the generated snapshot test suites (`Scripts/generate_snapshot_tests.rb`) and the hand-written dynamic snapshot tests build via `MockData.makeSharedContext()`/`MockRootViewModifier(modelContext:)`. Removing it means changing the generator and regenerating every snapshot suite. The attempt was reverted; do it together with the snapshot generator.
 
 ### 9.6 Commented-out statements and remaining TODOs *(still open from CODE_AUDIT_17 §9.5)*
 - **Location:** `Modules/CoreRPG/Sheet/SheetRootModel+Editor.swift:50,61`; `Modules/CoreRPG/Editors/TextDoubleEditor.swift:42`; `Modules/CoreRPG/LGViews/HeaderFooterContentScrollView.swift:34,163,184`; `Modules/CoreRPG/ItemDetail/ItemEditorForegroundView.swift:83`; `Modules/CoreRPG/LGViewModifiers/ToolbarItemListViewModifier.swift:207`; `Modules/CoreRPG/Debug/RainbowDebug.swift:23`; `Modules/PhotoRPG/Model/DataModel+Extensions.swift:26`; `Modules/MapRPG/Map/EditMapToolBar.swift:139`; `Modules/GeneratorRPG/Controller/GeneratorController.swift:328`; `Modules/GeneratorRPG/Controller/AdventureGeneratorController.swift:228`; new: `Modules/CoreRPG/Extensions/Image+AKImage.swift:16`, `Modules/CoreRPG/App/UserActivity.swift:64`, `Modules/CoreRPG/LinkRenderer/LinkHighlightTextRenderer.swift:89`. TODOs: `Modules/CharacterRPG/View/DetailEditorView.swift:14`, `Modules/CharacterRPG/Controller/EditController+Repair.swift:178`
@@ -651,6 +652,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Noise, and some suggest behaviour that isn't wired up.
 - **Action:** Delete the statements; resolve the TODOs or move them to the issue tracker.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. Removed all 20 commented-out statements: the 16 still open from audit 17 (the widget one went with its deleted file) plus the four new ones, including the two disabled expectations in `LinkControllerTests`. The two TODO markers are now plain notes that document the kept behaviour: `onChange(initial:)` is used on purpose, and an ungrouped item stays visible. No TODO/FIXME/HACK/#warning markers remain in Modules or Sources.
 
 ### 9.7 Per-module list-sequence trackers copied 8 times across Master and Player *(still open from CODE_AUDIT_17 §9.10)*
 - **Location:** `Modules/GameRPG/Controller/PlayerControllerModel.swift:235-420`; `Modules/GameRPG/Controller/MasterController.swift:509-567`

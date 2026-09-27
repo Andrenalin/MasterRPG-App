@@ -31,7 +31,6 @@ struct HeaderFooterContentScrollView<Header: View, Content: View, Footer: View, 
     @ViewBuilder var background: Background
     
     var body: some View {
-        //let _ = Self.printViewChangesOnlyInDebug()
         
         content
             .frame(maxWidth: .infinity)
@@ -160,7 +159,6 @@ private struct FooterView<Footer: View, Background: View>: View {
         }.overlay(alignment: .bottom) {
             Text(verbatim: "Bottom")
                 .padding()
-                //.glassEffect(.regular.interactive())
                 .padding(120)
         }
     } footer: {
@@ -181,7 +179,6 @@ private struct FooterView<Footer: View, Background: View>: View {
     .overlay(alignment: .bottom) {
         Text(verbatim: "Bottom")
             .padding()
-            //.glassEffect(.regular.interactive())
             .safeAreaInset(edge: .bottom) {
                 VStack {
                     Label {

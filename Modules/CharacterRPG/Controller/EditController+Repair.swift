@@ -175,7 +175,9 @@ extension EditController {
             groupItem.groupId = firstOwnerId
         }
         if groupItem.groupId == nil {
-            // TODO: confirm this should stay visible when ungrouped — see CODE_AUDIT_Character §9.16.
+            // An item that no longer belongs to any group becomes a normal, visible top-level
+            // item; hiding it would lose it from every list. See CODE_AUDIT_Character §9.16 and
+            // CODE_AUDIT_18 §9.6.
             groupItem.displayState = 0
         }
         save(

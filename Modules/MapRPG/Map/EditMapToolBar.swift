@@ -136,7 +136,6 @@ struct EditToolBarViewModifier: ViewModifier {
             .animation(reduceMotion ? nil : .bouncy, value: hideScales)
 #if !os(macOS)
             .fullScreenCover(isPresented: $showPinSelection) {
-            //.sheet(isPresented: $showPinSelection) {
                 ManagedPresentationView {
                     root.viewController.characterSelection(root: root, selectionModel: selectedPin)
                         .navigationTransition(.zoom(sourceID: "pin", in: pinSpace))

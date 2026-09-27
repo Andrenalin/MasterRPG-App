@@ -47,7 +47,6 @@ extension SheetRootModel {
 
     func addNewEntry(in sheetModel: SheetModel) -> UUID? {
         guard let entryId = addNewEntry(to: sheetModel.source) else { return nil }
-        //setCurrentItem(source: sheetModel.source, entryId: entryId)
         editorModel.itemId = sheetModel.source.itemId
         editorModel.module = sheetModel.source.typeId
         editorModel.entryId = entryId
@@ -58,7 +57,6 @@ extension SheetRootModel {
         guard let editable = entryDataEditable(for: sheetModel.source) else { return nil }
         let entryId = await editable.addNewGroup(itemId: sheetModel.source.itemId)
 
-        //setCurrentItem(source: sheetModel.source, entryId: entryId)
         editorModel.itemId = sheetModel.source.itemId
         editorModel.module = sheetModel.source.typeId
         editorModel.entryId = entryId

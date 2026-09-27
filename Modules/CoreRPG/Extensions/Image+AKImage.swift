@@ -13,7 +13,6 @@ import AppKit
 
 public typealias AKImage = NSImage
 
-//extension NSImage: @unchecked @retroactive Sendable {}
 
 public extension Image {
     init(akImage: AKImage) {

@@ -325,7 +325,6 @@ struct GeneratorController: Sendable {
         
     @MainActor func clearChat() {
         model.conversationEngine.clear()
-        //model.feedbackState.removeAll()
         model.isLoading = false
         model.responseErrorContent = ""
         model.showError = false

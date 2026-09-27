@@ -139,8 +139,6 @@ struct LinkControllerTests {
 
         #expect(root.itemController.itemOrEmpty(for: itemId).photoId == photoId)
         #expect(root.itemController.itemOrEmpty(for: itemId)[entry1.id] == entry1)
-//        #expect(root.itemController.itemOrEmpty(for: itemId)[entry2.id].content == "\(entry1.content)Table")
-//        #expect(root.itemController.itemOrEmpty(for: itemId)[entry3.id].content == "\(entry1.content)TableValue")
     }
 
     @Test func handleTextLinkRoutesAndToggleLinkDelegates() {
