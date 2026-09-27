@@ -1,19 +1,17 @@
 // @copyright André Trettin
 
+#if os(visionOS)
 import AudioRPG
 import AVFoundation
 import CoreRPG
 import Combine
 import Foundation
-import GroupActivities
 import os.log
 import SwiftUI
 
-#if os(visionOS)
+@preconcurrency import GroupActivities
 import TabletopKit
-#endif
 
-#if os(visionOS)
 // MARK: - visionOS spatial template configuration
 
 extension RPGSharePlayController {
