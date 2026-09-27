@@ -288,6 +288,17 @@ extension GameController {
               }) else {
             return false
         }
+        // A dead combatant must drop out of every attacker's target list
+        // immediately, not linger highlighted until the next manual toggle.
+        // `BattleRoundModel+Turns.swift`'s `synchronize(pins:)` derives each
+        // entry's `defenderIds` purely from `pin.isHighlighted`, so clearing
+        // the flag here is sufficient to remove it network-wide and to reset
+        // any attacker whose `rollRecipientCombatantId` pointed at it.
+        if isDead {
+            _ = updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { pin in
+                pin.isHighlighted = false
+            })
+        }
         // Only ever reached via `BattleRoundController.setDead`, which is
         // itself gated on `root.gameModel.gameConfig.isMaster`.
         _ = synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
@@ -417,7 +428,8 @@ extension GameController {
         var repairedAttacker = false
         if let attackerPinId = battleRoundModel.activePinId,
            let attacker = map.mapPins.first(where: { $0.id == attackerPinId }),
-           !attacker.isHighlighted {
+           !attacker.isHighlighted,
+           !attacker.isDead {
             repairedAttacker = updatePinState(
                 itemId: itemId,
                 pinId: attackerPinId,
