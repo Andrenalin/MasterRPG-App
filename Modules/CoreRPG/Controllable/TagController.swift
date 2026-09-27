@@ -179,7 +179,7 @@ public struct TagController: Sendable {
         }
     }
 
-    @MainActor public func sugguestionTags(module: NetworkModules, search: String) -> [String] {
+    @MainActor public func suggestionTags(module: NetworkModules, search: String) -> [String] {
         model.tags[module, default: [:]]
             .filter { $0.value.title.localizedStandardContains(search) }
             .sorted { $0.value.count > $1.value.count }

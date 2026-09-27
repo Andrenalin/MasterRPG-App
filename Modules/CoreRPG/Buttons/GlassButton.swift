@@ -24,17 +24,17 @@ import SwiftUI
 
 public struct GlassButton<Content: View>: View {
     public init(isProminent: Bool = false,  action: @escaping () -> Void, @ViewBuilder label: () -> Content) {
-        self.isProminet = isProminent
+        self.isProminent = isProminent
         self.label = label()
         self.action = action
     }
     
-    let isProminet: Bool
+    let isProminent: Bool
     let label: Content
     let action: () -> Void
     
     public var body: some View {
-        if isProminet {
+        if isProminent {
             GlassButtonInnerButtonView(label: label, action: action)
 #if !os(visionOS)
                 .buttonStyle(.glassProminent)

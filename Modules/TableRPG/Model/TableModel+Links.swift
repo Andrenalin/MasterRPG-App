@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 
 // Split out of TableModel.swift. See CODE_AUDIT_Table §9.10.
-extension TableModel: nonisolated ItemLinkRegistable {
+extension TableModel: nonisolated ItemLinkRegistrable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -50,7 +50,7 @@ extension TableModel: nonisolated ItemLinkRegistable {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .table)
         var total: [LinkRegisterModel] = []
         if valueChanged {
-            total += entry.links(for: entry.content).map {
+            total += LinkReplaceController.links(for: entry.content).map {
                 LinkRegisterModel(link: $0, source: source)
             }
         }

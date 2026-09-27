@@ -320,7 +320,7 @@ public extension ImportControllable {
         itemController: any ItemControllable,
         importModel: ItemDataImportModel
     ) {
-        guard let deletedIA: any ItemDataAccessable = itemController.itemSync(for: deletedId) else { return }
+        guard let deletedIA: any ItemDataAccessible = itemController.itemSync(for: deletedId) else { return }
         let reviewItem = SingleReviewItem(existing: deletedIA, imported: deletedIA, merged: deletedIA)
         let itemModel = SingleItemImportModel.from(item: reviewItem)
         let reviewItemModel = ImportReviewItemModel(
@@ -401,7 +401,7 @@ private extension ImportControllable {
     /// write what its `PeerImportPolicy` admits (§5.2). Returns `false` when the item must be
     /// skipped.
     @MainActor
-    private func prepareDecodedItem(_ item: any ItemDataAccessable, allowsPrivateRemoteHosts: Bool, peerPolicy: PeerImportPolicy?) -> Bool {
+    private func prepareDecodedItem(_ item: any ItemDataAccessible, allowsPrivateRemoteHosts: Bool, peerPolicy: PeerImportPolicy?) -> Bool {
         var item = item
         if let importedFileUrl = item.fileUrl {
             item.fileUrl = importedFileUrl.sanitizedForImport(allowsPrivateRemoteHosts: allowsPrivateRemoteHosts)
@@ -451,7 +451,7 @@ private extension ImportControllable {
             await editCtrl.repairFolder(itemId: id)
 
         case .manual:
-            let merged = await itemController.merge(with: importableItem) as? any ItemDataAccessable
+            let merged = await itemController.merge(with: importableItem) as? any ItemDataAccessible
             await recordManualReview(importableItem: importableItem, merged: merged, id: id, itemController: itemController, importModel: importModel)
         }
 
@@ -476,12 +476,12 @@ private extension ImportControllable {
     @MainActor
     private func recordManualReview(
         importableItem: ModelType,
-        merged: (any ItemDataAccessable)?,
+        merged: (any ItemDataAccessible)?,
         id: UUID,
         itemController: any ItemControllable,
         importModel: ItemDataImportModel
     ) {
-        guard let imported = importableItem as? any ItemDataAccessable else { return }
+        guard let imported = importableItem as? any ItemDataAccessible else { return }
         let existing = itemController.itemSync(for: id)
         let module = itemController.config.module
 
@@ -519,8 +519,8 @@ private extension ImportControllable {
     func logManualReviewDifference(
         module: NetworkModules,
         id: UUID,
-        existing: (any ItemDataAccessable)?,
-        imported: any ItemDataAccessable,
+        existing: (any ItemDataAccessible)?,
+        imported: any ItemDataAccessible,
         itemModel: SingleItemImportModel
     ) {
         guard let existing else {
@@ -547,7 +547,7 @@ private extension ImportControllable {
     }
 
     @MainActor
-    func logManualReviewUnchangedSkipped(module: NetworkModules, id: UUID, imported: any ItemDataAccessable) {
+    func logManualReviewUnchangedSkipped(module: NetworkModules, id: UUID, imported: any ItemDataAccessible) {
         Logger.importController.info("Manual import review unchanged skipped \(module.token, privacy: .public) id=\(id.uuidString, privacy: .public) name='\(imported.name.importLogPreview, privacy: .private)' because merge returned nil (model.isSame == true).")
     }
 
@@ -579,7 +579,7 @@ private extension ImportControllable {
     }
 
     @MainActor
-    func commonItemDifferences(existing: any ItemDataAccessable, imported: any ItemDataAccessable) -> [String] {
+    func commonItemDifferences(existing: any ItemDataAccessible, imported: any ItemDataAccessible) -> [String] {
         var differences: [String] = []
 
         appendImportDifference("id", existing.id.uuidString, imported.id.uuidString, to: &differences)
@@ -606,7 +606,7 @@ private extension ImportControllable {
         return differences
     }
 
-    func entryDifferences(existing: [any EntryDataAccessable], imported: [any EntryDataAccessable]) -> [String] {
+    func entryDifferences(existing: [any EntryDataAccessible], imported: [any EntryDataAccessible]) -> [String] {
         var differences: [String] = []
         let existingIds = existing.map(\.id)
         let importedIds = imported.map(\.id)
@@ -660,7 +660,7 @@ private extension ImportControllable {
         }
     }
 
-    @MainActor func addFile(data: Data, to item: any ItemDataAccessable, forceSave: Bool) async throws -> Bool {
+    @MainActor func addFile(data: Data, to item: any ItemDataAccessible, forceSave: Bool) async throws -> Bool {
         guard let fileUrlDataController, var fileUrl = item.fileUrl else { return false }
         var item = item
         let module = itemControllable.config.module.rawValue

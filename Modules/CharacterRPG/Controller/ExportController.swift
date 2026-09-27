@@ -65,8 +65,8 @@ extension ExportController: ExportModelBacked {
             var childIds: [UUID] = []
             var links: [LinkReplaceModel] = []
             item.entries.forEach { entry in
-                links.append(contentsOf: entry.links(for: entry.name))
-                links.append(contentsOf: entry.links(for: entry.value))
+                links.append(contentsOf: LinkReplaceController.links(for: entry.name))
+                links.append(contentsOf: LinkReplaceController.links(for: entry.value))
                 if let valueId = entry.valueId {
                     childIds.append(valueId)
                 }

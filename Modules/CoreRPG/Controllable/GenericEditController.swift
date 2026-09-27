@@ -16,7 +16,7 @@ import Foundation
 /// added later via extension — and keeps its own bespoke `EditController` instead.
 /// See CODE_AUDIT_EditItem §9.1.
 public struct GenericEditController<
-    Model: ItemDataAccessable & ItemDiffComparable & ItemLinkRegistable & ModelType
+    Model: ItemDataAccessible & ItemDiffComparable & ItemLinkRegistrable & ModelType
 >: Sendable {
     @MainActor public init(itemController: any ItemControllable, tagController: TagController) {
         self.itemController = itemController

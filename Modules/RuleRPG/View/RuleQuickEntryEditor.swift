@@ -96,7 +96,7 @@ struct RuleQuickEntryEditor: View {
             isPresented: $showsAffectedLinks,
             idealSize: CGSize(width: 400, height: 600)
         ) {
-            EffectedLinkActionPanelView(root: root.rootController, overwrite: true) { removed in
+            AffectedLinkActionPanelView(root: root.rootController, overwrite: true) { removed in
                 affectedEntries.removeAll(where: { removed.contains($0) })
                 _ = root.editController.merge(
                     itemId: model.id,

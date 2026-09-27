@@ -31,8 +31,8 @@ public struct ImageCacheControllableStorage: Sendable {
 public protocol ImageCacheControllable: Sendable {
     var cacheStorage: ImageCacheControllableStorage { get }
 
-    @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessable) async
-    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async
+    @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessible) async
+    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessible) async
 }
 
 extension ImageCacheControllable {
@@ -43,7 +43,7 @@ extension ImageCacheControllable {
     // Observable cache for SwiftUI views
     @MainActor public var observableImageCache: ObservableImageCache { cacheStorage.observableImageCache }
 
-    @MainActor public func createImage(for itemId: UUID, item: any ItemDataAccessable) async {}
+    @MainActor public func createImage(for itemId: UUID, item: any ItemDataAccessible) async {}
 
     public func photo(for itemId: UUID) async -> AKImage? {
         let image = await imageCacheController.object(for: itemId)
@@ -109,7 +109,7 @@ extension ImageCacheControllable {
     @MainActor
     public func createQuickLookThumbnail(
         for itemId: UUID,
-        item: any ItemDataAccessable,
+        item: any ItemDataAccessible,
         size: CGSize,
         removeWhiteBackground: Bool = false
     ) async {
@@ -134,7 +134,7 @@ public extension QuickLookThumbnailProviding {
     static var removesWhiteBackgroundInThumbnail: Bool { false }
 
     @MainActor
-    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+    func createThumbnail(for itemId: UUID, item: any ItemDataAccessible) async {
         await createQuickLookThumbnail(for: itemId, item: item, size: Self.quickLookThumbnailSize, removeWhiteBackground: Self.removesWhiteBackgroundInThumbnail)
     }
 }
@@ -149,7 +149,7 @@ extension ImageCacheControllable {
     }
     
     @discardableResult
-    @MainActor public func photoId(for itemId: UUID, item: any ItemDataAccessable, shouldDownload: Bool = false) async -> UUID? {
+    @MainActor public func photoId(for itemId: UUID, item: any ItemDataAccessible, shouldDownload: Bool = false) async -> UUID? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
         let trace = PerformanceTrace.begin("FullImagePipeline", itemId: itemId, kind: "full")
         defer { trace?.end() }
@@ -183,7 +183,7 @@ extension ImageCacheControllable {
     }
         
     @discardableResult
-    public func thumbnailId(for itemId: UUID, item: any ItemDataAccessable) async -> UUID? {
+    public func thumbnailId(for itemId: UUID, item: any ItemDataAccessible) async -> UUID? {
         let trace = PerformanceTrace.begin("ThumbnailPipeline", itemId: itemId, kind: "thumbnail")
         defer { trace?.end() }
         if await thumbnailCacheController.hasObject(for: itemId) {

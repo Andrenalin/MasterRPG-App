@@ -554,18 +554,18 @@ extension GameController {
         let dice = item.dice.sorted {
             var first = $0.result.first ?? 0
             var second = $1.result.first ?? 0
-            if let firstRerole = item.rerollOptions.first(where: { $0.number == first }) {
-                if firstRerole.maxDiceValue {
+            if let firstReroll = item.rerollOptions.first(where: { $0.number == first }) {
+                if firstReroll.maxDiceValue {
                     first = $0.die.max + 1
                 } else {
-                    first = firstRerole.value
+                    first = firstReroll.value
                 }
             }
-            if let secondRerole = item.rerollOptions.first(where: { $0.number == second }) {
-                if secondRerole.maxDiceValue {
+            if let secondReroll = item.rerollOptions.first(where: { $0.number == second }) {
+                if secondReroll.maxDiceValue {
                     second = $0.die.max + 1
                 } else {
-                    second = secondRerole.value
+                    second = secondReroll.value
                 }
             }
             return first > second

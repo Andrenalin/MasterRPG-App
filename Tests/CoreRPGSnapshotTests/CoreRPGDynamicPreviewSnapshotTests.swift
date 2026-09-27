@@ -619,7 +619,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         )
     }
 
-    private func structuredSheet(for item: any ItemDataAccessable) -> SheetModel {
+    private func structuredSheet(for item: any ItemDataAccessible) -> SheetModel {
         SheetModel(
             source: ItemRowModel(itemId: item.id, typeId: .adventure),
             name: item.name,

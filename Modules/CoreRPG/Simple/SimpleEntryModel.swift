@@ -23,7 +23,7 @@ public struct SimpleEntryModel: Identifiable, Equatable, Hashable, Codable, Send
     public var displayState: Int
 }
 
-extension SimpleEntryModel: EntryDataAccessable {
+extension SimpleEntryModel: EntryDataAccessible {
     public static func newChild(id: UUID) -> Self {
         SimpleEntryModel(id: UUID(), childId: id, name: "", content: "")
     }
@@ -54,4 +54,3 @@ extension SimpleEntryModel: ItemLinkEditable {
     public var textLinkContent: String { content }
 }
 
-extension SimpleEntryModel: ItemReferencable {}

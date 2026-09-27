@@ -63,17 +63,17 @@ enum SingleReviewDecision: String, CaseIterable, Identifiable {
 
 @MainActor
 final class SingleReviewItem {
-    init(existing: (any ItemDataAccessable)?, imported: (any ItemDataAccessable)?, merged: any ItemDataAccessable) {
+    init(existing: (any ItemDataAccessible)?, imported: (any ItemDataAccessible)?, merged: any ItemDataAccessible) {
         self.existing = existing
         self.imported = imported
         self.merged = merged
     }
 
-    let existing: (any ItemDataAccessable)?
-    let imported: (any ItemDataAccessable)?
-    let merged: any ItemDataAccessable
+    let existing: (any ItemDataAccessible)?
+    let imported: (any ItemDataAccessible)?
+    let merged: any ItemDataAccessible
 
-    func item(for decision: SingleReviewDecision) -> any ItemDataAccessable {
+    func item(for decision: SingleReviewDecision) -> any ItemDataAccessible {
         switch decision {
         case .existing: existing ?? merged
         case .imported: imported ?? merged
@@ -84,17 +84,17 @@ final class SingleReviewItem {
 
 @MainActor
 final class SingleReviewEntry {
-    init(existing: (any EntryDataAccessable)?, imported: (any EntryDataAccessable)?, merged: (any EntryDataAccessable)?) {
+    init(existing: (any EntryDataAccessible)?, imported: (any EntryDataAccessible)?, merged: (any EntryDataAccessible)?) {
         self.existing = existing
         self.imported = imported
         self.merged = merged
     }
 
-    let existing: (any EntryDataAccessable)?
-    let imported: (any EntryDataAccessable)?
-    let merged: (any EntryDataAccessable)?
+    let existing: (any EntryDataAccessible)?
+    let imported: (any EntryDataAccessible)?
+    let merged: (any EntryDataAccessible)?
 
-    func item(for decision: SingleReviewDecision) -> (any EntryDataAccessable)? {
+    func item(for decision: SingleReviewDecision) -> (any EntryDataAccessible)? {
         switch decision {
         case .existing: existing
         case .imported: imported
@@ -116,8 +116,8 @@ final class SingleReviewEntry {
 
 @MainActor
 private func entriesAreSemanticallySame(
-    _ existing: any EntryDataAccessable,
-    _ imported: any EntryDataAccessable
+    _ existing: any EntryDataAccessible,
+    _ imported: any EntryDataAccessible
 ) -> Bool {
     if let comparable = existing as? any ItemDiffComparable,
        let isSame = compareEntry(comparable, with: imported) {
@@ -130,15 +130,15 @@ private func entriesAreSemanticallySame(
 @MainActor
 private func compareEntry<Entry: ItemDiffComparable>(
     _ existing: Entry,
-    with imported: any EntryDataAccessable
+    with imported: any EntryDataAccessible
 ) -> Bool? {
     guard let imported = imported as? Entry else { return nil }
     return existing.isSame(imported)
 }
 
-private func compareBasicEntry<Entry: EntryDataAccessable>(
+private func compareBasicEntry<Entry: EntryDataAccessible>(
     _ existing: Entry,
-    with imported: any EntryDataAccessable
+    with imported: any EntryDataAccessible
 ) -> Bool? {
     guard let imported = imported as? Entry else { return nil }
     return existing.name == imported.name && existing.content == imported.content
@@ -151,12 +151,12 @@ final class SingleReviewItemProperty: Identifiable {
         item: SingleReviewItem,
         displayName: String,
         kind: SingleReviewKind,
-        value: @escaping @MainActor (any ItemDataAccessable) -> String,
-        compareValue: (@MainActor (any ItemDataAccessable) -> String)? = nil,
-        reviewValue: (@MainActor (any ItemDataAccessable) -> ReviewPropertyValue)? = nil,
+        value: @escaping @MainActor (any ItemDataAccessible) -> String,
+        compareValue: (@MainActor (any ItemDataAccessible) -> String)? = nil,
+        reviewValue: (@MainActor (any ItemDataAccessible) -> ReviewPropertyValue)? = nil,
         isReadOnly: Bool = false,
         decision: SingleReviewDecision,
-        apply: @escaping @MainActor (inout any ItemDataAccessable, any ItemDataAccessable) -> Void
+        apply: @escaping @MainActor (inout any ItemDataAccessible, any ItemDataAccessible) -> Void
     ) {
         self.id = id
         self.item = item
@@ -174,11 +174,11 @@ final class SingleReviewItemProperty: Identifiable {
     let item: SingleReviewItem
     let displayName: String
     let kind: SingleReviewKind
-    let value: @MainActor (any ItemDataAccessable) -> String
-    let compareValue: @MainActor (any ItemDataAccessable) -> String
-    let reviewValue: (@MainActor (any ItemDataAccessable) -> ReviewPropertyValue)?
+    let value: @MainActor (any ItemDataAccessible) -> String
+    let compareValue: @MainActor (any ItemDataAccessible) -> String
+    let reviewValue: (@MainActor (any ItemDataAccessible) -> ReviewPropertyValue)?
     let isReadOnly: Bool
-    let apply: @MainActor (inout any ItemDataAccessable, any ItemDataAccessable) -> Void
+    let apply: @MainActor (inout any ItemDataAccessible, any ItemDataAccessible) -> Void
 
     var decision: SingleReviewDecision
 
@@ -196,9 +196,9 @@ final class SingleReviewEntryProperty: Identifiable {
         entry: SingleReviewEntry,
         displayName: String,
         kind: SingleReviewKind,
-        valueKeyPath: KeyPath<any EntryDataAccessable, String>,
+        valueKeyPath: KeyPath<any EntryDataAccessible, String>,
         decision: SingleReviewDecision,
-        apply: @escaping (inout any EntryDataAccessable, any EntryDataAccessable) -> Void
+        apply: @escaping (inout any EntryDataAccessible, any EntryDataAccessible) -> Void
     ) {
         self.id = id
         self.entry = entry
@@ -213,8 +213,8 @@ final class SingleReviewEntryProperty: Identifiable {
     let entry: SingleReviewEntry
     let displayName: String
     let kind: SingleReviewKind
-    let valueKeyPath: KeyPath<any EntryDataAccessable, String>
-    let apply: (inout any EntryDataAccessable, any EntryDataAccessable) -> Void
+    let valueKeyPath: KeyPath<any EntryDataAccessible, String>
+    let apply: (inout any EntryDataAccessible, any EntryDataAccessible) -> Void
 
     var decision: SingleReviewDecision
 
@@ -541,7 +541,7 @@ extension SingleItemImportModel {
         return "\(decision.rawValue)|\(propertySignature)|\(entrySignature)"
     }
 
-    func materializedItem() -> any ItemDataAccessable {
+    func materializedItem() -> any ItemDataAccessible {
         var result = item.item(for: decision).copy()
         for property in properties {
             property.apply(&result, item.item(for: property.decision))
@@ -551,7 +551,7 @@ extension SingleItemImportModel {
     }
 
     /// Creates a whole-item snapshot for review without changing any live decisions.
-    func materializedItem(for decision: SingleReviewDecision) -> any ItemDataAccessable {
+    func materializedItem(for decision: SingleReviewDecision) -> any ItemDataAccessible {
         var result = item.item(for: decision).copy()
         for property in properties {
             let propertyDecision = defaultDecision(for: property, given: decision)
@@ -568,7 +568,7 @@ extension SingleEntryImportModel {
         return "\(id.uuidString):\(decision.rawValue)|\(propertySignature)"
     }
 
-    func materializedEntry() -> (any EntryDataAccessable)? {
+    func materializedEntry() -> (any EntryDataAccessible)? {
         guard var result = entry.item(for: decision) else { return nil }
         for property in properties {
             guard let source = entry.item(for: property.decision) else { continue }
@@ -578,7 +578,7 @@ extension SingleEntryImportModel {
     }
 
     /// Creates a whole-entry snapshot for review without changing any live decisions.
-    func materializedEntry(for decision: SingleReviewDecision) -> (any EntryDataAccessable)? {
+    func materializedEntry(for decision: SingleReviewDecision) -> (any EntryDataAccessible)? {
         guard var result = entry.item(for: decision) else { return nil }
         for property in properties {
             let propertyDecision = defaultDecision(for: property, given: decision)
@@ -589,8 +589,8 @@ extension SingleEntryImportModel {
     }
 }
 
-private extension ItemDataAccessable {
-    @MainActor func replaceEntries(with newEntries: [any EntryDataAccessable]) {
+private extension ItemDataAccessible {
+    @MainActor func replaceEntries(with newEntries: [any EntryDataAccessible]) {
         entries = newEntries.compactMap { $0 as? Entry }
     }
 }
@@ -616,7 +616,7 @@ extension SingleItemImportModel {
         prop.compareValue(item.item(for: .existing)) != prop.compareValue(item.item(for: .imported))
     }
 
-    private func value(from item: any ItemDataAccessable, for prop: SingleReviewItemProperty) -> String? {
+    private func value(from item: any ItemDataAccessible, for prop: SingleReviewItemProperty) -> String? {
         prop.value(item).nilIfEmpty
     }
 }
@@ -643,7 +643,7 @@ extension SingleEntryImportModel {
     }
 }
 
-extension ItemDataAccessable {
+extension ItemDataAccessible {
     @MainActor var fileName: String {
         guard let fileUrl else { return String(localized: "No file set", bundle: .module) }
         let name = fileUrl.rawUrl.lastPathComponent

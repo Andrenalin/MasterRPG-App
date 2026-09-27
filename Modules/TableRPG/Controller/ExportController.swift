@@ -50,7 +50,7 @@ extension ExportController: ExportModelBacked {
 
             var childIds: [UUID] = []
             let links = item.entries.flatMap { entry in
-                entry.links(for: entry.content)
+                LinkReplaceController.links(for: entry.content)
             }
 
             links.forEach {

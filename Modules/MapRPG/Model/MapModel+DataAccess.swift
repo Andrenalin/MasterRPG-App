@@ -30,4 +30,3 @@ extension MapModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension MapModel: nonisolated ItemReferencable {}

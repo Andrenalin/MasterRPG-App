@@ -220,7 +220,7 @@ public enum MasterRPGTips {
             guard visitedDataModels.insert(ObjectIdentifier(dataModel)).inserted else { continue }
 
             for storedModel in dataModel.itemData.values {
-                guard let item = storedModel as? any ItemDataAccessable else { continue }
+                guard let item = storedModel as? any ItemDataAccessible else { continue }
                 if item.specialCategory {
                     organizationCount += 1
                     continue

@@ -39,9 +39,9 @@ public protocol EntryDataEditable: EditControllable {
     var thumbnailEntryViewType: ThumbnailEntryViewType { get }
     var additioanlEnrtryViewType: AdditionalEntryViewType { get }
     
-    @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView
+    @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView
     
-    @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String
+    @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessible) -> String
     
     @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable]
     @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable?
@@ -141,9 +141,9 @@ public extension EntryDataEditable {
     var thumbnailEntryViewType: ThumbnailEntryViewType { .none }
     var additioanlEnrtryViewType: AdditionalEntryViewType { .none }
     
-    @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }
+    @MainActor func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView { AnyView(EmptyView()) }
     
-    @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
+    @MainActor func rowText(itemId: UUID, entry: any EntryDataAccessible) -> String {
         entry.name.isEmpty ? entry.content : "\(entry.name.markDownText()): \(entry.content)"
     }
     
@@ -249,14 +249,14 @@ public extension EntryDataEditable {
         let module = itemControllable.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
-        var effectedLinks = true
+        var affectedLinks = true
         for itemRowModel in itemRowModels {
             if !linkRegisterController.used(for: itemRowModel).isEmpty {
-                effectedLinks = false
+                affectedLinks = false
                 break
             }
         }
-        if recoverEntries != nil || effectedLinks {
+        if recoverEntries != nil || affectedLinks {
             if let recoverEntries {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }
@@ -392,7 +392,7 @@ public extension EntryDataEditable {
 }
 
 public extension EntryDataEditable {
-    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessable, linkController: any LinkControllable, cacheItemListModel: CacheItemListModel, searchModel: SearchModel, toggler: ((UUID, NetworkModules, Int) async -> Void)? = nil) -> LinkHighlightTextModel {
+    @MainActor func linkTextModel(itemId: UUID, for entry: any EntryDataAccessible, linkController: any LinkControllable, cacheItemListModel: CacheItemListModel, searchModel: SearchModel, toggler: ((UUID, NetworkModules, Int) async -> Void)? = nil) -> LinkHighlightTextModel {
         let nameText = rowText(itemId: itemId, entry: entry)
         guard let linkModel = cacheItemListModel.itemLink(cacheType: .row, itemId: entry.id) else {
             let model = LinkHighlightTextModel(linkControllable: linkController, text: nameText, highlightedText: searchModel.searchText, toggler: toggler)        

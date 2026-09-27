@@ -29,7 +29,7 @@ Generated: 16; skipped: 11.
 Generated: 22; skipped: 4.
 
 - Modules/CharacterRPG/Root/DetailRootView.swift — #Preview uses local dynamic state
-- Modules/CharacterRPG/View/AddtionalEntryRow.swift — #Preview uses local dynamic state
+- Modules/CharacterRPG/View/AdditionalEntryRow.swift — #Preview uses local dynamic state
 - Modules/CharacterRPG/View/DetailFolderListView.swift — #Preview uses local dynamic state
 - Modules/CharacterRPG/View/DetailListView.swift — #Preview uses local dynamic state
 

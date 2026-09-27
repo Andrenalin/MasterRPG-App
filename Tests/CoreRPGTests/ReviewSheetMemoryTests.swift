@@ -546,7 +546,7 @@ struct ReviewSheetMemoryTests {
     }
 }
 
-private struct SemanticReviewEntry: EntryDataAccessable {
+private struct SemanticReviewEntry: EntryDataAccessible {
     static var empty: SemanticReviewEntry {
         SemanticReviewEntry(id: .fixture1, name: "", content: "", semanticValue: 0)
     }

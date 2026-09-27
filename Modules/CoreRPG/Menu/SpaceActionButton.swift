@@ -30,7 +30,7 @@ struct SpaceActionButton: View {
         return Text("View \(name)", bundle: .module)
     }
 
-    private var item: (any ItemDataAccessable)? {
+    private var item: (any ItemDataAccessible)? {
         guard let selectedItemId = root.currentSelectedItemId else { return nil }
         return root.itemControllable.itemOrEmpty(for: selectedItemId)
     }

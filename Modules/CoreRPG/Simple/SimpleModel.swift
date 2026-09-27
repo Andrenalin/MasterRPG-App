@@ -32,7 +32,7 @@ public final class SimpleModel: nonisolated Identifiable {
         // `nonisolated init` uses (there via its manually named `_name_`
         // CRDT-backed property) to initialize a MainActor-isolated stored
         // property from a nonisolated context. Required because
-        // `ItemDataAccessable.empty(_:)` is a `nonisolated static`
+        // `ItemDataAccessible.empty(_:)` is a `nonisolated static`
         // requirement that must construct a `SimpleModel` synchronously.
         self.id = id
         self._name = name
@@ -88,7 +88,7 @@ public final class SimpleModel: nonisolated Identifiable {
     }
 }
 
-extension SimpleModel: nonisolated ItemDataAccessable {
+extension SimpleModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set {}
@@ -166,10 +166,10 @@ extension SimpleModel: nonisolated ItemDuplicatable {
     }
 }
 
-// `ItemLinkRegistable`'s requirements both have `[]`/`([], [])` extension
+// `ItemLinkRegistrable`'s requirements both have `[]`/`([], [])` extension
 // defaults — a `SimpleModel` never registers cross-item links, so the
 // defaults are the correct behavior here, not a stub.
-extension SimpleModel: nonisolated ItemLinkRegistable {}
+extension SimpleModel: nonisolated ItemLinkRegistrable {}
 
 extension SimpleModel: nonisolated Equatable, nonisolated Hashable, nonisolated Codable {
     nonisolated public static func == (lhs: SimpleModel, rhs: SimpleModel) -> Bool {

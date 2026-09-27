@@ -61,7 +61,7 @@ public extension SearchControllable {
             }
 
             // ── Non-empty: gather all visible non-folder candidates ───────────────────
-            var allItems: [(id: UUID, item: any ItemDataAccessable)] = []
+            var allItems: [(id: UUID, item: any ItemDataAccessible)] = []
             for itemId in itemIds {
                 guard let item = itemControllable.itemSync(for: itemId),
                       item.displayState == DisplayStateMask.fullVisible.rawValue, !item.specialCategory else { continue }
@@ -206,7 +206,7 @@ public extension SearchControllable {
     /// child items (needed when a collection is the focus). Folders are never added to
     /// `foundResults` — only their leaf descendants are.
     /// - Parameter depth: recursion guard — see `FolderTreeDepthLimit`.
-    @MainActor private func inspectorResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult], depth: Int = 0) async {
+    @MainActor private func inspectorResult(item: any ItemDataAccessible, searchText: String, displayMode: ListDisplayModel.DisplayMode, foundResults: inout [SearchResult], depth: Int = 0) async {
         guard depth < FolderTreeDepthLimit.max, !Task.isCancelled else { return }
 
         let itemMatches = itemMatchesFilter(item, searchText: searchText, displayMode: displayMode, includeTags: false)

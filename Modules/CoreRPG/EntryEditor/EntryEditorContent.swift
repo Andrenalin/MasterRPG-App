@@ -10,7 +10,7 @@ import SwiftUI
 private let autoFocusDelay: Duration = .milliseconds(100)
 
 struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
-    init(editController: any EntryDataEditable, editorModel: SheetEditorModel, itemId: UUID, entry: any EntryDataAccessable, linkTypes: LinkType.Type) {
+    init(editController: any EntryDataEditable, editorModel: SheetEditorModel, itemId: UUID, entry: any EntryDataAccessible, linkTypes: LinkType.Type) {
         self.editController = editController
         self.editorModel = editorModel
         self.itemId = itemId
@@ -23,7 +23,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
     let editController: any EntryDataEditable
     let editorModel: SheetEditorModel
     let itemId: UUID
-    let entry: any EntryDataAccessable
+    let entry: any EntryDataAccessible
     let linkTypes: LinkType.Type
     
     @FocusState private var currentFocus: EntryEditorFocusField?
@@ -81,7 +81,7 @@ struct EntryEditorContent<LinkType: LinkDataTransferable>: View {
         }
     }
     
-    private func updateEditModel(entry: any EntryDataAccessable, itemId: UUID) {
+    private func updateEditModel(entry: any EntryDataAccessible, itemId: UUID) {
         editModel.reset(entry: entry, source: ItemRowModel(itemId: itemId, entryId: entry.id, typeId: editorModel.module))
     }
 }
@@ -122,7 +122,7 @@ private struct EntryEditorContentEditorCardView<LinkType: LinkDataTransferable>:
     let editorModel: SheetEditorModel
     let itemId: UUID
     let editModel: TextEditModel
-    let entry: any EntryDataAccessable
+    let entry: any EntryDataAccessible
     let linkTypes: LinkType.Type
     let currentFocus: FocusState<EntryEditorFocusField?>.Binding
 

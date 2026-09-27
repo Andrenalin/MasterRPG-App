@@ -4,7 +4,7 @@ import SwiftUI
 import os.log
 
 public protocol EditControllable: Sendable {
-    associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemLinkRegistable & ModelType
+    associatedtype Model: ItemDataAccessible & ItemDiffComparable & ItemLinkRegistrable & ModelType
 
     var itemControllable: any ItemControllable { get }
     var fileUrlDataController: FileUrlDataController? { get }
@@ -14,7 +14,7 @@ public protocol EditControllable: Sendable {
     @MainActor var editorModel: ItemEditorModel { get }
 
     // overwrite extensions
-    @MainActor func duplicate(item: any ItemDataAccessable) async
+    @MainActor func duplicate(item: any ItemDataAccessible) async
     @MainActor func validateBeforeSave(model: Model)
     @MainActor func willDeleteChildren(of item: Model) async
     @MainActor func willRestore(item: inout Model)
@@ -175,7 +175,7 @@ public extension EditControllable {
 /// AdventureRPG's `AdventureModel` are the only two conformers today; both
 /// independently reimplemented the exact same orphan-handling trio below before this
 /// was hoisted into a shared, constrained default. See CODE_AUDIT_EditItem §9.5.
-public protocol GroupableModel: ItemDataAccessable {
+public protocol GroupableModel: ItemDataAccessible {
     var groupId: UUID? { get set }
 }
 
@@ -417,7 +417,7 @@ public extension EditControllable {
 // MARK: - Menu
 
 public extension EditControllable {
-    func addNew(type: EditControllerAddType) async -> (any ItemDataAccessable)? {
+    func addNew(type: EditControllerAddType) async -> (any ItemDataAccessible)? {
         let itemCategory: ItemListCategory
         if type == .folder {
             itemCategory = .folder
@@ -465,7 +465,7 @@ public extension EditControllable {
         await itemControllable.delete(itemId: itemId)
     }
     
-    @MainActor func duplicate(item: any ItemDataAccessable) async {
+    @MainActor func duplicate(item: any ItemDataAccessible) async {
         await recordOperation("EditControllable.duplicate(item:)")
 
         guard let model = editModel(for: item.id) else { return }

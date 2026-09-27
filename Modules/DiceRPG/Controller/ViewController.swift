@@ -15,7 +15,7 @@ extension ViewController: ViewControllable {
         AnyView(ThumbnailDiceRow(itemId: itemId).equatable())
     }
 
-    @MainActor public func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView {
+    @MainActor public func thumbnailRowView(for model: any ItemDataAccessible) -> AnyView {
         AnyView(ThumbnailDiceRow(itemId: model.id, item: model as? DiceModel).equatable())
     }
     

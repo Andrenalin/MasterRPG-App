@@ -103,7 +103,7 @@ public final class PhotoModel: nonisolated Identifiable {
     public var players: [UUID] = []
 }
 
-extension PhotoModel: nonisolated ItemGameReportable, nonisolated ItemLinkRegistable {}
+extension PhotoModel: nonisolated ItemGameReportable, nonisolated ItemLinkRegistrable {}
 
 extension PhotoModel: nonisolated Comparable {
     nonisolated public static func < (lhs: PhotoModel, rhs: PhotoModel) -> Bool {
@@ -188,7 +188,7 @@ extension PhotoModel {
     }
 }
 
-extension PhotoModel: nonisolated ItemDataAccessable {
+extension PhotoModel: nonisolated ItemDataAccessible {
     nonisolated public static var empty: PhotoModel { empty(UUID()) }
     nonisolated public static func empty(_ id: UUID) -> PhotoModel {
         PhotoModel(id: id, name: "")

@@ -37,10 +37,10 @@ struct ItemControllerTests {
         let isUsed = sut.linkRegisterController.isUsed(link: ItemRowModel(itemId: newId, typeId: .photo))
         #expect(isUsed)
 
-        let effectedLinks = sut.linkRegisterController.used(for: ItemRowModel(itemId: newId, typeId: .photo))
-        try #require(effectedLinks.count == 1)
-        #expect(effectedLinks[0].module == .adventure)
-        #expect(effectedLinks[0].name == model.name)
+        let affectedLinks = sut.linkRegisterController.used(for: ItemRowModel(itemId: newId, typeId: .photo))
+        try #require(affectedLinks.count == 1)
+        #expect(affectedLinks[0].module == .adventure)
+        #expect(affectedLinks[0].name == model.name)
     }
 
     @Test func itemRegisterLinksIsUsedReturnsAlsoEntries() async throws {
@@ -71,9 +71,9 @@ struct ItemControllerTests {
         let photoRow = ItemRowModel(itemId: photoId, typeId: .photo)
         let isUsed = sut.linkRegisterController.isUsed(link: photoRow)
         #expect(isUsed)
-        let effectedLinks = sut.linkRegisterController.used(for: photoRow)
-        #expect(effectedLinks.count == 2)
-        #expect(effectedLinks.contains { $0.entryName == nil })
-        #expect(effectedLinks.contains { $0.entryName == entry.name })
+        let affectedLinks = sut.linkRegisterController.used(for: photoRow)
+        #expect(affectedLinks.count == 2)
+        #expect(affectedLinks.contains { $0.entryName == nil })
+        #expect(affectedLinks.contains { $0.entryName == entry.name })
     }
 }

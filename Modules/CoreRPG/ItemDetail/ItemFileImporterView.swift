@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 struct ItemFileImporterView: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let fileTypes: [UTType]
     let isInitial: Bool
     
@@ -22,7 +22,7 @@ struct ItemFileImporterView: View {
 
 private struct InitialStyleView: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let fileTypes: [UTType]
     let isInitial: Bool
 
@@ -38,7 +38,7 @@ private struct InitialStyleView: View {
 
 private struct OverlayStyleView: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let fileTypes: [UTType]
     let isInitial: Bool
 
@@ -57,7 +57,7 @@ private struct OverlayStyleView: View {
 
 private struct FileImporterContentView: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let fileTypes: [UTType]
     let isInitial: Bool
 
@@ -87,7 +87,7 @@ private struct FileImporterContentView: View {
 }
 
 private struct FilePathDisplayView: View {
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let isInitial: Bool
 
     var body: some View {

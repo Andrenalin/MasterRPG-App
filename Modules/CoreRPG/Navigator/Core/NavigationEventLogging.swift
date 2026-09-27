@@ -107,7 +107,7 @@ extension NavigationEvent {
         /// Lifecycle events for a given navigator instance.
         nonisolated public enum LifecycleEvent: CustomStringConvertible {
             case configured
-            case intialized
+            case initialized
             case adding(UUID, name: String?)
             case removing(UUID, name: String?)
             case current(UUID, name: String?)
@@ -116,7 +116,7 @@ extension NavigationEvent {
             nonisolated public var description: String {
                 switch self {
                 case .configured: "configured"
-                case .intialized: "intialized"
+                case .initialized: "initialized"
                 case .adding(let id, let name):
                     if let name {
                         "adding \(id) (\(name))"

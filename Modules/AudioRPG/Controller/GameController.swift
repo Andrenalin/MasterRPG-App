@@ -6,7 +6,7 @@ import Foundation
 import Observation
 import os.log
 
-public protocol AudioGameStoreable: Sendable {
+public protocol AudioGameStorable: Sendable {
     // Returning a Task<Void, Error> instead of being async throws let both
     // call sites discard `.result` (and any thrown error) via `let _ =`.
     // See CODE_AUDIT_Game §4.2.
@@ -177,7 +177,7 @@ extension GameController {
     }
 }
 
-extension GameController: AudioGameStoreable {
+extension GameController: AudioGameStorable {
     @MainActor
     func play(id: UUID?, shouldPlay: Bool) async throws {
         guard let id else { return }

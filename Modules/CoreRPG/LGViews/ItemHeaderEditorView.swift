@@ -8,7 +8,7 @@ public struct ItemHeaderEditorView: View {
     private static let autoFocusDelay: Duration = .milliseconds(100)
     public init(
         editControllable: any EditControllable,
-        model: any ItemDataAccessable,
+        model: any ItemDataAccessible,
         module: NetworkModules,
         dismiss: @escaping () -> Void
     ) {
@@ -25,7 +25,7 @@ public struct ItemHeaderEditorView: View {
     }
 
     let editControllable: any EditControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let module: NetworkModules
     let dismissAction: () -> Void
 

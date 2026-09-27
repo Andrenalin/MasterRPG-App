@@ -16,7 +16,7 @@ struct BattleCharacterSheetFactory {
         let sheetRootManager: RootManager
         if let gameCharacterId = combatant.gameCharacterId,
            let clone = characterRoot.valueGameControllable.battleCharacterCopy(for: gameCharacterId) {
-            let items: [UUID: any ItemDataAccessable] = [clone.id: clone]
+            let items: [UUID: any ItemDataAccessible] = [clone.id: clone]
             itemId = clone.id
             sheetRootManager = baseRootManager.with(
                 reviewSheetMemory: ReviewSheetMemory(items: [.value: items])

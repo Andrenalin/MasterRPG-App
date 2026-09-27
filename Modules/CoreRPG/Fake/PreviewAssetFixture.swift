@@ -89,7 +89,7 @@ public enum PreviewAssetFixture {
     @MainActor
     static func cachePhotoViewFixture(
         _ photo: Photo
-    ) -> (cacheController: any ImageCacheControllable, model: any ItemDataAccessable) {
+    ) -> (cacheController: any ImageCacheControllable, model: any ItemDataAccessible) {
         let model = FakeItemModel(name: photo.title)
         let cacheController = FakeImageCacheController()
 

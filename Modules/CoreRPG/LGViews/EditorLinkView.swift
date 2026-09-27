@@ -4,7 +4,7 @@ import SwiftUI
 import TipKit
 
 public struct EditorLinkView: View {
-    public init(root: ItemRootController, model: any ItemDataAccessable, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules? = nil, selectedEntryId: UUID? = nil, destinationModule: NetworkModules? = nil) {
+    public init(root: ItemRootController, model: any ItemDataAccessible, editorLinkModel: EditorLinkModel, selectedModule: NetworkModules? = nil, selectedEntryId: UUID? = nil, destinationModule: NetworkModules? = nil) {
         self.root = root
         self.model = model
         self.editorLinkModel = editorLinkModel
@@ -14,7 +14,7 @@ public struct EditorLinkView: View {
     }
 
     let root: ItemRootController
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let editorLinkModel: EditorLinkModel
     let selectedEntryId: UUID?
     let destinationModule: NetworkModules?

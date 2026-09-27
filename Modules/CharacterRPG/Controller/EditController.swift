@@ -141,7 +141,7 @@ extension EditController {
     
     public var additioanlEnrtryViewType: AdditionalEntryViewType { .inline }
     
-    @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView {
+    @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView {
         AnyView(AdditionalEntryRow(source: source, entry: entry, textModel: textModel).equatable())
     }
     
@@ -212,7 +212,7 @@ extension EditController {
         CharacterEditorRoute.linkSelection(itemRowModel)
     }
     
-    @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessable) -> String {
+    @MainActor public func rowText(itemId: UUID, entry: any EntryDataAccessible) -> String {
         guard let item = editModel(for: itemId), let entry = entry as? ValueEntryModel else { return "" }
         return root.linkController.linkText(model: item, entry: entry)
     }

@@ -19,7 +19,7 @@ actor FileBookmarkModel {
     private var folderBookmarks: [UUID: Data] = [:]
     private var didFetch = false
 
-    private struct Bookmarks: Codable, Storeable, Sendable {
+    private struct Bookmarks: Codable, Storable, Sendable {
         let id: UUID
         let bookmarks: [UUID: Data]
     }

@@ -223,7 +223,7 @@ public extension FolderListControllable {
         }
     }
     
-    func copyModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
+    func copyModel(parentModel: (any ItemDataAccessible)?) -> FolderListModel {
         let newModel = FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
         // Pre-populate the cache with any already-loaded children of the parent folder/collection
         // so the detail list can render immediately while the background search runs.
@@ -249,7 +249,7 @@ public extension FolderListControllable {
         await performSearch(source: "resetItemOnce")
     }
 
-    func resetParent(model: (any ItemDataAccessable)?) {
+    func resetParent(model: (any ItemDataAccessible)?) {
         listModel.resetParent(model: model)
         listModel.updatedOnce = true
         // Scope the next search to this folder/collection's direct children
@@ -270,7 +270,7 @@ public extension FolderListControllable {
     /// before the detail list is ever built — the cause of the focused inspector being blank on
     /// first launch. Subsequent filter-field searches still go through the coalescing pipeline.
     /// The detail cache is warm-started in `copyModel`, so revisited parents redisplay instantly.
-    func resetDetail(model: (any ItemDataAccessable)) {
+    func resetDetail(model: (any ItemDataAccessible)) {
         listModel.resetDetailList(parentModel: model)
         listModel.detailListModel?.updatedOnce = true
         Task(name: "Initial Detail Search") { await performDetailSearch() }
@@ -282,7 +282,7 @@ public extension FolderListControllable {
         runSearch(source: "scheduleDetailSearch", kind: .detail, debounceText: true)
     }
 
-    func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessable)? {
+    func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessible)? {
         itemControllable.itemSync(for: selectedId ?? listModel.selected ?? UUID())
     }
 
@@ -290,7 +290,7 @@ public extension FolderListControllable {
     /// otherwise the root `listModel`. `ListRootView` and `LinkItemListView` both need this
     /// exact routing so scoped inspector state (entries, open/close, scroll) stays independent
     /// from the unscoped view.
-    func scopedListModel(parentModel: (any ItemDataAccessable)?) -> FolderListModel {
+    func scopedListModel(parentModel: (any ItemDataAccessible)?) -> FolderListModel {
         if parentModel != nil, let detail = listModel.detailListModel {
             return detail
         }

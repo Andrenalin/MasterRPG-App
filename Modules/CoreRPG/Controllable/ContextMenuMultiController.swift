@@ -28,12 +28,12 @@ struct ContextMenuMultiController {
         return listModel.ids(selectedItemIds: [currentSelected])
     }
     
-    func parentItem(currentSelected: UUID?) -> (any ItemDataAccessable)? {
+    func parentItem(currentSelected: UUID?) -> (any ItemDataAccessible)? {
         guard let selectedId = selection(currentSelected: currentSelected).first, let parentId = itemController.itemSync(for: selectedId)?.parentId else { return nil }
         return itemController.itemSync(for: parentId)
     }
     
-    func hasDifferentFolders(for parent: (any ItemDataAccessable)?) -> Bool {
+    func hasDifferentFolders(for parent: (any ItemDataAccessible)?) -> Bool {
         guard let parent, parent.isFolder else { return false }
         return parent.parentId != nil
     }

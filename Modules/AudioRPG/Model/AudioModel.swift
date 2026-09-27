@@ -113,7 +113,7 @@ extension AudioModel: nonisolated Comparable {
 }
 
 extension AudioModel: nonisolated ItemGameReportable {}
-extension AudioModel: nonisolated ItemLinkRegistable {}
+extension AudioModel: nonisolated ItemLinkRegistrable {}
 
 extension AudioModel: nonisolated ItemDiffComparable {
     // Legacy concrete shims remain nonisolated for direct Equatable-style calls.
@@ -171,7 +171,7 @@ extension AudioModel: nonisolated ItemDiffComparable {
 
 extension AudioModel: nonisolated ItemDuplicatable {
     // Nonisolated shim remains for legacy concrete callers. Generic item access
-    // is MainActor-isolated by ItemDuplicatable and ItemDataAccessable.
+    // is MainActor-isolated by ItemDuplicatable and ItemDataAccessible.
     nonisolated public func duplicate() -> AudioModel {
         assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
@@ -180,7 +180,7 @@ extension AudioModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension AudioModel: nonisolated ItemDataAccessable {
+extension AudioModel: nonisolated ItemDataAccessible {
     // Nonisolated: satisfies the nonisolated factory requirements; the init only
     // initializes stored state.
     nonisolated public static var empty: AudioModel { empty(UUID()) }

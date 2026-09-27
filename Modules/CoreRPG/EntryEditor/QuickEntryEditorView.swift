@@ -46,7 +46,7 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
     @State private var showInspector = false
     @State private var showResult = false
     
-    @State private var showEffectedLinksAlert: Bool = false
+    @State private var showAffectedLinksAlert: Bool = false
     @State private var editorModel = RemoveEntryListModel()
     
     public var body: some View {
@@ -68,8 +68,8 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                     .accessibilityHidden(!showHelp)
                     .animation(accessibilityReduceMotion ? nil : .default, value: showHelp)
                 }
-                .sizedSheet(isPresented: $showEffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
-                    EffectedLinkActionPanelView(root: root, overwrite: true) { rowModels in
+                .sizedSheet(isPresented: $showAffectedLinksAlert, idealSize: CGSize(width: 400, height: 600)) {
+                    AffectedLinkActionPanelView(root: root, overwrite: true) { rowModels in
                         editorModel.removeItems.removeAll(where: { rowModels.contains($0) })
                         // The standalone item editor always persists, even while a game
                         // is running — unlike in-game quick-edit surfaces, which stay memory-only.
@@ -186,7 +186,7 @@ private extension QuickEntryEditorView {
                         navigator.dismiss()
                     } else {
                         root.removeEntryListModel.removeItems = editorModel.removeItems
-                        showEffectedLinksAlert.toggle()
+                        showAffectedLinksAlert.toggle()
                     }
                 } label: {
                     Image(systemName: "square.and.arrow.down")

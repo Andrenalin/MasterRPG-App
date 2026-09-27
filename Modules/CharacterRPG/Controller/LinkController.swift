@@ -116,10 +116,10 @@ extension LinkController: LinkControllable {
                 }
             }
 
-            var links = entry.links(for: entry.name)
+            var links = LinkReplaceController.links(for: entry.name)
             validatedEntry.name = repairLinks(links, in: validatedEntry.name)
 
-            links = entry.links(for: entry.value)
+            links = LinkReplaceController.links(for: entry.value)
             validatedEntry.value = repairLinks(links, in: validatedEntry.value)
 
             if !entry.isSame(validatedEntry) {
@@ -199,7 +199,7 @@ extension LinkController {
     @MainActor
     private func calculate(entry: ValueEntryModel, deep: Int, memo: inout [LinkMemoKey: String?]) -> String? {
         guard entry.canCalculate else { return nil }
-        let links = entry.links(for: entry.value)
+        let links = LinkReplaceController.links(for: entry.value)
         var result = entry.value
         var valid = true
 

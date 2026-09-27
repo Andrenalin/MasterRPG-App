@@ -26,7 +26,7 @@ public struct LinkItemRootView: View {
     /// automatically and avoids the one-frame gap an `@State` seeded from it in `init` (and
     /// only kept in sync afterward by a `.task(id:)`) would otherwise risk. `LinkItemListView`
     /// below only keys off `parentModel?.id`, so recomputing this on every re-render is safe.
-    var parentModel: (any ItemDataAccessable)? {
+    var parentModel: (any ItemDataAccessible)? {
         guard let parentId = itemSelectionModel.onlyChildrenFrom else { return nil }
         return root.itemControllable.itemSync(for: parentId)
     }

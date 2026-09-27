@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-public struct EffectedLinkActionPanelView: View {
+public struct AffectedLinkActionPanelView: View {
     public init(root: any ItemRootControllable, overwrite: Bool = false, action: (([ItemRowModel]) -> Void)? = nil) {
         self.root = root
         self.overwrite = overwrite
@@ -74,16 +74,16 @@ public struct EffectedLinkActionPanelView: View {
         // order — `Task { }` inside `.onChange` had no such cancellation. See
         // CODE_AUDIT_EditItem §3.6.
         .task(id: removeEntryList.removeItems) {
-            removeEntryList.linkTree = await EffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
+            removeEntryList.linkTree = await AffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
         }
     }
 }
 
 #Preview {
-    EffectedLinkActionPanelView(root: ItemRootController.fake)
+    AffectedLinkActionPanelView(root: ItemRootController.fake)
 }
 
-private extension EffectedLinkActionPanelView {
+private extension AffectedLinkActionPanelView {
     @MainActor func removeItems(models: [ItemRowModel]) {
         for model in models {
             root.editControllable.markForDeletion(itemId: model.itemId)
@@ -177,7 +177,7 @@ private extension EffectedLinkActionPanelView {
         return name
     }
     
-    static func effectedItems(itemControllable: any ItemControllable, for item: ItemRowModel) async -> [EffectedItemModel] {
+    static func affectedItems(itemControllable: any ItemControllable, for item: ItemRowModel) async -> [AffectedItemModel] {
         let linkRegisterController = itemControllable.linkRegisterController
         return linkRegisterController.used(for: item)
     }
@@ -185,7 +185,7 @@ private extension EffectedLinkActionPanelView {
     static func linkTree(itemControllable: any ItemControllable, removeItems: [ItemRowModel]) async -> [RemoveLinkTreeModel] {
         var result: [RemoveLinkTreeModel] = []
         for item in removeItems {
-            let links = await effectedItems(itemControllable: itemControllable, for: item)
+            let links = await affectedItems(itemControllable: itemControllable, for: item)
             var items = [RemoveLinkTreeModel(item: item, link: nil, canRemoved: links.isEmpty, counter: links.count)]
             items.append(contentsOf: links.map {
                 RemoveLinkTreeModel(item: ItemRowModel(itemId: $0.id, typeId: item.typeId), link: $0, canRemoved: false, counter: 0)

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ItemEditorForegroundView<Editor: View>: View {
     let editor: Editor
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
     let shouldShowContent: Bool
@@ -29,7 +29,7 @@ struct ItemEditorForegroundView<Editor: View>: View {
 }
 
 private struct SpecialCategoryContentView: View {
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
     let isSubFolder: Bool
@@ -57,7 +57,7 @@ private struct SpecialCategoryContentView: View {
 private struct FormEditorContentView<Editor: View>: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
     let editor: Editor

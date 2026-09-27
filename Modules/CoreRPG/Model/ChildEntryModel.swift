@@ -15,7 +15,7 @@ public struct ChildEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
     public var displayState: Int = 0
 }
 
-extension ChildEntryModel: EntryDataAccessable {
+extension ChildEntryModel: EntryDataAccessible {
     public var name: String {
         get { "Photo" }
         set {}

@@ -5,7 +5,7 @@ import SwiftUI
 
 struct AdditionalEntryRow: View, Equatable {
     let source: ItemRowModel
-    let entry: any EntryDataAccessable
+    let entry: any EntryDataAccessible
     let textModel: LinkHighlightTextModel?
     /// Pre-resolved by the caller where available — see `ViewControllable`'s
     /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
@@ -19,7 +19,7 @@ struct AdditionalEntryRow: View, Equatable {
     /// See CODE_AUDIT_Character §8.1.
     private let entryId: UUID
 
-    init(source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?, resolvedModel: ValueModel? = nil) {
+    init(source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?, resolvedModel: ValueModel? = nil) {
         self.source = source
         self.entry = entry
         self.textModel = textModel

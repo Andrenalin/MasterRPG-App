@@ -43,7 +43,7 @@ struct InspectorRowView: View {
     }
 
     @ViewBuilder
-    private func rowContent(model: (any ItemDataAccessable)?) -> some View {
+    private func rowContent(model: (any ItemDataAccessible)?) -> some View {
         if let entryId = item.source.entryId,
            model?.entries.contains(where: { $0.id == entryId }) == true {
             entryRow(model: model, entryId: entryId)
@@ -52,7 +52,7 @@ struct InspectorRowView: View {
         }
     }
 
-    private func entryRow(model: (any ItemDataAccessable)?, entryId: UUID) -> some View {
+    private func entryRow(model: (any ItemDataAccessible)?, entryId: UUID) -> some View {
         HStack {
             LinkEntryRowView(root: root, item: item, listDisplayModel: root.folderLinkControllable.listDisplayModel)
             InspectorRowViewFolderChevronView(root: root, item: item)
@@ -69,7 +69,7 @@ struct InspectorRowView: View {
         )
     }
 
-    private func standardItemRow(model: (any ItemDataAccessable)?) -> some View {
+    private func standardItemRow(model: (any ItemDataAccessible)?) -> some View {
         itemRowView(model: model)
             .onTapGesture(count: 2) { openDetail(model: model) }
 #if os(macOS)
@@ -85,7 +85,7 @@ struct InspectorRowView: View {
             .contextMenu { rowContextMenu(model: model) }
     }
 
-    private func itemRowView(model: (any ItemDataAccessable)?) -> some View {
+    private func itemRowView(model: (any ItemDataAccessible)?) -> some View {
         let resolved = model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
         return ItemRowView(
             root: root,
@@ -115,7 +115,7 @@ struct InspectorRowView: View {
         .overlay(alignment: .trailing) { InspectorRowViewFolderChevronView(root: root, item: item) }
     }
 
-    private func isSelectionActive(model: (any ItemDataAccessable)?) -> Bool {
+    private func isSelectionActive(model: (any ItemDataAccessible)?) -> Bool {
         (type == .selection || type == .selectionInline) &&
         selectionModel.canSelect(
             isCollection: model?.specialCategory ?? false,
@@ -123,7 +123,7 @@ struct InspectorRowView: View {
         )
     }
 
-    private func openDetail(model: (any ItemDataAccessable)?) {
+    private func openDetail(model: (any ItemDataAccessible)?) {
 #if os(macOS)
         guard model?.specialCategory != true else { return }
         scenesManager.openWindow(
@@ -141,7 +141,7 @@ struct InspectorRowView: View {
     }
 
     @ViewBuilder
-    private func rowContextMenu(model: (any ItemDataAccessable)?) -> some View {
+    private func rowContextMenu(model: (any ItemDataAccessible)?) -> some View {
         Button {
             openDetail(model: model)
         } label: {
@@ -189,12 +189,12 @@ struct InspectorRowView: View {
         }
     }
     
-    func canGenerate(model: (any ItemDataAccessable)?) -> Bool {
+    func canGenerate(model: (any ItemDataAccessible)?) -> Bool {
         guard itemGenerationAction.isEnabled, let model else { return false }
         return root.configurable.module == .table && !model.specialCategory
     }
 
-    func generateItemView(model: (any ItemDataAccessable)?) -> some View {
+    func generateItemView(model: (any ItemDataAccessible)?) -> some View {
         Button {
             guard let model else { return }
             itemGenerationAction(model.id)

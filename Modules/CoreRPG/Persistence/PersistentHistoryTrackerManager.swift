@@ -232,7 +232,7 @@ private actor PersistentHistoryProcessor {
     }
     
     enum Error: String, Swift.Error {
-        case historyTransactionConvertionFailed
+        case historyTransactionConversionFailed
     }
 
     private static func fetcher(
@@ -260,7 +260,7 @@ private actor PersistentHistoryProcessor {
             historyFetchRequest.fetchRequest = fetchRequest
         }
 
-        guard let historyResult = try backgroundContext.execute(historyFetchRequest) as? NSPersistentHistoryResult, let history = historyResult.result as? [NSPersistentHistoryTransaction] else { throw Error.historyTransactionConvertionFailed }
+        guard let historyResult = try backgroundContext.execute(historyFetchRequest) as? NSPersistentHistoryResult, let history = historyResult.result as? [NSPersistentHistoryTransaction] else { throw Error.historyTransactionConversionFailed }
         return history
     }
     

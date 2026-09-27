@@ -81,7 +81,7 @@ extension DieModel {
         case A, B, C, D, E, F, G, H, I
     }
     
-    // The setter is a required no-op, not dead code: `EntryDataAccessable`
+    // The setter is a required no-op, not dead code: `EntryDataAccessible`
     // requires `name` to be `{ get set }` for types that support renaming
     // entries via the shared list-editing UI, but a die has no free-text
     // name of its own to rename (same pattern as `content` below).
@@ -112,7 +112,7 @@ extension DieModel {
     }
 }
 
-extension DieModel: EntryDataAccessable {
+extension DieModel: EntryDataAccessible {
     public var content: String {
         get { "" }
         set {}

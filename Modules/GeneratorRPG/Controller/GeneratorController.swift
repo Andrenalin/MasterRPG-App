@@ -233,7 +233,7 @@ struct GeneratorController: Sendable {
         model.conversationEngine.rebuild(baseInstructions: Self.defaultInstructions)
     }
 
-    @MainActor func preparaEngine(module: NetworkModules) async {
+    @MainActor func prepareEngine(module: NetworkModules) async {
         model.conversationEngine.prewarm()
         
         let extractInstructions = """

@@ -76,7 +76,7 @@ extension SheetRootModel {
         }
     }
 
-    @MainActor func convertEntryToGroup(source: ItemRowModel, existingItemId: UUID?) async -> (any ItemDataAccessable)? {
+    @MainActor func convertEntryToGroup(source: ItemRowModel, existingItemId: UUID?) async -> (any ItemDataAccessible)? {
         guard let entryId = source.entryId,
               let editable = entryDataEditable(for: source) else { return nil }
         let groupId = await editable.convertToGroup(itemId: source.itemId, entryId: entryId, existingItemId: existingItemId)

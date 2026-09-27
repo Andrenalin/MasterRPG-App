@@ -408,7 +408,7 @@ private struct ManagedFileImageCacheController: ImageCacheControllable {
     @MainActor
     func createThumbnail(
         for itemId: UUID,
-        item: any ItemDataAccessable
+        item: any ItemDataAccessible
     ) async {}
 }
 

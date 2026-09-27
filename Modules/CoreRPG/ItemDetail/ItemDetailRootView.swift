@@ -7,9 +7,9 @@ import UniformTypeIdentifiers
 
 struct EditingItem: Identifiable {
     let id: UUID
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
 
-    init(_ model: any ItemDataAccessable) {
+    init(_ model: any ItemDataAccessible) {
         self.id = model.id
         self.model = model
     }
@@ -51,7 +51,7 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable, 
     public init(
         root: any ItemRootControllable,
         detailListController: FolderListControllable,
-        selectedModel: any ItemDataAccessable,
+        selectedModel: any ItemDataAccessible,
         configuration: Configuration = Configuration(),
         linkTypes: LinkTypes.Type,
         showsBottomOverlayBar: Bool = true,
@@ -71,7 +71,7 @@ public struct ItemDetailRootView<Editor: View, LinkTypes: LinkDataTransferable, 
 
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
-    let selectedModel: any ItemDataAccessable
+    let selectedModel: any ItemDataAccessible
     let configuration: Configuration
     /// See `bottomOverlayBar`'s own doc — three modules (Audio/Weather/Dice)
     /// used to hand-implement this exact `safeAreaInset`/`overlay` stack
@@ -272,7 +272,7 @@ private extension ItemDetailRootView {
 
 struct ItemDetailToolbarContent: ToolbarContent {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let shouldShowContent: Bool
     let onEdit: () -> Void
 

@@ -86,7 +86,7 @@ public protocol LinkControllable: Sendable {
     @MainActor func collectLinks(of module: NetworkModules, from itemId: UUID) -> [UUID]
 
     // Links of an unsaved item
-    @MainActor func links(for item: any ItemDataAccessable) -> [LinkRegisterModel]
+    @MainActor func links(for item: any ItemDataAccessible) -> [LinkRegisterModel]
 }
 
 // MARK: - generate Links
@@ -277,7 +277,7 @@ public extension LinkControllable {
             return content.replacing(link.markDown, with: model.url(linkNumber: link.linkNumber, entryId: entry.id))
         } else {
             let all = categories.contains(.all)
-            var items: [(any ItemDataAccessable, Int)] = []
+            var items: [(any ItemDataAccessible, Int)] = []
             for itemId in itemControllable.itemDataModel.items {
                 if let model = itemControllable.itemSync(for: itemId), let index = all ? 0 : categories.firstIndex(of: model.category) {
                     items.append((model, index))
@@ -312,7 +312,7 @@ public extension LinkControllable {
 
     /// Clears all registered links whose source is `item`, then re-registers `item.linkRegisterModels`.
     /// Call unconditionally inside `validateLinks(on:)` — safe no-op when the item has no links.
-    @MainActor func resetLinkRegister<M: ItemLinkRegistable>(_ item: M) {
+    @MainActor func resetLinkRegister<M: ItemLinkRegistrable>(_ item: M) {
         let register = itemControllable.linkRegisterController
         var existing: [LinkRegisterModel] = []
         for links in register.model.items.values {
@@ -363,8 +363,8 @@ public extension LinkControllable {
 public extension LinkControllable {
     /// All links embedded in `item`, with `item` as source. Works for items that are not
     /// in the database yet, e.g. during import review.
-    @MainActor func links(for item: any ItemDataAccessable) -> [LinkRegisterModel] {
-        (item as? any ItemLinkRegistable)?.linkRegisterModels ?? []
+    @MainActor func links(for item: any ItemDataAccessible) -> [LinkRegisterModel] {
+        (item as? any ItemLinkRegistrable)?.linkRegisterModels ?? []
     }
 }
 

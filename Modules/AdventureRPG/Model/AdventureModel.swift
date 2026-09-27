@@ -100,7 +100,7 @@ public final class AdventureModel: nonisolated Identifiable {
     public var groupId: UUID?
 }
 
-extension AdventureModel: nonisolated ItemLinkRegistable {
+extension AdventureModel: nonisolated ItemLinkRegistrable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -146,7 +146,7 @@ extension AdventureModel: nonisolated ItemLinkRegistable {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .adventure)
         var total: [LinkRegisterModel] = []
         if valueChanged {
-            total += entry.links(for: entry.content).map {
+            total += LinkReplaceController.links(for: entry.content).map {
                 LinkRegisterModel(link: $0, source: source)
             }
         }
@@ -231,9 +231,8 @@ extension AdventureModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension AdventureModel: nonisolated ItemReferencable {}
 
-extension AdventureModel: nonisolated ItemDataAccessable {
+extension AdventureModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

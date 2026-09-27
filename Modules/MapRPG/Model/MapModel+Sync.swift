@@ -24,7 +24,7 @@ extension MapModel: nonisolated Comparable {
     }
 }
 
-extension MapModel: nonisolated ItemLinkRegistable {
+extension MapModel: nonisolated ItemLinkRegistrable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -85,7 +85,7 @@ extension MapModel: nonisolated ItemLinkRegistable {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .map)
         var total: [LinkRegisterModel] = []
         if valueChanged {
-            total += entry.links(for: entry.content).map {
+            total += LinkReplaceController.links(for: entry.content).map {
                 LinkRegisterModel(link: $0, source: source)
             }
         }

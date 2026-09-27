@@ -163,11 +163,11 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: MapRPG::AddtionalEntryRow
-    @Test("AddtionalEntryRow")
-    func snapshotAddtionalEntryRow() async throws {
-        try await assertPreviewSnapshot("AddtionalEntryRow") {
-            MapRPG.AddtionalEntryRow(
+    // snapshot-root: MapRPG::AdditionalEntryRow
+    @Test("AdditionalEntryRow")
+    func snapshotAdditionalEntryRow() async throws {
+        try await assertPreviewSnapshot("AdditionalEntryRow") {
+            MapRPG.AdditionalEntryRow(
                 source: ItemRowModel(
                     itemId: MapModel.previewId,
                     entryId: MapEntryModel.previewId,

@@ -37,7 +37,7 @@ import SwiftUI
         resetAttributedText()
     }
     
-    func reset(entry: any EntryDataAccessable, source: ItemRowModel) {
+    func reset(entry: any EntryDataAccessible, source: ItemRowModel) {
         // Cancel any pending updates
         nameUpdateTask?.cancel()
         updateTask?.cancel()

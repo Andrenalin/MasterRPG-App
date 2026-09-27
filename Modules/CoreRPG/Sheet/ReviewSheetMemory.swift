@@ -4,17 +4,17 @@ import Foundation
 
 public struct ReviewSheetMemory: Sendable {
     public init(
-        items: [NetworkModules: [UUID: any ItemDataAccessable]],
+        items: [NetworkModules: [UUID: any ItemDataAccessible]],
         hiddenItemIds: [NetworkModules: Set<UUID>] = [:]
     ) {
         self.items = items
         self.hiddenItemIds = hiddenItemIds
     }
 
-    private let items: [NetworkModules: [UUID: any ItemDataAccessable]]
+    private let items: [NetworkModules: [UUID: any ItemDataAccessible]]
     private let hiddenItemIds: [NetworkModules: Set<UUID>]
 
-    @MainActor public func item(for itemId: UUID, module: NetworkModules) -> (any ItemDataAccessable)? {
+    @MainActor public func item(for itemId: UUID, module: NetworkModules) -> (any ItemDataAccessible)? {
         items[module]?[itemId]
     }
 

@@ -50,7 +50,7 @@ public extension View {
 }
 
 struct OpenFileViewerViewModifier: ViewModifier {
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let openFileWindowModel: OpenFileWindowModel
     let module: NetworkModules
     

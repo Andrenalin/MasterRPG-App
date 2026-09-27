@@ -120,7 +120,7 @@ import SwiftUI
 
     /// Model of a linked item for display: prefers the import batch (imported items are
     /// not in the database yet), then falls back to the database.
-    func displayModel(for destination: ItemRowModel, preferImported: Bool, rootManager: RootManager?) -> (any ItemDataAccessable)? {
+    func displayModel(for destination: ItemRowModel, preferImported: Bool, rootManager: RootManager?) -> (any ItemDataAccessible)? {
         if let pending = modules.first(where: { $0.id == destination.typeId })?
             .reviewItems.first(where: { $0.id == destination.itemId }) {
             let item = pending.itemModel.item
@@ -144,7 +144,7 @@ import SwiftUI
     private func sheetMemory(
         overriding override: (itemId: UUID, module: NetworkModules, decision: SingleReviewDecision)?
     ) -> ReviewSheetMemory {
-        var items: [NetworkModules: [UUID: any ItemDataAccessable]] = [:]
+        var items: [NetworkModules: [UUID: any ItemDataAccessible]] = [:]
         var hiddenItemIds: [NetworkModules: Set<UUID>] = [:]
 
         for module in modules {

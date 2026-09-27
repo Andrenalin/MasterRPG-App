@@ -150,7 +150,7 @@ extension LinkController: LinkControllable {
         )
         for entry in inspected.entries {
             var updated = entry
-            updated.content = repairLinks(entry.links(for: entry.content), in: entry.content)
+            updated.content = repairLinks(LinkReplaceController.links(for: entry.content), in: entry.content)
             if updated != entry {
                 replacement[entry.id] = updated
             }
@@ -179,7 +179,7 @@ extension LinkController: LinkControllable {
         guard let item = itemController.itemSync(for: itemId) else { return [] }
         let descriptionLinks = LinkReplaceController.links(for: item.description)
         let entryLinks = item.entries.flatMap { entry in
-            entry.links(for: entry.content)
+            LinkReplaceController.links(for: entry.content)
         }
         return Array(Set((descriptionLinks + entryLinks)
             .filter { $0.module == module }

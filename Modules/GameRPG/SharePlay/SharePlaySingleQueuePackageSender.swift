@@ -79,7 +79,7 @@ enum SharePlayPackageSenderError: Error, Equatable {
     nonisolated static let encodedMessageSizeLimit = 256_000
     nonisolated static let defaultRetryDelays: [Duration] = [.milliseconds(100), .milliseconds(300)]
     nonisolated static let lowPackageCount = 60
-    nonisolated static let throttleInMilliSeconds = 200
+    nonisolated static let throttleInMilliseconds = 200
     nonisolated static let maxOutstandingMessages = 16
     nonisolated static let maxOutstandingBytes = 128_000_000
     nonisolated static let maxMessageByteCount = 64_000_000
@@ -205,7 +205,7 @@ enum SharePlayPackageSenderError: Error, Equatable {
             if packageNumber > 1,
                (packageNumber - 1) % Self.lowPackageCount == 0,
                offset < request.data.count {
-                try await Task.sleep(for: .milliseconds(Self.throttleInMilliSeconds))
+                try await Task.sleep(for: .milliseconds(Self.throttleInMilliseconds))
             }
         }
     }

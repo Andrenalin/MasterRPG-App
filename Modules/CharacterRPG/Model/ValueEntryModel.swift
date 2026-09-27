@@ -193,7 +193,7 @@ extension ValueEntryModel.ValueType {
     }
 }
 
-extension ValueEntryModel: EntryDataAccessable {
+extension ValueEntryModel: EntryDataAccessible {
     public var content: String {
         get { value }
         set { value = newValue }
@@ -259,7 +259,6 @@ extension ValueEntryModel: ItemDiffComparable {
     }
 }
 
-extension ValueEntryModel: ItemReferencable {}
 
 #if DEBUG
 extension ValueEntryModel {

@@ -63,7 +63,7 @@ extension FoundryMappingState {
         attachment: ExternalImportAttachment? = nil,
         decisionOwnerID: UUID? = nil,
         warnings: [String] = []
-    ) where Model: ItemDataAccessable & Observable {
+    ) where Model: ItemDataAccessible & Observable {
         var model = model
         model.name = sanitizedFoundryText(model.name)
         let key = DestinationKey(module: module, id: model.id)

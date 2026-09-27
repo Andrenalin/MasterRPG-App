@@ -108,7 +108,7 @@ extension PdfModel: nonisolated Comparable {
     }
 }
 
-extension PdfModel: nonisolated ItemLinkRegistable {}
+extension PdfModel: nonisolated ItemLinkRegistrable {}
 
 extension PdfModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: PdfModel) -> PdfModel {
@@ -178,7 +178,7 @@ extension PdfModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension PdfModel: nonisolated ItemDataAccessable {
+extension PdfModel: nonisolated ItemDataAccessible {
     nonisolated public static var empty: PdfModel { empty(UUID()) }
     nonisolated public static func empty(_ id: UUID) -> PdfModel {
         PdfModel(id: id, name: "")

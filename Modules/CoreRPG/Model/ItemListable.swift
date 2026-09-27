@@ -29,7 +29,7 @@ public enum DisplayStateMask: Int {
     }
 }
 
-public extension ItemDataAccessable {
+public extension ItemDataAccessible {
     nonisolated static var typeId: NetworkModules { .none }
 
     @MainActor var isHidden: Bool {

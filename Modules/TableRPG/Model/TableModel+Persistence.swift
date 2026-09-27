@@ -4,7 +4,7 @@ import CoreRPG
 import Foundation
 
 // Split out of TableModel.swift: ItemDiffComparable (merge/isSame/version),
-// Codable, ItemDataAccessable, ItemDuplicatable, ItemReferencable, and their
+// Codable, ItemDataAccessible, ItemDuplicatable, and their
 // canonical-content helper types — the CRDT/Codable/CoreData-snapshot
 // persistence boilerplate. See CODE_AUDIT_Table §9.10.
 
@@ -129,7 +129,6 @@ extension TableModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension TableModel: nonisolated ItemReferencable {}
 
 extension TableModel: nonisolated Equatable, nonisolated Hashable {
     nonisolated public static func == (lhs: TableModel, rhs: TableModel) -> Bool {

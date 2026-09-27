@@ -7,8 +7,8 @@ import SwiftUI
 
 // Split out of this file — see CODE_AUDIT §9.13:
 // - MapModel+Geometry.swift: image reset/rotation math, room toggle/focus
-// - MapModel+Sync.swift: Comparable, ItemLinkRegistable, ItemDiffComparable (merge/isSame/version)
-// - MapModel+DataAccess.swift: review properties, ItemDuplicatable/ItemReferencable/ItemDataAccessable
+// - MapModel+Sync.swift: Comparable, ItemLinkRegistrable, ItemDiffComparable (merge/isSame/version)
+// - MapModel+DataAccess.swift: review properties, ItemDuplicatable/ItemDataAccessible
 // - MapModel+Codable.swift: Codable, Equatable/Hashable
 
 enum MapPinId {
@@ -217,7 +217,7 @@ extension MapModel: nonisolated Codable {
     }
 }
 
-extension MapModel: nonisolated ItemDataAccessable {
+extension MapModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

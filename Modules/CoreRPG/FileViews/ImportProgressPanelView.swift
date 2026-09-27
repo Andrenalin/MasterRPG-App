@@ -312,7 +312,7 @@ private extension ImportProgressPanelView {
         if itemModel.decision == .existing {
             guard itemModel.hasOverrides, itemModel.item.existing != nil else { return }
         }
-        guard let model = itemModel.materializedItem() as? any Observable & ItemDataAccessable else { return }
+        guard let model = itemModel.materializedItem() as? any Observable & ItemDataAccessible else { return }
         root.itemControllable.replaceImportedModel(model: model, isInsert: true, forceSave: true)
         root.editControllable.repairFolder(itemId: item.id)
     }

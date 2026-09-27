@@ -27,7 +27,7 @@ struct InlineRowViewer: View, Equatable {
                         ThumbnailRowPhotoView(cacheController: cacheController, model: model, listDisplayModel: root.listDisplayModel, entryId: source.entryId)
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
-                    AddtionalEntryRow(source: source, entry: entry, resolvedModel: model)
+                    AdditionalEntryRow(source: source, entry: entry, resolvedModel: model)
                 }
             }
         }

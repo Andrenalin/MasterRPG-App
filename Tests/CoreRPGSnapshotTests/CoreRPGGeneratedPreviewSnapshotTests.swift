@@ -825,11 +825,11 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: CoreRPG::EffectedLinkActionPanelView
-    @Test("EffectedLinkActionPanelView")
-    func snapshotEffectedLinkActionPanelView() async throws {
-        try await assertPreviewSnapshot("EffectedLinkActionPanelView") {
-            CoreRPG.EffectedLinkActionPanelView(root: ItemRootController.fake)
+    // snapshot-root: CoreRPG::AffectedLinkActionPanelView
+    @Test("AffectedLinkActionPanelView")
+    func snapshotAffectedLinkActionPanelView() async throws {
+        try await assertPreviewSnapshot("AffectedLinkActionPanelView") {
+            CoreRPG.AffectedLinkActionPanelView(root: ItemRootController.fake)
         }
     }
 

@@ -146,8 +146,8 @@ extension MapPinModel: Codable {
         id = try values.decode(UUID.self, forKey: .id)
         name = try values.decode(String.self, forKey: .name)
         location = try values.decode(CGPoint.self, forKey: .location)
-        let ccolor = try values.decode(CodableColor.self, forKey: .color)
-        color = ccolor.color
+        let decodedColor = try values.decode(CodableColor.self, forKey: .color)
+        color = decodedColor.color
         photoId = try values.decodeIfPresent(UUID.self, forKey: .photoId)
         characterId = try values.decodeIfPresent(UUID.self, forKey: .characterId)
         size = try values.decode(MapPinSize.self, forKey: .size)

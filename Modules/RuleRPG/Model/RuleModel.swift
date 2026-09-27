@@ -126,7 +126,7 @@ public final class RuleModel: nonisolated Identifiable {
 
 // MARK: - Item behavior
 
-extension RuleModel: ItemLinkRegistable {
+extension RuleModel: ItemLinkRegistrable {
     public var linkRegisterModels: [LinkRegisterModel] {
         linkRegisterModels(description: description) + entries.flatMap(linkRegisterModels(entry:))
     }
@@ -170,7 +170,7 @@ extension RuleModel: ItemLinkRegistable {
 
     private func linkRegisterModels(entry: RuleEntryModel) -> [LinkRegisterModel] {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .rule)
-        return entry.links(for: entry.content).map { link in
+        return LinkReplaceController.links(for: entry.content).map { link in
             LinkRegisterModel(link: link, source: source)
         }
     }
@@ -248,9 +248,8 @@ extension RuleModel: ItemDuplicatable {
     }
 }
 
-extension RuleModel: ItemReferencable {}
 
-extension RuleModel: ItemDataAccessable {
+extension RuleModel: ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set {}

@@ -19,7 +19,7 @@ struct CacheController: Sendable {
 }
 
 extension CacheController: ImageCacheControllable {
-    @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessable) async {
+    @MainActor func createImage(for itemId: UUID, item: any ItemDataAccessible) async {
         guard let fileUrlDataController, let fileUrl = item.fileUrl  else { return }
         let trace = PerformanceTrace.begin("ImageDecode", itemId: itemId, kind: "full")
         defer { trace?.end() }
@@ -47,7 +47,7 @@ extension CacheController: ImageCacheControllable {
         )
     }
 
-    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessible) async {
         let trace = PerformanceTrace.begin("ThumbnailGenerate", itemId: itemId, kind: "thumbnail")
         defer { trace?.end() }
         // Reuse an already fully-decoded image if one happens to be cached; otherwise
@@ -71,7 +71,7 @@ extension CacheController: ImageCacheControllable {
     /// highest device scale (`resize(to:)` renders up to 3x on iOS).
     private static let thumbnailMaxPixelSize: CGFloat = 256
 
-    @MainActor private func downsampledSource(for itemId: UUID, item: any ItemDataAccessable) async -> AKImage? {
+    @MainActor private func downsampledSource(for itemId: UUID, item: any ItemDataAccessible) async -> AKImage? {
         guard let fileUrlDataController, let fileUrl = item.fileUrl else { return nil }
         return await fileUrlDataController.resolvedImage(
             for: fileUrl,

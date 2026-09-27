@@ -403,7 +403,7 @@ extension DiceModel: nonisolated Comparable {
     }
 }
 
-extension DiceModel: nonisolated ItemLinkRegistable {}
+extension DiceModel: nonisolated ItemLinkRegistrable {}
 
 extension DiceModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: DiceModel) -> DiceModel {
@@ -519,7 +519,7 @@ extension DiceModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension DiceModel: nonisolated ItemDataAccessable {
+extension DiceModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

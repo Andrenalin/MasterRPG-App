@@ -6,7 +6,7 @@ import Foundation
 // MARK: - Link Register
 // Split out of ValueModel.swift — see CODE_AUDIT_Character §9.9.
 
-extension ValueModel: nonisolated ItemLinkRegistable {
+extension ValueModel: nonisolated ItemLinkRegistrable {
     @MainActor public var linkRegisterModels: [LinkRegisterModel] {
         changedLinkRegisterModels(oldValue: .empty).0
     }
@@ -64,12 +64,12 @@ extension ValueModel: nonisolated ItemLinkRegistable {
         let source = ItemRowModel(itemId: id, entryId: entry.id, typeId: .value)
         var total: [LinkRegisterModel] = []
         if nameChanged {
-            total += entry.links(for: entry.name).map {
+            total += LinkReplaceController.links(for: entry.name).map {
                 LinkRegisterModel(link: $0, source: source)
             }
         }
         if valueChanged {
-            total += entry.links(for: entry.value).map {
+            total += LinkReplaceController.links(for: entry.value).map {
                 LinkRegisterModel(link: $0, source: source)
             }
         }

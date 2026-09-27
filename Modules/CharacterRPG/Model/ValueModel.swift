@@ -216,9 +216,8 @@ extension ValueModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension ValueModel: nonisolated ItemReferencable {}
 
-extension ValueModel: nonisolated ItemDataAccessable {
+extension ValueModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

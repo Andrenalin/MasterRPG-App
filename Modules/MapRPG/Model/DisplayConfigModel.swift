@@ -66,8 +66,8 @@ extension DisplayConfigModel: Codable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         tileCoordinates = try values.decode([CGPoint].self, forKey: .tileCoordinates)
-        let ccolor = try values.decode(CodableColor.self, forKey: .color)
-        color = ccolor.color
+        let decodedColor = try values.decode(CodableColor.self, forKey: .color)
+        color = decodedColor.color
         border = try values.decode(DisplayBorderViewModel.self, forKey: .border)
     }
 }
@@ -102,7 +102,7 @@ extension DisplayBorderViewModel: Codable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(UUID.self, forKey: .id)
         thickness = try values.decode(CGFloat.self, forKey: .thickness)
-        let ccolor = try values.decode(CodableColor.self, forKey: .color)
-        color = ccolor.color
+        let decodedColor = try values.decode(CodableColor.self, forKey: .color)
+        color = decodedColor.color
     }
 }

@@ -19,7 +19,7 @@ struct SheetReviewVersion: Identifiable {
     let id: SheetReviewVersionID
     let decision: SingleReviewDecision
     let sheetModel: SheetModel?
-    let entry: (any EntryDataAccessable)?
+    let entry: (any EntryDataAccessible)?
 
     var isAvailable: Bool {
         sheetModel != nil && entry != nil

@@ -16,7 +16,7 @@ public final class RemoveEntryListModel {
 
 struct RemoveLinkTreeModel: Identifiable {
     var item: ItemRowModel
-    var link: EffectedItemModel?
+    var link: AffectedItemModel?
     var canRemoved: Bool
     var counter: Int
     
@@ -25,7 +25,7 @@ struct RemoveLinkTreeModel: Identifiable {
     }
 }
 
-public struct EffectedItemModel: Equatable, Hashable, Identifiable, Sendable {
+public struct AffectedItemModel: Equatable, Hashable, Identifiable, Sendable {
     public init(id: UUID, name: String, entryName: String? = nil, module: NetworkModules) {
         self.id = id
         self.name = name

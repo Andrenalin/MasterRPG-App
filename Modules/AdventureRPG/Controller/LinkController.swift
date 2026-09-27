@@ -123,7 +123,7 @@ extension LinkController: LinkControllable {
         for entry in inspectedItem.entries {
             var validatedEntry = entry
 
-            let links = entry.links(for: entry.content)
+            let links = LinkReplaceController.links(for: entry.content)
             validatedEntry.content = repairLinks(links, in: validatedEntry.content)
 
             if !entry.isSame(validatedEntry) {
@@ -163,7 +163,7 @@ extension LinkController {
             linkIds.append(id)
         }
         item.entries.forEach {
-            let links = $0.links(for: $0.content)
+            let links = LinkReplaceController.links(for: $0.content)
             links.forEach {
                 switch $0.module {
                 case .photo:

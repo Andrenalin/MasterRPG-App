@@ -5,7 +5,7 @@ import SwiftUI
 struct ItemRowsView: View {
     let root: any ItemRootControllable
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     let listModel: FolderListModel
     let menuController: ContextMenuMultiController
     var focusedRowId: FocusState<UUID?>.Binding

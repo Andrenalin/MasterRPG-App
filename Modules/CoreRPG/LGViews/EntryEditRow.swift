@@ -4,7 +4,7 @@ import Foundation
 import SwiftUI
 
 public struct EntryEditRow: View {
-    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, resolvedModel: (any ModelType)? = nil) {
+    public init(root: any ItemRootControllable, editController: any EntryDataEditable, itemId: UUID, entry: any EntryDataAccessible, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, resolvedModel: (any ModelType)? = nil) {
         self.root = root
         self.editController = editController
         self.itemId = itemId
@@ -18,7 +18,7 @@ public struct EntryEditRow: View {
     let root: any ItemRootControllable
     let editController: any EntryDataEditable
     let itemId: UUID
-    let entry: any EntryDataAccessable
+    let entry: any EntryDataAccessible
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
@@ -60,8 +60,8 @@ public struct EntryEditRow: View {
 }
 
 private extension EntryEditRow {
-    var model: any ItemDataAccessable {
-        (resolvedModel as? any ItemDataAccessable) ?? editController.itemControllable.itemOrEmpty(for: itemId)
+    var model: any ItemDataAccessible {
+        (resolvedModel as? any ItemDataAccessible) ?? editController.itemControllable.itemOrEmpty(for: itemId)
     }
     
     var linkTextModel: LinkHighlightTextModel {

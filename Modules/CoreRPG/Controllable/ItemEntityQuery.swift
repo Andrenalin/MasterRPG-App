@@ -38,7 +38,7 @@ import Foundation
 @MainActor
 public protocol ItemEntityQuery: EntityQuery, EntityStringQuery, EnumerableEntityQuery where Entity.ID == UUID {
     associatedtype Root
-    associatedtype Model: ItemDataAccessable
+    associatedtype Model: ItemDataAccessible
 
     var root: Root { get }
 

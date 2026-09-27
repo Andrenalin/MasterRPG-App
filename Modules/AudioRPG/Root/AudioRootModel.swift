@@ -161,7 +161,7 @@ extension AudioRootModel {
     public var gameControllable: any GameControllable { gameController }
     @MainActor public var itemControllable: any ItemControllable { itemController }
     public var searchControllable: any SearchControllable { searchController }
-    public var audioGameControllable: any (GameControllable & AudioGameStoreable) { gameController }
+    public var audioGameControllable: any (GameControllable & AudioGameStorable) { gameController }
 }
 
 // MARK: - AudioPlayer

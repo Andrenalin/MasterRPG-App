@@ -729,6 +729,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Search becomes unreliable. Foundry models are `Codable`, so renames need `CodingKeys`, and the duplicate class names across platforms make cross-platform changes error-prone.
 - **Action:** Rename module by module (Foundry import and SharePlay first, with explicit `CodingKeys` where the name is a persisted key); do the misspellings in one mechanical commit; give the portable Table3D types distinct names.
 - **Severity:** Low
+- **Status (2026-09-26):** Misspelled types, members and files renamed (ItemDataAccessible, EntryDataAccessible, Storable, ItemLinkRegistrable, AffectedItemModel/affectedItems, AffectedLinkActionPanelView, AdditionalEntryRow, suggestionTags, historyTransactionConversionFailed, prepareEngine, isProminent, initialPackage, first/secondReroll, TagFilterSelection.Status.inactive, hasLink, titleName, throttleInMilliseconds, SpaceExample, initialized); redundant ItemReferenceable dropped in favour of LinkReplaceController.links(for:). None of the renamed members are Codable/persisted keys. The Id/Url mass rename is DEFERRED (large churn, per decision).
 
 ### 9.17 Magic constants
 - Network back-off `[1, 2, 4, 8, 15, 30] s` written three times with diverged attempt caps (`Modules/GameRPG/Browser/BrowserManager.swift:44`, `Modules/GameRPG/Master/MasterNetworkController.swift:328-330,365`, `Modules/GameRPG/Player/PlayerNetworkController.swift:88-89,504`); the 15 s handshake deadline twice → move to `GameLimits`.

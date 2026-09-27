@@ -12,7 +12,7 @@ import SwiftUI
 }
 
 public struct ThumbnailRowPhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, listDisplayModel: ListDisplayModel, entryId: UUID? = nil) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessible, listDisplayModel: ListDisplayModel, entryId: UUID? = nil) {
         self.cacheController = cacheController
         self.model = model
         self.listDisplayModel = listDisplayModel
@@ -20,7 +20,7 @@ public struct ThumbnailRowPhotoView: View {
     }
 
     let cacheController: ImageCacheControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let listDisplayModel: ListDisplayModel
     let entryId: UUID?
 

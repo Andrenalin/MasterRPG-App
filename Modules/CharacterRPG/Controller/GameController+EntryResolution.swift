@@ -40,7 +40,7 @@ extension GameController {
             return direct
         }
         if let linked = item.entries.first(where: { entry in
-            entry.links(for: entry.value).contains { link in
+            LinkReplaceController.links(for: entry.value).contains { link in
                 let linkName = link.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 return normalizedNames.contains {
                     linkName.localizedCaseInsensitiveCompare($0) == .orderedSame

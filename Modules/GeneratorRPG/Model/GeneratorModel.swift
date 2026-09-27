@@ -114,7 +114,7 @@ extension GeneratorModel {
     }
 }
 
-extension GeneratorModel: nonisolated ItemLinkRegistable {}
+extension GeneratorModel: nonisolated ItemLinkRegistrable {}
 
 extension GeneratorModel: nonisolated ItemDiffComparable {
     nonisolated func merge(_ other: GeneratorModel) -> GeneratorModel {
@@ -169,7 +169,7 @@ extension GeneratorModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension GeneratorModel: nonisolated ItemDataAccessable {
+extension GeneratorModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

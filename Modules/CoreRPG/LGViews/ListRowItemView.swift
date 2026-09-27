@@ -6,7 +6,7 @@ struct ListRowItemView: View, Equatable {
     let root: any ItemRootControllable
     let item: FolderListItemModel
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     let listModel: FolderListModel
     let menuController: ContextMenuMultiController
     let leadingPadding: CGFloat
@@ -82,7 +82,7 @@ struct ListRowItemView: View, Equatable {
 private extension ListRowItemView {
     // Use the pre-resolved model from FolderListItemModel (set by mapResult via itemSync).
     // Falls back to itemOrEmpty only for items not yet through the search pipeline.
-    var model: any ItemDataAccessable {
+    var model: any ItemDataAccessible {
         item.model ?? root.itemControllable.itemOrEmpty(for: item.source.itemId)
     }
 
@@ -146,7 +146,7 @@ private struct RowContentView: View {
     let root: any ItemRootControllable
     let item: FolderListItemModel
     let listController: any FolderListControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let isSelected: Bool
 
     var body: some View {

@@ -17,8 +17,8 @@ extension AttributedString {
 
         for run in runs {
             
-            if let haslink = run[AttributeScopes.FoundationAttributes.LinkAttribute.self] {
-                if !foundLink && haslink.absoluteString.contains(searchUrl) {
+            if let hasLink = run[AttributeScopes.FoundationAttributes.LinkAttribute.self] {
+                if !foundLink && hasLink.absoluteString.contains(searchUrl) {
                     foundLink = true
                     foundLinkRange = run.range
                     level = openLinks

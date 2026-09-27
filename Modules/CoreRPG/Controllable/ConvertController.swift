@@ -77,7 +77,7 @@ public struct ConvertController: Sendable {
         }
     }
 
-    @MainActor private func resetLinkRegister(for item: any ItemLinkRegistable) {
+    @MainActor private func resetLinkRegister(for item: any ItemLinkRegistrable) {
         let register = editController.linkRegisterController
         var existing: [LinkRegisterModel] = []
         for links in register.model.items.values {

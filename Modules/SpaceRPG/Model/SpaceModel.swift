@@ -113,7 +113,7 @@ extension SpaceModel: nonisolated Comparable {
 }
 
 extension SpaceModel: nonisolated ItemGameReportable {}
-extension SpaceModel: nonisolated ItemLinkRegistable {}
+extension SpaceModel: nonisolated ItemLinkRegistrable {}
 
 extension SpaceModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: SpaceModel) -> SpaceModel {
@@ -184,7 +184,7 @@ extension SpaceModel: nonisolated ItemDuplicatable {
     }
 }
 
-extension SpaceModel: nonisolated ItemDataAccessable {
+extension SpaceModel: nonisolated ItemDataAccessible {
     nonisolated public static var empty: SpaceModel { empty(UUID()) }
     nonisolated public static func empty(_ id: UUID) -> SpaceModel {
         SpaceModel(id: id, name: "", displayState: 0)

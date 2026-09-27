@@ -3,9 +3,9 @@
 import CoreRPG
 import SwiftUI
 
-struct AddtionalEntryRow: View, Equatable {
+struct AdditionalEntryRow: View, Equatable {
     let source: ItemRowModel
-    let entry: any EntryDataAccessable
+    let entry: any EntryDataAccessible
     /// Pre-resolved by the caller where available — see `ViewControllable`'s
     /// doc comment / CODE_AUDIT_10 §8.1. Falls back to `itemOrEmpty` when
     /// nil, so this stays correct for any call site not yet updated.
@@ -51,7 +51,7 @@ struct AddtionalEntryRow: View, Equatable {
 }
 
 #Preview(traits: .mockData) {
-    AddtionalEntryRow(
+    AdditionalEntryRow(
         source: ItemRowModel(
             itemId: MapModel.previewId,
             entryId: MapEntryModel.previewId,

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ItemDetailHeaderView: View {
     let module: NetworkModules
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel

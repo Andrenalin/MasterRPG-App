@@ -5,7 +5,7 @@ import SwiftUI
 public struct LinkItemListView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
-    init(root: any ItemRootControllable, type: LinkRootType, selectionModel: ItemSelectionModel, parentModel: (any ItemDataAccessable)?) {
+    init(root: any ItemRootControllable, type: LinkRootType, selectionModel: ItemSelectionModel, parentModel: (any ItemDataAccessible)?) {
         self.root = root
         self.type = type
         self.selectionModel = selectionModel
@@ -22,7 +22,7 @@ public struct LinkItemListView: View {
     let root: any ItemRootControllable
     let type: LinkRootType
     let selectionModel: ItemSelectionModel
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
 
     @State private var scrollPosition: UUID?
     @State private var showDetails: Bool = false
@@ -161,7 +161,7 @@ private struct LinkItemListViewContentView: View {
     let root: any ItemRootControllable
     let type: LinkRootType
     let selectionModel: ItemSelectionModel
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
 
     @Binding var scrollPosition: UUID?
     @Binding var showDetails: Bool

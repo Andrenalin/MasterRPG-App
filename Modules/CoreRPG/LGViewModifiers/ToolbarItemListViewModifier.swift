@@ -4,7 +4,7 @@ import SwiftUI
 import TipKit
 
 extension View {
-    public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessable)?, modal: Bool = false, dismissHandler: (() -> Void)? = nil) -> some View {
+    public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessible)?, modal: Bool = false, dismissHandler: (() -> Void)? = nil) -> some View {
         modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal, dismissHandler: dismissHandler))
     }
 }
@@ -12,7 +12,7 @@ extension View {
 struct ToolbarItemListViewModifier: ViewModifier {
     let root: any ItemRootControllable
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     let modal: Bool
     let dismissHandler: (() -> Void)?
 
@@ -123,7 +123,7 @@ private func addItem(for type: EditControllerAddType, listController: any Folder
 private struct ToolbarItemListActionMenuView: View {
     let root: any ItemRootControllable
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     let modal: Bool
 
     private var listModel: FolderListModel {
@@ -178,7 +178,7 @@ private struct ToolbarItemListActionMenuView: View {
 private struct ToolbarItemListSecondaryActionMenuView: View {
     let root: any ItemRootControllable
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     let modal: Bool
 
     private var listDisplayModel: ListDisplayModel {

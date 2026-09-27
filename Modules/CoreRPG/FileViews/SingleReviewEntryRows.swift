@@ -11,7 +11,7 @@ struct SingleReviewEntryRow: View {
     private var hasExisting: Bool { entry.entry.existing != nil }
     private var hasImported: Bool { entry.entry.imported != nil }
 
-    private func summary(from source: (any EntryDataAccessable)?) -> String? {
+    private func summary(from source: (any EntryDataAccessible)?) -> String? {
         guard let source else { return nil }
         let namePart = entry.properties.count > 0 ? source[keyPath: entry.properties[0].valueKeyPath] : ""
         let contentPart = entry.properties.count > 1 ? source[keyPath: entry.properties[1].valueKeyPath] : ""

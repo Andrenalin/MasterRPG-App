@@ -32,7 +32,7 @@ struct InternalRouteDestinationView: View {
             GroupEditorView(groupEditorController: GroupEditorController(itemController: root.itemControllable, editController: root.editControllable, ids: ids))
                 .presentationDetents([.medium])
         case .removeAlert:
-            EffectedLinkActionPanelView(root: root)
+            AffectedLinkActionPanelView(root: root)
         case .batchExtraction(let ids):
             root.viewControllable.batchExtractionView(
                 itemController: root.itemControllable,

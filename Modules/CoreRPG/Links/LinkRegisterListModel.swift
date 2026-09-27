@@ -109,7 +109,7 @@ public struct LinkRegisterModel: Equatable, Hashable, Sendable, Identifiable {
 
 /// Implemented by item models so `EditControllable.saveChanges` can diff which links were added or removed on each save.
 @MainActor
-public protocol ItemLinkRegistable {
+public protocol ItemLinkRegistrable {
     /// The item's unique identifier, used to locate existing register entries when resetting links.
     nonisolated var id: UUID { get }
     /// All links currently embedded in this item (used when no previous version exists, e.g. on first import).
@@ -118,7 +118,7 @@ public protocol ItemLinkRegistable {
     func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel])
 }
 
-public extension ItemLinkRegistable {
+public extension ItemLinkRegistrable {
     var linkRegisterModels: [LinkRegisterModel] { [] }
     func changedLinkRegisterModels(oldValue: Self) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) { ([], []) }
 }

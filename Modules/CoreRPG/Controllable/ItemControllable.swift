@@ -47,7 +47,7 @@ enum ItemTransactionMutationError: LocalizedError {
 }
 
 public protocol ItemControllable: Sendable  {
-    associatedtype Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
+    associatedtype Model: ItemDataAccessible & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistrable & Identifiable & Equatable & Hashable & Codable & ModelType
     
     var cacheControllable: ImageCacheControllable? { get }
     var config: ModuleConfigurable { get }
@@ -374,7 +374,7 @@ public extension ItemControllable {
         return model.merge(current)
     }
     
-    @MainActor func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessable) async {
+    @MainActor func reset(fileUrl: FileUrl?, item: inout any ItemDataAccessible) async {
         if let oldFileUlr = item.fileUrl {
             await cacheControllable?.remove(itemId: oldFileUlr.fileId)
         }

@@ -17,7 +17,7 @@ public struct FakeEntryModel: Identifiable, Equatable, Hashable, Codable, Sendab
     public var displayState: Int
 }
 
-extension FakeEntryModel: EntryDataAccessable {
+extension FakeEntryModel: EntryDataAccessible {
     public static func newChild(id: UUID) -> Self {
         FakeEntryModel(id: UUID(), childId: id, name: "", content: "")
     }
@@ -49,4 +49,3 @@ extension FakeEntryModel: ItemLinkEditable {
     }
 }
 
-extension FakeEntryModel: ItemReferencable {}

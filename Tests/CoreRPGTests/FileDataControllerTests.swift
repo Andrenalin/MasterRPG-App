@@ -31,7 +31,7 @@ struct FileDataControllerTests {
     }
 }
 
-fileprivate struct TestDataModel: Identifiable, Storeable, Codable {
+fileprivate struct TestDataModel: Identifiable, Storable, Codable {
     let id: UUID
     let name: String
 }

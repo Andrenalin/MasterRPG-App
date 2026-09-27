@@ -22,7 +22,7 @@ extension ViewController: ViewControllable {
         AnyView(ThumbnailPhotoRow(itemId: itemId).equatable())
     }
 
-    @MainActor public func thumbnailRowView(for model: any ItemDataAccessable) -> AnyView {
+    @MainActor public func thumbnailRowView(for model: any ItemDataAccessible) -> AnyView {
         AnyView(ThumbnailPhotoRow(itemId: model.id, item: model as? ValueModel).equatable())
     }
 }

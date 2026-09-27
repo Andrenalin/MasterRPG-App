@@ -97,8 +97,8 @@ extension EditController: EntryDataEditable {
     public var thumbnailEntryViewType: ThumbnailEntryViewType { .photo }
     public var additioanlEnrtryViewType: AdditionalEntryViewType { .custom }
 
-    @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessable, textModel: LinkHighlightTextModel?) -> AnyView {
-        AnyView(AddtionalEntryRow(source: source, entry: entry).equatable())
+    @MainActor public func additionalRowView(for source: ItemRowModel, entry: any EntryDataAccessible, textModel: LinkHighlightTextModel?) -> AnyView {
+        AnyView(AdditionalEntryRow(source: source, entry: entry).equatable())
     }
 
     func create(name: String, content: String) -> MapEntryModel {
@@ -393,14 +393,14 @@ extension EditController {
         let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }
 
-        var effectedLinks = true
+        var affectedLinks = true
         for itemRowModel in itemRowModels {
             if !linkRegisterController.used(for: itemRowModel).isEmpty {
-                effectedLinks = false
+                affectedLinks = false
                 break;
             }
         }
-        if recoverEntries != nil || effectedLinks {
+        if recoverEntries != nil || affectedLinks {
             if let recoverEntries {
                 newEntries.append(contentsOf: recoverEntries.compactMap { $0.entryId }.map { item[$0] })
             }

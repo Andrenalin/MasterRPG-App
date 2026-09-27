@@ -337,7 +337,7 @@ struct TableGenerationController: Sendable {
                     id: $0.id,
                     name: $0.name,
                     content: $0.content,
-                    tableLinks: $0.links(for: $0.content)
+                    tableLinks: LinkReplaceController.links(for: $0.content)
                         .filter { $0.module == .table && $0.entryId == nil }
                         .map {
                             TableGenerationLink(

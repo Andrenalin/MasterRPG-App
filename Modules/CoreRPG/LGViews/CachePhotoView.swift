@@ -3,14 +3,14 @@
 import SwiftUI
 
 public struct CachePhotoView: View {
-    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessable, highResolution: Bool = true) {
+    public init(cacheController: any ImageCacheControllable, model: any ItemDataAccessible, highResolution: Bool = true) {
         self.cacheController = cacheController
         self.model = model
         self.highResolution = highResolution
     }
 
     let cacheController: ImageCacheControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let highResolution: Bool
 
     @State private var lastFileUrl: FileUrl?

@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 struct ItemEditorBackgroundView<Editor: View>: View {
     let editor: Editor
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
     let fileTypes: [UTType]
@@ -50,7 +50,7 @@ struct ItemEditorBackgroundView<Editor: View>: View {
 }
 
 private struct OverlaysBaseView: View {
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
     let fileTypes: [UTType]
@@ -67,7 +67,7 @@ private struct OverlaysBaseView: View {
 }
 
 private struct DescriptionOverlayView: View {
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let root: any ItemRootControllable
     let folderListController: FolderListControllable
 
@@ -96,7 +96,7 @@ private struct DescriptionOverlayView: View {
 
 private struct FileImporterOverlayView: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let fileTypes: [UTType]
 
     var body: some View {

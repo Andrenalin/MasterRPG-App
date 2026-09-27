@@ -7,7 +7,7 @@ import Foundation
 // Split out of EditController.swift — see CODE_AUDIT_Character §9.7.
 
 extension EditController {
-    @MainActor public func duplicate(item: any ItemDataAccessable) async {
+    @MainActor public func duplicate(item: any ItemDataAccessible) async {
         let originalParentId = itemController.itemSync(for: item.id)?.parentId
         let copyId = await duplicate(itemId: item.id, withCopy: true)
 

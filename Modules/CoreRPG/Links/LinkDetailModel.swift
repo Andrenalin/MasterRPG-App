@@ -2,15 +2,6 @@
 
 import Foundation
 
-public protocol ItemReferencable {}
-
-public extension ItemReferencable {
-    @MainActor
-    func links(for text: String) -> [LinkReplaceModel] {
-        LinkReplaceController.links(for: text)
-    }
-}
-
 public struct LinkReplaceModel: Hashable, Sendable {
     public init(name: String, module: NetworkModules, linkNumber: Int, itemId: UUID, entryId: UUID?, markDown: String, command: String?, range: Range<String.Index>) {
         self.name = name

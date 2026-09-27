@@ -44,7 +44,7 @@ public struct AdventureEntryModel: Identifiable, Equatable, Hashable, Codable, S
     }
 }
 
-extension AdventureEntryModel: EntryDataAccessable {
+extension AdventureEntryModel: EntryDataAccessible {
     public var childId: UUID { id }
     public static func newChild(id: UUID) -> Self {
         empty(id)
@@ -95,7 +95,6 @@ extension AdventureEntryModel: ItemLinkEditable {
     }
 }
 
-extension AdventureEntryModel: ItemReferencable {}
 
 #if DEBUG
 extension AdventureEntryModel {

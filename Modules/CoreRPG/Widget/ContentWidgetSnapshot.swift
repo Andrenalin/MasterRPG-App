@@ -42,7 +42,7 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
     @MainActor
     public static func publish(module: NetworkModules, from dataModel: ItemDataModel) {
         let visibleItems = dataModel.items.compactMap { itemId -> ContentWidgetItem? in
-            guard let item = dataModel.itemData[itemId] as? any ItemDataAccessable,
+            guard let item = dataModel.itemData[itemId] as? any ItemDataAccessible,
                   item.displayState == DisplayStateMask.fullVisible.rawValue,
                   !item.specialCategory,
                   !item.name.isEmpty else { return nil }

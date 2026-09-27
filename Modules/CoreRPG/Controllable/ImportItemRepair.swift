@@ -12,7 +12,7 @@ public enum ImportItemRepair {
     }
 
     @MainActor
-    public static func normalizeLegacyCategory<Model: ItemDataAccessable>(in item: inout Model) {
+    public static func normalizeLegacyCategory<Model: ItemDataAccessible>(in item: inout Model) {
         guard shouldNormalizeLegacyCategory(item.category) else { return }
         let legacyCategory = item.category
         item.category = .entry

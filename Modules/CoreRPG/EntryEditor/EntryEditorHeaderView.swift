@@ -7,7 +7,7 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     let editorModel: SheetEditorModel
     let itemId: UUID
     @Bindable var editModel: TextEditModel
-    let entry: any EntryDataAccessable
+    let entry: any EntryDataAccessible
     let linkTypes: LinkType.Type
     
     @State private var isDropTargeted: Bool = false

@@ -102,7 +102,7 @@ extension FoundryMappingState {
         return id
     }
 
-    func configureAsset<Model: AnyObject & ItemDataAccessable>(_ model: Model, name: String, category: ItemListCategory) {
+    func configureAsset<Model: AnyObject & ItemDataAccessible>(_ model: Model, name: String, category: ItemListCategory) {
         var model = model
         model.name = name
         model.description = "Imported from \(packageName)."

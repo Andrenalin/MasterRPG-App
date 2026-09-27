@@ -3,7 +3,7 @@
 import Foundation
 import SwiftUI
 
-public protocol EntryDataAccessable {
+public protocol EntryDataAccessible {
     static var empty: Self { get }
     static func newChild(id: UUID) -> Self
 
@@ -20,7 +20,7 @@ public protocol EntryDataAccessable {
     func linkContent() -> String
 }
 
-public extension EntryDataAccessable {
+public extension EntryDataAccessible {
     func filter(with search: String) -> Bool {
         name.localizedStandardContains(search)
     }
@@ -36,7 +36,7 @@ public extension EntryDataAccessable {
     }
 }
 
-public struct EmtpyEntryViewModel: EntryDataAccessable, Identifiable, Equatable, Sendable {
+public struct EmtpyEntryViewModel: EntryDataAccessible, Identifiable, Equatable, Sendable {
     public static let empty: EmtpyEntryViewModel = EmtpyEntryViewModel()
     public static func newChild(id: UUID) -> EmtpyEntryViewModel {
         EmtpyEntryViewModel(childId: id)

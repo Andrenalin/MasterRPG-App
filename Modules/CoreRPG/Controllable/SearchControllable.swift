@@ -220,7 +220,7 @@ public extension SearchControllable {
     // compact  → name only
     // medium   → name + description
     // regular  → name + description + tags (tags excluded for inspector via includeTags: false)
-    @MainActor func itemMatchesFilter(_ item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> Bool {
+    @MainActor func itemMatchesFilter(_ item: any ItemDataAccessible, searchText: String, displayMode: ListDisplayModel.DisplayMode, includeTags: Bool = true) -> Bool {
         guard !searchText.isEmpty else { return true }
         if item.name.localizedStandardContains(searchText) { return true }
         if displayMode != .compact {
@@ -232,7 +232,7 @@ public extension SearchControllable {
         return false
     }
 
-    @MainActor func makeResult(item: any ItemDataAccessable, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil) -> SearchResult {
+    @MainActor func makeResult(item: any ItemDataAccessible, searchText: String, displayMode: ListDisplayModel.DisplayMode, parentEntryId: UUID? = nil) -> SearchResult {
         let description: String? = displayMode != .compact ? (item.description.isEmpty ? nil : item.description) : nil
         var score = searchText.isEmpty ? 100 : calculateRelevance(
             searchText: searchText,

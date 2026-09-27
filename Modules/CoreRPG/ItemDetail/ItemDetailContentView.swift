@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let configuration: ItemDetailConfiguration
     let editor: Editor
     let headerModel: HeaderScrollModel
@@ -127,7 +127,7 @@ private struct SubFolderDetailView: View {
 
 private struct ContentBodyView<Editor: View>: View {
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let configuration: ItemDetailConfiguration
     let editor: Editor
     let folderListController: FolderListControllable
@@ -227,7 +227,7 @@ private struct ItemHeaderEditorContentView: View {
 private extension View {
     @ViewBuilder
     func applyFileDropIfNeeded(
-        model: any ItemDataAccessable,
+        model: any ItemDataAccessible,
         fileTypes: [UTType],
         root: any ItemRootControllable
     ) -> some View {

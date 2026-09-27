@@ -190,7 +190,7 @@ extension EditController {
 // MARK: - Duplicate with sub-groups
 
 extension EditController {
-    @MainActor public func duplicate(item: any ItemDataAccessable) async {
+    @MainActor public func duplicate(item: any ItemDataAccessible) async {
         guard let model = editModel(for: item.id) else { return }
         let originalParentId = model.parentId
         let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true, visited: [model.id])

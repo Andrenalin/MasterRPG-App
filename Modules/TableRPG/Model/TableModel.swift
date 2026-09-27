@@ -9,8 +9,8 @@ import Observation
 // the .gmz wire format stays on this type's Codable (encode/decode on MainActor).
 //
 // Split across three files — this one (init + stored properties),
-// TableModel+Links.swift (ItemLinkRegistable), and
-// TableModel+Persistence.swift (ItemDiffComparable/Codable/ItemDataAccessable
+// TableModel+Links.swift (ItemLinkRegistrable), and
+// TableModel+Persistence.swift (ItemDiffComparable/Codable/ItemDataAccessible
 // and their canonical-content helper types) — since the single 418-line
 // original mixed several loosely related, mostly boilerplate-driven
 // protocol conformances. See CODE_AUDIT_Table §9.10.
@@ -170,7 +170,7 @@ extension TableModel: nonisolated Codable {
     }
 }
 
-extension TableModel: nonisolated ItemDataAccessable {
+extension TableModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

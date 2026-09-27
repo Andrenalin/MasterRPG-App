@@ -190,7 +190,7 @@ struct EditToolBarViewModifier: ViewModifier {
 #else
                 Group {
                     ToolbarItem(placement: titlePlacement) {
-                        Text(verbatim: titlename)
+                        Text(verbatim: titleName)
                             .foregroundStyle(.primary)
                     }
                     
@@ -279,11 +279,11 @@ private extension EditToolBarViewModifier {
     var editController: EditController { mapEditController.editController }
 
     var navTitle: String {
-        guard editController.editorModel.sheetEditorModel.entryId != nil else { return titlename }
+        guard editController.editorModel.sheetEditorModel.entryId != nil else { return titleName }
         return subtitleName
     }
 
-    var titlename: String {
+    var titleName: String {
         editorModel.workingCopy?.name ?? String(localized: "Untitled", bundle: .module)
     }
 

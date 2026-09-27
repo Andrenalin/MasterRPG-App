@@ -3,11 +3,11 @@
 import Foundation
 import SwiftUI
 
-public protocol Storeable {
+public protocol Storable {
     var id: UUID { get }
 }
 
-actor FileDataModel<Datatype: Codable & Storeable & Sendable> {
+actor FileDataModel<Datatype: Codable & Storable & Sendable> {
     private(set) var data: [Datatype] = []
 
     func setData(update: [Datatype]) {
@@ -43,7 +43,7 @@ actor FileDataModel<Datatype: Codable & Storeable & Sendable> {
     }
 }
 
-public struct FileDataController<Datatype: Codable & Storeable & Sendable>: Sendable {
+public struct FileDataController<Datatype: Codable & Storable & Sendable>: Sendable {
     private let model: FileDataModel<Datatype>
     private let persistence: FilePersistenceController
 

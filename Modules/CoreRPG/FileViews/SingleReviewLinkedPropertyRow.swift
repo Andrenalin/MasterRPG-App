@@ -70,7 +70,7 @@ private extension SingleReviewLinkedPropertyRow {
         return row
     }
 
-    func resolvedModel(for link: ItemRowModel, preferImported: Bool) -> (any ItemDataAccessable)? {
+    func resolvedModel(for link: ItemRowModel, preferImported: Bool) -> (any ItemDataAccessible)? {
         reviewModel?.displayModel(for: link, preferImported: preferImported, rootManager: rootManager)
             ?? rootManager?.rootModel(for: link.typeId)?.itemControllable.itemSync(for: link.itemId)
     }
@@ -99,7 +99,7 @@ private extension SingleReviewLinkedPropertyRow {
     }
 
     @ViewBuilder
-    func thumbnail(for resolved: any ItemDataAccessable, module: NetworkModules) -> some View {
+    func thumbnail(for resolved: any ItemDataAccessible, module: NetworkModules) -> some View {
         if let root = rootManager?.rootModel(for: module) {
             if root.viewControllable.thumbnailRowViewType == .custom {
                 root.viewControllable.thumbnailRowView(for: resolved)

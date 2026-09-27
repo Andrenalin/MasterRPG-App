@@ -109,7 +109,7 @@ extension MapEntryModel {
     }
 }
 
-extension MapEntryModel: EntryDataAccessable {
+extension MapEntryModel: EntryDataAccessible {
     public var childId: UUID { id }
     public static func newChild(id: UUID) -> Self {
         empty(id)
@@ -161,7 +161,6 @@ extension MapEntryModel: ItemDiffComparable {
     }
 }
 
-extension MapEntryModel: ItemReferencable {}
 
 #if DEBUG
 extension MapEntryModel {

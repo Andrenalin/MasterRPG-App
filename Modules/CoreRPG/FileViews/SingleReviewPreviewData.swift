@@ -194,4 +194,4 @@ extension SingleItemImportModel {
 }
 
 extension PreviewItemModel: nonisolated Equatable {}
-extension PreviewItemModel: nonisolated ItemDataAccessable {}
+extension PreviewItemModel: nonisolated ItemDataAccessible {}

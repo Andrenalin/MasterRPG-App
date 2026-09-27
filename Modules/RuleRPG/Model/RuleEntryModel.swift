@@ -73,7 +73,7 @@ public struct RuleEntryModel: Identifiable, Equatable, Hashable, Codable, Sendab
     }
 }
 
-extension RuleEntryModel: EntryDataAccessable {
+extension RuleEntryModel: EntryDataAccessible {
     public var childId: UUID { id }
 
     public static func newChild(id: UUID) -> RuleEntryModel {
@@ -134,7 +134,6 @@ extension RuleEntryModel: ItemLinkEditable {
     }
 }
 
-extension RuleEntryModel: ItemReferencable {}
 
 #if DEBUG
 public extension RuleEntryModel {

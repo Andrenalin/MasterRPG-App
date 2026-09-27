@@ -14,7 +14,7 @@ import Foundation
 /// `DiceRPG`'s `diceBag`, …) still provide their own bespoke `ItemController`, since a
 /// stored property can't be added later via extension. See CODE_AUDIT §9.3.
 public struct GenericItemController<
-    Model: ItemDataAccessable & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistable & Identifiable & Equatable & Hashable & Codable & ModelType
+    Model: ItemDataAccessible & ItemDiffComparable & ItemDuplicatable & ItemLinkRegistrable & Identifiable & Equatable & Hashable & Codable & ModelType
 >: Sendable {
     @MainActor public init(config: ModuleConfigurable) {
         self.config = config

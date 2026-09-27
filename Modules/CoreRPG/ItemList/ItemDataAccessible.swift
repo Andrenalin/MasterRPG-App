@@ -41,7 +41,7 @@ public extension ReviewPropertyValue {
 public struct ReviewCustomProperty: Sendable {
     public init(
         displayName: String,
-        value: @escaping @MainActor (any ItemDataAccessable) -> ReviewPropertyValue
+        value: @escaping @MainActor (any ItemDataAccessible) -> ReviewPropertyValue
     ) {
         self.displayName = displayName
         self.value = value
@@ -49,15 +49,15 @@ public struct ReviewCustomProperty: Sendable {
 
     public let displayName: String
     /// Reads the property from one model version (existing, imported or merged).
-    public let value: @MainActor (any ItemDataAccessable) -> ReviewPropertyValue
+    public let value: @MainActor (any ItemDataAccessible) -> ReviewPropertyValue
 }
 
 // Model state is MainActor-owned. Only `id` and the static factories stay
 // nonisolated because they are immutable/static identity APIs used by generic
 // infrastructure such as Identifiable, decoding, and empty model factories.
 @MainActor
-public protocol ItemDataAccessable: Sendable, Equatable {
-    associatedtype Entry: EntryDataAccessable, Identifiable, Equatable
+public protocol ItemDataAccessible: Sendable, Equatable {
+    associatedtype Entry: EntryDataAccessible, Identifiable, Equatable
 
     nonisolated static var empty: Self { get }
     nonisolated static var typeId: NetworkModules { get }
@@ -94,15 +94,15 @@ public protocol ItemDataAccessable: Sendable, Equatable {
     var reviewProperties: [ReviewCustomProperty] { get }
 }
 
-public extension ItemDataAccessable {
-    /// Type-erased content equality for `any ItemDataAccessable` existentials.
+public extension ItemDataAccessible {
+    /// Type-erased content equality for `any ItemDataAccessible` existentials.
     ///
     /// `isEqual(other:)` requires `Self`, so two existential boxes can't be compared with it
     /// directly — this opens `self`'s concrete type via a dynamic cast of `other` instead.
-    /// Lets SwiftUI-facing wrapper types (e.g. row views holding `any ItemDataAccessable`)
+    /// Lets SwiftUI-facing wrapper types (e.g. row views holding `any ItemDataAccessible`)
     /// build an `Equatable` render snapshot without hand-picking individual fields. See
     /// CODE_AUDIT §8.4.
-    func isEqualErased(to other: any ItemDataAccessable) -> Bool {
+    func isEqualErased(to other: any ItemDataAccessible) -> Bool {
         guard let other = other as? Self else { return false }
         return isEqual(other: other)
     }

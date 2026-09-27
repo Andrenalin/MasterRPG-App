@@ -35,7 +35,7 @@ struct MoveItemIntoButton: View {
         menuController.folderItems(currentSelected: root.currentSelectedItemId)
     }
 
-    private var item: (any ItemDataAccessable)? {
+    private var item: (any ItemDataAccessible)? {
         guard let selectedItemId = root.currentSelectedItemId else { return nil }
         return root.itemControllable.itemOrEmpty(for: selectedItemId)
     }

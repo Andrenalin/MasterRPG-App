@@ -81,7 +81,7 @@ public final class SearchModel: Sendable {
     
     @MainActor
     private func updateTagSuggestions(tagSearch: String.SubSequence) async {
-        let filteredSearchTags = tagController.sugguestionTags(module: module, search: String(tagSearch)).map { SearchTags(tag: $0) }
+        let filteredSearchTags = tagController.suggestionTags(module: module, search: String(tagSearch)).map { SearchTags(tag: $0) }
 
         if searchTags != filteredSearchTags {
             searchTags = filteredSearchTags

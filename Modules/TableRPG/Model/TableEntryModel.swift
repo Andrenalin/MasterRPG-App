@@ -30,9 +30,9 @@ public struct TableEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
     public var diceResult: String? = nil
 }
 
-// MARK: - EntryDataAccessable
+// MARK: - EntryDataAccessible
 
-extension TableEntryModel: EntryDataAccessable {
+extension TableEntryModel: EntryDataAccessible {
     public var childId: UUID { id }
     public static func newChild(id: UUID) -> Self {
         empty(id)
@@ -80,7 +80,6 @@ extension TableEntryModel: ItemLinkEditable {
     }
 }
 
-extension TableEntryModel: ItemReferencable {}
 
 #if DEBUG
 extension TableEntryModel {

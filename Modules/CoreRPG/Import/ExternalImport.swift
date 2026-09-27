@@ -106,7 +106,7 @@ public struct ExternalImportBatchItem: Identifiable, Sendable {
         attachment: ExternalImportAttachment? = nil,
         decisionOwnerID: UUID? = nil,
         warnings: [String] = []
-    ) where Model: ItemDataAccessable & Observable {
+    ) where Model: ItemDataAccessible & Observable {
         self.id = id
         self.module = module
         self.name = name

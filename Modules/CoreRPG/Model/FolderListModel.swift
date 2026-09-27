@@ -12,7 +12,7 @@ public final class FolderListModel {
         update(selection: Set(selection))
     }
 
-    public init(parentModel: (any ItemDataAccessable)?, navigationModel: ModuleNavigationModel) {
+    public init(parentModel: (any ItemDataAccessible)?, navigationModel: ModuleNavigationModel) {
         self.parentModel = parentModel
         self.selectedParentId = parentModel?.id
         self.isSelectionMode = false
@@ -25,7 +25,7 @@ public final class FolderListModel {
     @ObservationIgnored public let navigationModel: ModuleNavigationModel
 
     // MARK: - Items
-    @ObservationIgnored var parentModel: (any ItemDataAccessable)?
+    @ObservationIgnored var parentModel: (any ItemDataAccessible)?
     public var parentItemId: UUID? { parentModel?.id }
 
     @ObservationIgnored var updatedOnce: Bool = false
@@ -140,11 +140,11 @@ extension FolderListModel {
 // MARK: - Detail List
 
 public extension FolderListModel {
-    func resetParent(model: (any ItemDataAccessable)?) {
+    func resetParent(model: (any ItemDataAccessible)?) {
         resetListModel(parentModel: model)
     }
     
-    @MainActor func resetDetailList(parentModel: any ItemDataAccessable) {
+    @MainActor func resetDetailList(parentModel: any ItemDataAccessible) {
         if detailListModel == nil {
             detailListModel = FolderListModel(parentModel: parentModel, navigationModel: navigationModel)
         } else {
@@ -224,7 +224,7 @@ public extension FolderListModel {
 // MARK: - Navigation
 
 public extension FolderListModel {
-    func resetListModel(parentModel: (any ItemDataAccessable)?) {
+    func resetListModel(parentModel: (any ItemDataAccessible)?) {
         self.parentModel = parentModel
         selectedParentId = parentModel?.id
         subFolderRoute = nil
@@ -280,7 +280,7 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     /// Direct reference to the domain model for this row.
     /// Set by `mapResult` via `itemSync` so views never need a separate `itemSync` call.
     /// Not included in equality/hash — identity is defined by `id`/`source`, not model content.
-    public var model: (any ItemDataAccessable)? = nil
+    public var model: (any ItemDataAccessible)? = nil
 
     /// Creates an independent copy of this item and its entire children tree.
     /// Used by `resetDetailLink` to seed a `detailListModel` with pre-loaded items from the
@@ -324,7 +324,7 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
         lhs.children == rhs.children
     }
     
-    func model(root: RootManager) -> (any ItemDataAccessable)? {
+    func model(root: RootManager) -> (any ItemDataAccessible)? {
         root.itemRootController(for: source.typeId)?.itemControllable.itemSync(for: source.itemId)
     }
 }

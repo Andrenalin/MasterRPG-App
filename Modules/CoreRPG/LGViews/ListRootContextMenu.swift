@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct ListRootContextMenu: View {
-    init(root: any ItemRootControllable, controller: ContextMenuMultiController, parentItem: (any ItemDataAccessable)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
+    init(root: any ItemRootControllable, controller: ContextMenuMultiController, parentItem: (any ItemDataAccessible)?, currentSelected: UUID? = nil, listController: (any FolderListControllable)? = nil) {
         self.root = root
         self.controller = controller
         self.parentItem = parentItem
@@ -13,7 +13,7 @@ struct ListRootContextMenu: View {
 
     let root: any ItemRootControllable
     let controller: ContextMenuMultiController
-    let parentItem: (any ItemDataAccessable)?
+    let parentItem: (any ItemDataAccessible)?
     let currentSelected: UUID?
     let listController: (any FolderListControllable)?
 
@@ -57,11 +57,11 @@ private extension ListRootContextMenu {
         controller.itemName(currentSelected: currentSelected)
     }
     
-    var parent: (any ItemDataAccessable)? {
+    var parent: (any ItemDataAccessible)? {
         parentItem ?? controller.parentItem(currentSelected: currentSelected)
     }
 
-    @ViewBuilder func removeActions(parent: (any ItemDataAccessable)?) -> some View {
+    @ViewBuilder func removeActions(parent: (any ItemDataAccessible)?) -> some View {
         if controller.hasDifferentFolders(for: parent) {
             removeItemView(oneUp: true)
         }
@@ -263,7 +263,7 @@ private struct DeleteItemView: View {
     let root: any ItemRootControllable
     let controller: ContextMenuMultiController
     let currentSelected: UUID?
-    let parentItem: (any ItemDataAccessable)?
+    let parentItem: (any ItemDataAccessible)?
     let title: String
 
     var body: some View {

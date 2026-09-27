@@ -26,7 +26,7 @@ extension CacheController: ImageCacheControllable {
     /// keeps reasonable detail, while still skipping a full-resolution map decode.
     private static let thumbnailMaxPixelSize: CGFloat = 1024
 
-    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {
+    @MainActor func createThumbnail(for itemId: UUID, item: any ItemDataAccessible) async {
         guard let item = item as? MapModel else { return }
         guard !Task.isCancelled else { return }
         guard let source = await photoRoot.fetchPhotoThumbnailSource(

@@ -148,7 +148,7 @@ final class SharePlayPackageReceiver {
                 scheduleNextExpiration()
                 return nil
             }
-            packageList = PackageMessageList(initalPackage: package)
+            packageList = PackageMessageList(initialPackage: package)
             receivedPackages[streamKey] = packageList
             cumulativeIncompleteByteCount += packageData.count
         }
@@ -280,11 +280,11 @@ final class SharePlayPackageReceiver {
 
 @MainActor @Observable
 final class PackageMessageList {
-    init(initalPackage: PackageMessage) {
-        self.id = initalPackage.uuid
-        self.total = initalPackage.total
-        if let data = initalPackage.data {
-            self.messages = [initalPackage.count: data]
+    init(initialPackage: PackageMessage) {
+        self.id = initialPackage.uuid
+        self.total = initialPackage.total
+        if let data = initialPackage.data {
+            self.messages = [initialPackage.count: data]
             self.receivedByteCount = data.count
         } else {
             self.messages = [:]

@@ -96,7 +96,7 @@ public extension LinkRegisterController {
     }
 
     /// Returns all source items that link to `link` as their destination — used to populate "used by" UI.
-    @MainActor func used(for link: ItemRowModel) -> [EffectedItemModel] {
+    @MainActor func used(for link: ItemRowModel) -> [AffectedItemModel] {
         let keyId = link.itemId
         let links = model.items[keyId, default: []]
         return links.compactMap {
@@ -107,7 +107,7 @@ public extension LinkRegisterController {
             if let entryId = $0.source.entryId {
                 entryName = item[entryId].name
             }
-            return EffectedItemModel(id: UUID(), name: item.name, entryName: entryName, module: $0.source.typeId)
+            return AffectedItemModel(id: UUID(), name: item.name, entryName: entryName, module: $0.source.typeId)
         }
     }
 

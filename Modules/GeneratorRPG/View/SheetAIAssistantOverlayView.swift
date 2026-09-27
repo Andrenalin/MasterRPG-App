@@ -52,7 +52,7 @@ struct SheetAIAssistantOverlayView: View {
             }
             if generatorController.availability {
                 generatorController.seedConversationContext(sheetModel: rootModel.sheetModel)
-                await generatorController.preparaEngine(module: rootModel.sheetModel.source.typeId)
+                await generatorController.prepareEngine(module: rootModel.sheetModel.source.typeId)
             }
 
             await Task.yield()

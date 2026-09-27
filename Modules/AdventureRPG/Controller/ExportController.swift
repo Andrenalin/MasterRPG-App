@@ -76,7 +76,7 @@ extension ExportController: ExportControllable {
             }
 
             var childIds: [UUID] = []
-            let links = item.entries.flatMap { $0.links(for: $0.content) }
+            let links = item.entries.flatMap { LinkReplaceController.links(for: $0.content) }
 
             links.forEach {
                 switch $0.module {

@@ -5,7 +5,7 @@ import SwiftUI
 public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
-    public init(root: any ItemRootControllable, model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
+    public init(root: any ItemRootControllable, model: any ItemDataAccessible, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, isSelected: Bool = false, @ViewBuilder thumbnail: () -> Thumbnail = EmptyView.init, @ViewBuilder actionBar: () -> ActionBar = EmptyView.init) {
         self.root = root
         self.model = model
         self.cacheItemListModel = cacheItemListModel
@@ -17,7 +17,7 @@ public struct ItemRowView<Thumbnail: View, ActionBar: View>: View {
     }
 
     let root: any ItemRootControllable
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let cacheItemListModel: CacheItemListModel
     let listDisplayModel: ListDisplayModel
     let searchModel: SearchModel
@@ -98,7 +98,7 @@ private struct SpecialCategoryIconView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let isSpecialCategory: Bool
 
     var body: some View {
@@ -124,7 +124,7 @@ private struct SpecialCategoryIconView: View {
 }
 
 private struct SpecialAddIconView: View {
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
 
     var body: some View {
         if model.category == .drop {

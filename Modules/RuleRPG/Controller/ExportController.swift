@@ -71,7 +71,7 @@ extension ExportController: ExportModelBacked {
             var links = LinkReplaceController.links(for: item.description)
             if !item.specialCategory {
                 links.append(contentsOf: item.entries.flatMap { entry in
-                    entry.links(for: entry.content)
+                    LinkReplaceController.links(for: entry.content)
                 })
             }
 

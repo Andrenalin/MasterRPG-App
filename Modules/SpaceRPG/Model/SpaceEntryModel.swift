@@ -16,7 +16,7 @@ public struct SpaceEntryModel: Identifiable, Equatable, Hashable, Codable, Senda
     public var displayState: Int = 0
 }
 
-extension SpaceEntryModel: EntryDataAccessable {
+extension SpaceEntryModel: EntryDataAccessible {
     public var name: String {
         get { "Space Model" }
         set {}

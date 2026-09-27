@@ -3,7 +3,7 @@
 import SwiftUI
 
 public struct ItemDetailOverlayView: View {
-    public init(model: any ItemDataAccessable, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, fullHeader: Bool = false, onlyDescription: Bool = false, lines: Int = 20) {
+    public init(model: any ItemDataAccessible, cacheItemListModel: CacheItemListModel, listDisplayModel: ListDisplayModel, searchModel: SearchModel, fullHeader: Bool = false, onlyDescription: Bool = false, lines: Int = 20) {
         self.model = model
         self.listDisplayModel = listDisplayModel
         self.fullHeader = fullHeader
@@ -13,7 +13,7 @@ public struct ItemDetailOverlayView: View {
         self.searchModel = searchModel
     }
 
-    let model: any ItemDataAccessable
+    let model: any ItemDataAccessible
     let listDisplayModel: ListDisplayModel
     let fullHeader: Bool
     let onlyDescription: Bool

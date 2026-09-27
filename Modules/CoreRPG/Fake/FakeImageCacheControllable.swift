@@ -14,7 +14,7 @@ struct FakeImageCacheController: ImageCacheControllable {
         cacheStorage = ImageCacheControllableStorage()
     }
 
-    func createThumbnail(for itemId: UUID, item: any ItemDataAccessable) async {}
+    func createThumbnail(for itemId: UUID, item: any ItemDataAccessible) async {}
 
     let cacheStorage: ImageCacheControllableStorage
 }

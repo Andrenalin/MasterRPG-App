@@ -6,7 +6,7 @@ extension View {
     func listModelUpdatesModifier(
         listControllable: any FolderListControllable,
         itemControllable: any ItemControllable,
-        parentModel: (any ItemDataAccessable)? = nil
+        parentModel: (any ItemDataAccessible)? = nil
     ) -> some View {
         modifier(ListModelUpdatesViewModifier(
             listControllable: listControllable,
@@ -20,7 +20,7 @@ struct ListModelUpdatesViewModifier: ViewModifier {
     let listControllable: any FolderListControllable
     let itemControllable: any ItemControllable
     /// When set, the modifier is operating in detail-list context (folder/collection content).
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
 
     @Environment(\.navigator) private var navigator
     

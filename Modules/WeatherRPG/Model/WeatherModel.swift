@@ -201,7 +201,7 @@ extension WeatherModel: nonisolated Comparable {
     }
 }
 
-extension WeatherModel: nonisolated ItemLinkRegistable {
+extension WeatherModel: nonisolated ItemLinkRegistrable {
     @MainActor public func changedLinkRegisterModels(oldValue: WeatherModel) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
         var added: [LinkRegisterModel] = []
         var removed: [LinkRegisterModel] = []
@@ -230,11 +230,11 @@ extension WeatherModel: nonisolated ItemDuplicatable {
     }
 }
 
-// `nonisolated ItemDataAccessable` conformance must stay in this file: Swift
+// `nonisolated ItemDataAccessible` conformance must stay in this file: Swift
 // requires a class's `Sendable`-implying conformances to be co-located with the
 // class declaration, or it's a build warning today ("will be an error in a
 // future Swift language mode"). See CODE_AUDIT_Weather §9.7.
-extension WeatherModel: nonisolated ItemDataAccessable {
+extension WeatherModel: nonisolated ItemDataAccessible {
     public var fileUrl: FileUrl? {
         get { nil }
         set(newValue) {}

@@ -368,7 +368,7 @@ extension FoundryMappingState {
         }
     }
 
-    func configureFolder<Model: AnyObject & ItemDataAccessable>(_ model: Model, name: String, parentID: UUID?) {
+    func configureFolder<Model: AnyObject & ItemDataAccessible>(_ model: Model, name: String, parentID: UUID?) {
         var model = model
         model.name = name
         model.category = .folder

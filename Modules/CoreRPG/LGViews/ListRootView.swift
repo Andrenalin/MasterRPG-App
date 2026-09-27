@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 struct ListRootView: View {
     let root: any ItemRootControllable
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     var isSubFolder: Bool
     
     @Environment(\.navigator) private var navigator
@@ -220,7 +220,7 @@ private struct ListView: View {
 
     let root: any ItemRootControllable
     let listController: any FolderListControllable
-    let parentModel: (any ItemDataAccessable)?
+    let parentModel: (any ItemDataAccessible)?
     let listModel: FolderListModel
     let menuController: ContextMenuMultiController
     var focusedRowId: FocusState<UUID?>.Binding

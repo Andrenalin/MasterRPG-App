@@ -4,7 +4,7 @@ import Foundation
 import SwiftUI
 
 public struct TagFilterSelection: Equatable, Hashable, Sendable {
-    public init(tag: String, state: TagFilterSelection.Status = .deactive) {
+    public init(tag: String, state: TagFilterSelection.Status = .inactive) {
         self.tag = tag
         self.state = state
     }
@@ -12,7 +12,7 @@ public struct TagFilterSelection: Equatable, Hashable, Sendable {
     public enum Status: Equatable, Hashable, Sendable {
         case selected
         case deselected
-        case deactive
+        case inactive
     }
 
     public let tag: String
@@ -24,7 +24,7 @@ public struct TagFilterSelection: Equatable, Hashable, Sendable {
             return tags.contains { $0.localizedUppercase == tag.localizedUppercase }
         case .deselected:
             return !tags.contains { $0.localizedUppercase == tag.localizedUppercase }
-        case .deactive:
+        case .inactive:
             return true
         }
     }
