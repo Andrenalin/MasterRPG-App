@@ -14,14 +14,8 @@ extension TableModel: nonisolated ItemDiffComparable {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[TableEntryModel]>
             if mergedCategory.wrappedValue == .folder {
-                // O(1) id -> entry lookups instead of a linear scan per id.
-                // See CODE_AUDIT_Table §7.1.
-                let ownById = Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-                let otherById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-                let allIds = Set(ownById.keys).union(otherById.keys)
-                let combined = allIds
-                    .compactMap { id in ownById[id] ?? otherById[id] }
-                    .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+                // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
+                let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name)
                 mergedEntries = CRDTDataUpdate(wrappedValue: combined)
             } else {
                 mergedEntries = entries_.merged(other: other.entries_)

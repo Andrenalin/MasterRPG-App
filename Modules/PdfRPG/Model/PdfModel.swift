@@ -118,17 +118,14 @@ extension PdfModel: nonisolated ItemDiffComparable {
             // bookmark added independently on two devices before syncing isn't silently
             // discarded; entries present on both sides get their own CRDT fields merged
             // via `PdfEntryModel.merge`. See CODE_AUDIT_Pdf §5.2.
-            let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-            let combined = allIds
-                .map { id -> PdfEntryModel in
-                    switch (entries.first { $0.id == id }, other.entries.first { $0.id == id }) {
-                    case let (local?, remote?): return local.merge(remote)
-                    case let (local?, nil): return local
-                    case let (nil, remote?): return remote
-                    case (nil, nil): return .empty(id)
-                    }
-                }
-                .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
+            let combined = FolderEntryMerge.merged(
+                local: entries,
+                remote: other.entries,
+                id: \.id,
+                name: \.name,
+                combine: { local, remote in local.merge(remote) }
+            )
             // Merge the `update` marker CRDT too (not a fresh random UUID) so that
             // merging two otherwise-identical models is idempotent, matching
             // `CRDTDataUpdate.merged`'s own convention.

@@ -120,16 +120,8 @@ extension PhotoModel: nonisolated ItemDiffComparable {
             let mergedCategory = category_.merged(other: other.category_)
             let mergedEntries: CRDTDataUpdate<[PhotoEntryModel]>
             if mergedCategory.wrappedValue == .folder {
-                let allIds = Set(entries.map(\.id)).union(other.entries.map(\.id))
-                let combined = allIds
-                    .compactMap { id in entries.first { $0.id == id } ?? other.entries.first { $0.id == id } }
-                    // `PhotoEntryModel.name` is a constant placeholder ("Photo"), not a real
-                    // sort key, so sorting by it was a no-op that left `Set`'s randomized
-                    // iteration order in place — two devices merging identical entries could
-                    // land on different array orders and compare as permanently "different"
-                    // in `isSame(_:)` (below), which compares entries by index. Sort by `id`
-                    // instead so the merge result is deterministic across devices.
-                    .sorted { $0.id.uuidString < $1.id.uuidString }
+                // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
+                let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name)
                 mergedEntries = CRDTDataUpdate(wrappedValue: combined)
             } else {
                 mergedEntries = entries_.merged(other: other.entries_)

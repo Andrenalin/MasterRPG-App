@@ -674,6 +674,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Two devices can order equally-named entries differently in the 8 unfixed copies (cross-device determinism, see the memory note on version determinism), and CRDT merge fixes must be applied 9 times.
 - **Action:** One `mergedFolderEntries(_:_:)` helper in CoreRPG with a deterministic tie-break (name, then id).
 - **Severity:** Medium
+- **Status (2026-09-26):** FIXED. New CoreRPG `FolderEntryMerge.merged(local:remote:id:name:combine:)` does the union in O(n) with a deterministic order (name, then id). It replaces the copies in Audio, Weather, Character, Photo, Rule, Generator, Map, Space and Table, and Pdf's variant, which combines entries present on both sides via `combine` and had the same equal-name ordering problem. Covered by `FolderEntryMergeTests`.
 
 ### 9.10 Security-scoped access and detached-reader wrappers repeated *(extends CODE_AUDIT_17 §9.12)*
 - **Location:** `Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift:28-47,91,195`; `FoundrySystemPackageReader.swift:21-37,73`; `UniversalVTTReader.swift:164-180,186-201`; manual `startAccessingSecurityScopedResource` also at `Modules/CoreRPG/Import/ExternalImportSourceRegistry.swift:601`, `Modules/CoreRPG/Files/FileUrlDataController.swift:151`, `Modules/RolePlayGameKit/Import/Foundry/FoundryRuleImportModel.swift:106`, `Modules/SpaceRPG/Space/SpaceViewer.swift:501`, `Modules/RolePlayGameKit/Model/AppModel.swift:463`
