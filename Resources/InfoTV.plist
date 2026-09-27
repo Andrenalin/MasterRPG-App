@@ -38,8 +38,6 @@
 	</array>
 	<key>CKSharingSupported</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -52,8 +50,6 @@
 		<string>_gamemasterproxyserver._tcp</string>
 		<string>_gamemasterproxyclient._tcp</string>
 	</array>
-	<key>NSHandsTrackingUsageDescription</key>
-	<string>MasterRPG uses hand tracking to roll dice during the game.</string>
 	<key>NSUbiquitousContainers</key>
 	<dict>
 		<key>iCloud.de.andretrettin.gamemaster</key>
@@ -70,8 +66,6 @@
 	<array>
 		<string>de.AndreTrettin.GameMaster.Activity.Detail</string>
 	</array>
-	<key>NSWorldSensingUsageDescription</key>
-	<string>MasterRPG uses the world sensing data to detect tables for the dice rolling during the game.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

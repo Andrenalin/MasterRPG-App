@@ -1024,6 +1024,12 @@
         }
       }
     },
+    "Fix map size to photo" : {
+
+    },
+    "Fix Map Size to Photo" : {
+
+    },
     "focus entry" : {
       "comment" : "Action name for focusing a map entry.",
       "extractionState" : "stale",

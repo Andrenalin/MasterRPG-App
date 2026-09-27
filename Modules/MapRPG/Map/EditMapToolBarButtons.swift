@@ -228,6 +228,27 @@ struct EditToolBarViewModifierRefreshSharedMapButtonView: View {
     }
 }
 
+/// Repairs a map whose persisted size disagrees with its photo's own pixel size — see
+/// `MapEditController.fixMapSizeToPhoto(editorModel:)`. Hidden otherwise, since this is a
+/// one-shot repair, not something a correctly-sized map ever needs.
+struct EditToolBarViewModifierFixMapSizeButtonView: View {
+    let mapEditController: MapEditController
+    let editorModel: MapEditorSession
+    let isOutOfSync: Bool
+
+    @ViewBuilder
+    var body: some View {
+        if isOutOfSync {
+            Button {
+                mapEditController.fixMapSizeToPhoto(editorModel: editorModel)
+            } label: {
+                Image(systemName: "aspectratio")
+                    .accessibilityLabel(Text("Fix Map Size to Photo", bundle: .module))
+            }
+        }
+    }
+}
+
 struct EditToolBarViewModifierUndoButtonView: View {
     let mapEditController: MapEditController
     let editorModel: MapEditorSession

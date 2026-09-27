@@ -3,6 +3,7 @@
 import CoreGraphics
 import CoreRPG
 import SwiftUI
+import os.log
 
 // Split out of MapEditorModel.swift — see CODE_AUDIT §9.13.
 
@@ -33,9 +34,15 @@ extension MapEditorSession {
         let newCanvasSize = MapCanvasGeometryResolver.resolve(
             map: map,
             mapSize: CGSize(width: map.width, height: map.height),
-            imageSize: image.fixedSize,
+            imageSize: image.size,
             degrees: photoDegrees
         )
+        Logger.mapCanvas.debug("""
+            updateCanvas: map \(map.width, privacy: .public)x\(map.height, privacy: .public), \
+            image.size \(image.size.width, privacy: .public)x\(image.size.height, privacy: .public), \
+            image.fixedSize \(image.fixedSize.width, privacy: .public)x\(image.fixedSize.height, privacy: .public), \
+            resolved canvas \(newCanvasSize.width, privacy: .public)x\(newCanvasSize.height, privacy: .public)
+            """)
         let geometryChanged = self.photoDegrees != photoDegrees
             || canvasSize != newCanvasSize
             || ObjectIdentifier(self.image) != ObjectIdentifier(image)
