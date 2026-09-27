@@ -624,6 +624,7 @@
       }
     },
     "Extract Information" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -692,6 +693,7 @@
       }
     },
     "Name: %@\nDescription: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -667,6 +667,7 @@
       }
     },
     "Extract Information" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
