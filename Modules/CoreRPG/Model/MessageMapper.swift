@@ -16,13 +16,16 @@ public protocol MessageMapper: Sendable {
 /// diverge (e.g. deterministic key ordering, or its own error logging) can
 /// still provide its own `encodeData()`/`decodeData(of:)` instead of this
 /// default; conforming to `MessageMapper` doesn't force using it.
+///
+/// Uses the shared `JSONCoding` instances: this is the per-message network path they were
+/// written for. See CODE_AUDIT_18 §9.14.
 public extension MessageMapper where Self: Codable {
     func encodeData() -> Data? {
-        try? JSONEncoder().encode(self)
+        try? JSONCoding.encoder.encode(self)
     }
 
     static func decodeData(of data: Data?) -> Self? {
         guard let data else { return nil }
-        return try? JSONDecoder().decode(Self.self, from: data)
+        return try? JSONCoding.decoder.decode(Self.self, from: data)
     }
 }

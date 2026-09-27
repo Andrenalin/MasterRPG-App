@@ -58,34 +58,11 @@ struct TableEntity: IndexedEntity {
 extension TableEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
-
-            let renderer = ImageRenderer(content: VStack {
-                Text(item.name)
-                Text(item.description)
-            }.frame(width: 600))
-
-            renderer.render { size, renderer in
-                var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-
-                guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else {
-                    return
-                }
-                pdf.beginPDFPage(nil)
-                renderer(pdf)
-                pdf.endPDFPage()
-                pdf.closePDF()
-            }
-
-            return .init(url)
+            .init(try EntitySummaryExport.pdf(id: item.id, name: item.name, description: item.description))
         }
 
-        DataRepresentation(exportedContentType: .plainText) { item in
-            String(
-                localized: "Name: \(item.name)\nDescription: \(item.description)",
-                bundle: .module
-            )
-            .data(using: .utf8) ?? Data()
+        DataRepresentation(exportedContentType: .plainText) {
+            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
         }
     }
 }

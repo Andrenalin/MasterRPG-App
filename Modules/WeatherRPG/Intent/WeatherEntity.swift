@@ -60,42 +60,11 @@ struct WeatherEntityPdfRenderingError: Error {}
 extension WeatherEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            let url = URL.cachesDirectory.appending(component: "\(item.name).pdf")
-
-            let renderer = ImageRenderer(content: VStack {
-                Text(item.name)
-                Text(item.description)
-            }.frame(width: 600))
-
-            var didWritePdf = false
-            renderer.render { size, renderer in
-                var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-
-                guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else {
-                    return
-                }
-                pdf.beginPDFPage(nil)
-                renderer(pdf)
-                pdf.endPDFPage()
-                pdf.closePDF()
-                didWritePdf = true
-            }
-
-            guard didWritePdf else {
-                throw WeatherEntityPdfRenderingError()
-            }
-            return .init(url)
+            .init(try EntitySummaryExport.pdf(id: item.id, name: item.name, description: item.description))
         }
 
         DataRepresentation(exportedContentType: .plainText) {
-            let nameLabel = String(localized: "Name", bundle: .module)
-            let descriptionLabel = String(localized: "Description", bundle: .module)
-            return Data(
-                """
-                \(nameLabel): \($0.name)
-                \(descriptionLabel): \($0.description)
-                """.utf8
-            )
+            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
         }
     }
 }

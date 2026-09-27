@@ -14,19 +14,8 @@ import SwiftUI
 struct MapExtractToolBarButton: View {
     let model: MapModel
 
-    @Environment(\.navigator) private var navigator
-
     var body: some View {
-        Button {
-            navigator.navigate(to: MapDetailRoute.mapExtraction(model.id), method: .managedSheet)
-        } label: {
-            Label {
-                Text("Extract Information", bundle: .module)
-            } icon: {
-                Image(systemName: NetworkModules.generator.icon)
-            }
-        }
-        .disabled(model.entries.filter { !$0.isHexGrid }.isEmpty)
+        ExtractInformationToolBarButton(route: MapDetailRoute.mapExtraction(model.id), isDisabled: model.entries.filter { !$0.isHexGrid }.isEmpty)
     }
 }
 #endif

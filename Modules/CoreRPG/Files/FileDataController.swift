@@ -59,7 +59,7 @@ public struct FileDataController<Datatype: Codable & Storeable & Sendable>: Send
 public extension FileDataController {
     func fetch() async {
         let persistenceLoader = persistence
-        let decoder = JSONDecoder()
+        let decoder = JSONCoding.decoder
         let jsonData = await persistenceLoader.load()
         let data = jsonData.compactMap { entry in
             if let restoreData = try? decoder.decode(Datatype.self, from: entry.data) {
@@ -71,7 +71,7 @@ public extension FileDataController {
     }
 
     func save() async {
-        let encoder = JSONEncoder()
+        let encoder = JSONCoding.encoder
         let mappedData = await model.data.compactMap { entry -> DataModel? in
             if let encodedData = try? encoder.encode(entry) {
                 return DataModel(id: entry.id, data: encodedData)

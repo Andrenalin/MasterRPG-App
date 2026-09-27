@@ -46,7 +46,7 @@ extension FilePersistenceController {
             }
             let data = try Data(contentsOf: loadUrl)
 
-            let decoder = JSONDecoder()
+            let decoder = JSONCoding.decoder
             do {
                 return try decoder.decode([DataModel].self, from: data)
             } catch {
@@ -111,7 +111,7 @@ extension FilePersistenceController {
 
 private extension FilePersistenceController {
     static func saveModel(data: [DataModel], into fileUrl: URL) throws {
-        let encodedData = try JSONEncoder().encode(data)
+        let encodedData = try JSONCoding.encoder.encode(data)
         // Atomic: a kill mid-write must not leave a truncated file. See CODE_AUDIT_15 §5.5.
         try encodedData.write(to: fileUrl, options: .atomic)
     }

@@ -141,12 +141,3 @@ extension LinkController {
     @MainActor
     static var preview = SpaceRootModel.preview.linkController
 }
-
-private extension UUID {
-    nonisolated static func fixture(_ value: String) -> UUID {
-        guard let id = UUID(uuidString: value) else {
-            preconditionFailure("Invalid deterministic preview UUID: \(value)")
-        }
-        return id
-    }
-}

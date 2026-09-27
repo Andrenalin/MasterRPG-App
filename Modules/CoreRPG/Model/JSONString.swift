@@ -5,13 +5,13 @@ import Foundation
 public enum JSONString {
     public static func decode<Value: Codable, Other: StringProtocol>(text: Other?) -> Value? {
         guard let text else { return nil }
-        let decoder = JSONDecoder()
+        let decoder = JSONCoding.decoder
         guard let data = text.data(using: .utf8) else { return nil }
         return try? decoder.decode(Value.self, from: data)
     }
 
     public static func encode<Value: Codable>(value: Value) -> String? {
-        let encoder = JSONEncoder()
+        let encoder = JSONCoding.encoder
         guard let encodedData = try? encoder.encode(value) else {
             return nil
         }

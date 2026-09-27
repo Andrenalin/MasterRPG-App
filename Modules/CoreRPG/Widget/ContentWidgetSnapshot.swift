@@ -33,7 +33,7 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
     public static func load(for module: NetworkModules) -> Self {
         guard let data = UserDefaults.appGroupDefaults?
             .data(forKey: storageKey(for: module)),
-              let snapshot = try? JSONDecoder().decode(Self.self, from: data) else {
+              let snapshot = try? JSONCoding.decoder.decode(Self.self, from: data) else {
             return Self(module: module, totalCount: 0, items: [])
         }
         return snapshot
@@ -53,7 +53,7 @@ public struct ContentWidgetSnapshot: Codable, Equatable, Sendable {
             totalCount: visibleItems.count,
             items: Array(visibleItems.prefix(4))
         )
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        guard let data = try? JSONCoding.encoder.encode(snapshot) else { return }
         UserDefaults.appGroupDefaults?
             .set(data, forKey: storageKey(for: module))
         WidgetCenter.shared.reloadTimelines(ofKind: widgetKind(for: module))

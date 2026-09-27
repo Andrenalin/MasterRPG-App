@@ -711,6 +711,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** They drift apart independently (the D12-D gap in §5.9 came from the hand-kept dice lists).
 - **Action:** One `renderSummaryPdf(title:description:)`, a `DieModel(sides:color:)` factory with a single-interpolation `name(for:)`, `MessageMapper` defaulting to `JSONCoding`, and shared toolbar/preview/SharePlay components.
 - **Severity:** Low
+- **Status (2026-09-26):** FIXED. The five entity PDF/text exports now call CoreRPG's `EntitySummaryExport`, which always throws when the PDF context can't be created (CharacterEntity used to return a URL to an unwritten file). The widget snapshot and widget intent use one `DieModel.die(sides:color:id:)` factory; the dead `DiceRollerView` copy was deleted in §9.1, and `name(for:)` is a single interpolation. `MessageMapper`'s default coder and every option-free local `JSONEncoder()`/`JSONDecoder()` use `JSONCoding`; coders that set options (sorted keys, ISO dates, Foundry depth `userInfo`) stay local. The four extract toolbar buttons delegate to `ExtractInformationToolBarButton` (its label and German/Thai translations were added to the CoreRPG catalog). The five identical preview `UUID.fixture(_:)` helpers became one CoreRPG helper. The two SharePlay button views were merged in §8.2.
 
 ### 9.15 Oversized files (>500 LOC)
 - **`Modules/CoreRPG/Foundry/FoundryVTTImportReader.swift` (1,313)** — split into reader (1-277), decoder (278-657), document decoder (658-1017), extraction (1018-1238), caches (1239-1313). Severity: Medium.

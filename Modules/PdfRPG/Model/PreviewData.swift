@@ -138,12 +138,3 @@ extension PdfEntryModel {
     @MainActor
     static let preview = PdfEntryModel(id: previewId, name: "First Bookmark", content: "A bookmarked rule from the example PDF.", pageNumber: "1", bounds: .zero)
 }
-
-private extension UUID {
-    nonisolated static func fixture(_ value: String) -> UUID {
-        guard let id = UUID(uuidString: value) else {
-            preconditionFailure("Invalid deterministic preview UUID: \(value)")
-        }
-        return id
-    }
-}

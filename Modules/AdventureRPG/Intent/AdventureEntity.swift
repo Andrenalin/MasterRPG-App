@@ -55,54 +55,15 @@ public struct AdventureEntity: IndexedEntity {
     }
 }
 
-struct AdventureEntityPdfRenderError: Error {}
 
 extension AdventureEntity: Transferable {
     public static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in
-            // Derived from `item.id` rather than the user-editable `item.name` —
-            // two adventures can share a name, or the same adventure can be
-            // exported concurrently, either of which would collide on the same
-            // cache path if keyed by name. See CODE_AUDIT §5.5 (mirrors the fix
-            // already applied to CharacterEntity, CODE_AUDIT_Character §6.1).
-            let url = URL.cachesDirectory.appending(component: "\(item.id.uuidString).pdf")
-
-            let renderer = ImageRenderer(content: VStack {
-                Text(verbatim: item.name)
-                Text(verbatim: item.description)
-            }.frame(width: 600))
-
-            // `render`'s closure is synchronous and non-throwing, so a failed
-            // `CGContext` init is captured here and thrown after — previously it
-            // silently returned, leaving an empty/missing file behind a URL handed
-            // back as if the export had succeeded. See CODE_AUDIT §5.5.
-            var renderError: (any Error)?
-            renderer.render { size, renderer in
-                var box = CGRect(x: 0, y: 0, width: size.width, height: size.height)
-
-                guard let pdf = CGContext(url as CFURL, mediaBox: &box, nil) else {
-                    renderError = AdventureEntityPdfRenderError()
-                    return
-                }
-                pdf.beginPDFPage(nil)
-                renderer(pdf)
-                pdf.endPDFPage()
-                pdf.closePDF()
-            }
-            if let renderError {
-                throw renderError
-            }
-
-            return .init(url)
+            .init(try EntitySummaryExport.pdf(id: item.id, name: item.name, description: item.description))
         }
 
         DataRepresentation(exportedContentType: .plainText) {
-            Data(
-                """
-                Name: \($0.name)
-                Description: \($0.description)
-                """.utf8
-            )
+            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
         }
     }
 }

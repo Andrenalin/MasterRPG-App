@@ -23,6 +23,15 @@ public extension Date {
 }
 
 public extension UUID {
+    /// A deterministic id for previews and tests, from a literal UUID string. Shared by the
+    /// module preview fixtures, which each had their own private copy. See CODE_AUDIT_18 §9.14.
+    nonisolated static func fixture(_ value: String) -> UUID {
+        guard let id = UUID(uuidString: value) else {
+            preconditionFailure("Invalid deterministic preview UUID: \(value)")
+        }
+        return id
+    }
+
     /// Fixed UUID for primary test entities
     static let fixture1 = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
 

@@ -99,17 +99,12 @@ extension DieModel {
         // data decoded before that fix (Codable's `init(from:)` reads
         // `color` directly, bypassing the initializer).
         let code = DieModel.resolvedColor(color, for: die)
-        return switch die.sides {
-        case .two: "D2\(code)-\(number)"
-        case .three: "D3\(code)-\(number)"
-        case .four: "D4\(code)-\(number)"
-        case .six: "D6\(code)-\(number)"
-        case .eight: "D8\(code)-\(number)"
-        case .ten: "D10\(code)-\(number)"
-        case .twelve: "D12\(code)-\(number)"
-        case .twenty: "D20\(code)-\(number)"
-        case .number: "D20\(code)-1"
+        // Every standard die's art is named "D<sides><colour>-<face>"; a non-standard die
+        // shows the d20's first face. See CODE_AUDIT_18 §9.14.
+        if case .number = die.sides {
+            return "D20\(code)-1"
         }
+        return "D\(die.sides.number())\(code)-\(number)"
     }
     
     public func diceImage(for number: Int) -> Image {
@@ -193,6 +188,13 @@ extension DieModel {
     // call. See CODE_AUDIT §9.6.
     private static func die(_ sides: RawDie.Sides, color: ColorCode) -> DieModel {
         DieModel(id: UUID(), die: RawDie(sides), color: color.rawValue)
+    }
+
+    /// A die with `sides` faces — the named case for standard dice, `.number` otherwise. The
+    /// one sides→die mapping used by the widget snapshot and the widget intent (they had their
+    /// own switches). See CODE_AUDIT_18 §9.14.
+    public static func die(sides: Int, color: ColorCode = .G, id: UUID = UUID()) -> DieModel {
+        DieModel(id: id, die: RawDie(.sides(sides)), color: color.rawValue)
     }
 
     public static var die2: DieModel { die2(color: .Random) }

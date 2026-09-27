@@ -31,11 +31,11 @@ public enum DiceWidgetReloader {
 private enum AppGroupCodableStore {
     static func load<T: Codable>(_ type: T.Type, key: String) -> T? {
         guard let data = UserDefaults.appGroupDefaults?.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(T.self, from: data)
+        return try? JSONCoding.decoder.decode(T.self, from: data)
     }
 
     static func save<T: Codable>(_ value: T, key: String) {
-        guard let data = try? JSONEncoder().encode(value) else { return }
+        guard let data = try? JSONCoding.encoder.encode(value) else { return }
         UserDefaults.appGroupDefaults?.set(data, forKey: key)
     }
 }
@@ -71,22 +71,7 @@ public struct DiceWidgetDice: Codable, Identifiable, Equatable, Hashable, Sendab
     }
 
     public var dieModel: DieModel {
-        switch sides {
-        case 4:
-            .die4(color: .G)
-        case 6:
-            .die6(color: .G)
-        case 8:
-            .die8(color: .G)
-        case 10:
-            .die10(color: .G)
-        case 12:
-            .die12(color: .G)
-        case 20:
-            .die20(color: .G)
-        default:
-            DieModel(id: id, die: RawDie(.number(sides)), color: DieModel.ColorCode.G.rawValue)
-        }
+        .die(sides: sides, id: id)
     }
 }
 

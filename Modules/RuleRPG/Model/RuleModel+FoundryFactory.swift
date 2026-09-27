@@ -365,7 +365,7 @@ extension RuleModel {
         case .null: return "null"
         case .array(let values): return values.map(presentation).joined(separator: ", ")
         case .object:
-            guard let data = try? JSONEncoder().encode(value),
+            guard let data = try? JSONCoding.encoder.encode(value),
                   let text = String(data: data, encoding: .utf8) else { return "" }
             return text
         }

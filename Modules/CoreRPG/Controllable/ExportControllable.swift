@@ -363,7 +363,7 @@ public extension ExportControllable {
 
     @MainActor
     private func encoded<T: Encodable>(_ item: T) throws -> Data {
-        try JSONEncoder().encode(item)
+        try JSONCoding.encoder.encode(item)
     }
 
     @MainActor

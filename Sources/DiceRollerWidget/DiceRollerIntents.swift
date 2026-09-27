@@ -84,14 +84,18 @@ enum IntentDiceType: String, AppEnum {
 
     /// Convert to DieModel for actual dice rolling
     func toDieModel() -> DieModel {
+        .die(sides: sides)
+    }
+
+    private var sides: Int {
         switch self {
-        case .d4: return .die4(color: .G)
-        case .d6: return .die6(color: .G)
-        case .d8: return .die8(color: .G)
-        case .d10: return .die10(color: .G)
-        case .d12: return .die12(color: .G)
-        case .d20: return .die20(color: .G)
-        case .d100: return DieModel(id: UUID(), die: RawDie(.number(100)), color: "G")
+        case .d4: 4
+        case .d6: 6
+        case .d8: 8
+        case .d10: 10
+        case .d12: 12
+        case .d20: 20
+        case .d100: 100
         }
     }
 }

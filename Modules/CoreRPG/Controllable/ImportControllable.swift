@@ -213,7 +213,7 @@ public extension ImportControllable {
                         // itself `@MainActor`, so `await` alone hops for the decode call
                         // (no `MainActor.run` wrapper needed); the wire format is unchanged.
                         let itemVersion = version
-                        let newItem = try await itemControllable.decode(data: data, with: JSONDecoder(), version: itemVersion)
+                        let newItem = try await itemControllable.decode(data: data, with: JSONCoding.decoder, version: itemVersion)
                         guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !importsFromUntrustedSource, peerPolicy: peerPolicy) else {
                             continue
                         }
