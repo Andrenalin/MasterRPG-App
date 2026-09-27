@@ -660,6 +660,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** A sequencing fix in this historically lost-message-prone area must be repeated 8 times by hand.
 - **Action:** One generic `ListSequenceTracker` keyed by `NetworkModules` and one `DeferredRevealQueue`, used by both models.
 - **Severity:** Medium
+- **Status (2026-09-26):** DEFERRED. A generic ListSequenceTracker/DeferredRevealQueue across Master and Player is a behavioural refactor of the lost-message-prone sequencing paths, not a mechanical cleanup; do it together with §9.11 and the §9.15 PlayerControllerModel/MasterControllerModel split.
 
 ### 9.8 Twelve hand-rolled bounded LRU dictionaries
 - **Location:** `Modules/GameRPG/Controller/PlayerControllerModel.swift:277,334,391,454,511`; `Modules/GameRPG/Controller/MasterController.swift:370,422,450`; `Modules/GameRPG/Root/GameRootModel.swift:332`; `Modules/GameRPG/Network/SharePlayPlayerJournalAdmission.swift:244,365`; `Modules/GeneratorRPG/Root/GeneratorRootModel.swift:157`
@@ -667,6 +668,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Twelve copies of one eviction rule, each able to let the map and order array drift apart.
 - **Action:** Add a generic `BoundedOrderedDictionary<Key, Value>` to CoreRPG and replace them.
 - **Severity:** Medium
+- **Status (2026-09-26):** DEFERRED. Replacing the twelve dictionary-plus-order-array caches with a generic BoundedOrderedDictionary changes eviction code in GameRPG's sync paths; do it with §9.7, which owns most of the sites.
 
 ### 9.9 Folder-entry union merge copied into 9 item models; only one copy is deterministic
 - **Location:** `Modules/AudioRPG/Model/AudioModel.swift:130-135`; `Modules/WeatherRPG/Model/WeatherModel+Sync.swift:13`; `Modules/CharacterRPG/Model/ValueModel.swift:136`; `Modules/PhotoRPG/Model/PhotoModel.swift:122`; `Modules/RuleRPG/Model/RuleModel.swift:183`; `Modules/GeneratorRPG/Model/GeneratorModel.swift:124`; `Modules/MapRPG/Model/MapModel+Sync.swift:104`; `Modules/SpaceRPG/Model/SpaceModel.swift:129`; `Modules/TableRPG/Model/TableModel+Persistence.swift:16`
@@ -690,6 +692,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Authorization fixes (CODE_AUDIT_17 §6.3) and future fixes must be applied 3-4 times.
 - **Action:** One generic file-module handler per side, parameterised by module and store.
 - **Severity:** Medium
+- **Status (2026-09-26):** DEFERRED. A generic file-module message handler per side is a larger refactor of the authorization paths (CODE_AUDIT_17 §6.3); do it with §9.7.
 
 ### 9.12 ImageIO downsampling/header checks written three times
 - **Location:** `Modules/CoreRPG/Extensions/Image+AKImage.swift:166-244`; `Sources/RPGShare/ItemProviderImporter.swift:125-185`; `Modules/RolePlayGameKit/Import/Foundry/FoundryMediaNormalizer.swift:159-195`
@@ -697,6 +700,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Decompression-bomb guards drift (only the Foundry copy checks header dimensions before decoding).
 - **Action:** One CoreRPG `ImageDecoding` helper (bounded decode, downsample-to-JPEG, header check) used by all three.
 - **Severity:** Low
+- **Status (2026-09-26):** DEFERRED. Unifying the three CGImageSource pipelines changes decode caps per target (share extension memory budget vs app vs Foundry import) and needs a decision on one cap set; the Foundry header-dimension check is the model to adopt.
 
 ### 9.13 Per-module boilerplate families still move in lockstep *(still open from CODE_AUDIT_17 §9.7-§9.9)*
 - **Location:** `Modules/*/Resources/BundleModule.swift` (14 copies); `Controller/SyncDataController.swift` (12); `Root/LinkRootView.swift` (12); `Root/DetailRootView.swift` (12); `Route/DetailRoute.swift` (9); `Controller/FolderListController.swift`, `DataController.swift`, `ExportController.swift`, `LinkController.swift` (12 each); `Resources/Localization+Extensions.swift` (10); `Intent/*ManagementIntents.swift` (11 files, 2,014 LOC)
@@ -704,6 +708,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **Why:** Every routing, bundle, intent or Spotlight change touches 9-14 files.
 - **Action:** Follow audit 17's order: bundle/localization helpers first, then generic `DetailRoute`, `FolderListController`, `SyncDataController` and intent bodies.
 - **Severity:** Medium
+- **Status (2026-09-26):** DEFERRED (big refactor, per decision). Order from CODE_AUDIT_17 still applies: bundle/localization helpers, generic DetailRoute, FolderListController, SyncDataController, intent bodies.
 
 ### 9.14 Smaller duplicates *(partly still open from CODE_AUDIT_17 §9.11/§9.12)*
 - **Location:** Five PDF-export `Transferable` blocks (`Modules/AdventureRPG/Intent/AdventureEntity.swift:58-110`, `Modules/CharacterRPG/Intent/CharacterEntity.swift:60-95`, `Modules/MapRPG/Intent/MapEntity.swift:60-90`, `Modules/TableRPG/Intent/TableEntity.swift:60-90`, `Modules/WeatherRPG/Intent/WeatherEntity.swift:62-100`); three sides→`DieModel` switches (`Modules/DiceRPG/Widget/DiceConfiguration.swift:72-89`, `Sources/DiceRollerWidget/DiceRollerIntents.swift:89-98`, dead `DiceRollerView.swift:301`) and the redundant `DieModel.name(for:)` switch (`DieModel.swift:94-104`); inline `JSONEncoder()`/`JSONDecoder()` at 28 sites including the wire default `Modules/CoreRPG/Model/MessageMapper.swift:21,26` while `JSONCoding` exists; four extract toolbar buttons, six preview UUID helpers, two identical SharePlay button views (`Modules/GameRPG/SetupViews/SelectedAdventureView.swift:186`, `SelectedPlayerView.swift:138`)
@@ -722,6 +727,7 @@ No `#if false` blocks, no ungated `print`/`debugPrint`/`dump`/`NSLog`, and no FI
 - **`Modules/CoreRPG/Controllable/ImportControllable.swift` (866) / `EditControllable.swift` (827)** — extract import models, review diff, files, `InputStream` reading; edit menu/folder/files. Severity: Low.
 - **`Modules/CoreRPG/Foundry/FoundryRuleModels.swift` (829) / `FoundrySystemPackageReader.swift` (738)** — extract `FoundryJSONValue`, import limits, system decoders, utilities. Severity: Low.
 - **`FoundryImportView.swift` (711), `DiceModel.swift` (703), `AppModel.swift` (679), `GameRoot.swift` (654)** — split along existing MARK/extension boundaries (`+Sync`/`+DataAccess`/`+Codable`; `+Maintenance`/`+Routing`; `+Selection`/`+Master`/`+Player`/`+Demo`). Severity: Low.
+- **Status (2026-09-26):** DEFERRED (big refactor, per decision). File splits along the listed boundaries; SpaceViewer.loadEntity and RPGSharePlayController+ChunkedTransport.sendData first.
 
 ### 9.16 Naming: Id/Url convention and misspelled symbols *(partly still open from CODE_AUDIT_17 §9.14/§9.15)*
 - **Location:** Id/Url drift: `senderId` 74 vs `senderID` 32 (both in `Modules/GameRPG/Controller/PlayerControllerModel.swift:18,66`), `parentId` 682 vs `parentID` 77, `fileUrl` 475 vs `fileURL` 19, `sourceUrl` 9 vs `sourceURL` 64; heaviest in `Modules/CoreRPG/Import/ExternalImportSourceRegistry.swift`, `Modules/RolePlayGameKit/Import/Foundry/FoundryRuleImportModel.swift`, `Modules/GameRPG/Network/SharePlayPlayerJournalAdmission.swift`, `Modules/CoreRPG/Foundry/FoundryVTTImportModels.swift:64-141`. Misspelled core types: `ItemDataAccessable` (`Modules/CoreRPG/ItemList/ItemDataAccessable.swift:59`, 273 hits), `EntryDataAccessable`, `Storeable` (`Modules/CoreRPG/Files/FileDataController.swift:6`), `ItemLinkRegistable`, `ItemReferencable`, `effectedLink`/`EffectedItemModel` (`Modules/CoreRPG/Model/RemoveEntryListModel.swift:13,29`). Typos still open: `sugguestionTags`, `historyTransactionConvertionFailed`, `preparaEngine`, `isProminet`, `AddtionalEntryRow`, `initalPackage`, `firstRerole`, `deactive`, `haslink`, `titlename`, `ccolor`, `throttleInMilliSeconds`, `"ScaeExample"` (`Resources/RPGResourcesDebug/Resources.swift:35`). Misleading files: `Modules/GameRPG/Table3D/GamePortableSetup.swift`/`GamePortableRenderer.swift` declare classes with the same names as `GameSetup.swift`/`GameRenderer.swift` under `#if`; views in `Persistence/` and `Model/` (`CloudKitSyncStatusView.swift`, `OpenFileWindowModel.swift:75`).
