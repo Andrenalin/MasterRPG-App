@@ -129,6 +129,12 @@ private struct GameTableRealityContent: View {
     /// `tableMoveLastTranslation` would otherwise stay stuck non-zero forever, applying one
     /// large, wrong jump to the table's position on the next unrelated table-move gesture.
     @State private var tableMoveTracker = StaleGestureTracker()
+    /// The running total of `tableRotateGesture`'s rotation applied so far — like `DragGesture`'s
+    /// translation, `RotateGesture.Value.rotation` is cumulative from the gesture's start. Reset on
+    /// `.onEnded`.
+    @State private var tableRotateLastAngle: Angle = .zero
+    /// Same role as `tableMoveTracker`, for a rotate whose `.onEnded` never arrives.
+    @State private var tableRotateTracker = StaleGestureTracker()
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite.
     @State private var roomActionCoordinator = RoomActionCoordinator()
@@ -148,8 +154,8 @@ private struct GameTableRealityContent: View {
         // and rotate while dropping only its one-finger-drag component — and
         // reassigning this value resets the camera's current framing back to
         // default. Instead, the chained gesture below wins priority over the
-        // drag component for every touch, leaving only pinch-zoom/rotate to
-        // `.orbit` itself.
+        // drag component for every touch, leaving only pinch-zoom to
+        // `.orbit` itself; `tableRotateGesture` adds the two-finger rotate.
         .realityViewCameraControls(.orbit)
         .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
@@ -159,8 +165,8 @@ private struct GameTableRealityContent: View {
         // One physical drag, up to three meanings, tried in this order via `.exclusively(before:)`:
         //  1. `pinDragGesture` — a touch starting on a pin moves that pin (entity-targeted, so its
         //     predicate never matches a touch that lands elsewhere, letting the chain fall through).
-        //  2. `boardDragGesture` — a touch starting on the map surface moves the table. Also
-        //     entity-targeted; pins and room fog sit closer to the camera and win hit-testing first.
+        //  2. `boardDragGesture` — a touch starting on the map surface or on a room's fog moves the
+        //     table. Also entity-targeted; pins sit closer to the camera and win hit-testing first.
         //  3. iOS only: `tableMoveGesture` — anything else (bare wood, empty space) also moves the
         //     table. It is not entity-targeted, so this ordering keeps it from racing #1/#2 for the
         //     same touch. On macOS it is left out so a mouse drag on the background orbits the
@@ -171,6 +177,7 @@ private struct GameTableRealityContent: View {
         // targetedToEntity predicate simply never matches when the touch
         // lands only on the fog, letting roomTapGesture win instead.
         .simultaneousGesture(pinTapGesture.exclusively(before: roomTapGesture))
+        .simultaneousGesture(tableRotateGesture)
         .overlay(alignment: .topTrailing) {
             if showsEmbeddedToolbar {
                 GameTableToolbar(root: root, game: game)
@@ -219,9 +226,14 @@ private struct GameTableRealityContent: View {
 
     /// Dragging the map surface moves the whole table, the same way `tableMoveGesture` does for the
     /// bare wood table/background, so the one-finger drag does the same thing wherever it starts.
+    /// Room fog counts as map surface: the game master's room hit volumes sit above the board and
+    /// win the hit test, so without them here a drag over any room — most of a typical map — had
+    /// no target on macOS, where there is no untargeted `tableMoveGesture` fallback. Room taps and
+    /// long presses are unaffected; they fail as soon as the touch moves past this drag's minimum
+    /// distance.
     private var boardDragGesture: some Gesture {
         DragGesture(minimumDistance: 5)
-            .targetedToEntity(where: .has(BoardSurfaceComponent.self))
+            .targetedToEntity(where: .has(BoardSurfaceComponent.self) || .has(RoomComponent.self))
             .onChanged { value in
                 applyTableMoveDelta(translation: value.translation)
             }
@@ -268,6 +280,37 @@ private struct GameTableRealityContent: View {
         tableMoveTracker.recordUpdate()
         game.renderer.root.position.x += Float(delta.width) * Self.tableMoveScale
         game.renderer.root.position.z += Float(delta.height) * Self.tableMoveScale
+    }
+
+    /// Two-finger rotate (a trackpad rotate on macOS) turns the table about its own vertical axis.
+    /// Not entity-targeted, so it works wherever it starts — above all on the map, which covers most
+    /// of the table: `.orbit` has no two-finger rotate on iOS, and on macOS its mouse-drag orbit only
+    /// answers a drag that starts on the bare table. Simultaneous, so `.orbit`'s pinch-zoom still
+    /// works in the same two-finger gesture.
+    private var tableRotateGesture: some Gesture {
+        RotateGesture(minimumAngleDelta: .degrees(1))
+            .onChanged { value in
+                applyTableRotationDelta(rotation: value.rotation)
+            }
+            .onEnded { _ in
+                tableRotateLastAngle = .zero
+                tableRotateTracker.reset()
+            }
+    }
+
+    private func applyTableRotationDelta(rotation: Angle) {
+        if tableRotateTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
+            // See `applyTableMoveDelta`: re-arm instead of applying a delta against a lost gesture.
+            tableRotateLastAngle = rotation
+        }
+        let delta = rotation.radians - tableRotateLastAngle.radians
+        tableRotateLastAngle = rotation
+        tableRotateTracker.recordUpdate()
+        // SwiftUI angles grow clockwise on screen; seen from the camera above the table, a clockwise
+        // turn is a negative rotation about +Y. The root's origin is the table's center, so the
+        // table turns in place wherever it has been moved to.
+        let turn = simd_quatf(angle: -Float(delta), axis: SIMD3<Float>(0, 1, 0))
+        game.renderer.root.orientation = turn * game.renderer.root.orientation
     }
 
     /// Meters the table moves per screen point dragged — a hand-tuned feel
