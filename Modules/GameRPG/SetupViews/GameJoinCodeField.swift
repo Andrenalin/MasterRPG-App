@@ -20,9 +20,6 @@ struct GameJoinCodeField: View {
     var body: some View {
         HStack(alignment: .bottom) {
             VStack(spacing: 4) {
-                Text(title, bundle: .module)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 GameJoinCodeOTPField(
                     code: $code,
                     accessibilityLabel: title,

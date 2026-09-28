@@ -179,14 +179,7 @@ struct MapPassiveRoomCanvas: View {
     }
 
     private var tileRectangle: CGRect? {
-        let coordinates = displayConfig.tileCoordinates
-        guard coordinates.count == 4,
-              let rectangle = coordinates.bounds,
-              rectangle.width.isFinite,
-              rectangle.height.isFinite,
-              rectangle.width >= 1,
-              rectangle.height >= 1 else { return nil }
-        return rectangle
+        displayConfig.fogTileRectangle
     }
 
 }

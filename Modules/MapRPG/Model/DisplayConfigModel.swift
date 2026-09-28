@@ -17,6 +17,19 @@ public struct DisplayConfigModel: Identifiable, Equatable, Hashable, Sendable {
     public var color: Color = .black
     public var border: DisplayBorderViewModel
 
+    /// The map area repeated as the players' fog of war, or `nil` for solid
+    /// fog. Only a completed four-corner selection of at least one point per
+    /// side counts, so a half-drawn tile never becomes a sliver pattern.
+    public var fogTileRectangle: CGRect? {
+        guard tileCoordinates.count == 4,
+              let rectangle = tileCoordinates.bounds,
+              rectangle.width.isFinite,
+              rectangle.height.isFinite,
+              rectangle.width >= 1,
+              rectangle.height >= 1 else { return nil }
+        return rectangle
+    }
+
     public var borderColor: Color {
         get { border.color }
         set { border.color = newValue }

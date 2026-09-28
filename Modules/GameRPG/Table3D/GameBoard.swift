@@ -147,6 +147,9 @@ struct BoardTextureInput: Sendable {
         let fill: CGColor
         let border: CGColor?
         let borderThickness: CGFloat
+        /// The map area (in `coordinateSize` space) repeated inside hidden rooms instead of `fill`,
+        /// matching the 2D map's player fog. `nil` keeps the solid fill.
+        let tile: CGRect?
     }
 
     let image: CGImage
@@ -200,7 +203,8 @@ struct BoardTextureInput: Sendable {
         self.playerFog = PlayerFog(
             fill: Self.cgColor(displayConfig.color),
             border: displayConfig.hasBorder ? Self.cgColor(displayConfig.borderColor) : nil,
-            borderThickness: displayConfig.borderThickness
+            borderThickness: displayConfig.borderThickness,
+            tile: displayConfig.fogTileRectangle
         )
         self.gameMasterShownFill = Self.cgColor(Color.green.opacity(0.1))
         self.gameMasterHiddenFill = Self.cgColor(Color.green.opacity(0.5))
@@ -285,6 +289,12 @@ enum BoardTextureRenderer {
 
         guard !Task.isCancelled else { return nil }
 
+        // Snapshotted from the photo layer before any fog is drawn, so the tile repeats the same
+        // pixels the 2D map crops from its oriented image.
+        let fogTile = input.isGameMaster
+            ? nil
+            : fogTileImage(input.playerFog.tile, from: context, canvas: canvas, pixelSize: pixelSize)
+
         // Room polygons use `entry.coordinates`' top-left-origin, +y-down convention. The 3D board
         // never crops into a focused room; a red border marks the focus instead.
         context.saveGState()
@@ -312,10 +322,15 @@ enum BoardTextureRenderer {
                 context.setLineJoin(.round)
                 context.strokePath()
             } else {
-                // Players only ever get the hidden rooms (see `BoardTextureInput`), drawn as solid fog.
-                context.addPath(path)
-                context.setFillColor(input.playerFog.fill)
-                context.fillPath()
+                // Players only ever get the hidden rooms (see `BoardTextureInput`), drawn as fog:
+                // the repeated map tile when one is configured, otherwise the solid colour.
+                if let fogTile {
+                    drawTiledFog(fogTile, in: path, context: context, canvas: canvas)
+                } else {
+                    context.addPath(path)
+                    context.setFillColor(input.playerFog.fill)
+                    context.fillPath()
+                }
                 if let border = input.playerFog.border {
                     context.addPath(path)
                     context.setStrokeColor(border)
@@ -336,6 +351,75 @@ enum BoardTextureRenderer {
         context.restoreGState()
 
         return context.makeImage()
+    }
+
+    struct FogTile {
+        let image: CGImage
+        /// The tile's rect in canvas space (top-left origin), snapped to the crop's whole pixels so
+        /// each repeat maps 1:1 onto texture pixels instead of being resampled.
+        let rect: CGRect
+    }
+
+    /// Crops the tile out of the photo already drawn into `context`. `nil` (solid fog) when there
+    /// is no tile or it covers less than one texture pixel.
+    static func fogTileImage(
+        _ tile: CGRect?,
+        from context: CGContext,
+        canvas: CGSize,
+        pixelSize: CGSize
+    ) -> FogTile? {
+        guard let tile, canvas.width > 0, canvas.height > 0 else { return nil }
+        let scaleX = pixelSize.width / canvas.width
+        let scaleY = pixelSize.height / canvas.height
+        // A bitmap context's image rows run top to bottom, the same top-left-origin convention as
+        // the tile's canvas coordinates.
+        let pixelRect = CGRect(
+            x: tile.minX * scaleX,
+            y: tile.minY * scaleY,
+            width: tile.width * scaleX,
+            height: tile.height * scaleY
+        )
+        .integral
+        .intersection(CGRect(origin: .zero, size: pixelSize))
+        guard !pixelRect.isNull,
+              pixelRect.width >= 1,
+              pixelRect.height >= 1,
+              let image = context.makeImage()?.cropping(to: pixelRect) else { return nil }
+        return FogTile(
+            image: image,
+            rect: CGRect(
+                x: pixelRect.minX / scaleX,
+                y: pixelRect.minY / scaleY,
+                width: pixelRect.width / scaleX,
+                height: pixelRect.height / scaleY
+            )
+        )
+    }
+
+    /// Fills `path` (in the flipped, top-left-origin canvas space) with `tile` repeated on the
+    /// lattice anchored at the tile's own origin — the same lattice `MapFogTilePlanner` lays out
+    /// for the 2D map.
+    private static func drawTiledFog(_ tile: FogTile, in path: CGPath, context: CGContext, canvas: CGSize) {
+        context.saveGState()
+        context.addPath(path)
+        context.clip()
+        // The clip is kept in device space, so the flip can be undone for the draw: a `CGImage`
+        // drawn in the flipped space would land upside down. Applying the flip a second time
+        // returns to the canvas' bottom-left-origin space, where the tile's top-left-origin rect
+        // becomes `canvas.height - maxY`; the lattice keeps the same period and phase.
+        context.translateBy(x: 0, y: canvas.height)
+        context.scaleBy(x: 1, y: -1)
+        context.draw(
+            tile.image,
+            in: CGRect(
+                x: tile.rect.minX,
+                y: canvas.height - tile.rect.maxY,
+                width: tile.rect.width,
+                height: tile.rect.height
+            ),
+            byTiling: true
+        )
+        context.restoreGState()
     }
 }
 #endif

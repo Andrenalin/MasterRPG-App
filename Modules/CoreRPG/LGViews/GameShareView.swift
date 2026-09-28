@@ -9,7 +9,7 @@ public struct GameShareView<Content: View>: View {
         self.isShareable = isShareable
         self.content = content()
     }
-
+    
     let root: any ItemRootControllable
     let itemId: UUID
     /// False suppresses the share affordance regardless of `canShare`'s own game-state
@@ -17,25 +17,25 @@ public struct GameShareView<Content: View>: View {
     /// the Map itself. See CODE_AUDIT: Photo-in-Map share toggle.
     let isShareable: Bool
     let content: Content
-
+    
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     @Environment(\.sharingControlActions) private var sharingControlActions
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-
+    
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
         // button's allReported state and the row below it.
         let statuses = playerReportStatuses
-        HStack(alignment: .top, spacing: 4) {
-            actionBarWithSharing(statuses: statuses)
-            if root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
-                playerReportRow(for: statuses)
+        actionBarWithSharing(statuses: statuses)
+            .overlay(alignment: .topTrailing) {
+                if root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
+                    playerReportRow(for: statuses)
+                }
             }
-        }
     }
-
+    
     @ViewBuilder
     private func actionBarWithSharing(statuses: [PlayerReportStatus]) -> some View {
         switch root.viewControllable.sharingViewType {
@@ -48,7 +48,7 @@ public struct GameShareView<Content: View>: View {
             root.viewControllable.sharingView(for: itemId)
         }
     }
-
+    
     var canShare: Bool {
         guard isShareable else { return false }
         if appGameStateModel.gameModus == .player {
@@ -67,7 +67,7 @@ public struct GameShareView<Content: View>: View {
             return appGameStateModel.isGameRunning
         }
     }
-
+    
     func shareAction() {
         Task {
             if appGameStateModel.gameModus == .master {
@@ -94,7 +94,7 @@ private extension GameShareView {
             .visibleSortedByName
             .map { PlayerReportStatus(id: $0.id, name: $0.name, reported: reported.contains($0.id)) }
     }
-
+    
     func playerReportRow(for statuses: [PlayerReportStatus]) -> some View {
         HStack(spacing: 4) {
             Text(playerReportAttributedString(for: statuses))
@@ -103,20 +103,41 @@ private extension GameShareView {
                     .foregroundStyle(.tint)
             }
         }
-            .font(.caption)
-            .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))
+        .padding(.trailing, 4)
+        .font(.caption)
+        .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))
     }
 
+    func playerReportAttributedString(status: PlayerReportStatus) -> AttributedString {
+        var playerName = status.name
+        if let firstName = status.name.split(separator: " ").first {
+            playerName = String(firstName)
+        }
+
+        var name = AttributedString(playerName)
+        if status.reported {
+            name.font = .caption.bold()
+        } else {
+            name.foregroundColor = .secondary
+        }
+        return name
+    }
+    
     func playerReportAttributedString(for statuses: [PlayerReportStatus]) -> AttributedString {
         statuses.enumerated().reduce(into: AttributedString()) { line, entry in
             let (index, status) = entry
             if index > 0 {
                 line += AttributedString(", ")
             }
+            
+            var playerName = status.name
+            if let firstName = status.name.split(separator: " ").first {
+                playerName = String(firstName)
+            }
 
-            var name = AttributedString(status.name)
+            var name = AttributedString(playerName)
             if status.reported {
                 name.font = .caption.bold()
             } else {
@@ -125,7 +146,7 @@ private extension GameShareView {
             line += name
         }
     }
-
+    
     func playerReportAccessibilityLabel(for statuses: [PlayerReportStatus]) -> Text {
         let reportedNames = statuses.filter(\.reported).map(\.name).joined(separator: ", ")
         let missingNames = statuses.filter { !$0.reported }.map(\.name).joined(separator: ", ")
@@ -139,7 +160,7 @@ private extension GameShareView {
     }
 }
 
-private struct PlayerReportStatus {
+private struct PlayerReportStatus: Identifiable {
     let id: UUID
     let name: String
     let reported: Bool
@@ -148,6 +169,7 @@ private struct PlayerReportStatus {
 #Preview {
     GameShareView(root: ItemRootController.previewFixture(), itemId: .fixture1) {
         Text(verbatim: "Share item")
+            .padding(64)
     }
     .environment(AppGameStateModel())
 }
@@ -160,11 +182,11 @@ private struct PlayerReportStatus {
         let fixture = FakeItemRootControllerFixture(sharingViewType: .share)
         let root = fixture.root
         root.gameControllable.report(itemId: itemId, for: confirmedPlayer)
-
+        
         let gameState = AppGameStateModel()
         gameState.gameModus = .master
         gameState.isGameRunning = true
-
+        
         return (
             itemId: itemId,
             confirmedPlayer: confirmedPlayer,
@@ -173,17 +195,22 @@ private struct PlayerReportStatus {
             gameState: gameState
         )
     }()
-
+    
     GameShareView(root: fixture.root, itemId: fixture.itemId) {
-        Text(verbatim: "Some content")
+        ZStack {
+            Color.yellow.opacity(0.2)
+                .frame(width: 160, height: 60)
+            Text(verbatim: "Some content")
+                .padding()
+        }
     }
     .padding()
     .environment(fixture.gameState)
     .environment(\.sharingControlActions, SharingControlActions(
         control: {
             [
-                SharingControlModel(id: fixture.confirmedPlayer, name: "Arin", show: true),
-                SharingControlModel(id: fixture.missingPlayer, name: "Zara", show: true)
+                SharingControlModel(id: fixture.confirmedPlayer, name: "Arin Doof", show: true),
+                SharingControlModel(id: fixture.missingPlayer, name: "Zara Mega", show: true)
             ]
         },
         update: { _ in }
