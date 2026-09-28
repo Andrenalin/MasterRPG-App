@@ -94,7 +94,7 @@ struct OpenFileWindowView: View {
     func menuButton(windowId: String) -> some View {
         ControlGroup {
 #if os(iOS)
-            if UIDevice.current.userInterfaceIdiom == .pad {
+            if horizontalSizeClass == .regular {
                 Button {
                     scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
                 } label: {

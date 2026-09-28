@@ -14,6 +14,10 @@ struct DetailFolderListView: View {
     let folderListController: FolderListController
     var isSubFolder: Bool = false
 
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
@@ -46,7 +50,7 @@ struct DetailFolderListView: View {
 
     private var usesPhoneTabAccessory: Bool {
 #if os(iOS)
-        UIDevice.current.userInterfaceIdiom == .phone
+        horizontalSizeClass == .compact
 #else
         false
 #endif
