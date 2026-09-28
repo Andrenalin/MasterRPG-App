@@ -58,7 +58,22 @@ final class MapEditorSession {
 
     var mapMode: MapMode { configuration.mode }
     var playerPinId: UUID? { configuration.playerPinId }
-    var isStreaming: Bool = false
+    /// The game toolbar's "Share Map" state, kept in the map root's `RootModel.isMapStreaming`
+    /// once `MapEditor` attaches it, so the 2D map and the 3D table always agree.
+    /// `localIsStreaming` only covers a session that has no root attached (yet).
+    var isStreaming: Bool {
+        get { sharedRootModel?.isMapStreaming ?? localIsStreaming }
+        set {
+            if let sharedRootModel {
+                sharedRootModel.isMapStreaming = newValue
+            } else {
+                localIsStreaming = newValue
+            }
+        }
+    }
+    /// Weak: `RootModel.gameEditorModel` retains the game session.
+    @ObservationIgnored weak var sharedRootModel: RootModel?
+    private var localIsStreaming = true
     var isPointing: Bool = false
     var isPointerInteractionActive: Bool {
         mapMode == .gameMaster && isPointing

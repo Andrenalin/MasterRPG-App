@@ -425,6 +425,7 @@ extension GameController: MapGameStorable {
     }
 
     @MainActor func startGameAsMaster() {
+        root.rootModel.isMapStreaming = true
         root.rootModel.gameEditorModel?.displayMode = .master
     }
 }

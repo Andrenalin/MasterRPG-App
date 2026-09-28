@@ -185,10 +185,26 @@ struct BattleRoundControllerTests {
         ))
         #expect(sut.gameItem(for: mapId)[MapPinId.id, monsterPin.id].isDead)
 
-        // When: dehighlight removes the defender and repairs the roll target.
+        // Then: death alone clears the highlight, so the dead monster drops
+        // out of the defenders and the roll target falls back to the attacker.
+        #expect(!sut.gameItem(for: mapId)[MapPinId.id, monsterPin.id].isHighlighted)
+        activeEntry = try #require(sut.battleRoundModel.activeEntry)
+        #expect(activeEntry.defenderIds.isEmpty)
+        #expect(sut.battleRoundModel.rollRecipientCombatantId == player.id)
+
+        // When: a revived monster is highlighted again, then dehighlighted.
+        #expect(sut.setBattleCombatantDead(
+            itemId: mapId,
+            combatantId: monster.id,
+            isDead: false
+        ))
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id, isGameMaster: true))
+        activeEntry = try #require(sut.battleRoundModel.activeEntry)
+        #expect(activeEntry.defenderIds == [monster.id])
+        #expect(sut.selectBattleRollRecipient(itemId: mapId, combatantId: monster.id))
         #expect(sut.toggleHighlightPin(itemId: mapId, pinId: monsterPin.id, isGameMaster: true))
 
-        // Then
+        // Then: dehighlight removes the defender and repairs the roll target.
         activeEntry = try #require(sut.battleRoundModel.activeEntry)
         #expect(activeEntry.defenderIds.isEmpty)
         #expect(sut.battleRoundModel.rollRecipientCombatantId == player.id)

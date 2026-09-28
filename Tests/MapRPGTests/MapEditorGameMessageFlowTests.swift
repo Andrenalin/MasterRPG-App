@@ -24,10 +24,7 @@ struct MapEditorGameMessageFlowTests {
         )
         let fixture = makeFixture(entries: [room])
         let entriesRevisionBeforeToggle = fixture.liveMap.entries_.update
-
-        // The presentation flag controls whether the map surface is currently
-        // shared. It must not suppress authoritative game-state mutations.
-        fixture.session.isStreaming = false
+        #expect(fixture.session.isStreaming)
 
         // When
         fixture.session.route(.toggleRoomVisibility(room.id))
@@ -169,6 +166,43 @@ struct MapEditorGameMessageFlowTests {
         #expect(fixture.updateSpy.updates.count == 1)
     }
 
+    @Test("Paused sharing keeps game-master room, pointer and pin edits local, like the 3D table")
+    func pausedSharingKeepsGameMasterEditsLocal() {
+        // Given
+        let room = MapEntryModel(
+            id: UUID(),
+            name: "Crypt",
+            content: "",
+            coordinates: Self.square,
+            isShown: false
+        )
+        let pin = MapPinModel(id: UUID(), name: "Ghoul", location: CGPoint(x: 5, y: 5))
+        let fixture = makeFixture(entries: [room], pins: [pin])
+        fixture.session.isStreaming = false
+        fixture.session.isPointing = true
+
+        // When
+        fixture.session.route(.toggleRoomVisibility(room.id))
+        fixture.session.route(.toggleRoomFocus(room.id))
+        fixture.session.route(.canvasTap(CGPoint(x: 320, y: 240)))
+        var moved = pin
+        moved.location = CGPoint(x: 8, y: 8)
+        fixture.session.route(.pin(.move(pin: moved, isPointer: false)))
+
+        // Then: every edit still applies locally, but nothing reaches players.
+        #expect(fixture.liveMap.entries.first?.isShown == true)
+        #expect(fixture.liveMap.entries.first?.focused == true)
+        #expect(fixture.liveMap.pointer.isShown)
+        #expect(fixture.liveMap.mapPins.first?.location == moved.location)
+        #expect(fixture.updateSpy.updates.isEmpty)
+
+        // When: the explicit toolbar send still shares the current state.
+        fixture.session.sendMapUpdates()
+
+        // Then
+        #expect(fixture.updateSpy.updates.count == 1)
+    }
+
     @Test("Hex toggle mutates the session map and reveals reshare")
     func hexToggleUsesTheAuthoritativeSessionMap() {
         let fixture = makeFixture(entries: [], routerUsesLiveMap: false)
@@ -191,13 +225,15 @@ struct MapEditorGameMessageFlowTests {
 
     private func makeFixture(
         entries: [MapEntryModel],
+        pins: [MapPinModel] = [],
         mode: MapMode = .gameMaster,
         routerUsesLiveMap: Bool = true
     ) -> MapEditorGameMessageFixture {
         let persistentMap = MapModel(
             id: MapModel.previewId,
             name: "Game message test map",
-            entries: entries
+            entries: entries,
+            mapPins: pins
         )
         let root = MapRootModel.previewFixture(models: [persistentMap])
         let liveMap = root.gameController.gameItem(for: persistentMap.id)

@@ -100,17 +100,17 @@ final class MapEditorActionRouter {
             synchronizeRooms(from: workingCopy)
 
         case .gameMaster:
-            // A room toggle is an authoritative game command, not an
-            // optional continuous-streaming update. Mutate the controller's
-            // current live map so the payload cannot be built from a stale
-            // MapEditor reference, then broadcast exactly one mapState.
+            // Mutate the controller's current live map so the payload cannot
+            // be built from a stale MapEditor reference, then broadcast
+            // exactly one mapState — unless sharing is paused, like the 3D
+            // table; turning sharing back on sends the full state.
             guard root.gameController.toggleRoom(
                 itemId: session.mapId,
                 roomId: entryId
             ) else { return }
             let liveMap = root.gameController.gameItem(for: session.mapId)
             synchronizeRooms(from: liveMap)
-            session.actions.sendMapUpdates?()
+            session.broadcastMapEdit()
 
         case .player, .viewer:
             break
@@ -156,7 +156,7 @@ final class MapEditorActionRouter {
             synchronizeRooms(from: liveMap)
             session.focusId = liveMap.entries.first(where: \.focused)?.id
             session.focusedMap()
-            session.actions.focused?()
+            session.broadcastFocusEdit()
 
         case .player, .viewer:
             // Room focus is a master-to-player viewport command. Players may
@@ -330,9 +330,7 @@ final class MapEditorActionRouter {
     private func performGameMasterMutation(pinId: UUID, mutation: () -> Bool) -> Bool {
         guard session.mapMode == .gameMaster, mutation() else { return false }
         synchronizePinFromMap(pinId: pinId)
-        if session.isStreaming {
-            session.actions.sendMapUpdates?()
-        }
+        session.broadcastMapEdit()
         return true
     }
 
@@ -346,8 +344,6 @@ final class MapEditorActionRouter {
         guard currentMap.pointer.id == pinId,
               root.gameController.togglePointer(itemId: session.mapId) else { return }
         session.pins.setPinPointer(updatedPin: currentMap.pointer)
-        if session.isStreaming {
-            session.actions.sendMapUpdates?()
-        }
+        session.broadcastMapEdit()
     }
 }

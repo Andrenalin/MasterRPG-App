@@ -75,11 +75,13 @@ final class GameTableModel: Sendable {
 
     // MARK: - Shared toolbar state (`GameToolBarSession`)
 
-    /// Defaults to true: the volumetric table is inherently already shared
-    /// once it's open (unlike the 2D map, there's no private-editing mode to
-    /// opt out of), but the game master can still pause broadcasting
-    /// toolbar-driven edits (added pins, pointer moves) if they want to.
-    var isStreaming = true
+    /// The game toolbar's "Share Map" state, shared with the 2D map through the map root, so
+    /// pausing broadcasting of toolbar-driven edits (added pins, pointer moves) in one mode
+    /// pauses it in the other. On by default.
+    var isStreaming: Bool {
+        get { mapRoot.rootModel.isMapStreaming }
+        set { mapRoot.rootModel.isMapStreaming = newValue }
+    }
     /// Local GM preview of how the board reads in another role, same as the
     /// 2D map's display mode. Purely a rendering lens — it never changes
     /// what's actually shared; see `renderIsGameMaster`.

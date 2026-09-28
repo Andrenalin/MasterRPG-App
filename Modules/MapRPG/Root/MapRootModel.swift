@@ -18,6 +18,11 @@ public final class RootModel: Sendable {
     @MainActor
     var gameEditorModel: MapEditorSession? = nil
 
+    /// The game toolbar's "Share Map" state — one value for the 2D map and the 3D table, so
+    /// pausing sharing in one mode pauses it in the other. On by default and again at every game
+    /// start (`GameController.startGameAsMaster`).
+    @MainActor public var isMapStreaming = true
+
     /// The game screen retains its map session across map replacement so the
     /// bottom toolbar does not blink out. The owning game screen clears that
     /// retained session explicitly when the whole screen leaves the hierarchy.

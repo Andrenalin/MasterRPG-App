@@ -185,6 +185,28 @@ extension MapEditorSession {
         }
         map.pointer.timeInterval = GameController.bumpedTimeInterval(from: map.pointer.timeInterval)
         pins.setPinPointer(updatedPin: map.pointer)
+        broadcastMapEdit()
+    }
+
+    // MARK: - Broadcasting (game mode)
+
+    /// Sends a game-master edit (room, pin, pointer) to the players unless the game master paused
+    /// sharing (`isStreaming`) — the 2D counterpart of the 3D table's `broadcastMapEdit(for:)`, so
+    /// both honour the same "Share Map" toggle. Every edit-driven send must go through here (or
+    /// `broadcastFocusEdit()`); only the toolbar's explicit sends (`sendMapUpdates()`, "Refresh
+    /// Shared Map") bypass the pause. A player's own pin/pointer updates are never paused.
+    func broadcastMapEdit() {
+        guard sharesEdits else { return }
         actions.sendMapUpdates?()
+    }
+
+    /// `broadcastMapEdit()` for a room focus change, which is sent through its own action.
+    func broadcastFocusEdit() {
+        guard sharesEdits else { return }
+        actions.focused?()
+    }
+
+    private var sharesEdits: Bool {
+        mapMode != .gameMaster || isStreaming
     }
 }

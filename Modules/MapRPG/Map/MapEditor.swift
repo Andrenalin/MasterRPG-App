@@ -194,11 +194,13 @@ private extension MapEditor {
 
     func appear() {
         installActionRouter()
+        if session.mapMode != .edit {
+            session.sharedRootModel = root.rootModel
+        }
 
         if session.mapMode != .edit,
            configuration.registersGameToolbarSession {
             if let previous = root.rootModel.gameEditorModel, previous !== session {
-                session.isStreaming = previous.isStreaming
                 session.isPointing = previous.isPointing
                 if session.mapMode == .gameMaster {
                     session.displayMode = previous.displayMode
