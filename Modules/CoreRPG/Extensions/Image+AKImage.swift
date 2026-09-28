@@ -241,7 +241,11 @@ public extension AKImage {
         let originalWidth = (properties?[kCGImagePropertyPixelWidth] as? CGFloat) ?? CGFloat(cgImage.width)
         let scale = originalWidth > 0 ? CGFloat(cgImage.width) / originalWidth : 1
 #if os(macOS)
-        let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        // An explicit bitmap rep, not `NSImage(cgImage:size:)`: that wraps the image in an
+        // `NSCGImageSnapshotRep` whose `pixelsWide`/`pixelsHigh` report the screen's backing
+        // scale (2x on Retina), doubling `fixedSize` and every map canvas measured from it.
+        let image = NSImage(size: NSSize(width: cgImage.width, height: cgImage.height))
+        image.addRepresentation(NSBitmapImageRep(cgImage: cgImage))
 #else
         let image = UIImage(cgImage: cgImage)
 #endif

@@ -123,7 +123,7 @@ final class MapEditorSession {
         let resolvedCanvasSize = MapCanvasGeometryResolver.resolve(
             map: map,
             mapSize: CGSize(width: map.width, height: map.height),
-            imageSize: image.size,
+            imageSize: image.fixedSize,
             degrees: photoDegrees
         )
         Logger.mapCanvas.debug("""
