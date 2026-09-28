@@ -27,7 +27,7 @@ struct InlineRowViewer: View, Equatable {
             if let entryId = destination.entryId {
                 let resolvedModel = (destinationModel as? ValueModel) ?? root.itemController.itemOrEmpty(for: destination.itemId)
                 HStack(spacing: 4) {
-                    EntryListDiceRow(itemId: destination.itemId, entryId: entryId, resolvedModel: resolvedModel)
+                    EntryListDiceRow(itemId: destination.itemId, entryId: entryId)
                     if isSheetEditor && resolvedModel[entryId].diceId != nil {
                         DiceRowRemoveButton(itemId: destination.itemId, entryId: entryId)
                     }

@@ -70,15 +70,11 @@ extension GameController {
         // Mutate the existing live instance in place (`replace(with:)`)
         // rather than swapping in a fresh `.copy()` under the same dictionary
         // key: any view or model already holding a reference to this exact
-        // `@Observable` instance — e.g. `LinkController.updateValueCalculation`'s
-        // manually-armed `withObservationTracking`, which `EntryListDiceRow`
-        // relies on to notice a linked value changed — must see the change
-        // through its own reference. A full resync fires on every reconnect
-        // and on every advertised-version mismatch, i.e. potentially after
-        // every single edit in an active session, so replacing the reference
-        // here silently orphaned that tracking mid-session: the inline dice
-        // display stopped picking up further calculated-value changes even
-        // though the underlying data kept updating correctly. Matches the
+        // `@Observable` instance must see the change through its own
+        // reference. A full resync fires on every reconnect and on every
+        // advertised-version mismatch, i.e. potentially after every single
+        // edit in an active session, so swapping the reference here keeps
+        // churning every view that tracks this character. Matches the
         // identity-preserving pattern already used by
         // `ItemControllable.replaceInGameMemory(model:)`'s "existing" branch
         // and `syncGameMemoryIfLoaded`.

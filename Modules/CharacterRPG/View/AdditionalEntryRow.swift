@@ -53,7 +53,7 @@ struct AdditionalEntryRow: View, Equatable {
                 }
             }
 
-            EntryListDiceRow(itemId: source.itemId, entryId: entryId, resolvedModel: model)
+            EntryListDiceRow(itemId: source.itemId, entryId: entryId)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

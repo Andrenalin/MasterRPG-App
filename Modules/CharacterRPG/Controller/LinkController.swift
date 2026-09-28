@@ -293,20 +293,16 @@ extension LinkController {
 }
 
 extension LinkController {
+    /// The calculated number an entry's attached dice compares against (and scales its
+    /// die count by, via `DiceModel.addDiceEvery`), or `nil` for a non-number entry.
+    /// Resolves the entry's formula links through `calculate(entry:)`, so reading it
+    /// inside a view's `body` lets Observation track every entry the formula depends on,
+    /// at any link depth.
     @MainActor
-    func updateValueCalculation(itemId: UUID, entryId: UUID, action: @MainActor @escaping @Sendable () -> Void) {
-        let details: [LinkReplaceModel] = LinkReplaceController.links(for: itemController.itemOrEmpty(for: itemId)[entryId].value).filter {
-            $0.module == itemController.config.module && $0.entryId != nil && $0.entryId != entryId && itemController.itemSync(for: $0.itemId) != nil
-        }
-        for detail in details {
-            guard let detailEntryId = detail.entryId else { continue }
-            _ = withObservationTracking {
-                itemController.itemOrEmpty(for: detail.itemId)[detailEntryId].value
-            } onChange: {
-                Task { @MainActor in
-                    action()
-                }
-            }
-        }
+    func diceCompareValue(itemId: UUID, entryId: UUID) -> Int? {
+        let entry = itemController.itemOrEmpty(for: itemId)[entryId]
+        guard entry.type == .number else { return nil }
+        guard let valueText = calculate(entry: entry) else { return nil }
+        return Int(valueText)
     }
 }
