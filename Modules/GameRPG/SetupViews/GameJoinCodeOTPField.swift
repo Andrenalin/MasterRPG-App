@@ -33,6 +33,13 @@ struct GameJoinCodeOTPField: View {
                 .textContentType(.oneTimeCode)
 #endif
                 .focused($isFocused)
+#if os(macOS)
+                // AppKit draws the focus ring in the window's focus layer, so the
+                // near-zero opacity doesn't hide it and it would outline all boxes.
+                // The accented active digit box is the focus indicator instead.
+                .textFieldStyle(.plain)
+                .focusEffectDisabled()
+#endif
                 .opacity(0.02)
                 .submitLabel(submitLabel)
                 .accessibilityLabel(Text(accessibilityLabel, bundle: .module))
