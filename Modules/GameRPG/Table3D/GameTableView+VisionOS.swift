@@ -284,6 +284,9 @@ public struct GameTableView: View {
             if root.gameModel.gameTableModel === game {
                 root.gameModel.gameTableModel = nil
             }
+            if root.spaceRoot.tablePlacementReference === game?.renderer.tableTopEntity {
+                root.spaceRoot.tablePlacementReference = nil
+            }
         }
     }
 
@@ -293,6 +296,7 @@ public struct GameTableView: View {
             // Re-register the retained model instead of rebuilding the complete
             // TabletopKit graph and loading its package assets again.
             root.gameModel.gameTableModel = game
+            root.spaceRoot.tablePlacementReference = game.renderer.tableTopEntity
             scaleController.renderer = game.renderer
             root.gameModel.shareState.mode = .tabletop
             root.networkStore.sharePlayStore.applyShareState()
@@ -312,6 +316,7 @@ public struct GameTableView: View {
 
         root.gameModel.gameTableModel = initializedGame
         game = initializedGame
+        root.spaceRoot.tablePlacementReference = initializedGame.renderer.tableTopEntity
         scaleController.renderer = initializedGame.renderer
         root.gameModel.shareState.mode = .tabletop
         root.networkStore.sharePlayStore.applyShareState()

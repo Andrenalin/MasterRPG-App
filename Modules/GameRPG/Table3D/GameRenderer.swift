@@ -12,6 +12,12 @@ import os.log
 final class GameRenderer: TabletopGame.RenderDelegate {
     let cursorEntity: Entity
     let root: Entity
+    /// Marks the center of the table's top surface (`TableAssetFactory
+    /// .makePlainWoodTable()` rests the slab's bottom on `root`'s origin).
+    /// Registered as `SpaceRootModel.tablePlacementReference` so the
+    /// immersive `SpaceViewer` can float SharePlay-shared objects above the
+    /// table — see that property's doc.
+    let tableTopEntity: Entity
     /// Not read from the window at runtime — see `rootOffset`'s own doc for
     /// why depth specifically stays static. Reads `GameTableView.volumeSize`
     /// (the single source of truth also feeding `WindowVisionList`'s
@@ -63,6 +69,11 @@ final class GameRenderer: TabletopGame.RenderDelegate {
         // Move everything down within the volume so the tabletop is easier to see.
         root = Entity()
         root.transform.translation = .init(rootOffset)
+
+        tableTopEntity = Entity()
+        tableTopEntity.name = "TableTop"
+        tableTopEntity.position.y = GameMetrics.tableThickness
+        tableTopEntity.setParent(root)
 
         // Create a cursor mesh to show when a player hovers over a tile or group.
         self.cursorEntity = ModelEntity.cursor

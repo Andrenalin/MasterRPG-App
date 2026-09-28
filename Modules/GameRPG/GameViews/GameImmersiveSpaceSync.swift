@@ -41,9 +41,20 @@ struct GameImmersiveSpaceSyncModifier: ViewModifier {
                 let isActive = root.gameModel.shareState.groupImmersionActive
                 try? await Task.sleep(for: Self.groupImmersionDebounce)
                 guard !Task.isCancelled, root.gameModel.shareState.groupImmersionActive == isActive else { return }
+                // `showSpaceViewer`, not `openSpaceViewer`: after a flicker
+                // longer than the debounce (true → nil → true, e.g. while
+                // opening the game-table volume re-templates the session), the
+                // space is already open on this item and `openSpaceViewer`'s
+                // toggle closed it.
+                let revealedId = root.spaceRoot.gameControllable.gameModel.currentItemId
                 if isActive {
-                    await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: root.spaceRoot.gameControllable.currentId, entryId: nil))
+                    guard let revealedId, scenesManager.explicitlyDismissedSpaceItemId != revealedId else { return }
+                    await scenesManager.showSpaceViewer(selection: ItemSelection(itemId: revealedId, entryId: nil))
                 } else {
+                    // The GM's reveal owns an open Space item — a lapse in
+                    // group immersion (the system renegotiates it when the
+                    // game table becomes the primary scene) must not close it.
+                    guard revealedId == nil else { return }
                     await scenesManager.dismissSpaceViewer()
                 }
             }

@@ -124,7 +124,7 @@ struct GameRootViewer: View {
             // see `ScenesManager.explicitlyDismissedSpaceItemId`.
             guard scenesManager.explicitlyDismissedSpaceItemId != spaceId else { return }
             Task {
-                await scenesManager.openSpaceViewer(selection: ItemSelection(itemId: spaceId, entryId: nil))
+                await scenesManager.showSpaceViewer(selection: ItemSelection(itemId: spaceId, entryId: nil))
             }
         }
 #endif

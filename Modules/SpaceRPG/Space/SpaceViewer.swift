@@ -83,6 +83,12 @@ struct SpaceViewer: View {
     /// (dense while manipulating, sparse otherwise) instead of streaming at
     /// one fixed rate regardless of whether anything is moving.
     @State private var isManipulating = false
+    /// The game-table top (`SpaceRootModel.tablePlacementReference`) the
+    /// object was last floated above — see `placeAboveTableIfNeeded`.
+    @State private var tablePlacementReferenceId: Entity.ID?
+    /// Set once anyone moves the object after it was floated above the
+    /// table, so a later space realignment doesn't throw that pose away.
+    @State private var isMovedSinceTablePlacement = false
 #endif
 
     var body: some View {
@@ -184,6 +190,16 @@ struct SpaceViewer: View {
         .task(id: hasLoaded) {
             await sendTransformLoop()
         }
+        .task(
+            id: TablePlacementTrigger(
+                hasLoaded: hasLoaded,
+                isSharedPlacement: isSharedPlacement,
+                tableId: root.tablePlacementReference?.id,
+                displacement: immersiveSpaceDisplacement
+            )
+        ) {
+            await placeAboveTableIfNeeded()
+        }
         .onDisappear {
             sendTransformIfChanged()
         }
@@ -223,6 +239,66 @@ private extension SpaceViewer {
         // participant computes the same coordinates.
         let center = objectEntity.visualBounds(relativeTo: anchor).center
         objectEntity.position += SIMD3(-center.x, 1.0 - center.y, -center.z)
+    }
+
+    /// Height (meters) of the object's visual center above the game-table top.
+    private static let heightAboveTable: Float = 1.0
+    /// Both the table volume and the just re-anchored immersive content need a
+    /// rendered frame before `transformMatrix(relativeTo: .immersiveSpace)`
+    /// reports their settled poses — retried briefly instead of assumed.
+    private static let tablePlacementRetryDelay: Duration = .milliseconds(100)
+    private static let tablePlacementAttempts = 10
+
+    /// Floats the object `heightAboveTable` above the volumetric game table.
+    ///
+    /// In a SharePlay surround template the system puts the shared immersive
+    /// origin on the floor *under* the table volume, so the fixed "origin + 1 m"
+    /// from `applySharedPlacementIfNeeded` lands inside or below the tabletop.
+    /// The table's real pose comes from `transformMatrix(relativeTo:
+    /// .immersiveSpace)` (Apple's volume → immersive space conversion). Every
+    /// participant computes the same shared-space point, so the regular
+    /// transform broadcast stays consistent.
+    ///
+    /// Runs when the table opens, when shared placement starts, and when the
+    /// system realigns the space. A realignment only re-places while nobody has
+    /// moved the object since the last table placement.
+    @MainActor
+    func placeAboveTableIfNeeded() async {
+        guard isImmersiveSpace, hasLoaded, isSharedPlacement,
+              let table = root.tablePlacementReference else { return }
+        if tablePlacementReferenceId == table.id, isMovedSinceTablePlacement { return }
+        for _ in 0..<Self.tablePlacementAttempts {
+            try? await Task.sleep(for: Self.tablePlacementRetryDelay)
+            guard !Task.isCancelled else { return }
+            if placeAboveTable(table) { return }
+        }
+        Logger.spaceViewer.error("Could not resolve the game table pose in the immersive space")
+    }
+
+    @MainActor
+    func placeAboveTable(_ table: Entity) -> Bool {
+        guard !isManipulating,
+              let anchor = rootEntity,
+              let objectEntity,
+              let tableTop = table.transformMatrix(relativeTo: .immersiveSpace),
+              let anchorPose = anchor.transformMatrix(relativeTo: .immersiveSpace) else { return false }
+        let target = tableTop.columns.3 + SIMD4<Float>(0, Self.heightAboveTable, 0, 0)
+        let targetInAnchor = anchorPose.inverse * target
+        let center = objectEntity.visualBounds(relativeTo: anchor).center
+        objectEntity.position += SIMD3(targetInAnchor.x, targetInAnchor.y, targetInAnchor.z) - center
+        tablePlacementReferenceId = table.id
+        isMovedSinceTablePlacement = false
+        return true
+    }
+
+    /// Marks the current table placement as settled when the object already
+    /// has a synced pose, so opening it doesn't override where someone left it.
+    @MainActor
+    func adoptRetainedPoseForTablePlacement() {
+        let version = root.gameController.gameItem(for: id).version
+        guard root.gameController.spaceGameModel.transform(for: id, version: version) != nil else { return }
+        tablePlacementReferenceId = root.tablePlacementReference?.id
+        isMovedSinceTablePlacement = true
     }
 
     @MainActor
@@ -283,6 +359,7 @@ private extension SpaceViewer {
             duration: Self.remoteTransformEaseDuration,
             timingFunction: .linear
         )
+        isMovedSinceTablePlacement = true
         lastAcknowledgedTransform = transform
         unacknowledgedTransformTicks = 0
     }
@@ -434,6 +511,7 @@ private extension SpaceViewer {
                 version: root.gameController.gameItem(for: id).version
             )
         )
+        adoptRetainedPoseForTablePlacement()
         hasLoaded = true
     }
 
@@ -582,6 +660,7 @@ private extension SpaceViewer {
                     guard event.entity == loadedEntity else { return }
                     Task { @MainActor in
                         self.isManipulating = true
+                        self.isMovedSinceTablePlacement = true
                     }
                 }
                 manipulationEndedSubscription = content.subscribe(
@@ -684,6 +763,9 @@ private extension SpaceViewer {
                     version: root.gameController.gameItem(for: id).version
                 )
             )
+            if isImmersiveSpace {
+                adoptRetainedPoseForTablePlacement()
+            }
             #endif
 
         } catch let error as DecodingError {
@@ -852,6 +934,15 @@ private struct SpaceViewerProgressView: View {
 }
 
 #if os(visionOS)
+/// Re-runs `SpaceViewer.placeAboveTableIfNeeded` whenever any input to the
+/// table-relative placement changes.
+private struct TablePlacementTrigger: Equatable {
+    let hasLoaded: Bool
+    let isSharedPlacement: Bool
+    let tableId: Entity.ID?
+    let displacement: Pose3D
+}
+
 private struct SpaceViewerMovedToImmersiveSpaceView: View {
     var body: some View {
         VStack(spacing: 16) {

@@ -492,6 +492,21 @@ import OSLog
         await toggleSpaceViewer(selection: selection)
     }
 
+    /// Shows `selection` in the spaceViewer immersive space without ever
+    /// closing it — opens the space, or replaces the displayed item, but is a
+    /// no-op when that item is already shown.
+    ///
+    /// For programmatic callers (a GM reveal, SharePlay group immersion).
+    /// `openSpaceViewer` treats a repeat call for the shown item as the user
+    /// pressing "view in space" again and closes it, so a repeated reveal or a
+    /// group-immersion re-activation closed the space without anyone asking.
+    @MainActor
+    public func showSpaceViewer(selection: ItemSelection) async {
+        guard getSceneState(for: .spaceViewer) != .opened
+                || currentSpaceViewerItemId != selection.itemId else { return }
+        await openSpaceViewer(selection: selection)
+    }
+
     /// Dismisses the spaceViewer immersive space if it is open or opening.
     @MainActor
     public func dismissSpaceViewer() async {

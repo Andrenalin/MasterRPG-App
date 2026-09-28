@@ -3,6 +3,9 @@
 import CoreRPG
 import CoreData
 import SwiftUI
+#if os(visionOS)
+import RealityKit
+#endif
 
 @MainActor @Observable
 public final class SpaceRootModel {
@@ -144,6 +147,15 @@ public final class SpaceRootModel {
     /// can hand a loaded entity from the window preview to the immersive
     /// space instead of reloading it. See `SpaceHandoffModel`.
     let handoffModel = SpaceHandoffModel()
+
+    /// The top-surface center of the volumetric game table while its window
+    /// is open, set by GameRPG's `GameTableView` (SpaceRPG can't import
+    /// GameRPG, so the table registers itself here). In a SharePlay surround
+    /// template the shared immersive origin sits on the *floor* under the
+    /// table volume, so the immersive `SpaceViewer` uses this entity's
+    /// `transformMatrix(relativeTo: .immersiveSpace)` to float the object
+    /// above the table instead of at a fixed height inside it.
+    public var tablePlacementReference: Entity?
 #endif
 
     @ObservationIgnored let folderListController: FolderListController
