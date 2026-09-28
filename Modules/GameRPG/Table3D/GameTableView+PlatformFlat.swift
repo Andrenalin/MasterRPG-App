@@ -10,25 +10,27 @@ import SwiftUI
 /// Camera-based 3D table for iOS and macOS. It intentionally shares the game
 /// model and map/pin synchronization with the visionOS table while leaving all
 /// TabletopKit session behavior in the visionOS implementation above.
+///
+/// Each view instance builds and owns its own `GameTableModel` — and so its own RealityKit
+/// entities. Reusing one model's entities in a later view (e.g. after a 2D ↔ 3D toggle) moved them
+/// between two RealityView scenes whose setup and teardown SwiftUI doesn't order, which
+/// intermittently left the table black. A new map doesn't create a new view (see
+/// `GameRootViewer.mapView(for:)`), so building fresh only costs a moment on a toggle.
 @MainActor
 public struct GameTableView: View {
     let root: GameRoot
-    private let retentionModel: GameScreenModel?
     private let showsEmbeddedToolbar: Bool
 
     @State private var game: GameTableModel?
     @State private var accessibilitySubscriptions: [any Cancellable] = []
 
     public init(root: GameRoot) {
-        self.root = root
-        retentionModel = nil
-        showsEmbeddedToolbar = true
+        self.init(root: root, showsEmbeddedToolbar: true)
     }
 
-    init(root: GameRoot, retentionModel: GameScreenModel?) {
+    init(root: GameRoot, showsEmbeddedToolbar: Bool) {
         self.root = root
-        self.retentionModel = retentionModel
-        showsEmbeddedToolbar = false
+        self.showsEmbeddedToolbar = showsEmbeddedToolbar
     }
 
     public var body: some View {
@@ -57,8 +59,9 @@ public struct GameTableView: View {
         }
         .onDisappear {
             accessibilitySubscriptions.removeAll()
-            retentionModel?.retainedGameTableModel = game
-            if root.gameModel.gameTableModel === game {
+            // A view that replaced this one may already have registered its own model; the
+            // identity check leaves that registration alone.
+            if let game, root.gameModel.gameTableModel === game {
                 root.gameModel.gameTableModel = nil
             }
         }
@@ -72,20 +75,6 @@ public struct GameTableView: View {
             root.gameModel.gameTableModel = game
             await game.handleMapChange(
                 isGameMaster: root.gameModel.gameConfig.isMaster
-            )
-            return
-        }
-
-        if let retainedGame = retentionModel?.retainedGameTableModel {
-            retainedGame.networkActions = root.networkActions
-            retainedGame.isGameMaster = root.gameModel.gameConfig.isMaster
-            retainedGame.playerPinId = retainedGame.isGameMaster
-                ? nil
-                : root.gameModel.gameConfig.id
-            game = retainedGame
-            root.gameModel.gameTableModel = retainedGame
-            await retainedGame.handleMapChange(
-                isGameMaster: retainedGame.isGameMaster
             )
             return
         }

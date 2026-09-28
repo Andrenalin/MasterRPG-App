@@ -54,7 +54,6 @@ struct GameRootViewer: View {
         GameContentLayer {
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
                 mapView(for: mapId)
-                    .id(mapId)
             } else {
                 GameSetupBackdrop()
             }
@@ -136,12 +135,19 @@ struct GameRootViewer: View {
 #if os(iOS) || os(macOS)
         if appSettingsModel.showGameTableVolume,
            contentType.supportsInlineThreeDTable {
-            GameTableView(root: root, retentionModel: gameScreenModel)
+            // Deliberately not keyed by `mapId`: the table switches maps itself
+            // (`GameTableView`'s `.task(id: currentItemId)`). Rebuilding it per map
+            // created the new RealityView while the old one was still live, and
+            // handing the shared RealityKit scene between the two left the new
+            // map's table black.
+            GameTableView(root: root, showsEmbeddedToolbar: false)
         } else {
             twoDimensionalMapView(for: mapId)
+                .id(mapId)
         }
 #else
         twoDimensionalMapView(for: mapId)
+            .id(mapId)
 #endif
     }
 

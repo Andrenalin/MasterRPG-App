@@ -7337,7 +7337,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice into text for AI chat.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
 				INFOPLIST_KEY_NSWorldSensingUsageDescription = "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game.";
@@ -7412,7 +7411,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice into text for AI chat.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = NO;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = NO;
 				INFOPLIST_KEY_NSWorldSensingUsageDescription = "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game.";
@@ -8968,7 +8966,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -9037,7 +9034,6 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© Copyright 2024-2026, Andre Trettin";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "MasterRPG uses the local network to connect with other player around you to share maps from the GameMaster";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MasterRPG uses the photo library to import photos for the photo module and other modules to show photos and maps";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
