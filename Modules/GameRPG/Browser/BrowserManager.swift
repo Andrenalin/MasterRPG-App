@@ -39,6 +39,8 @@ final class BrowserManager {
     @ObservationIgnored private var supervisorTask: Task<Void, Never>?
     @ObservationIgnored private var monitorTask: Task<Bool, Never>?
     @ObservationIgnored private var runGeneration = 0
+    /// Setup screens currently showing this browser's games.
+    @ObservationIgnored private var screenDemand = 0
 
     init(serviceType: GameServiceType = .player) {
         self.serviceType = serviceType
@@ -118,6 +120,24 @@ final class BrowserManager {
                 self?.connectionState = .connecting
             }
         }
+    }
+
+    /// A setup screen that lists games appeared. The "Player" and "Join" screens share this
+    /// browser, and SwiftUI can call the next screen's `onAppear` before the previous screen's
+    /// `onDisappear`: a plain `start()`/`stop()` pair per screen then stopped (and emptied) the
+    /// browser the new screen had just started, so switching screens made hosted games vanish.
+    func screenAppeared() {
+        screenDemand += 1
+        start()
+    }
+
+    /// A setup screen that lists games disappeared. Discovery stops once no screen shows it,
+    /// unless `keepRunning` (a join under way or connected: the removal of the host's service
+    /// is how a lost master is noticed). See CODE_AUDIT_Join §7.2.
+    func screenDisappeared(keepRunning: Bool) {
+        screenDemand = max(0, screenDemand - 1)
+        guard screenDemand == 0, !keepRunning else { return }
+        stop()
     }
 
     func stop() {

@@ -63,14 +63,14 @@ struct SearchProxyView: View {
         }
         .onAppear {
             guard startsServices else { return }
-            root.networkStore.model.playerStore?.browserManager.start()
-            root.networkProxyStore.model.playerStore?.browserManager.start()
+            root.networkStore.model.playerStore?.browserManager.screenAppeared()
+            root.networkProxyStore.model.playerStore?.browserManager.screenAppeared()
         }
         .onDisappear {
             guard startsServices else { return }
             for controller in [root.networkStore.model.playerStore, root.networkProxyStore.model.playerStore] {
-                guard let controller, controller.networkModel.playerConnectionId == nil else { continue }
-                controller.browserManager.stop()
+                guard let controller else { continue }
+                controller.browserManager.screenDisappeared(keepRunning: controller.networkModel.playerConnectionId != nil)
             }
         }
     }

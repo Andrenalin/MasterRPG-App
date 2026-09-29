@@ -153,7 +153,9 @@ extension BrowserRowView {
     /// changes this row's rendered output is which device `model` is, and
     /// its two derived connection-state booleans. See CODE_AUDIT_13 §8.7.
     static func == (lhs: BrowserRowView, rhs: BrowserRowView) -> Bool {
-        lhs.model.id == rhs.model.id
+        // Identity, not `id`: a TXT record that resolves later replaces the model under the same
+        // id, and the row must pick up its session and supporter tier.
+        lhs.model === rhs.model
             && lhs.root === rhs.root
             && lhs.isConnected == rhs.isConnected
             && lhs.isDeactivate == rhs.isDeactivate

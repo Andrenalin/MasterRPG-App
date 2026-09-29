@@ -42,14 +42,15 @@ struct BrowserView: View {
         }
         .onAppear {
             guard startsServices else { return }
-            playerNetworkControllable.browserManager.start()
+            playerNetworkControllable.browserManager.screenAppeared()
         }
         .onDisappear {
-            // Discovery only runs while it is needed: leaving this screen stops it, unless a join
-            // is under way or connected (the removal of the host's service is how a lost master is
-            // noticed). See CODE_AUDIT_Join §7.2.
-            guard startsServices, playerNetworkControllable.networkModel.playerConnectionId == nil else { return }
-            playerNetworkControllable.browserManager.stop()
+            // Discovery only runs while a screen needs it, or a join is under way or connected.
+            // See CODE_AUDIT_Join §7.2.
+            guard startsServices else { return }
+            playerNetworkControllable.browserManager.screenDisappeared(
+                keepRunning: playerNetworkControllable.networkModel.playerConnectionId != nil
+            )
         }
         .animation(accessibilityReduceMotion ? nil : .default, value: playerNetworkControllable.networkModel.isConnected)
         .animation(accessibilityReduceMotion ? nil : .default, value: playerNetworkControllable.browserManager.isBrowsing)
