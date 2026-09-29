@@ -237,7 +237,7 @@ private struct SheetEntryRowContentView: View {
     @Binding var isEditTypePickerPresented: Bool
 
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             if entryModel.isReviewPlaceholder, let reviewModel = entryModel.entryReviewModel {
                 SheetEntryReviewPlaceholderView(
                     entryModel: entryModel,

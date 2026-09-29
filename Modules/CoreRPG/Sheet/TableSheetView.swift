@@ -34,7 +34,7 @@ private struct TableSheetListContentView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 4) {
+            LazyVStack(spacing: 2) {
                 SheetRootView(root: root, rootModel: model)
                     .animation(accessibilityReduceMotion ? nil : .default, value: model.searchText)
             }
