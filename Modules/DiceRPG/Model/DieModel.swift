@@ -128,7 +128,7 @@ extension DieModel: EntryDataAccessible {
     }
 
     public func duplicate() -> DieModel {
-        DieModel(id: UUID(), die: die)
+        DieModel(id: UUID(), die: die, color: color)
     }
     
     public func filter(with search: String) -> Bool {

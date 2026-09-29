@@ -86,5 +86,40 @@ struct DiceModelTests {
         let merged = b.merge(a)
         #expect(merged.name == "Next Name")
     }
+
+    // MARK: - Colour inheritance
+
+    @Test func dieDuplicateKeepsColorAndGetsNewId() {
+        let die = DieModel(id: UUID(), die: .twenty, color: DieModel.ColorCode.A.rawValue)
+        let copy = die.duplicate()
+        #expect(copy.color == "A")
+        #expect(copy.id != die.id)
+    }
+
+    @Test func changingCompareValueKeepsDiceColor() {
+        let model = DiceModel(id: UUID(), dice: [DieModel(id: UUID(), die: .twenty, color: DieModel.ColorCode.A.rawValue)], addDiceEvery: 20)
+        model.compareValue = 45
+        #expect(model.dice.count == 3)
+        #expect(model.dice.allSatisfy { $0.color == "A" })
+        model.compareValue = 10
+        #expect(model.dice.count == 1)
+        #expect(model.dice.allSatisfy { $0.color == "A" })
+    }
+
+    @Test func activatingAddDiceKeepsDiceColor() {
+        let model = DiceModel(id: UUID(), dice: [DieModel(id: UUID(), die: .twenty, color: DieModel.ColorCode.A.rawValue)], compareValue: 60)
+        model.addDiceActivate = true
+        #expect(model.dice.count == 3)
+        #expect(model.dice.allSatisfy { $0.color == "A" })
+    }
+
+    @Test func diceModelDuplicateKeepsEachDieColor() {
+        let model = DiceModel(id: UUID(), dice: [
+            DieModel(id: UUID(), die: .twenty, color: DieModel.ColorCode.A.rawValue),
+            DieModel(id: UUID(), die: .twenty, color: DieModel.ColorCode.G.rawValue),
+        ])
+        let copy = model.duplicate()
+        #expect(copy.dice.map(\.color) == ["A", "G"])
+    }
 }
 #endif
