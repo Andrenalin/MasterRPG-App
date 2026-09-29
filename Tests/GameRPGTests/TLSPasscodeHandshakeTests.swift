@@ -15,12 +15,11 @@ struct TLSPasscodeHandshakeTests {
     /// connection only starts (and completes its handshake) once something receives on it.
     private final class Server: @unchecked Sendable {
         let delegate = OutcomeDelegate()
-        private let lock = NSLock()
-        private var controllers: [ConnectionController] = []
+        private let store = ControllerStore()
         private var runTask: Task<Void, Never>?
 
         var accepted: [ConnectionController] {
-            lock.withLock { controllers }
+            store.controllers
         }
 
         func start(passcode: String) async throws -> NWEndpoint.Port {
@@ -38,10 +37,11 @@ struct TLSPasscodeHandshakeTests {
                 }
             }
             let delegate = delegate
+            let store = store
             runTask = Task {
-                try? await listener.run { [weak self] connection in
+                try? await listener.run { connection in
                     let controller = ConnectionController(id: UUID(), connection: connection, delegate: delegate)
-                    self?.lock.withLock { self?.controllers.append(controller) }
+                    store.append(controller)
                     await controller.startConnection()
                 }
             }
@@ -59,6 +59,20 @@ struct TLSPasscodeHandshakeTests {
             for controller in accepted {
                 await controller.cancel()
             }
+        }
+    }
+
+    /// Holds the accepted controllers, so the listener's handler does not capture `Server`.
+    private final class ControllerStore: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: [ConnectionController] = []
+
+        var controllers: [ConnectionController] {
+            lock.withLock { stored }
+        }
+
+        func append(_ controller: ConnectionController) {
+            lock.withLock { stored.append(controller) }
         }
     }
 
