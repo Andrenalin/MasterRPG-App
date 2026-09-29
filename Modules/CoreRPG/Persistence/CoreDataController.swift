@@ -15,7 +15,17 @@ public protocol CoreDataId {
 /// unstructured Task per enqueue could reorder rapid edits to the same id or miss
 /// a save that races the enqueue.
 final class CoreDataModel: Sendable {
-    private let operations = Mutex<[PendingOperation]>([])
+    private struct Queue {
+        var operations: [PendingOperation] = []
+        /// Stamped onto each queued operation, so a newer edit for an id always wins.
+        var nextSequence: UInt64 = 0
+        /// The newest sequence a flush has drained per id. A rollback that re-queues an older
+        /// operation after a newer one was drained must drop it, or the older full snapshot
+        /// would be committed over the newer one. See CODE_AUDIT_19 §3.4.
+        var latestDrained: [UUID: UInt64] = [:]
+    }
+
+    private let queue = Mutex<Queue>(Queue())
     private let flushChain = Mutex<Task<Void, Error>?>(nil)
     /// Operations already applied to the shared context by a flush but not yet committed by a
     /// `context.save()`. A rollback of the shared context (any module's failed save) discards
@@ -27,20 +37,34 @@ final class CoreDataModel: Sendable {
     private let unsavedInserts = Mutex<Set<UUID>>([])
 
     func addPendingOperation(_ operation: PendingOperation) {
-        operations.withLock { $0.append(operation) }
+        queue.withLock { queue in
+            var operation = operation
+            queue.nextSequence += 1
+            operation.sequence = queue.nextSequence
+            queue.operations.append(operation)
+        }
     }
 
     /// Puts operations that could not be applied back *in front of* anything queued since they
     /// were drained: re-adding them behind newer edits would let the older state win the
-    /// last-wins merge of the next flush. See CODE_AUDIT_16 §3.12.
+    /// last-wins merge of the next flush (CODE_AUDIT_16 §3.12). An operation superseded by a
+    /// newer one a flush already drained is dropped instead (CODE_AUDIT_19 §3.4).
     func restorePendingOperations(_ restored: [PendingOperation]) {
-        operations.withLock { $0.insert(contentsOf: restored, at: 0) }
+        queue.withLock { queue in
+            let current = restored.filter { operation in
+                queue.latestDrained[operation.id].map { $0 <= operation.sequence } ?? true
+            }
+            queue.operations.insert(contentsOf: current, at: 0)
+        }
     }
 
     func clearPendingOperations() -> [PendingOperation] {
-        operations.withLock { pending in
-            let cleared = pending
-            pending.removeAll()
+        queue.withLock { queue in
+            let cleared = queue.operations
+            queue.operations.removeAll()
+            for operation in cleared where operation.sequence > queue.latestDrained[operation.id, default: 0] {
+                queue.latestDrained[operation.id] = operation.sequence
+            }
             return cleared
         }
     }
@@ -50,7 +74,10 @@ final class CoreDataModel: Sendable {
     /// deletion arrived can't resurrect the item on the next flush (insert, since
     /// its id is no longer found to exist). See CODE_AUDIT_17 §5.7.
     func removePendingOperations(for id: UUID) {
-        operations.withLock { $0.removeAll { $0.id == id } }
+        queue.withLock { queue in
+            queue.operations.removeAll { $0.id == id }
+            queue.latestDrained[id] = nil
+        }
         inFlight.withLock { $0.removeAll { $0.id == id } }
         unsavedInserts.withLock { _ = $0.remove(id) }
     }
@@ -77,7 +104,7 @@ final class CoreDataModel: Sendable {
             return ids
         }
         guard !committedIds.isEmpty else { return }
-        let stillQueued = Set(operations.withLock { $0.map(\.id) })
+        let stillQueued = Set(queue.withLock { $0.operations.map(\.id) })
         unsavedInserts.withLock { inserts in
             inserts.subtract(committedIds.subtracting(stillQueued))
         }
@@ -121,6 +148,8 @@ struct PendingOperation: Sendable {
     // legacy path is unaffected.
     let model: any Sendable
     let updater: @Sendable (any Sendable, NSManagedObject) -> Void
+    /// Assigned by `CoreDataModel.addPendingOperation`; orders edits to the same id.
+    var sequence: UInt64 = 0
 }
 
 public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & CoreDataId>: Sendable {
@@ -187,7 +216,7 @@ public extension CoreDataController {
             guard !pendingOperations.isEmpty else { return }
 
             var operationsByID: [UUID: PendingOperation] = [:]
-            for operation in pendingOperations {
+            for operation in pendingOperations where operation.sequence >= operationsByID[operation.id]?.sequence ?? 0 {
                 operationsByID[operation.id] = operation
             }
             let uniqueOperations = Array(operationsByID.values)

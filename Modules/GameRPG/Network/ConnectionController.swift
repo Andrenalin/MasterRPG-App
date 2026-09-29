@@ -151,6 +151,14 @@ extension ConnectionController: ConnectionControllable {
     /// delegate learns the connection is dead instead of nothing ever
     /// finding out. See CODE_AUDIT_Network §5.5.
     private func send(content: Data?, context: NWConnection.ContentContext) {
+        // A nil encoding (encode failure) would go out as a zero-length frame, which the
+        // receiver treats as the peer closing the connection. Covers every send path, not
+        // only the master's ordered one. See CODE_AUDIT_19 §3.14.
+        guard let content else {
+            let uuid = id.uuidString
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Skipped sending a message that could not be encoded")
+            return
+        }
         connection.send(
             content: content,
             contentContext: context,
@@ -231,30 +239,30 @@ private extension ConnectionController {
         }
     }
 
+    /// Waits for each message holding only the `NWConnection`: `self` is bound per message, so
+    /// the `deinit` cleanup still runs when an owner drops the controller without `cancel()`
+    /// (its `connection.cancel()` completes the pending receive). See CODE_AUDIT_19 §3.11.
     func startReceiveLoop() {
         guard receiveTask == nil else { return }
+        let connection = connection
         receiveTask = Task { [weak self] in
-            guard let self else { return }
-            await self.receiveLoop()
+            while !Task.isCancelled {
+                let received = await withCheckedContinuation { (continuation: CheckedContinuation<ReceivedMessage, Never>) in
+                    connection.receiveMessage { content, context, _, error in
+                        continuation.resume(returning: ReceivedMessage(content: content, context: context, error: error))
+                    }
+                }
+                guard let self else { return }
+                await self.process(content: received.content, context: received.context, error: received.error)
+                if received.error != nil { return }
+            }
         }
     }
 
-    func receiveLoop() async {
-        while !Task.isCancelled {
-            let shouldContinue = await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
-                connection.receiveMessage { [weak self] content, context, _, error in
-                    guard let self else {
-                        continuation.resume(returning: false)
-                        return
-                    }
-                    Task {
-                        await self.process(content: content, context: context, error: error)
-                        continuation.resume(returning: error == nil)
-                    }
-                }
-            }
-            if !shouldContinue { break }
-        }
+    private struct ReceivedMessage: Sendable {
+        let content: Data?
+        let context: NWConnection.ContentContext?
+        let error: NWError?
     }
 
     func process(content: Data?, context: NWConnection.ContentContext?, error: Error?) async {

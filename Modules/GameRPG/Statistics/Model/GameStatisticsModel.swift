@@ -157,12 +157,8 @@ final class GameStatisticsModel: Sendable {
 
         if pendingEvents.count >= Self.maximumBufferedEvents {
             await flushPendingEvents()
-        } else if flushTask == nil {
-            flushTask = Task { [weak self] in
-                try? await Task.sleep(for: Self.flushInterval)
-                guard !Task.isCancelled else { return }
-                await self?.flushPendingEvents()
-            }
+        } else {
+            scheduleFlush()
         }
     }
 
@@ -186,8 +182,13 @@ final class GameStatisticsModel: Sendable {
         pendingEvents = []
         pendingRoster = nil
         guard let context, !batch.isEmpty || roster != nil else { return }
+        // Only the step that failed is re-queued: once `recordEvents` saved, re-queuing the
+        // batch for a failed checkpoint inserted events without a deduplication key twice.
+        // See CODE_AUDIT_19 §3.17.
+        var unsavedBatch = batch
         do {
             try await dataController.recordEvents(batch, in: context)
+            unsavedBatch = []
             if let roster, let sessionId = batch.last?.draft.sessionId ?? activeSessionID {
                 try await dataController.checkpointSession(
                     id: sessionId,
@@ -205,13 +206,48 @@ final class GameStatisticsModel: Sendable {
             // See CODE_AUDIT_18 §3.10.
             failedFlushAttempts += 1
             if failedFlushAttempts <= Self.maximumFlushRetries {
-                pendingEvents.insert(contentsOf: batch, at: 0)
+                pendingEvents.insert(contentsOf: unsavedBatch, at: 0)
                 if pendingRoster == nil { pendingRoster = roster }
+                scheduleFlush()
             } else {
-                Logger.statistics.error("Dropped \(batch.count, privacy: .public) statistics events after \(Self.maximumFlushRetries, privacy: .public) failed saves")
+                Logger.statistics.error("Dropped \(unsavedBatch.count, privacy: .public) statistics events after \(Self.maximumFlushRetries, privacy: .public) failed saves")
                 failedFlushAttempts = 0
             }
         }
+    }
+
+    /// Flushes after `flushInterval` unless a flush is already scheduled. Also retries a failed
+    /// flush, which used to wait for the next event to arrive. See CODE_AUDIT_19 §3.17.
+    private func scheduleFlush() {
+        guard flushTask == nil else { return }
+        flushTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.flushInterval)
+            guard !Task.isCancelled else { return }
+            await self?.flushPendingEvents()
+        }
+    }
+
+    private var hasPendingWrites: Bool {
+        !pendingEvents.isEmpty || pendingRoster != nil
+    }
+
+    /// Flushes, retrying failed saves right away, before the session is marked complete:
+    /// `recordEvents` skips events of a completed session. Whatever still cannot be saved is
+    /// dropped with a log instead of silently. See CODE_AUDIT_19 §3.17.
+    private func flushBeforeCompletingSession() async {
+        await flushPendingEvents()
+        var retries = 0
+        while hasPendingWrites, retries < Self.maximumFlushRetries {
+            retries += 1
+            await flushPendingEvents()
+        }
+        guard hasPendingWrites else { return }
+        flushTask?.cancel()
+        flushTask = nil
+        Logger.statistics.error("Dropped \(self.pendingEvents.count, privacy: .public) statistics events that could not be saved before the session ended")
+        pendingEvents = []
+        pendingRoster = nil
+        failedFlushAttempts = 0
     }
 
     func participantLeft(id: UUID, at date: Date = .now) async {
@@ -234,7 +270,7 @@ final class GameStatisticsModel: Sendable {
         at date: Date = .now
     ) async {
         guard let context, let activeSessionID else { return }
-        await flushPendingEvents()
+        await flushBeforeCompletingSession()
         do {
             try await dataController.finishSession(id: activeSessionID, at: date, reason: reason, in: context)
             lastCompletedSessionID = activeSessionID

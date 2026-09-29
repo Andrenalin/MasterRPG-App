@@ -8,21 +8,32 @@ import Synchronization
 final class CloudContainerCache: Sendable {
     static let shared = CloudContainerCache()
 
-    private enum State: Sendable {
+    private enum Resolution: Sendable {
         case unresolved
         case resolved(URL?)
     }
 
-    private let state = Mutex<State>(.unresolved)
+    private struct State: Sendable {
+        var resolution: Resolution = .unresolved
+        /// Bumped by `invalidate()`. A resolve that started before the bump must not store its
+        /// (old-identity) result. See CODE_AUDIT_19 §3.8.
+        var generation = 0
+    }
+
+    private let state = Mutex(State())
     private let isObserving = Mutex(false)
 
     var url: URL? {
-        if case .resolved(let url) = state.withLock({ $0 }) {
+        let (resolution, generation) = state.withLock { ($0.resolution, $0.generation) }
+        if case .resolved(let url) = resolution {
             return url
         }
         // Resolved outside the lock: the call can block while the container is set up.
         let url = FileManager.default.url(forUbiquityContainerIdentifier: FileManager.cloudContainerIdentifier)
-        state.withLock { $0 = .resolved(url) }
+        state.withLock { state in
+            guard state.generation == generation else { return }
+            state.resolution = .resolved(url)
+        }
         return url
     }
 
@@ -46,6 +57,9 @@ final class CloudContainerCache: Sendable {
     }
 
     func invalidate() {
-        state.withLock { $0 = .unresolved }
+        state.withLock { state in
+            state.resolution = .unresolved
+            state.generation += 1
+        }
     }
 }

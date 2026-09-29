@@ -116,9 +116,14 @@ final class PersistentHistoryTrackerManager {
         self.processor = processor
 
         // One ordered consumer instead of a `Task` per notification. See CODE_AUDIT_18 §4.2.
+        // The sequence is created here, synchronously, so it is registered before `init`
+        // returns; one startup pass covers a remote change posted before that (widget or
+        // share-extension writes, the first CloudKit import). See CODE_AUDIT_19 §3.6.
         let coordinator = container.persistentStoreCoordinator
+        let remoteChanges = NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange, object: coordinator)
         remoteChangeTask = Task {
-            for await _ in NotificationCenter.default.notifications(named: .NSPersistentStoreRemoteChange, object: coordinator) {
+            await processor.schedule()
+            for await _ in remoteChanges {
                 await processor.schedule()
             }
         }

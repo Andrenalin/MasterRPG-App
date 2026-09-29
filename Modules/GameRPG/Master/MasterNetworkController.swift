@@ -187,6 +187,9 @@ extension MasterNetworkController: MasterNetworkControllable {
         redialAttempts = [:]
         listenerRestartTask?.cancel()
         listenerRestartTask = nil
+        // A new hosting session's first send must not wait for the old session's tail.
+        // See CODE_AUDIT_19 §3.13.
+        outboundChain = nil
         networkModel.listenerStatus = .stopped
         // Fire-and-forget: `resetConnections()` is synchronous (called from
         // the non-async `startStreaming`/`stopStreaming`), and clearing
@@ -229,12 +232,16 @@ extension MasterNetworkController {
     }
 
     private func sendOrdered(_ data: MessageMapper?, to connections: [any ConnectionControllable]) async {
+        // Encoding starts right away, concurrently with earlier sends; only the hand-off to
+        // the connections is chained, so a small message no longer also waits for its own
+        // encode behind a multi-MB map encode. See CODE_AUDIT_19 §3.13.
+        let encoding = Task { await encodedOffMain(data) }
         let previous = outboundChain
         let send = Task { @MainActor in
             await previous?.value
             // A nil encoding (encode failure) used to go out as a zero-length frame, which
             // the receiver treats as the peer closing the connection. See CODE_AUDIT_18 §3.15.
-            guard let encodedData = await encodedOffMain(data) else {
+            guard let encodedData = await encoding.value else {
                 Logger.networking.error("MasterNetworkController: Skipped sending a message that could not be encoded")
                 return
             }

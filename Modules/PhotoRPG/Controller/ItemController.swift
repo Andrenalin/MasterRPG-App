@@ -56,28 +56,47 @@ extension ItemController {
             let progressBox = ProgressBox()
             return try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { continuation in
-                    progressBox.progress = provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
+                    let progress = provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
                         if let error {
                             continuation.resume(throwing: error)
                         } else {
                             continuation.resume(returning: data)
                         }
                     }
+                    progressBox.store(progress)
                 }
             } onCancel: {
-                progressBox.progress?.cancel()
+                progressBox.cancel()
             }
         }
         return nil
     }
 
-    /// Holds the load's `Progress` so the cancellation handler can reach it.
+    /// Holds the load's `Progress` so the cancellation handler can reach it. A cancel that
+    /// arrives before the progress is stored is remembered and applied on `store`, instead of
+    /// being lost. See CODE_AUDIT_19 §3.15.
     private final class ProgressBox: Sendable {
-        private let storage = Mutex<Progress?>(nil)
+        private struct State {
+            var progress: Progress?
+            var isCancelled = false
+        }
 
-        var progress: Progress? {
-            get { storage.withLock { $0 } }
-            set { storage.withLock { $0 = newValue } }
+        private let storage = Mutex(State())
+
+        func store(_ progress: Progress) {
+            let cancelNow = storage.withLock { state -> Bool in
+                state.progress = progress
+                return state.isCancelled
+            }
+            if cancelNow { progress.cancel() }
+        }
+
+        func cancel() {
+            let progress = storage.withLock { state -> Progress? in
+                state.isCancelled = true
+                return state.progress
+            }
+            progress?.cancel()
         }
     }
 #endif

@@ -17,6 +17,7 @@ final class AudioPlayerSessionModel: Sendable {
     weak var delegate: (AnyObject & AudioPlayerSessionDelegate)?
     private(set) var audioSessionObservers: [NSObjectProtocol] = []
     private(set) var wasPlaying = false
+    private(set) var configureTask: Task<Void, Never>?
     
     init(delegate: (AnyObject & AudioPlayerSessionDelegate)) {
         self.delegate = delegate
@@ -28,6 +29,10 @@ final class AudioPlayerSessionModel: Sendable {
     
     func reset(wasPlaying: Bool) {
         self.wasPlaying = wasPlaying
+    }
+
+    func reset(configureTask: Task<Void, Never>?) {
+        self.configureTask = configureTask
     }
 }
 
@@ -46,8 +51,18 @@ final class AudioPlayerSession: Sendable {
     func initSession() {
 #if !os(macOS)
         registerSessionNotifications()
-        Task { await configureAndActivate() }
+        model.reset(configureTask: Task { await configureAndActivate() })
 #endif
+    }
+
+    /// Waits for the initial category/activation so the first track never starts under the
+    /// default category (silenced by the ring switch). Returns at once after the first wait.
+    /// See CODE_AUDIT_19 §3.5.
+    @MainActor
+    func waitUntilConfigured() async {
+        guard let task = model.configureTask else { return }
+        await task.value
+        model.reset(configureTask: nil)
     }
 }
 

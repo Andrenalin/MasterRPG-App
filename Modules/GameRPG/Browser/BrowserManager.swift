@@ -74,8 +74,49 @@ final class BrowserManager {
         // One supervising task owns every browser run for this start: a browser that fails or
         // ends without `stop()` is recreated after a backoff instead of leaving discovery dead
         // for the rest of the session. See CODE_AUDIT_Join §5.3.
+        // The loop lives in the task and binds `self` only between awaits: calling a method on
+        // `self?` kept the manager alive for the supervisor's whole lifetime, so the
+        // `isolated deinit` cleanup never ran without an explicit `stop()`.
+        // See CODE_AUDIT_19 §3.11.
+        let serviceType = serviceType
         supervisorTask = Task { @MainActor [weak self] in
-            await self?.supervise(generation: generation)
+            var attempt = 0
+            while !Task.isCancelled, self?.runGeneration == generation {
+                let controller = BrowserClientController(serviceType: serviceType)
+                // Events of a superseded run are dropped: they must not overwrite the state of
+                // the run that replaced it. See CODE_AUDIT_16 §3.8 and CODE_AUDIT_Join §3.2.
+                let monitor = Task { @MainActor [weak self] in
+                    var sawReady = false
+                    for await event in controller.networkUpdateEvents {
+                        guard let self, self.runGeneration == generation else { return sawReady }
+                        if case .browserRunning = event { sawReady = true }
+                        self.handleStateEvent(event)
+                    }
+                    return sawReady
+                }
+                self?.monitorTask = monitor
+
+                do {
+                    try await controller.startBrowser()
+                } catch is CancellationError {
+                    monitor.cancel()
+                    return
+                } catch {
+                    Logger.browserController.log("Browser error: \(error.localizedDescription)")
+                    guard self?.runGeneration == generation else { return }
+                    self?.record(failure: error)
+                }
+                let sawReady = await monitor.value
+                guard !Task.isCancelled, self?.runGeneration == generation else { return }
+
+                if self?.connectionState != .stopped { self?.connectionState = .stopped }
+                if sawReady { attempt = 0 }
+                let delay = GameLimits.networkRestartDelay(forAttempt: attempt)
+                attempt += 1
+                try? await Task.sleep(for: delay)
+                guard !Task.isCancelled, self?.runGeneration == generation else { return }
+                self?.connectionState = .connecting
+            }
         }
     }
 
@@ -96,46 +137,6 @@ final class BrowserManager {
         supervisorTask = nil
         monitorTask?.cancel()
         monitorTask = nil
-    }
-
-    private func supervise(generation: Int) async {
-        var attempt = 0
-        while !Task.isCancelled, runGeneration == generation {
-            let controller = BrowserClientController(serviceType: serviceType)
-            // Events of a superseded run are dropped: they must not overwrite the state of the
-            // run that replaced it. See CODE_AUDIT_16 §3.8 and CODE_AUDIT_Join §3.2.
-            let monitor = Task { @MainActor [weak self] in
-                var sawReady = false
-                for await event in controller.networkUpdateEvents {
-                    guard let self, self.runGeneration == generation else { return sawReady }
-                    if case .browserRunning = event { sawReady = true }
-                    self.handleStateEvent(event)
-                }
-                return sawReady
-            }
-            monitorTask = monitor
-
-            do {
-                try await controller.startBrowser()
-            } catch is CancellationError {
-                monitor.cancel()
-                return
-            } catch {
-                Logger.browserController.log("Browser error: \(error.localizedDescription)")
-                guard runGeneration == generation else { return }
-                record(failure: error)
-            }
-            let sawReady = await monitor.value
-            guard !Task.isCancelled, runGeneration == generation else { return }
-
-            if connectionState != .stopped { connectionState = .stopped }
-            if sawReady { attempt = 0 }
-            let delay = GameLimits.networkRestartDelay(forAttempt: attempt)
-            attempt += 1
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, runGeneration == generation else { return }
-            connectionState = .connecting
-        }
     }
 
     private func handleStateEvent(_ event: NetworkEvent) {

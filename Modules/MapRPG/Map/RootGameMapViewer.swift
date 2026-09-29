@@ -63,16 +63,34 @@ struct RootGameMapViewer: View {
 
     private func sendMapUpdates() {
         if mode == .master {
-            _ = root.mapGameControllable.synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
-            networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
-            if root.mapGameControllable.battleRoundModel.isRunning,
-               let battleUpdate = root.mapGameControllable.networkBattleRoundUpdate(for: itemId) {
-                networkActions?.game(battleUpdate, .battleRound, nil)
+            // A structural edit made in the 3D table while sharing was paused was never sent;
+            // resuming here must push that content update before the map state.
+            // See CODE_AUDIT_19 §3.12.
+            if root.rootModel.mapsWithUnsharedStructure.remove(itemId) != nil {
+                let root = root
+                let itemId = itemId
+                let networkActions = networkActions
+                Task {
+                    let content = await root.mapGameControllable.networkMapContentUpdate(for: itemId)
+                    networkActions?.game(content, .generic, nil)
+                    Self.sendMasterMapState(root: root, itemId: itemId, networkActions: networkActions)
+                }
+            } else {
+                Self.sendMasterMapState(root: root, itemId: itemId, networkActions: networkActions)
             }
         } else if mapModel.pointer.isShown {
             networkActions?.game(root.gameController.networkPin(itemId: itemId, position: mapModel.pointer), .mapPin, nil)
         } else if let pin = mapModel.mapPins.first(where: { $0.id == playerPinId }) {
             networkActions?.game(root.gameController.networkPin(itemId: itemId, position: pin), .mapPin, nil)
+        }
+    }
+
+    private static func sendMasterMapState(root: MapRootModel, itemId: UUID, networkActions: NetworkActions?) {
+        _ = root.mapGameControllable.synchronizeBattleDefenders(itemId: itemId, isGameMaster: true)
+        networkActions?.game(root.gameController.networkMapUpdate(for: itemId), .mapState, nil)
+        if root.mapGameControllable.battleRoundModel.isRunning,
+           let battleUpdate = root.mapGameControllable.networkBattleRoundUpdate(for: itemId) {
+            networkActions?.game(battleUpdate, .battleRound, nil)
         }
     }
 

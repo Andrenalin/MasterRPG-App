@@ -53,21 +53,45 @@ extension GameTableModel {
     /// paused; only the explicit "Refresh Shared Map" (`sendMapUpdates`) bypasses the pause.
     func broadcastMapEdit(for mapId: UUID) {
         guard isStreaming else { return }
+        // A pending content update ends with a live map state that includes this edit.
+        guard pendingMapContentBroadcasts[mapId, default: 0] == 0 else { return }
         broadcastMapState(for: mapId)
     }
 
     /// A structural edit (entries added/removed, e.g. the hex grid) needs the content update
     /// first — a map state that references entries a player doesn't have forces every player
     /// through a repair round trip — then the map state. Honours "pause sharing" like
-    /// `broadcastMapEdit`. See CODE_AUDIT_18 §5.19.
+    /// `broadcastMapEdit`: while paused the map is marked, and the resume/refresh send
+    /// (`sendMapUpdates`) pushes the content update. See CODE_AUDIT_18 §5.19, CODE_AUDIT_19 §3.12.
     func broadcastMapContentEdit(for mapId: UUID) {
-        guard isStreaming else { return }
+        guard isStreaming else {
+            mapRoot.rootModel.mapsWithUnsharedStructure.insert(mapId)
+            return
+        }
+        sendMapContent(for: mapId, force: false)
+    }
+
+    /// Sends the map's content update, then its live map state, chained behind any earlier
+    /// content update so two quick structural edits arrive in order. `force` bypasses the
+    /// pause, for the explicit "Refresh Shared Map".
+    func sendMapContent(for mapId: UUID, force: Bool) {
+        let previous = mapContentBroadcastTask
         let mapRoot = mapRoot
-        Task { [weak self] in
+        pendingMapContentBroadcasts[mapId, default: 0] += 1
+        mapContentBroadcastTask = Task { [weak self] in
+            await previous?.value
             let content = await mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
-            guard let self, self.isStreaming else { return }
+            guard let self else { return }
+            self.pendingMapContentBroadcasts[mapId, default: 1] -= 1
+            if self.pendingMapContentBroadcasts[mapId] == 0 {
+                self.pendingMapContentBroadcasts[mapId] = nil
+            }
+            guard force || self.isStreaming else {
+                self.mapRoot.rootModel.mapsWithUnsharedStructure.insert(mapId)
+                return
+            }
             self.networkActions?.game(content, .generic, nil)
-            self.broadcastMapEdit(for: mapId)
+            self.broadcastMapState(for: mapId)
         }
     }
 

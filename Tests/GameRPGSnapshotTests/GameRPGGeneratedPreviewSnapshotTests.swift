@@ -671,7 +671,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("SharePlayButton")
     func snapshotSharePlayButton() async throws {
         try await assertPreviewSnapshot("SharePlayButton") {
-            GameRPG.SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"))
+            GameRPG.SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"), isEligibleForGroupSession: false)
         }
     }
 

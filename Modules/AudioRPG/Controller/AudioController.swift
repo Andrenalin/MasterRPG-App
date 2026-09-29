@@ -270,7 +270,9 @@ extension AudioController {
         // only because sharedAudioId is already populated from the previous call).
         model.coordinator?.coordinatePlayback(of: id)
         replaceCurrentItem()
-        if triggerPlay { play() }
+        guard triggerPlay else { return }
+        await model.audioSession?.waitUntilConfigured()
+        play()
     }
 
     @MainActor
@@ -313,10 +315,17 @@ private extension AudioController {
         // `AnyCancellable`s so the existing subscription teardown cancels them.
         // See CODE_AUDIT_18 §4.2.
         let player = model.player
+        // KVO publishers don't buffer and `.values` only has demand while the loop waits, so
+        // a change landing mid-iteration was dropped. The buffer keeps demand open, and each
+        // element is only a wake-up: the live status is read so a stale buffered value
+        // never wins. See CODE_AUDIT_19 §3.3.
+        let statusChanges = player.publisher(for: \.timeControlStatus)
+            .removeDuplicates()
+            .buffer(size: 8, prefetch: .keepFull, whenFull: .dropOldest)
         let statusTask = Task { @MainActor [weak self] in
-            for await status in player.publisher(for: \.timeControlStatus).removeDuplicates().values {
+            for await _ in statusChanges.values {
                 guard let self else { return }
-                self.model.isPlaying = status == .playing
+                self.model.isPlaying = player.timeControlStatus == .playing
             }
         }
         let endOfItemTask = Task { @MainActor [weak self] in

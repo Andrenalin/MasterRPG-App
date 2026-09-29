@@ -82,6 +82,13 @@ extension Navigator: NavigationSending {
     /// convenience API, which forwards to this method.
     @MainActor
     public func send(values: [any Hashable]) {
+        send(values: values, firstStashedAt: nil)
+    }
+
+    /// `firstStashedAt` carries a replayed send's original stash time, so an unconsumed replay
+    /// keeps its lifetime instead of restarting it. See CODE_AUDIT_19 §3.2.
+    @MainActor
+    internal func send(values: [any Hashable], firstStashedAt: ContinuousClock.Instant?) {
         guard let value: any Hashable = values.first else {
             return
         }
@@ -91,7 +98,7 @@ extension Navigator: NavigationSending {
             resume(action(self), values: remainingValues)
         } else {
             log(.send(.sending(value)))
-            publisher.send(NavigationSendValues(navigator: root, value: value, values: remainingValues))
+            publisher.send(NavigationSendValues(navigator: root, value: value, values: remainingValues, firstStashedAt: firstStashedAt))
         }
     }
 
@@ -369,7 +376,7 @@ private struct OnNavigationReceiveModifier<T: Hashable>: ViewModifier {
             // subscribed (e.g. a route performed right after opening this window).
             // See CODE_AUDIT_18 §3.17.
             .task {
-                navigator.root.replayUndeliveredSends()
+                navigator.root.replayUndeliveredSends(for: T.self)
             }
             .onReceive(navigator.publisher) { values in
                 if let value: T = values.consume() {
@@ -402,14 +409,23 @@ internal final class NavigationSendValues {
     internal let value: any Hashable
     internal let values: [any Hashable]
     internal let identifier: String?
+    /// When a replayed send was first stashed; `nil` for a fresh send.
+    internal let firstStashedAt: ContinuousClock.Instant?
 
     internal var consumed: Bool = false
 
-    internal init(navigator: Navigator, value: any Hashable, values: [any Hashable], identifier: String? = nil) {
+    internal init(
+        navigator: Navigator,
+        value: any Hashable,
+        values: [any Hashable],
+        identifier: String? = nil,
+        firstStashedAt: ContinuousClock.Instant? = nil
+    ) {
         self.navigator = navigator
         self.value = value
         self.values = values
         self.identifier = identifier
+        self.firstStashedAt = firstStashedAt
     }
 
     // See CODE_AUDIT_15 §3.4.
@@ -417,7 +433,7 @@ internal final class NavigationSendValues {
         if consumed == false {
             navigator.log(.error("missing receive handler for type: \(String(describing: type(of: value)))!!!"))
             if identifier == nil {
-                navigator.root.stashUndeliveredSend([value] + values)
+                navigator.root.stashUndeliveredSend([value] + values, at: firstStashedAt ?? .now)
             }
         }
     }
@@ -452,22 +468,29 @@ extension NavigationSendValues {
 
 extension Navigator {
     @MainActor
-    internal func stashUndeliveredSend(_ values: [any Hashable]) {
+    internal func stashUndeliveredSend(_ values: [any Hashable], at stashedAt: ContinuousClock.Instant = .now) {
         pruneUndeliveredSends()
-        undeliveredSends.append((values, .now))
+        undeliveredSends.append((values, stashedAt))
         if undeliveredSends.count > Self.maximumUndeliveredSends {
             undeliveredSends.removeFirst(undeliveredSends.count - Self.maximumUndeliveredSends)
         }
     }
 
+    /// Replays only the stashed sends a receiver of `type` can consume; sends for other
+    /// receivers stay stashed (and keep their original timestamp) until theirs mounts or they
+    /// expire. See CODE_AUDIT_19 §3.2.
     @MainActor
-    internal func replayUndeliveredSends() {
+    internal func replayUndeliveredSends<T: Hashable>(for type: T.Type) {
         pruneUndeliveredSends()
         guard !undeliveredSends.isEmpty else { return }
-        let pending = undeliveredSends
-        undeliveredSends.removeAll()
+        let isForReceiver: ((values: [any Hashable], at: ContinuousClock.Instant)) -> Bool = { send in
+            send.values.first.map { $0 is T } ?? false
+        }
+        let pending = undeliveredSends.filter(isForReceiver)
+        guard !pending.isEmpty else { return }
+        undeliveredSends.removeAll(where: isForReceiver)
         for send in pending {
-            self.send(values: send.values)
+            self.send(values: send.values, firstStashedAt: send.at)
         }
     }
 

@@ -9,7 +9,7 @@ import Foundation
 import os.log
 import SwiftUI
 
-@preconcurrency import GroupActivities
+import GroupActivities
 import TabletopKit
 
 // MARK: - visionOS spatial template configuration
@@ -21,7 +21,7 @@ extension RPGSharePlayController {
               sessionLifecycle.isCurrent(sessionId: sessionId),
               groupSession?.id == sessionId
         else { return }
-        guard let coordinator = await session.systemCoordinator,
+        guard let coordinator = await Self.systemCoordinator(of: SystemCoordinatorLookup(session: session))?.coordinator,
               !Task.isCancelled,
               sessionLifecycle.isCurrent(sessionId: sessionId),
               groupSession?.id == sessionId
@@ -42,6 +42,22 @@ extension RPGSharePlayController {
         tasks[UUID()] = immersionTask
     }
     
+    /// `systemCoordinator` is a nonisolated async getter on the non-Sendable `GroupSession`, so
+    /// reading it from the main actor "sends" the session. The unchecked crossing is scoped to
+    /// this one read-only lookup instead of a module-wide `@preconcurrency import`, which hid
+    /// every other GroupActivities diagnostic in this file. The coordinator itself is only used
+    /// on the main actor afterwards. See CODE_AUDIT_19 §3.10.
+    private struct SystemCoordinatorLookup: @unchecked Sendable {
+        var session: GroupSession<RPGActivity>?
+        var coordinator: SystemCoordinator?
+    }
+
+    @concurrent
+    private nonisolated static func systemCoordinator(of lookup: SystemCoordinatorLookup) async -> SystemCoordinatorLookup? {
+        guard let coordinator = await lookup.session?.systemCoordinator else { return nil }
+        return SystemCoordinatorLookup(session: nil, coordinator: coordinator)
+    }
+
     func applyShareState() {
         guard let coordinator = systemCoordinator else { return }
         var configuration = SystemCoordinator.Configuration()

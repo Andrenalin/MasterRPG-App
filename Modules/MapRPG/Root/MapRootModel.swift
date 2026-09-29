@@ -23,6 +23,12 @@ public final class RootModel: Sendable {
     /// start (`GameController.startGameAsMaster`).
     @MainActor public var isMapStreaming = true
 
+    /// Maps whose entry structure (e.g. the 3D table's hex grid toggle) changed while sharing
+    /// was paused, so the structural content update was never sent. The next explicit send
+    /// must push it before the map state. See CODE_AUDIT_19 §3.12.
+    @ObservationIgnored
+    @MainActor public var mapsWithUnsharedStructure: Set<UUID> = []
+
     /// The game screen retains its map session across map replacement so the
     /// bottom toolbar does not blink out. The owning game screen clears that
     /// retained session explicitly when the whole screen leaves the hierarchy.

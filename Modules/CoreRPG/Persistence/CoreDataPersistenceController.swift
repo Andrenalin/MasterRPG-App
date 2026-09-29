@@ -115,6 +115,9 @@ public final class CoreDataInitModel {
         spotlightIndexer = nil
         persistentHistoryTracker = nil
         persistentHistoryCleaner = nil
+        if let context {
+            ContextFlushLedger.shared.unregister(context)
+        }
     }
 }
 

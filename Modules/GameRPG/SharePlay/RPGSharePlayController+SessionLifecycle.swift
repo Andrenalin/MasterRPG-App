@@ -302,10 +302,12 @@ extension RPGSharePlayController {
         // Track transport identities directly. An initial participant snapshot
         // may arrive before `.joined`; the tracker retains it and the state loop
         // replays those participants exactly once after Messenger is ready.
+        // `self` is re-bound per element, not once before the loop, so the loop does not keep
+        // the controller alive for the session's lifetime. See CODE_AUDIT_19 §3.11.
         let participantTask = Task { @MainActor [weak self] in
-            guard let self else { return }
             for await _ in groupSession.$activeParticipants.values {
-                guard !Task.isCancelled,
+                guard let self,
+                      !Task.isCancelled,
                       self.sessionLoopIsCurrent(sessionId: groupSession.id)
                 else { return }
                 // Treat each stream element as a wake-up signal only, and re-read

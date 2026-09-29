@@ -245,9 +245,9 @@ private extension SpaceViewer {
     private static let heightAboveTable: Float = 1.0
     /// Both the table volume and the just re-anchored immersive content need a
     /// rendered frame before `transformMatrix(relativeTo: .immersiveSpace)`
-    /// reports their settled poses — retried briefly instead of assumed.
-    private static let tablePlacementRetryDelay: Duration = .milliseconds(100)
-    private static let tablePlacementAttempts = 10
+    /// reports their settled poses — retried once per scene update (about a
+    /// second at 90 Hz) instead of assumed. See CODE_AUDIT_19 §3.16.
+    private static let tablePlacementAttempts = 90
 
     /// Floats the object `heightAboveTable` above the volumetric game table.
     ///
@@ -268,8 +268,7 @@ private extension SpaceViewer {
               let table = root.tablePlacementReference else { return }
         if tablePlacementReferenceId == table.id, isMovedSinceTablePlacement { return }
         for _ in 0..<Self.tablePlacementAttempts {
-            try? await Task.sleep(for: Self.tablePlacementRetryDelay)
-            guard !Task.isCancelled else { return }
+            guard let rootEntity, await SceneUpdateWaiter.nextUpdate(of: rootEntity) else { return }
             if placeAboveTable(table) { return }
         }
         Logger.spaceViewer.error("Could not resolve the game table pose in the immersive space")
@@ -654,23 +653,23 @@ private extension SpaceViewer {
                 // only while someone is really dragging/rotating/scaling it,
                 // and flush the settled pose the instant the gesture ends
                 // instead of waiting for the next active-cadence tick.
+                //
+                // Set directly in the (main-actor) handlers, not a turn later through a
+                // `Task` hop: a grab in the same turn as a table-placement attempt must
+                // already be seen by its `!isManipulating` guard. See CODE_AUDIT_19 §3.16.
                 manipulationBeganSubscription = content.subscribe(
                     to: ManipulationEvents.WillBegin.self
                 ) { [weak loadedEntity] event in
                     guard event.entity == loadedEntity else { return }
-                    Task { @MainActor in
-                        self.isManipulating = true
-                        self.isMovedSinceTablePlacement = true
-                    }
+                    self.isManipulating = true
+                    self.isMovedSinceTablePlacement = true
                 }
                 manipulationEndedSubscription = content.subscribe(
                     to: ManipulationEvents.WillEnd.self
                 ) { [weak loadedEntity] event in
                     guard event.entity == loadedEntity else { return }
-                    Task { @MainActor in
-                        self.isManipulating = false
-                        self.sendTransformIfChanged()
-                    }
+                    self.isManipulating = false
+                    self.sendTransformIfChanged()
                 }
             }
 #else

@@ -141,6 +141,10 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         networkModel.passcode = passcode
         networkModel.sessionId = model.sessionId
         networkModel.joinFailure = nil
+        // Removals that piled up while the player was only browsing (e.g. the GM restarting
+        // hosting) must not fail this fresh join: the `Observations` loop armed below yields
+        // the current value first. See CODE_AUDIT_19 §3.1.
+        _ = browserManager.takeRemoved()
         await start(model: playerModel)
 
         guard joinAttemptToken == token else {

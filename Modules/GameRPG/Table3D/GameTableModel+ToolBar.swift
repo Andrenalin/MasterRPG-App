@@ -82,7 +82,12 @@ extension GameTableModel {
 
     func sendMapUpdates() {
         guard let mapId = currentMapId else { return }
-        broadcastMapState(for: mapId)
+        // A structural edit made while sharing was paused was never sent. See CODE_AUDIT_19 §3.12.
+        if mapRoot.rootModel.mapsWithUnsharedStructure.remove(mapId) != nil {
+            sendMapContent(for: mapId, force: true)
+        } else {
+            broadcastMapState(for: mapId)
+        }
     }
 
     /// Game-master room action used by every tabletop platform.

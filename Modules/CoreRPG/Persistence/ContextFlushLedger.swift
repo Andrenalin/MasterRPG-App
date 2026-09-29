@@ -21,6 +21,8 @@ final class ContextFlushLedger: Sendable {
 
     private struct UncheckedObserver: @unchecked Sendable {
         let value: NSObjectProtocol
+        /// Detects a new context allocated at a dead one's address after a store swap.
+        weak var context: NSManagedObjectContext?
     }
 
     private let entries = Mutex<[ObjectIdentifier: [WeakModel]]>([:])
@@ -28,8 +30,16 @@ final class ContextFlushLedger: Sendable {
 
     func register(_ model: CoreDataModel, for context: NSManagedObjectContext) {
         let key = ObjectIdentifier(context)
+        // Keyed by address: an entry left by a released context at the same address belongs
+        // to a torn-down store and must not be reused. See CODE_AUDIT_19 §3.7.
+        let isReusedAddress = observers.withLock { observers in
+            guard let existing = observers[key], existing.context !== context else { return false }
+            NotificationCenter.default.removeObserver(existing.value)
+            observers[key] = nil
+            return true
+        }
         entries.withLock { entries in
-            var models = entries[key, default: []].filter { $0.model != nil }
+            var models = isReusedAddress ? [] : entries[key, default: []].filter { $0.model != nil }
             models.append(WeakModel(model: model))
             entries[key] = models
         }
@@ -44,7 +54,18 @@ final class ContextFlushLedger: Sendable {
             ) { [weak self] _ in
                 self?.didCommit(key)
             }
-            observers[key] = UncheckedObserver(value: token)
+            observers[key] = UncheckedObserver(value: token, context: context)
+        }
+    }
+
+    /// Drops the context's queues and its save observer. Call when the store is torn down
+    /// (`CoreDataInitModel.stop()`). See CODE_AUDIT_19 §3.7.
+    func unregister(_ context: NSManagedObjectContext) {
+        let key = ObjectIdentifier(context)
+        entries.withLock { _ = $0.removeValue(forKey: key) }
+        let observer = observers.withLock { $0.removeValue(forKey: key) }
+        if let observer {
+            NotificationCenter.default.removeObserver(observer.value)
         }
     }
 
