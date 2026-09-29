@@ -324,7 +324,9 @@ enum BoardTextureRenderer {
             } else {
                 // Players only ever get the hidden rooms (see `BoardTextureInput`), drawn as fog:
                 // the repeated map tile when one is configured, otherwise the solid colour.
-                if let fogTile {
+                // A room needing more tiles than the 2D budget gets solid fog there, so here too.
+                // See CODE_AUDIT_19 §5.18.
+                if let fogTile, MapFogTileBudget.allowsTiling(roomBounds: path.boundingBoxOfPath, tileRectangle: fogTile.rect) {
                     drawTiledFog(fogTile, in: path, context: context, canvas: canvas)
                 } else {
                     context.addPath(path)
@@ -355,8 +357,9 @@ enum BoardTextureRenderer {
 
     struct FogTile {
         let image: CGImage
-        /// The tile's rect in canvas space (top-left origin), snapped to the crop's whole pixels so
-        /// each repeat maps 1:1 onto texture pixels instead of being resampled.
+        /// The tile's exact rect in canvas space (top-left origin): the lattice's period and phase.
+        /// Snapping it to whole texture pixels made the 3D pattern drift from the 2D one after a
+        /// few repeats. See CODE_AUDIT_19 §5.18.
         let rect: CGRect
     }
 
@@ -373,25 +376,35 @@ enum BoardTextureRenderer {
         let scaleY = pixelSize.height / canvas.height
         // A bitmap context's image rows run top to bottom, the same top-left-origin convention as
         // the tile's canvas coordinates.
-        let pixelRect = CGRect(
+        let exactPixelRect = CGRect(
             x: tile.minX * scaleX,
             y: tile.minY * scaleY,
             width: tile.width * scaleX,
             height: tile.height * scaleY
         )
-        .integral
         .intersection(CGRect(origin: .zero, size: pixelSize))
-        guard !pixelRect.isNull,
-              pixelRect.width >= 1,
-              pixelRect.height >= 1,
-              let image = context.makeImage()?.cropping(to: pixelRect) else { return nil }
+        guard !exactPixelRect.isNull else { return nil }
+        // Crop to the nearest whole pixels (snapping outward added slivers of the neighbouring
+        // pixels, visible as seams), then draw the crop into the exact tile rect, so the repeat
+        // period is the tile's, as in 2D. See CODE_AUDIT_19 §5.18.
+        let minX = exactPixelRect.minX.rounded()
+        let minY = exactPixelRect.minY.rounded()
+        let cropRect = CGRect(
+            x: minX,
+            y: minY,
+            width: exactPixelRect.maxX.rounded() - minX,
+            height: exactPixelRect.maxY.rounded() - minY
+        )
+        guard cropRect.width >= 1,
+              cropRect.height >= 1,
+              let image = context.makeImage()?.cropping(to: cropRect) else { return nil }
         return FogTile(
             image: image,
             rect: CGRect(
-                x: pixelRect.minX / scaleX,
-                y: pixelRect.minY / scaleY,
-                width: pixelRect.width / scaleX,
-                height: pixelRect.height / scaleY
+                x: exactPixelRect.minX / scaleX,
+                y: exactPixelRect.minY / scaleY,
+                width: exactPixelRect.width / scaleX,
+                height: exactPixelRect.height / scaleY
             )
         )
     }

@@ -167,6 +167,43 @@ struct BattleRoundModelTests {
         #expect(sut.activeAttackerId == first.id)
     }
 
+    /// CODE_AUDIT_19 §5.8: `nextRound()` must skip a fallen first combatant like `nextAttacker()`.
+    @Test("A new round skips a fallen first combatant")
+    func nextRoundSkipsDeadFirstCombatant() {
+        let sut = BattleRoundModel()
+        let first = combatant(name: "First", initiative: 18, isDead: true)
+        let second = combatant(name: "Second", initiative: 12)
+        sut.begin(mapId: UUID(), players: [second], roomCombatants: [first], initiativeOrder: .descending)
+
+        #expect(sut.nextRound())
+
+        #expect(sut.activeAttackerId == second.id)
+        #expect(sut.rollRecipientCombatantId == second.id)
+    }
+
+    /// CODE_AUDIT_19 §5.8: a fallen combatant leaves every attacker's target list, not only the
+    /// active one's.
+    @Test("Removing a fallen defender clears it from every entry")
+    func removeDefenderClearsEveryEntry() throws {
+        let sut = BattleRoundModel()
+        let first = combatant(name: "First", initiative: 18)
+        let second = combatant(name: "Second", initiative: 12)
+        let target = combatant(name: "Target", initiative: 4, highlighted: true)
+        sut.begin(mapId: UUID(), players: [first, second], roomCombatants: [target], initiativeOrder: .descending)
+        #expect(sut.activateAttacker(first.id))
+        _ = sut.synchronize(pins: [first.pin, second.pin, target.pin])
+        #expect(sut.activateAttacker(second.id))
+        _ = sut.synchronize(pins: [first.pin, second.pin, target.pin])
+        #expect(sut.entries.filter { $0.defenderIds.contains(target.id) }.count == 2)
+        let sequence = sut.networkSequence
+
+        #expect(sut.removeDefender(target.id))
+
+        #expect(sut.entries.allSatisfy { !$0.defenderIds.contains(target.id) })
+        #expect(sut.networkSequence > sequence)
+        #expect(!sut.removeDefender(target.id))
+    }
+
     @Test("Removing a combatant drops its own entry and every defender appearance")
     func removeCombatantDropsEntryAndDefenderReferences() throws {
         // Given: second is highlighted, so synchronizing while third is

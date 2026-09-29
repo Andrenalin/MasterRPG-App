@@ -108,16 +108,22 @@ extension MasterController {
             // a joining player's pin only appears on the next unrelated map
             // state update.
             if let mapId = root.mapRoot.gameControllable.gameModel.currentItemId {
-                // Messenger messages have no history. Replay the latest
-                // photo-free structural snapshot when the roster changes so a
-                // SharePlay participant joining after the Journal publication
-                // receives edits made since that base attachment.
-                await send(
-                    type: .update,
-                    subtype: .generic,
-                    updated: root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
-                )
-                await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
+                if root.mapRoot.rootModel.isMapStreaming {
+                    // Messenger messages have no history. Replay the latest
+                    // photo-free structural snapshot when the roster changes so a
+                    // SharePlay participant joining after the Journal publication
+                    // receives edits made since that base attachment.
+                    await send(
+                        type: .update,
+                        subtype: .generic,
+                        updated: root.mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
+                    )
+                    await send(type: .update, subtype: .mapState, updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId))
+                } else {
+                    // A paused "Share Map" keeps the map private; resuming sends the content
+                    // and the state, including the new player's pin. See CODE_AUDIT_19 §5.7.
+                    root.mapRoot.rootModel.mapsWithUnsharedStructure.insert(mapId)
+                }
                 if root.mapRoot.mapGameControllable.battleRoundModel.isRunning,
                    let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                        for: mapId

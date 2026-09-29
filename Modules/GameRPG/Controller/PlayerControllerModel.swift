@@ -76,6 +76,23 @@ final class PlayerControllerModel {
         let counter: Int
     }
 
+    private struct MapRepairFailures: Equatable, Sendable {
+        let assetVersion: Int?
+        let contentVersion: Int?
+        var count: Int
+    }
+
+    /// A map repair to request again after the master answered `.failed`.
+    struct MapRepairRetry: Equatable, Sendable {
+        let itemId: UUID
+        let assetVersion: Int?
+        let contentVersion: Int?
+        let attempt: Int
+    }
+
+    /// How often one map generation's repair is re-requested after a `.failed` answer.
+    static let maximumMapRepairRetries = 3
+
     private struct PendingMapRepair: Equatable, Sendable {
         let assetVersion: Int?
         let contentVersion: Int?
@@ -155,6 +172,10 @@ final class PlayerControllerModel {
     private var mapContentVersions: [UUID: Int] = [:]
     private var pendingMapRepairs: [UUID: PendingMapRepair] = [:]
     private var pendingMapBackgroundRepairs: [UUID: PendingMapRepair] = [:]
+    /// `.failed` answers per map for the generation of its pending repair.
+    /// See CODE_AUDIT_19 §5.6.
+    private var mapRepairFailures: [UUID: MapRepairFailures] = [:]
+    @ObservationIgnored private var mapRepairRetryTasks: [UUID: Task<Void, Never>] = [:]
     /// Latest `.battleRound` update that arrived while its map generation was
     /// not yet current on this device — mirrors `pendingMapStates`, not the
     /// per-pin `deferredMapPins`: there is only one battle-round state per
@@ -926,6 +947,7 @@ final class PlayerControllerModel {
         pendingMapRepairs[itemId] = nil
         pendingMapBackgroundRepairs[itemId] = nil
         pendingMapRequests.remove(itemId)
+        clearMapRepairFailures(itemId: itemId)
         pendingMapContentUpdates[itemId] = nil
         pendingMapStates[itemId] = nil
     }
@@ -937,7 +959,54 @@ final class PlayerControllerModel {
         pendingMapRepairs[itemId] = nil
         pendingMapBackgroundRepairs[itemId] = nil
         pendingMapRequests.remove(itemId)
+        clearMapRepairFailures(itemId: itemId)
         return presentsMap
+    }
+
+    /// The master answered the pending repair with `.failed` (too many deferred repairs, or
+    /// an export failure). `beginMapRepair` coalesces an identical pending repair, so without
+    /// a retry the map stayed broken until the GM changed its generation.
+    ///
+    /// Returns the retry to schedule, or `nil` when no repair is pending or this generation
+    /// has failed `maximumMapRepairRetries` times; then the pending repair is dropped, so the
+    /// next announcement of the map may request it again. See CODE_AUDIT_19 §5.6.
+    func failMapRepair(itemId: UUID) -> MapRepairRetry? {
+        guard let repair = pendingMapRepairs[itemId] else { return nil }
+        var failures = mapRepairFailures[itemId]
+        if failures?.assetVersion != repair.assetVersion || failures?.contentVersion != repair.contentVersion {
+            failures = MapRepairFailures(assetVersion: repair.assetVersion, contentVersion: repair.contentVersion, count: 0)
+        }
+        failures?.count += 1
+        mapRepairFailures[itemId] = failures
+        let attempt = failures?.count ?? 1
+        guard attempt <= Self.maximumMapRepairRetries else {
+            pendingMapRepairs[itemId] = nil
+            pendingMapBackgroundRepairs[itemId] = nil
+            pendingMapRequests.remove(itemId)
+            return nil
+        }
+        return MapRepairRetry(
+            itemId: itemId,
+            assetVersion: repair.assetVersion,
+            contentVersion: repair.contentVersion,
+            attempt: attempt
+        )
+    }
+
+    /// Whether `retry`'s generation is still the pending repair for its map.
+    func isMapRepairPending(_ retry: MapRepairRetry) -> Bool {
+        guard let repair = pendingMapRepairs[retry.itemId] else { return false }
+        return repair.assetVersion == retry.assetVersion && repair.contentVersion == retry.contentVersion
+    }
+
+    func setMapRepairRetryTask(_ task: Task<Void, Never>, itemId: UUID) {
+        mapRepairRetryTasks[itemId]?.cancel()
+        mapRepairRetryTasks[itemId] = task
+    }
+
+    private func clearMapRepairFailures(itemId: UUID) {
+        mapRepairFailures[itemId] = nil
+        mapRepairRetryTasks.removeValue(forKey: itemId)?.cancel()
     }
 
     func resetMapContentSequence() {
@@ -950,6 +1019,9 @@ final class PlayerControllerModel {
         pendingMapRepairs.removeAll()
         pendingMapBackgroundRepairs.removeAll()
         pendingMapRequests.removeAll()
+        mapRepairFailures.removeAll()
+        mapRepairRetryTasks.values.forEach { $0.cancel() }
+        mapRepairRetryTasks.removeAll()
         deferredMapPins.removeAll()
         deferredMapPinOrder.removeAll()
         pendingBattleRoundUpdates.removeAll()

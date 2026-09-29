@@ -649,20 +649,26 @@ public extension EditControllable {
 
         // Check if we have an existing file
         var isSameFilePath: Bool = false
+        var replacedFileUrl: FileUrl?
         if let existingFileUrl = item.fileUrl {
             // If selecting same file, just reset cache without deleting
             isSameFilePath = await fileUrlDataController.isSameFile(existingFileUrl: existingFileUrl, newUrl: url)
             // reset cach only for the thumbnail, it might be old thumbnail file exists.
             await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: !isSameFilePath)
-
             if !isSameFilePath {
-                // Different file - delete old file and clear reference
-                fileUrlDataController.delete(existingFileUrl)
-                reset(fileUrl: nil, itemId: itemId)
+                replacedFileUrl = existingFileUrl
             }
         }
 
-        guard let url, !isSameFilePath else { return }
+        guard !isSameFilePath else { return }
+        guard let url else {
+            // The file was removed, not replaced.
+            if let replacedFileUrl {
+                fileUrlDataController.delete(replacedFileUrl)
+                reset(fileUrl: nil, itemId: itemId)
+            }
+            return
+        }
 
         let securityScope = url.startSecurityScopedAccess()
         defer { securityScope.stop() }
@@ -674,14 +680,24 @@ public extension EditControllable {
         }
 
         do {
+            // Create the new file before the old one is deleted: a failed replacement (iCloud
+            // copy error, scope failure) used to leave the item with no file on every device.
+            // See CODE_AUDIT_19 §5.9.
             let updatedFileUrl = try await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
             reset(fileUrl: updatedFileUrl, itemId: itemId)
+            if let replacedFileUrl {
+                await fileUrlDataController.deleteReplaced(replacedFileUrl)
+                if updatedFileUrl.location == .url {
+                    // A remote file saves no bookmark, so the old one is stale.
+                    fileUrlDataController.removeBookmarks(fileId: itemId)
+                }
+            }
         } catch {
-            // Don't paper over a failed attach by silently leaving/forcing `fileUrl` to
-            // nil as if nothing was ever selected — log and surface it so the picker UI
-            // can tell the user the attach failed. See CODE_AUDIT_EditItem §5.7.
+            // The old file and its reference are kept. Log and surface the failure so the
+            // user learns the attach failed. See CODE_AUDIT_EditItem §5.7, CODE_AUDIT_19 §5.9.
             Logger.editController.error("resetFile(url:itemId:) failed to create file url: \(error.localizedDescription, privacy: .public)")
             itemControllable.itemDataModel.lastPersistenceError = error
+            PersistenceIssueCenter.shared.recordFileError(error)
         }
     }
     

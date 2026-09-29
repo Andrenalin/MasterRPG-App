@@ -394,11 +394,15 @@ struct BattleRoundController: Sendable {
         #if !os(tvOS)
         root.gameModel.gameTableModel?.syncPawnsWithMapPins()
         #endif
-        root.networkActions.game(
-            root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId),
-            .mapState,
-            nil
-        )
+        // While the GM paused "Share Map", the map state (room visibility, focus, pins) stays
+        // private; only the battle round goes out. Resuming sends the state. See CODE_AUDIT_19 §5.7.
+        if root.mapRoot.rootModel.isMapStreaming {
+            root.networkActions.game(
+                root.mapRoot.mapGameControllable.networkMapUpdate(for: mapId),
+                .mapState,
+                nil
+            )
+        }
         if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(for: mapId) {
             root.networkActions.game(battleUpdate, .battleRound, nil)
         }

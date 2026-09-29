@@ -123,6 +123,40 @@ final class MapPlayerSequencingTests {
         #expect(pending.counter == 41)
     }
 
+    /// CODE_AUDIT_19 §5.6: a `.failed` answer used to leave the repair pending forever, and
+    /// `beginMapRepair` coalesced every later request for the same generation.
+    @Test("A failed Map repair is retried a bounded number of times, then may be requested again")
+    func failedMapRepairIsRetriedThenReleased() throws {
+        let model = PlayerControllerModel()
+        let itemId = UUID()
+        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: true, counter: 10))
+
+        for attempt in 1...PlayerControllerModel.maximumMapRepairRetries {
+            let retry = try #require(model.failMapRepair(itemId: itemId))
+            #expect(retry.attempt == attempt)
+            #expect(retry.assetVersion == 3)
+            #expect(retry.contentVersion == 5)
+            #expect(model.isMapRepairPending(retry))
+        }
+
+        #expect(model.failMapRepair(itemId: itemId) == nil)
+        #expect(model.pendingMapRepairRequirement(itemId: itemId) == nil)
+        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: true, counter: 11))
+    }
+
+    @Test("A completed Map repair resets its failure count")
+    func completedMapRepairResetsFailures() throws {
+        let model = PlayerControllerModel()
+        let itemId = UUID()
+        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: false, counter: 10))
+        _ = try #require(model.failMapRepair(itemId: itemId))
+        _ = model.completeMapRepair(itemId: itemId)
+
+        #expect(model.failMapRepair(itemId: itemId) == nil)
+        #expect(model.beginMapRepair(itemId: itemId, assetVersion: 3, contentVersion: 5, presentsMap: false, counter: 12))
+        #expect(try #require(model.failMapRepair(itemId: itemId)).attempt == 1)
+    }
+
     @Test("An older Map state cannot roll live state backward")
     func staleMapStateIsIgnored() async throws {
         // Given

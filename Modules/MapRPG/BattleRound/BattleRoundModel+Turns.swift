@@ -176,11 +176,32 @@ extension BattleRoundModel {
         return nil
     }
 
+    /// Drops a fallen combatant from every entry's target list. `synchronize(pins:)` only
+    /// recomputes the *active* entry's `defenderIds`, so the other attackers kept it and
+    /// highlighted it again on their next turn. See CODE_AUDIT_19 §5.8.
+    @discardableResult
+    func removeDefender(_ combatantId: UUID) -> Bool {
+        var changed = false
+        for index in entries.indices where entries[index].defenderIds.contains(combatantId) {
+            entries[index].defenderIds.removeAll { $0 == combatantId }
+            changed = true
+        }
+        if rollRecipientCombatantId == combatantId, rollRecipientCombatantId != activeAttackerId {
+            rollRecipientCombatantId = activeAttackerId
+            changed = true
+        }
+        if changed {
+            bumpNetworkSequence()
+        }
+        return changed
+    }
+
     @discardableResult
     func nextRound() -> Bool {
         guard isRunning else { return false }
         roundCounter += 1
-        activeAttackerId = entries.first?.attackerId
+        // Skip fallen combatants, as `nextAttacker()` does. See CODE_AUDIT_19 §5.8.
+        activeAttackerId = firstLivingAttackerId(from: 0) ?? entries.first?.attackerId
         rollRecipientCombatantId = activeAttackerId
         presentedActivePinId = activeAttackerId.flatMap { combatant(id: $0)?.pinId }
         bumpNetworkSequence()

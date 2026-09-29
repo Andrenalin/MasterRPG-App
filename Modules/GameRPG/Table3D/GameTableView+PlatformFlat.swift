@@ -91,6 +91,10 @@ public struct GameTableView: View {
         initializedGame.playerPinId = initializedGame.isGameMaster
             ? nil
             : root.gameModel.gameConfig.id
+        // Each 2D↔3D toggle builds a new model: keep the GM's preview lens. See CODE_AUDIT_19 §5.17.
+        if initializedGame.isGameMaster {
+            initializedGame.displayMode = root.mapRoot.rootModel.gameDisplayMode
+        }
         root.gameModel.gameTableModel = initializedGame
         game = initializedGame
 
@@ -98,6 +102,10 @@ public struct GameTableView: View {
             isGameMaster: initializedGame.isGameMaster
         )
         guard !Task.isCancelled else { return }
+        // The reshare baseline starts at the loaded map's values, as the 2D session's does on
+        // appear; the defaults (scale 1, no hex grid) offered a reshare for every map that
+        // differed from them. See CODE_AUDIT_19 §5.17.
+        initializedGame.resetReshare()
         initializedGame.syncPawnsWithMapPins()
     }
 }

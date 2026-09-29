@@ -78,6 +78,7 @@ struct OpenFileWindowView: View {
     
 #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 #endif
     
     @Environment(ScenesManager.self) private var scenesManager
@@ -94,7 +95,9 @@ struct OpenFileWindowView: View {
     func menuButton(windowId: String) -> some View {
         ControlGroup {
 #if os(iOS)
-            if horizontalSizeClass == .regular {
+            // iPhones never open a second window, whatever their size class; an iPad in
+            // compact Split View still can. See CODE_AUDIT_19 §5.16.
+            if supportsMultipleWindows {
                 Button {
                     scenesManager.openWindow(SceneId(rawValue: windowId), selection: WindowItemSelection(itemId: model.itemId, entryId: model.entryId))
                 } label: {

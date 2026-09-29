@@ -563,7 +563,8 @@ extension GameController {
             }
             if let secondReroll = item.rerollOptions.first(where: { $0.number == second }) {
                 if secondReroll.maxDiceValue {
-                    second = $0.die.max + 1
+                    // The second die's own maximum. See CODE_AUDIT_19 §5.15.
+                    second = $1.die.max + 1
                 } else {
                     second = secondReroll.value
                 }

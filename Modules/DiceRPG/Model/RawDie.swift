@@ -166,15 +166,18 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
 // exports and LAN/SharePlay payloads during a mixed-version rollout). Encode `.three` in the
 // legacy shape and map the legacy shape back to `.three` on decode. See CODE_AUDIT_18 §5.8.
 extension RawDie.Sides: Codable {
-    /// Mirrors the synthesized wire format of the cases every shipped build knows.
+    /// Mirrors the synthesized wire format of the cases every shipped build knows, plus the
+    /// `{"three":{}}` form that builds `c2d185f2`…`354e3893` wrote. It is only decoded, never
+    /// encoded. See CODE_AUDIT_19 §5.14.
     private enum WireShape: Codable {
-        case two, four, six, eight, ten, twelve, twenty
+        case two, three, four, six, eight, ten, twelve, twenty
         case number(Int)
     }
 
     public init(from decoder: any Decoder) throws {
         switch try WireShape(from: decoder) {
         case .two: self = .two
+        case .three: self = .three
         case .four: self = .four
         case .six: self = .six
         case .eight: self = .eight

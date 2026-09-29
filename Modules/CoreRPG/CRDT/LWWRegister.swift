@@ -37,16 +37,6 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
             // functionally equivalent to say rhs instance is ordered after lhs instance
             lhs.clockId <= rhs.clockId
         }
-
-        /// Whether this atom's clock is within "now plus the allowed skew". A clock beyond it
-        /// (a badly skewed device or a crafted payload) must not win a merge: local writes are
-        /// themselves bounded by the same skew, so a stored far-future clock would beat every
-        /// later edit on every replica and freeze the field. Rejecting (instead of clamping,
-        /// which depends on each replica's merge time) keeps replicas convergent.
-        /// See CODE_AUDIT_18 §5.5.
-        var isAdmissible: Bool {
-            clockId.clock <= MonotonicWallClock.bounded(clockId.clock)
-        }
     }
 
     private var _storage: Metadata
@@ -60,10 +50,13 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
         set {
             // A local write overwrites what this replica currently holds, so it must order
             // after it even when the stored clock came from another device (or a previous
-            // launch) and is ahead of this device's clock. `observe` bounds the jump.
-            // See CODE_AUDIT_18 §5.5.
-            MonotonicWallClock.observe(_storage.clockId.clock)
-            _storage = Metadata(value: newValue, id: selfId)
+            // launch) and is ahead of this device's clock — however far ahead: a stored
+            // far-future clock can then never freeze the field. `observe` still bounds how far
+            // the process clock itself jumps. See CODE_AUDIT_18 §5.5, CODE_AUDIT_19 §5.5.
+            let stored = _storage.clockId.clock
+            MonotonicWallClock.observe(stored)
+            let afterStored = stored.nextUp.isFinite ? stored.nextUp : stored
+            _storage = Metadata(value: newValue, id: selfId, timestamp: max(MonotonicWallClock.now(), afterStored))
         }
     }
 
@@ -95,20 +88,17 @@ extension LWWRegister: Replicable {
         return result
     }
 
-    /// Last-writer-wins, except that an atom whose clock is beyond the allowed skew loses to
-    /// an admissible one (on either side, so a far-future value stored before this fix heals
-    /// on its next merge too). See CODE_AUDIT_18 §5.5.
+    /// Plain last-writer-wins on (clock, actor id): the result depends only on the two atoms,
+    /// never on the merging device's time, so every replica converges on the same value.
+    ///
+    /// Rejecting atoms beyond "now plus the allowed skew" (CODE_AUDIT_18 §5.5) depended on
+    /// each replica's local time: a device whose clock ran fast had its edits refused by the
+    /// others while keeping them itself, and a re-sent stale atom won once real time caught
+    /// up. Freezing is prevented on the write side instead: a local write always orders
+    /// after the value it overwrites (`value`'s setter). See CODE_AUDIT_19 §5.5.
     static func mergedStorage(_ local: Metadata, _ remote: Metadata) -> Metadata {
-        switch (local.isAdmissible, remote.isAdmissible) {
-        case (true, false):
-            return local
-        case (false, true):
-            MonotonicWallClock.observe(remote.clockId.clock)
-            return remote
-        default:
-            MonotonicWallClock.observe(remote.clockId.clock)
-            return local <= remote ? remote : local
-        }
+        MonotonicWallClock.observe(remote.clockId.clock)
+        return local <= remote ? remote : local
     }
 }
 

@@ -250,6 +250,28 @@ struct GameControllerTests {
         #expect(reorder.map { $0.id } == [GameControllerTests.dieUUID1, GameControllerTests.dieUUID2, GameControllerTests.dieUUID3])
     }
     
+    /// CODE_AUDIT_19 §5.15: a "max dice value" reroll counts as the rerolled die's own maximum
+    /// plus one. The second die used the first die's maximum, so a d6 rolled 1 next to a d20
+    /// counted as 21 and sorted ahead of a d20 showing 10.
+    @Test func reorderUsesEachDiesOwnMaximumForAReroll() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        let sixId = UUID()
+        let twentyId = UUID()
+        dice.rerollOptions = [DiceModel.RerollOption(number: 1, value: 0, maxDiceValue: true)]
+        dice.dice = [
+            DieModel(id: sixId, die: .six, rotation: 0, result: [1], displayState: 3),
+            DieModel(id: twentyId, die: .twenty, rotation: 0, result: [10], displayState: 3),
+        ]
+        #expect(sut.reorder(for: dice.id).map(\.id) == [twentyId, sixId])
+
+        dice.dice = [
+            DieModel(id: twentyId, die: .twenty, rotation: 0, result: [10], displayState: 3),
+            DieModel(id: sixId, die: .six, rotation: 0, result: [1], displayState: 3),
+        ]
+        #expect(sut.reorder(for: dice.id).map(\.id) == [twentyId, sixId])
+    }
+
     @Test func calculate() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController

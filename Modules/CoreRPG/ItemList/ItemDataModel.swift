@@ -19,9 +19,9 @@ public final class ItemDataModel: Sendable {
     @ObservationIgnored public var contentWidgetPublisher: (@MainActor @Sendable () -> Void)?
 
     /// Set whenever `ItemControllable.save()`/`flushPendingOperations()`/`resetData()`'s batch
-    /// delete fails. `nil` once a following persistence call succeeds. UI can observe this to
-    /// surface a recoverable-error alert instead of silently discarding an edit that never
-    /// reached disk. See CODE_AUDIT §5.1.
+    /// delete fails. `nil` once a following save succeeds (a flush alone doesn't clear it).
+    /// The UI shows the app-wide `PersistenceIssueCenter` instead. See CODE_AUDIT §5.1,
+    /// CODE_AUDIT_19 §5.13.
     public internal(set) var lastPersistenceError: (any Error)?
 
     public var items: [UUID] = []

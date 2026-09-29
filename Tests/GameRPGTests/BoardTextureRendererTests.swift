@@ -94,6 +94,40 @@ struct BoardTextureRendererTests {
         #expect(try TexturePixel(texture, x: 25, y: 75).isBlue)
     }
 
+    /// CODE_AUDIT_19 §5.18: the repeat period is the tile's exact size. Snapping it to whole
+    /// texture pixels made the 3D lattice drift from the 2D one on large maps.
+    @Test("The fog tile keeps its exact rect as the repeat period")
+    func fogTileKeepsExactPeriod() throws {
+        let pixelSize = CGSize(width: 2048, height: 2048)
+        let context = try #require(CGContext(
+            data: nil,
+            width: Int(pixelSize.width),
+            height: Int(pixelSize.height),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ))
+        let canvas = CGSize(width: 3000, height: 3000)
+        let tile = CGRect(x: 10.3, y: 20.7, width: 33.3, height: 41.9)
+
+        let fogTile = try #require(BoardTextureRenderer.fogTileImage(tile, from: context, canvas: canvas, pixelSize: pixelSize))
+
+        #expect(abs(fogTile.rect.minX - tile.minX) < 1e-9)
+        #expect(abs(fogTile.rect.minY - tile.minY) < 1e-9)
+        #expect(abs(fogTile.rect.width - tile.width) < 1e-9)
+        #expect(abs(fogTile.rect.height - tile.height) < 1e-9)
+    }
+
+    /// CODE_AUDIT_19 §5.18: the 3D board uses the 2D per-room tile budget, so a room that needs
+    /// more tiles than 2D draws gets solid fog in both.
+    @Test("A room needing more tiles than the 2D budget gets solid fog")
+    func tileBudgetMatchesTwoDimensionalMap() {
+        let tile = CGRect(x: 0, y: 0, width: 1, height: 1)
+        #expect(MapFogTileBudget.allowsTiling(roomBounds: CGRect(x: 0, y: 0, width: 50, height: 50), tileRectangle: tile))
+        #expect(!MapFogTileBudget.allowsTiling(roomBounds: CGRect(x: 0, y: 0, width: 100, height: 100), tileRectangle: tile))
+    }
+
     @Test("Without a complete tile selection the hidden room stays solid fog")
     func incompleteTileFallsBackToSolidFog() async throws {
         let texture = try await render(tileCoordinates: Array(Self.redQuadrant.prefix(3)))

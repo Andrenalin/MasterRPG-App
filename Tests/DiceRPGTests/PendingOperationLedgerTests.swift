@@ -2,7 +2,7 @@
 
 #if canImport(Testing)
 import CoreData
-import CoreRPG
+@testable import CoreRPG
 import Foundation
 import Testing
 
@@ -78,6 +78,120 @@ struct PendingOperationLedgerTests {
         try await second.save()
         #expect(Set(try await first.fetchIds()) == [firstId, secondId])
         #expect(await first.unsavedInsertIds().isEmpty)
+    }
+
+    // MARK: - CODE_AUDIT_19
+
+    /// §5.4: a delete used to go straight into the context, so another module's failed save
+    /// rolled it back and the item came back on disk while it stayed gone in memory.
+    @Test func deleteSurvivesARollbackOfTheSharedContext() async throws {
+        let store = try makeStore()
+        let sut = DataController(context: store.context, token: NetworkModules.dice.token)
+        let itemId = UUID()
+        try sut.replaceSync(id: itemId, with: dice(itemId, name: "Saved"))
+        try await sut.save()
+
+        try await sut.delete(id: itemId)
+        await store.context.perform {
+            store.context.rollbackRestoringFlushedOperations()
+        }
+        try await sut.save()
+
+        #expect(try await sut.fetchIds().isEmpty)
+    }
+
+    /// §5.4: the same for a direct replace (`addNew`).
+    @Test func directReplaceSurvivesARollbackOfTheSharedContext() async throws {
+        let store = try makeStore()
+        let sut = DataController(context: store.context, token: NetworkModules.dice.token)
+        let itemId = UUID()
+
+        try await sut.replace(id: itemId, with: dice(itemId, name: "New"))
+        await store.context.perform {
+            store.context.rollbackRestoringFlushedOperations()
+        }
+        try await sut.save()
+
+        #expect(try await sut.fetchIds() == [itemId])
+    }
+
+    /// §5.3: an edit is re-queued by at most `maxRollbackRetries` rollbacks, then discarded,
+    /// so a recurring save error can't stall persistence for the whole session.
+    @Test func rollbackRetriesAreCapped() async throws {
+        let store = try makeStore()
+        let sut = DataController(context: store.context, token: NetworkModules.dice.token)
+        let itemId = UUID()
+        try sut.replaceSync(id: itemId, with: dice(itemId, name: "Failing"))
+
+        for _ in 0...CoreDataModel.maxRollbackRetries {
+            try await sut.flushPendingOperations()
+            await store.context.perform {
+                store.context.rollbackRestoringFlushedOperations()
+            }
+        }
+        try await sut.save()
+
+        #expect(try await sut.fetchIds().isEmpty)
+    }
+
+    /// §5.3: the items a failed save names are quarantined; the other edits are retried.
+    @Test func itemsNamedByTheSaveErrorAreNotRetried() async throws {
+        let store = try makeStore()
+        let sut = DataController(context: store.context, token: NetworkModules.dice.token)
+        let invalidId = UUID()
+        let validId = UUID()
+        try sut.replaceSync(id: invalidId, with: dice(invalidId, name: "Invalid"))
+        try sut.replaceSync(id: validId, with: dice(validId, name: "Valid"))
+        try await sut.flushPendingOperations()
+
+        await store.context.perform {
+            let invalidObject = store.context.registeredObjects.first {
+                ($0 as? any CoreDataId)?.uuid == invalidId
+            }
+            let error = NSError(
+                domain: NSCocoaErrorDomain,
+                code: NSValidationMissingMandatoryPropertyError,
+                userInfo: [NSValidationObjectErrorKey: invalidObject as Any]
+            )
+            store.context.rollbackRestoringFlushedOperations(after: error)
+        }
+        try await sut.save()
+
+        #expect(try await sut.fetchIds() == [validId])
+    }
+
+    /// §5.1: a failed consolidated save re-queues the import's insert; the rollback's delete
+    /// (`ItemControllable.deleteForExternalImport`) must keep the second save from committing it.
+    @Test func rolledBackImportInsertIsNotCommittedByTheNextSave() async throws {
+        let store = try makeStore()
+        let sut = DataController(context: store.context, token: NetworkModules.dice.token)
+        let importedId = UUID()
+        try sut.replaceSync(id: importedId, with: dice(importedId, name: "Imported"))
+        sut.markUnsavedInsert(id: importedId)
+        try await sut.flushPendingOperations()
+        await store.context.perform {
+            store.context.rollbackRestoringFlushedOperations()
+        }
+
+        await sut.removePendingOperations(for: importedId)
+        try await sut.delete(id: importedId)
+        try await sut.save()
+
+        #expect(try await sut.fetchIds().isEmpty)
+    }
+
+    /// §5.12: a full reconciliation keeps an unsaved local insert listed, not only in `itemData`.
+    @Test func reconciliationKeepsUnsavedInsertsListed() async throws {
+        let store = try makeStore()
+        let root = DiceRootModel.testRoot()
+        root.itemController.itemDataModel.dataController = DataController(context: store.context, token: NetworkModules.dice.token)
+        let localId = UUID()
+        let remoteId = UUID()
+        root.itemController.replace(model: dice(localId, name: "Local"), isInsert: true)
+
+        await root.itemController.updates([dice(remoteId, name: "Remote")])
+
+        #expect(Set(root.itemController.itemDataModel.items) == [localId, remoteId])
     }
 }
 

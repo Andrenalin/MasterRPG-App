@@ -309,8 +309,9 @@ extension GameController {
               let attacker = battleRoundModel.attacker(for: entry) else {
             return
         }
+        // A fallen combatant is never highlighted as a target. See CODE_AUDIT_19 §5.8.
         let highlightedPinIds = Set(
-            [attacker.pinId] + battleRoundModel.defenders(for: entry).map(\.pinId)
+            [attacker.pinId] + battleRoundModel.defenders(for: entry).filter { !$0.isDead }.map(\.pinId)
         )
         for pin in map.mapPins where pin.isHighlighted != highlightedPinIds.contains(pin.id) {
             _ = updatePinState(itemId: itemId, pinId: pin.id) { updatedPin in

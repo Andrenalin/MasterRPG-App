@@ -177,12 +177,16 @@ extension MasterController {
                     root.gameModel.gameTableModel?.syncPawnsWithMapPins()
                     #endif
                     if syncResult.healthChanged {
-                        await send(
-                            type: .update,
-                            subtype: .mapState,
-                            updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id),
-                            authoritativeMaster: true
-                        )
+                        // A paused "Share Map" keeps the map state private; only the battle
+                        // round goes out. See CODE_AUDIT_19 §5.7.
+                        if root.mapRoot.rootModel.isMapStreaming {
+                            await send(
+                                type: .update,
+                                subtype: .mapState,
+                                updated: root.mapRoot.mapGameControllable.networkMapUpdate(for: model.data.id),
+                                authoritativeMaster: true
+                            )
+                        }
                         if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                             for: model.data.id
                         ) {

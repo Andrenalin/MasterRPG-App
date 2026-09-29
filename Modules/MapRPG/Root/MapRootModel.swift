@@ -29,6 +29,21 @@ public final class RootModel: Sendable {
     @ObservationIgnored
     @MainActor public var mapsWithUnsharedStructure: Set<UUID> = []
 
+    /// The game master's player/reader preview, shared by the 2D map session and the 3D table.
+    /// Each 2D↔3D toggle builds a new table model, which used to start at `.master` again.
+    /// See CODE_AUDIT_19 §5.17.
+    @MainActor public var gameDisplayMode: MapDisplayMode {
+        get { gameEditorModel?.displayMode ?? retainedGameDisplayMode }
+        set {
+            retainedGameDisplayMode = newValue
+            if let gameEditorModel, gameEditorModel.mapMode == .gameMaster {
+                gameEditorModel.displayMode = newValue
+            }
+        }
+    }
+    @ObservationIgnored
+    @MainActor private var retainedGameDisplayMode: MapDisplayMode = .master
+
     /// The game screen retains its map session across map replacement so the
     /// bottom toolbar does not blink out. The owning game screen clears that
     /// retained session explicitly when the whole screen leaves the hierarchy.

@@ -110,6 +110,9 @@ public extension ItemControllable {
         model.category = type
         do {
             try await dataControllable?.replace(id: model.id, with: model)
+            // Protects the new item from the sync-deletion diff until its insert commits,
+            // also when another module's failed save rolls it back. See CODE_AUDIT_19 §5.4.
+            dataControllable?.markUnsavedInsert(id: model.id)
         } catch {
             // Every sibling mutation below records a failed write instead of silently
             // proceeding as if it succeeded; this path was the one exception. See
@@ -278,6 +281,10 @@ public extension ItemControllable {
     /// thrown error never masquerades as a successful rollback.
     @MainActor func deleteForExternalImport(itemId: UUID) async throws {
         guard let item = itemSync(for: itemId, noGame: true) else { return }
+        // A failed consolidated save re-queues the import's own insert; drop it, or the
+        // rollback's second save commits the item the import just rolled back.
+        // See CODE_AUDIT_19 §5.1.
+        await dataControllable?.removePendingOperations(for: item.id)
         try await dataControllable?.delete(id: item.id)
 
         for entry in item.entries {
@@ -414,9 +421,11 @@ public extension ItemControllable {
         do {
             try await dataControllable?.batchDelete(ids: allItemIds)
             itemDataModel.lastPersistenceError = nil
+            PersistenceIssueCenter.shared.recordSuccessfulSave()
         } catch {
             Logger.itemController.error("resetData() batch delete failed: \(error.localizedDescription, privacy: .public)")
             itemDataModel.lastPersistenceError = error
+            PersistenceIssueCenter.shared.recordSaveError(error)
         }
     }
 
@@ -424,23 +433,27 @@ public extension ItemControllable {
         do {
             try await dataControllable?.save()
             itemDataModel.lastPersistenceError = nil
+            PersistenceIssueCenter.shared.recordSuccessfulSave()
         } catch {
             // The in-memory edit already applied, so a failed save here leaves the UI
             // showing a change that never reached disk — log and surface it rather than
-            // silently discarding the failure. See CODE_AUDIT §5.1.
+            // silently discarding the failure. See CODE_AUDIT §5.1, CODE_AUDIT_19 §5.13.
             Logger.itemController.error("save() failed: \(error.localizedDescription, privacy: .public)")
             itemDataModel.lastPersistenceError = error
+            PersistenceIssueCenter.shared.recordSaveError(error)
         }
         AppIntentContentInvalidator.invalidate()
     }
 
+    /// A successful flush commits nothing, so it leaves an earlier save error in place; only
+    /// a successful save clears it. See CODE_AUDIT_19 §5.13.
     @MainActor func flushPendingOperations() async {
         do {
             try await dataControllable?.flushPendingOperations()
-            itemDataModel.lastPersistenceError = nil
         } catch {
             Logger.itemController.error("flushPendingOperations() failed: \(error.localizedDescription, privacy: .public)")
             itemDataModel.lastPersistenceError = error
+            PersistenceIssueCenter.shared.recordSaveError(error)
         }
     }
 
@@ -467,6 +480,9 @@ public extension ItemControllable {
             setModel(with: item)
             updatedItems.append(item.id)
         }
+        // Unsaved local inserts are kept in `itemData` above; keep them listed too, or they
+        // vanish from lists, exports and link lookups until relaunch. See CODE_AUDIT_19 §5.12.
+        updatedItems += itemDataModel.items.filter { unsavedInsertIds.contains($0) && !sortedModelIds.contains($0) }
         itemDataModel.resetItems(updatedItems)
         itemDataModel.publishContentWidgetSnapshot()
     }

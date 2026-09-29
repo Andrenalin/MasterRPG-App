@@ -18,6 +18,13 @@ enum PlayerMapPinApplication: Sendable {
 
 extension PlayerController {
     func handleMap(_ model: GameNetworkModel) async throws -> GameNetworkModel? {
+        if model.subType == .failed,
+           model.sender.isMaster,
+           model.data.type == .map,
+           !root.gameModel.gameConfig.isMaster {
+            scheduleMapRepairRetry(itemId: model.data.id, version: model.data.version)
+            return nil
+        }
         guard model.subType != .ok, model.subType != .failed else { return nil }
 
         let isPlayerMapPin = model.sender.role == .player &&

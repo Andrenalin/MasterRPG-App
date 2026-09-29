@@ -148,7 +148,7 @@ public extension LinkRegisterController {
                 }
                 if context.hasChanges { try context.save() }
             } catch {
-                context.rollbackRestoringFlushedOperations()
+                context.rollbackRestoringFlushedOperations(after: error)
                 Logger.coreDataController.error("link resetData error \(error.localizedDescription, privacy: .public)")
             }
         }
@@ -202,7 +202,7 @@ public extension LinkRegisterController {
                 do {
                     if context.hasChanges { try context.save() }
                 } catch {
-                    context.rollbackRestoringFlushedOperations()
+                    context.rollbackRestoringFlushedOperations(after: error)
                     throw error
                 }
             }

@@ -60,21 +60,27 @@ public extension SyncDataControllable {
             let previousTask = itemControllable.itemDataModel.pendingSyncTask
             itemControllable.itemDataModel.pendingSyncTask = Task(priority: .userInitiated) {
                 await previousTask?.value
-                do {
-                    await CloudKitOperationCounter.shared.recordOperation(
-                        function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
-                        file: "SyncDataControllable.swift"
-                    )
+                await CloudKitOperationCounter.shared.recordOperation(
+                    function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
+                    file: "SyncDataControllable.swift"
+                )
 
-                    // Process deletions — diff the reported ids against Core Data's actual
-                    // current ids rather than trusting `deletedIds` directly.
-                    // `CoreDataChangeObserver` can report a placeholder (freshly-generated,
-                    // meaningless) UUID for a deleted object it can no longer resolve once
-                    // Core Data has already turned it into an unfulfillable fault — acting on
-                    // that placeholder directly is a guaranteed no-op, silently dropping the
-                    // deletion. Diffing against a fresh id fetch is what the producer's own
-                    // contract ("consumers diff against fetched ids") assumes. See CODE_AUDIT §3.2.
-                    if !deletedIds.isEmpty {
+                // Process deletions — diff the reported ids against Core Data's actual
+                // current ids rather than trusting `deletedIds` directly.
+                // `CoreDataChangeObserver` can report a placeholder (freshly-generated,
+                // meaningless) UUID for a deleted object it can no longer resolve once
+                // Core Data has already turned it into an unfulfillable fault — acting on
+                // that placeholder directly is a guaranteed no-op, silently dropping the
+                // deletion. Diffing against a fresh id fetch is what the producer's own
+                // contract ("consumers diff against fetched ids") assumes. See CODE_AUDIT §3.2.
+                //
+                // A failed id fetch skips only this diff: the inserts and updates below still
+                // apply, and a full reconciliation afterwards catches the deletions. A later
+                // notification carries only its own ids, so it would never retry them.
+                // See CODE_AUDIT_19 §5.11.
+                var needsReconciliation = false
+                if !deletedIds.isEmpty {
+                    do {
                         let currentIds = Set(try await dataControllable.fetchIds())
                         // An item created on this device whose insert is still queued is not in
                         // Core Data yet either: it must not be mistaken for a remote deletion,
@@ -87,31 +93,41 @@ public extension SyncDataControllable {
                         for staleId in staleIds {
                             await itemControllable.delete(itemId: staleId, withFileData: false, withDatabase: false)
                         }
+                    } catch {
+                        Logger.syncDataControllable.error("updateFromSync deletion diff failed, reconciling: \(error.localizedDescription, privacy: .public)")
+                        needsReconciliation = true
                     }
+                }
 
-                    // Process insertions
-                    // The data is ALREADY in Core Data (we're fetching from it!)
-                    // We only need to update in-memory models, NOT save back to database
-                    for insertedId in insertedIds {
+                // Process insertions
+                // The data is ALREADY in Core Data (we're fetching from it!)
+                // We only need to update in-memory models, NOT save back to database
+                for insertedId in insertedIds {
+                    do {
                         guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
                         // `resetModel(with:)` is itself `@MainActor` — `await` alone hops, same as
                         // `delete(itemId:...)` above; no `MainActor.run` wrapper needed.
                         itemControllable.resetModel(with: model)
+                    } catch {
+                        Logger.syncDataControllable.error("updateFromSync insert \(insertedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                        needsReconciliation = true
                     }
+                }
 
-                    // Process updates
-                    for updatedId in updatedIds {
+                // Process updates
+                for updatedId in updatedIds {
+                    do {
                         guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
                         // Use mergeUpdates to avoid database writes during sync
                         itemControllable.mergeUpdates(model: model)
+                    } catch {
+                        Logger.syncDataControllable.error("updateFromSync update \(updatedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                        needsReconciliation = true
                     }
-                } catch {
-                    // Sync errors are non-fatal; the next CloudKit notification will retry —
-                    // but log so a merge that keeps failing (rather than self-healing on the
-                    // next notification) is actually diagnosable.
-                    Logger.syncDataControllable.error(
-                        "updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count)) failed: \(error.localizedDescription, privacy: .public)"
-                    )
+                }
+
+                if needsReconciliation {
+                    await fetchUpdates()
                 }
             }
         }

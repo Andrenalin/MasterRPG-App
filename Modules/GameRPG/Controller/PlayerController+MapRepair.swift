@@ -168,6 +168,33 @@ extension PlayerController {
         )
     }
 
+    /// Re-requests a map repair the master answered with `.failed`, after a growing delay
+    /// (2, 4, 8 s) and at most `maximumMapRepairRetries` times per generation. The master
+    /// refuses when a player already has two deferred repairs, so a player joining with three
+    /// or more broken maps got some of them only after waiting. See CODE_AUDIT_19 §5.6.
+    func scheduleMapRepairRetry(itemId: UUID, version: Int) {
+        guard let retry = gameModel.failMapRepair(itemId: itemId) else { return }
+        let task = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1 << retry.attempt))
+            guard let self, !Task.isCancelled, self.gameModel.isMapRepairPending(retry) else { return }
+            await self.send(
+                type: .reveal,
+                subType: .mapState,
+                updated: NetworkCodableDataType(
+                    id: itemId,
+                    type: .map,
+                    version: version,
+                    data: nil,
+                    assetVersion: retry.assetVersion,
+                    contentVersion: retry.contentVersion
+                ),
+                relayToProxyClients: false,
+                purpose: .assetRequest
+            )
+        }
+        gameModel.setMapRepairRetryTask(task, itemId: itemId)
+    }
+
     /// Requests pin photos absent from both the photo game state and persistent
     /// item controller. The map background is delivered with the full map.
     /// Each photo is requested once per connection; SharePlay turns the first

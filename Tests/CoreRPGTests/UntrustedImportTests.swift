@@ -164,7 +164,10 @@ struct UntrustedImportTests {
 
     @Test("Observing a far-future remote clock keeps later local writes ahead of it")
     func observedClockAdvancesLocalWrites() {
-        let future = MonotonicWallClock.now() + 3_600
+        // Based on the real clock, not `MonotonicWallClock.now()`: the process-wide clock may
+        // already run up to the allowed skew ahead after another test's merge, and a value
+        // derived from it could exceed the cap.
+        let future = Date().timeIntervalSinceReferenceDate + 3_600
         MonotonicWallClock.observe(future)
         #expect(MonotonicWallClock.now() > future)
     }
@@ -202,23 +205,44 @@ struct UntrustedImportTests {
         #expect(merged.value == "edited")
     }
 
-    /// CODE_AUDIT_18 §5.5: a clock far beyond the allowed skew (here ~100 years) used to be
-    /// stored raw and win every later merge, freezing the field.
-    @Test("A far-future clock loses to admissible values and cannot freeze a field")
+    /// CODE_AUDIT_18 §5.5 / CODE_AUDIT_19 §5.5: a far-future clock (here ~100 years) wins the
+    /// merge it arrives in on every replica alike, but the next local edit orders after it, so
+    /// it can't freeze the field.
+    @Test("A far-future clock cannot freeze a field")
     func farFutureClockDoesNotFreezeField() {
         let farFuture = MonotonicWallClock.now() + 100 * 365 * 86_400
         let attacker = LWWRegister("attacker", actorID: "a", timestamp: farFuture)
 
         var honest = LWWRegister("old", actorID: "b")
         honest.merging(with: attacker)
-        #expect(honest.value == "old")
-        #expect(honest.merged(with: attacker).value == "old")
+        #expect(honest.value == "attacker")
 
-        // A replica that stored the far-future value before the fix heals on its next merge.
-        var poisoned = attacker
         honest.value = "edited"
+        var poisoned = attacker
         poisoned.merging(with: honest)
         #expect(poisoned.value == "edited")
+        #expect(attacker.merged(with: honest).value == "edited")
+    }
+
+    /// CODE_AUDIT_19 §5.5: the merge result must not depend on the merging device's time. An
+    /// edit from a device whose clock runs more than the allowed skew ahead used to be
+    /// rejected by every other replica while its author kept it, so replicas diverged.
+    @Test("Replicas converge on an edit from a device whose clock runs fast")
+    func fastClockEditConverges() {
+        let fastClock = MonotonicWallClock.now() + 3 * 86_400
+        let fastDevice = LWWRegister("fast", actorID: "a", timestamp: fastClock)
+        let slowDevice = LWWRegister("slow", actorID: "b")
+
+        #expect(fastDevice.merged(with: slowDevice).value == "fast")
+        #expect(slowDevice.merged(with: fastDevice).value == "fast")
+    }
+
+    @Test("Merging is commutative for atoms with equal clocks")
+    func equalClocksOrderByActor() {
+        let clock = MonotonicWallClock.now()
+        let first = LWWRegister("first", actorID: "a", timestamp: clock)
+        let second = LWWRegister("second", actorID: "b", timestamp: clock)
+        #expect(first.merged(with: second).value == second.merged(with: first).value)
     }
 
     @Test("A local write orders after the value it overwrites")

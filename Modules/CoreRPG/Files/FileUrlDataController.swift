@@ -513,6 +513,27 @@ public extension FileUrlDataController {
         }
     }
 
+    /// Deletes a file an item's new file just replaced. The replacement already saved its
+    /// bookmark under the same `fileId`, so the old file is found by its path, never through
+    /// the bookmark (that would resolve to the new file), and the bookmark is kept.
+    /// See CODE_AUDIT_19 §5.9.
+    func deleteReplaced(_ fileUrl: FileUrl) async {
+        let fileLocation: URL?
+        switch fileUrl.location {
+        case .newCloud:
+            fileLocation = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
+        case .local, .appCloud:
+            fileLocation = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location, module: fileUrl.module)
+        case .url:
+            fileLocation = remoteCacheURL(for: fileUrl)
+        case .icloud, .other:
+            // Not stored by the app; `delete(_:)` only drops the bookmark for these.
+            fileLocation = nil
+        }
+        guard let fileLocation else { return }
+        _ = await removeFileLoggingFailure(at: fileLocation)
+    }
+
     /// Removes the file at `url`, logging (rather than silently discarding)
     /// any failure other than the file already being absent. Returns `true`
     /// when the caller may safely treat the file as gone — either it was

@@ -652,6 +652,49 @@ struct BattleRoundControllerTests {
         #expect(sut.battleRoundModel.combatant(id: combatant.id)?.gameCharacterId == runtimeId)
     }
 
+    /// CODE_AUDIT_19 §5.8: A targets M, B kills M; when A's turn comes round M must not be
+    /// highlighted again from A's stored target list.
+    @Test("A defender killed on another attacker's turn is not highlighted again")
+    func deadDefenderStaysUnhighlightedOnNextTurn() async throws {
+        let root = try await MockRoot.importTestData()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let mapId = UUID()
+        let room = MapEntryModel(id: UUID(), name: "Room", content: "", coordinates: square(x: 0), focused: true)
+        let characterIds = (0..<3).map { _ in UUID() }
+        for (index, characterId) in characterIds.enumerated() {
+            root.characterRoot.itemController.replace(
+                model: ValueModel(id: characterId, name: "Character \(index)"),
+                isInsert: true
+            )
+        }
+        let pinA = MapPinModel(id: UUID(), name: "A", characterId: characterIds[0], location: CGPoint(x: 20, y: 20), isPlayer: true)
+        let pinB = MapPinModel(id: UUID(), name: "B", characterId: characterIds[1], location: CGPoint(x: 40, y: 40), isPlayer: true)
+        let pinM = MapPinModel(id: UUID(), name: "M", characterId: characterIds[2], location: CGPoint(x: 60, y: 60))
+        let map = MapModel(id: mapId, name: "Dungeon", entries: [room], mapPins: [pinA, pinB, pinM])
+        root.itemController.replace(model: map, isInsert: true)
+        sut.setGame(item: map.copy(), itemId: mapId)
+        #expect(sut.startBattle(itemId: mapId, initiativeOrder: .descending))
+        let attackerA = try #require(sut.battleRoundModel.combatant(pinId: pinA.id))
+        let attackerB = try #require(sut.battleRoundModel.combatant(pinId: pinB.id))
+        let defenderM = try #require(sut.battleRoundModel.combatant(pinId: pinM.id))
+
+        // A targets M.
+        #expect(sut.activateBattleAttacker(itemId: mapId, combatantId: attackerA.id))
+        #expect(sut.toggleHighlightPin(itemId: mapId, pinId: pinM.id, isGameMaster: true))
+        #expect(try #require(sut.battleRoundModel.activeEntry).defenderIds == [defenderM.id])
+
+        // B's turn: B kills M.
+        #expect(sut.activateBattleAttacker(itemId: mapId, combatantId: attackerB.id))
+        #expect(sut.setBattleCombatantDead(itemId: mapId, combatantId: defenderM.id, isDead: true))
+
+        // A's turn again.
+        #expect(sut.activateBattleAttacker(itemId: mapId, combatantId: attackerA.id))
+
+        #expect(!sut.gameItem(for: mapId)[MapPinId.id, pinM.id].isHighlighted)
+        #expect(!(try #require(sut.battleRoundModel.activeEntry).defenderIds.contains(defenderM.id)))
+    }
+
     private func square(x: CGFloat) -> [CGPoint] {
         [
             CGPoint(x: x, y: 0),

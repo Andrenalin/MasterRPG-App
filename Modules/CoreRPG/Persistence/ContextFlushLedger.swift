@@ -2,6 +2,7 @@
 
 import CoreData
 import Foundation
+import os.log
 import Synchronization
 
 /// Tracks, per shared `NSManagedObjectContext`, the pending-operation queues of every
@@ -69,10 +70,19 @@ final class ContextFlushLedger: Sendable {
         }
     }
 
-    /// Call on the context's queue right after `rollback()`.
-    func didRollBack(_ context: NSManagedObjectContext) {
+    /// Call on the context's queue right after `rollback()`. Operations for `failingIds`, or
+    /// ones retried too often, are discarded and reported instead of re-queued.
+    /// See CODE_AUDIT_19 §5.3.
+    func didRollBack(_ context: NSManagedObjectContext, failingIds: Set<UUID> = []) {
+        var discarded: [UUID] = []
         for model in models(for: ObjectIdentifier(context)) {
-            model.restoreInFlight()
+            discarded += model.restoreInFlight(failingIds: failingIds).map(\.id)
+        }
+        guard !discarded.isEmpty else { return }
+        Logger.coreDataController.error("Discarded \(discarded.count) edits after repeated save failures: \(discarded.map(\.uuidString).joined(separator: ", "), privacy: .public)")
+        let count = discarded.count
+        Task { @MainActor in
+            PersistenceIssueCenter.shared.recordDiscardedEdits(count)
         }
     }
 
@@ -91,8 +101,26 @@ extension NSManagedObjectContext {
     /// Rolls the context back and re-queues every module's flushed-but-unsaved edits that the
     /// rollback discarded. Use instead of a bare `rollback()` on the shared app context. Must
     /// run on the context's queue. See CODE_AUDIT_18 §5.3.
-    public func rollbackRestoringFlushedOperations() {
+    ///
+    /// Pass the save error: the items it names are quarantined instead of retried, so one
+    /// invalid object can't make every later save fail. See CODE_AUDIT_19 §5.3.
+    public func rollbackRestoringFlushedOperations(after error: (any Error)? = nil) {
+        // Read before `rollback()`, while the failing objects are still registered.
+        let failingIds = error.map(Self.failingItemIds(in:)) ?? []
         rollback()
-        ContextFlushLedger.shared.didRollBack(self)
+        ContextFlushLedger.shared.didRollBack(self, failingIds: failingIds)
+    }
+
+    /// Ids of the items a failed save names: validation failures (single or
+    /// `NSDetailedErrorsKey`) and merge conflicts. Objects without a `uuid` are skipped;
+    /// the retry cap still bounds those. Must run on the context's queue.
+    static func failingItemIds(in error: any Error) -> Set<UUID> {
+        let nsError = error as NSError
+        var errors = [nsError]
+        errors += nsError.userInfo[NSDetailedErrorsKey] as? [NSError] ?? []
+        var objects = errors.compactMap { $0.userInfo[NSValidationObjectErrorKey] as? NSManagedObject }
+        let conflicts = nsError.userInfo[NSPersistentStoreSaveConflictsErrorKey] as? [NSMergeConflict] ?? []
+        objects += conflicts.map(\.sourceObject)
+        return Set(objects.compactMap { ($0 as? any CoreDataId)?.uuid })
     }
 }

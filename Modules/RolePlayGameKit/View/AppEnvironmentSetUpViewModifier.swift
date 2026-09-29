@@ -101,6 +101,7 @@ struct AppSettingSetUpViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .modifier(UserSettingsViewModifier(appModel: appModel))
+            .modifier(PersistenceIssueBannerViewModifier(center: .shared))
 #if os(visionOS)
                 .onAppear {
                     appModel.scenesManager.setActions(

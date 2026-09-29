@@ -340,6 +340,16 @@ struct MapFogTileDrawPlan {
     var tileCount: Int { columns.count * rows.count }
 }
 
+/// The 2D map's per-room tile budget, shared with the 3D board so both show solid fog for the
+/// same rooms. See CODE_AUDIT_19 §5.18.
+public enum MapFogTileBudget {
+    /// Whether a room with `roomBounds` is filled with the repeated `tileRectangle` (both in
+    /// canvas coordinates) rather than solid fog.
+    public static func allowsTiling(roomBounds: CGRect, tileRectangle: CGRect) -> Bool {
+        MapFogTilePlanner(tileRectangle: tileRectangle).tileOrigins(covering: roomBounds) != nil
+    }
+}
+
 /// Plans repeated fog tiles independently for each room. The former global
 /// limit made a group of otherwise inexpensive rooms lose its tile whenever
 /// their aggregate count crossed the threshold.
@@ -353,18 +363,25 @@ struct MapFogTilePlanner {
     let maximumTilesPerRoom: Int
 
     func drawPlan(for snapshot: MapRoomSnapshot) -> MapFogTileDrawPlan? {
+        guard let origins = tileOrigins(covering: snapshot.bounds) else { return nil }
+        return MapFogTileDrawPlan(snapshot: snapshot, columns: origins.columns, rows: origins.rows)
+    }
+
+    /// The tile lattice's column and row origins covering `bounds`, or `nil` (solid fog) when
+    /// the room needs more than `maximumTilesPerRoom` tiles.
+    func tileOrigins(covering bounds: CGRect) -> (columns: [CGFloat], rows: [CGFloat])? {
         guard maximumTilesPerRoom > 0 else { return nil }
         let maximumOriginsPerAxis = min(maximumTilesPerRoom, 4_096)
         let columns = tileOrigins(
-            minimum: snapshot.bounds.minX,
-            maximum: snapshot.bounds.maxX,
+            minimum: bounds.minX,
+            maximum: bounds.maxX,
             sourceMinimum: tileRectangle.minX,
             length: tileRectangle.width,
             maximumCount: maximumOriginsPerAxis
         )
         let rows = tileOrigins(
-            minimum: snapshot.bounds.minY,
-            maximum: snapshot.bounds.maxY,
+            minimum: bounds.minY,
+            maximum: bounds.maxY,
             sourceMinimum: tileRectangle.minY,
             length: tileRectangle.height,
             maximumCount: maximumOriginsPerAxis
@@ -373,7 +390,7 @@ struct MapFogTilePlanner {
 
         let (tileCount, didOverflow) = columns.count.multipliedReportingOverflow(by: rows.count)
         guard !didOverflow, tileCount <= maximumTilesPerRoom else { return nil }
-        return MapFogTileDrawPlan(snapshot: snapshot, columns: columns, rows: rows)
+        return (columns, rows)
     }
 
     private func tileOrigins(

@@ -112,7 +112,7 @@ public struct TagController: Sendable {
                 }
                 if context.hasChanges { try context.save() }
             } catch {
-                context.rollbackRestoringFlushedOperations()
+                context.rollbackRestoringFlushedOperations(after: error)
                 Logger.coreDataController.error("tag resetData error \(error.localizedDescription, privacy: .public)")
             }
         }
@@ -165,7 +165,7 @@ public struct TagController: Sendable {
                 do {
                     if context.hasChanges { try context.save() }
                 } catch {
-                    context.rollbackRestoringFlushedOperations()
+                    context.rollbackRestoringFlushedOperations(after: error)
                     throw error
                 }
             }

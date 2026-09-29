@@ -88,6 +88,10 @@ final class GameTableModel: Sendable {
     var displayMode: MapDisplayMode = .master {
         didSet {
             guard oldValue != displayMode else { return }
+            if isGameMaster {
+                // Kept on the map root so a 2D↔3D toggle keeps it. See CODE_AUDIT_19 §5.17.
+                mapRoot.rootModel.gameDisplayMode = displayMode
+            }
             replaceFogOfWarTask()
         }
     }

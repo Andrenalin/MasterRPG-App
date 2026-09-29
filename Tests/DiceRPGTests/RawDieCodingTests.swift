@@ -27,6 +27,13 @@ struct RawDieCodingTests {
         #expect(try JSONDecoder().decode(RawDie.Sides.self, from: data) == .three)
     }
 
+    /// CODE_AUDIT_19 §5.14: builds `c2d185f2`…`354e3893` wrote a d3 as `{"three":{}}`.
+    @Test("The interim {\"three\":{}} shape decodes as .three")
+    func interimThreeShapeDecodes() throws {
+        let data = Data(#"{"three":{}}"#.utf8)
+        #expect(try JSONDecoder().decode(RawDie.Sides.self, from: data) == .three)
+    }
+
     @Test("Other sides round-trip unchanged", arguments: [
         RawDie.Sides.two, .four, .six, .eight, .ten, .twelve, .twenty, .number(7), .number(100)
     ])

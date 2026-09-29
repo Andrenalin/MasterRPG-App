@@ -15,6 +15,12 @@ public protocol CoreDataId {
 /// unstructured Task per enqueue could reorder rapid edits to the same id or miss
 /// a save that races the enqueue.
 final class CoreDataModel: Sendable {
+    /// How often a rollback may re-queue the same operation before it is discarded. A save
+    /// error that keeps recurring (disk full, one invalid object) would otherwise re-apply
+    /// and fail the same operations on every autosave, and no module would ever commit
+    /// again. See CODE_AUDIT_19 §5.3.
+    static let maxRollbackRetries = 3
+
     private struct Queue {
         var operations: [PendingOperation] = []
         /// Stamped onto each queued operation, so a newer edit for an id always wins.
@@ -111,14 +117,31 @@ final class CoreDataModel: Sendable {
     }
 
     /// The context rolled back: re-queue what the rollback discarded, in front of newer edits.
-    func restoreInFlight() {
-        let restored = inFlight.withLock { flushed -> [PendingOperation] in
+    ///
+    /// An operation for one of `failingIds` (the objects the failed save named) or one that
+    /// has already been re-queued `maxRollbackRetries` times is discarded instead, so a
+    /// persistent error in one item can't stall every module's persistence. Returns the
+    /// discarded operations. See CODE_AUDIT_19 §5.3.
+    @discardableResult
+    func restoreInFlight(failingIds: Set<UUID> = []) -> [PendingOperation] {
+        let flushed = inFlight.withLock { flushed -> [PendingOperation] in
             let restored = flushed
             flushed.removeAll()
             return restored
         }
-        guard !restored.isEmpty else { return }
+        guard !flushed.isEmpty else { return [] }
+        var restored: [PendingOperation] = []
+        var discarded: [PendingOperation] = []
+        for var operation in flushed {
+            operation.rollbackCount += 1
+            if failingIds.contains(operation.id) || operation.rollbackCount > Self.maxRollbackRetries {
+                discarded.append(operation)
+            } else {
+                restored.append(operation)
+            }
+        }
         restorePendingOperations(restored)
+        return discarded
     }
 
     /// Runs `work` only after any previously-chained flush has finished, atomically swapping
@@ -148,8 +171,17 @@ struct PendingOperation: Sendable {
     // legacy path is unaffected.
     let model: any Sendable
     let updater: @Sendable (any Sendable, NSManagedObject) -> Void
+    /// Deletes the row instead of applying `model`. Deletes ride the queue so a rollback
+    /// re-queues them like any other flushed edit. See CODE_AUDIT_19 §5.4.
+    var isDeletion = false
     /// Assigned by `CoreDataModel.addPendingOperation`; orders edits to the same id.
     var sequence: UInt64 = 0
+    /// How often a rollback has re-queued this operation. See CODE_AUDIT_19 §5.3.
+    var rollbackCount = 0
+
+    static func deletion(of id: UUID) -> PendingOperation {
+        PendingOperation(id: id, model: id, updater: { _, _ in }, isDeletion: true)
+    }
 }
 
 public struct CoreDataController<Model: ModelType, DataType: NSManagedObject & CoreDataId>: Sendable {
@@ -178,10 +210,13 @@ public extension CoreDataController {
         try? await delete(uuid: uuid)
     }
 
+    /// Queues the deletion and flushes it into the context without saving. A direct
+    /// `context.delete` was not recorded as in flight, so another module's failed save could
+    /// roll it back: the item came back on disk after relaunch while it stayed gone in memory.
+    /// See CODE_AUDIT_19 §5.4.
     func delete(uuid: UUID) async throws {
-        await context.perform {
-            deleteCoreData(id: uuid, save: false)
-        }
+        model.addPendingOperation(.deletion(of: uuid))
+        try await flushPendingOperations()
     }
 
     func fetchIds() async throws -> [UUID] {
@@ -208,8 +243,9 @@ public extension CoreDataController {
 
     /// Drains the pending-operations queue into the context without calling `context.save()`.
     /// Use from `AdventureRootModel.save()` for all module roots so a single `context.save()`
-    /// covers every module's changes. Direct callers (`addNew`, `delete`, `batchReplace`) use
-    /// `save()` instead, which flushes and saves immediately.
+    /// covers every module's changes. `replace`, `delete` and `batchReplace` queue their
+    /// writes and flush too, so every write into the shared context is recorded as in flight
+    /// and survives another module's rollback. See CODE_AUDIT_19 §5.4.
     func flushPendingOperations() async throws {
         try await model.chainedFlush {
             let pendingOperations = model.clearPendingOperations()
@@ -227,7 +263,11 @@ public extension CoreDataController {
                 try await context.perform {
                     let existingUUIDs = try self.existingUUIDsInContext(uniqueOperations.map { $0.id })
                     for operation in uniqueOperations {
-                        if existingUUIDs.contains(operation.id) {
+                        if operation.isDeletion {
+                            if existingUUIDs.contains(operation.id), let existing = self.fetchCoreData(uuid: operation.id) {
+                                self.context.delete(existing)
+                            }
+                        } else if existingUUIDs.contains(operation.id) {
                             if let existing = self.fetchCoreData(uuid: operation.id) {
                                 operation.updater(operation.model, existing)
                             }
@@ -262,9 +302,10 @@ public extension CoreDataController {
             // same invalid set and failed until relaunch. Roll back so the context
             // returns to its last-saved state instead (CODE_AUDIT_17 §5.6), and re-queue
             // every module's flushed-but-unsaved edits the rollback discarded, so they are
-            // retried instead of lost (CODE_AUDIT_18 §5.3).
+            // retried instead of lost (CODE_AUDIT_18 §5.3). The objects the error names are
+            // quarantined rather than retried (CODE_AUDIT_19 §5.3).
             await context.perform {
-                context.rollbackRestoringFlushedOperations()
+                context.rollbackRestoringFlushedOperations(after: error)
             }
             throw error
         }
@@ -300,48 +341,23 @@ public extension CoreDataController {
         }
     }
 
+    /// Queues the replace and flushes it into the context without saving, so the write is
+    /// recorded as in flight and re-queued by a rollback. See CODE_AUDIT_19 §5.4.
     func replace<Snapshot: Sendable>(uuid: UUID, snapshot: Snapshot, updater: @escaping @Sendable (Snapshot, DataType) -> Void) async throws {
-        await context.perform {
-            if let current = fetchCoreData(uuid: uuid) {
-                updater(snapshot, current)
-            } else {
-                Logger.coreDataController.debug("add new \(uuid, privacy: .public)")
-                let new = DataType(context: context)
-                updater(snapshot, new)
-            }
-        }
+        queueReplace(uuid: uuid, snapshot: snapshot, updater: updater)
+        try await flushPendingOperations()
     }
 
-    /// Single upfront existence check, chunked apply, one save.
+    /// Queues every snapshot, then flushes and saves once. See CODE_AUDIT_19 §5.4.
     func batchReplace<Snapshot: Sendable>(
         snapshots: [Snapshot],
         keyPath: KeyPath<Snapshot, UUID>,
-        updater: @escaping @Sendable (Snapshot, DataType) -> Void,
-        chunkSize: Int = 100
+        updater: @escaping @Sendable (Snapshot, DataType) -> Void
     ) async throws {
         guard !snapshots.isEmpty else { return }
-
-        let allUUIDs = snapshots.map { $0[keyPath: keyPath] }
-        let existingUUIDs = try await batchExists(uuids: allUUIDs)
-
-        for chunk in snapshots.chunked(into: chunkSize) {
-            // Evaluate the key path here: a `KeyPath` is not `Sendable` and must not be captured
-            // by the `perform` closure. See CODE_AUDIT_15 §3.17.
-            let keyedChunk = chunk.map { (uuid: $0[keyPath: keyPath], snapshot: $0) }
-            await context.perform {
-                for (uuid, snapshot) in keyedChunk {
-                    if existingUUIDs.contains(uuid) {
-                        if let existing = fetchCoreData(uuid: uuid) {
-                            updater(snapshot, existing)
-                        }
-                    } else {
-                        let new = DataType(context: context)
-                        updater(snapshot, new)
-                    }
-                }
-            }
+        for snapshot in snapshots {
+            queueReplace(uuid: snapshot[keyPath: keyPath], snapshot: snapshot, updater: updater)
         }
-
         try await save()
         Logger.coreDataController.info("Batch replaced \(snapshots.count) snapshots")
     }
@@ -373,7 +389,7 @@ public extension CoreDataController {
                     try saveCoreDataThrowing()
                 } catch {
                     Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
-                    context.rollbackRestoringFlushedOperations()
+                    context.rollbackRestoringFlushedOperations(after: error)
                     throw error
                 }
             }
@@ -525,16 +541,6 @@ private extension CoreDataController {
         return nil
     }
 
-    func deleteCoreData(id: UUID, save: Bool = true) {
-        Logger.coreDataController.debug("going to delete \(id, privacy: .public)")
-        guard let object = fetchCoreData(uuid: id) else { return }
-        context.delete(object)
-        if save {
-            saveCoreData()
-        }
-        Logger.coreDataController.debug("deleted \(id, privacy: .public)")
-    }
-    
     func saveCoreData() {
         do {
             try saveCoreDataThrowing()

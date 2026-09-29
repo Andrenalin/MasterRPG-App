@@ -298,6 +298,9 @@ extension GameController {
             _ = updatePinState(itemId: itemId, pinId: combatant.pinId, mutation: { pin in
                 pin.isHighlighted = false
             })
+            // `synchronize(pins:)` below only updates the active entry; the other
+            // attackers' target lists must drop it too. See CODE_AUDIT_19 §5.8.
+            battleRoundModel.removeDefender(combatantId)
         }
         // Only ever reached via `BattleRoundController.setDead`, which is
         // itself gated on `root.gameModel.gameConfig.isMaster`.

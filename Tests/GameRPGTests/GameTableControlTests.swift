@@ -170,6 +170,32 @@ struct GameTableControlTests {
         #expect(fixture.game.canMovePin(fixture.liveMap.pointer.id))
     }
 
+    /// CODE_AUDIT_19 §5.17: each 2D↔3D toggle builds a new table model; the GM's preview lens
+    /// lives on the map root, so the next model starts from it instead of `.master`.
+    @Test("The game master's display mode outlives the table model")
+    func displayModeOutlivesTableModel() async throws {
+        let fixture = try await makeFixture(entries: [], isGameMaster: true)
+        fixture.game.displayMode = .player
+
+        #expect(fixture.game.mapRoot.rootModel.gameDisplayMode == .player)
+
+        let nextModel = GameTableModel(mapRoot: fixture.game.mapRoot, photoRoot: fixture.game.photoRoot)
+        nextModel.isGameMaster = true
+        nextModel.displayMode = fixture.game.mapRoot.rootModel.gameDisplayMode
+        #expect(nextModel.displayMode == .player)
+    }
+
+    /// CODE_AUDIT_19 §5.17: the reshare baseline starts at the map's values, not the defaults.
+    @Test("Resetting the reshare baseline leaves nothing to reshare")
+    func resetReshareMatchesCurrentMap() async throws {
+        let fixture = try await makeFixture(entries: [], isGameMaster: true)
+        fixture.liveMap.pinScale = 2
+
+        #expect(fixture.game.canReshare)
+        fixture.game.resetReshare()
+        #expect(!fixture.game.canReshare)
+    }
+
     private func makeFixture(
         entries: [MapEntryModel],
         isGameMaster: Bool
