@@ -39,6 +39,7 @@ struct MapViewportOverlayLayer: View {
             MapPinViewportMenuLayer(
                 pins: session.pins,
                 mode: session.mapMode,
+                pinScale: session.pinScale,
                 transform: transform,
                 geometry: session.viewport.geometry,
                 viewportRectangle: actionViewportRectangle,
@@ -77,12 +78,30 @@ struct MapViewportOverlayLayer: View {
 private struct MapPinViewportMenuLayer: View {
     let pins: MapPinViewModel
     let mode: MapMode
+    let pinScale: CGFloat
     let transform: ViewportTransform
     let geometry: ViewportGeometry
     let viewportRectangle: CGRect
     let containerSize: CGSize
 
     var body: some View {
+#if os(iOS) || os(macOS)
+        if let node = expandedNode, context != .none, let source = pinRectangle(for: node) {
+            MapPinActionPopover(
+                model: node,
+                context: context,
+                source: source,
+                viewportRectangle: viewportRectangle
+            )
+            .frame(
+                width: containerSize.width,
+                height: containerSize.height,
+                alignment: .topLeading
+            )
+            .transition(.opacity)
+            .zIndex(10)
+        }
+#else
         if let node = expandedNode, context != .none {
             let anchor = geometry.viewportPoint(fromContent: node.pin.location, transform: transform)
             let placement = MapAdaptiveFanGeometry.verticalPlacement(
@@ -92,11 +111,10 @@ private struct MapPinViewportMenuLayer: View {
                 preferredDirection: .bottom
             )
             if placement.isValid {
-                MapPinExpandedMenu(
+                MapPinActionMenuFan(
                     model: node,
                     context: context,
-                    placement: placement,
-                    usesGlassEffects: true
+                    placement: placement
                 )
                 .frame(
                     width: containerSize.width,
@@ -109,7 +127,28 @@ private struct MapPinViewportMenuLayer: View {
                 .zIndex(10)
             }
         }
+#endif
     }
+
+#if os(iOS) || os(macOS)
+    /// The pin's on-screen frame, used as the popover source. Derived from the
+    /// displayed transform, so the popover follows the pin while panning.
+    private func pinRectangle(for node: MapPinNode) -> CGRect? {
+        let center = geometry.viewportPoint(fromContent: node.pin.location, transform: transform)
+        let zoomScale: CGFloat = node.pin.isZoom ? 4 : 1
+        let size = node.pin.size.size * (pinScale * zoomScale * transform.scale)
+        guard center.x.isFinite, center.y.isFinite,
+              size.width.isFinite, size.height.isFinite else { return nil }
+        let width = max(1, size.width)
+        let height = max(1, size.height)
+        return CGRect(
+            x: center.x - width / 2,
+            y: center.y - height / 2,
+            width: width,
+            height: height
+        )
+    }
+#endif
 
     private var expandedNode: MapPinNode? {
         pins.isExpandedId.flatMap(pins.pinNode(for:))
@@ -400,4 +439,5 @@ private struct MapViewportOverlayPreview: View {
 
 #Preview("Map viewport controls") {
     MapViewportOverlayPreview()
+        .environment(MapRootModel.preview)
 }

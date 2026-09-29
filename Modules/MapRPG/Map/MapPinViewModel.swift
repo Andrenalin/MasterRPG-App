@@ -181,8 +181,10 @@ final class MapPinViewModel {
         ))
     }
 
-    func copyPin(id: UUID) {
-        guard let sourceIndex = mapPinNodes.firstIndex(where: { $0.id == id }) else { return }
+    /// Duplicates a pin next to the original and returns the duplicate's id.
+    @discardableResult
+    func copyPin(id: UUID) -> UUID? {
+        guard let sourceIndex = mapPinNodes.firstIndex(where: { $0.id == id }) else { return nil }
         var pin = mapPinNodes[sourceIndex].pin
         pin.id = UUID()
         pin.location = pin.location + (pin.size.size.width + 25)
@@ -190,6 +192,7 @@ final class MapPinViewModel {
         node.attach(to: self)
         mapPinNodes.insert(node, at: sourceIndex)
         rebuildLayerNodes()
+        return node.id
     }
 
     func resizePin(id: UUID) {
@@ -269,7 +272,10 @@ final class MapPinViewModel {
         case (.editor, .remove):
             removePin(id: node.id)
         case (.editor, .copy):
-            copyPin(id: node.id)
+            // Select the duplicate, so the action menu moves on to it.
+            if let copyId = copyPin(id: node.id) {
+                setExpanded(id: copyId)
+            }
         case (.editor, .photo):
             node.isPhotoSelectionPresented = true
             return

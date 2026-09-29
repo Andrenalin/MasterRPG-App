@@ -418,6 +418,30 @@ struct MapEditorInteractionModelTests {
         #expect(model.isExpandedId == nil)
     }
 
+    @Test("Duplicating a pin moves the action menu and selection to the duplicate")
+    func duplicatingPinSelectsDuplicate() throws {
+        let pin = MapPinModel(id: UUID(), name: "Token")
+        let map = MapModel(id: UUID(), name: "Copy map", mapPins: [pin])
+        let session = MapEditorSession(
+            map: map,
+            image: AKImage(),
+            photoDegrees: 0,
+            containerSize: CGSize(width: 800, height: 600),
+            configuration: MapEditorConfiguration(mode: .edit, displayMode: .master)
+        )
+        let node = try #require(session.pins.pinNode(for: pin.id))
+        node.handleTap(context: .editor)
+        #expect(session.pins.isExpandedId == pin.id)
+
+        node.perform(.copy, context: .editor)
+
+        let copy = try #require(session.pins.mapPinNodes.first { $0.id != pin.id })
+        #expect(session.pins.isExpandedId == copy.id)
+        #expect(copy.isExpanded)
+        #expect(!node.isExpanded)
+        #expect(session.selection.pinId == copy.id)
+    }
+
     @Test("Switching maps discards stale editor interaction state")
     func switchingMapsReseedsEditorState() {
         let firstEntry = MapEntryModel(

@@ -233,6 +233,9 @@ final class MapEditorSession {
         case .beginMove:
             rooms.active.selectNeedle(nil)
             selection.selectPin(nil)
+        case .action(.copy, _, _, _):
+            // The duplicate took over the expanded action menu.
+            selection.selectPin(pins.isExpandedId)
         case .move, .action:
             break
         }
