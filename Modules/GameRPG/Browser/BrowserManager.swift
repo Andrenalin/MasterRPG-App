@@ -154,7 +154,7 @@ final class BrowserManager {
             connectionState = .stopped
             if let error { record(failure: error) }
         case .endpointsUpdated(let endpoints):
-            updateGames(from: endpoints)
+            updateGames(from: endpoints.map { DiscoveredService(name: $0.name, txtRecord: $0.txtRecord) })
         }
     }
 
@@ -176,25 +176,51 @@ final class BrowserManager {
         return removed
     }
 
-    private func updateGames(from endpoints: [Bonjour.Endpoint]) {
+    /// What `updateGames` needs of a browse result; `Bonjour.Endpoint` cannot be created in tests.
+    struct DiscoveredService {
+        let name: String
+        let txtRecord: NWTXTRecord
+    }
+
+    func updateGames(from endpoints: [DiscoveredService]) {
         let newNames = Set(endpoints.map { $0.name })
         let newlyRemoved = games.filter { !newNames.contains($0.endpointName) }
         if !newlyRemoved.isEmpty {
             removed.append(contentsOf: newlyRemoved)
         }
         games.removeAll { !newNames.contains($0.endpointName) }
-        let existing = Set(games.map { $0.endpointName })
-        for endpoint in endpoints where !existing.contains(endpoint.name) {
-            games.append(
-                BrowserGameModel(
-                    id: UUID(),
-                    endpointName: endpoint.name,
-                    connectionMode: serviceType.connectionMode,
-                    supporterTier: Self.supporterTier(from: endpoint.txtRecord),
-                    sessionId: endpoint.txtRecord[NWTXTRecord.sessionKey]
+        for endpoint in endpoints {
+            let sessionId = endpoint.txtRecord[NWTXTRecord.sessionKey]
+            guard let index = games.firstIndex(where: { $0.endpointName == endpoint.name }) else {
+                games.append(
+                    BrowserGameModel(
+                        id: UUID(),
+                        endpointName: endpoint.name,
+                        connectionMode: serviceType.connectionMode,
+                        supporterTier: Self.supporterTier(from: endpoint.txtRecord),
+                        sessionId: sessionId
+                    )
                 )
+                Logger.browserController.log("Found endpoint: \(endpoint.name) (session \(sessionId == nil ? "missing" : "present", privacy: .public))")
+                continue
+            }
+            // A service is often reported before its TXT record has resolved. Only reading the
+            // TXT on first sight left `sessionId` nil for good, so a restarted master never
+            // matched its waiting players. A later result with a TXT record updates the entry
+            // (same id, so the UI keeps its row); one without keeps what is known.
+            let game = games[index]
+            guard sessionId != nil || endpoint.txtRecord[NWTXTRecord.supporterTierKey] != nil else { continue }
+            let updatedSessionId = sessionId ?? game.sessionId
+            let updatedTier = endpoint.txtRecord[NWTXTRecord.supporterTierKey] == nil ? game.supporterTier : Self.supporterTier(from: endpoint.txtRecord)
+            guard updatedSessionId != game.sessionId || updatedTier != game.supporterTier else { continue }
+            games[index] = BrowserGameModel(
+                id: game.id,
+                endpointName: game.endpointName,
+                connectionMode: game.connectionMode,
+                supporterTier: updatedTier,
+                sessionId: updatedSessionId
             )
-            Logger.browserController.log("Found endpoint: \(endpoint.name)")
+            Logger.browserController.log("Updated endpoint: \(endpoint.name) (session \(updatedSessionId == nil ? "missing" : "present", privacy: .public))")
         }
     }
 

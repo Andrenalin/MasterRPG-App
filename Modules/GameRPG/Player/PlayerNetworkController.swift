@@ -300,6 +300,7 @@ private extension PlayerNetworkController {
     }
 
     private func setUpListener() {
+        refreshMasterSessionId()
         // Reuses the passcode this session's outbound connection was made
         // with — the peer on the other end already knows it, so no new code
         // entry is needed to re-admit them if they reconnect.
@@ -404,6 +405,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
         let fallbackListener = networkModel.listener
         networkModel.reset(listener: nil)
         fallbackListener?.stopListening()
+        refreshMasterSessionId()
         resolvePendingConnection(success: true)
         await delegate.playerReady()
     }
@@ -418,6 +420,17 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
 }
 
 private extension PlayerNetworkController {
+    /// Takes the master's session from its current browser entry. The join may have used an
+    /// entry whose TXT record had not resolved yet; the reconnect service must still carry the
+    /// session, or the restarted master never redials this player. Keeps the known session when
+    /// the master is no longer advertised.
+    func refreshMasterSessionId() {
+        guard let endpoint = networkModel.model?.endpoint,
+              let game = browserManager.games.first(where: { browserManager.nwEndpoint(for: $0) == endpoint }),
+              let sessionId = game.sessionId else { return }
+        networkModel.sessionId = sessionId
+    }
+
     func isCurrentConnection(_ id: ConnectionController.ID) -> Bool {
         networkModel.connectionController?.id == id
     }

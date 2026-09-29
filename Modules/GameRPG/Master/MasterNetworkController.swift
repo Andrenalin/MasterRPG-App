@@ -32,6 +32,7 @@ final class MasterNetworkController: Sendable {
     let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkModel
+    private let hostingSessions: HostingSessionStore
     private var browserConnectionEndpoints: [ConnectionController.ID: NWEndpoint] = [:]
     // See CODE_AUDIT §6.1: throttles repeated bad-passcode attempts on the inbound
     // listener. connectToPlayer's outbound reconnect dial-outs are never throttled —
@@ -72,9 +73,11 @@ final class MasterNetworkController: Sendable {
         name: String,
         delegate: MasterNetworkControllerDelegate? = nil,
         listnerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging,
-        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder()
+        browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder(),
+        hostingSessions: HostingSessionStore = .shared
     ) {
         self.networkModel = MasterNetworkModel(name: name)
+        self.hostingSessions = hostingSessions
         self.delegate = MasterNetworkControllerDelegateBox(delegate)
         self.listnerBuilder = listnerBuilder
         self.browserConnectionBuilder = browserConnectionBuilder
@@ -104,7 +107,9 @@ extension MasterNetworkController: MasterNetworkControllable {
         networkModel.isStreaming = true
         networkModel.passcode = passcode
         networkModel.isProxyHosting = proxy
-        networkModel.sessionId = UUID().uuidString
+        // Stable while the code is: players waiting to reconnect after the master ended and
+        // restarted the game still advertise it, so they are redialed.
+        networkModel.sessionId = hostingSessions.sessionId(forPasscode: passcode, proxy: proxy)
         listenerRestartAttempt = 0
         startListener()
 
@@ -442,6 +447,9 @@ extension MasterNetworkController {
         // Only this session's own reconnect services are dialed: another group's players
         // advertise the same service type on the same network. See CODE_AUDIT_Join §5.2.
         let ownGames = games.filter { $0.sessionId == networkModel.sessionId }
+        for game in games where game.sessionId != networkModel.sessionId {
+            Logger.networking.debug("MasterNetworkController: Not redialing \(game.endpointName, privacy: .private), session \(game.sessionId == nil ? "missing" : "different", privacy: .public)")
+        }
         let endpoints = ownGames.map { manager.nwEndpoint(for: $0) }
         let advertisedEndpoints = Set(endpoints)
         networkModel.browserConnections.removeAll { !advertisedEndpoints.contains($0) }

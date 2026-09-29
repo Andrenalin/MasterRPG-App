@@ -62,9 +62,10 @@ final class MasterNetworkModel {
     var connections: [any ConnectionControllable] = []
     var isStreaming: Bool = false
     var listenerStatus: MasterListenerStatus = .stopped
-    /// Identifies this hosting run. Advertised by the listener, and required of the reconnect
-    /// services this master dials, so a master only redials its own players.
-    /// See CODE_AUDIT_Join §5.2.
+    /// Identifies this master's session. Advertised by the listener, and required of the
+    /// reconnect services this master dials, so a master only redials its own players
+    /// (CODE_AUDIT_Join §5.2). Kept across hosting runs with the same join code by
+    /// `HostingSessionStore`, so a restarted game redials the players of the previous run.
     @ObservationIgnored var sessionId: String = UUID().uuidString
     @ObservationIgnored var isProxyHosting = false
 

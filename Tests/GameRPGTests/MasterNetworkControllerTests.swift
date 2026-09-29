@@ -27,7 +27,8 @@ struct MasterNetworkControllerTestEnvironment {
             name: name,
             delegate: delegateSpy,
             listnerBuilder: { _, _, _, _, _, _ in listenerSpy as any ListenerManaging },
-            browserConnectionBuilder: browserConnectionBuilder
+            browserConnectionBuilder: browserConnectionBuilder,
+            hostingSessions: HostingSessionStore(storage: InMemoryJoinCodeStorage())
         )
 
         return MasterNetworkControllerTestEnvironment(
@@ -465,6 +466,50 @@ struct MasterNetworkControllerTests {
         // Assert
         #expect(factory.endpoints.count == 1)
         #expect(factory.endpoints.first.map { "\($0)" }?.contains("Own") == true)
+        env.controller.stopStreaming()
+    }
+
+    @Test("A restarted game with the same code redials the players of the previous run")
+    func restartedGameRedialsPreviousPlayers() async {
+        // Arrange
+        let factory = BrowserConnectionFactorySpy()
+        let env = await MasterNetworkControllerTestEnvironment.create(
+            browserConnectionBuilder: { endpoint, _, _ in factory.makeConnection(endpoint: endpoint) }
+        )
+        env.controller.startStreaming(passcode: "1234")
+        let previousSession = env.controller.networkModel.sessionId
+        env.controller.stopStreaming()
+        let waitingPlayer = BrowserGameModel(id: UUID(), endpointName: "Waiting", connectionMode: .proxy, sessionId: previousSession)
+
+        // Act
+        env.controller.startStreaming(passcode: "1234")
+        env.controller.refresh(games: [waitingPlayer])
+
+        // Assert
+        #expect(env.controller.networkModel.sessionId == previousSession)
+        #expect(factory.endpoints.count == 1)
+        env.controller.stopStreaming()
+    }
+
+    @Test("A new join code starts a new session")
+    func newCodeStartsNewSession() async {
+        // Arrange
+        let factory = BrowserConnectionFactorySpy()
+        let env = await MasterNetworkControllerTestEnvironment.create(
+            browserConnectionBuilder: { endpoint, _, _ in factory.makeConnection(endpoint: endpoint) }
+        )
+        env.controller.startStreaming(passcode: "1234")
+        let previousSession = env.controller.networkModel.sessionId
+        env.controller.stopStreaming()
+        let waitingPlayer = BrowserGameModel(id: UUID(), endpointName: "Waiting", connectionMode: .proxy, sessionId: previousSession)
+
+        // Act
+        env.controller.startStreaming(passcode: "5678")
+        env.controller.refresh(games: [waitingPlayer])
+
+        // Assert
+        #expect(env.controller.networkModel.sessionId != previousSession)
+        #expect(factory.endpoints.isEmpty)
         env.controller.stopStreaming()
     }
 

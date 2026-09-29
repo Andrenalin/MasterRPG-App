@@ -283,10 +283,12 @@ private extension ConnectionController {
     func startSendLoop(on connection: GameConnection) {
         guard sendTask == nil else { return }
         let outbound = outbound
+        let uuid = id.uuidString
         sendTask = Task { [weak self] in
             for await message in outbound {
                 do {
                     try await connection.send(message.content, metadata: NWProtocolFramer.Message(gameMessageType: message.type))
+                    Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Sent \(message.content.count, privacy: .public) bytes")
                 } catch {
                     guard !Task.isCancelled else { return }
                     await self?.sendFailed(error: error)
@@ -374,7 +376,13 @@ extension ConnectionController {
             Logger.connectionController.error("Connection: \(uuid, privacy: .public) Invalid message type")
             return
         }
-        await delegate?.received(data: content, for: id)
+        let uuid = id.uuidString
+        guard let delegate else {
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Dropped a received message, no delegate")
+            return
+        }
+        Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Received \(content?.count ?? 0, privacy: .public) bytes")
+        await delegate.received(data: content, for: id)
     }
 }
 
