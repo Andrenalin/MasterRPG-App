@@ -49,7 +49,9 @@ public final class ItemRowTreeModel: Identifiable, Sendable {
     }
 }
 
-extension ItemRowTreeModel: @preconcurrency Codable {
+// Isolated conformances (SE-0470): usable only on the main actor, checked at compile time
+// instead of trapping at runtime. See CODE_AUDIT_19 §4.1.
+extension ItemRowTreeModel: @MainActor Codable {
     enum CodingKeys: CodingKey {
         case id
         case model
@@ -75,7 +77,7 @@ extension ItemRowTreeModel: @preconcurrency Codable {
     }
 }
 
-extension ItemRowTreeModel: @preconcurrency Equatable, @preconcurrency Hashable {
+extension ItemRowTreeModel: @MainActor Equatable, @MainActor Hashable {
     public static func == (lhs: ItemRowTreeModel, rhs: ItemRowTreeModel) -> Bool {
         lhs.id == rhs.id &&
         lhs.expanded == rhs.expanded &&

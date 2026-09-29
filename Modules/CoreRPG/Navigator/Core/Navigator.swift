@@ -340,6 +340,8 @@ extension Navigator {
 
 extension EnvironmentValues {
     /// Create environment entry for the Navigator managing the current ManagedNavigationStack.
+    /// Main-actor isolated so it can use `NavigatorKey`'s isolated conformance.
+    @MainActor
     public var navigator: Navigator {
         get { self[NavigatorKey.self] }
         set { self[NavigatorKey.self] = newValue }
@@ -347,7 +349,8 @@ extension EnvironmentValues {
 }
 
 @MainActor
-private struct NavigatorKey: @preconcurrency EnvironmentKey {
+private struct NavigatorKey: @MainActor EnvironmentKey {
+    // Isolated conformance (SE-0470) instead of `@preconcurrency`. See CODE_AUDIT_19 §4.1.
     // Old-school approach avoids subtle bug in @Entry macro
     // https://michaellong.medium.com/debugging-swiftuis-entry-macro-e018a4974454
     static let defaultValue: Navigator = Navigator(owner: .application, name: nil)

@@ -4,6 +4,7 @@ import Combine
 import CoreData
 import Foundation
 import os.log
+import Synchronization
 
 /// Do NOT mark this `@MainActor`. `context` is frequently a private-queue background
 /// context (see `CloudKitCoreDataPersistenceController`'s "background_context"), and Core
@@ -12,27 +13,23 @@ import os.log
 /// below inferred main-actor-isolated while Combine still invokes them off-thread, which
 /// broke Core Data's thread confinement in practice (see git history for this file).
 ///
-/// `@unchecked Sendable` soundness precondition: `observeCoreDataChanges(from:entity:handler:)`
-/// must be called exactly once per instance. `observer` is mutable, unsynchronized state — a
-/// second call on the same instance would silently drop the first subscription's `Cancellable`
-/// (with no compiler signal) rather than run two subscriptions side by side. Every current call
+/// `observeCoreDataChanges(from:entity:handler:)` must be called once per instance: every call
 /// site (one per module's `SyncDataController.init`, via `SyncDataControllable.startSyncObservation`)
-/// already satisfies this by constructing a fresh `CoreDataChangeObserver()` right before calling
-/// it; `observeCoreDataChanges` itself enforces it defensively below. See CODE_AUDIT §3.6.
-public final class CoreDataChangeObserver: @unchecked Sendable {
+/// constructs a fresh `CoreDataChangeObserver()` right before calling it, and a second call traps.
+/// `observer` sits behind a `Mutex`, so the class is checked `Sendable`. See CODE_AUDIT_19 §4.1.
+public final class CoreDataChangeObserver: Sendable {
     typealias DataType = (NSManagedObject & CoreDataId)
 
-    private var observer: AnyCancellable?
+    private let observer = Mutex<Subscription?>(nil)
 
     public init() {}
 
     public func observeCoreDataChanges(from context: NSManagedObjectContext, entity: NSEntityDescription, handler: @escaping @Sendable ([UUID], [UUID], [UUID]) -> Void) {
-        precondition(observer == nil, "observeCoreDataChanges(from:entity:handler:) must only be called once per CoreDataChangeObserver instance.")
         let localCtx = context
         // The entity's name (a `String`) crosses into the `@Sendable` closure instead of the
         // non-Sendable `NSEntityDescription`. See CODE_AUDIT_18 §3.18.
         let entityName = entity.name
-        observer = NotificationCenter.default
+        let subscription = NotificationCenter.default
             .publisher(for: NSManagedObjectContext.didMergeChangesObjectIDsNotification, object: localCtx)
             .compactMap { notification -> (deleted: [UUID], inserted: [UUID], updated: [UUID])? in
                 // Pull the (Sendable) object ID sets out of the non-Sendable notification
@@ -58,10 +55,21 @@ public final class CoreDataChangeObserver: @unchecked Sendable {
                 Logger.coreDataChangeObserver.debug("Handler D:\(deleted.count) I:\(inserted.count) U:\(updated.count)")
                 handler(deleted, inserted, updated)
             }
+        observer.withLock { observer in
+            precondition(observer == nil, "observeCoreDataChanges(from:entity:handler:) must only be called once per CoreDataChangeObserver instance.")
+            observer = Subscription(cancellable: subscription)
+        }
     }
 }
 
 private extension CoreDataChangeObserver {
+    /// The subscription captures the caller's non-Sendable `context`, so region analysis can't
+    /// hand it to the `Mutex` as-is. The box is immutable and the cancellable is only cancelled
+    /// (on deinit), which is thread-safe; this is the one unchecked spot left.
+    struct Subscription: @unchecked Sendable {
+        let cancellable: AnyCancellable
+    }
+
     enum ChangeType: Equatable, CaseIterable {
         case inserted, deleted, updated
 
