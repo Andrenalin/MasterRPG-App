@@ -34,16 +34,24 @@ protocol ConnectionControllerDelegate: Sendable & AnyObject {
 
 actor ConnectionController: Identifiable {
     nonisolated let id: UUID
-    private let connection: NWConnection
-    // NWConnection needs a dispatch queue; callbacks hop from it into the actor.
-    private let queue = DispatchQueue(label: BundleIds.app("ConnectionController"))
+    /// Released on teardown. A `GameConnection` has no `cancel()`: cancelling the task waiting in
+    /// `receive()`/`send()` cancels it, and dropping the last reference closes it.
+    private var connection: GameConnection?
     private weak var delegate: (any ConnectionControllerDelegate)?
     private var receiveTask: Task<Void, Never>?
+    /// Sends run one at a time from `outbound`, in the order they were queued, so an awaited send
+    /// never lets a later message overtake it through actor reentrancy.
+    private var sendTask: Task<Void, Never>?
+    private let outbound: AsyncStream<OutboundMessage>
+    private let outboundContinuation: AsyncStream<OutboundMessage>.Continuation
+    /// A message can arrive before the `.ready` state update is handled; the delegate still hears
+    /// `readyConnection` first.
+    private var readyReported = false
     /// Set the moment `connectionFailed(message:isAuthenticationFailure:)`
-    /// reports a terminal outcome to the delegate. `cancel()` (called from
-    /// every failure path) always produces a later `.cancelled` state
-    /// callback from `NWConnection`; without this guard that `.cancelled`
-    /// would *also* call `lostConnection()`, delivering two independent
+    /// reports a terminal outcome to the delegate. The teardown on every
+    /// failure path can produce a later `.cancelled` state update from the
+    /// connection; without this guard that `.cancelled` would *also* call
+    /// `lostConnection()`, delivering two independent
     /// terminal-outcome delegate calls — `failed` then `lostConnection` — for
     /// one underlying failure, racing `ConnectionThrottleTracker`'s
     /// `resolve(id:succeeded:)` against its own `clear(id:)` with no ordering
@@ -53,31 +61,37 @@ actor ConnectionController: Identifiable {
     /// CODE_AUDIT_Reconnect §3.1.
     private var terminalOutcomeReported = false
     /// Set by an external `cancel()` (the owner tearing the connection down on purpose). The
-    /// pending `receiveMessage` completes afterwards with a cancellation error that must not be
+    /// pending `receive()` completes afterwards with a cancellation error that must not be
     /// reported as a failure of its own. See CODE_AUDIT_15 §3.6.
     private var wasCancelledLocally = false
-    /// Consumes `NWConnection` state updates in the order they were delivered.
+    /// Consumes connection state updates in the order they were delivered.
     private var stateTask: Task<Void, Never>?
 
     init(id: UUID, endpoint: NWEndpoint, passcode: String, delegate: ConnectionControllerDelegate) {
-        self.id = id
-        self.connection = NWConnection.connection(endpoint: endpoint, passcode: passcode)
-        self.delegate = delegate
+        self.init(id: id, connection: .game(to: endpoint, passcode: passcode), delegate: delegate)
         Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init endpoint (\(NWParameters.passcodeCheck(passcode), privacy: .private))")
     }
 
-    init(id: UUID, connection: NWConnection, delegate: ConnectionControllerDelegate) {
+    init(id: UUID, connection: GameConnection, delegate: ConnectionControllerDelegate) {
         self.id = id
         self.connection = connection
         self.delegate = delegate
+        (outbound, outboundContinuation) = AsyncStream.makeStream(of: OutboundMessage.self)
         Logger.connectionController.debug("Connection: \(id.uuidString, privacy: .public) Init connection")
     }
 
     deinit {
         // Owners may drop connections without an explicit cancel() (e.g. resetConnections).
+        // Cancelling the pending receive cancels the connection.
         receiveTask?.cancel()
+        sendTask?.cancel()
         stateTask?.cancel()
-        connection.cancel()
+        outboundContinuation.finish()
+    }
+
+    private struct OutboundMessage: Sendable {
+        let type: GameMessageType
+        let content: Data
     }
 }
 
@@ -92,14 +106,15 @@ extension ConnectionController: ConnectionControllable {
     }
 
     func startConnection() {
+        guard let connection, stateTask == nil else { return }
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Start")
 
         // One `Task` per state change gave no ordering guarantee (`.ready` could be processed
         // after `.failed`/`.cancelled`); a single consumer of an `AsyncStream` keeps the order.
         // See CODE_AUDIT_15 §3.6.
-        let (states, continuation) = AsyncStream.makeStream(of: NWConnection.State.self)
-        connection.stateUpdateHandler = { newState in
+        let (states, continuation) = AsyncStream.makeStream(of: GameConnection.State.self)
+        connection.onStateUpdate { _, newState in
             continuation.yield(newState)
             if case .cancelled = newState { continuation.finish() }
         }
@@ -109,12 +124,21 @@ extension ConnectionController: ConnectionControllable {
                 await self.stateChanged(state)
             }
         }
-        connection.start(queue: queue)
+        // A `GameConnection` starts with its first `receive()`/`send()`, so the receive loop is
+        // what establishes it. See CODE_AUDIT_19 §4.2.
+        startReceiveLoop(on: connection)
+        startSendLoop(on: connection)
     }
 
     func cancel() {
         wasCancelledLocally = true
+        let wasStarted = stateTask != nil
         teardown()
+        // Only a cancelled pending `receive()`/`send()` yields a `.cancelled` state update; a
+        // connection released while idle closes without one. Report the loss either way, after
+        // the caller's own bookkeeping as before; `terminalOutcomeReported` keeps it to one.
+        guard wasStarted else { return }
+        Task { await self.reportCancelled() }
     }
 
     func request(type: GameMessageType, with content: MessageMapper?) {
@@ -128,29 +152,19 @@ extension ConnectionController: ConnectionControllable {
     func request(type: GameMessageType, encodedContent: Data?) {
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send request")
-        let message = NWProtocolFramer.Message(gameMessageType: type)
-        let context = NWConnection.ContentContext(identifier: "PlayerRequest", metadata: [message])
-        send(content: encodedContent, context: context)
+        send(type: type, content: encodedContent)
     }
 
     func response(type: GameMessageType, encodedContent: Data?) {
         let uuid = id.uuidString
         Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Send response")
-        let message = NWProtocolFramer.Message(gameMessageType: type)
-        let context = NWConnection.ContentContext(identifier: "MasterResponse", metadata: [message])
-        send(content: encodedContent, context: context)
+        send(type: type, content: encodedContent)
     }
 
-    /// `.idempotent` completion never invokes its handler at all, so the app
-    /// was never told whether a write actually reached the peer — a
-    /// mid-flight failure (a Wi-Fi drop, backgrounding, a peer going out of
-    /// range) silently lost that specific message with no signal to retry
-    /// it and no way to select which in-flight message(s) were affected.
-    /// `.contentProcessed` surfaces a failure through the same
-    /// `connectionFailed` path a receive-side error already uses, so the
-    /// delegate learns the connection is dead instead of nothing ever
-    /// finding out. See CODE_AUDIT_Network §5.5.
-    private func send(content: Data?, context: NWConnection.ContentContext) {
+    /// Every send reports its outcome: a mid-flight failure (a Wi-Fi drop, backgrounding, a peer
+    /// going out of range) reaches the delegate through `connectionFailed` instead of silently
+    /// losing that message. See CODE_AUDIT_Network §5.5.
+    private func send(type: GameMessageType, content: Data?) {
         // A nil encoding (encode failure) would go out as a zero-length frame, which the
         // receiver treats as the peer closing the connection. Covers every send path, not
         // only the master's ordered one. See CODE_AUDIT_19 §3.14.
@@ -159,18 +173,10 @@ extension ConnectionController: ConnectionControllable {
             Logger.connectionController.error("Connection: \(uuid, privacy: .public) Skipped sending a message that could not be encoded")
             return
         }
-        connection.send(
-            content: content,
-            contentContext: context,
-            isComplete: true,
-            completion: .contentProcessed { [weak self] error in
-                guard let error else { return }
-                Task { await self?.sendFailed(error: error) }
-            }
-        )
+        outboundContinuation.yield(OutboundMessage(type: type, content: content))
     }
 
-    private func sendFailed(error: NWError) async {
+    private func sendFailed(error: any Error) async {
         // A send still in flight when the owner cancelled completes with an error too.
         guard !wasCancelledLocally else { return }
         let uuid = id.uuidString
@@ -180,23 +186,25 @@ extension ConnectionController: ConnectionControllable {
     }
 }
 private extension ConnectionController {
-    /// Stops receiving and cancels the connection without marking the cancel as the owner's.
+    /// Stops receiving and sending and releases the connection, without marking the cancel as
+    /// the owner's. Cancelling a task waiting in `receive()`/`send()` cancels the connection (a
+    /// `.cancelled` state update follows); dropping the last reference closes it otherwise.
     func teardown() {
         receiveTask?.cancel()
         receiveTask = nil
-        connection.cancel()
+        sendTask?.cancel()
+        sendTask = nil
+        outboundContinuation.finish()
+        connection = nil
     }
 
-    func stateChanged(_ newState: NWConnection.State) async {
+    func stateChanged(_ newState: GameConnection.State) async {
         let uuid = id.uuidString
 
         switch newState {
         case .ready:
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Ready")
-            // A late `.ready` after a terminal outcome or a local cancel must not arm a receive.
-            guard !terminalOutcomeReported, !wasCancelledLocally else { return }
-            startReceiveLoop()
-            await connectionReady()
+            await reportReady()
 
         case let .failed(error):
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Failed \(error.localizedDescription, privacy: .public)")
@@ -205,21 +213,12 @@ private extension ConnectionController {
 
         case .cancelled:
             Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Cancelled")
-            // Mirrors `cancel()`: without this, a receive callback still
-            // pending inside `receiveLoop` fires once more with a
-            // cancellation error after teardown was already reported,
-            // re-entering `process()`/`connectionFailed()` for the same
-            // underlying event. See CODE_AUDIT_Network §5.9.
-            receiveTask?.cancel()
-            receiveTask = nil
-            // Only report a fresh loss if this instance hasn't already
-            // reported a terminal outcome via `connectionFailed` — see
-            // `terminalOutcomeReported`'s own doc. A `.cancelled` that
-            // follows an external `cancel()` (e.g. `stop()`'s own teardown,
-            // never preceded by a reported failure) still reports normally.
-            guard !terminalOutcomeReported else { return }
-            terminalOutcomeReported = true
-            await lostConnection()
+            // Mirrors `cancel()`: without this, a receive still pending inside the receive
+            // loop fires once more with a cancellation error after teardown was already
+            // reported, re-entering `process()`/`connectionFailed()` for the same underlying
+            // event. See CODE_AUDIT_Network §5.9.
+            teardown()
+            await reportCancelled()
 
         case let .waiting(error):
             // A rejected handshake (wrong code: `-9820 bad MAC`, unknown identity: `-9864`)
@@ -239,68 +238,87 @@ private extension ConnectionController {
         }
     }
 
-    /// Waits for each message holding only the `NWConnection`: `self` is bound per message, so
-    /// the `deinit` cleanup still runs when an owner drops the controller without `cancel()`
-    /// (its `connection.cancel()` completes the pending receive). See CODE_AUDIT_19 §3.11.
-    func startReceiveLoop() {
+    /// Only reports a fresh loss if this instance hasn't already reported a terminal outcome via
+    /// `connectionFailed` — see `terminalOutcomeReported`'s own doc. An external `cancel()`
+    /// (e.g. `stop()`'s own teardown, never preceded by a reported failure) still reports.
+    func reportCancelled() async {
+        guard !terminalOutcomeReported else { return }
+        terminalOutcomeReported = true
+        await lostConnection()
+    }
+
+    /// Reports `readyConnection` once, from whichever comes first: the `.ready` state update or
+    /// the first received message. A late `.ready` after a terminal outcome or a local cancel
+    /// reports nothing.
+    func reportReady() async {
+        guard !readyReported, !terminalOutcomeReported, !wasCancelledLocally else { return }
+        readyReported = true
+        await connectionReady()
+    }
+
+    /// Waits for each message holding only the connection: `self` is bound per message, so the
+    /// `deinit` cleanup still runs when an owner drops the controller without `cancel()` (it
+    /// cancels this task, which cancels the pending receive and the connection). Each message is
+    /// processed before the next receive, so a slow delegate holds back the peer instead of
+    /// buffering. See CODE_AUDIT_19 §3.11.
+    func startReceiveLoop(on connection: GameConnection) {
         guard receiveTask == nil else { return }
-        let connection = connection
         receiveTask = Task { [weak self] in
             while !Task.isCancelled {
-                let received = await withCheckedContinuation { (continuation: CheckedContinuation<ReceivedMessage, Never>) in
-                    connection.receiveMessage { content, context, _, error in
-                        continuation.resume(returning: ReceivedMessage(content: content, context: context, error: error))
-                    }
+                let received: ReceivedMessage
+                do {
+                    let message = try await connection.receive()
+                    received = ReceivedMessage(content: message.content, type: message.metadata.framer.gameMessageType, error: nil)
+                } catch {
+                    received = ReceivedMessage(content: nil, type: .invalid, error: error)
                 }
                 guard let self else { return }
-                await self.process(content: received.content, context: received.context, error: received.error)
+                await self.process(received)
                 if received.error != nil { return }
             }
         }
     }
 
-    private struct ReceivedMessage: Sendable {
-        let content: Data?
-        let context: NWConnection.ContentContext?
-        let error: NWError?
+    /// Sends the queued messages one at a time. Holds only the connection, like the receive loop.
+    func startSendLoop(on connection: GameConnection) {
+        guard sendTask == nil else { return }
+        let outbound = outbound
+        sendTask = Task { [weak self] in
+            for await message in outbound {
+                do {
+                    try await connection.send(message.content, metadata: NWProtocolFramer.Message(gameMessageType: message.type))
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    await self?.sendFailed(error: error)
+                    return
+                }
+            }
+        }
     }
 
-    func process(content: Data?, context: NWConnection.ContentContext?, error: Error?) async {
-        // The receive that was pending when the owner cancelled completes with an error (or
-        // EOF): the teardown is already being reported through `.cancelled`.
+    struct ReceivedMessage: Sendable {
+        let content: Data?
+        let type: GameMessageType
+        let error: (any Error)?
+    }
+
+    func process(_ received: ReceivedMessage) async {
+        // The receive that was pending when the owner cancelled completes with an error: the
+        // teardown is already being reported through `.cancelled`.
         guard !wasCancelledLocally else { return }
-        guard error == nil else {
+        if let error = received.error {
+            // A peer closing the connection (player quits, master stops a player, app
+            // backgrounds) also ends the receive with an error: `GameConnection` has no
+            // separate end-of-stream result. Either way the delegate hears that the connection
+            // died, and the loop stops. See CODE_AUDIT_Network §5.6.
             let uuid = id.uuidString
-            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error?.localizedDescription ?? "", privacy: .public)")
+            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Error \(error.localizedDescription, privacy: .public)")
             teardown()
-            let isAuthenticationFailure = (error as? NWError).map(Self.isAuthenticationFailure) ?? false
-            await connectionFailed(message: error?.localizedDescription ?? "", isAuthenticationFailure: isAuthenticationFailure)
+            await connectionFailed(message: error.localizedDescription, isAuthenticationFailure: Self.isAuthenticationFailure(error))
             return
         }
-        guard content != nil else {
-            // No error, but no content either: the standard `NWConnection`
-            // idiom for a graceful peer half-close (EOF), not an ordinary
-            // unrecognized message — a routine occurrence on every clean
-            // disconnect (player quits, master stops a player, app
-            // backgrounds). Previously this fell into the same
-            // log-and-continue branch as a genuinely foreign/garbage
-            // message, so the delegate was never told the connection died,
-            // and `receiveLoop` re-armed `receiveMessage` in a tight,
-            // non-yielding cycle since a closed stream's completion replays
-            // instantly. See CODE_AUDIT_Network §5.6.
-            let uuid = id.uuidString
-            Logger.connectionController.debug("Connection: \(uuid, privacy: .public) Peer closed the connection")
-            teardown()
-            // A graceful peer half-close is never evidence of a bad passcode.
-            await connectionFailed(message: "Peer closed the connection", isAuthenticationFailure: false)
-            return
-        }
-        guard let gameMessage = context?.protocolMetadata(definition: GameProtocol.definition) as? NWProtocolFramer.Message else {
-            let uuid = id.uuidString
-            Logger.connectionController.error("Connection: \(uuid, privacy: .public) Message is not from MasterRPG")
-            return
-        }
-        await receivedMessage(content: content, message: gameMessage)
+        await reportReady()
+        await receivedMessage(content: received.content, type: received.type)
     }
 }
 
@@ -345,13 +363,13 @@ extension ConnectionController {
         errSSLNetworkTimeout
     ]
 
-    nonisolated static func isAuthenticationFailure(_ error: NWError) -> Bool {
-        guard case let .tls(status) = error else { return false }
+    nonisolated static func isAuthenticationFailure(_ error: any Error) -> Bool {
+        guard let error = error as? NWError, case let .tls(status) = error else { return false }
         return !transientTLSStatuses.contains(status)
     }
 
-    func receivedMessage(content: Data?, message: NWProtocolFramer.Message) async {
-        guard message.gameMessageType == .gameData else {
+    func receivedMessage(content: Data?, type: GameMessageType) async {
+        guard type == .gameData else {
             let uuid = id.uuidString
             Logger.connectionController.error("Connection: \(uuid, privacy: .public) Invalid message type")
             return

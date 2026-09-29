@@ -138,7 +138,7 @@ struct MasterNetworkControllerTests {
         env.controller.startStreaming(passcode: "1234")
 
         // Act
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
 
         // Assert
         #expect(env.controller.networkModel.connections.count == 1)
@@ -149,7 +149,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
         let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act
@@ -164,7 +164,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
         let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act
@@ -179,7 +179,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
         let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act & Assert - All send methods execute without error
@@ -288,7 +288,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
 
         // Act
         await env.controller.lostConnection(for: UUID())
@@ -303,7 +303,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
 
         // Act
         await env.controller.failed(with: "Error", for: UUID())
@@ -318,7 +318,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("http://localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
         let connectionId = env.controller.networkModel.connections.first!.id
 
         // Act
@@ -393,7 +393,7 @@ struct MasterNetworkControllerTests {
         // Arrange
         let env = await MasterNetworkControllerTestEnvironment.create()
         env.controller.startStreaming(passcode: "1234")
-        await env.controller.newConnection(for: NWConnection(host: .init("localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
 
         // Act
         await env.controller.listenerCancelled()
@@ -481,7 +481,7 @@ struct MasterNetworkControllerTests {
         for index in 0..<(MasterNetworkController.maximumOutboundDials + 4) {
             env.controller.connectToPlayer(endpoint: .service(name: "Fallback\(index)", type: GameServiceType.master.serviceName, domain: "local.", interface: nil))
         }
-        await env.controller.newConnection(for: NWConnection(host: .init("localhost"), port: .any, using: .tcp))
+        await env.controller.newConnection(for: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"))
 
         // Assert
         #expect(factory.endpoints.count == MasterNetworkController.maximumOutboundDials)

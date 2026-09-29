@@ -137,8 +137,7 @@ extension NWProtocolFramer.Message {
     }
 }
 
-// FramerProtocol conformance — required so GameProtocol can be used with Framer<T>
-// when Apple exposes PSK in the declarative TLS API.
+// Lets `Framer<GameProtocol>` run this framer on `GameConnection`/`GameListener`.
 extension GameProtocol: FramerProtocol {}
 
 // Define a protocol header struct to help encode and decode bytes.

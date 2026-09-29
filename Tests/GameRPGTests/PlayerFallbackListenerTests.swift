@@ -156,8 +156,8 @@ struct PlayerFallbackListenerTests {
     }
 
     /// An unroutable address keeps the connection pending instead of failing on its own.
-    private func pendingConnection() -> NWConnection {
-        NWConnection(host: NWEndpoint.Host("192.0.2.1"), port: 9, using: .tcp)
+    private func pendingConnection() -> GameConnection {
+        .game(to: .hostPort(host: "192.0.2.1", port: 9), passcode: "1234")
     }
 
     private func makeConnection(id: ConnectionController.ID, delegate: any ConnectionControllerDelegate) -> ConnectionController {

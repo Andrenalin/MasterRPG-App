@@ -365,28 +365,26 @@ extension MasterNetworkController: ListenerManagerDelegate {
     static let listenerHealthyDuration: Duration = .seconds(120)
 
     @MainActor
-    func listenerNewConnection(_ connection: NWConnection) async {
+    func listenerNewConnection(_ connection: GameConnection) async {
         // A game has a handful of players; an unbounded connection table lets one
         // authenticated (or handshake-spamming) peer exhaust memory. See CODE_AUDIT_15 §6.1.
         guard inboundConnectionCount < Self.maximumConnections else {
+            // Returning drops the only reference, which closes the connection.
             Logger.networking.debug("MasterNetworkController: Rejected connection, connection limit reached")
-            connection.cancel()
             return
         }
         let generation = networkModel.connectionGeneration
-        guard await connectionThrottle.shouldAllow(endpoint: connection.endpoint) else {
+        guard await connectionThrottle.shouldAllow(endpoint: connection.remoteEndpoint) else {
             Logger.networking.debug("MasterNetworkController: Rejected connection attempt from throttled source")
-            connection.cancel()
             return
         }
         let id = UUID()
-        await connectionThrottle.register(id: id, endpoint: connection.endpoint)
+        await connectionThrottle.register(id: id, endpoint: connection.remoteEndpoint)
         // A reset during the suspensions above already cleared the pending bookkeeping; a
         // connection admitted now would have no owning listener. See CODE_AUDIT_16 §3.3.
         guard generation == networkModel.connectionGeneration,
               inboundConnectionCount < Self.maximumConnections else {
             await connectionThrottle.clear(id: id)
-            connection.cancel()
             return
         }
         Logger.networking.debug("MasterNetworkController: New Connection")
@@ -407,8 +405,8 @@ extension MasterNetworkController: ListenerManagerDelegate {
     }
 
     /// Convenience accessor used by tests to inject a connection directly.
-    func newConnection(for nwConnection: NWConnection) async {
-        await listenerNewConnection(nwConnection)
+    func newConnection(for connection: GameConnection) async {
+        await listenerNewConnection(connection)
     }
 }
 

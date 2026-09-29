@@ -30,7 +30,7 @@ final class GameListenerDelegateMock: ListenerManagerDelegate, @unchecked Sendab
         calledCancelled += 1
     }
 
-    func listenerNewConnection(_ connection: NWConnection) async {
+    func listenerNewConnection(_ connection: GameConnection) async {
         calledNewConnection += 1
     }
 }

@@ -4,21 +4,34 @@ import CryptoKit
 import Foundation
 import Network
 
-protocol ConnectionAbstraction: AnyObject {
-    var debugDescription: String { get }
-    var stateUpdateHandler: (@Sendable (_ state: NWConnection.State) -> Void)? { get set }
+/// The LAN game transport: the `GameProtocol` framer over TLS-PSK over TCP, on the structured
+/// Network API. See CODE_AUDIT_19 §4.2.
+typealias GameConnection = NetworkConnection<Framer<GameProtocol>>
+typealias GameListener = NetworkListener<Framer<GameProtocol>>
 
-    func cancel()
-    func send(content: Data?, contentContext: NWConnection.ContentContext, isComplete: Bool, completion: NWConnection.SendCompletion)
-    func start(queue: DispatchQueue)
-    func receiveMessage(completion: @escaping @Sendable (_ completeContent: Data?, _ contentContext: NWConnection.ContentContext?, _ isComplete: Bool, _ error: NWError?) -> Void)
+enum GameNetworkParameters {
+    /// The declarative `TLS` builder has no pre-shared-key option, so TLS-PSK comes from the
+    /// initial `NWParameters(passcode:)` and the builder only adds the framer over TCP. Declaring
+    /// `TLS` in the builder as well stacks a second TLS layer and every handshake fails.
+    static func builder(passcode: String) -> NWParametersBuilder<Framer<GameProtocol>> {
+        .parameters(initialParameters: NWParameters(passcode: passcode)) {
+            Framer(using: GameProtocol.self) {
+                TCP().keepalive(idleTimeInSeconds: keepaliveIdle, count: keepaliveCount, intervalInSeconds: keepaliveInterval)
+            }
+        }
+    }
+
+    // A probe every 2 s of idleness kept the radio busy on every idle session; probe after
+    // 15 s and give up after 3 unanswered probes 5 s apart (~30 s to notice a dead peer,
+    // instead of the OS default retry schedule). See CODE_AUDIT_Join §7.1.
+    static let keepaliveIdle: UInt32 = 15
+    static let keepaliveInterval: UInt32 = 5
+    static let keepaliveCount: UInt32 = 3
 }
 
-extension NWConnection: ConnectionAbstraction {}
-
-extension NWConnection {
-    static func connection(endpoint: NWEndpoint, passcode: String) -> NWConnection {
-        NWConnection(to: endpoint, using: NWParameters(passcode: passcode))
+extension GameConnection {
+    static func game(to endpoint: NWEndpoint, passcode: String) -> GameConnection {
+        GameConnection(to: endpoint, using: GameNetworkParameters.builder(passcode: passcode))
     }
 }
 
@@ -33,27 +46,20 @@ extension NWParameters {
         return "len \(passcode.count) check \(String(nibble, radix: 16))"
     }
 
-    // Create parameters for use in PeerConnection and PeerListener.
+    // The TLS-PSK and TCP base of `GameNetworkParameters.builder(passcode:)`, which adds the
+    // `GameProtocol` framer on top.
     convenience init(passcode: String) {
-        // Customize TCP options to enable keepalives.
         let tcpOptions = NWProtocolTCP.Options()
-        // A probe every 2 s of idleness kept the radio busy on every idle session; probe after
-        // 15 s and give up after 3 unanswered probes 5 s apart (~30 s to notice a dead peer,
-        // instead of the OS default retry schedule). See CODE_AUDIT_Join §7.1.
         tcpOptions.enableKeepalive = true
-        tcpOptions.keepaliveIdle = 15
-        tcpOptions.keepaliveInterval = 5
-        tcpOptions.keepaliveCount = 3
+        tcpOptions.keepaliveIdle = Int(GameNetworkParameters.keepaliveIdle)
+        tcpOptions.keepaliveInterval = Int(GameNetworkParameters.keepaliveInterval)
+        tcpOptions.keepaliveCount = Int(GameNetworkParameters.keepaliveCount)
 
         // Create parameters with custom TLS and TCP options.
         self.init(tls: NWParameters.tlsOptions(passcode: passcode), tcp: tcpOptions)
 
         // Enable using a peer-to-peer link.
         includePeerToPeer = true
-
-        // Add your custom game protocol to support game messages.
-        let gameOptions = NWProtocolFramer.Options(definition: GameProtocol.definition)
-        defaultProtocolStack.applicationProtocols.insert(gameOptions, at: 0)
     }
 
     // Create TLS options using a passcode to derive a pre-shared key.

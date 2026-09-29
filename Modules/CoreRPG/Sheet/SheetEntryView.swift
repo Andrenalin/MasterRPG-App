@@ -628,7 +628,7 @@ private struct SheetEntrySelectionBorder: View, Equatable {
         rootModel: .fake,
         parentModel: .empty,
         entryModel: SheetRootModel.fake.sheetModel,
-        isEditor: false,
+        isEditor: true,
         linkTypes: EmptyLinkTransferable.self,
         focusedEntryId: $focusedEntryId
     )

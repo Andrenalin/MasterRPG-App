@@ -21,15 +21,16 @@ actor ConnectionThrottleTracker {
 
     /// Whether a new connection attempt from `endpoint` should be admitted.
     /// An endpoint with no derivable `throttleSourceKey` is always admitted —
-    /// matching `ConnectionAttemptThrottle`'s own source-less behavior.
+    /// matching `ConnectionAttemptThrottle`'s own source-less behavior. `endpoint` is a
+    /// connection's `remoteEndpoint`, which an accepted connection always has.
     ///
     /// Handshakes still in flight count against the source too: failures are only
     /// recorded once a handshake ends, so without a cap on concurrent pending handshakes a
     /// source could open any number of guesses in parallel before the first failure lands.
     /// See CODE_AUDIT_15 §6.1.
-    func shouldAllow(endpoint: NWEndpoint) async -> Bool {
+    func shouldAllow(endpoint: NWEndpoint?) async -> Bool {
         guard pendingSources.count < Self.maximumPendingHandshakes else { return false }
-        guard let source = endpoint.throttleSourceKey else { return true }
+        guard let source = endpoint?.throttleSourceKey else { return true }
         let pendingForSource = pendingSources.values.reduce(into: 0) { count, pending in
             if pending == source { count += 1 }
         }
@@ -45,8 +46,8 @@ actor ConnectionThrottleTracker {
     /// Ties `id` to `endpoint`'s throttle source while its handshake is in
     /// flight, so a later `resolve(id:succeeded:)` or `clear(id:)` knows what
     /// to do. A no-op for an endpoint with no derivable source.
-    func register(id: ConnectionController.ID, endpoint: NWEndpoint) {
-        guard let source = endpoint.throttleSourceKey else { return }
+    func register(id: ConnectionController.ID, endpoint: NWEndpoint?) {
+        guard let source = endpoint?.throttleSourceKey else { return }
         pendingSources[id] = source
     }
 

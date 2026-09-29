@@ -16,7 +16,7 @@ fileprivate enum ListenerEvent: Sendable {
     case waiting(NWError)
     case failed(NWError)
     case cancelled
-    case newConnection(NWConnection)
+    case newConnection(GameConnection)
 }
 
 protocol ListenerManagerDelegate: AnyObject, Sendable {
@@ -25,7 +25,7 @@ protocol ListenerManagerDelegate: AnyObject, Sendable {
     /// right after calling `startListening()`. See CODE_AUDIT_17 §5.22.
     func listenerReady() async
     func listenerCancelled() async
-    func listenerNewConnection(_ connection: NWConnection) async
+    func listenerNewConnection(_ connection: GameConnection) async
     /// The listener is up but can't accept yet (local-network permission prompt, no
     /// interface). See CODE_AUDIT_18 §5.15.
     func listenerWaiting(_ error: NWError) async
@@ -104,7 +104,7 @@ final class ListenerManager: ListenerManaging {
                 Logger.listenerController.error("ListenerManager: Error \(error.localizedDescription, privacy: .public)")
                 guard let self, self.runGeneration == generation else { return }
                 self.state = .stopped
-                // `run()` throwing (e.g. `NWListener(using:)` itself failing) previously
+                // `run()` throwing (e.g. `GameListener(for:using:)` itself failing) previously
                 // only set `state` here and never told the delegate, while the caller had
                 // already set `listenerStatus = .running` right after starting — the GM
                 // saw a healthy game while nobody could join, and the restart-with-backoff
@@ -151,10 +151,6 @@ final class ListenerManager: ListenerManaging {
 }
 
 actor ListenerServerController {
-    /// How long each individual sleep in `run()`'s keep-alive loop lasts —
-    /// not a listener timeout. See CODE_AUDIT §9.12.
-    private static let keepAliveInterval: Duration = .seconds(24 * 60 * 60)
-
     fileprivate let events: AsyncStream<ListenerEvent>
     private let continuation: AsyncStream<ListenerEvent>.Continuation
     private let name: String
@@ -162,12 +158,6 @@ actor ListenerServerController {
     private let serviceType: GameServiceType
     private let passcode: String
     private let sessionId: String?
-    // NWListener needs a dispatch queue for its callbacks, which immediately
-    // hop into this actor via Task { await self... } below — a dedicated
-    // background queue matches ConnectionController's own NWConnection
-    // wrapper rather than routing through the main queue. See CODE_AUDIT_9
-    // §3.4.
-    private let queue = DispatchQueue(label: BundleIds.app("ListenerServerController"))
 
     init(name: String, supporterTier: SupporterTier = .none, serviceType: GameServiceType, passcode: String, sessionId: String? = nil) {
         self.name = name
@@ -178,52 +168,54 @@ actor ListenerServerController {
         (self.events, self.continuation) = AsyncStream.makeStream(of: ListenerEvent.self)
     }
 
+    /// Listens until the calling task is cancelled (then throws `CancellationError`) or the
+    /// listener ends. Runs on the structured `GameListener`, which needs no dispatch queue and
+    /// no keep-alive loop. See CODE_AUDIT_19 §4.2.
     func run() async throws {
         let passcodeCheck = NWParameters.passcodeCheck(passcode)
         Logger.listenerController.debug("ListenerManager: Listening (\(passcodeCheck, privacy: .private))")
-        let listener = try NWListener(using: NWParameters(passcode: passcode))
         var txtEntries = [NWTXTRecord.supporterTierKey: String(supporterTier.rawValue)]
         if let sessionId {
             txtEntries[NWTXTRecord.sessionKey] = sessionId
         }
-        listener.service = NWListener.Service(name: Self.advertisedName(from: name), type: serviceType.serviceName, txtRecord: NWTXTRecord(txtEntries))
-        defer {
-            listener.cancel()
-            continuation.finish()
-        }
+        let listener = try GameListener(
+            for: .bonjour(name: Self.advertisedName(from: name), type: serviceType.serviceName, txtRecord: NWTXTRecord(txtEntries)),
+            using: GameNetworkParameters.builder(passcode: passcode)
+        )
+        let continuation = continuation
+        defer { continuation.finish() }
 
-        // Yield straight into the ordered event stream from the listener's queue: one `Task`
-        // per callback gave no ordering guarantee (`.ready` could be handled after
-        // `.failed`/`.cancelled`, a connection before `.ready`), and since CODE_AUDIT_17 §5.22
-        // that order drives `listenerStatus`. Same pattern as `ConnectionController`.
-        // See CODE_AUDIT_18 §3.16.
-        let continuation = self.continuation
+        // Yield straight into the ordered event stream: one `Task` per callback gave no ordering
+        // guarantee (`.ready` could be handled after `.failed`/`.cancelled`, a connection before
+        // `.ready`), and since CODE_AUDIT_17 §5.22 that order drives `listenerStatus`. Same
+        // pattern as `ConnectionController`. See CODE_AUDIT_18 §3.16.
         let listenerName = name
         let serviceName = serviceType.serviceName
-        listener.stateUpdateHandler = { state in
+        listener.onStateUpdate { _, state in
             Self.yield(state, to: continuation, listenerName: listenerName, serviceName: serviceName)
         }
-        listener.newConnectionHandler = { connection in
-            continuation.yield(.newConnection(connection))
-        }
 
-        listener.start(queue: queue)
-
-        // `run()` only needs to stay suspended — actual listening is entirely
-        // driven by `listener`'s own callbacks above — so this loops a bounded
-        // sleep indefinitely rather than a single fixed-duration one. A single
-        // `Task.sleep` here used to let `run()` return normally once it
-        // elapsed, which tore the listener down (via the `defer` above)
-        // without ever yielding a `.cancelled`/`.failed` event, so a session
-        // hosted for more than a day would silently stop accepting
-        // connections with no signal to `ListenerManager`. See CODE_AUDIT §3.1.
-        try await withTaskCancellationHandler {
-            while true {
-                try await Task.sleep(for: Self.keepAliveInterval)
+        // The handler hands each connection to `ListenerManager` and returns: an accepted
+        // connection lives as long as its `ConnectionController` holds it, not as long as this
+        // handler or the listener runs. Cancelling the listener stops accepting new connections
+        // and keeps the accepted ones, as `NWListener` did (the player's reconnect listener is
+        // retired while its connection stays up).
+        do {
+            try await listener.run { connection in
+                continuation.yield(.newConnection(connection))
             }
-        } onCancel: {
-            listener.cancel()
+        } catch {
+            try Task.checkCancellation()
+            // Reported as the terminal event, not thrown: `ListenerManager` would otherwise call
+            // `listenerCancelled()` for the error and again for the `.failed` state. The stream
+            // finishes on the first terminal event, so whichever comes second is dropped.
+            Self.yield(.failed(error as? NWError ?? .posix(.EIO)), to: continuation, listenerName: listenerName, serviceName: serviceName)
+            return
         }
+        // `run` returns normally when its task is cancelled; `ListenerManager` tells a
+        // cancellation apart from a failure by the error.
+        try Task.checkCancellation()
+        Self.yield(.cancelled, to: continuation, listenerName: listenerName, serviceName: serviceName)
     }
 
     /// DNS-SD instance names are limited to 63 UTF-8 bytes, and an empty name is invalid. The
@@ -244,7 +236,7 @@ actor ListenerServerController {
     }
 
     private static func yield(
-        _ state: NWListener.State,
+        _ state: GameListener.State,
         to continuation: AsyncStream<ListenerEvent>.Continuation,
         listenerName: String,
         serviceName: String

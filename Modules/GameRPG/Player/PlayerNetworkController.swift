@@ -67,7 +67,7 @@ final class PlayerNetworkController: Sendable {
     private var unclaimedJoinOutcome: (token: UUID, success: Bool)?
 
     /// Forces a stalled join to resolve after `joinTimeout` instead of
-    /// hanging forever, covering `NWConnection.State.waiting` (Local Network
+    /// hanging forever, covering `GameConnection.State.waiting` (Local Network
     /// permission not yet granted, an unreachable/firewalled peer, no usable
     /// path) — a state `ConnectionController.stateChanged(_:)` never reports
     /// to this delegate, since it isn't a terminal `.failed`/`.cancelled`.
@@ -165,7 +165,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
         joinTimeoutTask = Task { @MainActor [weak self, timeout = Self.joinTimeout] in
             try? await Task.sleep(for: timeout)
             guard !Task.isCancelled, let self, self.joinAttemptToken == token else { return }
-            // Covers `NWConnection.State.waiting` (Local Network permission
+            // Covers `GameConnection.State.waiting` (Local Network permission
             // not yet granted, unreachable/firewalled peer, no usable
             // path), which never reaches `.failed`/`.cancelled` and so
             // never calls back into this delegate on its own.
@@ -255,10 +255,10 @@ private extension PlayerNetworkController {
         await networkModel.connectionController?.startConnection()
     }
 
-    func restart(connection: NWConnection) async {
+    func restart(connection: GameConnection) async {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
         let id = UUID()
-        await connectionThrottle.register(id: id, endpoint: connection.endpoint)
+        await connectionThrottle.register(id: id, endpoint: connection.remoteEndpoint)
         // The replaced controller's receive loop holds it alive, so it must be cancelled
         // explicitly or its socket lingers until TCP fails. See CODE_AUDIT_Join §3.1.
         let replaced = networkModel.connectionController
@@ -361,7 +361,7 @@ extension PlayerNetworkController: ConnectionControllerDelegate {
                 return
             }
             networkModel.joinFailure = .unreachable
-            // The connection was torn down (e.g. the underlying `NWConnection`
+            // The connection was torn down (e.g. the underlying `GameConnection`
             // reporting `.cancelled` for a rejected handshake instead of
             // `.failed`) before ever reaching `.ready`. This is an initial-join
             // failure, not a previously-established session dropping, so it
@@ -522,10 +522,10 @@ extension PlayerNetworkController: ListenerManagerDelegate {
     }
 
     @MainActor
-    func listenerNewConnection(_ connection: NWConnection) async {
-        guard await connectionThrottle.shouldAllow(endpoint: connection.endpoint) else {
+    func listenerNewConnection(_ connection: GameConnection) async {
+        // Returning without keeping `connection` closes it.
+        guard await connectionThrottle.shouldAllow(endpoint: connection.remoteEndpoint) else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Rejected connection attempt from throttled source")
-            connection.cancel()
             return
         }
         // Only a lost player takes a connection, and only one at a time. The listener stays up
@@ -533,7 +533,6 @@ extension PlayerNetworkController: ListenerManagerDelegate {
         // foreign connection can no longer end the reconnect. See CODE_AUDIT_Join §5.1.
         guard networkModel.connectionState == .lost else {
             Logger.playerNetworkController.debug("PlayerNetworkController: Dropping connection attempt outside a reconnect")
-            connection.cancel()
             return
         }
         Logger.playerNetworkController.debug("PlayerNetworkController: Listener new connection")

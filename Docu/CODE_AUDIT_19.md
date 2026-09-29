@@ -664,7 +664,7 @@ If any finding doesn't reproduce when you visit the line, send me the specific r
 
 ---
 
-## 13. Remediation status (§3.1–§3.17, §4.1)
+## 13. Remediation status (§3.1–§3.17, §4.1–§4.2)
 
 Fixed 2026-09-29 on `develop` (uncommitted at the time of writing). Every fix is tagged `See CODE_AUDIT_19 §3.x` in the code.
 
@@ -688,3 +688,4 @@ Fixed 2026-09-29 on `develop` (uncommitted at the time of writing). Every fix is
 | 3.16 | Partly fixed | Placement retries once per `SceneEvents.Update` (new `SceneUpdateWaiter`, up to 90 frames) instead of `Task.sleep`. `isManipulating`/`isMovedSinceTablePlacement` are set directly in the handlers. Moving the placement logic into a model (§9.23) is not done. |
 | 3.17 | Fixed | Only the failed step is re-queued (a failed checkpoint no longer re-inserts saved events). A failed flush schedules a retry. `finishSession` retries pending writes before marking the session complete and logs whatever is still dropped. |
 | 4.1 | Fixed | `ItemRowTreeModel` uses `@MainActor Codable/Equatable/Hashable` and `NavigatorKey` uses `@MainActor EnvironmentKey` (SE-0470). `EnvironmentValues.navigator` is now `@MainActor`, since the isolated conformance can't be used from a nonisolated accessor. `CoreDataChangeObserver` is checked `Sendable`: `observer` is a `Mutex`, and the call-once precondition runs under the lock. A private immutable `Subscription` box stays `@unchecked Sendable` because the `AnyCancellable` captures the caller's non-Sendable context, so it can't be handed to the `Mutex` as a plain value. |
+| 4.2 | Fixed | The LAN transport runs on the structured Network API: `GameConnection`/`GameListener` (`NetworkConnection`/`NetworkListener` over `Framer<GameProtocol>`), with no `DispatchQueue` and no keep-alive sleep loop. The declarative `TLS` has no PSK option, so `GameNetworkParameters.builder(passcode:)` passes the TLS-PSK `NWParameters` as `initialParameters` and declares only the framer over TCP. `ConnectionController` sends through one ordered send loop, and `cancel()` reports the loss itself (a connection released while idle gets no `.cancelled` update). Accepted connections outlive the listener, as with `NWListener`. `ConnectionAbstraction` and its unused mock are removed. Tests: `TLSPasscodeHandshakeTests` (loopback handshake, message round trip, connection outliving the listener). Still to check on two devices over peer-to-peer Wi-Fi. |

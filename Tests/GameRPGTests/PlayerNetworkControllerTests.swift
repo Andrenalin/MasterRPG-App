@@ -72,11 +72,7 @@ struct PlayerNetworkControllerTests {
     ) -> ConnectionController {
         ConnectionController(
             id: id,
-            connection: NWConnection(
-                host: NWEndpoint.Host("localhost"),
-                port: .any,
-                using: .tcp
-            ),
+            connection: .game(to: .hostPort(host: "localhost", port: .any), passcode: "1234"),
             delegate: delegate
         )
     }

@@ -7,71 +7,100 @@ import Testing
 
 @testable import GameRPG
 
-/// Real loopback handshakes with the app's TLS-PSK parameters.
+/// Real loopback handshakes with the app's TLS-PSK parameters on `GameListener`/`GameConnection`.
 @Suite("TLS-PSK passcode handshake")
 struct TLSPasscodeHandshakeTests {
-    private final class Box: @unchecked Sendable {
-        var port: NWEndpoint.Port?
-        var listener: NWListener?
-        var accepted: [NWConnection] = []
-    }
+    /// A listener with the app's parameters. Every accepted connection is wrapped in a
+    /// `ConnectionController` and started, as `MasterNetworkController` does: an accepted
+    /// connection only starts (and completes its handshake) once something receives on it.
+    private final class Server: @unchecked Sendable {
+        let delegate = OutcomeDelegate()
+        private let lock = NSLock()
+        private var controllers: [ConnectionController] = []
+        private var runTask: Task<Void, Never>?
 
-    private func startListener(passcode: String) async throws -> (NWListener, NWEndpoint.Port, Box) {
-        let box = Box()
-        let listener = try NWListener(using: NWParameters(passcode: passcode))
-        box.listener = listener
-        listener.newConnectionHandler = { connection in
-            box.accepted.append(connection)
-            connection.start(queue: .global())
+        var accepted: [ConnectionController] {
+            lock.withLock { controllers }
         }
-        let port: NWEndpoint.Port = try await withCheckedThrowingContinuation { continuation in
-            let once = OnceFlag()
-            listener.stateUpdateHandler = { state in
+
+        func start(passcode: String) async throws -> NWEndpoint.Port {
+            let listener = try GameListener(using: GameNetworkParameters.builder(passcode: passcode))
+            let (ports, portContinuation) = AsyncStream.makeStream(of: NWEndpoint.Port?.self)
+            listener.onStateUpdate { listener, state in
                 switch state {
                 case .ready:
-                    if let port = listener.port, once.take() { continuation.resume(returning: port) }
-                case .failed(let error):
-                    if once.take() { continuation.resume(throwing: error) }
-                default: break
+                    portContinuation.yield(listener.port)
+                    portContinuation.finish()
+                case .failed, .cancelled:
+                    portContinuation.finish()
+                default:
+                    break
                 }
             }
-            listener.start(queue: .global())
+            let delegate = delegate
+            runTask = Task {
+                try? await listener.run { [weak self] connection in
+                    let controller = ConnectionController(id: UUID(), connection: connection, delegate: delegate)
+                    self?.lock.withLock { self?.controllers.append(controller) }
+                    await controller.startConnection()
+                }
+            }
+            var iterator = ports.makeAsyncIterator()
+            guard let port = await iterator.next() ?? nil else { throw NWError.posix(.EADDRNOTAVAIL) }
+            return port
         }
-        return (listener, port, box)
-    }
 
-    private final class OnceFlag: @unchecked Sendable {
-        private let lock = NSLock()
-        private var taken = false
-        func take() -> Bool { lock.lock(); defer { lock.unlock() }; if taken { return false }; taken = true; return true }
+        func stopListening() {
+            runTask?.cancel()
+        }
+
+        func stop() async {
+            stopListening()
+            for controller in accepted {
+                await controller.cancel()
+            }
+        }
     }
 
     private func outcome(port: NWEndpoint.Port, passcode: String) async -> String {
-        let connection = NWConnection.connection(endpoint: .hostPort(host: "127.0.0.1", port: port), passcode: passcode)
-        return await withCheckedContinuation { continuation in
-            let once = OnceFlag()
-            connection.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    if once.take() { continuation.resume(returning: "ready") }
-                case .failed(let error):
-                    if once.take() { continuation.resume(returning: "failed: \(error)") }
-                case .waiting(let error):
-                    if once.take() { continuation.resume(returning: "waiting: \(error)") }
-                default: break
-                }
+        let connection = GameConnection.game(to: .hostPort(host: "127.0.0.1", port: port), passcode: passcode)
+        let (states, continuation) = AsyncStream.makeStream(of: String.self)
+        connection.onStateUpdate { _, state in
+            switch state {
+            case .ready:
+                continuation.yield("ready")
+            case .failed(let error):
+                continuation.yield("failed: \(error)")
+            case .waiting(let error):
+                continuation.yield("waiting: \(error)")
+            default:
+                break
             }
-            connection.start(queue: .global())
         }
+        // A `GameConnection` starts with its first receive; cancelling it cancels the connection.
+        let receive = Task { _ = try? await connection.receive() }
+        defer { receive.cancel() }
+        var iterator = states.makeAsyncIterator()
+        return await iterator.next() ?? "none"
+    }
+
+    private func client(port: NWEndpoint.Port, passcode: String, delegate: OutcomeDelegate) -> ConnectionController {
+        ConnectionController(
+            id: UUID(),
+            endpoint: .hostPort(host: "127.0.0.1", port: port),
+            passcode: passcode,
+            delegate: delegate
+        )
     }
 
     @Test("Same code connects; a different code is rejected")
     func sameAndDifferentCodes() async throws {
-        let (listener, port, _) = try await startListener(passcode: "1234")
-        defer { listener.cancel() }
+        let server = Server()
+        let port = try await server.start(passcode: "1234")
 
         let same = await outcome(port: port, passcode: "1234")
         let different = await outcome(port: port, passcode: "9999")
+        await server.stop()
 
         // Regression: a UTF-16 PSK identity contains NUL bytes and never matched, so even the
         // right code failed with "unknown PSK identity".
@@ -82,65 +111,109 @@ struct TLSPasscodeHandshakeTests {
 
     @Test("ConnectionController reports a wrong code as an authentication failure")
     func wrongCodeIsReportedAsAuthenticationFailure() async throws {
-        let (listener, port, _) = try await startListener(passcode: "1234")
-        defer { listener.cancel() }
+        let server = Server()
+        let port = try await server.start(passcode: "1234")
         let delegate = OutcomeDelegate()
-        let controller = ConnectionController(
-            id: UUID(),
-            endpoint: .hostPort(host: "127.0.0.1", port: port),
-            passcode: "9999",
-            delegate: delegate
-        )
+        let controller = client(port: port, passcode: "9999", delegate: delegate)
 
         await controller.startConnection()
-        let result = await delegate.firstOutcome(timeout: .seconds(10))
+        let result = await delegate.outcome(at: 0, timeout: .seconds(10))
         await controller.cancel()
+        await server.stop()
 
         #expect(result == "failed(auth: true)", "\(result)")
     }
 
     @Test("ConnectionController becomes ready with the right code")
     func rightCodeBecomesReady() async throws {
-        let (listener, port, _) = try await startListener(passcode: "1234")
-        defer { listener.cancel() }
+        let server = Server()
+        let port = try await server.start(passcode: "1234")
         let delegate = OutcomeDelegate()
-        let controller = ConnectionController(
-            id: UUID(),
-            endpoint: .hostPort(host: "127.0.0.1", port: port),
-            passcode: "1234",
-            delegate: delegate
-        )
+        let controller = client(port: port, passcode: "1234", delegate: delegate)
 
         await controller.startConnection()
-        let result = await delegate.firstOutcome(timeout: .seconds(10))
+        let result = await delegate.outcome(at: 0, timeout: .seconds(10))
         await controller.cancel()
+        await server.stop()
 
         #expect(result == "ready", "\(result)")
+    }
+
+    @Test("Framed game messages reach the other side in order, both ways")
+    func messagesRoundTrip() async throws {
+        let server = Server()
+        let port = try await server.start(passcode: "1234")
+        let delegate = OutcomeDelegate()
+        let controller = client(port: port, passcode: "1234", delegate: delegate)
+
+        await controller.startConnection()
+        for index in 0..<5 {
+            await controller.request(type: .gameData, encodedContent: Data("request \(index)".utf8))
+        }
+        let serverReceived = await server.delegate.outcome(at: 5, timeout: .seconds(10))
+        let accepted = try #require(server.accepted.first)
+        await accepted.response(type: .gameData, encodedContent: Data("response".utf8))
+        let clientReceived = await delegate.outcome(at: 1, timeout: .seconds(10))
+        await controller.cancel()
+        await server.stop()
+
+        let expected = ["ready"] + (0..<5).map { "data: request \($0)" }
+        #expect(Array(server.delegate.recorded.prefix(6)) == expected)
+        #expect(serverReceived == "data: request 4")
+        #expect(clientReceived == "data: response")
+    }
+
+    @Test("An accepted connection outlives the listener, and a local cancel reports the loss")
+    func acceptedConnectionOutlivesListener() async throws {
+        let server = Server()
+        let port = try await server.start(passcode: "1234")
+        let delegate = OutcomeDelegate()
+        let controller = client(port: port, passcode: "1234", delegate: delegate)
+        await controller.startConnection()
+        #expect(await server.delegate.outcome(at: 0, timeout: .seconds(10)) == "ready")
+
+        // The player's reconnect listener is retired while its connection stays up.
+        server.stopListening()
+        try await Task.sleep(for: .milliseconds(200))
+        await controller.request(type: .gameData, encodedContent: Data("after listener".utf8))
+        let received = await server.delegate.outcome(at: 1, timeout: .seconds(10))
+
+        await controller.cancel()
+        let clientTerminal = await delegate.outcome(at: 1, timeout: .seconds(10))
+        let serverTerminal = await server.delegate.outcome(at: 2, timeout: .seconds(10))
+        await server.stop()
+
+        #expect(received == "data: after listener")
+        #expect(clientTerminal == "lost")
+        #expect(serverTerminal == "failed(auth: false)", "the peer closing is reported: \(serverTerminal)")
     }
 
     private final class OutcomeDelegate: ConnectionControllerDelegate, @unchecked Sendable {
         private let lock = NSLock()
         private var outcomes: [String] = []
 
+        var recorded: [String] {
+            lock.withLock { outcomes }
+        }
+
         private func record(_ outcome: String) {
             lock.withLock { outcomes.append(outcome) }
         }
 
-        func received(data: Data?, for id: ConnectionController.ID) async {}
+        func received(data: Data?, for id: ConnectionController.ID) async {
+            record("data: \(data.map { String(decoding: $0, as: UTF8.self) } ?? "nil")")
+        }
         func failed(with error: String?, isAuthenticationFailure: Bool, for id: ConnectionController.ID) async {
             record("failed(auth: \(isAuthenticationFailure))")
         }
         func lostConnection(for id: ConnectionController.ID) async { record("lost") }
         func readyConnection(for id: ConnectionController.ID) async { record("ready") }
 
-        private func firstRecorded() -> String? {
-            lock.withLock { outcomes.first }
-        }
-
-        func firstOutcome(timeout: Duration) async -> String {
+        func outcome(at index: Int, timeout: Duration) async -> String {
             let deadline = ContinuousClock.now.advanced(by: timeout)
             while ContinuousClock.now < deadline {
-                if let first = firstRecorded() { return first }
+                let outcomes = recorded
+                if outcomes.count > index { return outcomes[index] }
                 try? await Task.sleep(for: .milliseconds(50))
             }
             return "timeout"
