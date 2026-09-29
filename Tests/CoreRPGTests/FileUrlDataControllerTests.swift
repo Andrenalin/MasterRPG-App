@@ -275,8 +275,49 @@ struct FileAccessTests {
 
         #expect(await sut.isAvailableWithoutDownloading(stored))
         #expect(try await sut.loadData(for: stored) == data)
+        #expect(await sut.hasDownloadedData(for: stored))
     }
-    
+
+    @Test("hasDownloadedData is false for a file that is not on this device")
+    func hasDownloadedDataFalseForMissingFile() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
+        let missing = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
+
+        #expect(await sut.hasDownloadedData(for: missing) == false)
+    }
+
+    @Test("Bytes held for a file that is not on this device are used by every read")
+    func heldPeerDataServesReads() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
+        // The item's file reference carries no bytes, as after an item replacement or merge.
+        let reference = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
+        let bytes = Data("map photo from the master".utf8)
+        #expect(await sut.hasDownloadedData(for: reference) == false)
+
+        sut.holdPeerData(bytes, for: reference)
+
+        #expect(await sut.hasDownloadedData(for: reference))
+        #expect(await sut.isAvailableWithoutDownloading(reference))
+        #expect(try await sut.loadData(for: reference) == bytes)
+        let urlBytes = await sut.url(for: reference) { url -> Data? in
+            guard let url else { return nil }
+            return try? Data(contentsOf: url)
+        }
+        #expect(urlBytes == bytes)
+    }
+
+    @Test("hasDownloadedData is true for bytes held in memory")
+    func hasDownloadedDataTrueForUnconvertedData() async throws {
+        let module = uniqueModuleName()
+        let sut = await FileUrlDataController(moduleFolder: module, fileTypes: [.data], filenameExtension: "test")
+        var fileUrl = FileUrl(fileId: UUID(), url: try uniqueRelativeTestURL(), location: .newCloud, module: module, relativeUrl: nil)
+        fileUrl.resetData(Data("bytes from the master".utf8))
+
+        #expect(await sut.hasDownloadedData(for: fileUrl))
+    }
+
     @Test("loadData returns data when FileUrl has unconverted data")
     func loadDataReturnsUnconvertedData() async throws {
         let module = uniqueModuleName()

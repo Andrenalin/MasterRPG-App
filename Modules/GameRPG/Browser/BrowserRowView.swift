@@ -45,7 +45,10 @@ struct BrowserRowView: View, Equatable {
                     }
                 } icon: {
                     if isConnecting {
+                        // iOS tints the spinner with the accent color, which vanishes on the
+                        // prominent (accent) background; match the button's white label instead.
                         ProgressView()
+                            .tint(.white)
                     } else {
                         switch model.connectionMode {
                         case .observer:

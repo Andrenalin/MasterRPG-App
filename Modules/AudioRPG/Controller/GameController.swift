@@ -137,7 +137,7 @@ extension GameController {
 
         if let fileUrl = item.fileUrl,
            let fileUrlDataController = itemController.fileUrlDataController,
-           await !fileUrlDataController.hasLocalData(for: fileUrl) {
+           await !fileUrlDataController.hasDownloadedData(for: fileUrl) {
             return false
         }
 

@@ -5,6 +5,7 @@ import CryptoKit
 import SwiftUI
 import UniformTypeIdentifiers
 import os.log
+import Synchronization
 
 @MainActor @Observable
 public final class FileUrlDataModel {
@@ -18,6 +19,7 @@ public struct FileUrlDataController: Sendable {
     private let fileBookmarkController: FileBookmarkController
     private let locationFileManager: LocationFileManager
     private let remoteFileDownloader: RemoteFileDownloader
+    private let peerFiles = PeerFileDataStore()
 
     public let fileTypes: [UTType]
     let filenameExtension: String
@@ -110,6 +112,7 @@ public extension FileUrlDataController {
     /// List thumbnails use this to avoid turning a module switch into a bulk download.
     func isAvailableWithoutDownloading(_ fileUrl: FileUrl) async -> Bool {
         if fileUrl.hasUnconvertedData { return true }
+        if peerFiles.data(for: fileUrl.fileId) != nil { return true }
 
         switch fileUrl.location {
         case .appCloud, .icloud, .newCloud:
@@ -174,10 +177,71 @@ public extension FileUrlDataController {
         return exists ?? false
     }
 
+    /// Whether the file can be read now without waiting for iCloud: like `hasLocalData(for:)`,
+    /// but an iCloud Drive item must also be downloaded. A file that has not downloaded yet
+    /// still exists on disk as a dataless placeholder (iOS 17, macOS 14), so `hasLocalData`
+    /// reports it available — a player then declared a map photo it could not read, discarded
+    /// the bytes the master sent, and waited on an iCloud download that can stall. Game-time
+    /// checks use this so the bytes come from the peer; it also asks iCloud to fetch the file.
+    /// Imports keep `hasLocalData`: an existing placeholder with a matching hash is still the
+    /// right file to reuse.
+    func hasDownloadedData(for fileUrl: FileUrl) async -> Bool {
+        if fileUrl.hasUnconvertedData { return true }
+        if fileUrl.location == .url {
+            return await hasLocalData(for: fileUrl)
+        }
+        let isDownloaded = await deviceUrl(for: fileUrl) { url -> Bool? in
+            guard let url, FileManager.default.fileExists(atPath: url.relativePath) else { return false }
+            return Self.isDownloadedOrLocal(url)
+        } ?? false
+        if isDownloaded {
+            // iCloud delivered the file: the peer's copy is no longer needed.
+            peerFiles.remove(fileUrl.fileId)
+            return true
+        }
+        return peerFiles.data(for: fileUrl.fileId) != nil
+    }
+
+    /// Keeps the bytes a game peer sent for a file that is on iCloud Drive but not downloaded
+    /// on this device, so the game can use them now. The iCloud file itself is never written
+    /// (it downloads on its own); the bytes are held here, by file id, not on the item: item
+    /// replacement and sync merges compare file references without their bytes and dropped
+    /// them, so the player kept requesting the file again. Released once iCloud has the file.
+    func holdPeerData(_ data: Data, for fileUrl: FileUrl) {
+        peerFiles.hold(data, for: fileUrl.fileId)
+    }
+
+    /// A temporary copy of held peer bytes, for readers that need a file URL (PDF, 3D, audio).
+    private func heldPeerFileUrl(for fileUrl: FileUrl) -> URL? {
+        guard let data = peerFiles.data(for: fileUrl.fileId) else { return nil }
+        let pathExtension = fileUrl.rawUrl.pathExtension.isEmpty ? filenameExtension : fileUrl.rawUrl.pathExtension
+        let heldUrl = URL.temporaryDirectory
+            .appending(path: "peer-\(fileUrl.fileId.uuidString)")
+            .appendingPathExtension(pathExtension)
+        if FileManager.default.fileExists(atPath: heldUrl.path(percentEncoded: false)) { return heldUrl }
+        return (try? data.write(to: heldUrl, options: .atomic)) == nil ? nil : heldUrl
+    }
+
+    /// `true` for a file outside iCloud Drive or a downloaded iCloud item. For an iCloud item
+    /// that is not downloaded it starts the download and returns `false`.
+    private static func isDownloadedOrLocal(_ url: URL) -> Bool {
+        guard let values = try? url.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey]),
+              values.isUbiquitousItem == true else { return true }
+        let status = values.ubiquitousItemDownloadingStatus
+        if status == .current || status == .downloaded { return true }
+        do {
+            try FileManager.default.startDownloadingUbiquitousItem(at: url)
+        } catch {
+            Logger.fileStore.error("Cannot start the iCloud download of \(url.lastPathComponent, privacy: .private): \(error.localizedDescription, privacy: .public)")
+        }
+        return false
+    }
+
     func loadData(for fileUrl: FileUrl) async throws -> Data? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.loadData(for:)", file: "FileUrlDataController.swift")
         
         guard !fileUrl.hasUnconvertedData else { return fileUrl.data }
+        if let held = peerFiles.data(for: fileUrl.fileId) { return held }
         return try await url(for: fileUrl) { url async throws -> Data? in
             guard let url else { return nil }
             return try await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
@@ -185,6 +249,9 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) async throws -> T?) async rethrows -> T? {
+        if let heldUrl = heldPeerFileUrl(for: fileUrl) {
+            return try await action(heldUrl)
+        }
         if fileUrl.location == .url {
             let cachedURL = try? await ensureRemoteCache(for: fileUrl)
             return try await action(cachedURL)
@@ -202,6 +269,14 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
+        if let heldUrl = heldPeerFileUrl(for: fileUrl) {
+            return try action(heldUrl)
+        }
+        return try await deviceUrl(for: fileUrl, action: action)
+    }
+
+    /// `url(for:action:)` without the held peer copy: where the file really is on this device.
+    private func deviceUrl<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
         if fileUrl.location == .url {
             let cachedURL = try? await ensureRemoteCache(for: fileUrl)
             return try action(cachedURL)
@@ -690,5 +765,37 @@ extension FileUrlDataController {
     @MainActor
     static public func empty() -> FileUrlDataController {
         FileUrlDataController(moduleFolder: "Tests", fileTypes: [.image], filenameExtension: "test")
+    }
+}
+
+/// Bytes game peers sent for files not downloaded from iCloud on this device, by file id.
+/// Shared by the copies of one module's `FileUrlDataController`.
+final class PeerFileDataStore: Sendable {
+    private let entries = Mutex<[UUID: Data]>([:])
+
+    func data(for fileId: UUID) -> Data? {
+        entries.withLock { $0[fileId] }
+    }
+
+    func hold(_ data: Data, for fileId: UUID) {
+        let replaced = entries.withLock { entries -> Bool in
+            defer { entries[fileId] = data }
+            return entries[fileId] != nil && entries[fileId] != data
+        }
+        if replaced { Self.removeTemporaryCopy(of: fileId) }
+    }
+
+    func remove(_ fileId: UUID) {
+        let removed = entries.withLock { $0.removeValue(forKey: fileId) != nil }
+        if removed { Self.removeTemporaryCopy(of: fileId) }
+    }
+
+    private static func removeTemporaryCopy(of fileId: UUID) {
+        let prefix = "peer-\(fileId.uuidString)"
+        let directory = URL.temporaryDirectory
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path(percentEncoded: false)) else { return }
+        for name in names where name.hasPrefix(prefix) {
+            try? FileManager.default.removeItem(at: directory.appending(path: name))
+        }
     }
 }

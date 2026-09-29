@@ -173,7 +173,9 @@ public extension FileVersionGameControllable {
         guard let item = itemControllable.itemSync(for: itemId, noGame: true) else { return false }
         guard let fileUrl = item.fileUrl else { return true }
         guard let fileUrlDataController = itemControllable.fileUrlDataController else { return false }
-        return await fileUrlDataController.hasLocalData(for: fileUrl)
+        // Reported to the master as available: an iCloud file that has not downloaded must not
+        // count, or the master sends only a reference to bytes this device cannot read.
+        return await fileUrlDataController.hasDownloadedData(for: fileUrl)
     }
 
     func rebuildFileReports(masterVersions: [UUID: Int], masterId: UUID, only itemId: UUID? = nil) {

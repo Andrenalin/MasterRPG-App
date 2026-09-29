@@ -669,7 +669,18 @@ private extension ImportControllable {
 
         // Reuse the existing file when the binary is unchanged — do not write the same file again
         if let existingFileUrl = await reusableExistingFileUrl(for: item.id, importedHash: importedHash, forceSave: forceSave) {
-            Logger.importController.debug("Import addFile reuses existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(existingFileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public)")
+            // A game delivery of a file that is on iCloud Drive but not downloaded here: the
+            // iCloud file is left alone (it downloads on its own, `hasDownloadedData` asked for
+            // it), and the controller holds the peer's bytes so the game can show them now.
+            // Dropping them left the player with a placeholder it could not read.
+            var keepsBytesInMemory = false
+            if forceSave == false {
+                keepsBytesInMemory = await !fileUrlDataController.hasDownloadedData(for: existingFileUrl)
+            }
+            if keepsBytesInMemory {
+                fileUrlDataController.holdPeerData(data, for: existingFileUrl)
+            }
+            Logger.importController.debug("Import addFile reuses existing file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(existingFileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public) inMemory=\(keepsBytesInMemory, privacy: .public)")
             item.fileUrl = existingFileUrl
             if forceSave == false, let localItem = itemControllable.itemSync(for: item.id, noGame: true) {
                 item.parentId = localItem.parentId
@@ -705,6 +716,13 @@ private extension ImportControllable {
             // A matching hash is not enough: a metadata-only import carries the
             // hash without the binary. Only reuse when the file really exists.
             guard await fileUrlDataController?.hasLocalData(for: existingFileUrl) == true else { return nil }
+            return existingFileUrl
+        }
+        // Without a hash the file must be read to compare. A game delivery must not wait on the
+        // iCloud download of a file that is not here yet: it reuses the reference and keeps the
+        // peer's bytes in memory (see `addFile`); nothing is written in game mode.
+        if forceSave == false, await fileUrlDataController?.hasLocalData(for: existingFileUrl) == true,
+           await fileUrlDataController?.hasDownloadedData(for: existingFileUrl) == false {
             return existingFileUrl
         }
         guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }

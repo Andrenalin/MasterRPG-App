@@ -321,12 +321,14 @@ public extension GameControllable {
         return NetworkCodableDataType(id: id, type: itemControllable.config.module, version: version)
     }
     
-    /// Whether the item's backing file (if any) is available on this device.
+    /// Whether the item's backing file (if any) can be read on this device now. An iCloud Drive
+    /// file that has not downloaded does not count (see `hasDownloadedData(for:)`), so the game
+    /// gets the bytes from the peer instead of waiting on iCloud.
     /// Items without a file trivially return true.
     func hasLocalFileData(for itemId: UUID) async -> Bool {
         guard let fileUrlDataController = itemControllable.fileUrlDataController else { return true }
         guard let fileUrl = await itemControllable.item(for: itemId)?.fileUrl else { return true }
-        return await fileUrlDataController.hasLocalData(for: fileUrl)
+        return await fileUrlDataController.hasDownloadedData(for: fileUrl)
     }
 
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
