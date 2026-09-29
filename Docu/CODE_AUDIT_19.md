@@ -24,7 +24,9 @@ The only other diagnostics were "appintentsmetadataprocessor: Metadata extractio
 
 **How to read verification.** **[verified]** means I re-read the cited lines myself after an agent reported them (see §12). Findings without the tag were read by the reporting agent but not independently re-read. Treat their line numbers as reliable and their severity as that agent's estimate. Corrections to agent reports are listed at the end of §12.
 
-**Result in one line.** No Critical findings. There are two High findings: a rolled-back Foundry/UniversalVTT import can still be committed to the store (§5.1), and the new "Fix Map Size to Photo" button can zero or distort a map (§5.2). The main pattern is that the audit-18 §5.3 fix (re-queue flushed edits on rollback) creates three new persistence hazards (§3.4, §5.1, §5.3), and nothing surfaces them to the user (§5.13). The new pause-sharing for 2D maps is bypassed by battle, health and roster rebroadcasts (§5.7).
+**Result in one line.** No Critical findings. There is one High finding: a rolled-back Foundry/UniversalVTT import can still be committed to the store (§5.1). The main pattern is that the audit-18 §5.3 fix (re-queue flushed edits on rollback) creates three new persistence hazards (§3.4, §5.1, §5.3), and nothing surfaces them to the user (§5.13). The new pause-sharing for 2D maps is bypassed by battle, health and roster rebroadcasts (§5.7).
+
+**Removed findings.** §5.2 and §8.2 (the "Fix Map Size to Photo" button) were removed on 2026-09-29: the feature is no longer needed and its code (button and `MapEditController+PhotoSize.swift`) was deleted. The remaining section numbers are unchanged.
 
 ---
 
@@ -33,21 +35,19 @@ The only other diagnostics were "appintentsmetadataprocessor: Metadata extractio
 Top items to address, in priority order:
 
 1. **[High] A rolled-back external import can still commit its items, which point at deleted attachments** — §5.1 — `Modules/CoreRPG/Persistence/CoreDataController.swift:87-95,152-156`, `Modules/CoreRPG/Import/ExternalImportReviewSession.swift:302-318`. **[verified]** **[REGRESSION 9b40de42]**
-2. **[High] "Fix Map Size to Photo" zeroes the map while the photo is loading, and distorts rotated maps** — §5.2 — `Modules/MapRPG/Map/MapEditController+PhotoSize.swift:15-52`. **[verified]** **[NEW c9afb6f6]**
-3. **[Medium] Paused "Share Map" is bypassed by battle, health and roster rebroadcasts** — §5.7 — `Modules/GameRPG/BattleRound/BattleRoundController.swift:390-405`, `MasterController+MapMessages.swift:179-195`, `MasterController+Control.swift:120`. **[verified]**
-4. **[Medium] A recurring save error now stalls every module's persistence for the whole session, silently** — §5.3 — `Modules/CoreRPG/Persistence/CoreDataController.swift:87-95,224-242`. **[REGRESSION 9b40de42]**
-5. **[Medium] A re-queued older snapshot can overwrite a newer committed edit** — §3.4 — `Modules/CoreRPG/Persistence/CoreDataController.swift:33-38,86-95,184-222`. **[REGRESSION 9b40de42]**
-6. **[Medium] Direct context writes (`addNew`, `delete`, `batchReplace`) are still lost on a rollback** — §5.4 — `Modules/CoreRPG/Persistence/CoreDataController.swift:152-156,274-318`. **[INCOMPLETE FIX of §5.3]**
-7. **[Medium] The remote-URL check accepts the expanded IPv6 loopback address (SSRF)** — §6.1 — `Modules/CoreRPG/Files/FileUrl.swift:199-238`. **[verified]** **[INCOMPLETE FIX of §6.5]**
-8. **[Medium] Replacing an item's file deletes the old file before the new one exists** — §5.9 — `Modules/CoreRPG/Controllable/EditControllable.swift:647-686`. **[verified]**
-9. **[Medium] Stale Bonjour removals fail a fresh LAN join** — §3.1 — `Modules/GameRPG/Player/PlayerNetworkController.swift:448-460`. **[verified]** **[REGRESSION 477ebf3a]**
-10. **[Medium] A dead defender is highlighted again on the next turn** — §5.8 — `Modules/MapRPG/Controller/GameController+Metadata.swift:306-321`. **[verified]** **[NEW 25a7b71b]**
+2. **[Medium] Paused "Share Map" is bypassed by battle, health and roster rebroadcasts** — §5.7 — `Modules/GameRPG/BattleRound/BattleRoundController.swift:390-405`, `MasterController+MapMessages.swift:179-195`, `MasterController+Control.swift:120`. **[verified]**
+3. **[Medium] A recurring save error now stalls every module's persistence for the whole session, silently** — §5.3 — `Modules/CoreRPG/Persistence/CoreDataController.swift:87-95,224-242`. **[REGRESSION 9b40de42]**
+4. **[Medium] A re-queued older snapshot can overwrite a newer committed edit** — §3.4 — `Modules/CoreRPG/Persistence/CoreDataController.swift:33-38,86-95,184-222`. **[REGRESSION 9b40de42]**
+5. **[Medium] Direct context writes (`addNew`, `delete`, `batchReplace`) are still lost on a rollback** — §5.4 — `Modules/CoreRPG/Persistence/CoreDataController.swift:152-156,274-318`. **[INCOMPLETE FIX of §5.3]**
+6. **[Medium] The remote-URL check accepts the expanded IPv6 loopback address (SSRF)** — §6.1 — `Modules/CoreRPG/Files/FileUrl.swift:199-238`. **[verified]** **[INCOMPLETE FIX of §6.5]**
+7. **[Medium] Replacing an item's file deletes the old file before the new one exists** — §5.9 — `Modules/CoreRPG/Controllable/EditControllable.swift:647-686`. **[verified]**
+8. **[Medium] Stale Bonjour removals fail a fresh LAN join** — §3.1 — `Modules/GameRPG/Player/PlayerNetworkController.swift:448-460`. **[verified]** **[REGRESSION 477ebf3a]**
+9. **[Medium] A dead defender is highlighted again on the next turn** — §5.8 — `Modules/MapRPG/Controller/GameController+Metadata.swift:306-321`. **[verified]** **[NEW 25a7b71b]**
 
 ---
 
 ## 2. Quick wins (≤30 min each)
 
-- **Hide the "Fix Map Size" button unless the photo has a positive size, and compare with the resolver's tolerance** — `Modules/MapRPG/Map/MapEditController+PhotoSize.swift:15-19` (§5.2).
 - **Call `removePendingOperations(for:)` in `deleteForExternalImport`** — `Modules/CoreRPG/Controllable/ItemControllable.swift:279-291` (§5.1).
 - **Filter dead combatants out of the highlight set** — `Modules/MapRPG/Controller/GameController+Metadata.swift:312-314` (§5.8).
 - **Use `$1` for the second die** — `Modules/DiceRPG/Controller/GameController.swift:566` (§5.15).
@@ -213,16 +213,6 @@ The compiler reports zero concurrency warnings on all four platforms. Every find
 - **What:** When the import's consolidated save fails, the rollback re-queues every flushed operation, including the import's inserts. The review session's rollback then calls `deleteForExternalImport`, which removes the item from memory and asks Core Data to delete a row that no longer exists, but never removes the re-queued insert.
 - **Why:** The session then deletes the new attachment files and runs `consolidatedSave()` again (line 314). That flush applies the re-queued inserts and commits them. The UI reports "import rolled back", yet the items are persisted, exported to CloudKit, reference deleted files, and reappear after relaunch.
 - **Action:** Call `removePendingOperations(for:)` for every rolled-back inserted id (inside `deleteForExternalImport` or the rollback loop), or keep import operations out of the re-queue once the session decides to roll back. Add a test that fails the first consolidated save.
-- **Severity:** High
-
-### 5.2 "Fix Map Size to Photo" zeroes the map while the photo is loading, and distorts rotated maps **[verified]** **[NEW c9afb6f6]**
-- **Location:** `Modules/MapRPG/Map/MapEditController+PhotoSize.swift:15-19` (check), `:33-52` (repair), `:57-64` (`realPhotoSize`); `Modules/MapRPG/Map/RootCanvasMap.swift:35,106` (empty placeholder image); `Modules/MapRPG/Model/MapModel+Geometry.swift:37-53`; `Modules/MapRPG/Map/EditMapToolBar.swift:229-236,314-316`; `Modules/MapRPG/Map/EditMapToolBarButtons.swift:234-250`
-- **What:** There are three separate defects:
-  - `RootCanvasMap` shows an empty `AKImage()` (size 0×0) while the photo loads, or permanently when the photo file is unavailable. `realPhotoSize` returns that zero size unchanged, so `isMapSizeOutOfSyncWithPhoto` is true and the button appears. Tapping it calls `resetImage(size: .zero)`, which sets the map's width and height to 0: `resetEntryGeometry` bails out on zero, but the canvas size has already been written.
-  - The stored map size is already rotated (`rotatedContentSize`), but `realPhotoSize` aspect-matches the *unrotated* photo against it and passes the result back into `resetImage`, which rotates it again. Example: a 90° map stored at 4000×2000 with a 1000×2000 photo becomes a 1000×2000 canvas, scaling x by 1 and y by 0.25, so every room, pin, wall and tile crop is distorted. For any rotation that isn't a multiple of 90° the button never goes away.
-  - The doc comment promises `MapCanvasGeometryResolver`'s aspect tolerance, but the check uses exact `!=`, so maps whose logical size legitimately differs from the photo's pixel size show the button too.
-- **Why:** One tap on a visible toolbar button corrupts the map geometry. The change is undoable in the editor, but it is saved and broadcast if the GM doesn't notice.
-- **Action:** Return "in sync" unless the photo size is finite and positive. Compare and repair in unrotated image space, reuse the resolver's aspect-error helper and tolerance instead of a second copy, and add tests for 0°/90°/45°.
 - **Severity:** High
 
 ### 5.3 A recurring save error now stalls every module's persistence for the whole session, silently **[REGRESSION 9b40de42]**
@@ -391,13 +381,6 @@ The rule sweep against CLAUDE.md is clean: no `foregroundColor`, `tabItem`, one-
 - **What:** The report row is an unpadded `.overlay(alignment: .topTrailing)` and is shown whenever statuses exist, even when `isShareable == false`.
 - **Why:** A photo embedded in a Map (whose share button `b0ebf6db` hides) still shows player names if it was shared elsewhere. The caption also draws on top of the photo or text with no background, which hurts legibility and contrast.
 - **Action:** Hide the row when `!isShareable`, and give it a background or reserved space.
-- **Severity:** Low
-
-### 8.2 "Fix Map Size" toolbar button: icon-only label and an always-present `ToolbarItem` **[NEW c9afb6f6]**
-- **Location:** `Modules/MapRPG/Map/EditMapToolBarButtons.swift:234-250`; `Modules/MapRPG/Map/EditMapToolBar.swift:229-236`
-- **What:** The label is an `Image` with `.accessibilityLabel`, rather than the `Button(_:systemImage:action:)` form CLAUDE.md requires. The `ToolbarItem` is always declared, and its content is empty when the button is hidden.
-- **Why:** There is no visible text for label-style toolbars or the macOS customisation sheet, and an empty bottom-bar item can leave a spacing gap in the Liquid Glass toolbar group.
-- **Action:** Use the titled-button form, and declare the `ToolbarItem` conditionally.
 - **Severity:** Low
 
 ### 8.3 `LinkHighlightTextView.plainText` resolves its runtime key without `bundle: .module` **[NEW f0b463b1]**
@@ -596,10 +579,10 @@ The general sweep is clean: no `#if false`, no TODO/FIXME/HACK/`#warning`, no `p
 - **Severity:** Low
 
 ### 9.26 Test gaps in the new and fixed code
-- **Location:** fixed sleeps as synchronisation: `Tests/CharacterRPGTests/LinkControllerTests.swift:491-602` (9 sites, new in `3157aed1`), `Tests/GameRPGTests/SearchModelTests.swift:47-145` (8), 31 sites in 15 files in total; symmetric tile fixture: `Tests/GameRPGTests/BoardTextureRendererTests.swift:69-94`; no test references `fixMapSizeToPhoto`/`realPhotoSize` (§5.2) or the import-rollback re-save (§5.1)
-- **What:** Tests wait 100 ms for observation-driven updates. The tile test uses a uniformly coloured quadrant, so a flipped or phase-shifted tile gives the same pixels. The two High findings have no coverage.
-- **Why:** Flaky under load or TSan (consistent with the known GameRPGTests TSan batch crashes), and the new tiling and map-repair logic is effectively untested.
-- **Action:** Await conditions (`confirmation`, an `Observations` sequence with a timeout) instead of sleeping, use an asymmetric tile and a non-multiple room size, and add regression tests for §5.1, §5.2 and §5.8.
+- **Location:** fixed sleeps as synchronisation: `Tests/CharacterRPGTests/LinkControllerTests.swift:491-602` (9 sites, new in `3157aed1`), `Tests/GameRPGTests/SearchModelTests.swift:47-145` (8), 31 sites in 15 files in total; symmetric tile fixture: `Tests/GameRPGTests/BoardTextureRendererTests.swift:69-94`; no test references the import-rollback re-save (§5.1)
+- **What:** Tests wait 100 ms for observation-driven updates. The tile test uses a uniformly coloured quadrant, so a flipped or phase-shifted tile gives the same pixels. The High finding has no coverage.
+- **Why:** Flaky under load or TSan (consistent with the known GameRPGTests TSan batch crashes), and the new tiling logic is effectively untested.
+- **Action:** Await conditions (`confirmation`, an `Observations` sequence with a timeout) instead of sleeping, use an asymmetric tile and a non-multiple room size, and add regression tests for §5.1 and §5.8.
 - **Severity:** Low
 
 ### 9.27 Comment contradicts the `isShareable` source **[NEW b0ebf6db]**
@@ -626,7 +609,7 @@ The general sweep is clean: no `#if false`, no TODO/FIXME/HACK/`#warning`, no `p
 ## 11. What was NOT audited
 
 - `Docu/`, `Snapshots/`, `Integrations/` (third-party), `.git`, `.build`, `DerivedData`.
-- Runtime behaviour: no tests, UI tests, Instruments traces or on-device runs. These claims come from reading code and should be confirmed on a device: whether the resolver treats leading-zero IPv4 as octal (§6.1), the SharePlay join hang (§3.9), and the Liquid Glass toolbar gap from an empty item (§8.2).
+- Runtime behaviour: no tests, UI tests, Instruments traces or on-device runs. These claims come from reading code and should be confirmed on a device: whether the resolver treats leading-zero IPv4 as octal (§6.1) and the SharePlay join hang (§3.9).
 - Algorithmic correctness of the Foundry/UniversalVTT/LevelDB parsers, CRDT types beyond the clock rules, and RealityKit/TabletopKit scene maths beyond the new tiling, gesture and placement code.
 - The 24 findings in `Docu/CODE_AUDIT_Network.md`: only audit-18 network fixes and new code were re-checked.
 - Build settings and scheme configuration, apart from the usage-description keys in §9.24; the `RPGTabletopGameContent` SPM package internals.
@@ -642,7 +625,6 @@ The general sweep is clean: no `#if false`, no TODO/FIXME/HACK/`#warning`, no `p
 Spot-check pattern: in Xcode, command-click the `path:line` reference in the report; it should land on the cited line. I re-read the following myself after the agents reported them (or found them myself).
 
 - **§5.1** — `Modules/CoreRPG/Persistence/CoreDataController.swift` lines 87-95 (`restoreInFlight` → `restorePendingOperations` inserts at the front), 224-242 (`save()` catch → `rollbackRestoringFlushedOperations`), 152-156 (`delete(uuid:)` only calls `deleteCoreData(id:save:false)`, whose `guard let object = fetchCoreData(uuid:)` at line 501 fails for a rolled-back row, and no `removePendingOperations`). `Modules/CoreRPG/Controllable/ItemControllable.swift` lines 279-291 (`deleteForExternalImport`). `Modules/CoreRPG/Import/ExternalImportReviewSession.swift` lines 302-318 (rollback, then a second `consolidatedSave()`, which is `AdventureRootModel.saveExternalImport` at lines 309-325 and flushes every module).
-- **§5.2** — `Modules/MapRPG/Map/RootCanvasMap.swift` lines 35 and 106 (`AKImage()` while loading or unavailable). `MapEditController+PhotoSize.swift` lines 57-64 (`realPhotoSize` returns `photoSize` unchanged when it isn't positive), 15-19 (exact `!=`), 33-40 (`resetImage(size: realSize, …)`). `MapModel+Geometry.swift` lines 37-47 (width/height written from `rotatedContentSize(size, …)` before `resetEntryGeometry` returns early on a zero size). The rotation part (double rotation) is the agent's worked example, consistent with lines 41-44.
 - **§5.7** — `Modules/GameRPG/BattleRound/BattleRoundController.swift` lines 390-405, `MasterController+MapMessages.swift` lines 179-195, `MasterController+Control.swift` line 120: none checks `isMapStreaming` (its only readers are `GameTableModel.swift:82`, `MapEditorSession.swift:65` and `MapRootModel.swift:24`).
 - **§5.8** — `GameController+Metadata.swift` lines 312-320 (highlight set from `defenders(for: entry)`, no `isDead` filter); `BattleRoundModel+Turns.swift` lines 214-223 (only the active entry's `defenderIds` is recomputed).
 - **§5.9** — `EditControllable.swift` lines 658-661 (delete before create) and 677-685 (on failure only `lastPersistenceError` is set).

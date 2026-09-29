@@ -226,14 +226,6 @@ struct EditToolBarViewModifier: ViewModifier {
                             sharedMapHasChanges: sharedMapHasChanges
                         )
                     }
-
-                    ToolbarItem(placement: bottomBarPlacement) {
-                        EditToolBarViewModifierFixMapSizeButtonView(
-                            mapEditController: mapEditController,
-                            editorModel: editorModel,
-                            isOutOfSync: isMapSizeOutOfSyncWithPhoto
-                        )
-                    }
                 }
 #if !os(visionOS) && !os(tvOS)
                 ToolbarSpacer(.fixed, placement: bottomBarPlacement)
@@ -309,10 +301,6 @@ private extension EditToolBarViewModifier {
     var isSharedMap: Bool {
         guard let mapId = editorModel.workingCopy?.id else { return false }
         return root.gameController.gameModel.itemData[mapId] is MapModel
-    }
-
-    var isMapSizeOutOfSyncWithPhoto: Bool {
-        mapEditController.isMapSizeOutOfSyncWithPhoto(editorModel: editorModel)
     }
 
     var sharedMapHasChanges: Bool {
