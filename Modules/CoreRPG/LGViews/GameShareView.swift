@@ -30,7 +30,10 @@ public struct GameShareView<Content: View>: View {
         let statuses = playerReportStatuses
         actionBarWithSharing(statuses: statuses)
             .overlay(alignment: .topTrailing) {
-                if root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
+                // Only where this view offers sharing: a Photo embedded in a Map shares through
+                // the Map, so its report row showed player names for a share it doesn't offer.
+                // See CODE_AUDIT_19 §8.1.
+                if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
                     playerReportRow(for: statuses)
                 }
             }
@@ -103,8 +106,12 @@ private extension GameShareView {
                     .foregroundStyle(.tint)
             }
         }
-        .padding(.trailing, 4)
         .font(.caption)
+        // Drawn over the photo or text below it: a material background keeps it legible.
+        // See CODE_AUDIT_19 §8.1.
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(.regularMaterial, in: .capsule)
         .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))

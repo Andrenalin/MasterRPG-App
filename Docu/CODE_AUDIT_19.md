@@ -646,7 +646,7 @@ If any finding doesn't reproduce when you visit the line, send me the specific r
 
 ---
 
-## 13. Remediation status (§3.1–§3.17, §4.1–§4.2, §5.1–§5.18)
+## 13. Remediation status (§3.1–§3.17, §4.1–§4.2, §5.1–§5.18, §6.1–§6.2, §7.1–§7.3, §8.1–§8.4)
 
 Fixed 2026-09-29 on `develop` (uncommitted at the time of writing). Every fix is tagged `See CODE_AUDIT_19 §3.x` in the code.
 
@@ -688,3 +688,11 @@ Fixed 2026-09-29 on `develop` (uncommitted at the time of writing). Every fix is
 | 5.16 | Fixed | "Open in Window" is gated on `supportsMultipleWindows`. |
 | 5.17 | Fixed | The GM's display mode lives in `RootModel.gameDisplayMode` (shared with the 2D session), and a new table model resets its reshare baseline to the loaded map's values. Tests: `GameTableControlTests` (two). |
 | 5.18 | Fixed | The fog tile is cropped to the nearest whole pixels but drawn into the exact tile rect, so the repeat period matches 2D. Rooms over the 2D tile budget (`MapFogTileBudget`, shared with `MapFogTilePlanner`) get solid fog in 3D too. Tests: `BoardTextureRendererTests` (two). |
+| 6.1 | Fixed | IPv6 literals are parsed with Network's `IPv6Address` (zone dropped) and refused when any, loopback, link-local, unique-local, site-local, multicast, IPv4-compatible or 6to4; a v4-mapped address is classified as IPv4. A canonical dotted quad is parsed with `IPv4Address` (multicast/reserved 224+ now refused too). A label with a leading `0` is no longer canonical, so `0177.0.0.1` falls into the numeric-literal refusal. Tests: `UntrustedImportTests.publicRemoteHosts` (10 new cases). |
+| 6.2 | Fixed | The share extension's image download uses `GuardedRemoteDownload.downloadWithResponse` (new; returns the response for the MIME check) with `maximumSourceFileByteSize`, so the body is capped while it downloads and redirects are checked. Private hosts stay allowed, as for text: the user shared the URL. |
+| 7.1 | Fixed | Content hashes are streamed in 1 MB chunks (`FileUrl.contentHash(ofFileAt:)`, `FileManager.contentHash(coordinatingAccessAt:)`) for picked files and the legacy-location check. The picker's copy (`CloudDocumentController.move`) and item duplication (`EditControllable.resetFile(copying:)` → `FileUrlDataController.copyFile`) copy file-to-file. A failed duplicate copy is logged and shown in the banner instead of `try?`. Test: `StreamedContentHashTests`. |
+| 7.2 | Fixed | The fog tile is rendered into a tile-sized context with the same photo transform (`drawPhoto`), instead of snapshotting the whole board texture to crop it. Covered by the existing `BoardTextureRendererTests` pixel tests. |
+| 7.3 | Fixed | Temp track copies go into `tmp/AudioTracks`, emptied once per launch on first use; a copy whose load fails is deleted. |
+| 8.1 | Fixed | The player report row is shown only when `isShareable`, and sits on a material capsule so it stays legible over the content. |
+| 8.3 | By design | The `Text` is already localized: its components are resolved `Text` values and the key is only the synthetic `%@%@…` concatenation format, so it takes no `bundle: .module`. Marked with a comment in `LinkHighlightTextView.plainText`. `Text(verbatim:)` isn't possible (it takes only a `String`, which would drop the link icons, bold text and the custom attributes the highlight renderer reads), and `Text + Text` is deprecated in iOS 26. |
+| 8.4 | Fixed | The unreachable direct-activation branch (and its error alert) is removed: `SharePlayButton` only opens the invite sheet, matching `GameSharePlayButton`, which shows it only while this device can't start a session directly. No behaviour change. |

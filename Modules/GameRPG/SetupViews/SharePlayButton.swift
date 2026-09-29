@@ -5,7 +5,6 @@ import CoreRPG
 import CoreTransferable
 import GroupActivities
 import SwiftUI
-import os.log
 
 #if os(macOS)
 import AppKit
@@ -14,7 +13,7 @@ import UIKit
 #endif
 
 #Preview {
-    SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"), isEligibleForGroupSession: false)
+    SharePlayButton("Start SharePlay", activity: RPGActivity(adventureTitle: "Preview Adventure"))
 }
 
 /// The setup screens' SharePlay entry, shown only while this device can't start a group
@@ -28,37 +27,26 @@ struct GameSharePlayButton: View {
     }
 
     var body: some View {
-        SharePlayButton(
-            "Play RPG Online",
-            activity: RPGActivity(),
-            isEligibleForGroupSession: sharePlayStore.canActivateSharePlay
-        )
+        SharePlayButton("Play RPG Online", activity: RPGActivity())
         .opacity(sharePlayStore.canActivateSharePlay ? 0 : 1)
         .allowsHitTesting(!sharePlayStore.canActivateSharePlay)
         .accessibilityHidden(sharePlayStore.canActivateSharePlay)
     }
 }
 
+/// Opens the system sheet that invites people to a SharePlay session. Only shown while this
+/// device can't start a group session directly (see `GameSharePlayButton`), so it has no
+/// direct-activation path: that branch was unreachable. See CODE_AUDIT_19 §8.4.
 struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: View {
-    /// Injected from `RPGSharePlayController.canActivateSharePlay`, which already observes
-    /// `GroupStateObserver` for the app's lifetime. The view used to own an observer through
-    /// `@ObservedObject`, which recreated it (and briefly read `false`) on every parent
-    /// re-render. See CODE_AUDIT_18 §8.2.
-    let isEligibleForGroupSession: Bool
-
     @State
     private var isActivitySharingViewPresented = false
-    
-    @State
-    private var isActivationErrorViewPresented = false
-    
+
     let text: LocalizedStringKey
     let activity: ActivityType
 
-    init(_ text: LocalizedStringKey, activity: ActivityType, isEligibleForGroupSession: Bool) {
+    init(_ text: LocalizedStringKey, activity: ActivityType) {
         self.text = text
         self.activity = activity
-        self.isEligibleForGroupSession = isEligibleForGroupSession
     }
 
     var body: some View {
@@ -69,21 +57,7 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
                 .accessibilityHidden(true)
 #endif
             Button {
-                if isEligibleForGroupSession {
-                    // No need to detach: this action closure is already MainActor-isolated
-                    // (created inside `body`, which is @MainActor), so a plain structured
-                    // Task inherits that isolation — no nested Task needed to set the flag.
-                    Task { @MainActor in
-                        do {
-                            _ = try await activity.activate()
-                        } catch {
-                            Logger.sharePlay.error("Error activating activity: \(error.localizedDescription, privacy: .public)")
-                            isActivationErrorViewPresented = true
-                        }
-                    }
-                } else {
-                    isActivitySharingViewPresented = true
-                }
+                isActivitySharingViewPresented = true
             } label: {
                 Label {
                     Text(text, bundle: .module)
@@ -98,11 +72,6 @@ struct SharePlayButton<ActivityType: GroupActivity & Transferable & Sendable>: V
                         isActivitySharingViewPresented = false
                     }
                 }
-            }
-            .alert(Text("Unable to start game", bundle: .module), isPresented: $isActivationErrorViewPresented) {
-                Button(role: .cancel) { } label: { Text("OK", bundle: .module) }
-            } message: {
-                Text("Please try again later.", bundle: .module)
             }
         }
     }

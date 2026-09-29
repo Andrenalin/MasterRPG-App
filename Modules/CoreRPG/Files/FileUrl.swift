@@ -2,6 +2,7 @@
 
 import CryptoKit
 import Foundation
+import Network
 
 public struct FileUrl: Equatable, Hashable, Codable, Sendable {
     public let fileId: UUID
@@ -81,6 +82,19 @@ public extension FileUrl {
 
     static func contentHash(of data: Data) -> String {
         Data(SHA256.hash(data: data)).base64EncodedString()
+    }
+
+    /// `contentHash(of:)` of the file at `url`, read in 1 MB chunks instead of loading the
+    /// whole file, so hashing a large audio, USDZ or PDF file doesn't spike memory.
+    /// See CODE_AUDIT_19 §7.1.
+    static func contentHash(ofFileAt url: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return Data(hasher.finalize()).base64EncodedString()
     }
 
     /// Byte length taken from the SHA256 content-hash digest to derive `contentVersion`
@@ -207,27 +221,30 @@ public extension URL {
             return false
         }
         if host.contains(":") {
-            // IPv6 literal: loopback, unspecified, unique-local, link-local, v4-mapped.
-            let value = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
-            return !(value == "::1" || value == "::" || value.hasPrefix("fc") || value.hasPrefix("fd")
-                || value.hasPrefix("fe8") || value.hasPrefix("fe9") || value.hasPrefix("fea")
-                || value.hasPrefix("feb") || value.hasPrefix("::ffff:"))
+            // IPv6 literal, parsed rather than prefix-matched: "[0:0:0:0:0:0:0:1]" and "[0::1]"
+            // are loopback too. A zone ("%25en0") is dropped. See CODE_AUDIT_19 §6.1.
+            let literal = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+            let address = literal.split(separator: "%", maxSplits: 1).first.map(String.init) ?? literal
+            guard let ipv6 = IPv6Address(address) else { return false }
+            return Self.isPublic(ipv6)
         }
-        let octets = host.split(separator: ".").compactMap { Int($0) }
-        if octets.count == 4, octets.count == host.split(separator: ".").count {
-            switch (octets[0], octets[1]) {
-            case (0, _), (10, _), (127, _), (169, 254), (192, 168): return false
-            case (172, 16...31), (100, 64...127): return false
-            default: return true
-            }
-        }
-        // Not a clean 4-octet dotted-quad. A host whose every label is a numeric IPv4 part
-        // (decimal/octal digits, or `0x`-prefixed hex — e.g. "127.1", "0x7f.0.0.1", a bare
-        // decimal like "2130706433") is a shorthand IPv4 literal `getaddrinfo` still
-        // resolves, not a real DNS name — refuse it (CODE_AUDIT_17 §6.10). Labels made of
-        // hex *letters* without the `0x` prefix (e.g. "cafe.be") are real hostnames and are
-        // allowed. See CODE_AUDIT_18 §6.5.
         let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        // A canonical dotted quad (four decimal labels without leading zeros) is classified by
+        // its parsed bytes. See CODE_AUDIT_19 §6.1.
+        let isCanonicalDottedQuad = labels.count == 4 && labels.allSatisfy { label in
+            !label.isEmpty && label.count <= 3 && label.allSatisfy { $0.isASCII && $0.isNumber }
+                && (label == "0" || label.first != "0")
+        }
+        if isCanonicalDottedQuad {
+            guard let ipv4 = IPv4Address(host) else { return false }
+            return Self.isPublic(ipv4)
+        }
+        // Not a canonical dotted-quad. A host whose every label is a numeric IPv4 part
+        // (decimal digits, a leading-zero octal part like "0177", or `0x`-prefixed hex — e.g.
+        // "127.1", "0177.0.0.1", "0x7f.0.0.1", a bare decimal like "2130706433") is a
+        // shorthand IPv4 literal `getaddrinfo` may still resolve, not a real DNS name — refuse
+        // it (CODE_AUDIT_17 §6.10, CODE_AUDIT_19 §6.1). Labels made of hex *letters* without the
+        // `0x` prefix (e.g. "cafe.be") are real hostnames and are allowed. See CODE_AUDIT_18 §6.5.
         let looksLikeNumericIPLiteral = !labels.isEmpty && labels.allSatisfy { label in
             if label.hasPrefix("0x") {
                 return label.dropFirst(2).allSatisfy(\.isHexDigit)
@@ -235,6 +252,31 @@ public extension URL {
             return !label.isEmpty && label.allSatisfy { $0.isASCII && $0.isNumber }
         }
         return !looksLikeNumericIPLiteral
+    }
+
+    /// Public unicast: not this network, private, loopback, link-local, shared (CGNAT),
+    /// multicast or reserved. See CODE_AUDIT_15 §6.3, CODE_AUDIT_19 §6.1.
+    private static func isPublic(_ address: IPv4Address) -> Bool {
+        let bytes = [UInt8](address.rawValue)
+        guard bytes.count == 4 else { return false }
+        switch (bytes[0], bytes[1]) {
+        case (0, _), (10, _), (127, _), (169, 254), (192, 168): return false
+        case (172, 16...31), (100, 64...127): return false
+        case (224...255, _): return false
+        default: return true
+        }
+    }
+
+    private static func isPublic(_ address: IPv6Address) -> Bool {
+        if let mapped = address.asIPv4 {
+            return isPublic(mapped)
+        }
+        let bytes = [UInt8](address.rawValue)
+        guard bytes.count == 16 else { return false }
+        return !(address.isAny || address.isLoopback || address.isLinkLocal || address.isUniqueLocal
+            || address.isMulticast || address.isIPv4Compatabile || address.is6to4
+            // Site-local fec0::/10 (deprecated but still routed on some LANs).
+            || (bytes[0] == 0xfe && bytes[1] & 0xc0 == 0xc0))
     }
 
     var isSupportedRemoteFileURL: Bool {

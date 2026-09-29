@@ -147,12 +147,19 @@ struct CloudDocumentController: Sendable {
         }
     }
 
+    /// Copies the picked file file-to-file: reading it into memory first spiked memory for
+    /// large audio, USDZ or PDF files. See CODE_AUDIT_19 §7.1.
     func move(sourceUrl: URL, destinationFilename: String) async throws -> String {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(sourceUrl:destinationFilename:)", file: "CloudDocumentController.swift")
         
-        let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: sourceUrl)
-        try await write(data: data, to: destinationFilename)
+        try await copy(from: sourceUrl, to: destinationFilename)
         return destinationFilename
+    }
+
+    /// Copies `sourceUrl` to `filePath` below the module folder without reading it into memory.
+    /// See CODE_AUDIT_19 §7.1.
+    func copy(from sourceUrl: URL, to filePath: String) async throws {
+        try await FileManager.default.copyReplacingItem(coordinatingAccessFrom: sourceUrl, to: fullUrl(filePath: filePath))
     }
 
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {

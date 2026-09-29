@@ -265,23 +265,7 @@ enum BoardTextureRenderer {
         let fitScale = orientedSize.width > 0 && orientedSize.height > 0
             ? min(pixelSize.width / orientedSize.width, pixelSize.height / orientedSize.height)
             : 1
-        context.setFillColor(CGColor(gray: 0.1, alpha: 1))
-        context.fill(CGRect(origin: .zero, size: pixelSize))
-        context.interpolationQuality = .high
-        context.saveGState()
-        context.translateBy(x: pixelSize.width / 2, y: pixelSize.height / 2)
-        context.rotate(by: -CGFloat(input.degrees) * .pi / 180)
-        context.scaleBy(x: fitScale, y: fitScale)
-        context.draw(
-            input.image,
-            in: CGRect(
-                x: -input.sourceSize.width / 2,
-                y: -input.sourceSize.height / 2,
-                width: input.sourceSize.width,
-                height: input.sourceSize.height
-            )
-        )
-        context.restoreGState()
+        drawPhoto(input, in: context, pixelSize: pixelSize, fitScale: fitScale)
 
         // Maps canvas points (where the rooms live) onto the texture's pixels — per axis, so rooms
         // stay on the same spot of the picture even when the canvas' shape differs from the photo's.
@@ -293,7 +277,9 @@ enum BoardTextureRenderer {
         // pixels the 2D map crops from its oriented image.
         let fogTile = input.isGameMaster
             ? nil
-            : fogTileImage(input.playerFog.tile, from: context, canvas: canvas, pixelSize: pixelSize)
+            : fogTileImage(input.playerFog.tile, canvas: canvas, pixelSize: pixelSize) { tileContext in
+                drawPhoto(input, in: tileContext, pixelSize: pixelSize, fitScale: fitScale)
+            }
 
         // Room polygons use `entry.coordinates`' top-left-origin, +y-down convention. The 3D board
         // never crops into a focused room; a red border marks the focus instead.
@@ -355,6 +341,28 @@ enum BoardTextureRenderer {
         return context.makeImage()
     }
 
+    /// The dark background and the oriented photo, in pixel space (Core Graphics'
+    /// bottom-left origin). Shared by the texture and the fog tile.
+    private static func drawPhoto(_ input: BoardTextureInput, in context: CGContext, pixelSize: CGSize, fitScale: CGFloat) {
+        context.setFillColor(CGColor(gray: 0.1, alpha: 1))
+        context.fill(CGRect(origin: .zero, size: pixelSize))
+        context.interpolationQuality = .high
+        context.saveGState()
+        context.translateBy(x: pixelSize.width / 2, y: pixelSize.height / 2)
+        context.rotate(by: -CGFloat(input.degrees) * .pi / 180)
+        context.scaleBy(x: fitScale, y: fitScale)
+        context.draw(
+            input.image,
+            in: CGRect(
+                x: -input.sourceSize.width / 2,
+                y: -input.sourceSize.height / 2,
+                width: input.sourceSize.width,
+                height: input.sourceSize.height
+            )
+        )
+        context.restoreGState()
+    }
+
     struct FogTile {
         let image: CGImage
         /// The tile's exact rect in canvas space (top-left origin): the lattice's period and phase.
@@ -363,13 +371,15 @@ enum BoardTextureRenderer {
         let rect: CGRect
     }
 
-    /// Crops the tile out of the photo already drawn into `context`. `nil` (solid fog) when there
-    /// is no tile or it covers less than one texture pixel.
+    /// Renders the tile's pixels of the texture: `drawPhoto` draws the photo into a tile-sized
+    /// context shifted to the tile. Snapshotting the whole board context to crop one tile
+    /// allocated a full extra texture on every fog render. `nil` (solid fog) when there is no
+    /// tile or it covers less than one texture pixel. See CODE_AUDIT_19 §7.2.
     static func fogTileImage(
         _ tile: CGRect?,
-        from context: CGContext,
         canvas: CGSize,
-        pixelSize: CGSize
+        pixelSize: CGSize,
+        drawPhoto: (CGContext) -> Void
     ) -> FogTile? {
         guard let tile, canvas.width > 0, canvas.height > 0 else { return nil }
         let scaleX = pixelSize.width / canvas.width
@@ -397,7 +407,19 @@ enum BoardTextureRenderer {
         )
         guard cropRect.width >= 1,
               cropRect.height >= 1,
-              let image = context.makeImage()?.cropping(to: cropRect) else { return nil }
+              let tileContext = CGContext(
+                data: nil,
+                width: Int(cropRect.width),
+                height: Int(cropRect.height),
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else { return nil }
+        // `cropRect` has a top-left origin (image rows); the context's origin is bottom-left.
+        tileContext.translateBy(x: -cropRect.minX, y: -(pixelSize.height - cropRect.maxY))
+        drawPhoto(tileContext)
+        guard let image = tileContext.makeImage() else { return nil }
         return FogTile(
             image: image,
             rect: CGRect(

@@ -356,8 +356,9 @@ public extension FileUrlDataController {
                 // Try the stored legacy location before rewriting imported bytes.
                 let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
                 if exists && !isDir {
-                    if let existingData = try? await FileManager.default.contentsOfFile(coordinatingAccessAt: oldUrl),
-                       FileUrl.contentHash(of: existingData) == contentHash {
+                    // Streamed, not read into memory. See CODE_AUDIT_19 §7.1.
+                    if let existingHash = try? await FileManager.default.contentHash(coordinatingAccessAt: oldUrl),
+                       existingHash == contentHash {
                         // File already exists on disk - return FileUrl without data in memory
                         return FileUrl(fileId: fileId, url: unconvertedFileUrl.rawUrl, location: unconvertedFileUrl.location, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
                     }
@@ -395,6 +396,41 @@ public extension FileUrlDataController {
             Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
         }
         return FileUrl(fileId: fileId, url: fileURL, location: .newCloud, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
+    }
+
+    /// Copies `source` file-to-file to the `.newCloud` file at `relativeUrl` and hashes the copy
+    /// streamed. Duplicating an item used to read its whole file into memory. Data held only in
+    /// memory (unconverted or a peer's file) still goes through `createNewFileUrl`.
+    /// Returns `nil` when the source file can't be resolved. See CODE_AUDIT_19 §7.1.
+    @concurrent
+    func copyFile(_ source: FileUrl, fileId: UUID, to relativeUrl: URL) async throws -> FileUrl? {
+        if source.hasUnconvertedData || peerFiles.data(for: source.fileId) != nil {
+            guard let data = try await loadData(for: source) else { return nil }
+            var unconverted = FileUrl(fileId: fileId, url: relativeUrl, location: .newCloud, module: source.module, relativeUrl: nil)
+            unconverted.resetData(data)
+            return try await createNewFileUrl(fileId: fileId, unconvertedFileUrl: unconverted, pathExtension: relativeUrl.pathExtension)
+        }
+
+        let fullUrl = cloudDocumentController.fullUrl(fileUrl: relativeUrl)
+        let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
+        let filePath = nameUrl.path(percentEncoded: false)
+        let cloudDocumentController = cloudDocumentController
+        let copied = try await url(for: source) { sourceUrl async throws -> Bool? in
+            guard let sourceUrl else { return false }
+            try await cloudDocumentController.copy(from: sourceUrl, to: filePath)
+            return true
+        }
+        guard copied == true else { return nil }
+
+        let securityScope = fullUrl.startSecurityScopedAccess()
+        defer { securityScope.stop() }
+        do {
+            try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
+        } catch {
+            Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
+        }
+        let contentHash = try await FileManager.default.contentHash(coordinatingAccessAt: fullUrl)
+        return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: source.module, relativeUrl: nil, contentHash: contentHash)
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
@@ -439,8 +475,8 @@ public extension FileUrlDataController {
             resolvedContentHash = contentHash
         } else {
             do {
-                let data = try await FileManager.default.contentsOfFile(coordinatingAccessAt: url)
-                resolvedContentHash = FileUrl.contentHash(of: data)
+                // Streamed, not read into memory. See CODE_AUDIT_19 §7.1.
+                resolvedContentHash = try await FileManager.default.contentHash(coordinatingAccessAt: url)
             } catch {
                 Logger.fileStore.error("Cannot read picker file to compute contentHash \(error.localizedDescription, privacy: .public)")
                 resolvedContentHash = nil

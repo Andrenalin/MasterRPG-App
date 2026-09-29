@@ -192,7 +192,7 @@ extension AudioController {
                 // a discarded load deletes its own. See CODE_AUDIT_18 §3.7 (and §7.1).
                 let tempUrl = Self.temporaryTrackUrl(for: request.id, pathExtension: url.pathExtension)
                 try await FileManager.default.copyItem(coordinatingAccessFrom: url, to: tempUrl)
-                return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
+                return try await Self.loadingRemovingOnFailure(request, from: tempUrl)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from file url: \(error.localizedDescription, privacy: .public)")
@@ -202,7 +202,7 @@ extension AudioController {
             if audioAsset == nil, let data = request.fileUrl.data {
                 let tempUrl = Self.temporaryTrackUrl(for: request.id, pathExtension: itemController.config.filenameExtension)
                 try data.write(to: tempUrl)
-                return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
+                return try await Self.loadingRemovingOnFailure(request, from: tempUrl)
             }
         } catch {
             Logger.audioController.error("Cannot read audio from data: \(error.localizedDescription, privacy: .public)")
@@ -210,11 +210,36 @@ extension AudioController {
         return audioAsset
     }
 
+    /// Loads the copied track, deleting the copy when loading fails: nothing else would ever
+    /// remove it. See CODE_AUDIT_19 §7.3.
+    private static func loadingRemovingOnFailure(_ request: AudioAssetRequest, from tempUrl: URL) async throws -> PlaylistItem {
+        do {
+            return try await PlaylistItem.loading(id: request.id, title: request.title, artist: request.artist, from: tempUrl)
+        } catch {
+            try? FileManager.default.removeItem(at: tempUrl)
+            throw error
+        }
+    }
+
     private static func temporaryTrackUrl(for id: UUID, pathExtension: String) -> URL {
-        URL.temporaryDirectory
+        trackDirectory
             .appending(path: "\(id.uuidString)-\(UUID().uuidString)")
             .appendingPathExtension(pathExtension)
     }
+
+    /// The app's own folder for the temporary track copies. Emptied once per launch, on first
+    /// use, before this run has created any copy: copies still present at the previous exit
+    /// were never removed and piled up. See CODE_AUDIT_19 §7.3.
+    private static let trackDirectory: URL = {
+        let directory = URL.temporaryDirectory.appending(path: "AudioTracks", directoryHint: .isDirectory)
+        try? FileManager.default.removeItem(at: directory)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        } catch {
+            Logger.audioController.error("Cannot create the audio track folder: \(error.localizedDescription, privacy: .public)")
+        }
+        return directory
+    }()
 
     @MainActor func loadAndPlay(id: UUID) {
         // If item is already in playlist, just play it

@@ -155,9 +155,15 @@ private extension ItemProviderImporter {
         if url.isFileURL {
             return try await imageData(fromFile: url)
         }
-        // A shared web page URL is not an image: download to disk (not memory), require an
-        // image content type and cap the size before decoding anything.
-        let (downloadedUrl, response) = try await URLSession.shared.download(from: url)
+        // A shared web page URL is not an image: download to disk (not memory), capped while it
+        // downloads and with checked redirects, then require an image content type before
+        // decoding anything. The user shared this URL, so private hosts stay allowed, as for
+        // text. See CODE_AUDIT_18 §6.4, CODE_AUDIT_19 §6.2.
+        let (downloadedUrl, response) = try await GuardedRemoteDownload.downloadWithResponse(
+            from: url,
+            maximumBytes: maximumSourceFileByteSize,
+            allowsPrivateHosts: true
+        )
         defer { try? FileManager.default.removeItem(at: downloadedUrl) }
         guard response.mimeType?.hasPrefix("image/") == true else { throw Error.failedToLoad }
         return try await imageData(fromFile: downloadedUrl)

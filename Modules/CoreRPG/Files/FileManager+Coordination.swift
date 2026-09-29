@@ -55,6 +55,29 @@ extension FileManager {
         }
     }
     
+    /// The streamed content hash of the file at `url`. See CODE_AUDIT_19 §7.1.
+    func contentHash(coordinatingAccessAt url: URL) async throws -> String {
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(readingItemAt: url) { url in
+                try FileUrl.contentHash(ofFileAt: url)
+            }
+        }
+    }
+
+    /// Copies a file to `toURL` without reading it into memory, creating the parent folder and
+    /// replacing a file already there. See CODE_AUDIT_19 §7.1.
+    func copyReplacingItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
+        try await Self.performCoordinatedFileAccess {
+            try Self.coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
+                try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                if FileManager.default.fileExists(atPath: writeURL.path(percentEncoded: false)) {
+                    try FileManager.default.removeItem(at: writeURL)
+                }
+                try FileManager.default.copyItem(at: readURL, to: writeURL)
+            }
+        }
+    }
+
     func contentsOfFile(coordinatingAccessAt url: URL) async throws -> Data {
         try await Self.performCoordinatedFileAccess {
             try Self.coordinate(readingItemAt: url) { url in

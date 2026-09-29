@@ -99,19 +99,10 @@ struct BoardTextureRendererTests {
     @Test("The fog tile keeps its exact rect as the repeat period")
     func fogTileKeepsExactPeriod() throws {
         let pixelSize = CGSize(width: 2048, height: 2048)
-        let context = try #require(CGContext(
-            data: nil,
-            width: Int(pixelSize.width),
-            height: Int(pixelSize.height),
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ))
         let canvas = CGSize(width: 3000, height: 3000)
         let tile = CGRect(x: 10.3, y: 20.7, width: 33.3, height: 41.9)
 
-        let fogTile = try #require(BoardTextureRenderer.fogTileImage(tile, from: context, canvas: canvas, pixelSize: pixelSize))
+        let fogTile = try #require(BoardTextureRenderer.fogTileImage(tile, canvas: canvas, pixelSize: pixelSize) { _ in })
 
         #expect(abs(fogTile.rect.minX - tile.minX) < 1e-9)
         #expect(abs(fogTile.rect.minY - tile.minY) < 1e-9)

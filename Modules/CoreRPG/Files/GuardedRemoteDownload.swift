@@ -9,6 +9,16 @@ import Foundation
 /// and §6.5.
 public enum GuardedRemoteDownload {
     public static func download(from url: URL, maximumBytes: Int, allowsPrivateHosts: Bool = false) async throws -> URL {
+        try await downloadWithResponse(from: url, maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts).fileUrl
+    }
+
+    /// `download(from:maximumBytes:allowsPrivateHosts:)` that also returns the response, for
+    /// callers that check its MIME type. See CODE_AUDIT_19 §6.2.
+    public static func downloadWithResponse(
+        from url: URL,
+        maximumBytes: Int,
+        allowsPrivateHosts: Bool = false
+    ) async throws -> (fileUrl: URL, response: URLResponse) {
         let delegate = Delegate(maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts)
         let (temporaryURL, response) = try await URLSession.shared.download(from: url, delegate: delegate)
         if let response = response as? HTTPURLResponse,
@@ -21,7 +31,7 @@ public enum GuardedRemoteDownload {
             try? FileManager.default.removeItem(at: temporaryURL)
             throw URLError(.dataLengthExceedsMaximum)
         }
-        return temporaryURL
+        return (temporaryURL, response)
     }
 
     private final class Delegate: NSObject, URLSessionDownloadDelegate, Sendable {

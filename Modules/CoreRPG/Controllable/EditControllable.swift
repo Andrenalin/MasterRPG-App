@@ -509,11 +509,16 @@ public extension EditControllable {
         let duplicate = model.duplicate()
         itemControllable.replace(model: duplicate, isInsert: true)
 
-        if let fileUrl = model.fileUrl, let fileUrlDataController,
-           let data = try? await fileUrlDataController.loadData(for: fileUrl) {
-            var path = fileUrl.rawUrl.deletingLastPathComponent().path(percentEncoded: false)
-            if path == "./" { path = "" }
-            try? await resetFile(data: data, itemId: duplicate.id, path: path)
+        if let fileUrl = model.fileUrl {
+            // File-to-file, and a failure is reported instead of silently leaving the copy
+            // without a file. See CODE_AUDIT_19 §7.1.
+            do {
+                try await resetFile(copying: fileUrl, itemId: duplicate.id)
+            } catch {
+                Logger.editController.error("duplicate(model:) failed to copy the file: \(error.localizedDescription, privacy: .public)")
+                itemControllable.itemDataModel.lastPersistenceError = error
+                PersistenceIssueCenter.shared.recordFileError(error)
+            }
         }
 
         guard model.isFolder else { return duplicate }
@@ -701,6 +706,24 @@ public extension EditControllable {
         }
     }
     
+    /// Gives `itemId` its own copy of `source`, named like `resetFile(data:itemId:path:)` names
+    /// new files, copied file-to-file. See CODE_AUDIT_19 §7.1.
+    @MainActor func resetFile(copying source: FileUrl, itemId: UUID) async throws {
+        guard let fileUrlDataController, let item = editModel(for: itemId) else { return }
+        var folder = await folderPath(itemId: item.parentId)
+        if !folder.isEmpty {
+            folder.append("/")
+        }
+        let baseName = item.name.isEmpty ? "NewData-\(item.id.uuidString)" : item.name
+        let fileName = "\(baseName).\(itemControllable.config.filenameExtension)"
+        guard let root = URL(string: "/") else { return }
+        let destination = root.appending(path: folder).appending(component: fileName)
+        guard let fileUrl = try await fileUrlDataController.copyFile(source, fileId: item.id, to: destination) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        reset(fileUrl: fileUrl, itemId: itemId)
+    }
+
     @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
         guard let item = editModel(for: itemId) else { return }
         if item.fileUrl != nil {

@@ -112,6 +112,17 @@ struct UntrustedImportTests {
         ("https://2130706433/a.png", false),
         ("https://cafe.be/a.png", true),
         ("https://dead.beef.com/a.png", true),
+        // CODE_AUDIT_19 §6.1: IPv6 literals are parsed, and leading-zero IPv4 labels are numeric.
+        ("https://[0:0:0:0:0:0:0:1]/a.png", false),
+        ("https://[0::1]/a.png", false),
+        ("https://[::ffff:127.0.0.1]/a.png", false),
+        ("https://[::ffff:7f00:1]/a.png", false),
+        ("https://[fe80::1%25en0]/a.png", false),
+        ("https://[fd12:3456::1]/a.png", false),
+        ("https://[2606:4700:4700::1111]/a.png", true),
+        ("https://0177.0.0.1/a.png", false),
+        ("https://010.0.0.1/a.png", false),
+        ("https://224.0.0.251/a.png", false),
     ])
     func publicRemoteHosts(urlString: String, isPublic: Bool) throws {
         let url = try #require(URL(string: urlString))

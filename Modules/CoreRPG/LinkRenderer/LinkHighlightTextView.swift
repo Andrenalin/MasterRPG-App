@@ -58,6 +58,9 @@ public struct LinkHighlightTextView: View {
         for component in components {
             interpolation.appendInterpolation(component.text)
         }
+        // Already localized: every component is a resolved `Text`, and the key is only the
+        // synthetic `%@%@…` concatenation format, so no `bundle: .module` is needed.
+        // See CODE_AUDIT_19 §8.3.
         return Text(LocalizedStringKey(stringInterpolation: interpolation))
     }
 
