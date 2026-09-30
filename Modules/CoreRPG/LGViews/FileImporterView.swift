@@ -141,7 +141,7 @@ private struct RemoteFileURLImporterModifier: ViewModifier {
     private var remoteURL: URL? {
         let value = remoteURLText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: value),
-              url.isSupportedRemoteFileURL else {
+              url.isSupportedRemoteFileUrl else {
             return nil
         }
         return url

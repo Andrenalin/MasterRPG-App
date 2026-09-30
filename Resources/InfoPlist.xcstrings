@@ -523,30 +523,6 @@
         }
       }
     },
-    "NSMicrophoneUsageDescription" : {
-      "comment" : "Privacy - Microphone Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "MasterRPG benötigt Mikrofonzugriff für Sprachbefehle und Spracherkennungsfunktionen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG needs access to your microphone to listen to your voice commands for the AI chat assistant."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "MasterRPG ต้องการการเข้าถึงไมโครโฟนเพื่อเปิดใช้งานคำสั่งเสียงและฟีเจอร์การจดจำเสียงพูด"
-          }
-        }
-      }
-    },
     "NSPhotoLibraryUsageDescription" : {
       "comment" : "Privacy - Photo Library Usage Description",
       "extractionState" : "extracted_with_value",
@@ -567,54 +543,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้คลังภาพเพื่อนำเข้าภาพถ่ายสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
-          }
-        }
-      }
-    },
-    "NSSpeechRecognitionUsageDescription" : {
-      "comment" : "Privacy - Speech Recognition Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "MasterRPG verwendet Spracherkennung, um deine Sprachbefehle für den Sprachassistenten in Text umzuwandeln."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG uses speech recognition to convert your voice commands into text for the voice assistant feature."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "MasterRPG ใช้การจดจำเสียงพูดเพื่อแปลงคำสั่งเสียงของคุณเป็นข้อความสำหรับฟีเจอร์ผู้ช่วยเสียง"
-          }
-        }
-      }
-    },
-    "NSWorldSensingUsageDescription" : {
-      "comment" : "Privacy - World Sensing Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "MasterRPG ใช้ข้อมูลการรับรู้โลกเพื่อตรวจจับโต๊ะสำหรับการทอยลูกเต๋าระหว่างเกม"
           }
         }
       }

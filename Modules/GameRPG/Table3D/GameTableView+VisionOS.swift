@@ -300,7 +300,7 @@ public struct GameTableView: View {
             scaleController.renderer = game.renderer
             root.gameModel.shareState.mode = .tabletop
             root.networkStore.sharePlayStore.applyShareState()
-            configureSessionState(for: game)
+            game.configureSession(from: root)
             game.applyFocusedDiceRollForLocalSeat = Self.focusedDiceHandler(for: game, diceRoot: root.diceRoot)
             await game.handleMapChange(isGameMaster: game.isGameMaster)
             applyCurrentFocusedDiceRoll(to: game)
@@ -335,7 +335,7 @@ public struct GameTableView: View {
         initializedGame.setupSeating(
             sharePlayController: root.networkStore.sharePlayStore
         )
-        configureSessionState(for: initializedGame)
+        initializedGame.configureSession(from: root)
 
         // The volume can open after a map is already revealed — bring the
         // table up to date immediately instead of waiting for a mapState trip.
@@ -440,11 +440,6 @@ public struct GameTableView: View {
         return diceModel.dice.flatMap { [$0.die.max] + $0.result }
     }
 
-    private func configureSessionState(for game: GameTableModel) {
-        game.networkActions = root.networkActions
-        game.isGameMaster = root.gameModel.gameConfig.isMaster
-        game.playerPinId = game.isGameMaster ? nil : root.gameModel.gameConfig.id
-    }
 }
 
 #Preview {

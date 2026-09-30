@@ -68,15 +68,12 @@ extension GameTableModel {
         // game copy of the map. See CODE_AUDIT_18 §5.19.
         guard isGameMaster, let mapId = currentMapId else { return }
         _ = mapRoot.toggleHexMap(itemId: mapId)
-        // `syncAfterExternalEdit()` only syncs pawns/hit areas and broadcasts map state —
-        // unlike every other fog-affecting entry point it never called
-        // `replaceFogOfWarTask()`, so the board texture (which draws every entry,
-        // including the hex grid) stayed stale until an unrelated fog change.
-        // See CODE_AUDIT_17 §5.24.
+        // Re-render the board: it draws every entry, including the hex grid, which otherwise
+        // stayed stale until an unrelated fog change. See CODE_AUDIT_17 §5.24.
         replaceFogOfWarTask()
         syncPawnsWithMapPins()
         // The new/removed hex entries go out as a structural content update before the map
-        // state (`syncAfterExternalEdit` only sent the state). See CODE_AUDIT_18 §5.19.
+        // state. See CODE_AUDIT_18 §5.19.
         broadcastMapContentEdit(for: mapId)
     }
 
@@ -109,53 +106,6 @@ extension GameTableModel {
         guard isGameMaster, let mapId = currentMapId,
               mapRoot.mapGameControllable.toggleRoomFocus(itemId: mapId, roomId: roomId) else { return }
         await replaceFogOfWarTask().value
-        syncPawnsWithMapPins()
-        broadcastMapEdit(for: mapId)
-    }
-
-    /// Shows or hides the full map with one render/sync/network transaction.
-    func setAllRoomsShown(_ isShown: Bool) async {
-        guard isGameMaster, let mapId = currentMapId else { return }
-        let roomIds = rooms.map(\.id)
-        guard mapRoot.mapGameControllable.setRoomsShown(
-            itemId: mapId,
-            roomIds: roomIds,
-            isShown: isShown
-        ) else { return }
-        await replaceFogOfWarTask().value
-        syncPawnsWithMapPins()
-        broadcastMapEdit(for: mapId)
-    }
-
-    func togglePointerVisibility() {
-        guard isGameMaster, let mapId = currentMapId,
-              mapRoot.mapGameControllable.togglePointer(itemId: mapId) else { return }
-        syncPawnsWithMapPins()
-        broadcastMapEdit(for: mapId)
-    }
-
-    /// Places and reveals the pointer at the map center without requiring the
-    /// 2D map window. Both mutations are delivered in one mapState message.
-    func movePointerToMapCenter() {
-        guard isGameMaster, let mapId = currentMapId, let mapModel = currentMapModel() else { return }
-        let center = CGPoint(x: mapModel.width / 2, y: mapModel.height / 2)
-        let moved = mapRoot.mapGameControllable.movePointer(itemId: mapId, location: center)
-        let revealed = mapModel.pointer.isShown
-            ? false
-            : mapRoot.mapGameControllable.togglePointer(itemId: mapId)
-        guard moved || revealed else { return }
-        syncPawnsWithMapPins()
-        broadcastMapEdit(for: mapId)
-    }
-
-    /// Adds a set selected by a future platform-specific character picker.
-    /// Keeping the mutation here avoids coupling the tabletop to MapEditor.
-    func addMonstersAtMapCenter(_ monsters: [ItemRowModel]) {
-        guard isGameMaster, let mapId = currentMapId,
-              mapRoot.mapGameControllable.addMonstersAtMapCenter(
-                itemId: mapId,
-                monsters: monsters
-              ) else { return }
         syncPawnsWithMapPins()
         broadcastMapEdit(for: mapId)
     }

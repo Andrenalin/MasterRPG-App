@@ -65,9 +65,4 @@ public struct PdfAnalysisProgress: Equatable, Sendable {
         self.currentPage = currentPage
         self.totalPages = totalPages
     }
-
-    public var percentage: Double {
-        guard totalPages > 0 else { return 0 }
-        return Double(currentPage) / Double(totalPages)
-    }
 }

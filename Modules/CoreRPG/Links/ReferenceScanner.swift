@@ -30,77 +30,79 @@ private extension ReferenceScanner {
     static let numberPattern = "[0-9]+"
     static let commandPattern = "[a-zA-Z]+"
     
+    /// One link match; `entry`/`command` are set when the pattern has those segments.
+    struct LinkMatch {
+        let name: String
+        let module: String
+        let link: String
+        let table: String
+        let entry: String?
+        let command: String?
+    }
+
+    /// The one parser behind the four link shapes: `TABLE`, `TABLE/COMMAND`, `TABLE/ENTRY` and
+    /// `TABLE/ENTRY/COMMAND` differ only in their optional segments. Only a table segment that
+    /// is not a UUID is logged: a command link (`…/TABLE/Roll`) also matches the entry shape,
+    /// and its non-UUID "entry" is expected. See CODE_AUDIT_19 §9.18.
+    static func parseLinks(for scheme: String, in content: String, hasEntry: Bool, hasCommand: Bool) -> [LinkMatch] {
+        var pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Module>\(modulePattern))\\/(?<Link>\(numberPattern))\\/(?<Table>\(uuidPattern))"
+        var groups = ["Name", "Module", "Link", "Table"]
+        if hasEntry {
+            pattern += "\\/(?<Entry>\(uuidPattern))"
+            groups.append("Entry")
+        }
+        if hasCommand {
+            pattern += "\\/(?<Command>\(commandPattern))"
+            groups.append("Command")
+        }
+        pattern += "\\)"
+        let results = RegularExpressionParser.parse(content, with: pattern, extract: groups)
+        return stride(from: 0, to: results.count - groups.count + 1, by: groups.count).compactMap { start in
+            let match = LinkMatch(
+                name: results[start],
+                module: results[start + 1],
+                link: results[start + 2],
+                table: results[start + 3],
+                entry: hasEntry ? results[start + 4] : nil,
+                command: hasCommand ? results[start + groups.count - 1] : nil
+            )
+            guard UUID(uuidString: match.table) != nil else {
+                Logger.linkController.error("ReferenceScanner Parse error UUID nil for table:\(match.table). Link will be ignored")
+                return nil
+            }
+            return match
+        }
+    }
+
     static func parseUrlsTable(for scheme: String, in content: String) -> [ReferenceTableLink] {
-        var links: [ReferenceTableLink] = []
-        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Module>\(modulePattern))\\/(?<Link>\(numberPattern))\\/(?<Table>\(uuidPattern))\\)"
-        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Module", "Link", "Table"])
-        for i in 0 ..< (results.count / 4) {
-            let name = results[i * 4]
-            let module = results[i * 4 + 1]
-            let link = results[i * 4 + 2]
-            let table = results[i * 4 + 3]
-            if let tableUUID = UUID(uuidString: table) {
-                links.append(ReferenceTableLink(name: name, module: module, linkNumber: link, table: tableUUID))
-            } else {
-                Logger.linkController.error("ReferenceScanner Parse error UUID nil for table:\(table). Link will be ignored")
-            }
-        }
-        return links
+        tableLinks(parseLinks(for: scheme, in: content, hasEntry: false, hasCommand: false))
     }
-    
+
     static func parseUrlsTableWithCommand(for scheme: String, in content: String) -> [ReferenceTableLink] {
-        var links: [ReferenceTableLink] = []
-        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Module>\(modulePattern))\\/(?<Link>\(numberPattern))\\/(?<Table>\(uuidPattern))\\/(?<Command>\(commandPattern))\\)"
-        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Module", "Link", "Table", "Command"])
-        for i in 0 ..< (results.count / 5) {
-            let name = results[i * 5]
-            let module = results[i * 5 + 1]
-            let link = results[i * 5 + 2]
-            let table = results[i * 5 + 3]
-            let command = results[i * 5 + 4]
-            if let tableUUID = UUID(uuidString: table) {
-                links.append(ReferenceTableLink(name: name, module: module, linkNumber: link, table: tableUUID, command: command))
-            } else {
-                Logger.linkController.error("ReferenceScanner Parse error UUID nil for table:\(table). Link will be ignored")
-            }
-        }
-        return links
+        tableLinks(parseLinks(for: scheme, in: content, hasEntry: false, hasCommand: true))
     }
-    
+
     static func parseUrlsEntry(for scheme: String, in content: String) -> [ReferenceEntryLink] {
-        var links: [ReferenceEntryLink] = []
-        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Module>\(modulePattern))\\/(?<Link>\(numberPattern))\\/(?<Table>\(uuidPattern))\\/(?<Entry>\(uuidPattern))\\)"
-        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Module", "Link", "Table", "Entry"])
-        for i in 0 ..< (results.count / 5) {
-            let name = results[i * 5]
-            let module = results[i * 5 + 1]
-            let link = results[i * 5 + 2]
-            let table = results[i * 5 + 3]
-            let entry = results[i * 5 + 4]
-            if let tableUUID = UUID(uuidString: table), let entryUUID = UUID(uuidString: entry) {
-                links.append(ReferenceEntryLink(name: name, module: module, linkNumber: link, table: tableUUID, entry: entryUUID))
-            }
-        }
-        return links
+        entryLinks(parseLinks(for: scheme, in: content, hasEntry: true, hasCommand: false))
     }
-    
+
     static func parseUrlsEntryWithCommand(for scheme: String, in content: String) -> [ReferenceEntryLink] {
-        var links: [ReferenceEntryLink] = []
-        let pattern = "\\[(?<Name>\(namePattern))\\]\\(\(scheme):\\/\\/(?<Module>\(modulePattern))\\/(?<Link>\(numberPattern))\\/(?<Table>\(uuidPattern))\\/(?<Entry>\(uuidPattern))\\/(?<Command>\(commandPattern))\\)"
-        let results = RegularExpressionParser.parse(content, with: pattern, extract: ["Name", "Module", "Link", "Table", "Entry", "Command"])
-        for i in 0 ..< (results.count / 6) {
-            let name = results[i * 6]
-            let module = results[i * 6 + 1]
-            let link = results[i * 6 + 2]
-            let table = results[i * 6 + 3]
-            let entry = results[i * 6 + 4]
-            let command = results[i * 6 + 5]
-            if let tableUUID = UUID(uuidString: table), let entryUUID = UUID(uuidString: entry) {
-                links.append(ReferenceEntryLink(name: name, module: module, linkNumber: link, table: tableUUID, entry: entryUUID, command: command))
-            } else {
-                Logger.linkController.error("ReferenceScanner Parse error UUID nil for table:\(table) or entry:\(entry). Link will be ignored")
-            }
+        entryLinks(parseLinks(for: scheme, in: content, hasEntry: true, hasCommand: true))
+    }
+
+    static func tableLinks(_ matches: [LinkMatch]) -> [ReferenceTableLink] {
+        matches.compactMap { match in
+            guard let table = UUID(uuidString: match.table) else { return nil }
+            return ReferenceTableLink(name: match.name, module: match.module, linkNumber: match.link, table: table, command: match.command)
         }
-        return links
+    }
+
+    static func entryLinks(_ matches: [LinkMatch]) -> [ReferenceEntryLink] {
+        matches.compactMap { match in
+            guard let table = UUID(uuidString: match.table),
+                  let entryText = match.entry,
+                  let entry = UUID(uuidString: entryText) else { return nil }
+            return ReferenceEntryLink(name: match.name, module: match.module, linkNumber: match.link, table: table, entry: entry, command: match.command)
+        }
     }
 }

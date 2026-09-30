@@ -67,8 +67,8 @@ public final class LinkHighlightTextModel {
         let searchUrl = (link.markDown.split(separator: "]").last ?? Substring(link.markDown)).trimmingCharacters(in: CharacterSet(charactersIn: "()"))
         guard let url = URL(string: searchUrl) else { return }
 
-        var repariedText = text
-        _ = LinkReplaceController.linksRepair(for: &repariedText, linkControllable: linkControllable)
+        var repairedText = text
+        _ = LinkReplaceController.linksRepair(for: &repairedText, linkControllable: linkControllable)
 
         let occurrenceToggler: ((UUID, NetworkModules) async -> Void)?
         if let toggler {
@@ -78,7 +78,7 @@ public final class LinkHighlightTextModel {
         } else {
             occurrenceToggler = nil
         }
-        let updatedText = linkControllable.handleTextLink(url: url, in: repariedText, shareResult: shareResult, toggler: occurrenceToggler, editAction: editAction)
+        let updatedText = linkControllable.handleTextLink(url: url, in: repairedText, shareResult: shareResult, toggler: occurrenceToggler, editAction: editAction)
 
         linkToggled.toggle()
         
@@ -102,7 +102,7 @@ extension LinkHighlightTextModel {
 
         let parsedDisplayText: [HighlightedTextComponent]
         if links.isEmpty && !containsStructuredFormatting(repairedText) {
-            parsedDisplayText = hightlight(
+            parsedDisplayText = highlight(
                 text: repairedText,
                 range: repairedText.startIndex..<repairedText.endIndex,
                 isBold: false,
@@ -156,7 +156,7 @@ extension LinkHighlightTextModel {
             if text[index] == Character(LinkExpandHighLightValues.begin.rawValue) {
                 if lastIndex != index && index > lastIndex {
                     let previousRange = lastIndex..<index
-                    result.append(contentsOf: hightlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
+                    result.append(contentsOf: highlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
                 }
                 var nextIndex = text.index(after: index)
                 if boldRange != nil {
@@ -208,7 +208,7 @@ extension LinkHighlightTextModel {
                     if var range = boldRange {
                         // bold end
                         range = range.lowerBound..<index
-                        result.append(contentsOf: hightlight(text: text, range: range, isBold: true, deep: deep))
+                        result.append(contentsOf: highlight(text: text, range: range, isBold: true, deep: deep))
                         boldRange = nil
                         lastIndex = text.index(after: nextIndex)
                     } else {
@@ -219,7 +219,7 @@ extension LinkHighlightTextModel {
                         }
                         if lastIndex != index && index > lastIndex {
                             let range = lastIndex..<index
-                            result.append(contentsOf: hightlight(text: text, range: range, isBold: false, deep: deep))
+                            result.append(contentsOf: highlight(text: text, range: range, isBold: false, deep: deep))
                         }
                         lastIndex = rangeStart
                     }
@@ -230,13 +230,13 @@ extension LinkHighlightTextModel {
             if let link = linksByStart[index] {
                 if lastIndex != index && index > lastIndex {
                     let previousRange = lastIndex..<index
-                    result.append(contentsOf: hightlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
+                    result.append(contentsOf: highlight(text: text, range: previousRange, isBold: boldRange != nil, deep: deep))
                 }
                 result.append(HighlightedTextComponent(text: Text(Image(systemName: link.icon))
                     .customAttribute(LinkIconAttribute(linkModel: link))
                     .bold(boldRange != nil), string: link.icon, range: link.range))
                 
-                result.append(contentsOf: hightlight(text: "\(link.name)", range: link.name.startIndex..<link.name.endIndex, isBold: boldRange != nil, deep: deep, custom: [LinkHighlightAttribute(linkModel: link)]))
+                result.append(contentsOf: highlight(text: "\(link.name)", range: link.name.startIndex..<link.name.endIndex, isBold: boldRange != nil, deep: deep, custom: [LinkHighlightAttribute(linkModel: link)]))
                 result.append(HighlightedTextComponent(text: Text(verbatim: "  ")
                     .customAttribute(LinkIconExpandedAttribute(isStart: false)), string: LinkExpandHighLightValues.space.rawValue, range: link.name.startIndex..<link.name.endIndex))
 
@@ -251,12 +251,12 @@ extension LinkHighlightTextModel {
         }
         if lastIndex < range.upperBound {
             let previousRange = lastIndex..<range.upperBound
-            result.append(contentsOf: hightlight(text: text, range: previousRange, isBold: false, deep: deep))
+            result.append(contentsOf: highlight(text: text, range: previousRange, isBold: false, deep: deep))
         }
         return result
     }
     
-    private func hightlight(text: String, range: Range<String.Index>, isBold: Bool, deep: Int, custom: [any TextAttribute] = []) -> [HighlightedTextComponent] {
+    private func highlight(text: String, range: Range<String.Index>, isBold: Bool, deep: Int, custom: [any TextAttribute] = []) -> [HighlightedTextComponent] {
         if let searchText = highlightedText {
             let restText = String(text[range])
             let searchRanges = restText.ranges(of: searchText, options: .caseInsensitive)

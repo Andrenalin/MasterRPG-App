@@ -856,7 +856,7 @@ extension InputStream {
     /// subsequent `read` call ever gets a chance to fail with `.notEnoughData`. See
     /// CODE_AUDIT_Import §6.1. 512 MB comfortably covers the largest legitimate single
     /// blob this format carries (an embedded PDF or 3D object file) with headroom.
-    static let maxSingleBlockSize = 512 * 1_024 * 1_024
+    static let maxSingleBlockSize = 512 * ByteUnit.mebibyte
 
     func readData(size: Int) throws -> Data {
         guard size >= 0, size <= Self.maxSingleBlockSize else {
@@ -880,5 +880,5 @@ extension InputStream {
         return data
     }
 
-    private static let readChunkSize = 1_024 * 1_024
+    private static let readChunkSize = ByteUnit.mebibyte
 }

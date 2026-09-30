@@ -26,16 +26,3 @@ struct BorderLessTVButtonStyleViewModifier: ViewModifier {
     }
 }
 
-public extension View {
-}
-
-struct SwitchTVToggleStyleViewModifier: ViewModifier {
-    func body(content: Content) -> some View {
-#if os(tvOS)
-        content
-#else
-        content
-            .toggleStyle(.switch)
-#endif
-    }
-}

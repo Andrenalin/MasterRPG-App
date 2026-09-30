@@ -646,7 +646,7 @@ If any finding doesn't reproduce when you visit the line, send me the specific r
 
 ---
 
-## 13. Remediation status (§3.1–§3.17, §4.1–§4.2, §5.1–§5.18, §6.1–§6.2, §7.1–§7.3, §8.1–§8.4)
+## 13. Remediation status (§3.1–§3.17, §4.1–§4.2, §5.1–§5.18, §6.1–§6.2, §7.1–§7.3, §8.1–§8.4, §9.1–§9.27)
 
 Fixed 2026-09-29 on `develop` (uncommitted at the time of writing). Every fix is tagged `See CODE_AUDIT_19 §3.x` in the code.
 
@@ -696,3 +696,30 @@ Fixed 2026-09-29 on `develop` (uncommitted at the time of writing). Every fix is
 | 8.1 | Fixed | The player report row is shown only when `isShareable`, and sits on a material capsule so it stays legible over the content. |
 | 8.3 | By design | The `Text` is already localized: its components are resolved `Text` values and the key is only the synthetic `%@%@…` concatenation format, so it takes no `bundle: .module`. Marked with a comment in `LinkHighlightTextView.plainText`. `Text(verbatim:)` isn't possible (it takes only a `String`, which would drop the link icons, bold text and the custom attributes the highlight renderer reads), and `Text + Text` is deprecated in iOS 26. |
 | 8.4 | Fixed | The unreachable direct-activation branch (and its error alert) is removed: `SharePlayButton` only opens the invite sheet, matching `GameSharePlayButton`, which shows it only while this device can't start a session directly. No behaviour change. |
+| 9.1 | Fixed | The empty extensions, `GlasseffectAll.swift`, `ItemListActions.swift`, `SwitchTVToggleStyleViewModifier`, `TextContentTypeAll` and its modifier, and `LinkReplaceController.linkDetailModels(for:)` are deleted. |
+| 9.2 | Fixed | `batchReplace`, `batchExists` and `fetch(uuid:)` are deleted; the doc comments no longer mention them. |
+| 9.3 | Fixed | `WeatherEntityPdfRenderingError` is deleted. |
+| 9.4 | Fixed | `EntitySummaryExport.plainText` uses the localized `"Name: %@\nDescription: %@"` key in CoreRPG's catalog; the German and Thai translations moved over from TableRPG, whose stale key is gone. |
+| 9.5 | Fixed | 160 stale keys that no Swift source produces (neither as a literal nor as an interpolation pattern) are pruned from 10 catalogs, plus the stale "Extract Information" copies in Adventure, Map, Pdf and Table and the microphone/speech usage strings. Generic stale keys that shared CoreRPG views may look up at runtime with a module's bundle ("OK", "Share", "Entries replaced", …) are kept. |
+| 9.6 | Fixed | `BundleIds.legacyProduct` (`de.AndreTrettin.GameMaster`) builds the document UTTypes and the user-activity type; `BundleIdsTests` pins all three; the doc names five spellings. |
+| 9.7 | Fixed | The remaining `N * 1_024 * 1_024` and `N * 1_024` limits use `ByteUnit`. |
+| 9.8 | Fixed | `RootRoute.visionSceneStorageKey` (documented as intentionally separate, value unchanged), `ExtendedTabRoute.sceneStorageKey`, and `GameStorageKeys.lastGameMasterUUID`/`lastPlayerUUID` replace the literals. |
+| 9.9 | Fixed | The listed misspellings are renamed; the generator property is now `GenerationSettings.samplingStrategy` (§9.16); the iOS/macOS table types are `PortableGameSetup`/`PortableGameRenderer`, reached from shared code through the `TableGameSetup`/`TableGameRenderer` typealiases. |
+| 9.10 | Fixed | `isPublicRemoteFileUrl`, `isSupportedRemoteFileUrl`, `temporaryUrl`, `requestedUrl`. |
+| 9.11 | Fixed | The unused 3D-table actions (`setAllRoomsShown`, `togglePointerVisibility`, `movePointerToMapCenter`, `addMonstersAtMapCenter`, `syncAfterExternalEdit`) and `GameController.addMonstersAtMapCenter` are deleted. The toolbar's point action uses the new `GameController.showPointerAtMapCenter(itemId:)`, which `GameTableControlTests` now tests. |
+| 9.12 | Fixed | The list builder calls the per-status helper; `PlayerReportStatus` drops `Identifiable`; the single-child `VStack` and the whitespace-only lines are gone. |
+| 9.13 | Fixed | `MapEditorSession.canvasSize(map:image:degrees:)` replaces both resolves; the diagnostic logs and `Logger.mapCanvas` are removed. |
+| 9.14 | Fixed | `GameTableModel.configureSession(from:)` wires both tables (and restores the GM's preview lens). |
+| 9.15 | Fixed | Event suppression, `toggleImmersiveSpace`, `SceneId.immersiveSpace` and `openWindowForModule` (`ModuleRouting.swift`) are deleted; the tracker modifier calls its callbacks directly. |
+| 9.16 | Fixed | `GenerationSettings`, `ConversationState` and the `ConversationSessionModel` protocol extension (`syncConversationState`, `fetchContextSize`, engine wiring) are shared by both session models. |
+| 9.17 | Fixed | `JSONCoding.sortedKeysEncoder`, `iso8601SortedKeysEncoder` and `iso8601Decoder`; every `FoundryJSONValue` decode gets its depth guard from `FoundryJSONDecoding.makeDecoder(isSourceJSON:)`, and `UniversalVTTReader` calls `decodeSource`. |
+| 9.18 | Fixed | One `parseLinks(for:in:hasEntry:hasCommand:)`; a table segment that is not a UUID is logged the same way for every shape (a command link's non-UUID "entry" is expected and not logged). Tests: `ReferenceScannerTests`. |
+| 9.19 | Fixed | `TabSecondGameView(root:isPlayer:)` and one `GameElapsedTimerText` replace the pairs; the side-panel chrome is the shared `gameSidePanel` modifier; the screens share `gameScreenOrnaments` (visionOS) and `GameScreenModel.restoreMainTab` (macOS). The screens' remaining differences (menus, export, observer handling) stay in each screen. |
+| 9.20 | Fixed | `CoreDataInitModel.recoverStore(setupContext:)` and `installBackgroundContext(from:)` serve both controllers. |
+| 9.21 | Fixed | The `shouldShow…` copies are deleted (a `#Rule` can't call shared code); `MasterRPGTipKitIntegrationTests.applySetsEveryRuleInput` tests the rule inputs, next to the existing real-rule test, with TipKit configured once per process. |
+| 9.22 | Fixed | The listed single-occurrence members are deleted (`ItemRowTreeModel` drops `isFirst`/`isLast` and their coding keys; old stored data still decodes). |
+| 9.23 | Fixed | Split along existing boundaries: `FileUrlDataController` (+Create, +Manage, `PeerFileDataStore`), `SingleImportModels`, `SheetEntryRowViews`, DiceRPG `GameController` (+PlayerDice, +DiceResult), `ExternalImportSourceTypes` and +Matching, `GameController+BattleSync`, `ItemControllable` (+Sync, +Viewer), `ViewportConfiguration`/`ViewportModel`, `PlayerController+MessageProcessing`. SpaceViewer's table placement moved into `SpaceTablePlacement` (tests: `SpaceTablePlacementTests`); splitting SpaceViewer itself stays deferred. |
+| 9.24 | Fixed | Both usage descriptions are removed from MasterMac and MasterTV (by build-configuration id), and world sensing, which nothing uses, from every catalog. Hand tracking stays on MasterRPG (visionOS table scaling). |
+| 9.25 | Fixed | `RoomActionCoordinator.swift` holds the coordinator and `replaceTask`; the timeout is `StaleGestureTracker.defaultTimeout`; the view types moved to `Views/OpenFileWindowView.swift`, `CloudKitSyncStatusView` to `Views/`; one `EditorFocus.autoFocusDelay`. |
+| 9.26 | Fixed | A `waitUntil` helper (CoreRPG `Fake`, DEBUG) replaces the fixed sleeps that waited for a condition (LinkController, SpaceRPG/PhotoRPG/CharacterRPG/AudioRPG, listener restarts); one deliberate "stays unchanged" settle is kept and commented, as are sleeps that simulate work or order timestamps. `asymmetricTileKeepsPhaseAndOrientation` covers tile phase and orientation; §5.1 and §5.8 got regression tests with §5. |
+| 9.27 | Fixed | The comment now says the share button follows `inlineSheet.isShareable`, which MapRPG sets to false. |

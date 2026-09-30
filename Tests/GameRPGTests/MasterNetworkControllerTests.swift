@@ -26,7 +26,7 @@ struct MasterNetworkControllerTestEnvironment {
         let controller = MasterNetworkController(
             name: name,
             delegate: delegateSpy,
-            listnerBuilder: { _, _, _, _, _, _ in listenerSpy as any ListenerManaging },
+            listenerBuilder: { _, _, _, _, _, _ in listenerSpy as any ListenerManaging },
             browserConnectionBuilder: browserConnectionBuilder,
             hostingSessions: HostingSessionStore(storage: InMemoryJoinCodeStorage())
         )
@@ -408,8 +408,7 @@ struct MasterNetworkControllerTests {
 
         // The listener comes back after the first restart pause; it reads as restarting
         // until the new listener reports `.ready` (CODE_AUDIT_17 §5.22, CODE_AUDIT_18 §5.15).
-        try await Task.sleep(for: .seconds(1.5))
-        #expect(env.listenerSpy.calledStartListening == 2)
+        #expect(await waitUntil(timeout: .seconds(5)) { env.listenerSpy.calledStartListening == 2 })
         #expect(env.controller.networkModel.listenerStatus == .restarting)
         await env.controller.listenerReady()
         #expect(env.controller.networkModel.listenerStatus == .running)

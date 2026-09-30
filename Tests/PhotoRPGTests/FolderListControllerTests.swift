@@ -927,8 +927,10 @@ struct FolderListControllerTests {
 
         // User reopens it → should work
         root.folderListController.openFolder(itemId: folderId)
-        // openFolder spawns a Task — yield to let it run
-        try? await Task.sleep(for: .milliseconds(50))
+        // openFolder spawns a Task — wait for it to run
+        _ = await waitUntil {
+            root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })?.isOpen == true
+        }
 
         let afterReopen = root.folderListController.listModel.list.first(where: { $0.source.itemId == folderId })
         #expect(afterReopen?.isOpen == true, "Folder must be open after user reopens via chevron")

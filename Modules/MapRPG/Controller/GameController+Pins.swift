@@ -303,23 +303,15 @@ extension GameController {
         return networkPin(itemId: itemId, position: item.pointer)
     }
 
-    /// Adds the selected characters to the center of the live game map. This
-    /// lets a standalone tabletop add pawns without depending on MapEditor UI.
+    /// Moves the pointer to the map's centre and shows it: the game toolbar's "point" action on
+    /// the 2D map and the 3D table. Returns whether anything changed. See CODE_AUDIT_19 §9.11.
     @MainActor
-    func addMonstersAtMapCenter(itemId: UUID, monsters: [ItemRowModel]) -> Bool {
-        guard !monsters.isEmpty,
-              gameModel.itemData[itemId] is MapModel else { return false }
+    func showPointerAtMapCenter(itemId: UUID) -> Bool {
         let item = gameItem(for: itemId)
-        let initialCount = item.mapPins.count
         let center = CGPoint(x: item.width / 2, y: item.height / 2)
-        root.editController.addMonsters(
-            map: item,
-            entryId: nil,
-            location: center,
-            monsters: monsters,
-            number: 1
-        )
-        return item.mapPins.count > initialCount
+        let moved = movePointer(itemId: itemId, location: center)
+        let revealed = item.pointer.isShown ? false : togglePointer(itemId: itemId)
+        return moved || revealed
     }
 
     /// Toggles a pin's visibility as the game master — the 3D-table

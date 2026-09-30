@@ -836,12 +836,8 @@ struct EditControllerTests {
         // Duplicate the item
         await sut.duplicate(item: originalItem)
 
-        // Wait a bit for async operation
-        try? await Task.sleep(for: .milliseconds(100))
-
         // Verify a new item was created
-        let newCount = root.itemController.itemDataModel.items.count
-        #expect(newCount == initialCount + 1)
+        #expect(await waitUntil { root.itemController.itemDataModel.items.count == initialCount + 1 })
     }
 
     @Test func markForDeletion() async throws {

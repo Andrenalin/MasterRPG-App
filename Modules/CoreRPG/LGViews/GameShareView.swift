@@ -9,7 +9,7 @@ public struct GameShareView<Content: View>: View {
         self.isShareable = isShareable
         self.content = content()
     }
-    
+
     let root: any ItemRootControllable
     let itemId: UUID
     /// False suppresses the share affordance regardless of `canShare`'s own game-state
@@ -17,13 +17,13 @@ public struct GameShareView<Content: View>: View {
     /// the Map itself. See CODE_AUDIT: Photo-in-Map share toggle.
     let isShareable: Bool
     let content: Content
-    
+
     @Environment(AppGameStateModel.self) private var appGameStateModel
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     @Environment(\.sharingControlActions) private var sharingControlActions
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    
+
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
         // button's allReported state and the row below it.
@@ -38,7 +38,7 @@ public struct GameShareView<Content: View>: View {
                 }
             }
     }
-    
+
     @ViewBuilder
     private func actionBarWithSharing(statuses: [PlayerReportStatus]) -> some View {
         switch root.viewControllable.sharingViewType {
@@ -51,7 +51,7 @@ public struct GameShareView<Content: View>: View {
             root.viewControllable.sharingView(for: itemId)
         }
     }
-    
+
     var canShare: Bool {
         guard isShareable else { return false }
         if appGameStateModel.gameModus == .player {
@@ -70,7 +70,7 @@ public struct GameShareView<Content: View>: View {
             return appGameStateModel.isGameRunning
         }
     }
-    
+
     func shareAction() {
         Task {
             if appGameStateModel.gameModus == .master {
@@ -97,7 +97,7 @@ private extension GameShareView {
             .visibleSortedByName
             .map { PlayerReportStatus(id: $0.id, name: $0.name, reported: reported.contains($0.id)) }
     }
-    
+
     func playerReportRow(for statuses: [PlayerReportStatus]) -> some View {
         HStack(spacing: 4) {
             Text(playerReportAttributedString(for: statuses))
@@ -131,29 +131,17 @@ private extension GameShareView {
         }
         return name
     }
-    
+
     func playerReportAttributedString(for statuses: [PlayerReportStatus]) -> AttributedString {
         statuses.enumerated().reduce(into: AttributedString()) { line, entry in
             let (index, status) = entry
             if index > 0 {
                 line += AttributedString(", ")
             }
-            
-            var playerName = status.name
-            if let firstName = status.name.split(separator: " ").first {
-                playerName = String(firstName)
-            }
-
-            var name = AttributedString(playerName)
-            if status.reported {
-                name.font = .caption.bold()
-            } else {
-                name.foregroundColor = .secondary
-            }
-            line += name
+            line += playerReportAttributedString(status: status)
         }
     }
-    
+
     func playerReportAccessibilityLabel(for statuses: [PlayerReportStatus]) -> Text {
         let reportedNames = statuses.filter(\.reported).map(\.name).joined(separator: ", ")
         let missingNames = statuses.filter { !$0.reported }.map(\.name).joined(separator: ", ")
@@ -167,7 +155,7 @@ private extension GameShareView {
     }
 }
 
-private struct PlayerReportStatus: Identifiable {
+private struct PlayerReportStatus {
     let id: UUID
     let name: String
     let reported: Bool
@@ -189,11 +177,11 @@ private struct PlayerReportStatus: Identifiable {
         let fixture = FakeItemRootControllerFixture(sharingViewType: .share)
         let root = fixture.root
         root.gameControllable.report(itemId: itemId, for: confirmedPlayer)
-        
+
         let gameState = AppGameStateModel()
         gameState.gameModus = .master
         gameState.isGameRunning = true
-        
+
         return (
             itemId: itemId,
             confirmedPlayer: confirmedPlayer,
@@ -202,7 +190,7 @@ private struct PlayerReportStatus: Identifiable {
             gameState: gameState
         )
     }()
-    
+
     GameShareView(root: fixture.root, itemId: fixture.itemId) {
         ZStack {
             Color.yellow.opacity(0.2)

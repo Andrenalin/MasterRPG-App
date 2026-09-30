@@ -71,42 +71,14 @@ struct PlayerGameScreen: View {
             diceDisplayModel: diceShowOptionModel
         )
 #if os(visionOS)
-        .gameImmersiveSpaceSync(root: root)
-        .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .bottomLeading) {
-            GameOrnamentCloseButton()
-                .environment(gameScreenModel)
-        }
-        .ornament(attachmentAnchor: .scene(.topLeading), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.dicePlayerView(root: root.diceRoot)
-                .environment(diceShowOptionModel)
-        }
-        .ornament(attachmentAnchor: .scene(.topTrailing), contentAlignment: .bottomTrailing) {
-            OverlayGameMenu(root: root, playerController: playerController, isMaster: false)
-                .environment(diceShowOptionModel)
-                .environment(gameScreenModel)
-                .padding(.bottom, 12)
-        }
-        .ornament(attachmentAnchor: .scene(.trailing), contentAlignment: .leading) {
-            VStack {
-                PlayerSideMenu(root: root)
-                    .environment(gameScreenModel)
-            }
-            .padding(12)
-        }
-        .ornament(attachmentAnchor: .scene(.bottomLeading), contentAlignment: .topLeading) {
-            root.diceRoot.viewController.diceActionBarView(root: root.diceRoot)
-                .padding(.top, 12)
-                .environment(diceShowOptionModel)
-        }
-        .ornament(attachmentAnchor: .scene(.bottom), contentAlignment: .top) {
-            root.diceRoot.viewController.diceRollView(root: root.diceRoot)
-                .padding(.top, 56)
-                .environment(diceShowOptionModel)
-        }
-        .ornament(attachmentAnchor: .scene(.bottomTrailing), contentAlignment: .topTrailing) {
-            root.diceRoot.viewController.diceResultView(root: root.diceRoot)
-                .padding(.top, 12)
-                .environment(diceShowOptionModel)
+        .gameScreenOrnaments(
+            root: root,
+            gameScreenModel: gameScreenModel,
+            diceShowOptionModel: diceShowOptionModel,
+            playerController: playerController,
+            isMaster: false
+        ) {
+            PlayerSideMenu(root: root)
         }
 #endif
     }
@@ -129,21 +101,12 @@ private extension PlayerGameScreen {
             scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
         }
 #elseif os(macOS)
-        let savedMode = GameMainTabDisplayMode(rawValue: appSettingsModel.playerMainTabDisplayMode) ?? .hidden
-        gameScreenModel.gameMainTabDisplayMode = savedMode
-
-        switch savedMode {
-        case .hidden:
-            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .none }
-
-        case .inline:
-            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .value }
-
-        case .window:
-            withAnimation(accessibilityReduceMotion ? nil : .default) { gameScreenModel.showMainTab = .none }
-            if let characterId = root.gameModel.selectedCharacter {
-                scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
-            }
+        if gameScreenModel.restoreMainTab(
+            savedMode: appSettingsModel.playerMainTabDisplayMode,
+            tab: .value,
+            animation: accessibilityReduceMotion ? nil : .default
+        ), let characterId = root.gameModel.selectedCharacter {
+            scenesManager.openWindow(SceneId.viewerId(for: .value), selection: WindowItemSelection(itemId: characterId))
         }
 #else
         let isShown = appSettingsModel.autoShowPlayerMainTab

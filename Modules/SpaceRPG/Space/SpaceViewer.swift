@@ -83,12 +83,8 @@ struct SpaceViewer: View {
     /// (dense while manipulating, sparse otherwise) instead of streaming at
     /// one fixed rate regardless of whether anything is moving.
     @State private var isManipulating = false
-    /// The game-table top (`SpaceRootModel.tablePlacementReference`) the
-    /// object was last floated above — see `placeAboveTableIfNeeded`.
-    @State private var tablePlacementReferenceId: Entity.ID?
-    /// Set once anyone moves the object after it was floated above the
-    /// table, so a later space realignment doesn't throw that pose away.
-    @State private var isMovedSinceTablePlacement = false
+    /// Where the object floats above the game table — see `placeAboveTableIfNeeded`.
+    @State private var tablePlacement = SpaceTablePlacement()
 #endif
 
     var body: some View {
@@ -241,15 +237,13 @@ private extension SpaceViewer {
         objectEntity.position += SIMD3(-center.x, 1.0 - center.y, -center.z)
     }
 
-    /// Height (meters) of the object's visual center above the game-table top.
-    private static let heightAboveTable: Float = 1.0
     /// Both the table volume and the just re-anchored immersive content need a
     /// rendered frame before `transformMatrix(relativeTo: .immersiveSpace)`
     /// reports their settled poses — retried once per scene update (about a
     /// second at 90 Hz) instead of assumed. See CODE_AUDIT_19 §3.16.
     private static let tablePlacementAttempts = 90
 
-    /// Floats the object `heightAboveTable` above the volumetric game table.
+    /// Floats the object `SpaceTablePlacement.heightAboveTable` above the volumetric game table.
     ///
     /// In a SharePlay surround template the system puts the shared immersive
     /// origin on the floor *under* the table volume, so the fixed "origin + 1 m"
@@ -266,7 +260,7 @@ private extension SpaceViewer {
     func placeAboveTableIfNeeded() async {
         guard isImmersiveSpace, hasLoaded, isSharedPlacement,
               let table = root.tablePlacementReference else { return }
-        if tablePlacementReferenceId == table.id, isMovedSinceTablePlacement { return }
+        guard tablePlacement.shouldPlace(onTable: table.id) else { return }
         for _ in 0..<Self.tablePlacementAttempts {
             guard let rootEntity, await SceneUpdateWaiter.nextUpdate(of: rootEntity) else { return }
             if placeAboveTable(table) { return }
@@ -281,12 +275,12 @@ private extension SpaceViewer {
               let objectEntity,
               let tableTop = table.transformMatrix(relativeTo: .immersiveSpace),
               let anchorPose = anchor.transformMatrix(relativeTo: .immersiveSpace) else { return false }
-        let target = tableTop.columns.3 + SIMD4<Float>(0, Self.heightAboveTable, 0, 0)
-        let targetInAnchor = anchorPose.inverse * target
-        let center = objectEntity.visualBounds(relativeTo: anchor).center
-        objectEntity.position += SIMD3(targetInAnchor.x, targetInAnchor.y, targetInAnchor.z) - center
-        tablePlacementReferenceId = table.id
-        isMovedSinceTablePlacement = false
+        objectEntity.position += SpaceTablePlacement.objectOffset(
+            tableTop: tableTop,
+            anchorPose: anchorPose,
+            objectCenter: objectEntity.visualBounds(relativeTo: anchor).center
+        )
+        tablePlacement.didPlace(onTable: table.id)
         return true
     }
 
@@ -296,8 +290,7 @@ private extension SpaceViewer {
     func adoptRetainedPoseForTablePlacement() {
         let version = root.gameController.gameItem(for: id).version
         guard root.gameController.spaceGameModel.transform(for: id, version: version) != nil else { return }
-        tablePlacementReferenceId = root.tablePlacementReference?.id
-        isMovedSinceTablePlacement = true
+        tablePlacement.adoptRetainedPose(onTable: root.tablePlacementReference?.id)
     }
 
     @MainActor
@@ -358,7 +351,7 @@ private extension SpaceViewer {
             duration: Self.remoteTransformEaseDuration,
             timingFunction: .linear
         )
-        isMovedSinceTablePlacement = true
+        tablePlacement.markMoved()
         lastAcknowledgedTransform = transform
         unacknowledgedTransformTicks = 0
     }
@@ -662,7 +655,7 @@ private extension SpaceViewer {
                 ) { [weak loadedEntity] event in
                     guard event.entity == loadedEntity else { return }
                     self.isManipulating = true
-                    self.isMovedSinceTablePlacement = true
+                    self.tablePlacement.markMoved()
                 }
                 manipulationEndedSubscription = content.subscribe(
                     to: ManipulationEvents.WillEnd.self

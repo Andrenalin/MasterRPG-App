@@ -14,11 +14,11 @@ struct OverlayPlayerTabBar: View {
 #elseif os(tvOS)
             if root.gameModel.gameType != .observer {
                 TabPlayerGameView(root: root)
-                TabPlayerSecondGameView(root: root)
+                TabSecondGameView(root: root, isPlayer: true)
             }
 #else
             TabPlayerGameView(root: root)
-            TabPlayerSecondGameView(root: root)
+            TabSecondGameView(root: root, isPlayer: true)
 #endif
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)

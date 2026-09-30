@@ -3,7 +3,6 @@
 import CoreGraphics
 import CoreRPG
 import SwiftUI
-import os.log
 
 // Split out of MapEditorModel.swift — see CODE_AUDIT §9.13.
 
@@ -27,22 +26,22 @@ extension MapEditorSession {
         updateEffectiveContainerSize()
     }
 
+    /// The editor canvas for `map` drawn over `image`, used on creation and on every update.
+    /// See CODE_AUDIT_19 §9.13.
+    static func canvasSize(map: MapModel, image: AKImage, degrees: Double) -> CGSize {
+        MapCanvasGeometryResolver.resolve(
+            map: map,
+            mapSize: CGSize(width: map.width, height: map.height),
+            imageSize: image.fixedSize,
+            degrees: degrees
+        )
+    }
+
     func updateCanvas(map: MapModel, image: AKImage, photoDegrees: Double) {
         if mapId != map.id {
             changeImage(map: map)
         }
-        let newCanvasSize = MapCanvasGeometryResolver.resolve(
-            map: map,
-            mapSize: CGSize(width: map.width, height: map.height),
-            imageSize: image.fixedSize,
-            degrees: photoDegrees
-        )
-        Logger.mapCanvas.debug("""
-            updateCanvas: map \(map.width, privacy: .public)x\(map.height, privacy: .public), \
-            image.size \(image.size.width, privacy: .public)x\(image.size.height, privacy: .public), \
-            image.fixedSize \(image.fixedSize.width, privacy: .public)x\(image.fixedSize.height, privacy: .public), \
-            resolved canvas \(newCanvasSize.width, privacy: .public)x\(newCanvasSize.height, privacy: .public)
-            """)
+        let newCanvasSize = Self.canvasSize(map: map, image: image, degrees: photoDegrees)
         let geometryChanged = self.photoDegrees != photoDegrees
             || canvasSize != newCanvasSize
             || ObjectIdentifier(self.image) != ObjectIdentifier(image)

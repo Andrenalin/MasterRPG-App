@@ -489,16 +489,13 @@ struct LinkControllerTests {
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 3)
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 35)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2 })
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 15)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1 })
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 25)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2 })
     }
 
     /// Regression: B's formula links to *two* entries. The previous per-link
@@ -530,12 +527,10 @@ struct LinkControllerTests {
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1)
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 10)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2 })
 
         edit.updateValue(itemId: itemId, entryId: cEntry.id, number: 35)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 3)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 3 })
     }
 
     /// The dice entry (C) links to B, which links to A. Editing A must reach C's dice —
@@ -563,8 +558,7 @@ struct LinkControllerTests {
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1)
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 30)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2 })
     }
 
     /// A full-package resync (`GameController.updatePlayer(data:)`, sent on reconnect or
@@ -590,17 +584,17 @@ struct LinkControllerTests {
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 3)
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 35)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2 })
 
         let resyncData = try await root.gameController.createGameData(for: itemId)
         try await root.gameController.updatePlayer(data: resyncData)
+        // A fixed settle, not a condition wait: this checks that the resync does *not* change the
+        // count, which a wait for the current value would pass without waiting.
         try await Task.sleep(for: .milliseconds(100))
         #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 2)
 
         edit.updateValue(itemId: itemId, entryId: aEntry.id, number: 15)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1)
+        #expect(await waitUntil { Self.gameDiceCount(root: root, gameDiceId: gameDiceId) == 1 })
     }
 
     @MainActor

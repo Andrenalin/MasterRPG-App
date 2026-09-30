@@ -179,30 +179,6 @@
         }
       }
     },
-    "NSHandsTrackingUsageDescription" : {
-      "comment" : "Privacy - Hands Tracking Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG verwendet Handerkennung, damit du den 3D-Spieltisch durch Zusammenkneifen beider Hände in der Größe verändern kannst."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG uses hand tracking to roll dice during the game."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "MasterRPG ใช้การติดตามมือเพื่อทอยลูกเต๋าระหว่างเกม"
-          }
-        }
-      }
-    },
     "NSHumanReadableCopyright" : {
       "comment" : "Copyright (human-readable)",
       "extractionState" : "stale",
@@ -271,30 +247,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "MasterRPG ใช้คลังภาพเพื่อนำเข้าภาพถ่ายสำหรับโมดูลภาพถ่ายและโมดูลอื่น ๆ เพื่อแสดงภาพถ่ายและแผนที่"
-          }
-        }
-      }
-    },
-    "NSWorldSensingUsageDescription" : {
-      "comment" : "Privacy - World Sensing Usage Description",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MasterRPG verwendet Welterkennungsdaten, um Tische für das Würfeln während des Spiels zu erkennen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "MasterRPG uses the world sensing data to detect tables for the dice rolling during the game."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "MasterRPG ใช้ข้อมูลการรับรู้โลกเพื่อตรวจจับโต๊ะสำหรับการทอยลูกเต๋าระหว่างเกม"
           }
         }
       }

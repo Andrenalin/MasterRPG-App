@@ -110,7 +110,7 @@ public protocol MapGameStorable: Sendable {
     @MainActor func movePointer(itemId: UUID, location: CGPoint) -> Bool
     @MainActor func togglePointer(itemId: UUID) -> Bool
     @MainActor func networkPointer(itemId: UUID) -> NetworkCodableDataType?
-    @MainActor func addMonstersAtMapCenter(itemId: UUID, monsters: [ItemRowModel]) -> Bool
+    @MainActor func showPointerAtMapCenter(itemId: UUID) -> Bool
     @MainActor func togglePin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func zoomPin(itemId: UUID, pinId: UUID) -> Bool
     @MainActor func toggleDeadPin(itemId: UUID, pinId: UUID) -> Bool

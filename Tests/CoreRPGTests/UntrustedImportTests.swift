@@ -126,7 +126,7 @@ struct UntrustedImportTests {
     ])
     func publicRemoteHosts(urlString: String, isPublic: Bool) throws {
         let url = try #require(URL(string: urlString))
-        #expect(url.isPublicRemoteFileURL == isPublic)
+        #expect(url.isPublicRemoteFileUrl == isPublic)
     }
 
     @Test("A peer's private-host url is relocated, the user's own import may keep it")

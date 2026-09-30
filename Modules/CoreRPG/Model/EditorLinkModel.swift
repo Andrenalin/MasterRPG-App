@@ -138,18 +138,18 @@ public final class EditorLinkModel {
         }
     }
     
-    func addLinkAndReset(editController: any EntryDataEditable, destiantionItemId: UUID, destinationEntryId: UUID?) {
+    func addLinkAndReset(editController: any EntryDataEditable, destinationItemId: UUID, destinationEntryId: UUID?) {
         guard let destinationEntryId else { return }
 
         for module in firstRow {
-            addLinkAndReset(editController: editController, destiantionItemId: destiantionItemId, destinationEntryId: destinationEntryId, module: module)
+            addLinkAndReset(editController: editController, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, module: module)
         }
         for module in secondRow {
-            addLinkAndReset(editController: editController, destiantionItemId: destiantionItemId, destinationEntryId: destinationEntryId, module: module)
+            addLinkAndReset(editController: editController, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId, module: module)
         }
     }
     
-    private func addLinkAndReset(editController: any EntryDataEditable, destiantionItemId: UUID, destinationEntryId: UUID, module: NetworkModules) {
+    private func addLinkAndReset(editController: any EntryDataEditable, destinationItemId: UUID, destinationEntryId: UUID, module: NetworkModules) {
         guard let rootController = rootManager?.itemRootController(for: module) else { return }
 
         let selection = selectionModel(for: module)
@@ -157,7 +157,7 @@ public final class EditorLinkModel {
             let item = rootController.itemControllable.itemOrEmpty(for: itemSelection.itemId)
             let entryId = itemSelection.entryId
             let name = if let entryId { item.urlName(entryId: entryId) } else { item.urlName() }
-            editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destiantionItemId, destinationEntryId: destinationEntryId)
+            editController.add(link: name, module: module, itemId: itemSelection.itemId, entryId: itemSelection.entryId, destinationItemId: destinationItemId, destinationEntryId: destinationEntryId)
         }
         selection.resetSelection(itemId: nil, entryId: nil)
     }

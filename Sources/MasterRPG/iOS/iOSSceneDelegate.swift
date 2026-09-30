@@ -10,8 +10,6 @@ import Observation
 
 @MainActor @Observable
 final class IosSceneDelegate: NSObject, UIWindowSceneDelegate {
-    var originalDelegate: (any UIWindowSceneDelegate)?
-
     var window: UIWindow?
     public weak var windowScene: UIWindowScene?
 

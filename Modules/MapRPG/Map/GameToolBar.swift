@@ -213,13 +213,7 @@ private struct GameToolBarBarButtonsView<Session: GameToolBarSession>: View {
             if model.isPointing {
                 guard root.gameController.togglePointer(itemId: mapId) else { return }
             } else {
-                let mapModel = root.gameController.currentItem()
-                let center = CGPoint(x: mapModel.width / 2, y: mapModel.height / 2)
-                let moved = root.gameController.movePointer(itemId: mapId, location: center)
-                let revealed = mapModel.pointer.isShown
-                    ? false
-                    : root.gameController.togglePointer(itemId: mapId)
-                guard moved || revealed else { return }
+                guard root.gameController.showPointerAtMapCenter(itemId: mapId) else { return }
             }
             model.isPointing.toggle()
         }

@@ -382,7 +382,7 @@ struct ConvertControllerRepairTests {
     }
 }
 
-// MARK: - repairCharacterContrains
+// MARK: - repairCharacterConstraints
 
 extension ConvertControllerRepairTests {
 
@@ -402,7 +402,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: item, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – orphaned parentId cleared
         let after = root.itemController.itemOrEmpty(for: itemId)
@@ -419,7 +419,7 @@ extension ConvertControllerRepairTests {
         root.editController.addItem(itemId: itemId, parentId: folderId)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – valid parentId preserved
         let after = root.itemController.itemOrEmpty(for: itemId)
@@ -441,7 +441,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: owner, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – no entry may still reference targetId as valueId
         let after = root.itemController.itemOrEmpty(for: ownerId)
@@ -461,7 +461,7 @@ extension ConvertControllerRepairTests {
         let groupItemId = try #require(groupEntry.valueId)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – GroupItem reference untouched
         let afterOwner = root.itemController.itemOrEmpty(for: ownerId)
@@ -485,7 +485,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: folder, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – entry removed (child.parentId != folderId)
         let afterFolder = root.itemController.itemOrEmpty(for: folderId)
@@ -502,7 +502,7 @@ extension ConvertControllerRepairTests {
         root.editController.addItem(itemId: charId, parentId: folderId)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – entry preserved
         let afterFolder = root.itemController.itemOrEmpty(for: folderId)
@@ -540,7 +540,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: folder, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – entries in alphabetical order: Alpha, Bravo, Charlie
         let afterFolder = root.itemController.itemOrEmpty(for: folderId)
@@ -568,7 +568,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: collection, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – GroupItem entry removed from collection
         let afterCollection = root.itemController.itemOrEmpty(for: collectionId)
@@ -588,7 +588,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: collection, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – valid entry preserved
         let afterCollection = root.itemController.itemOrEmpty(for: collectionId)
@@ -618,7 +618,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: owner2, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – owner1 still references the GroupItem; owner2 does not
         let afterOwner1 = root.itemController.itemOrEmpty(for: owner1Id)
@@ -640,7 +640,7 @@ extension ConvertControllerRepairTests {
         let groupItemId = try #require(groupEntry.valueId)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – single-owner reference untouched
         let afterOwner = root.itemController.itemOrEmpty(for: ownerId)
@@ -664,7 +664,7 @@ extension ConvertControllerRepairTests {
         root.itemController.replace(model: item, isInsert: false)
 
         // When
-        root.editController.repairCharacterContrains()
+        root.editController.repairCharacterConstraints()
 
         // Then – deleted item is untouched (displayState==2 skips all checks)
         let after = root.itemController.itemOrEmpty(for: itemId)

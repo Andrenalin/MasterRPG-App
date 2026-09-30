@@ -3,25 +3,16 @@
 import Foundation
 
 //#if DEBUG
-/// Deterministic test fixtures for dates and UUIDs.
+/// Deterministic test fixtures for UUIDs.
 ///
 /// These fixtures provide repeatable values for tests, ensuring F.I.R.S.T. principles
-/// (especially Repeatable). Using fixed values instead of `Date()` or `UUID()` prevents
+/// (especially Repeatable). Using fixed values instead of `UUID()` prevents
 /// flaky tests and makes debugging easier.
 ///
 /// **Usage:**
 /// ```swift
-/// let model = SomeModel(
-///     id: .fixture1,
-///     createdAt: .fixture2024Jan1
-/// )
+/// let model = SomeModel(id: .fixture1)
 /// ```
-public extension Date {
-    /// January 1, 2024 00:00:00 UTC
-    static let fixture2024Jan1 = Date(timeIntervalSince1970: 1704067200)
-
-}
-
 public extension UUID {
     /// A deterministic id for previews and tests, from a literal UUID string. Shared by the
     /// module preview fixtures, which each had their own private copy. See CODE_AUDIT_18 §9.14.

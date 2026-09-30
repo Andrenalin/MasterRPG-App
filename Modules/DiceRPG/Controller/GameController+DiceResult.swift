@@ -1,0 +1,259 @@
+// @copyright André Trettin
+
+import CoreRPG
+import AVFoundation
+import Foundation
+import Synchronization
+import Observation
+import os.log
+import RPGResources
+
+// Split out of GameController.swift — see CODE_AUDIT_19 §9.23.
+
+// MARK: - Dice Result
+
+extension GameController {
+    @MainActor
+    func calculate(itemId: UUID) -> DiceResultModel {
+        let item = gameItem(for: itemId)
+        var result = DiceResultModel(diceModel: DiceSnapshot(item))
+        guard item.dice.reduce(0, { $0 + $1.result.count }) > 0 else { return result }
+        
+        result.result = .rolled
+        let text = item.dice.compactMap {
+            guard !$0.result.isEmpty else { return nil }
+            return $0.result.map { "\($0)" }.joined(separator: ",")
+        }.joined(separator: "|")
+        result.values = text
+        
+        let succeed = !fumble(for: itemId)
+        guard succeed else {
+            result.result = .fumble
+            return result
+        }
+        let sumResult = sumResult(itemId: itemId)
+        result.sum = sumResult
+
+        result.checked = sumResult > 0
+
+        if coup(for: itemId) {
+            result.result = .coup
+        }
+        
+        return result
+    }
+    
+    @MainActor
+    func sumResult(itemId: UUID) -> Int {
+        let item = gameItem(for: itemId)
+        let orderedDice = reorder(for: itemId)
+        var result = 0
+        if item.sumUp {
+            if item.canPercentDice, item.percentDice {
+                var ten = orderedDice[0].result.last ?? 0
+                var one = orderedDice[1].result.last ?? 0
+                ten = ten == 10 ? 0 : ten
+                one = one == 10 ? 0 : one
+                result = ten * 10 + one
+                if result == 0 {
+                    result = 100
+                }
+            } else {
+                orderedDice.enumerated().forEach { index, die in
+                    let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
+                    die.result.forEach { diceValue in
+                        result += resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions)
+                    }
+                }
+                result = result.saturatingSum(item.modifier.saturatingInt)
+            }
+        }
+        return result
+    }
+    
+    @MainActor
+    func coup(for itemId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        return matchesSpecialValue(onlyFirstDie: item.coupOnlyOnFirstDie, values: item.coupValues, dice: item.dice)
+    }
+
+    // Shared by `DiceRoll`/`DicePlayer`, which previously each implemented
+    // this identical lookup themselves. See CODE_AUDIT §9.5.
+    @MainActor
+    func resultColor(for dieId: UUID, itemId: UUID) -> [Bool] {
+        diceSuccess(for: itemId).first(where: { $0.0 == dieId })?.1 ?? []
+    }
+
+    @MainActor
+    func diceSuccess(for itemId: UUID) -> [(UUID, [Bool])] {
+        let item = gameItem(for: itemId)
+        guard item.dice.reduce(0, { $0 + $1.result.count }) > 0,
+              !fumble(for: itemId),
+              item.sumUp else { return [] }
+        let orderedDice = reorder(for: itemId)
+        if item.canPercentDice, item.percentDice {
+            return orderedDice.map { ($0.id, [true]) }
+        }
+        return orderedDice.enumerated().map { index, die in
+            let maxValue = maxValuePerDice(for: index + 1, itemId: itemId)
+            let dieResult = die.result.map { diceValue in
+                resolvedDiceValue(for: diceValue, maxValue: maxValue, rerollOptions: item.rerollOptions) > 0
+            }
+            return (die.id, dieResult)
+        }
+    }
+
+    @MainActor
+    func fumble(for itemId: UUID) -> Bool {
+        let item = gameItem(for: itemId)
+        return matchesSpecialValue(onlyFirstDie: item.fumbleOnlyOnFirstDie, values: item.fumbleValues, dice: item.dice)
+    }
+
+    /// Shared by `coup(for:)`/`fumble(for:)`: both check whether the rolled dice match a
+    /// special value, either on an individual die (respecting `onlyFirstDie`) or on their sum.
+    @MainActor
+    private func matchesSpecialValue(onlyFirstDie: Bool, values: [DiceModel.CoupFumbleOption], dice: [DieModel]) -> Bool {
+        let allResults = onlyFirstDie ? [dice.first?.result.first ?? 0] : dice.compactMap { $0.result.first }
+        let matchesDiceValue = allResults.contains(where: { value in values.contains(where: { $0.isDiceValue(value) }) })
+        if matchesDiceValue { return true }
+        let result = allResults.reduce(0) { $0 + $1 }
+        return values.contains(where: { $0.isResultValue(result) })
+    }
+
+    /// Shared by `sumResult(itemId:)`/`diceSuccess(for:)`: a rolled die value counts as its
+    /// reroll-option override when one applies, otherwise itself if within `maxValue`, else 0.
+    @MainActor
+    private func resolvedDiceValue(for diceValue: Int, maxValue: Int, rerollOptions: [DiceModel.RerollOption]) -> Int {
+        if let rerollOption = rerollOptions.first(where: { $0.number == diceValue }) {
+            return rerollOption.maxDiceValue ? maxValue : rerollOption.value
+        }
+        return diceValue <= maxValue ? diceValue : 0
+    }
+    
+    @MainActor
+    func maxValuePerDice(for index: Int, itemId: UUID) -> Int {
+        let item = gameItem(for: itemId)
+        let maxDieValue = item.dice.first?.die.max ?? 1
+        guard item.addDiceEvery > 0 else { return maxDieValue }
+        let maxValue = item.compareValue.saturatingInt
+        return max(0, min((maxValue + maxDieValue) - item.addDiceEvery * index, maxDieValue))
+    }
+    
+    @MainActor
+    func result(itemId: UUID) -> DiceResultModel {
+        calculate(itemId: itemId)
+    }
+    
+    @MainActor
+    func resultText(itemId: UUID) -> String {
+        let diceResult = result(itemId: itemId)
+        guard diceResult.result != .notRolled else {
+            return String(localized: diceResult.result.localizedTitle)
+        }
+        let item = gameItem(for: itemId)
+        var compareText = ""
+        if item.compareOption != .off {
+            compareText = "\(item.compareOption.rawText)\(item.compareValue.saturatingInt)"
+        }
+        var text = "\(diceResult.values)\(compareText)"
+        var specialText = ""
+        if diceResult.result == .coup || diceResult.result == .fumble {
+            specialText = " \(String(localized: diceResult.result.localizedTitle))"
+        }
+        if diceResult.result == .fumble {
+            text += specialText
+        } else {
+            text += " ∑\(diceResult.sum)\(specialText)"
+        }
+        if item.compareOption != .off {
+            text.append("\(diceResult.checked ? "✅" : "❌")")
+        }
+        return text
+    }
+    
+    @MainActor
+    func reorder(for itemId: UUID) -> [DieModel] {
+        let item = gameItem(for: itemId)
+        guard item.reorderDice else { return item.dice }
+        let dice = item.dice.sorted {
+            var first = $0.result.first ?? 0
+            var second = $1.result.first ?? 0
+            if let firstReroll = item.rerollOptions.first(where: { $0.number == first }) {
+                if firstReroll.maxDiceValue {
+                    first = $0.die.max + 1
+                } else {
+                    first = firstReroll.value
+                }
+            }
+            if let secondReroll = item.rerollOptions.first(where: { $0.number == second }) {
+                if secondReroll.maxDiceValue {
+                    // The second die's own maximum. See CODE_AUDIT_19 §5.15.
+                    second = $1.die.max + 1
+                } else {
+                    second = secondReroll.value
+                }
+            }
+            return first > second
+        }
+        return dice
+    }
+    
+    @MainActor
+    func reset(for itemId: UUID) {
+        gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
+            die.resetResults()
+        }
+    }
+    
+    @MainActor
+    func roll(die: DieModel?, for itemId: UUID) {
+        if let diceUrl = Resources.bundle.url(forResource: diceName(for: itemId, isOne: die != nil), withExtension: "m4a") {
+            let item = AVPlayerItem(url: diceUrl)
+            diceGameModel.audioPlayer.replaceCurrentItem(with: item)
+            diceGameModel.audioPlayer.play()
+            diceGameModel.audioPlayer.volume = Self.diceSoundVolume
+        }
+
+        let item = gameItem(for: itemId)
+        if let die, let index = item.dice.firstIndex(where: { $0.id == die.id }) {
+            gameItem(for: itemId).dice[index] = die.roll(rerollOptions: item.rerollOptions)
+        } else {
+            gameItem(for: itemId).dice = gameItem(for: itemId).dice.map { die in
+                die.roll(rerollOptions: item.rerollOptions)
+            }
+        }
+        // `Task { }` (unlike `.detached`) inherits the caller's isolation —
+        // since this call is made from @MainActor `roll(die:for:)`,
+        // `nonisolated` alone was not actually keeping this off the main
+        // actor (see CODE_AUDIT_Game §3.1's mechanism). `.detached` gives it
+        // a genuine off-main starting point for the UserDefaults JSON I/O;
+        // `diceResult` is computed here on the main actor (result(itemId:)
+        // is itself @MainActor) and handed in by value.
+        // See CODE_AUDIT_Game §3.6.
+        let diceResult = result(itemId: itemId)
+        diceGameModel.diceUpdateWidgetTask?.cancel()
+        diceGameModel.diceUpdateWidgetTask = Task.detached(priority: .utility) { [self] in
+            await diceUpdateWidget(diceResult: diceResult)
+        }
+    }
+
+    nonisolated private func diceUpdateWidget(diceResult: DiceResultModel) async {
+#if !os(tvOS)
+        // A newer roll's task cancels the previous one (see the call site),
+        // but without this check the previous roll's write below would still
+        // run to completion and could overwrite the newer roll's saved
+        // result, leaving the Home Screen/Lock Screen widget showing a stale
+        // dice result. See CODE_AUDIT_13 §3.2.
+        guard !Task.isCancelled else { return }
+
+        // Update widget. Two overlapping tasks (the cancel above only stops one that has not
+        // started yet) must not interleave their read-modify-write, and an older roll must
+        // never overwrite a newer one. See CODE_AUDIT_15 §3.14.
+        guard DiceConfiguration.recordLastRoll(diceResult) else { return }
+
+        // Reload widgets
+        DiceWidgetReloader.reloadDiceWidgets()
+
+#endif
+    }
+}

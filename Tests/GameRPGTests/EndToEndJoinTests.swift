@@ -18,7 +18,7 @@ struct EndToEndJoinTests {
         let master = MasterNetworkController(
             name: name,
             delegate: delegate,
-            listnerBuilder: MasterNetworkController.gameListenerBuilder(),
+            listenerBuilder: MasterNetworkController.gameListenerBuilder(),
             hostingSessions: HostingSessionStore(storage: InMemoryJoinCodeStorage())
         )
         master.startStreaming(passcode: code)

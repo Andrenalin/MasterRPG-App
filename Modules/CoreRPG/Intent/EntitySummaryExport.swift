@@ -38,12 +38,15 @@ public enum EntitySummaryExport {
         return url
     }
 
+    /// Localized like Table's and Weather's own exports were before they were shared: the
+    /// hard-coded English labels made the export English-only in de and th. See CODE_AUDIT_19 §9.4.
     public static func plainText(name: String, description: String) -> Data {
         Data(
-            """
-            Name: \(name)
-            Description: \(description)
-            """.utf8
+            String(
+                localized: "Name: \(name)\nDescription: \(description)",
+                bundle: .module,
+                comment: "Plain-text export of an item for Shortcuts and sharing."
+            ).utf8
         )
     }
 }

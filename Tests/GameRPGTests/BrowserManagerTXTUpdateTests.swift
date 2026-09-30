@@ -49,7 +49,7 @@ struct BrowserManagerTXTUpdateTests {
         let controller = MasterNetworkController(
             name: "Master",
             delegate: MasterNetworkControllerDelegateMock(),
-            listnerBuilder: { _, _, _, _, _, _ in GameListenerAbstractionMock() as any ListenerManaging },
+            listenerBuilder: { _, _, _, _, _, _ in GameListenerAbstractionMock() as any ListenerManaging },
             browserConnectionBuilder: { endpoint, _, _ in
                 dialed.endpoints.append(endpoint)
                 return ConnectionControllableSpyingStub()

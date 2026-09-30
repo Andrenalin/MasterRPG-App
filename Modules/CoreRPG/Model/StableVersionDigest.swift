@@ -16,9 +16,7 @@ import Foundation
 /// before encoding). See CODE_AUDIT §9.11.
 public enum StableVersionDigest {
     public static func digest<Value: Encodable>(_ value: Value) -> Int {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(value) else { return 1 }
+        guard let data = try? JSONCoding.sortedKeysEncoder.encode(value) else { return 1 }
         let digest = SHA256.hash(data: data)
         let rawValue = digest.prefix(8).reduce(UInt64(0)) { partialResult, byte in
             partialResult << 8 | UInt64(byte)

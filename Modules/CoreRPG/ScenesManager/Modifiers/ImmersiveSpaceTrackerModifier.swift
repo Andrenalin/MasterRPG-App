@@ -13,7 +13,7 @@ import SwiftUI
 /// Use `ImmersiveSpaceTrackerModifier` to:
 /// - Track immersive space appearance and disappearance
 /// - Update immersive space state in the `ScenesManager`
-/// - Note: The `inTransition` state is handled by the ScenesManager's toggleImmersiveSpace method
+/// - Note: The `inTransition` state is handled by the ScenesManager's toggleSpaceViewer method
 ///
 /// ## Example
 /// ```swift

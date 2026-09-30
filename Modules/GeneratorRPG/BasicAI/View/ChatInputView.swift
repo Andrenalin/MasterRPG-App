@@ -52,7 +52,7 @@ struct ChatInputView: View {
                         .interactive(true), in: .circle
                 )
                 .glassEffectID("sendButton", in: glassNamespace)
-                .disabled(generatorController.model.isLoading || generatorController.model.isSummarizing || generatorController.model.extractSession.isResponding)
+                .disabled(generatorController.model.isLoading || generatorController.model.conversationState.isSummarizing || generatorController.model.extractSession.isResponding)
 #if os(macOS)
                 .buttonStyle(.plain)
 #endif
@@ -88,7 +88,7 @@ struct ChatInputView: View {
             .disabled(
                 messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
                 generatorController.model.isLoading ||
-                generatorController.model.isSummarizing ||
+                generatorController.model.conversationState.isSummarizing ||
                 generatorController.model.extractSession.isResponding
             )
         }

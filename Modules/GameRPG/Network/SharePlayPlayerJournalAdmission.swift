@@ -137,7 +137,7 @@ actor SharePlayPlayerJournalAdmission {
     init(
         maximumAdmissionCount: Int = 512,
         maximumPendingCount: Int = 16,
-        maximumPendingByteCount: Int = 64 * 1_024 * 1_024,
+        maximumPendingByteCount: Int = 64 * ByteUnit.mebibyte,
         admissionRetentionWindow: Duration = .seconds(120),
         clock: ContinuousClock = ContinuousClock()
     ) {

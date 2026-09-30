@@ -47,9 +47,7 @@ struct MapUpdatePayload: Codable, Sendable, MessageMapper {
     /// conformers. `decodeData(of:)` has no such requirement and uses the
     /// protocol's default.
     func encodeData() -> Data? {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        return try? encoder.encode(self)
+        try? JSONCoding.sortedKeysEncoder.encode(self)
     }
 }
 

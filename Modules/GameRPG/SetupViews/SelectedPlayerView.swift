@@ -8,7 +8,7 @@ import TipKit
 struct SelectedPlayerView: View {
     let root: GameRoot
 
-    @AppStorage("lastPlayerUUID", store: .standard)
+    @AppStorage(GameStorageKeys.lastPlayerUUID, store: .standard)
     private var playerUUID: String = ""
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()

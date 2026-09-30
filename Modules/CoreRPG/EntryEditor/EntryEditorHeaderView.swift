@@ -105,9 +105,6 @@ struct EntryEditorHeaderView<LinkType: LinkDataTransferable>: View {
     }
 }
 
-private extension View {
-}
-
 #Preview {
     @Previewable var editModel = TextEditModel(linkRegisterController: LinkRegisterController.fake)
     EntryEditorHeaderView(

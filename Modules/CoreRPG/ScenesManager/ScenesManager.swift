@@ -183,108 +183,6 @@ import OSLog
 #endif
     }
     
-    /// Defines which events can be suppressed for a scene.
-    ///
-    /// Use this type to control which events should be prevented from occurring:
-    /// ```swift
-    /// // Suppress multiple events
-    /// scenesManager.suppressEvents([.openEvent, .dismissEvent], for: .settings)
-    ///
-    /// // Check if events are suppressed
-    /// if scenesManager.areEventsSuppressed(.dismissEvent, for: .settings) {
-    ///     print("Dismiss events are suppressed")
-    /// }
-    /// ```
-    public struct SceneEventMask: OptionSet, Sendable {
-        public let rawValue: Int
-        
-        public init(rawValue: Int) {
-            self.rawValue = rawValue
-        }
-        
-        /// Suppresses the scene's dismiss event, preventing window dismissal
-        public static let dismissEvent = SceneEventMask(rawValue: 1 << 0)
-        
-        /// Suppresses the scene's open event, preventing window opening
-        public static let openEvent = SceneEventMask(rawValue: 1 << 1)
-        
-        /// Suppresses all events for the scene
-        public static let all: SceneEventMask = [.dismissEvent, .openEvent]
-    }
-    
-    /// Tracks which events are suppressed for each scene
-    private var suppressedEvents: [SceneId: SceneEventMask] = [:]
-    
-    /// Suppresses specific events for a scene.
-    ///
-    /// Use this method to prevent certain scene events from occurring. This is useful
-    /// when you want to temporarily disable window opening or dismissal.
-    ///
-    /// - Parameters:
-    ///   - events: The events to suppress (e.g., `.dismissEvent`, `.openEvent`, or `.all`)
-    ///   - scene: The scene identifier to suppress events for
-    ///
-    /// ## Example
-    /// ```swift
-    /// // Suppress both open and dismiss events
-    /// scenesManager.suppressEvents(.all, for: .settings)
-    ///
-    /// // Suppress only dismiss events
-    /// scenesManager.suppressEvents(.dismissEvent, for: .settings)
-    /// ```
-    public func suppressEvents(_ events: SceneEventMask, for scene: SceneId) {
-        if var existing = suppressedEvents[scene] {
-            existing.formUnion(events)
-            suppressedEvents[scene] = existing
-        } else {
-            suppressedEvents[scene] = events
-        }
-    }
-    
-    /// Removes event suppression for a scene.
-    ///
-    /// Use this method to re-enable previously suppressed events.
-    ///
-    /// - Parameters:
-    ///   - events: The events to unsuppress (defaults to `.all`)
-    ///   - scene: The scene identifier to remove event suppression from
-    ///
-    /// ## Example
-    /// ```swift
-    /// // Remove all event suppression
-    /// scenesManager.unsuppressEvents(for: .settings)
-    ///
-    /// // Remove only open event suppression
-    /// scenesManager.unsuppressEvents(.openEvent, for: .settings)
-    /// ```
-    public func unsuppressEvents(_ events: SceneEventMask = .all, for scene: SceneId) {
-        guard var existing = suppressedEvents[scene] else { return }
-        existing.subtract(events)
-        if existing.isEmpty {
-            suppressedEvents.removeValue(forKey: scene)
-        } else {
-            suppressedEvents[scene] = existing
-        }
-    }
-    
-    /// Checks if specific events are suppressed for a scene.
-    ///
-    /// - Parameters:
-    ///   - events: The events to check
-    ///   - scene: The scene identifier to check
-    /// - Returns: `true` if all specified events are suppressed for the scene
-    ///
-    /// ## Example
-    /// ```swift
-    /// if scenesManager.areEventsSuppressed(.dismissEvent, for: .settings) {
-    ///     print("Cannot dismiss settings window")
-    /// }
-    /// ```
-    public func areEventsSuppressed(_ events: SceneEventMask, for scene: SceneId) -> Bool {
-        guard let suppressed = suppressedEvents[scene] else { return false }
-        return suppressed.intersection(events) == events
-    }
-    
     /// Opens a window with the specified scene identifier.
     ///
     /// - Parameter scene: The scene identifier for the window to open
@@ -383,39 +281,6 @@ import OSLog
         }
     }
 
-    /// Toggles the immersive space between open and closed states.
-    ///
-    /// - Note: This method handles state transitions and error cases automatically
-    /// - Returns: An async task that completes when the toggle operation is finished
-    @MainActor
-    public func toggleImmersiveSpace() async {
-        guard let dismissImmersiveSpace = dismissImmersiveSpace,
-              let openImmersiveSpace = openImmersiveSpace else { return }
-
-        switch immersiveSpaceState {
-        case .open:
-            sceneStates[SceneId.immersiveSpace] = .closing
-            immersiveSpaceState = .inTransition
-            await dismissImmersiveSpace()
-        case .closed:
-            sceneStates[SceneId.immersiveSpace] = .opening
-            immersiveSpaceState = .inTransition
-            switch await openImmersiveSpace(id: SceneId.immersiveSpace.rawValue) {
-            case .opened:
-                break
-            case .userCancelled, .error:
-                Logger.scenesManager.error("Failed to open immersive space. Did you you setup the immersive space correctly with SceneId.immersiveSpace?")
-                immersiveSpaceState = .closed
-                sceneStates[SceneId.immersiveSpace] = .closed
-            @unknown default:
-                immersiveSpaceState = .closed
-                sceneStates[SceneId.immersiveSpace] = .closed
-            }
-        case .inTransition:
-            break
-        }
-    }
-
     /// Opens the spaceViewer immersive space with the given item selection.
     @MainActor
     public func toggleSpaceViewer(selection: ItemSelection?) async {
@@ -436,7 +301,7 @@ import OSLog
             case .opened:
                 currentSpaceViewerItemId = selection?.itemId
             case .userCancelled, .error:
-                Logger.scenesManager.error("Failed to open immersive space. Did you you setup the immersive space correctly with SceneId.immersiveSpace?")
+                Logger.scenesManager.error("Failed to open the Space viewer immersive space (SceneId.spaceViewer).")
                 immersiveSpaceState = .closed
                 sceneStates[SceneId.spaceViewer] = .closed
                 currentSpaceViewerItemId = nil

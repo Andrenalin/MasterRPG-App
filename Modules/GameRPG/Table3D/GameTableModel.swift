@@ -15,10 +15,21 @@ import DiceRPG
 import TabletopKit
 #endif
 
+// The table's scene types: the TabletopKit volume on visionOS, the camera-based table on iOS and
+// macOS. Distinct class names, so a cross-platform edit can't confuse the two.
+// See CODE_AUDIT_19 §9.9.
+#if os(visionOS)
+typealias TableGameSetup = GameSetup
+typealias TableGameRenderer = GameRenderer
+#else
+typealias TableGameSetup = PortableGameSetup
+typealias TableGameRenderer = PortableGameRenderer
+#endif
+
 @Observable @MainActor
 final class GameTableModel: Sendable {
-    let renderer: GameRenderer
-    let setup: GameSetup
+    let renderer: TableGameRenderer
+    let setup: TableGameSetup
 
 #if os(visionOS)
     let tabletopGame: TabletopGame
@@ -153,8 +164,8 @@ final class GameTableModel: Sendable {
         self.mapRoot = mapRoot
         self.photoRoot = photoRoot
 
-        renderer = GameRenderer()
-        setup = GameSetup(root: renderer.root)
+        renderer = TableGameRenderer()
+        setup = TableGameSetup(root: renderer.root)
 
 #if os(visionOS)
         tabletopGame = TabletopGame(tableSetup: setup.setup)

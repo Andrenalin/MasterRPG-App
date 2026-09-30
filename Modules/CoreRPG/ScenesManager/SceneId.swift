@@ -41,12 +41,3 @@ public struct SceneId: RawRepresentable, Hashable {
         self.rawValue = rawValue
     }
 }
-
-// MARK: - Built-in Scene Identifiers
-public extension SceneId {
-    /// The identifier for the immersive space scene.
-    ///
-    /// This identifier is used internally by the `ScenesManager` to track
-    /// and manage the immersive space state.
-    static var immersiveSpace: Self { .init(rawValue: "ImmersiveSpace") }
-}

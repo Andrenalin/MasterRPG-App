@@ -15,7 +15,7 @@ import UIKit
 /// RealityKit scene owner used by the camera-based table on iOS and macOS.
 /// TabletopKit remains isolated in the visionOS `GameRenderer` implementation.
 @MainActor
-final class GameRenderer {
+final class PortableGameRenderer {
     let root: Entity
     let camera: Entity
     weak var game: GameTableModel?
@@ -94,7 +94,7 @@ final class GameRenderer {
     }
 }
 
-private extension GameRenderer {
+private extension PortableGameRenderer {
     /// A 35° departure from top-down keeps the map readable while showing
     /// enough table depth for pins and dice to feel three-dimensional.
     static let angleFromTop: Float = 35 * .pi / 180

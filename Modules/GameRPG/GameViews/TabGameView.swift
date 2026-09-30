@@ -10,7 +10,6 @@ struct TabGameView: View {
     let adventureId: UUID
 
     @Environment(GameScreenModel.self) private var gameScreenModel
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
@@ -20,48 +19,12 @@ struct TabGameView: View {
                 focusedIds: [adventureId]
             )
         }
-        .frame(
-            maxWidth: gameScreenModel.sideBarWidth,
-            maxHeight: .infinity,
-            alignment: valueFor(iOS: .trailing, macOS: .trailing, tvOS: .trailing, visionOS: .leading)
+        .gameSidePanel(
+            isShown: gameScreenModel.showMainTab != .none,
+            width: gameScreenModel.sideBarWidth,
+            animationValue: gameScreenModel.showMainTab,
+            onWidthChange: gameScreenModel.updateInlineMainOverlayWidth
         )
-#if os(iOS)
-        .ignoresSafeArea()
-        .clipShape(.rect(
-            topLeadingRadius: 14,
-            bottomLeadingRadius: 14,
-            bottomTrailingRadius: 0,
-            topTrailingRadius: 0
-        ))
-        .background(.ultraThinMaterial, in: .rect(
-            topLeadingRadius: 14,
-            bottomLeadingRadius: 14,
-            bottomTrailingRadius: 0,
-            topTrailingRadius: 0
-        ))
-#elseif !os(visionOS)
-        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
-#endif
-        .offset(
-            x: gameScreenModel.showMainTab == .none
-            ? valueFor(
-                iOS: gameScreenModel.sideBarWidth,
-                macOS: gameScreenModel.sideBarWidth,
-                tvOS: gameScreenModel.sideBarWidth,
-                visionOS: -gameScreenModel.sideBarWidth
-            )
-            : 0
-        )
-        .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
-        .allowsHitTesting(gameScreenModel.showMainTab != .none)
-        .accessibilityHidden(gameScreenModel.showMainTab == .none)
-        .shadow(radius: 8)
-        .animation(accessibilityReduceMotion ? nil : .bouncy, value: gameScreenModel.showMainTab)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width
-        } action: { width in
-            gameScreenModel.updateInlineMainOverlayWidth(width)
-        }
     }
 }
 

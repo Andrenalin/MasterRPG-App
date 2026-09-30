@@ -138,23 +138,4 @@ public final class LinkReplaceController: Sendable {
         }
         return result
     }
-
-    public static func linkDetailModels(for text: String) -> [LinkReplaceModel] {
-        let list = links(for: text)
-        var names: Set<String> = []
-        return list.map {
-            var displayName = $0.name
-            var counter = 1
-            // 100 is a sanity cap, not an expected count: real link lists never
-            // have anywhere near 100 same-named entries, so this only bounds
-            // the pathological case instead of looping indefinitely.
-            while names.contains(displayName) && counter < 100 {
-                displayName = "\($0.name)-\(counter)"
-                counter += 1
-            }
-            guard !names.contains(displayName) else { return $0 }
-            names.insert(displayName)
-            return LinkReplaceModel(name: "🔗[\(displayName)]", module: $0.module, linkNumber: $0.linkNumber, itemId: $0.itemId, entryId: $0.entryId, markDown: $0.markDown, command: $0.command, range: $0.range)
-        }
-    }
 }

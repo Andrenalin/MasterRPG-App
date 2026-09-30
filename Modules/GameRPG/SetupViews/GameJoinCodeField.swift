@@ -19,14 +19,12 @@ struct GameJoinCodeField: View {
 
     var body: some View {
         HStack(alignment: .bottom) {
-            VStack(spacing: 4) {
-                GameJoinCodeOTPField(
-                    code: $code,
-                    accessibilityLabel: title,
-                    submitLabel: submitLabel,
-                    onSubmit: onSubmit
-                )
-            }
+            GameJoinCodeOTPField(
+                code: $code,
+                accessibilityLabel: title,
+                submitLabel: submitLabel,
+                onSubmit: onSubmit
+            )
 
             if let onRandomize {
                 Button(action: onRandomize) {

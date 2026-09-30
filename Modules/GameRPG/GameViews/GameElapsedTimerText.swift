@@ -1,10 +1,12 @@
 // @copyright André Trettin
 
 import CoreRPG
-#if os(macOS) || os(visionOS)
+#if os(iOS) || os(macOS) || os(visionOS)
 import Foundation
 import SwiftUI
 
+/// The running game time. On iOS it floats over the map on a glass capsule. One view for every
+/// platform (iOS had a copy). See CODE_AUDIT_19 §9.19.
 struct GameElapsedTimerText: View {
     let startDate: Date
     private let referenceDate: Date?
@@ -32,7 +34,13 @@ struct GameElapsedTimerText: View {
             }
         }
         .monospacedDigit()
+#if os(iOS)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .glassEffect(.regular, in: .capsule)
+#else
         .padding(.horizontal)
+#endif
     }
 
     private func elapsedDuration(at date: Date) -> Duration {

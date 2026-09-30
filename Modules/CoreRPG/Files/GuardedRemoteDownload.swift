@@ -20,18 +20,18 @@ public enum GuardedRemoteDownload {
         allowsPrivateHosts: Bool = false
     ) async throws -> (fileUrl: URL, response: URLResponse) {
         let delegate = Delegate(maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts)
-        let (temporaryURL, response) = try await URLSession.shared.download(from: url, delegate: delegate)
+        let (temporaryUrl, response) = try await URLSession.shared.download(from: url, delegate: delegate)
         if let response = response as? HTTPURLResponse,
            !(200...299).contains(response.statusCode) {
-            try? FileManager.default.removeItem(at: temporaryURL)
+            try? FileManager.default.removeItem(at: temporaryUrl)
             throw URLError(.badServerResponse)
         }
-        let size = (try? temporaryURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        let size = (try? temporaryUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard size <= maximumBytes else {
-            try? FileManager.default.removeItem(at: temporaryURL)
+            try? FileManager.default.removeItem(at: temporaryUrl)
             throw URLError(.dataLengthExceedsMaximum)
         }
-        return (temporaryURL, response)
+        return (temporaryUrl, response)
     }
 
     private final class Delegate: NSObject, URLSessionDownloadDelegate, Sendable {
@@ -56,7 +56,7 @@ public enum GuardedRemoteDownload {
                 completionHandler(nil)
                 return
             }
-            let isAllowed = allowsPrivateHosts ? target.isSupportedRemoteFileURL : target.isPublicRemoteFileURL
+            let isAllowed = allowsPrivateHosts ? target.isSupportedRemoteFileUrl : target.isPublicRemoteFileUrl
             completionHandler(isAllowed ? request : nil)
         }
 

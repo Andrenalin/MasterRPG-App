@@ -7,7 +7,7 @@ import CharacterRPG
 struct SelectedMasterView: View {
     let root: GameRoot
 
-    @AppStorage("lastGameMasterUUID", store: .standard)
+    @AppStorage(GameStorageKeys.lastGameMasterUUID, store: .standard)
     private var gameMasterUUID: String = ""
 
     @State private var selection: ItemSelectionModel = ItemSelectionModel()

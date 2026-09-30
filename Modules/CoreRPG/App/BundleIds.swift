@@ -2,11 +2,11 @@
 
 import Foundation
 
-/// The reverse-DNS prefixes every app-owned identifier is built from, so the four spellings
-/// (`MasterRPG`, `gamemaster`, `masterrpg`, bare domain) live in one place. The composed
-/// identifiers are registered externally (entitlements, Info.plist, App Store Connect, Game
-/// Center, the keychain) and must never change; `BundleIdsTests` pins them.
-/// See CODE_AUDIT_18 §9.17.
+/// The reverse-DNS prefixes every app-owned identifier is built from, so the five spellings
+/// (`MasterRPG`, `gamemaster`, `masterrpg`, bare domain, and the legacy `de.AndreTrettin.GameMaster`)
+/// live in one place. The composed identifiers are registered externally (entitlements,
+/// Info.plist, App Store Connect, Game Center, the keychain, document types, Handoff) and must
+/// never change; `BundleIdsTests` pins them. See CODE_AUDIT_18 §9.17, CODE_AUDIT_19 §9.6.
 public enum BundleIds {
     /// The developer's reverse-DNS domain.
     public static let domain = "de.andretrettin"
@@ -17,6 +17,9 @@ public enum BundleIds {
     public static let product = "\(domain).gamemaster"
     /// Prefix of the Game Center achievement ids (registered in lower case).
     public static let achievement = "\(domain).masterrpg.achievement"
+    /// The first product's spelling, kept by the exported document types and the user-activity
+    /// type: both are registered in Info.plist and on other devices.
+    public static let legacyProduct = "de.AndreTrettin.GameMaster"
 
     /// `app` followed by `.suffix`.
     public static func app(_ suffix: String) -> String {

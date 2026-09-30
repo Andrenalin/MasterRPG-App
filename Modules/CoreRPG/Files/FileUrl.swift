@@ -173,7 +173,7 @@ public extension FileUrl {
     func sanitizedForImport(allowsPrivateRemoteHosts: Bool = false) -> FileUrl {
         switch location {
         case .url:
-            let isAllowed = allowsPrivateRemoteHosts ? rawUrl.isSupportedRemoteFileURL : rawUrl.isPublicRemoteFileURL
+            let isAllowed = allowsPrivateRemoteHosts ? rawUrl.isSupportedRemoteFileUrl : rawUrl.isPublicRemoteFileUrl
             return isAllowed ? self : relocatedToAppStorage()
         case .other:
             return relocatedToAppStorage()
@@ -210,8 +210,8 @@ public extension URL {
     /// An http(s) url whose host is not this device or a private network. Peers can send
     /// `FileUrl`s that make the receiving device fetch them, so loopback, link-local and
     /// private-range hosts (probing the GM's LAN) are refused. See CODE_AUDIT_15 §6.3.
-    var isPublicRemoteFileURL: Bool {
-        guard isSupportedRemoteFileURL, var host = host()?.lowercased() else { return false }
+    var isPublicRemoteFileUrl: Bool {
+        guard isSupportedRemoteFileUrl, var host = host()?.lowercased() else { return false }
         // A trailing "." is a legal DNS root label — "localhost." resolves identically to
         // "localhost" but previously missed every suffix/equality check below. See
         // CODE_AUDIT_17 §6.10.
@@ -279,7 +279,7 @@ public extension URL {
             || (bytes[0] == 0xfe && bytes[1] & 0xc0 == 0xc0))
     }
 
-    var isSupportedRemoteFileURL: Bool {
+    var isSupportedRemoteFileUrl: Bool {
         guard let scheme = scheme?.lowercased(),
               scheme == "http" || scheme == "https",
               host() != nil else {

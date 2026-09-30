@@ -75,7 +75,7 @@ extension DataController: CoreDataSnapshotPersistable {
             )
         }
         unequalSet(lhs: &model.displayConfigUpdate, rhs: snapshot.displayConfig.$update.rawValue) {
-            guard let displayConfig = model.displyConfigOrNew(for: snapshot.id) else { return }
+            guard let displayConfig = model.displayConfigOrNew(for: snapshot.id) else { return }
             self.map(snapshot.displayConfig.wrappedValue, into: displayConfig)
             model.displayConfig = displayConfig
         }

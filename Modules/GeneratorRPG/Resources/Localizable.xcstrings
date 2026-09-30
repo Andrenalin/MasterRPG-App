@@ -103,23 +103,6 @@
         }
       }
     },
-    "%@ How can I help you?" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Wie kann ich helfen?"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ ฉันช่วยอะไรคุณได้บ้าง?"
-          }
-        }
-      }
-    },
     "%lld / %lld tokens" : {
       "localizations" : {
         "de" : {
@@ -293,40 +276,6 @@
         }
       }
     },
-    "🔧 Calling tool: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🔧 Tool wird aufgerufen: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "🔧 กำลังเรียกใช้เครื่องมือ: %@"
-          }
-        }
-      }
-    },
-    "🔧 Tool result: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🔧 Tool-Ergebnis: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "🔧 ผลลัพธ์เครื่องมือ: %@"
-          }
-        }
-      }
-    },
     "Add a reference character" : {
       "localizations" : {
         "de" : {
@@ -407,23 +356,6 @@
         }
       }
     },
-    "Adventure Block %lld" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abenteuerblock %lld"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บล็อกการผจญภัย %lld"
-          }
-        }
-      }
-    },
     "Adventure: %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -437,23 +369,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "การผจญภัย: %@"
-          }
-        }
-      }
-    },
-    "AI did not generate usable sheet content." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die KI hat keinen verwendbaren Datenblattinhalt generiert."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "AI ไม่สร้างเนื้อหาชีทที่ใช้งานได้"
           }
         }
       }
@@ -602,23 +517,6 @@
         }
       }
     },
-    "Answers / Ideas" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antworten / Ideen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คำตอบ / ความคิด"
-          }
-        }
-      }
-    },
     "Apple Intelligence is not available. PDF summary analysis requires it." : {
       "localizations" : {
         "de" : {
@@ -631,74 +529,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Apple Intelligence ไม่พร้อมใช้งาน การวิเคราะห์สรุป PDF ต้องใช้งาน"
-          }
-        }
-      }
-    },
-    "Apple Intelligence is not enabled. Please enable it in Settings." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence ist nicht aktiviert. Bitte aktiviere es in den Einstellungen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Apple Intelligence ยังไม่ได้เปิดใช้งาน โปรดเปิดใช้งานในการตั้งค่า"
-          }
-        }
-      }
-    },
-    "Apple Intelligence is still preparing its language model. Try again later." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence bereitet das Sprachmodell noch vor. Versuche es später erneut."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Apple Intelligence กำลังเตรียมโมเดลภาษาอยู่ โปรดลองอีกครั้งในภายหลัง"
-          }
-        }
-      }
-    },
-    "Apple Intelligence is unavailable: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence ist nicht verfügbar: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Apple Intelligence ไม่พร้อมใช้งาน: %@"
-          }
-        }
-      }
-    },
-    "Apple Intelligence is unavailable." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Intelligence ist nicht verfügbar."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Apple Intelligence ไม่พร้อมใช้งาน"
           }
         }
       }
@@ -763,142 +593,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ถาม AI"
-          }
-        }
-      }
-    },
-    "Assistant is currently typing a response" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Assistent gibt gerade eine Antwort ein"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ผู้ช่วยกำลังพิมพ์การตอบกลับ"
-          }
-        }
-      }
-    },
-    "Assistant is typing" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Assistent schreibt"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ผู้ช่วยกำลังพิมพ์"
-          }
-        }
-      }
-    },
-    "Assistant replied, %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antwort des Assistenten, %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ผู้ช่วยตอบกลับ, %@"
-          }
-        }
-      }
-    },
-    "Assistant replied, context summary: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antwort des Assistenten, Kontextzusammenfassung: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ผู้ช่วยตอบกลับ, สรุปบริบท: %@"
-          }
-        }
-      }
-    },
-    "Assistant replied, typing indicator, %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antwort des Assistenten, Eingabeanzeige, %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ผู้ช่วยตอบกลับ, ตัวบ่งชี้การพิมพ์, %@"
-          }
-        }
-      }
-    },
-    "Attached image" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Angehängtes Bild"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รูปภาพที่แนบมา"
-          }
-        }
-      }
-    },
-    "Blocks" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Blöcke"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บล็อก"
-          }
-        }
-      }
-    },
-    "Campaign: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kampagne: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แคมเปญ: %@"
           }
         }
       }
@@ -1048,57 +742,6 @@
         }
       }
     },
-    "Context" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontext"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บริบท"
-          }
-        }
-      }
-    },
-    "Context summarized" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontext zusammengefasst"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สรุปบริบทแล้ว"
-          }
-        }
-      }
-    },
-    "Context summary indicator" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontextzusammenfassungsanzeige"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตัวบ่งชี้สรุปบริบท"
-          }
-        }
-      }
-    },
     "Context window exceeded: %@" : {
       "localizations" : {
         "de" : {
@@ -1111,40 +754,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เกินขนาด context window: %@"
-          }
-        }
-      }
-    },
-    "Copy message" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nachricht kopieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คัดลอกข้อความ"
-          }
-        }
-      }
-    },
-    "Create a new campaign for DungeonSlayer under the mountain in an old deserted dwarven empire." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erstelle eine neue DungeonSlayer-Kampagne unter dem Berg in einem alten, verlassenen Zwergenreich."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างแคมเปญใหม่สำหรับ DungeonSlayer ใต้ภูเขาในจักรวรรดิดวาร์ฟร้างเก่าแก่"
           }
         }
       }
@@ -1209,40 +818,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "การถอดรหัสล้มเหลว: %@"
-          }
-        }
-      }
-    },
-    "Delete answers" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antworten löschen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลบคำตอบ"
-          }
-        }
-      }
-    },
-    "Delete Answers" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antworten löschen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ลบคำตอบ"
           }
         }
       }
@@ -1413,76 +988,6 @@
         }
       }
     },
-    "Double-tap to access message options like copy and share" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Doppeltippen, um Nachrichtenoptionen wie Kopieren und Teilen aufzurufen"
-          }
-        },
-        "th" : {
-          "variations" : {
-            "device" : {
-              "appletv" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "กดสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
-                }
-              },
-              "applevision" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
-                }
-              },
-              "ipad" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
-                }
-              },
-              "iphone" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
-                }
-              },
-              "mac" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "ดับเบิลคลิกเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "แตะสองครั้งเพื่อเข้าถึงตัวเลือกข้อความ เช่น คัดลอกและแชร์"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Enable Apple Intelligence in System Settings to generate sheet content." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktiviere Apple Intelligence in den Systemeinstellungen, um Datenblattinhalte zu generieren."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดใช้งาน Apple Intelligence ในการตั้งค่าระบบเพื่อสร้างเนื้อหาชีท"
-          }
-        }
-      }
-    },
     "Enable Apple Intelligence in System Settings." : {
       "localizations" : {
         "de" : {
@@ -1512,40 +1017,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ข้อผิดพลาด"
-          }
-        }
-      }
-    },
-    "Extract" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Extrahieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ดึง"
-          }
-        }
-      }
-    },
-    "Extract adventure blocks" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abenteuerblöcke extrahieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ดึงบล็อกการผจญภัย"
           }
         }
       }
@@ -1642,23 +1113,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวดึงข้อมูล"
-          }
-        }
-      }
-    },
-    "Failed to create language model session" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Sprachmodellsitzung konnte nicht erstellt werden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถสร้างเซสชันโมเดลภาษาได้"
           }
         }
       }
@@ -1846,76 +1300,6 @@
         }
       }
     },
-    "Generate adventure" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abenteuer generieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สร้างการผจญภัย"
-          }
-        }
-      }
-    },
-    "Generated Adventure" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generiertes Abenteuer"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การผจญภัยที่สร้างขึ้น"
-          }
-        }
-      }
-    },
-    "Generating" : {
-      "comment" : "A label displayed when the AI is generating a response.",
-      "extractionState" : "stale",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wird generiert"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังสร้าง"
-          }
-        }
-      }
-    },
-    "Generating block" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Block wird generiert"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กำลังสร้างบล็อก"
-          }
-        }
-      }
-    },
     "Generating sheet content" : {
       "localizations" : {
         "de" : {
@@ -1928,23 +1312,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "กำลังสร้างเนื้อหาชีท"
-          }
-        }
-      }
-    },
-    "Generation Error: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generierungsfehler: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้อผิดพลาดในการสร้าง: %@"
           }
         }
       }
@@ -2147,23 +1514,6 @@
         }
       }
     },
-    "Message copied to clipboard" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nachricht in die Zwischenablage kopiert"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คัดลอกข้อความไปยังคลิปบอร์ดแล้ว"
-          }
-        }
-      }
-    },
     "Missing prompt" : {
       "localizations" : {
         "de" : {
@@ -2292,23 +1642,6 @@
         }
       }
     },
-    "No Blocks" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keine Blöcke"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่มีบล็อก"
-          }
-        }
-      }
-    },
     "No note added." : {
       "localizations" : {
         "de" : {
@@ -2422,23 +1755,6 @@
         }
       }
     },
-    "Opens the AI request field" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öffnet das KI-Eingabefeld"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดช่องคำขอสำหรับ AI"
-          }
-        }
-      }
-    },
     "Other error: %@" : {
       "localizations" : {
         "de" : {
@@ -2535,42 +1851,6 @@
         }
       }
     },
-    "Please wait for the assistant to finish typing" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bitte warte, bis der Assistent die Eingabe beendet hat"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โปรดรอให้ผู้ช่วยพิมพ์เสร็จก่อน"
-          }
-        }
-      }
-    },
-    "Press Return to generate sheet content" : {
-      "comment" : "A hint displayed when the user is generating a sheet.",
-      "extractionState" : "stale",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drücke die Eingabetaste, um Tabelleninhalt zu generieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กด Return เพื่อสร้างเนื้อหาชีท"
-          }
-        }
-      }
-    },
     "Provider failure: %@" : {
       "localizations" : {
         "de" : {
@@ -2651,23 +1931,6 @@
         }
       }
     },
-    "Reasoning: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Überlegung: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เหตุผล: %@"
-          }
-        }
-      }
-    },
     "Reference added" : {
       "localizations" : {
         "de" : {
@@ -2706,40 +1969,6 @@
         }
       }
     },
-    "Response generation failed: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Antwortgenerierung ist fehlgeschlagen: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การสร้างการตอบกลับล้มเหลว: %@"
-          }
-        }
-      }
-    },
-    "Restore" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wiederherstellen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กู้คืน"
-          }
-        }
-      }
-    },
     "Save" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2753,23 +1982,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "บันทึก"
-          }
-        }
-      }
-    },
-    "Scenario: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Szenario: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สถานการณ์: %@"
           }
         }
       }
@@ -2855,91 +2067,6 @@
         }
       }
     },
-    "Send prompt" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anfrage senden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ส่งพรอมต์"
-          }
-        }
-      }
-    },
-    "Share message" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nachricht teilen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แชร์ข้อความ"
-          }
-        }
-      }
-    },
-    "Share sheet opened" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teilen-Dialog geöffnet"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปิดชีทแชร์แล้ว"
-          }
-        }
-      }
-    },
-    "Sheet Blocks" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datenblattblöcke"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บล็อกชีท"
-          }
-        }
-      }
-    },
-    "Sheet blocks and generated blocks will appear here." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datenblattblöcke und generierte Blöcke werden hier angezeigt."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บล็อกจากชีทและบล็อกที่สร้างขึ้นจะปรากฏที่นี่"
-          }
-        }
-      }
-    },
     "Start" : {
       "localizations" : {
         "de" : {
@@ -2984,23 +2111,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "การสตรีมเสร็จสิ้นแล้วแต่ไม่ได้รับเนื้อหาใด"
-          }
-        }
-      }
-    },
-    "Streaming failed: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Streaming fehlgeschlagen: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การสตรีมล้มเหลว: %@"
           }
         }
       }
@@ -3085,57 +2195,6 @@
         }
       }
     },
-    "Take" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übernehmen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "นำมาใช้"
-          }
-        }
-      }
-    },
-    "The language model is not ready yet. Please try again later." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Sprachmodell ist noch nicht bereit. Versuche es später erneut."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โมเดลภาษายังไม่พร้อมใช้งาน โปรดลองอีกครั้งในภายหลัง"
-          }
-        }
-      }
-    },
-    "The language model is unavailable for an unknown reason." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Sprachmodell ist aus einem unbekannten Grund nicht verfügbar."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โมเดลภาษาไม่พร้อมใช้งานด้วยเหตุผลที่ไม่ทราบ"
-          }
-        }
-      }
-    },
     "The PDF content is too large. Processing only the first portion." : {
       "localizations" : {
         "de" : {
@@ -3196,104 +2255,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ภาษาของตารางนี้ไม่รองรับโดย Apple Intelligence"
-          }
-        }
-      }
-    },
-    "This device does not support Apple Intelligence." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Gerät unterstützt Apple Intelligence nicht."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "อุปกรณ์นี้ไม่รองรับ Apple Intelligence"
-          }
-        }
-      }
-    },
-    "This device is not eligible for Apple Intelligence. Please use a compatible device." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Gerät ist nicht für Apple Intelligence geeignet. Verwende bitte ein kompatibles Gerät."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "อุปกรณ์นี้ไม่รองรับ Apple Intelligence โปรดใช้อุปกรณ์ที่เข้ากันได้"
-          }
-        }
-      }
-    },
-    "This is a summary of previous conversation context. Double-tap to interact with message options." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dies ist eine Zusammenfassung des vorherigen Gesprächskontexts. Doppeltippen, um die Nachrichtenoptionen aufzurufen."
-          }
-        },
-        "th" : {
-          "variations" : {
-            "device" : {
-              "applevision" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "นี่คือสรุปบริบทการสนทนาก่อนหน้า แตะสองครั้งเพื่อโต้ตอบกับตัวเลือกข้อความ"
-                }
-              },
-              "ipad" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "นี่คือสรุปบริบทการสนทนาก่อนหน้า แตะสองครั้งเพื่อโต้ตอบกับตัวเลือกข้อความ"
-                }
-              },
-              "iphone" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "นี่คือสรุปบริบทการสนทนาก่อนหน้า แตะสองครั้งเพื่อโต้ตอบกับตัวเลือกข้อความ"
-                }
-              },
-              "mac" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "นี่คือสรุปบริบทการสนทนาก่อนหน้า ดับเบิลคลิกเพื่อโต้ตอบกับตัวเลือกข้อความ"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "นี่คือสรุปบริบทการสนทนาก่อนหน้า แตะสองครั้งเพื่อโต้ตอบกับตัวเลือกข้อความ"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "This message contains a summary of previous conversation context" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diese Nachricht enthält eine Zusammenfassung des vorherigen Gesprächskontexts"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้อความนี้มีสรุปบริบทการสนทนาก่อนหน้า"
           }
         }
       }
@@ -3438,40 +2399,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เครื่องมือ ‘%@’ ล้มเหลว: %@"
-          }
-        }
-      }
-    },
-    "Tool Call Error: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tool-Aufruffehler: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ข้อผิดพลาดการเรียกใช้เครื่องมือ: %@"
-          }
-        }
-      }
-    },
-    "Tool call failed: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tool-Aufruf fehlgeschlagen: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การเรียกใช้เครื่องมือล้มเหลว: %@"
           }
         }
       }
@@ -3723,23 +2650,6 @@
         }
       }
     },
-    "Welcome to the AI Assistant." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Willkommen beim KI-Assistenten."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ยินดีต้อนรับสู่ผู้ช่วย AI"
-          }
-        }
-      }
-    },
     "What note should be added?" : {
       "localizations" : {
         "de" : {
@@ -3800,57 +2710,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวสร้างใด?"
-          }
-        }
-      }
-    },
-    "You said, %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ihre Nachricht, %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คุณพูด, %@"
-          }
-        }
-      }
-    },
-    "You said, context summary: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ihre Nachricht, Kontextzusammenfassung: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คุณพูด, สรุปบริบท: %@"
-          }
-        }
-      }
-    },
-    "You said, typing indicator, %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ihre Nachricht, Eingabeanzeige, %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "คุณพูด, ตัวบ่งชี้การพิมพ์, %@"
           }
         }
       }

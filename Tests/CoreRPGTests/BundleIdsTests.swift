@@ -19,5 +19,9 @@ struct BundleIdsTests {
         #expect("\(BundleIds.achievement).first_game" == "de.andretrettin.masterrpg.achievement.first_game")
         #expect(UTType.adventureLink.identifier == "de.andretrettin.MasterRPG.Link.Adventure")
         #expect(UTType.entryLink.identifier == "de.andretrettin.MasterRPG.Link.Entry")
+        // CODE_AUDIT_19 §9.6: the legacy spelling of the document and Handoff types.
+        #expect(UTType.rpgDocument.identifier == "de.AndreTrettin.GameMaster.gmz")
+        #expect(UTType.gmsDocument.identifier == "de.AndreTrettin.GameMaster.gms")
+        #expect(UserActivity.bundleIdentifierType == "de.AndreTrettin.GameMaster.Activity.Detail")
     }
 }

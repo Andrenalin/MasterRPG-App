@@ -4,51 +4,6 @@ import CoreGraphics
 import Foundation
 import Observation
 
-/// The committed transform of logical content inside a viewport.
-public struct ViewportTransform: Equatable, Sendable {
-    public init(scale: CGFloat = 1, offset: CGPoint = .zero) {
-        self.scale = scale
-        self.offset = offset
-    }
-
-    public var scale: CGFloat
-    public var offset: CGPoint
-
-    public static let identity = ViewportTransform()
-}
-
-/// Defines how far transformed content may be moved outside its viewport.
-public enum ViewportPanPolicy: Equatable, Sendable {
-    /// Small content is centered and large content continues to cover the viewport.
-    case contained
-
-    /// Content may leave the viewport while this many points remain recoverable on each axis.
-    case minimumVisible(CGFloat)
-}
-
-/// Immutable inputs used to calculate a viewport transform.
-public struct ViewportConfiguration: Equatable, Sendable {
-    public init(
-        id: UUID,
-        contentSize: CGSize,
-        containerSize: CGSize,
-        maximumScaleMultiplier: CGFloat = 8,
-        panPolicy: ViewportPanPolicy = .contained
-    ) {
-        self.id = id
-        self.contentSize = contentSize.validViewportSize
-        self.containerSize = containerSize.validViewportSize
-        self.maximumScaleMultiplier = maximumScaleMultiplier.validScaleMultiplier
-        self.panPolicy = panPolicy.validViewportPolicy
-    }
-
-    public let id: UUID
-    public let contentSize: CGSize
-    public let containerSize: CGSize
-    public let maximumScaleMultiplier: CGFloat
-    public let panPolicy: ViewportPanPolicy
-}
-
 /// Pure layout and coordinate-conversion functions shared by image and map viewers.
 public struct ViewportGeometry: Sendable {
     public init(configuration: ViewportConfiguration) {
@@ -470,87 +425,8 @@ private extension ViewportGeometry {
     }
 }
 
-/// A narrow observable owner for committed viewport state. Transient gesture transforms should
-/// stay in `@GestureState` and be committed here once when the interaction ends.
-@MainActor @Observable public final class ViewportModel {
-    private var state: State
-
-    public init(
-        configuration: ViewportConfiguration,
-        transform: ViewportTransform? = nil
-    ) {
-        let geometry = ViewportGeometry(configuration: configuration)
-        state = State(
-            configuration: configuration,
-            transform: geometry.constrained(transform ?? geometry.fitTransform)
-        )
-    }
-
-    public var configuration: ViewportConfiguration {
-        state.configuration
-    }
-
-    public var transform: ViewportTransform {
-        state.transform
-    }
-
-    public var geometry: ViewportGeometry {
-        ViewportGeometry(configuration: state.configuration)
-    }
-
-    public var isAtFit: Bool {
-        geometry.isAtFit(state.transform)
-    }
-
-    public func commit(_ transform: ViewportTransform) {
-        let constrained = geometry.constrained(transform)
-        guard constrained != state.transform else {
-            return
-        }
-        state = State(configuration: state.configuration, transform: constrained)
-    }
-
-    public func reset() {
-        commit(geometry.fitTransform)
-    }
-
-    public func configure(_ configuration: ViewportConfiguration) {
-        guard configuration != state.configuration else {
-            return
-        }
-        let geometry = ViewportGeometry(configuration: configuration)
-        state = State(configuration: configuration, transform: geometry.fitTransform)
-    }
-
-    public func resize(
-        to configuration: ViewportConfiguration,
-        oldAnchor: CGPoint? = nil,
-        newAnchor: CGPoint? = nil,
-        refitWhenAtFit: Bool = true
-    ) {
-        guard configuration != state.configuration else {
-            return
-        }
-        let geometry = ViewportGeometry(configuration: configuration)
-        let transform = geometry.resizedTransform(
-            from: state.transform,
-            previousConfiguration: state.configuration,
-            oldAnchor: oldAnchor,
-            newAnchor: newAnchor,
-            refitWhenAtFit: refitWhenAtFit
-        )
-        state = State(configuration: configuration, transform: transform)
-    }
-}
-
-private extension ViewportModel {
-    struct State: Equatable {
-        let configuration: ViewportConfiguration
-        let transform: ViewportTransform
-    }
-}
-
-private extension ViewportPanPolicy {
+// Internal, not private: ViewportModel.swift uses these helpers too. See CODE_AUDIT_19 §9.23.
+extension ViewportPanPolicy {
     var validViewportPolicy: ViewportPanPolicy {
         switch self {
         case .contained:
@@ -561,13 +437,13 @@ private extension ViewportPanPolicy {
     }
 }
 
-private extension CGFloat {
+extension CGFloat {
     var validScaleMultiplier: CGFloat {
         isFinite && self >= 1 ? self : 8
     }
 }
 
-private extension CGSize {
+extension CGSize {
     var isValidViewportSize: Bool {
         width.isFinite && height.isFinite && width > 0 && height > 0
     }
@@ -581,7 +457,7 @@ private extension CGSize {
     }
 }
 
-private extension CGPoint {
+extension CGPoint {
     var isFinite: Bool {
         x.isFinite && y.isFinite
     }

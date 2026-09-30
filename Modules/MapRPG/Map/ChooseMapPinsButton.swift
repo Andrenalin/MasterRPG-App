@@ -67,12 +67,6 @@ struct ChooseMapPinsButton: View {
     }
 }
 
-/// Cross-module entry point: `EditController`/`characterSelection` are internal
-/// to MapRPG, so other modules (GameRPG's 3D table toolbar) reach
-/// `ChooseMapPinsButton` through this instead of constructing it directly.
-public extension ViewController {
-}
-
 #Preview {
     ChooseMapPinsButton(root: .preview, focusedRoomId: nil, onMonstersAdded: {})
         .environment(ScenesManager())

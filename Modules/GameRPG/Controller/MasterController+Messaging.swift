@@ -195,7 +195,7 @@ extension MasterController {
 
         // Built from local state in one MainActor hop; a playerId becomes the
         // message target so only the addressee processes it.
-        let networtData = root.gameModel.outgoingMessage(
+        let networkData = root.gameModel.outgoingMessage(
             replyToMessageID: replyToMessageID,
             timestamp: outgoingTimestamp,
             counter: counter,
@@ -208,17 +208,17 @@ extension MasterController {
 
         if !asProxy,
            appliesLocalSpaceTransform,
-           networtData.sender.isMaster,
+           networkData.sender.isMaster,
            type == .update,
            subtype == .spaceTransform {
             guard root.spaceRoot.spaceGameControllable.applySpaceTransform(
-                data: networtData.data,
-                counter: networtData.counter,
-                timestamp: networtData.timestamp
+                data: networkData.data,
+                counter: networkData.counter,
+                timestamp: networkData.timestamp
             ) else { return }
         }
 
-        if let wireID = networtData.messageID {
+        if let wireID = networkData.messageID {
             let deliveryID = gameModel.trackDelivery(
                 wireID: wireID,
                 counter: counter
@@ -229,7 +229,7 @@ extension MasterController {
                 subType: subtype,
                 module: updated.type,
                 itemId: updated.id,
-                targetID: networtData.targetId
+                targetID: networkData.targetId
             )
         } else {
             root.logGameController.addMessage(
@@ -242,23 +242,23 @@ extension MasterController {
         }
         let deliveryOrigin = origin ?? (asProxy ? .proxy(connectionId) : .direct(connectionId))
         await root.statisticsModel.record(
-            networtData,
+            networkData,
             direction: .outgoing,
             origin: deliveryOrigin
         )
 
         if asProxy {
             if let targetConnectionId = origin?.connectionId ?? connectionId {
-                await root.networkProxyStore.sendPlayer(networtData, to: targetConnectionId)
+                await root.networkProxyStore.sendPlayer(networkData, to: targetConnectionId)
             } else {
-                await root.networkProxyStore.sendPlayer(data: networtData)
+                await root.networkProxyStore.sendPlayer(data: networkData)
             }
         } else if let origin {
-            await root.networkStore.sendPlayer(networtData, to: origin)
+            await root.networkStore.sendPlayer(networkData, to: origin)
         } else if let connectionId {
-            await root.networkStore.sendPlayer(networtData, to: connectionId)
+            await root.networkStore.sendPlayer(networkData, to: connectionId)
         } else {
-            await root.networkStore.sendPlayer(data: networtData, fileJournal: Self.usesFileJournal(for: networtData))
+            await root.networkStore.sendPlayer(data: networkData, fileJournal: Self.usesFileJournal(for: networkData))
         }
     }
 

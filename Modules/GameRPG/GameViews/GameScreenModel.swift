@@ -128,4 +128,18 @@ final class GameScreenModel {
         guard topGameMenuHeight != height else { return }
         topGameMenuHeight = height
     }
+
+#if os(macOS)
+    /// Starts the main tab in the display mode saved in settings (raw `GameMainTabDisplayMode`).
+    /// Returns `true` when the tab opens in its own window, which the caller then opens.
+    /// Shared by the game-master and player screens. See CODE_AUDIT_19 §9.19.
+    func restoreMainTab(savedMode rawValue: Int, tab: NetworkModules, animation: Animation?) -> Bool {
+        let savedMode = GameMainTabDisplayMode(rawValue: rawValue) ?? .hidden
+        gameMainTabDisplayMode = savedMode
+        withAnimation(animation) {
+            showMainTab = savedMode == .inline ? tab : .none
+        }
+        return savedMode == .window
+    }
+#endif
 }

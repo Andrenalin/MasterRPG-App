@@ -67,9 +67,7 @@ public final class SheetModel: Identifiable, Sendable, Equatable, Hashable {
     // MARK: Generated answer preview
     public var isGeneratedAnswer: Bool = false
     public var isGeneratedSelected: Bool = false
-    public var isGeneratedAccepted: Bool = false
     public var isGeneratedHidden: Bool = false
-    public var generatedBatchId: String?
 
     // MARK: Selection
     /// Exclusive row selection across the SheetModel tree, managed by SheetRootModel.setSelected(_:parent:).
@@ -175,7 +173,4 @@ public enum SheetModelType: Equatable, Hashable, Sendable {
 public enum SheetInsertionPosition: Equatable, Hashable, Sendable {
     case end
     case after(UUID)
-}
-
-public extension SheetModel {
 }

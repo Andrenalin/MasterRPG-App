@@ -3,9 +3,6 @@
 import SwiftUI
 
 public struct ItemHeaderEditorView: View {
-    /// Lets this view's own presentation animation finish before grabbing keyboard focus —
-    /// focusing mid-transition reads as a glitch. See CODE_AUDIT §9.14.
-    private static let autoFocusDelay: Duration = .milliseconds(100)
     public init(
         editControllable: any EditControllable,
         model: any ItemDataAccessible,
@@ -76,7 +73,7 @@ public struct ItemHeaderEditorView: View {
         }
         .task {
 #if !os(tvOS)
-            try? await Task.sleep(for: Self.autoFocusDelay)
+            try? await Task.sleep(for: EditorFocus.autoFocusDelay)
             currentFocus = .name
 #endif
         }

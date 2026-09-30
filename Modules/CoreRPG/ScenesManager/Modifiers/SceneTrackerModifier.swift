@@ -64,18 +64,14 @@ private struct SceneTrackerModifier: ViewModifier {
             }
     }
     
-    /// Handles scene activation and triggers the onOpen callback if needed
+    /// Handles scene activation and triggers the onOpen callback
     private func trackSceneActivation() {
-        if !scenesManager.areEventsSuppressed(.openEvent, for: trackedScene) {
-            onOpen?()
-        }
+        onOpen?()
     }
-    
-    /// Handles scene deactivation and triggers the onDismiss callback if needed
+
+    /// Handles scene deactivation and triggers the onDismiss callback
     private func trackSceneDeactivation() {
-        if !scenesManager.areEventsSuppressed(.dismissEvent, for: trackedScene) {
-            onDismiss?()
-        }
+        onDismiss?()
     }
 }
 

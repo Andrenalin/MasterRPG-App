@@ -29,7 +29,7 @@ actor MasterNetworkControllerDelegateBox {
 final class MasterNetworkController: Sendable {
     private let delegate: MasterNetworkControllerDelegateBox
     /// Arguments: name, supporter tier, proxy, passcode, session id, delegate.
-    let listnerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging
+    let listenerBuilder: @MainActor @Sendable (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging
     let browserConnectionBuilder: @MainActor @Sendable (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable
     let networkModel: MasterNetworkModel
     private let hostingSessions: HostingSessionStore
@@ -72,14 +72,14 @@ final class MasterNetworkController: Sendable {
     init(
         name: String,
         delegate: MasterNetworkControllerDelegate? = nil,
-        listnerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging,
+        listenerBuilder: @MainActor @Sendable @escaping (String, SupporterTier, Bool, String, String, any ListenerManagerDelegate) -> any ListenerManaging,
         browserConnectionBuilder: @MainActor @Sendable @escaping (NWEndpoint, String, any ConnectionControllerDelegate) -> any ConnectionControllable = MasterNetworkController.gameBrowserConnectionBuilder(),
         hostingSessions: HostingSessionStore = .shared
     ) {
         self.networkModel = MasterNetworkModel(name: name)
         self.hostingSessions = hostingSessions
         self.delegate = MasterNetworkControllerDelegateBox(delegate)
-        self.listnerBuilder = listnerBuilder
+        self.listenerBuilder = listenerBuilder
         self.browserConnectionBuilder = browserConnectionBuilder
         Logger.networking.debug("MasterNetworkController: Init")
     }
@@ -119,7 +119,7 @@ extension MasterNetworkController: MasterNetworkControllable {
     }
 
     private func startListener() {
-        networkModel.listener = listnerBuilder(
+        networkModel.listener = listenerBuilder(
             networkModel.name,
             networkModel.supporterTier,
             networkModel.isProxyHosting,

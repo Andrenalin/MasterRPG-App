@@ -65,7 +65,7 @@ struct FileUrlTests {
         #expect(restored.rawUrl == remoteURL)
         #expect(restored.contentHash == source.contentHash)
         #expect(restored.data == nil)
-        #expect(remoteURL.isSupportedRemoteFileURL)
-        #expect(URL(filePath: "/tmp/map.png").isSupportedRemoteFileURL == false)
+        #expect(remoteURL.isSupportedRemoteFileUrl)
+        #expect(URL(filePath: "/tmp/map.png").isSupportedRemoteFileUrl == false)
     }
 }

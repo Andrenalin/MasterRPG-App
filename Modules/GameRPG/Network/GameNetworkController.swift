@@ -31,7 +31,7 @@ final class GameNetworkController: Sendable {
     /// acknowledgements, repair requests, screens, and canonicalization inputs
     /// are master-only and must stop at the game master.
     /// Allowance for the JSON envelope around a relayed payload (ids, names, counters).
-    nonisolated static let relayFrameOverheadAllowance = 64 * 1_024
+    nonisolated static let relayFrameOverheadAllowance = 64 * ByteUnit.kibibyte
 
     /// Whether a received frame may be relayed byte-for-byte: its size must be consistent
     /// with the decoded payload (base64 in JSON is 4/3 of the raw bytes) plus the envelope.
@@ -65,7 +65,7 @@ final class GameNetworkController: Sendable {
     // MARK: Static builders
 
     static let defaultMasterStoreBuilder: (String, MasterNetworkControllerDelegate) -> any MasterNetworkControllable = { name, delegate in
-        MasterNetworkController(name: name, delegate: delegate, listnerBuilder: MasterNetworkController.gameListenerBuilder())
+        MasterNetworkController(name: name, delegate: delegate, listenerBuilder: MasterNetworkController.gameListenerBuilder())
     }
 
     static let directPlayerStoreBuilder: (String, PlayerNetworkControllerDelegate) -> any PlayerNetworkControllable = { name, delegate in

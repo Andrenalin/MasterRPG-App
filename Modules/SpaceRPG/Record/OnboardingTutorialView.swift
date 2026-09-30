@@ -144,7 +144,7 @@ struct OnboardingTutorialView: View {
         Self.onboardingStateToTitleMap[onboardingStateMachine.currentState] ?? ""
     }
 
-    private static let onboardingStateTodetailTextMap: [OnboardingState: String] = [
+    private static let onboardingStateToDetailTextMap: [OnboardingState: String] = [
         .tooFewImages: LocalizedString.tooFewImagesDetailText,
         .firstSegmentNeedsWork: LocalizedString.firstSegmentNeedsWorkDetailText,
         .firstSegmentComplete: LocalizedString.firstSegmentCompleteDetailText,
@@ -160,7 +160,7 @@ struct OnboardingTutorialView: View {
     ]
 
     private var detailText: String {
-        Self.onboardingStateTodetailTextMap[onboardingStateMachine.currentState] ?? ""
+        Self.onboardingStateToDetailTextMap[onboardingStateMachine.currentState] ?? ""
     }
 }
 

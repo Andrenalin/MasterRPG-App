@@ -422,11 +422,11 @@ struct SheetControllerTests {
             existingItemId: existingItemId
         )
 
-        // `FolderListControllable.update(debounce:)` refreshes via a detached Task; give it a
-        // moment to complete (same pattern used elsewhere in SheetRootModel for post-move resync).
-        try await Task.sleep(for: .milliseconds(300))
-
-        #expect(!root.folderListController.listModel.list.contains(where: { $0.source.itemId == existingItemId }), "Converting an entry to a group must refresh the item list so the now-hidden item disappears")
+        // `FolderListControllable.update(debounce:)` refreshes via a detached Task.
+        #expect(
+            await waitUntil { !root.folderListController.listModel.list.contains(where: { $0.source.itemId == existingItemId }) },
+            "Converting an entry to a group must refresh the item list so the now-hidden item disappears"
+        )
     }
 
     @Test func characterUpdateLeavesFoldedEntriesCollapsed() async throws {

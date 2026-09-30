@@ -93,7 +93,7 @@ struct SplitVisionNavigation: View {
 }
 
 private struct SplitVisionNavigationRestorationModifier: ViewModifier {
-    @SceneStorage("GameRoute") private var storedTab: RootRoute = .game
+    @SceneStorage(RootRoute.visionSceneStorageKey) private var storedTab: RootRoute = .game
 
     let appModel: AppModel
 

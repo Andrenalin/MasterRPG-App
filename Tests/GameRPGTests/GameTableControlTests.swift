@@ -45,7 +45,7 @@ struct GameTableControlTests {
         fixture.game.isStreaming = false
 
         await fixture.game.toggleRoomVisibility(room.id)
-        fixture.game.togglePointerVisibility()
+        await fixture.game.toggleRoomFocus(room.id)
 
         #expect(fixture.liveMap.entries.first?.isShown == true)
         #expect(fixture.networkSpy.calls.isEmpty)
@@ -110,44 +110,20 @@ struct GameTableControlTests {
         #expect(fixture.networkSpy.calls.isEmpty)
     }
 
-    @Test("Show all rooms renders and broadcasts as one transaction")
-    func showAllRoomsBroadcastsOnce() async throws {
-        let rooms = ["Hall", "Kitchen", "Vault"].map {
-            MapEntryModel(
-                id: UUID(),
-                name: $0,
-                content: "",
-                coordinates: Self.square,
-                isShown: false
-            )
-        }
-        let fixture = try await makeFixture(entries: rooms, isGameMaster: true)
-
-        await fixture.game.setAllRoomsShown(true)
-
-        #expect(fixture.liveMap.entries.allSatisfy { $0.isShown })
-        #expect(fixture.networkSpy.calls.count == 1)
-        #expect(fixture.networkSpy.calls.first?.action == .mapState)
-    }
-
-    @Test("Pointer controls work without a 2D editor and broadcast once per command")
-    func pointerControlsAreAutonomous() async throws {
+    /// CODE_AUDIT_19 §9.11: the toolbar's "point" action on the 2D map and the 3D table uses this
+    /// one routine; the tests used to exercise 3D-only copies the UI never ran.
+    @Test("Pointing moves the pointer to the map centre and shows it")
+    func showPointerAtMapCenter() async throws {
         let fixture = try await makeFixture(entries: [], isGameMaster: true)
         fixture.liveMap.pointer.location = .zero
         fixture.liveMap.pointer.isShown = false
+        let controller = fixture.game.mapRoot.mapGameControllable
 
-        fixture.game.movePointerToMapCenter()
+        #expect(controller.showPointerAtMapCenter(itemId: fixture.liveMap.id))
 
         #expect(fixture.liveMap.pointer.location == CGPoint(x: 600, y: 400))
         #expect(fixture.liveMap.pointer.isShown)
-        #expect(fixture.networkSpy.calls.count == 1)
-        #expect(fixture.networkSpy.calls.first?.action == .mapState)
-
-        fixture.game.togglePointerVisibility()
-
-        #expect(!fixture.liveMap.pointer.isShown)
-        #expect(fixture.networkSpy.calls.count == 2)
-        #expect(fixture.networkSpy.calls.allSatisfy { $0.action == .mapState })
+        #expect(!controller.showPointerAtMapCenter(itemId: fixture.liveMap.id))
     }
 
     @Test("Players can move only their own token and a visible shared pointer")

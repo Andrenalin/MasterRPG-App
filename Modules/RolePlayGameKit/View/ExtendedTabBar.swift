@@ -40,9 +40,9 @@ struct ExtendedTabBar: View {
         .navigationTitle(Text(verbatim: NetworkModules.editor.title))
         .navigationBarTitleDisplayModeAll(.inline)
         .navigationModifier { destination in
-            if let extened = destination as? ExtendedTabRoute {
+            if let extended = destination as? ExtendedTabRoute {
                 destination()
-                    .modifier(ZoomTransitionViewModifier(sourceId: extened.module.token, namespace: zoomNamespace))
+                    .modifier(ZoomTransitionViewModifier(sourceId: extended.module.token, namespace: zoomNamespace))
             } else {
                 destination()
             }
@@ -64,7 +64,7 @@ struct ExtendedTabBar: View {
 }
 
 private struct ExtendedTabBarRestorationModifier: ViewModifier {
-    @SceneStorage("ExtendedTabRoute") private var currentModule: ExtendedTabRoute?
+    @SceneStorage(ExtendedTabRoute.sceneStorageKey) private var currentModule: ExtendedTabRoute?
 
     let appModel: AppModel
     @Binding var tabSelectedModule: NetworkModules

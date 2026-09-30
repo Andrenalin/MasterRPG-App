@@ -40,7 +40,7 @@ actor GameRelayAdmission {
     /// times; the budget bounds that. See CODE_AUDIT_18 §6.2.
     private var relayedBytes: [UUID: [(at: ContinuousClock.Instant, count: Int)]] = [:]
     static let byteBudgetWindow: Duration = .seconds(60)
-    static let byteBudgetPerSender = 512 * 1_024 * 1_024
+    static let byteBudgetPerSender = 512 * ByteUnit.mebibyte
 
     init(limit: Int = 512, retentionWindow: Duration = .seconds(120), clock: ContinuousClock = ContinuousClock()) {
         self.limit = limit
@@ -150,8 +150,8 @@ actor SharePlayDeferredPeerGroupEvents {
 
     init(
         maximumEventCount: Int = 32,
-        maximumEventByteCount: Int = 64 * 1_024,
-        maximumTotalByteCount: Int = 512 * 1_024
+        maximumEventByteCount: Int = 64 * ByteUnit.kibibyte,
+        maximumTotalByteCount: Int = 512 * ByteUnit.kibibyte
     ) {
         self.maximumEventCount = max(1, maximumEventCount)
         self.maximumEventByteCount = max(0, maximumEventByteCount)

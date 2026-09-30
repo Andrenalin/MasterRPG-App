@@ -802,30 +802,6 @@
         }
       }
     },
-    "Estimated time remaining: %@ (Object Capture)" : {
-      "comment" : "Estimated processing time to reconstruct object.",
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geschätzte verbleibende Zeit: %@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Estimated time remaining: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เวลาที่เหลือโดยประมาณ: %@"
-          }
-        }
-      }
-    },
     "Failed to Load 3D Model" : {
       "localizations" : {
         "de" : {
@@ -1438,23 +1414,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ต้องการแสงสว่างมากขึ้น"
-          }
-        }
-      }
-    },
-    "Move" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bewegen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ย้าย"
           }
         }
       }

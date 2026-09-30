@@ -279,11 +279,8 @@ private extension UniversalVTTReader {
     }
 
     static func decodeRaw(_ data: Data) throws -> FoundryJSONValue {
-        let decoder = JSONDecoder()
-        decoder.userInfo[.masterRPGFoundrySourceJSON] = true
-        decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
         do {
-            return try decoder.decode(FoundryJSONValue.self, from: data)
+            return try FoundryJSONDecoding.decodeSource(data)
         } catch {
             throw FoundryImportError.invalidArchive("The Universal VTT file is not valid JSON.")
         }

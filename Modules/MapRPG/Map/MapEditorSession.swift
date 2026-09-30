@@ -2,7 +2,6 @@
 
 import CoreRPG
 import SwiftUI
-import os.log
 
 // Renamed from MapEditorModel.swift (the file's only type was MapEditorSession,
 // not MapEditorModel) and split — see CODE_AUDIT §9.13:
@@ -135,18 +134,7 @@ final class MapEditorSession {
         self.actions = actions
         self.image = image
         self.photoDegrees = photoDegrees
-        let resolvedCanvasSize = MapCanvasGeometryResolver.resolve(
-            map: map,
-            mapSize: CGSize(width: map.width, height: map.height),
-            imageSize: image.fixedSize,
-            degrees: photoDegrees
-        )
-        Logger.mapCanvas.debug("""
-            init: map \(map.width, privacy: .public)x\(map.height, privacy: .public), \
-            image.size \(image.size.width, privacy: .public)x\(image.size.height, privacy: .public), \
-            image.fixedSize \(image.fixedSize.width, privacy: .public)x\(image.fixedSize.height, privacy: .public), \
-            resolved canvas \(resolvedCanvasSize.width, privacy: .public)x\(resolvedCanvasSize.height, privacy: .public)
-            """)
+        let resolvedCanvasSize = Self.canvasSize(map: map, image: image, degrees: photoDegrees)
         let normalizedTrailingReservation = trailingViewportReservation.isFinite
             ? max(0, trailingViewportReservation)
             : 0

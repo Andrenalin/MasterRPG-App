@@ -97,31 +97,31 @@ final class FoundryImportModel {
     }
 
     func loadSelectedArtifact() async {
-        guard let requestedURL = selectedURL else { return }
+        guard let requestedUrl = selectedURL else { return }
         let requestedSelectionID = selectionID
         loadState = .loading
         do {
             let detector = detector
             // Structured and scope-balanced; cancellation propagates. See CODE_AUDIT_18 §4.4.
-            let detected = try await requestedURL.withSecurityScopedAccess { url in
+            let detected = try await requestedUrl.withSecurityScopedAccess { url in
                 try detector.detect(at: url)
             }
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, selectedURL == requestedURL else { return }
+            guard selectionID == requestedSelectionID, selectedURL == requestedUrl else { return }
             artifact = detected
             switch detected.kind {
             case .universalVTT:
-                universalVTT = try await universalReader.read(from: requestedURL)
+                universalVTT = try await universalReader.read(from: requestedUrl)
                 package = nil
             case .unknown:
                 throw FoundryImportError.unsupportedSource
             default:
-                package = try await reader.read(from: requestedURL)
+                package = try await reader.read(from: requestedUrl)
                 universalVTT = nil
             }
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, selectedURL == requestedURL else { return }
-            let descriptor = makeSourceDescriptor(sourceURL: requestedURL)
+            guard selectionID == requestedSelectionID, selectedURL == requestedUrl else { return }
+            let descriptor = makeSourceDescriptor(sourceURL: requestedUrl)
             let archiveEntries: [ExternalImportSourceEntry]
             do {
                 archiveEntries = try await archiveStore.sourceRegistryEntries()
@@ -135,7 +135,7 @@ final class FoundryImportModel {
                 fallbackEntries: archiveEntries
             )
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, selectedURL == requestedURL else { return }
+            guard selectionID == requestedSelectionID, selectedURL == requestedUrl else { return }
             sourceDescriptor = descriptor
             sourceResolution = resolution
             switch resolution {

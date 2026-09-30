@@ -11,17 +11,12 @@ import SwiftUI
 
 @Observable
 @MainActor
-final class GeneratorSessionModel {
+final class GeneratorSessionModel: ConversationSessionModel {
     init(conversationEngine: ConversationEngine) {
         self.conversationEngine = conversationEngine
         self.session = conversationEngine.session
         
-        conversationEngine.onStateChange = { [weak self] in
-            self?.syncConversationState()
-        }
-        Task(name: "Foundation Context Size") { [weak self] in
-            await self?.fetchContextSize()
-        }
+        observeConversationEngine()
     }
     
     // session
@@ -34,9 +29,8 @@ final class GeneratorSessionModel {
     var lastItemId: UUID?
 
     var isLoading: Bool = false
-    var isSummarizing: Bool = false
-    var isApplyingWindow: Bool = false
-    var sessionCount: Int = 1
+    var generationSettings = GenerationSettings()
+    var conversationState = ConversationState()
 
     var responseErrorContent: String = ""
     var showError: Bool = false
@@ -79,65 +73,6 @@ final class GeneratorSessionModel {
         return currentGeneration
     }
 
-    // MARK: - Generation Options
-    var SamplingStrategyConfiguration: SamplingStrategyConfiguration = .default
-    var useFixedSeed: Bool = false
-    var usePermissiveGuardrails: Bool = false
-    var topKSamplingValue: Int = 50
-    private var samplingSeed: UInt64?
-    
-    var generationOptions: GenerationOptionsConfiguration {
-        switch SamplingStrategyConfiguration {
-        case .default:
-            return GenerationOptionsConfiguration()
-        case .greedy:
-            return GenerationOptionsConfiguration(sampling: .greedy)
-        case .sampling:
-            let seed: UInt64? = useFixedSeed ? (samplingSeed ?? generateAndStoreSeed()) : nil
-            return GenerationOptionsConfiguration(
-                sampling: .randomTop(topKSamplingValue, seed: seed)
-            )
-        }
-    }
-    
-    func currentGuardrails() -> GuardrailsConfiguration {
-        usePermissiveGuardrails ? .permissiveContentTransformations : .default
-    }
-
-    func generateAndStoreSeed() -> UInt64 {
-        let seed = UInt64.random(in: UInt64.min...UInt64.max)
-        samplingSeed = seed
-        return seed
-    }
-
-    // token management
-    var currentTokenCount: Int = 0
-    var maxContextSize: Int = AppConfiguration.TokenManagement.defaultMaxTokens
-    
-    var tokenUsageFraction: Double {
-        guard maxContextSize > 0 else { return 0 }
-        return min(1.0, Double(currentTokenCount) / Double(maxContextSize))
-    }
-    
-    @MainActor func syncConversationState() {
-        session = conversationEngine.session
-        currentTokenCount = conversationEngine.currentTokenCount
-        maxContextSize = conversationEngine.maxContextSize
-        isSummarizing = conversationEngine.isSummarizing
-        isApplyingWindow = conversationEngine.isApplyingWindow
-        sessionCount = conversationEngine.sessionCount
-    }
-    
-    func fetchContextSize() async {
-        let contextSize = await AppConfiguration.TokenManagement.contextSize(
-            modelUseCase: .general,
-            guardrails: currentGuardrails()
-        )
-        conversationEngine.setMaxContextSize(contextSize)
-        syncConversationState()
-    }
-    
-    
     // extracting
     var extractSession = LanguageModelSession()
     /// The instructions `extractSession` was last built with — kept so `extract(message:
@@ -290,7 +225,7 @@ struct GeneratorController: Sendable {
                 let typeId = rootSheetModel.source.typeId
                 let response = try await model.conversationEngine.sendStreamingMessage(
                     prompt,
-                    generationOptions: model.generationOptions
+                    generationOptions: model.generationSettings.options()
                 ) { @MainActor partialText in
                     guard model.currentGeneration == generation else { return }
                     let updated = SheetModel(

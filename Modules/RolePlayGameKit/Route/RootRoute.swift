@@ -4,9 +4,12 @@ import CoreRPG
 import SwiftUI
 
 public enum RootRoute: Hashable, Codable {
-    /// The `@SceneStorage` key every root navigation layout restores its selected route from.
+    /// The `@SceneStorage` key the root navigation layouts restore their selected route from.
     /// See CODE_AUDIT_18 §9.17.
     static let sceneStorageKey = "RootRoute"
+    /// visionOS' `SplitVisionNavigation` stores its route under its own, older key on purpose:
+    /// existing scenes keep their state under it, so it must not be renamed. See CODE_AUDIT_19 §9.8.
+    static let visionSceneStorageKey = "GameRoute"
     /// The first route of a new scene.
     static var defaultRoute: RootRoute { .game }
     /// The first route of a new scene in `TabSidebar`, which has no Game tab.

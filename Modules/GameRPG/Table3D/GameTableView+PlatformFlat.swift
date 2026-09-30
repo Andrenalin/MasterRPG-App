@@ -86,15 +86,7 @@ public struct GameTableView: View {
         await initializedGame.renderer.loadAssets()
         guard !Task.isCancelled else { return }
 
-        initializedGame.networkActions = root.networkActions
-        initializedGame.isGameMaster = root.gameModel.gameConfig.isMaster
-        initializedGame.playerPinId = initializedGame.isGameMaster
-            ? nil
-            : root.gameModel.gameConfig.id
-        // Each 2D↔3D toggle builds a new model: keep the GM's preview lens. See CODE_AUDIT_19 §5.17.
-        if initializedGame.isGameMaster {
-            initializedGame.displayMode = root.mapRoot.rootModel.gameDisplayMode
-        }
+        initializedGame.configureSession(from: root)
         root.gameModel.gameTableModel = initializedGame
         game = initializedGame
 
@@ -263,7 +255,7 @@ private struct GameTableRealityContent: View {
     /// cumulative-since-start value (`DragGesture.Value` and `EntityTargetValue<DragGesture.Value>`
     /// both expose it as `CGSize`), so only the value itself needs passing.
     private func applyTableMoveDelta(translation: CGSize) {
-        if tableMoveTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
+        if tableMoveTracker.isStale(after: StaleGestureTracker.defaultTimeout) {
             // The previous drag's `.onEnded` was likely never delivered (system interruption,
             // window backgrounding mid-drag) — re-arm from this call's value instead of computing
             // a delta against the stale one.
@@ -296,7 +288,7 @@ private struct GameTableRealityContent: View {
     }
 
     private func applyTableRotationDelta(rotation: Angle) {
-        if tableRotateTracker.isStale(after: RoomActionCoordinator.staleGestureTimeout) {
+        if tableRotateTracker.isStale(after: StaleGestureTracker.defaultTimeout) {
             // See `applyTableMoveDelta`: re-arm instead of applying a delta against a lost gesture.
             tableRotateLastAngle = rotation
         }

@@ -63,10 +63,19 @@ enum FoundryPackagePath {
 /// only one of the two readers.
 enum FoundryJSONDecoding {
     static func decodeSource(_ data: Data) throws -> FoundryJSONValue {
+        try makeDecoder(isSourceJSON: true).decode(FoundryJSONValue.self, from: data)
+    }
+
+    /// A decoder with the depth guard installed — the one place every `FoundryJSONValue`
+    /// decode gets it from, so a copy can't drift. Build one per decode: the depth counter is
+    /// per-decode state. See CODE_AUDIT_19 §9.17.
+    static func makeDecoder(isSourceJSON: Bool) -> JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.userInfo[.masterRPGFoundrySourceJSON] = true
+        if isSourceJSON {
+            decoder.userInfo[.masterRPGFoundrySourceJSON] = true
+        }
         decoder.userInfo[.masterRPGFoundryJSONDepth] = FoundryJSONDepthCounter()
-        return try decoder.decode(FoundryJSONValue.self, from: data)
+        return decoder
     }
 
     /// Decodes `data`, translating any failure into a `FoundryImportError`. Pass

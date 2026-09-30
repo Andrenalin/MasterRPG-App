@@ -142,7 +142,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("IOSGameElapsedTimerText")
     func snapshotIOSGameElapsedTimerText() async throws {
         try await assertPreviewSnapshot("IOSGameElapsedTimerText") {
-            GameRPG.IOSGameElapsedTimerText(
+            GameRPG.GameElapsedTimerText(
                 startDate: GamePreviewData.referenceDate.addingTimeInterval(-5_400),
                 referenceDate: GamePreviewData.referenceDate
             )
@@ -494,7 +494,7 @@ struct GameRPGGeneratedPreviewSnapshotTests {
     @Test("TabPlayerSecondGameView")
     func snapshotTabPlayerSecondGameView() async throws {
         try await assertPreviewSnapshot("TabPlayerSecondGameView") {
-            GameRPG.TabPlayerSecondGameView(root: .previewFixture(game: .player))
+            GameRPG.TabSecondGameView(root: .previewFixture(game: .player), isPlayer: true)
                 .environment(GameScreenModel())
         }
     }

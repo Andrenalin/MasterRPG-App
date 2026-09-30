@@ -362,23 +362,6 @@
         }
       }
     },
-    "3D Map" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3D-Karte"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แผนที่ 3D"
-          }
-        }
-      }
-    },
     "6 Months" : {
       "localizations" : {
         "de" : {
@@ -785,23 +768,6 @@
         }
       }
     },
-    "Campaign Hearth" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kampagnenfeuer"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เตาผิงแคมเปญ"
-          }
-        }
-      }
-    },
     "Cancel" : {
       "localizations" : {
         "de" : {
@@ -814,23 +780,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ยกเลิก"
-          }
-        }
-      }
-    },
-    "Cancel Game" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spiel abbrechen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ยกเลิกเกม"
           }
         }
       }
@@ -866,23 +815,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "จัดกึ่งกลางตัวชี้"
-          }
-        }
-      }
-    },
-    "Changes the game setup options below." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ändert die nachfolgenden Optionen für die Spieleinrichtung."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เปลี่ยนตัวเลือกการตั้งค่าเกมด้านล่าง"
           }
         }
       }
@@ -933,23 +865,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวละคร"
-          }
-        }
-      }
-    },
-    "Choose" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wählen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือก"
           }
         }
       }
@@ -1102,40 +1017,6 @@
         }
       }
     },
-    "Choose your seat" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Platz auswählen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลือกที่นั่งของคุณ"
-          }
-        }
-      }
-    },
-    "Chronicle" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chronik"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "พงศาวดาร"
-          }
-        }
-      }
-    },
     "Chunked %lld" : {
       "localizations" : {
         "de" : {
@@ -1204,23 +1085,6 @@
         }
       }
     },
-    "Clear Search" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suche löschen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ล้างการค้นหา"
-          }
-        }
-      }
-    },
     "Code" : {
       "localizations" : {
         "de" : {
@@ -1263,23 +1127,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "รวบรวมสถิติเกม"
-          }
-        }
-      }
-    },
-    "Complete the three preparations, then begin." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schließe die drei Vorbereitungen ab und beginne dann."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เตรียมทั้งสามขั้นตอนให้เสร็จ แล้วจึงเริ่ม"
           }
         }
       }
@@ -1383,23 +1230,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ประเภทเนื้อหา"
-          }
-        }
-      }
-    },
-    "Continue as" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortfahren als"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ดำเนินการต่อในฐานะ"
           }
         }
       }
@@ -2157,23 +1987,6 @@
         }
       }
     },
-    "Find a game" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Spiel finden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ค้นหาเกม"
-          }
-        }
-      }
-    },
     "Find a nearby game as observer or proxy." : {
       "localizations" : {
         "de" : {
@@ -2202,94 +2015,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "เล่นเกมให้ครบอย่างน้อย 15 นาทีเพื่อแทนที่ตัวอย่างนี้ด้วยเรื่องราวของคุณเอง"
-          }
-        }
-      }
-    },
-    "Found %lld Players" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Spieler gefunden"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Spieler gefunden"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Spieler gefunden"
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "Found %lld Player"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "Found %lld Players"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "Found %lld Players"
-                }
-              }
-            }
-          }
-        },
-        "th" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "พบผู้เล่น %lld คน"
-                }
-              },
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "machine_translated",
-                  "value" : "พบผู้เล่น %lld คน"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Found game: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spiel gefunden: %@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "พบเกม: %@"
           }
         }
       }
@@ -2606,46 +2331,6 @@
         }
       }
     },
-    "Gather your party and continue the story." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Versammle deine Gruppe und setze die Geschichte fort."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "รวมกลุ่มนักผจญภัยและสานต่อเรื่องราว"
-          }
-        }
-      }
-    },
-    "Generated %@: %@" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generiert %1$@: %2$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Generated %1$@: %2$@"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "สร้าง %1$@: %2$@"
-          }
-        }
-      }
-    },
     "Group By" : {
       "comment" : "A label for selecting the granularity of the statistics.",
       "isCommentAutoGenerated" : true,
@@ -2660,23 +2345,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "จัดกลุ่มตาม"
-          }
-        }
-      }
-    },
-    "Guild Hall" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gildenhalle"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "หอสมาคม"
           }
         }
       }
@@ -2745,23 +2413,6 @@
         }
       }
     },
-    "Hide All Rooms" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Räume ausblenden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซ่อนห้องทั้งหมด"
-          }
-        }
-      }
-    },
     "Hide Dice" : {
       "comment" : "A label for the button.",
       "isCommentAutoGenerated" : true,
@@ -2812,23 +2463,6 @@
         }
       }
     },
-    "Hide Pointer" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeiger ausblenden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซ่อนตัวชี้"
-          }
-        }
-      }
-    },
     "Hide Side Menu Buttons" : {
       "localizations" : {
         "de" : {
@@ -2859,23 +2493,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ซ่อนแถบด้านข้าง"
-          }
-        }
-      }
-    },
-    "Hide table volume" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tischlautstärke ausblenden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ซ่อนระดับเสียงของโต๊ะ"
           }
         }
       }
@@ -3256,23 +2873,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "กลุ่มผู้เล่นที่ใหญ่ที่สุด"
-          }
-        }
-      }
-    },
-    "Last setup" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Letzte Einrichtung"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การตั้งค่าล่าสุด"
           }
         }
       }
@@ -3897,23 +3497,6 @@
         }
       }
     },
-    "Observe any hosted game in the local network, or connect as proxy to extend a player to a second screen and audio source." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einem laufenden Spiel im lokalen Netzwerk zuschauen oder als Proxy verbinden, um einem Spieler einen zweiten Bildschirm und eine zusätzliche Tonquelle bereitzustellen."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "สังเกตการณ์เกมที่เปิดให้บริการในเครือข่ายท้องถิ่น หรือเชื่อมต่อเป็นตัวกลางเพื่อขยายผู้เล่นไปยังหน้าจอที่สองและแหล่งเสียง"
-          }
-        }
-      }
-    },
     "Observe: %@" : {
       "localizations" : {
         "de" : {
@@ -4263,23 +3846,6 @@
         }
       }
     },
-    "Please try again later." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bitte versuche es später erneut."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "โปรดลองอีกครั้งในภายหลัง"
-          }
-        }
-      }
-    },
     "Portal Gate" : {
       "localizations" : {
         "de" : {
@@ -4296,23 +3862,6 @@
         }
       }
     },
-    "Prepare the session" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sitzung vorbereiten"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เตรียมเซสชัน"
-          }
-        }
-      }
-    },
     "Proxy" : {
       "localizations" : {
         "de" : {
@@ -4325,23 +3874,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวกลาง"
-          }
-        }
-      }
-    },
-    "Quest Board" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questtafel"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กระดานภารกิจ"
           }
         }
       }
@@ -4664,23 +4196,6 @@
         }
       }
     },
-    "Return to the table" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurück an den Spieltisch"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "กลับสู่โต๊ะเกม"
-          }
-        }
-      }
-    },
     "Revive Pin" : {
       "localizations" : {
         "de" : {
@@ -4791,23 +4306,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Raum %@"
-          }
-        }
-      }
-    },
-    "Room Visibility" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raumsichtbarkeit"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การมองเห็นห้อง"
           }
         }
       }
@@ -5164,40 +4662,6 @@
         }
       }
     },
-    "Session Chronicle" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sitzungschronik"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "พงศาวดารเซสชัน"
-          }
-        }
-      }
-    },
-    "Session setup" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sitzung einrichten"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ตั้งค่าเซสชัน"
-          }
-        }
-      }
-    },
     "Share" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5361,23 +4825,6 @@
         }
       }
     },
-    "Show All Rooms" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Räume anzeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงห้องทั้งหมด"
-          }
-        }
-      }
-    },
     "Show Dice" : {
       "comment" : "A label for the button.",
       "isCommentAutoGenerated" : true,
@@ -5446,23 +4893,6 @@
         }
       }
     },
-    "Show Pointer" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeiger anzeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงตัวชี้"
-          }
-        }
-      }
-    },
     "Show Side Menu Buttons" : {
       "localizations" : {
         "de" : {
@@ -5497,23 +4927,6 @@
         }
       }
     },
-    "Show table volume" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tischlautstärke anzeigen"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แสดงระดับเสียงของโต๊ะ"
-          }
-        }
-      }
-    },
     "Show Table Volume" : {
       "localizations" : {
         "de" : {
@@ -5526,23 +4939,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "แสดงระดับเสียงของโต๊ะ"
-          }
-        }
-      }
-    },
-    "Side Menu" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seitenmenü"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เมนูด้านข้าง"
           }
         }
       }
@@ -5664,23 +5060,6 @@
         }
       }
     },
-    "Start a game as" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beginne das Spiel als"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เริ่มเกมในฐานะ"
-          }
-        }
-      }
-    },
     "Start Battle" : {
       "comment" : "A button that starts a battle.",
       "isCommentAutoGenerated" : true,
@@ -5785,23 +5164,6 @@
     },
     "That code was not accepted. Check it and try again." : {
 
-    },
-    "The action above starts or joins the session when your selection is ready." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die obige Aktion startet die Sitzung oder tritt ihr bei, sobald deine Auswahl bereit ist."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "การดำเนินการด้านบนจะเริ่มหรือเข้าร่วมเซสชันเมื่อรายการที่คุณเลือกพร้อม"
-          }
-        }
-      }
     },
     "The host did not accept the connection in time. Check the code and that Local Network access is allowed, then try again." : {
 
@@ -5996,23 +5358,6 @@
         }
       }
     },
-    "Unable to start game" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spiel kann nicht gestartet werden"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ไม่สามารถเริ่มเกมได้"
-          }
-        }
-      }
-    },
     "Unknown" : {
       "comment" : "Description of a game statistic event kind when the event kind is unknown.",
       "isCommentAutoGenerated" : true,
@@ -6061,23 +5406,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตัวละครที่ไม่ทราบชื่อ"
-          }
-        }
-      }
-    },
-    "Unnamed Room" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unbenannter Raum"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ห้องที่ไม่มีชื่อ"
           }
         }
       }
@@ -6301,40 +5629,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dein Spielercode"
-          }
-        }
-      }
-    },
-    "Your role" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Rolle"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "บทบาทของคุณ"
-          }
-        }
-      }
-    },
-    "Your session dashboard" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Sitzungsübersicht"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "แดชบอร์ดเซสชันของคุณ"
           }
         }
       }

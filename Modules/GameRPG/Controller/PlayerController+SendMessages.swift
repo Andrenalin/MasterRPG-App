@@ -216,7 +216,7 @@ extension PlayerController {
             outgoingCounter = gameModel.nextOutgoingMessageCounter()
         }
         Logger.networking.debug("PlayerController: Send \(outgoingCounter, privacy: .public): \(type.debugDescription, privacy: .public) - \(subType.debugDescription, privacy: .public) for \(updated.id, privacy: .public)")
-        let networtData = root.gameModel.outgoingMessage(
+        let networkData = root.gameModel.outgoingMessage(
             timestamp: outgoingTimestamp,
             counter: outgoingCounter,
             type: type,
@@ -230,23 +230,23 @@ extension PlayerController {
         // longer republishes a canonical Space transform. Apply this exact
         // versioned envelope optimistically so SpaceViewer observes its own
         // timestamped transform as acknowledged and does not retry forever.
-        if networtData.purpose == .event,
-           networtData.type == .update,
-           networtData.subType == .spaceTransform,
-           networtData.data.type == .space {
+        if networkData.purpose == .event,
+           networkData.type == .update,
+           networkData.subType == .spaceTransform,
+           networkData.data.type == .space {
             _ = root.spaceRoot.spaceGameControllable.applySpaceTransform(
-                data: networtData.data,
-                counter: networtData.counter,
-                timestamp: networtData.timestamp
+                data: networkData.data,
+                counter: networkData.counter,
+                timestamp: networkData.timestamp
             )
         }
 
         let origin: GameMessageOrigin = root.gameModel.gameType == .proxy ? .proxy(nil) : .direct(nil)
-        await root.statisticsModel.record(networtData, direction: .outgoing, origin: origin)
+        await root.statisticsModel.record(networkData, direction: .outgoing, origin: origin)
 
-        let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networtData)
+        let useOnTypeJournal = useJournal || Self.usesFileJournal(for: networkData)
         await sendOriginating(
-            model: networtData,
+            model: networkData,
             useJournal: useOnTypeJournal,
             relayToProxyClients: relayToProxyClients
         )

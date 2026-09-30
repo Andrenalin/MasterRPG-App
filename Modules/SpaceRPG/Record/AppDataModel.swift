@@ -373,8 +373,8 @@ final class AppDataModel: Identifiable {
         }
 
         // Finds new feedback.
-        let feebackToAdd = feedback.subtracting(persistentFeedback)
-        for thisFeedback in feebackToAdd {
+        let feedbackToAdd = feedback.subtracting(persistentFeedback)
+        for thisFeedback in feedbackToAdd {
             if let feedbackString = FeedbackMessages.getFeedbackString(for: thisFeedback) {
                 messageList.add(feedbackString)
             }

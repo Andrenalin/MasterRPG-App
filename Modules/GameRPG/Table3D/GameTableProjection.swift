@@ -14,7 +14,7 @@ import AppKit
 import UIKit
 #endif
 
-extension GameSetup {
+extension TableGameSetup {
     /// Syncs pin tokens (players and monsters) with the current map pins,
     /// id-matched: updates existing, creates missing, removes stale tokens.
     /// Returns pinId → photoId for tokens that still need their photo texture.

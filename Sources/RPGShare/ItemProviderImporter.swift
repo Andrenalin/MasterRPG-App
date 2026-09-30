@@ -199,13 +199,13 @@ private extension ItemProviderImporter {
         return output as Data
     }
 
-    nonisolated static let maximumRawImageByteSize = 8 * 1_024 * 1_024
+    nonisolated static let maximumRawImageByteSize = 8 * ByteUnit.mebibyte
     nonisolated static let maximumDownsampledPixelDimension: CGFloat = 4_096
-    nonisolated static let maximumTotalImagePayloadSize = 60 * 1_024 * 1_024
+    nonisolated static let maximumTotalImagePayloadSize = 60 * ByteUnit.mebibyte
     /// Largest image file (or download) the extension will even open.
     nonisolated static let maximumSourceFileByteSize = ByteLimits.maximumSourceFileBytes
     /// Text shared into an entry is small; anything larger is not text worth loading.
-    nonisolated static let maximumTextByteSize = 5 * 1_024 * 1_024
+    nonisolated static let maximumTextByteSize = 5 * ByteUnit.mebibyte
 
     nonisolated static func loadText(provider: NSItemProvider, type: UTType) async throws -> String {
         let item = try await loadItem(provider: provider, type: type)

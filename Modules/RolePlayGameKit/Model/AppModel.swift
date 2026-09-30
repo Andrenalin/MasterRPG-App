@@ -579,7 +579,7 @@ extension AppModel {
 
     /// Returns the root Navigator for the given window scene.
     ///
-    /// Callers that have just opened a window via `openWindowForModule(...)` should resolve the
+    /// Callers that have just opened a window for a module should resolve the
     /// navigator through this method so the navigator they get matches the window that's actually
     /// on screen — looking it up on the module before the window opens can yield the wrong one
     /// on platforms where module-to-window mapping is platform-conditional.

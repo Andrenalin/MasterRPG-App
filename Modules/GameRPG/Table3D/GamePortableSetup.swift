@@ -9,7 +9,7 @@ import RealityKit
 import os.log
 
 @MainActor
-final class GameSetup {
+final class PortableGameSetup {
     let root: Entity
     let board: Board
     let pinContainer: Entity

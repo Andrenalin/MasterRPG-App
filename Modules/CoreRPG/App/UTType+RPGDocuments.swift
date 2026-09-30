@@ -4,8 +4,8 @@ import UniformTypeIdentifiers
 
 public extension UTType {
     static let rpgDocument = UTType(
-        exportedAs: "de.AndreTrettin.GameMaster.gmz")
+        exportedAs: "\(BundleIds.legacyProduct).gmz")
 
     static let gmsDocument = UTType(
-        exportedAs: "de.AndreTrettin.GameMaster.gms")
+        exportedAs: "\(BundleIds.legacyProduct).gms")
 }

@@ -30,7 +30,7 @@ extension RPGMap {
     /// window between being fetched and this running. The caller skips this
     /// sync step; the next sync pass reconciles it once the deletion (or a
     /// re-fetch) has settled, instead of crashing the process. See CODE_AUDIT §5.2.
-    func displyConfigOrNew(for _: UUID) -> RPGDisplayConfig? {
+    func displayConfigOrNew(for _: UUID) -> RPGDisplayConfig? {
         if let displayConfig {
             return displayConfig
         }
@@ -48,7 +48,7 @@ extension RPGMapEntry {
         set { coordinates = NSSet(array: newValue) }
     }
 
-    /// See `RPGMap.displyConfigOrNew(for:)` — same concurrent-deletion race, same graceful bail-out.
+    /// See `RPGMap.displayConfigOrNew(for:)` — same concurrent-deletion race, same graceful bail-out.
     func newCoordinate() -> RPGPosition? {
         guard let managedObjectContext else {
             Logger.syncDataControllable.error("RPGMapEntry has no managedObjectContext while adding a coordinate — likely deleted by a concurrent merge. Skipping this sync step.")
@@ -64,7 +64,7 @@ extension RPGDisplayConfig {
         set { tileCoordinates = NSSet(array: newValue) }
     }
 
-    /// See `RPGMap.displyConfigOrNew(for:)` — same concurrent-deletion race, same graceful bail-out.
+    /// See `RPGMap.displayConfigOrNew(for:)` — same concurrent-deletion race, same graceful bail-out.
     func newCoordinate() -> RPGPosition? {
         guard let managedObjectContext else {
             Logger.syncDataControllable.error("RPGDisplayConfig has no managedObjectContext while adding a coordinate — likely deleted by a concurrent merge. Skipping this sync step.")
@@ -75,7 +75,7 @@ extension RPGDisplayConfig {
 }
 
 extension RPGMapPin {
-    /// See `RPGMap.displyConfigOrNew(for:)` — same concurrent-deletion race, same graceful bail-out.
+    /// See `RPGMap.displayConfigOrNew(for:)` — same concurrent-deletion race, same graceful bail-out.
     func coordinateOrNew(for _: UUID) -> RPGPosition? {
         if let coordinate = location {
             return coordinate

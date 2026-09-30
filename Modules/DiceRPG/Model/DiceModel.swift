@@ -377,10 +377,6 @@ extension DiceModel {
         }
     }
     
-    var minValue: Int {
-        dice.reduce(0) { $0 + $1.die.min }
-    }
-    
     var maxValue: Int {
         dice.reduce(0) { $0 + $1.die.max }
     }

@@ -94,6 +94,28 @@ struct BoardTextureRendererTests {
         #expect(try TexturePixel(texture, x: 25, y: 75).isBlue)
     }
 
+    /// CODE_AUDIT_19 §9.26: an asymmetric tile (red only in its top-left 15×15 corner) repeated
+    /// with a 30 px period across the 50 px hidden room, a non-multiple. A flipped tile or a
+    /// shifted lattice changes these pixels; a uniformly coloured tile can't show either.
+    @Test("An asymmetric tile repeats with the tile's own phase and orientation")
+    func asymmetricTileKeepsPhaseAndOrientation() async throws {
+        let tile = [
+            CGPoint(x: 35, y: 35),
+            CGPoint(x: 65, y: 35),
+            CGPoint(x: 65, y: 65),
+            CGPoint(x: 35, y: 65)
+        ]
+        let texture = try await render(tileCoordinates: tile)
+
+        // Lattice origins at x = 35, 65, 95 and y = 5, 35, 65, 95.
+        #expect(try TexturePixel(texture, x: 70, y: 40).isRed)
+        #expect(try TexturePixel(texture, x: 85, y: 40).isBlue)
+        #expect(try TexturePixel(texture, x: 70, y: 55).isBlue)
+        #expect(try TexturePixel(texture, x: 70, y: 70).isRed)
+        #expect(try TexturePixel(texture, x: 97, y: 67).isRed)
+        #expect(try TexturePixel(texture, x: 55, y: 10).isBlue)
+    }
+
     /// CODE_AUDIT_19 §5.18: the repeat period is the tile's exact size. Snapping it to whole
     /// texture pixels made the 3D lattice drift from the 2D one on large maps.
     @Test("The fog tile keeps its exact rect as the repeat period")

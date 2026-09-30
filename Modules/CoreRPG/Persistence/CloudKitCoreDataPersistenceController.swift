@@ -137,36 +137,15 @@ public struct CloudKitCoreDataPersistenceController {
 
     @MainActor
     public func recoverFromError() {
-        guard model.recoverableError, let url = model.containerStoreUrl, let container = model.container else { return }
-        do {
-            try container.destroyStoreFiles(at: url)
-            let model = model
-            container.loadPersistentStores { _, error in
-                let newError: CoreDataInitError = if let error = error as NSError? {
-                    .creation(message: error.localizedDescription)
-                } else {
-                    .none
-                }
-                runOnMainActor {
-                    model.error = newError
-                    Self.setupContext(container: container, model: model)
-                }
-            }
-        } catch {
-            model.error = .removeFile(message: error.localizedDescription)
+        model.recoverStore { container, model in
+            Self.setupContext(container: container, model: model)
         }
     }
 
     @MainActor
     private static func setupContext(container: NSPersistentContainer, model: CoreDataInitModel) {
-        guard model.error == .none else { return }
         // Setup main background context for regular operations
-        let context = container.newBackgroundContext()
-        context.name = "background_context"
-        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
-        context.transactionAuthor = model.currentActor.rawValue
-        context.automaticallyMergesChangesFromParent = true
-        model.context = context
+        guard model.installBackgroundContext(from: container) else { return }
 
 #if !os(tvOS)
         model.spotlightIndexer?.startSpotlightIndexing()

@@ -38,8 +38,11 @@ enum GameLimits {
     }
 }
 
-/// `@AppStorage` keys read in more than one view.
+/// The game setup's `@AppStorage` keys, kept in one place so a typo can't silently lose the
+/// stored value. See CODE_AUDIT_19 §9.8.
 enum GameStorageKeys {
     static let lastSelectedGameType = "lastSelectedGameType"
     static let lastAdventureUUID = "lastAdventureUUID"
+    static let lastGameMasterUUID = "lastGameMasterUUID"
+    static let lastPlayerUUID = "lastPlayerUUID"
 }

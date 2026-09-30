@@ -53,10 +53,6 @@ struct WeatherEntity: IndexedEntity {
     }
 }
 
-/// Thrown when the `WeatherEntity` PDF export can't open a `CGContext` for the
-/// destination file (e.g. disk full, sandbox/permission issue).
-struct WeatherEntityPdfRenderingError: Error {}
-
 extension WeatherEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .pdf) { @MainActor item in

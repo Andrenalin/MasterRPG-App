@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
+import CoreRPG
 import Foundation
 import Network
 import Testing
@@ -112,8 +113,7 @@ struct PlayerFallbackListenerTests {
 
         #expect(controller.networkModel.playerConnectionId != nil)
         #expect(controller.networkModel.listener == nil)
-        try await Task.sleep(for: .seconds(1.5))
-        #expect(builds.value == 2)
+        #expect(await waitUntil(timeout: .seconds(5)) { builds.value == 2 })
         #expect(controller.networkModel.listener != nil)
         await controller.stop()
     }

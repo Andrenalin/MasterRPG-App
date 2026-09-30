@@ -45,7 +45,7 @@ public struct EditorLinkView: View {
                 .toolbarItemListModifier(root: root, listControllable: editorLinkModel.folderListController, parentModel: nil, modal: true) {
                     let resolvedRoot = destinationModule.flatMap { editorLinkModel.rootManager?.itemRootController(for: $0) } ?? root
                     guard let editControllable = resolvedRoot.editControllable as? (any EntryDataEditable) else { return }
-                    editorLinkModel.addLinkAndReset(editController: editControllable, destiantionItemId: model.id, destinationEntryId: selectedEntryId)
+                    editorLinkModel.addLinkAndReset(editController: editControllable, destinationItemId: model.id, destinationEntryId: selectedEntryId)
                 }
                 .searchItemList(listControllable: editorLinkModel.folderListController)
         }

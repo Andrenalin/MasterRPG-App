@@ -8,7 +8,7 @@ import os.log
 // Split out of EditController.swift — see CODE_AUDIT_Character §9.7.
 
 extension EditController {
-    @MainActor func repairCharacterContrains() {
+    @MainActor func repairCharacterConstraints() {
         let itemIds = itemControllable.itemDataModel.items
 
         // Build: groupItemId → [ownerIds that reference it via entry.valueId]

@@ -666,23 +666,6 @@
         }
       }
     },
-    "Extract Information" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Informationen extrahieren"
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "ดึงข้อมูล"
-          }
-        }
-      }
-    },
     "Extract with AI" : {
       "localizations" : {
         "de" : {

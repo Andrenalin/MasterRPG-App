@@ -147,7 +147,7 @@ final class CoreDataModel: Sendable {
     /// Runs `work` only after any previously-chained flush has finished, atomically swapping
     /// in the new task under one lock acquisition so two concurrent `flushPendingOperations()`/
     /// `save()` calls on this controller (e.g. an autosave debounce racing an explicit save)
-    /// can never both observe "no predecessor" and run their dequeue→batchExists→apply
+    /// can never both observe "no predecessor" and run their dequeue→existence check→apply
     /// sequences in parallel — which could let an older call's apply step land after (and
     /// silently overwrite) a newer one's. See CODE_AUDIT §3.3.
     func chainedFlush(_ work: @escaping @Sendable () async throws -> Void) async throws {
@@ -243,7 +243,7 @@ public extension CoreDataController {
 
     /// Drains the pending-operations queue into the context without calling `context.save()`.
     /// Use from `AdventureRootModel.save()` for all module roots so a single `context.save()`
-    /// covers every module's changes. `replace`, `delete` and `batchReplace` queue their
+    /// covers every module's changes. `replace` and `delete` queue their
     /// writes and flush too, so every write into the shared context is recorded as in flight
     /// and survives another module's rollback. See CODE_AUDIT_19 §5.4.
     func flushPendingOperations() async throws {
@@ -347,20 +347,6 @@ public extension CoreDataController {
         queueReplace(uuid: uuid, snapshot: snapshot, updater: updater)
         try await flushPendingOperations()
     }
-
-    /// Queues every snapshot, then flushes and saves once. See CODE_AUDIT_19 §5.4.
-    func batchReplace<Snapshot: Sendable>(
-        snapshots: [Snapshot],
-        keyPath: KeyPath<Snapshot, UUID>,
-        updater: @escaping @Sendable (Snapshot, DataType) -> Void
-    ) async throws {
-        guard !snapshots.isEmpty else { return }
-        for snapshot in snapshots {
-            queueReplace(uuid: snapshot[keyPath: keyPath], snapshot: snapshot, updater: updater)
-        }
-        try await save()
-        Logger.coreDataController.info("Batch replaced \(snapshots.count) snapshots")
-    }
 }
 
 // MARK: - Batch Operations (New)
@@ -396,8 +382,7 @@ public extension CoreDataController {
         }
         Logger.coreDataController.info("Batch deleted \(uuids.count) objects")
     }
-    
-    
+
     /// Batch exists check for multiple UUIDs
     /// Must be called on the context's queue. A failed lookup throws rather than reading as
     /// "nothing exists".
@@ -409,30 +394,6 @@ public extension CoreDataController {
         request.resultType = .dictionaryResultType
         let results = try context.fetch(request)
         return Set(results.compactMap { $0["uuid"] as? UUID })
-    }
-
-    func batchExists(uuids: [UUID]) async throws -> Set<UUID> {
-        guard !uuids.isEmpty else { return Set() }
-        
-        // A failed lookup must not read as "nothing exists": callers would insert every model
-        // as new and create duplicate uuid rows. See CODE_AUDIT_15 §5.6.
-        return try await context.perform {
-            let request = NSFetchRequest<NSDictionary>(entityName: String(describing: DataType.self))
-            request.predicate = NSPredicate(format: "uuid IN %@", uuids as [NSUUID])
-            request.propertiesToFetch = ["uuid"]
-            request.resultType = .dictionaryResultType
-
-            do {
-                let results = try context.fetch(request)
-                let existingUUIDs = results.compactMap { dict in
-                    dict["uuid"] as? UUID
-                }
-                return Set(existingUUIDs)
-            } catch {
-                Logger.coreDataController.error("Batch exists check error: \(error.localizedDescription, privacy: .public)")
-                throw error
-            }
-        }
     }
 }
 
@@ -510,12 +471,6 @@ private extension CoreDataController {
         } catch {
             Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
             throw error
-        }
-    }
-
-    func fetch(uuid: UUID) async throws -> DataType? {
-        await context.perform {
-            fetchCoreData(uuid: uuid)
         }
     }
 

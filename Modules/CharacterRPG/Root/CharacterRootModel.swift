@@ -245,7 +245,7 @@ extension CharacterRootModel {
 
     public func checkFolders(reportModel: ValidateRepairModel) async {
         reportModel.update(section: "Validating Character Data")
-        editController.repairCharacterContrains()
+        editController.repairCharacterConstraints()
 
         for id in itemController.itemDataModel.items {
             guard let model = await itemController.item(for: id), model.displayState != DisplayStateMask.totalHidden.rawValue && model.specialCategory == false else { continue }

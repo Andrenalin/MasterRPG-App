@@ -10,8 +10,6 @@ public final class ItemRowTreeModel: Identifiable, Sendable {
     public var expanded: Bool = false
     public var children: [ItemRowTreeModel] = []
     public var idChildren: [UUID: Int] = [:]
-    public var isFirst: Bool = false
-    public var isLast: Bool = false
 
     public init(id: UUID, model: ItemRowModel, level: Int = 0, expanded: Bool = false, children: [ItemRowTreeModel] = [], idChildren: [UUID: Int] = [:]) {
         self.id = id
@@ -38,8 +36,6 @@ public final class ItemRowTreeModel: Identifiable, Sendable {
         self._expanded = try container.decode(Bool.self, forKey: ItemRowTreeModel.CodingKeys._expanded)
         self._children = try container.decode([ItemRowTreeModel].self, forKey: ItemRowTreeModel.CodingKeys._children)
         self._idChildren = try container.decode([UUID : Int].self, forKey: ItemRowTreeModel.CodingKeys._idChildren)
-        self._isFirst = try container.decode(Bool.self, forKey: ItemRowTreeModel.CodingKeys._isFirst)
-        self._isLast = try container.decode(Bool.self, forKey: ItemRowTreeModel.CodingKeys._isLast)
     }
 
     public static let empty: ItemRowTreeModel = .init(id: UUID(), model: ItemRowModel.empty)
@@ -59,8 +55,6 @@ extension ItemRowTreeModel: @MainActor Codable {
         case _expanded
         case _children
         case _idChildren
-        case _isFirst
-        case _isLast
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -72,8 +66,6 @@ extension ItemRowTreeModel: @MainActor Codable {
         try container.encode(self._expanded, forKey: ItemRowTreeModel.CodingKeys._expanded)
         try container.encode(self._children, forKey: ItemRowTreeModel.CodingKeys._children)
         try container.encode(self._idChildren, forKey: ItemRowTreeModel.CodingKeys._idChildren)
-        try container.encode(self._isFirst, forKey: ItemRowTreeModel.CodingKeys._isFirst)
-        try container.encode(self._isLast, forKey: ItemRowTreeModel.CodingKeys._isLast)
     }
 }
 

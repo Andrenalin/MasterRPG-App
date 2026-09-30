@@ -6,7 +6,7 @@ import os.log
 // MARK: - CloudKit Operation Counter
 
 // Actually enforces something (a periodic reset + a one-time-per-window log warning) instead
-// of being pure write-only telemetry nobody ever read `getCount()`/called `reset()` on — see
+// of being pure write-only telemetry nobody ever read or reset — see
 // CODE_AUDIT §9.2. `warningThreshold` is a heuristic, not an Apple-documented CloudKit quota:
 // it exists to surface an unusually chatty day of Core Data saves/file operations in the log
 // before they risk CloudKit's actual per-request rate limits, not to enforce a real limit.
@@ -47,10 +47,6 @@ actor CloudKitOperationCounter {
         guard operationCount >= Self.warningThreshold, !hasWarnedThisWindow else { return }
         hasWarnedThisWindow = true
         Logger.fileStore.warning("☁️ CloudKit operation count has crossed \(Self.warningThreshold, privacy: .public) since \(self.startTime, privacy: .public) — check for a sync loop or an unusually chatty batch.")
-    }
-
-    func getCount() -> Int {
-        operationCount
     }
 
     func reset() {

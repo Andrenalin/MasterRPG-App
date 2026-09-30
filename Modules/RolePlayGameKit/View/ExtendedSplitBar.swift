@@ -40,7 +40,7 @@ struct ExtendedSplitBar: View {
 }
 
 private struct ExtendedSplitBarRestorationModifier: ViewModifier {
-    @SceneStorage("ExtendedTabRoute") private var currentModule: ExtendedTabRoute?
+    @SceneStorage(ExtendedTabRoute.sceneStorageKey) private var currentModule: ExtendedTabRoute?
 
     let appModel: AppModel
     @Binding var tabSelectedModule: NetworkModules

@@ -2,6 +2,7 @@
 
 #if canImport(Testing)
 import AVFoundation
+import CoreRPG
 import Foundation
 import Testing
 
@@ -96,8 +97,7 @@ struct AudioControllerTests {
         model.currentItem = first
 
         sut.performRemoteCommand(.nextTrack)
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(model.currentId == second.id)
+        #expect(await waitUntil { model.currentId == second.id })
 
         sut.performRemoteCommand(.previousTrack)
         sut.performRemoteCommand(.changePlaybackPosition(1))

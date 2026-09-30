@@ -23,14 +23,16 @@ extension GameTableModel {
         rooms.first(where: \.focused)?.id
     }
 
-    /// Re-syncs pawns and re-broadcasts after a map mutation made outside this model — e.g.
-    /// `ChooseMapPinsButton` adding monster pins directly through `EditController`, bypassing this
-    /// model's own mutation methods (which all sync/broadcast themselves). Local sync always runs so
-    /// the game master sees the change immediately; broadcasting respects `isStreaming`.
-    func syncAfterExternalEdit() {
-        syncPawnsWithMapPins()
-        guard isGameMaster, let mapId = currentMapId else { return }
-        broadcastMapEdit(for: mapId)
+    /// Wires the model to the running game: the network, the game-master role and the player's
+    /// own pin, plus the GM's preview lens, which a 2D↔3D toggle must keep (CODE_AUDIT_19 §5.17).
+    /// Shared by the visionOS and iOS/macOS tables. See CODE_AUDIT_19 §9.14.
+    func configureSession(from root: GameRoot) {
+        networkActions = root.networkActions
+        isGameMaster = root.gameModel.gameConfig.isMaster
+        playerPinId = isGameMaster ? nil : root.gameModel.gameConfig.id
+        if isGameMaster {
+            displayMode = root.mapRoot.rootModel.gameDisplayMode
+        }
     }
 
     var pointer: MapPinModel? {

@@ -8,142 +8,6 @@ import TipKit
 
 @Suite("MasterRPG tip eligibility")
 struct MasterRPGTipEligibilityTests {
-    @Test("An empty ready database offers creation and import guidance")
-    func emptyDatabase() {
-        // Given
-        let snapshot = makeSnapshot()
-
-        // When / Then
-        #expect(snapshot.shouldShowFirstItem)
-        #expect(!snapshot.shouldShowFirstEntry)
-        #expect(!snapshot.shouldShowOrganization)
-        #expect(!snapshot.shouldShowLinking)
-    }
-
-    @Test("Existing or imported content suppresses first-item guidance")
-    func existingContent() {
-        // Given
-        let snapshot = makeSnapshot(
-            regularItemCount: 8,
-            topLevelItemCount: 6,
-            entryCount: 12,
-            linkCount: 2,
-            organizationCount: 2
-        )
-
-        // When / Then
-        #expect(!snapshot.shouldShowFirstItem)
-        #expect(!snapshot.shouldShowFirstEntry)
-        #expect(!snapshot.shouldShowOrganization)
-        #expect(!snapshot.shouldShowLinking)
-    }
-
-    @Test("The first-entry tip follows the first real item")
-    func firstEntry() {
-        // Given
-        let snapshot = makeSnapshot(
-            regularItemCount: 1,
-            topLevelItemCount: 1
-        )
-
-        // When / Then
-        #expect(!snapshot.shouldShowFirstItem)
-        #expect(snapshot.shouldShowFirstEntry)
-    }
-
-    @Test("Organization guidance waits until the library has useful scale")
-    func organizationThreshold() {
-        // Given
-        let beforeThreshold = makeSnapshot(
-            regularItemCount: 3,
-            topLevelItemCount: 3,
-            entryCount: 1
-        )
-        let atThreshold = makeSnapshot(
-            regularItemCount: 4,
-            topLevelItemCount: 4,
-            entryCount: 1
-        )
-        let alreadyOrganized = makeSnapshot(
-            regularItemCount: 4,
-            topLevelItemCount: 4,
-            entryCount: 1,
-            organizationCount: 1
-        )
-
-        // When / Then
-        #expect(!beforeThreshold.shouldShowOrganization)
-        #expect(atThreshold.shouldShowOrganization)
-        #expect(!alreadyOrganized.shouldShowOrganization)
-    }
-
-    @Test("Link guidance requires two resources and an editable entry")
-    func linkingPrerequisites() {
-        // Given
-        let noEntry = makeSnapshot(
-            regularItemCount: 2,
-            topLevelItemCount: 2
-        )
-        let readyToLink = makeSnapshot(
-            regularItemCount: 2,
-            topLevelItemCount: 2,
-            entryCount: 1
-        )
-        let existingLink = makeSnapshot(
-            regularItemCount: 2,
-            topLevelItemCount: 2,
-            entryCount: 1,
-            linkCount: 1
-        )
-
-        // When / Then
-        #expect(!noEntry.shouldShowLinking)
-        #expect(readyToLink.shouldShowLinking)
-        #expect(!existingLink.shouldShowLinking)
-    }
-
-    @Test("Game and map tips are based on available domain content")
-    func domainPrerequisites() {
-        // Given
-        let snapshot = makeSnapshot(
-            regularItemCount: 3,
-            topLevelItemCount: 3,
-            adventureCount: 1,
-            characterCount: 1,
-            mapCount: 1
-        )
-
-        // When / Then
-        #expect(snapshot.shouldShowAdventureSelection)
-        #expect(snapshot.shouldShowCharacterSelection)
-        #expect(snapshot.shouldShowMapEditor)
-        #expect(snapshot.shouldShowAnotherWindow)
-    }
-
-    @Test("No contextual tip is eligible before the database is ready")
-    func databaseNotReady() {
-        // Given
-        let snapshot = makeSnapshot(
-            databaseReady: false,
-            regularItemCount: 5,
-            topLevelItemCount: 5,
-            entryCount: 2,
-            adventureCount: 1,
-            characterCount: 1,
-            mapCount: 1
-        )
-
-        // When / Then
-        #expect(!snapshot.shouldShowFirstItem)
-        #expect(!snapshot.shouldShowFirstEntry)
-        #expect(!snapshot.shouldShowOrganization)
-        #expect(!snapshot.shouldShowLinking)
-        #expect(!snapshot.shouldShowAdventureSelection)
-        #expect(!snapshot.shouldShowCharacterSelection)
-        #expect(!snapshot.shouldShowMapEditor)
-        #expect(!snapshot.shouldShowAnotherWindow)
-    }
-
     @Test("Core onboarding copy is localized in German")
     func germanLocalization() {
         // Given
@@ -163,30 +27,6 @@ struct MasterRPGTipEligibilityTests {
         #expect(title == "Erstelle dein erstes Element")
         #expect(action == "Kampagne importieren")
     }
-
-    private func makeSnapshot(
-        databaseReady: Bool = true,
-        regularItemCount: Int = 0,
-        topLevelItemCount: Int = 0,
-        entryCount: Int = 0,
-        linkCount: Int = 0,
-        organizationCount: Int = 0,
-        adventureCount: Int = 0,
-        characterCount: Int = 0,
-        mapCount: Int = 0
-    ) -> MasterRPGTipEligibilitySnapshot {
-        MasterRPGTipEligibilitySnapshot(
-            databaseReady: databaseReady,
-            regularItemCount: regularItemCount,
-            topLevelItemCount: topLevelItemCount,
-            entryCount: entryCount,
-            linkCount: linkCount,
-            organizationCount: organizationCount,
-            adventureCount: adventureCount,
-            characterCount: characterCount,
-            mapCount: mapCount
-        )
-    }
 }
 
 @Suite("MasterRPG TipKit integration", .serialized)
@@ -198,18 +38,7 @@ struct MasterRPGTipKitIntegrationTests {
     )
     func completedEventHidesTip() async throws {
         // Given
-        let datastoreURL = URL.temporaryDirectory.appending(
-            path: "MasterRPGTipKitTests-\(UUID().uuidString)",
-            directoryHint: .isDirectory
-        )
-        try FileManager.default.createDirectory(
-            at: datastoreURL,
-            withIntermediateDirectories: true
-        )
-        try Tips.configure([
-            .datastoreLocation(.url(datastoreURL)),
-            .displayFrequency(.immediate)
-        ])
+        try Self.configureTipsOnce()
         MasterRPGTipState.forceReplay = false
         MasterRPGTipState.apply(
             MasterRPGTipEligibilitySnapshot(
@@ -240,6 +69,56 @@ struct MasterRPGTipKitIntegrationTests {
         // Then
         #expect(wasAvailable)
         #expect(becameUnavailable)
+    }
+
+    /// CODE_AUDIT_19 §9.21: the eligibility conditions exist only in the tips' `#Rule`s, so
+    /// the snapshot must reach every rule input unchanged.
+    @Test("Applying a snapshot sets every tip rule input")
+    func applySetsEveryRuleInput() throws {
+        try Self.configureTipsOnce()
+        let snapshot = MasterRPGTipEligibilitySnapshot(
+            databaseReady: true,
+            regularItemCount: 7,
+            topLevelItemCount: 5,
+            entryCount: 11,
+            linkCount: 3,
+            organizationCount: 2,
+            adventureCount: 1,
+            characterCount: 4,
+            mapCount: 6
+        )
+
+        MasterRPGTipState.apply(snapshot)
+
+        #expect(MasterRPGTipState.databaseReady)
+        #expect(MasterRPGTipState.regularItemCount == 7)
+        #expect(MasterRPGTipState.topLevelItemCount == 5)
+        #expect(MasterRPGTipState.entryCount == 11)
+        #expect(MasterRPGTipState.linkCount == 3)
+        #expect(MasterRPGTipState.organizationCount == 2)
+        #expect(MasterRPGTipState.adventureCount == 1)
+        #expect(MasterRPGTipState.characterCount == 4)
+        #expect(MasterRPGTipState.mapCount == 6)
+    }
+
+    /// `Tips.configure` may run only once per process.
+    private static let tipsConfiguration: Result<Void, any Error> = Result {
+        let datastoreURL = URL.temporaryDirectory.appending(
+            path: "MasterRPGTipKitTests-\(UUID().uuidString)",
+            directoryHint: .isDirectory
+        )
+        try FileManager.default.createDirectory(
+            at: datastoreURL,
+            withIntermediateDirectories: true
+        )
+        try Tips.configure([
+            .datastoreLocation(.url(datastoreURL)),
+            .displayFrequency(.immediate)
+        ])
+    }
+
+    private static func configureTipsOnce() throws {
+        try tipsConfiguration.get()
     }
 
     private func wait(

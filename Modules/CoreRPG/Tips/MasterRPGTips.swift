@@ -7,11 +7,15 @@ import os
 
 // MARK: - Eligibility Snapshot
 
-/// A testable summary of the user data that controls contextual guidance.
+/// A summary of the user data that controls contextual guidance: the inputs of the tips'
+/// `#Rule`s, applied through `MasterRPGTipState.apply(_:)`.
 ///
 /// TipKit events remember that a workflow was completed. This snapshot prevents
 /// misleading onboarding before an event has ever been donated, such as showing
 /// "Create your first item" to someone who imported an existing campaign.
+///
+/// The eligibility conditions live only in the `#Rule`s (a `#Rule` can't call shared code);
+/// hand-copied `shouldShow…` flags that only tests read were removed. See CODE_AUDIT_19 §9.21.
 public struct MasterRPGTipEligibilitySnapshot: Equatable, Sendable {
     public init(
         databaseReady: Bool,
@@ -44,38 +48,6 @@ public struct MasterRPGTipEligibilitySnapshot: Equatable, Sendable {
     public let adventureCount: Int
     public let characterCount: Int
     public let mapCount: Int
-
-    public var shouldShowFirstItem: Bool {
-        databaseReady && regularItemCount == 0
-    }
-
-    public var shouldShowFirstEntry: Bool {
-        databaseReady && regularItemCount > 0 && entryCount == 0
-    }
-
-    public var shouldShowOrganization: Bool {
-        databaseReady && topLevelItemCount >= 4 && organizationCount == 0
-    }
-
-    public var shouldShowLinking: Bool {
-        databaseReady && regularItemCount >= 2 && entryCount > 0 && linkCount == 0
-    }
-
-    public var shouldShowAdventureSelection: Bool {
-        databaseReady && adventureCount > 0
-    }
-
-    public var shouldShowCharacterSelection: Bool {
-        databaseReady && characterCount > 0
-    }
-
-    public var shouldShowMapEditor: Bool {
-        databaseReady && mapCount > 0
-    }
-
-    public var shouldShowAnotherWindow: Bool {
-        databaseReady && regularItemCount > 0
-    }
 }
 
 /// Persistent TipKit parameters derived from the live database and current UI.

@@ -430,7 +430,7 @@ private actor RemoteDownloadProbe {
     private(set) var requestCount = 0
 
     func download(_ remoteURL: URL) throws -> URL {
-        guard remoteURL.isSupportedRemoteFileURL else {
+        guard remoteURL.isSupportedRemoteFileUrl else {
             throw URLError(.unsupportedURL)
         }
         requestCount += 1
