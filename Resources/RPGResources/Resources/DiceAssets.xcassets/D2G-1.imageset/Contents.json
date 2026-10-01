@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "D2G-1.png",
+      "filename" : "IMG_0749.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "D2G-1x2.png",
+      "filename" : "IMG_0749x2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "D2G-1x3.png",
+      "filename" : "IMG_0749x3.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

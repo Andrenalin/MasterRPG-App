@@ -11,11 +11,14 @@ struct DiceBag: View {
     // `.dieN(color:)` call) on every `DiceBag` re-init, churning `ForEach`
     // identity on every unrelated parent redraw. See CODE_AUDIT §7.2.
     private static let diceBagA: [DieModel] = [.die3(color: .A), .die4(color: .A), .die6(color: .A), .die8(color: .A), .die10(color: .A), .die12(color: .A), .die20(color: .A)]
-    private static let diceBagB: [DieModel] = [.die3(color: .B), .die4(color: .B), .die6(color: .B), .die8(color: .B), .die10(color: .B), .die12(color: .B), .die20(color: .B)]
-    private static let diceBagC: [DieModel] = [.die2(color: .G), .die10(color: .C), .die10(color: .D), .die12(color: .C)]
-    private static let diceBagD: [DieModel] = [.die6(color: .C), .die6(color: .D), .die6(color: .E), .die6(color: .F), .die6(color: .H), .die6(color: .I)]
-    private static let diceBagE: [DieModel] = [.die20(color: .C), .die20(color: .D), .die20(color: .F), .die20(color: .H)]
     private static let diceBagG: [DieModel] = [.die3(color: .G), .die4(color: .G), .die6(color: .G), .die8(color: .G), .die10(color: .G), .die12(color: .G), .die20(color: .G)]
+    private static let diceBagB: [DieModel] = [.die3(color: .B), .die4(color: .B), .die6(color: .B), .die8(color: .B), .die10(color: .B), .die12(color: .B), .die20(color: .B)]
+    private static let diceBagF: [DieModel] = [.die3(color: .C), .die4(color: .D), .die6(color: .E), .die8(color: .C), .die10(color: .E), .die12(color: .D), .die20(color: .F)]
+
+    private static let diceBagC: [DieModel] = [.die2(color: .G), .die3(color: .D), .die4(color: .C), .die4(color: .E), .die10(color: .C), .die10(color: .D), .die10(color: .F)]
+
+    private static let diceBagD: [DieModel] = [.die6(color: .C), .die6(color: .D), .die6(color: .F), .die6(color: .H), .die6(color: .I)]
+    private static let diceBagE: [DieModel] = [.die12(color: .C), .die20(color: .C), .die20(color: .D), .die20(color: .E), .die20(color: .H)]
 
     @Environment(DiceRootModel.self) private var root
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -31,6 +34,9 @@ struct DiceBag: View {
                 }
                 HStack(spacing: 8) {
                     diceBagView(for: Self.diceBagB)
+                }
+                HStack(spacing: 8) {
+                    diceBagView(for: Self.diceBagF)
                 }
                 HStack(spacing: 8) {
                     diceBagView(for: Self.diceBagC)
