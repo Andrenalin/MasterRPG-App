@@ -1,0 +1,21 @@
+name,bundle_identifier,title_en,title_de,title_th,how_achieved
+first_game,de.andretrettin.masterrpg.achievement.first_game,First Game,Erstes Spiel,เกมแรก,Complete 1 game session
+regular_adventurer,de.andretrettin.masterrpg.achievement.regular_adventurer,Regular Adventurer,Stammabenteurer,นักผจญภัยประจำ,Play 10 sessions
+veteran_adventurer,de.andretrettin.masterrpg.achievement.veteran_adventurer,Veteran Adventurer,Abenteuer-Veteran,นักผจญภัยมากประสบการณ์,Play 50 sessions
+storyteller,de.andretrettin.masterrpg.achievement.storyteller,Storyteller,Geschichtenerzähler,นักเล่าเรื่อง,40 hours total as game master
+loyal_hero,de.andretrettin.masterrpg.achievement.loyal_hero,Loyal Hero,Treuer Held,ฮีโร่ผู้ซื่อสัตย์,100 hours with the same character
+campaigner,de.andretrettin.masterrpg.achievement.campaigner,Campaigner,Kampagnenkämpfer,ผู้ผ่านศึกแคมเปญ,10 sessions in the same adventure
+well_travelled,de.andretrettin.masterrpg.achievement.well_travelled,Well Travelled,Weitgereist,นักเดินทางผู้ช่ำชอง,Play 5 different adventures
+dice_initiate,de.andretrettin.masterrpg.achievement.dice_initiate,Dice Initiate,Würfel-Novize,ผู้เริ่มต้นทอยลูกเต๋า,Roll 100 dice in game sessions
+dice_legend,de.andretrettin.masterrpg.achievement.dice_legend,Dice Legend,Würfellegende,ตำนานลูกเต๋า,Roll 1000 dice
+critical_moment,de.andretrettin.masterrpg.achievement.critical_moment,Critical Moment,Kritischer Moment,ช่วงเวลาคริติคอล,Roll 1 critical success
+unlucky_hero,de.andretrettin.masterrpg.achievement.unlucky_hero,Unlucky Hero,Pechvogel,ฮีโร่ดวงซวย,Roll 1 fumble
+multimedia_maestro,de.andretrettin.masterrpg.achievement.multimedia_maestro,Multimedia Maestro,Multimedia-Meister,ปรมาจารย์มัลติมีเดีย,"Share 5 different module types (photo, map, audio, PDF, ...) during games"
+full_party,de.andretrettin.masterrpg.achievement.full_party,Full Party,Volle Gruppe,ปาร์ตี้เต็มกลุ่ม,A session with at least 5 participants
+epic_session,de.andretrettin.masterrpg.achievement.epic_session,Epic Session,Epische Sitzung,เซสชันมหากาพย์,One single session of at least 8 hours
+dice_overlord,de.andretrettin.masterrpg.achievement.dice_overlord,Dice Overlord,Würfelherrscher,จอมราชันลูกเต๋า,Roll 10000 dice
+fortunes_favorite,de.andretrettin.masterrpg.achievement.fortunes_favorite,Fortune's Favorite,Glückskind,ลูกรักแห่งโชคชะตา,Roll 100 critical successes
+cursed_dice,de.andretrettin.masterrpg.achievement.cursed_dice,Cursed Dice,Verfluchte Würfel,ลูกเต๋าต้องสาป,Roll 100 fumbles
+both_sides,de.andretrettin.masterrpg.achievement.both_sides,Both Sides of the Screen,Beide Seiten des Schirms,ทั้งสองฝั่งของฉาก,Have play time as both game master and player (50% each)
+hundred_hour_club,de.andretrettin.masterrpg.achievement.hundred_hour_club,Hundred Hour Club,Hundert-Stunden-Club,ชมรมร้อยชั่วโมง,100 hours of total play time
+grand_campaign,de.andretrettin.masterrpg.achievement.grand_campaign,Grand Campaign,Große Kampagne,แคมเปญยิ่งใหญ่,25 sessions in the same adventure

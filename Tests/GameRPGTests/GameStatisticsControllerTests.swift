@@ -160,6 +160,15 @@ struct GameStatisticsControllerTests {
         #expect(progress[GameCenterAchievementEvaluator.Identifier.multimediaMaestro] == 100)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.fullParty] == 100)
         #expect(progress[GameCenterAchievementEvaluator.Identifier.epicSession] == 100)
+        let diceOverlord = try #require(progress[GameCenterAchievementEvaluator.Identifier.diceOverlord])
+        #expect(abs(diceOverlord - 1.01) < 0.000_001)
+        #expect(progress[GameCenterAchievementEvaluator.Identifier.fortunesFavorite] == 100)
+        let cursedDice = try #require(progress[GameCenterAchievementEvaluator.Identifier.cursedDice])
+        #expect(abs(cursedDice - 1) < 0.000_001)
+        #expect(progress[GameCenterAchievementEvaluator.Identifier.bothSides] == 50)
+        let hundredHourClub = try #require(progress[GameCenterAchievementEvaluator.Identifier.hundredHourClub])
+        #expect(abs(hundredHourClub - 44) < 0.000_001)
+        #expect(progress[GameCenterAchievementEvaluator.Identifier.grandCampaign] == 24)
     }
 
     @Test("games shorter than 15 minutes and their related data are excluded")

@@ -28,7 +28,7 @@ struct MapPopoverGeometryTests {
         #expect(placement.isValid)
         #expect(placement.isFullyVisible)
         #expect(placement.side == .trailing)
-        #expect(placement.frame.minX == source.maxX)
+        #expect(placement.frame.minX == source.maxX + MapPopoverGeometry.sourceGap)
         #expect(placement.frame.size == CGSize(
             width: contentSize.width + MapPopoverGeometry.arrowLength,
             height: contentSize.height
@@ -50,7 +50,7 @@ struct MapPopoverGeometryTests {
 
         // Then
         #expect(placement.side == .leading)
-        #expect(placement.frame.maxX == source.minX)
+        #expect(placement.frame.maxX == source.minX - MapPopoverGeometry.sourceGap)
         #expect(placement.isFullyVisible)
     }
 

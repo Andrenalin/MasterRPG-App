@@ -36,6 +36,8 @@ enum MapPopoverGeometry {
     static let arrowWidth: CGFloat = 26
     static let cornerRadius: CGFloat = 28
     static let edgeInset: CGFloat = 8
+    /// Distance between the source and the arrow tip.
+    static let sourceGap: CGFloat = 12
 
     /// Places a panel of `contentSize` (arrow excluded) next to `source`,
     /// trying `preferredSides` in order and falling back to the side with the
@@ -72,13 +74,13 @@ enum MapPopoverGeometry {
         let size = frameSize(for: contentSize, side: side)
         var origin: CGPoint = switch side {
         case .trailing:
-            CGPoint(x: source.maxX, y: source.midY - size.height / 2)
+            CGPoint(x: source.maxX + sourceGap, y: source.midY - size.height / 2)
         case .leading:
-            CGPoint(x: source.minX - size.width, y: source.midY - size.height / 2)
+            CGPoint(x: source.minX - sourceGap - size.width, y: source.midY - size.height / 2)
         case .bottom:
-            CGPoint(x: source.midX - size.width / 2, y: source.maxY)
+            CGPoint(x: source.midX - size.width / 2, y: source.maxY + sourceGap)
         case .top:
-            CGPoint(x: source.midX - size.width / 2, y: source.minY - size.height)
+            CGPoint(x: source.midX - size.width / 2, y: source.minY - sourceGap - size.height)
         }
         origin.x = clamp(origin.x, lower: safeFrame.minX, upper: safeFrame.maxX - size.width)
         origin.y = clamp(origin.y, lower: safeFrame.minY, upper: safeFrame.maxY - size.height)
@@ -106,7 +108,7 @@ enum MapPopoverGeometry {
 
     private static func requiredRoom(on side: MapPopoverSide, for contentSize: CGSize) -> CGFloat {
         let size = frameSize(for: contentSize, side: side)
-        return side.isHorizontal ? size.width : size.height
+        return (side.isHorizontal ? size.width : size.height) + sourceGap
     }
 
     private static func availableRoom(on side: MapPopoverSide, of source: CGRect, in safeFrame: CGRect) -> CGFloat {

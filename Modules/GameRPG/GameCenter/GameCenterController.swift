@@ -137,6 +137,12 @@ struct GameCenterAchievementEvaluator: Sendable {
         static let multimediaMaestro = "\(BundleIds.achievement).multimedia_maestro"
         static let fullParty = "\(BundleIds.achievement).full_party"
         static let epicSession = "\(BundleIds.achievement).epic_session"
+        static let diceOverlord = "\(BundleIds.achievement).dice_overlord"
+        static let fortunesFavorite = "\(BundleIds.achievement).fortunes_favorite"
+        static let cursedDice = "\(BundleIds.achievement).cursed_dice"
+        static let bothSides = "\(BundleIds.achievement).both_sides"
+        static let hundredHourClub = "\(BundleIds.achievement).hundred_hour_club"
+        static let grandCampaign = "\(BundleIds.achievement).grand_campaign"
     }
 
     private enum DurationGoal {
@@ -145,6 +151,7 @@ struct GameCenterAchievementEvaluator: Sendable {
         static let storyteller: TimeInterval = 40 * 3_600
         static let loyalHero: TimeInterval = 100 * 3_600
         static let epicSession: TimeInterval = 8 * 3_600
+        static let hundredHourClub: TimeInterval = 100 * 3_600
     }
 
     func progress(from summary: GameStatisticsSummary) -> [GameCenterAchievementProgress] {
@@ -152,6 +159,8 @@ struct GameCenterAchievementEvaluator: Sendable {
         let longestAdventureCount = summary.adventures.map(\.count).max() ?? 0
         let sharedModuleCount = Set(summary.modules.filter { $0.count > 0 }.map(\.key)).count
         let largestParty = summary.recentSessions.map(\.maxParticipantCount).max() ?? 0
+        // Each side of the screen is worth half: game master and player time.
+        let rolesPlayed = (summary.gameMasterDuration > 0 ? 1.0 : 0) + (summary.playerDuration > 0 ? 1 : 0)
 
         return [
             progress(Identifier.firstGame, current: Double(summary.sessionCount), goal: 1),
@@ -167,7 +176,13 @@ struct GameCenterAchievementEvaluator: Sendable {
             progress(Identifier.unluckyHero, current: Double(summary.fumbleCount), goal: 1),
             progress(Identifier.multimediaMaestro, current: Double(sharedModuleCount), goal: 5),
             progress(Identifier.fullParty, current: Double(largestParty), goal: 5),
-            progress(Identifier.epicSession, current: summary.longestDuration, goal: DurationGoal.epicSession)
+            progress(Identifier.epicSession, current: summary.longestDuration, goal: DurationGoal.epicSession),
+            progress(Identifier.diceOverlord, current: Double(summary.diceRollCount), goal: 10_000),
+            progress(Identifier.fortunesFavorite, current: Double(summary.criticalCount), goal: 100),
+            progress(Identifier.cursedDice, current: Double(summary.fumbleCount), goal: 100),
+            progress(Identifier.bothSides, current: rolesPlayed, goal: 2),
+            progress(Identifier.hundredHourClub, current: summary.totalDuration, goal: DurationGoal.hundredHourClub),
+            progress(Identifier.grandCampaign, current: Double(longestAdventureCount), goal: 25)
         ]
     }
 

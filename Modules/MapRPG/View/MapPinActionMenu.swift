@@ -154,7 +154,8 @@ struct MapPinActionMenuStack: View {
                 }
             }
         }
-        .padding()
+        // Half of the default `padding()` inset.
+        .padding(8)
         .modifier(
             MapPinPhotoSelectionModifier(
                 model: model,
