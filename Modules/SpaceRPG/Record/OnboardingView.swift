@@ -22,7 +22,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Rectangle().fill(.background).ignoresSafeArea()
             if let session = appModel.objectCaptureSession {
                 OnboardingTutorialView(session: session, onboardingStateMachine: stateMachine)
                 OnboardingButtonView(session: session, onboardingStateMachine: stateMachine)

@@ -79,13 +79,19 @@ public extension FileUrlDataController {
         return FileUrl(fileId: fileId, url: fileURL, location: .newCloud, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
     }
 
-    /// Copies `source` file-to-file to the `.newCloud` file at `relativeUrl` and hashes the copy
-    /// streamed. Duplicating an item used to read its whole file into memory. Data held only in
-    /// memory (unconverted or a peer's file) still goes through `createNewFileUrl`.
-    /// Returns `nil` when the source file can't be resolved. See CODE_AUDIT_19 §7.1.
+    /// Copies `source` file-to-file to a new `.newCloud` file named after `relativeUrl` and hashes
+    /// the copy streamed. Duplicating an item used to read its whole file into memory. Data held
+    /// only in memory (unconverted) still goes through `createNewFileUrl`.
+    /// The destination never replaces an existing file: a taken name gets a numbered suffix, and
+    /// a destination that is the source itself is refused. The source is read from where the file
+    /// really is on this device, not from bytes a game peer sent.
+    /// Returns `nil` when the source file can't be resolved.
+    /// See CODE_AUDIT_19 §7.1, CODE_AUDIT_20 §5.1.
     @concurrent
-    func copyFile(_ source: FileUrl, fileId: UUID, to relativeUrl: URL) async throws -> FileUrl? {
-        if source.hasUnconvertedData || peerFiles.data(for: source.fileId) != nil {
+    func copyFile(_ source: FileUrl, fileId: UUID, to requestedUrl: URL) async throws -> FileUrl? {
+        let relativeUrl = try await uniqueDestination(for: requestedUrl)
+
+        if source.hasUnconvertedData {
             guard let data = try await loadData(for: source) else { return nil }
             var unconverted = FileUrl(fileId: fileId, url: relativeUrl, location: .newCloud, module: source.module, relativeUrl: nil)
             unconverted.resetData(data)
@@ -96,8 +102,12 @@ public extension FileUrlDataController {
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
         let filePath = nameUrl.path(percentEncoded: false)
         let cloudDocumentController = cloudDocumentController
-        let copied = try await url(for: source) { sourceUrl async throws -> Bool? in
+        let destinationPath = Self.normalizedPath(fullUrl)
+        let copied = try await deviceUrl(for: source) { sourceUrl async throws -> Bool? in
             guard let sourceUrl else { return false }
+            guard Self.normalizedPath(sourceUrl) != destinationPath else {
+                throw CocoaError(.fileWriteFileExists)
+            }
             try await cloudDocumentController.copy(from: sourceUrl, to: filePath)
             return true
         }
@@ -112,6 +122,15 @@ public extension FileUrlDataController {
         }
         let contentHash = try await FileManager.default.contentHash(coordinatingAccessAt: fullUrl)
         return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: source.module, relativeUrl: nil, contentHash: contentHash)
+    }
+
+    /// `requestedUrl` (a path below the module folder), renamed with a numbered suffix when a
+    /// file of that name already exists.
+    private func uniqueDestination(for requestedUrl: URL) async throws -> URL {
+        let folder = requestedUrl.deletingLastPathComponent().path(percentEncoded: false)
+        let name = try await cloudDocumentController.suggestedFileName(for: folder, filename: requestedUrl.lastPathComponent)
+        guard name != requestedUrl.lastPathComponent else { return requestedUrl }
+        return requestedUrl.deletingLastPathComponent().appending(component: name)
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
@@ -204,12 +223,15 @@ public extension FileUrlDataController {
     /// called from ItemStore on delete of the item
     func delete(_ fileUrl: FileUrl?) {
         guard let fileUrl else { return }
+        // Bytes a game peer sent for this file are of no use once the item is gone.
+        peerFiles.remove(fileUrl.fileId)
         switch fileUrl.location {
             case .local, .appCloud, .newCloud:
                 Task { @concurrent in
                     await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)", file: "FileUrlDataController.swift")
 
-                    guard let accessUrl = await url(for: fileUrl, action: { $0 }) else { return }
+                    // The real file, never the temp copy of held peer bytes. See CODE_AUDIT_20 §5.3.
+                    guard let accessUrl = await deviceUrl(for: fileUrl, action: { $0 }) else { return }
                     // Only drop the bookmark once the file is actually gone (or was
                     // already gone) — a genuine removal failure (coordination
                     // timeout, permission error, transient iCloud state) instead
@@ -230,24 +252,42 @@ public extension FileUrlDataController {
         }
     }
 
-    /// Deletes a file an item's new file just replaced. The replacement already saved its
-    /// bookmark under the same `fileId`, so the old file is found by its path, never through
-    /// the bookmark (that would resolve to the new file), and the bookmark is kept.
-    /// See CODE_AUDIT_19 §5.9.
-    func deleteReplaced(_ fileUrl: FileUrl) async {
-        let fileLocation: URL?
+    /// Where the app stores the file `fileUrl` points to, or `nil` for references it does not
+    /// own (`.icloud`, `.other`). The single notion of "where the file really is" that
+    /// `deleteReplaced` and `isSameStoredFile` compare. See CODE_AUDIT_20 §5.9.
+    func storedLocation(of fileUrl: FileUrl) -> URL? {
         switch fileUrl.location {
         case .newCloud:
-            fileLocation = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
+            return cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
         case .local, .appCloud:
-            fileLocation = locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location, module: fileUrl.module)
+            return locationFileManager.absoluteUrl(for: fileUrl.rawUrl, at: fileUrl.location, module: fileUrl.module)
         case .url:
-            fileLocation = remoteCacheURL(for: fileUrl)
+            return remoteCacheURL(for: fileUrl)
         case .icloud, .other:
-            // Not stored by the app; `delete(_:)` only drops the bookmark for these.
-            fileLocation = nil
+            return nil
         }
-        guard let fileLocation else { return }
+    }
+
+    /// Whether two references resolve to the same stored file.
+    func isSameStoredFile(_ lhs: FileUrl, _ rhs: FileUrl) -> Bool {
+        guard let lhsLocation = storedLocation(of: lhs), let rhsLocation = storedLocation(of: rhs) else { return false }
+        return Self.normalizedPath(lhsLocation) == Self.normalizedPath(rhsLocation)
+    }
+
+    private static func normalizedPath(_ url: URL) -> String {
+        url.standardizedFileURL.resolvingSymlinksInPath().path(percentEncoded: false)
+    }
+
+    /// Deletes a file an item's new file just replaced. The replacement already saved its
+    /// bookmark under the same `fileId`, so the old file is found by its path, never through
+    /// the bookmark (that would resolve to the new file), and the bookmark is kept. Nothing is
+    /// deleted when the new reference resolves to the old file's location.
+    /// See CODE_AUDIT_19 §5.9, CODE_AUDIT_20 §5.9.
+    func deleteReplaced(_ fileUrl: FileUrl, keeping newFileUrl: FileUrl) async {
+        guard let fileLocation = storedLocation(of: fileUrl) else { return }
+        if let newLocation = storedLocation(of: newFileUrl), Self.normalizedPath(newLocation) == Self.normalizedPath(fileLocation) {
+            return
+        }
         _ = await removeFileLoggingFailure(at: fileLocation)
     }
 

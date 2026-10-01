@@ -19,7 +19,7 @@ public struct FileUrlDataController: Sendable {
     let fileBookmarkController: FileBookmarkController
     let locationFileManager: LocationFileManager
     let remoteFileDownloader: RemoteFileDownloader
-    let peerFiles = PeerFileDataStore()
+    let peerFiles = PeerFileDataStore.shared
 
     public let fileTypes: [UTType]
     let filenameExtension: String
@@ -211,15 +211,22 @@ public extension FileUrlDataController {
         peerFiles.hold(data, for: fileUrl.fileId)
     }
 
+    /// Drops every byte held for game peers. Called when a game ends. See CODE_AUDIT_20 §5.3.
+    static func releaseHeldPeerData() {
+        PeerFileDataStore.shared.removeAll()
+    }
+
     /// A temporary copy of held peer bytes, for readers that need a file URL (PDF, 3D, audio).
+    /// The name carries the store's generation, so a replaced hold can never be shadowed by a
+    /// stale temp file, and the bytes and the generation are read together. See CODE_AUDIT_20 §3.8.
     private func heldPeerFileUrl(for fileUrl: FileUrl) -> URL? {
-        guard let data = peerFiles.data(for: fileUrl.fileId) else { return nil }
+        guard let held = peerFiles.snapshot(for: fileUrl.fileId) else { return nil }
         let pathExtension = fileUrl.rawUrl.pathExtension.isEmpty ? filenameExtension : fileUrl.rawUrl.pathExtension
         let heldUrl = URL.temporaryDirectory
-            .appending(path: "peer-\(fileUrl.fileId.uuidString)")
+            .appending(path: "peer-\(fileUrl.fileId.uuidString)-\(held.generation)")
             .appendingPathExtension(pathExtension)
         if FileManager.default.fileExists(atPath: heldUrl.path(percentEncoded: false)) { return heldUrl }
-        return (try? data.write(to: heldUrl, options: .atomic)) == nil ? nil : heldUrl
+        return (try? held.data.write(to: heldUrl, options: .atomic)) == nil ? nil : heldUrl
     }
 
     /// `true` for a file outside iCloud Drive or a downloaded iCloud item. For an iCloud item
@@ -252,6 +259,20 @@ public extension FileUrlDataController {
         if let heldUrl = heldPeerFileUrl(for: fileUrl) {
             return try await action(heldUrl)
         }
+        return try await deviceUrl(for: fileUrl, action: action)
+    }
+
+    func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
+        if let heldUrl = heldPeerFileUrl(for: fileUrl) {
+            return try action(heldUrl)
+        }
+        return try await deviceUrl(for: fileUrl, action: action)
+    }
+
+    /// `url(for:action:)` without the held peer copy: where the file really is on this device.
+    /// Every mutating operation (delete, move, copy) resolves through this, never the held bytes.
+    /// See CODE_AUDIT_20 §5.3.
+    func deviceUrl<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) async throws -> T?) async rethrows -> T? {
         if fileUrl.location == .url {
             let cachedURL = try? await ensureRemoteCache(for: fileUrl)
             return try await action(cachedURL)
@@ -268,15 +289,7 @@ public extension FileUrlDataController {
         return try await action(resolved.url)
     }
 
-    func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
-        if let heldUrl = heldPeerFileUrl(for: fileUrl) {
-            return try action(heldUrl)
-        }
-        return try await deviceUrl(for: fileUrl, action: action)
-    }
-
-    /// `url(for:action:)` without the held peer copy: where the file really is on this device.
-    private func deviceUrl<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
+    func deviceUrl<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
         if fileUrl.location == .url {
             let cachedURL = try? await ensureRemoteCache(for: fileUrl)
             return try action(cachedURL)

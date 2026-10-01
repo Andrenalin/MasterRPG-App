@@ -346,14 +346,3 @@ extension EditController {
     }
 }
 #endif
-
-extension EditController {
-
-    @MainActor func collectPhotos(itemId: UUID, entryId: UUID) {
-        let photoIds = root.linkController.collectLinks(of: .photo, from: itemId)
-        let links = photoIds.map {
-            root.photoRoot.linkControllable.generateLink(itemId: $0)
-        }.sorted()
-        update(itemId: itemId, entryId: entryId, name: "Collection", content: links.joined(separator: "\n"))
-    }
-}

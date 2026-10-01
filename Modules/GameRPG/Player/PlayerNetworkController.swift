@@ -259,8 +259,9 @@ private extension PlayerNetworkController {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
         let id = UUID()
         await connectionThrottle.register(id: id, endpoint: connection.remoteEndpoint)
-        // The replaced controller's receive loop holds it alive, so it must be cancelled
-        // explicitly or its socket lingers until TCP fails. See CODE_AUDIT_Join §3.1.
+        // Cancel the replaced controller explicitly: `cancel()` closes its socket and reports
+        // the loss now, instead of leaving the socket until TCP fails.
+        // See CODE_AUDIT_Join §3.1, CODE_AUDIT_20 §3.9.
         let replaced = networkModel.connectionController
         networkModel.reset(controller: ConnectionController(id: id, connection: connection, delegate: self))
         await replaced?.cancel()
@@ -423,8 +424,12 @@ private extension PlayerNetworkController {
     /// Takes the master's session from its current browser entry. The join may have used an
     /// entry whose TXT record had not resolved yet; the reconnect service must still carry the
     /// session, or the restarted master never redials this player. Keeps the known session when
-    /// the master is no longer advertised.
+    /// the master is no longer advertised. Once the master is lost and a session is known, a
+    /// different advertised session belongs to a restarted game with a new join code: adopting
+    /// it would make the master redial this player with a passcode that cannot match, and each
+    /// failed handshake would count against this player's throttle. See CODE_AUDIT_20 §3.6.
     func refreshMasterSessionId() {
+        guard networkModel.sessionId == nil || networkModel.connectionState != .lost else { return }
         guard let endpoint = networkModel.model?.endpoint,
               let game = browserManager.games.first(where: { browserManager.nwEndpoint(for: $0) == endpoint }),
               let sessionId = game.sessionId else { return }
@@ -466,8 +471,15 @@ extension PlayerNetworkController {
         guard networkModel.model != nil else { return }
         let browser = browserManager
         networkModel.observeRemovalTask?.cancel()
+        // The sequence holds the browser weakly and ends with it, so a controller released
+        // without `stop()` cannot keep the browser and its Bonjour browse alive.
+        // See CODE_AUDIT_20 §3.5.
+        let changes = Observations<[BrowserGameModel], Never>.untilFinished { [weak browser] in
+            guard let browser else { return .finish }
+            return .next(browser.removed)
+        }
         networkModel.observeRemovalTask = Task { @MainActor [weak self] in
-            for await removed in Observations({ browser.removed }) {
+            for await removed in changes {
                 guard let self, !Task.isCancelled else { return }
                 // `takeRemoved()` below empties the list, which is itself a change.
                 guard !removed.isEmpty else { continue }

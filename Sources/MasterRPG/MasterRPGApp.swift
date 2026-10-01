@@ -30,7 +30,7 @@ struct MasterRPGApp: App {
         MasterRPGTips.configure()
         // Off-main so the one-time iCloud/App Group container resolution doesn't
         // land on the main thread during early app/window setup. See §5.19.
-        Task.detached(priority: .utility) {
+        Task(priority: .utility) { @concurrent in
             await FileManager.prewarmCloudUrls()
         }
 

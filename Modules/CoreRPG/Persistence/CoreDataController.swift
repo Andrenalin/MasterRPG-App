@@ -88,6 +88,13 @@ final class CoreDataModel: Sendable {
         unsavedInserts.withLock { _ = $0.remove(id) }
     }
 
+    /// Whether an edit a failed save rolled back is still waiting for its retry.
+    /// See CODE_AUDIT_20 §5.11.
+    var hasRetryingOperations: Bool {
+        queue.withLock { queue in queue.operations.contains { $0.rollbackCount > 0 } }
+            || inFlight.withLock { flushed in flushed.contains { $0.rollbackCount > 0 } }
+    }
+
     func markUnsavedInsert(_ id: UUID) {
         unsavedInserts.withLock { _ = $0.insert(id) }
     }
@@ -132,8 +139,14 @@ final class CoreDataModel: Sendable {
         guard !flushed.isEmpty else { return [] }
         var restored: [PendingOperation] = []
         var discarded: [PendingOperation] = []
+        // With the failing items identified, only they are blamed: the other operations are
+        // innocent, so a bad item cannot use up their retries. Without an identification every
+        // rollback counts, which still bounds the retries. See CODE_AUDIT_20 §5.5.
+        let isIdentified = !failingIds.isEmpty
         for var operation in flushed {
-            operation.rollbackCount += 1
+            if !isIdentified || failingIds.contains(operation.id) {
+                operation.rollbackCount += 1
+            }
             if failingIds.contains(operation.id) || operation.rollbackCount > Self.maxRollbackRetries {
                 discarded.append(operation)
             } else {
@@ -393,7 +406,18 @@ public extension CoreDataController {
         request.propertiesToFetch = ["uuid"]
         request.resultType = .dictionaryResultType
         let results = try context.fetch(request)
-        return Set(results.compactMap { $0["uuid"] as? UUID })
+        var existing = Set(results.compactMap { $0["uuid"] as? UUID })
+        // A dictionary fetch reflects the store only. Unsaved inserts and deletes of the shared
+        // context count too, or a second flush would insert a duplicate row for an unsaved
+        // insert and drop an update that follows an unsaved delete. See CODE_AUDIT_20 §5.7.
+        let requested = Set(uuids)
+        for case let inserted as DataType in context.insertedObjects {
+            if let uuid = inserted.uuid, requested.contains(uuid) { existing.insert(uuid) }
+        }
+        for case let deleted as DataType in context.deletedObjects {
+            if let uuid = deleted.uuid { existing.remove(uuid) }
+        }
+        return existing
     }
 }
 

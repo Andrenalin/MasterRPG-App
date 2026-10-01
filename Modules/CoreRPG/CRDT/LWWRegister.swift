@@ -7,12 +7,39 @@
 
 import Foundation
 
+/// An actor id a register stamps its local writes with, distinct on every device.
+///
+/// The id a register is created with is stored in it and decoded on every device, so all
+/// replicas would write with the same actor and two devices writing the same clock tick
+/// would tie, swap values on merge and never converge. See CODE_AUDIT_20 §5.8.
+public protocol LWWActorID: Hashable, Comparable {
+    /// The identity of this install.
+    static var local: Self { get }
+}
+
+extension String: LWWActorID {
+    public static var local: String { LocalActorId.value }
+}
+
+/// A random id created once per install and kept in `UserDefaults`.
+private enum LocalActorId {
+    static let value: String = {
+        let key = BundleIds.app("crdtLocalActorId")
+        if let stored = UserDefaults.standard.string(forKey: key), !stored.isEmpty {
+            return stored
+        }
+        let created = UUID().uuidString
+        UserDefaults.standard.set(created, forKey: key)
+        return created
+    }()
+}
+
 /// A Last-Writer-Wins Register.
 ///
 /// The `LWWRegister` implementation is based on an optimized CRDT register type as described in
 /// [A comprehensive study of Convergent and Commutative Replicated Data Types](https://hal.inria.fr/inria-00555588/document)”
 /// by Marc Shapiro, Nuno Preguiça, Carlos Baquero, and Marek Zawirski (2011).
-public struct LWWRegister<ActorID: Hashable & Comparable, T> {
+public struct LWWRegister<ActorID: LWWActorID, T> {
     /// A struct that represents the state of an LWWRegister
     public struct Metadata {
         internal var value: T
@@ -56,7 +83,7 @@ public struct LWWRegister<ActorID: Hashable & Comparable, T> {
             let stored = _storage.clockId.clock
             MonotonicWallClock.observe(stored)
             let afterStored = stored.nextUp.isFinite ? stored.nextUp : stored
-            _storage = Metadata(value: newValue, id: selfId, timestamp: max(MonotonicWallClock.now(), afterStored))
+            _storage = Metadata(value: newValue, id: ActorID.local, timestamp: max(MonotonicWallClock.now(), afterStored))
         }
     }
 

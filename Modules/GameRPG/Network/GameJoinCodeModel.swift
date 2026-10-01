@@ -72,7 +72,7 @@ public final class GameJoinCodeModel: Sendable {
         writeBuffer.enqueue(value, forKey: key)
         let buffer = writeBuffer
         let storage = codeStorage
-        Task.detached(priority: .utility) {
+        Task(priority: .utility) { @concurrent in
             buffer.flush(to: storage)
         }
     }

@@ -222,7 +222,7 @@ public extension ExportControllable {
     @MainActor func createExport(itemIds: ItemModuleIds, into url: URL, exportModel: ItemDataExportModel) -> Task<Void, any Error> {
         let exportController = rootExportController
 
-        return Task.detached(priority: .userInitiated) {
+        return Task(priority: .userInitiated) { @concurrent in
             let securityScope = url.startSecurityScopedAccess()
             defer { securityScope.stop() }
             // Export into a temporary file and replace the destination only once the export is
@@ -235,7 +235,7 @@ public extension ExportControllable {
             outputStream.open()
             defer { try? FileManager.default.removeItem(at: temporaryUrl) }
 
-            // `Task.detached` doesn't inherit any ambient actor isolation (unlike a plain
+            // A `@concurrent` task doesn't inherit any ambient actor isolation (unlike a plain
             // `Task { }` literal written inside a @MainActor context elsewhere in this
             // file), so these genuinely need an actor-isolated function call rather than
             // just an `await`-prefixed property access.

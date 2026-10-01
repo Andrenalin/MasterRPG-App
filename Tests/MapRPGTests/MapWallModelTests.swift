@@ -122,6 +122,23 @@ struct MapWallModelTests {
         #expect(resizedWall.end == CGPoint(x: 20, y: 60))
     }
 
+    /// CODE_AUDIT_20 §6.3: persisted, network and import decodes install no depth counter, so
+    /// `FoundryJSONValue` bounds its own nesting.
+    @Test func deeplyNestedWallMetadataIsRejectedWithoutADepthCounter() throws {
+        var wall = makeWall(sourceIdentifier: "scene:one:wall:nested")
+        wall.rawMetadata = .string("MARKER")
+        let encoded = try #require(String(data: try JSONEncoder().encode([wall]), encoding: .utf8))
+
+        func nested(depth: Int) -> String {
+            String(repeating: "[", count: depth) + "0" + String(repeating: "]", count: depth)
+        }
+        let withinLimit = encoded.replacing("\"MARKER\"", with: nested(depth: 100))
+        #expect(MapWallPersistenceCodec.decode(withinLimit).wrappedValue.count == 1)
+
+        let pastLimit = encoded.replacing("\"MARKER\"", with: nested(depth: 300))
+        #expect(MapWallPersistenceCodec.decode(pastLimit).wrappedValue.isEmpty)
+    }
+
     private func makeWall(sourceIdentifier: String) -> MapWallModel {
         MapWallModel(
             sourceIdentifier: sourceIdentifier,

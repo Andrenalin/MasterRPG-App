@@ -7,10 +7,6 @@ import CoreGraphics
 /// `MapOverlayLoupeGeometry.swift`) — hoisted out when that file was split.
 /// See CODE_AUDIT §9.13.
 extension CGPoint {
-    var isFinite: Bool {
-        x.isFinite && y.isFinite
-    }
-
     func clamped(to rect: CGRect) -> CGPoint {
         CGPoint(
             x: min(max(x, rect.minX), rect.maxX),

@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import Foundation
 
 enum SharePlayPackageSenderError: Error, Equatable {
@@ -81,8 +82,8 @@ enum SharePlayPackageSenderError: Error, Equatable {
     nonisolated static let lowPackageCount = 60
     nonisolated static let throttleInMilliseconds = 200
     nonisolated static let maxOutstandingMessages = 16
-    nonisolated static let maxOutstandingBytes = 128_000_000
-    nonisolated static let maxMessageByteCount = 64_000_000
+    nonisolated static let maxOutstandingBytes = 128 * ByteUnit.megabyte
+    nonisolated static let maxMessageByteCount = 64 * ByteUnit.megabyte
 
     func send(data: Data, participantId: UUID? = nil) async throws {
         guard !isStopped else { throw SharePlayPackageSenderError.senderStopped }

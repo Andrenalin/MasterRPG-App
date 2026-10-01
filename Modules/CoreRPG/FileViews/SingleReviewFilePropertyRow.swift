@@ -52,7 +52,7 @@ struct SingleReviewFilePropertyRow: View {
                                 .foregroundStyle(.tertiary)
                         }
                         HStack(alignment: .top, spacing: 10) {
-                            thumbnail
+                            thumbnail(for: property.decision)
                             VStack(alignment: .leading, spacing: 4) {
                                 SingleReviewFilePropertyRowFileNamesView(wasName: wasName, newName: newName)
                             }
@@ -88,10 +88,6 @@ struct SingleReviewFilePropertyRow: View {
 
     private var expansionHint: Text {
         isExpanded ? Text("Collapse choices", bundle: .module) : Text("Show choices", bundle: .module)
-    }
-
-    private var thumbnail: some View {
-        thumbnail(for: property.decision)
     }
 
     @ViewBuilder

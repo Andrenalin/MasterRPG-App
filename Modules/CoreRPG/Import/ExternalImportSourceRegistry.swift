@@ -12,7 +12,7 @@ public actor ExternalImportSourceRegistry {
     public static let shared = ExternalImportSourceRegistry()
 
     public init(directoryURL: URL? = nil) {
-        self.explicitDirectoryURL = directoryURL
+        self.explicitDirectoryUrl = directoryURL
     }
 
     public func resolve(
@@ -99,12 +99,12 @@ public actor ExternalImportSourceRegistry {
     }
 
     private static let currentFormatVersion = 2
-    private let explicitDirectoryURL: URL?
+    private let explicitDirectoryUrl: URL?
 
     /// Resolved on every use (not captured at init), so the shared registry follows the iCloud
     /// root after an identity change. See CODE_AUDIT_19 §3.8.
     private var directoryURL: URL {
-        explicitDirectoryURL ?? FileManager.preferredRootUrl
+        explicitDirectoryUrl ?? FileManager.preferredRootUrl
             .appending(path: CloudDocumentController.documentDirName)
             .appending(path: "foundry")
             .appending(path: "sources", directoryHint: .isDirectory)

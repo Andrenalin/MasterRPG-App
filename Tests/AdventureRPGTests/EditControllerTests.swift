@@ -122,9 +122,6 @@ struct EditControllerTests {
         var updated = root.itemController.itemOrEmpty(for: itemId)
         #expect(updated.photoId == photoId)
 
-        sut.collectPhotos(itemId: itemId, entryId: entryId)
-        #expect(root.itemController.itemOrEmpty(for: itemId)[entryId].name == "Collection")
-
         let created = sut.create(name: "Created", content: "Created content")
         #expect(created.name == "Created")
         #expect(created.content == "Created content")

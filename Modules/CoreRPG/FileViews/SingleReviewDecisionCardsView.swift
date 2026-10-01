@@ -29,9 +29,9 @@ struct SingleReviewDecisionCardsView: View {
                         .padding(.vertical, 14)
                         .background(model.decision == decision ? decision.tint.opacity(0.14) : Color.secondary.opacity(0.06))
                         .foregroundStyle(model.decision == decision ? decision.tint : .secondary)
-                        .clipShape(.rect(cornerRadius: 14))
+                        .clipShape(.rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: ResolvedAppTheme.panelCornerRadius)
                                 .strokeBorder(model.decision == decision ? decision.tint : Color.clear, lineWidth: 2)
                         }
                     }

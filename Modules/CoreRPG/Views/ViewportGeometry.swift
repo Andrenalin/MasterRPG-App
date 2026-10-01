@@ -443,7 +443,9 @@ extension CGFloat {
     }
 }
 
-extension CGSize {
+// The one definition of "finite and positive size" and "finite point"; `public` so the map and
+// photo modules use it instead of keeping their own copies, which drifted. See CODE_AUDIT_20 §9.9.
+public extension CGSize {
     var isValidViewportSize: Bool {
         width.isFinite && height.isFinite && width > 0 && height > 0
     }
@@ -457,7 +459,7 @@ extension CGSize {
     }
 }
 
-extension CGPoint {
+public extension CGPoint {
     var isFinite: Bool {
         x.isFinite && y.isFinite
     }

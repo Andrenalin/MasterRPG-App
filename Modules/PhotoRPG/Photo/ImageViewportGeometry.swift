@@ -7,8 +7,8 @@ import Foundation
 struct ImageViewportConfiguration: Equatable, Sendable {
     init(id: UUID, imageSize: CGSize, containerSize: CGSize, degrees: Double) {
         self.id = id
-        self.imageSize = imageSize.validImageViewportSize
-        self.containerSize = containerSize.validImageViewportSize
+        self.imageSize = imageSize.validViewportSize
+        self.containerSize = containerSize.validViewportSize
         self.degrees = ViewportGeometry.normalize(rotationDegrees: degrees)
     }
 
@@ -120,14 +120,4 @@ struct ImageViewportGeometry: Sendable {
 
 private extension ImageViewportGeometry {
     static let maximumScaleMultiplier: CGFloat = 8
-}
-
-private extension CGSize {
-    var isValidImageViewportSize: Bool {
-        width.isFinite && height.isFinite && width > 0 && height > 0
-    }
-
-    var validImageViewportSize: CGSize {
-        isValidImageViewportSize ? self : .zero
-    }
 }

@@ -26,9 +26,10 @@ struct ExtendedSplitBar: View {
             .navigationAutoReceive(ExtendedTabRoute.self)
             .focusedSceneValue(\.selectedModule, $tabSelectedModule)
             .applyIf(restoresState) {
-                $0.modifier(ExtendedSplitBarRestorationModifier(
+                $0.modifier(ExtendedTabRestorationModifier(
                     appModel: appModel,
-                    tabSelectedModule: $tabSelectedModule
+                    tabSelectedModule: $tabSelectedModule,
+                    selectsMapsOnEditors: true
                 ))
             }
     }
@@ -37,30 +38,6 @@ struct ExtendedSplitBar: View {
 #Preview {
     ExtendedSplitBar(restoresState: false)
         .environment(AppModel.previewWithoutDatabase)
-}
-
-private struct ExtendedSplitBarRestorationModifier: ViewModifier {
-    @SceneStorage(ExtendedTabRoute.sceneStorageKey) private var currentModule: ExtendedTabRoute?
-
-    let appModel: AppModel
-    @Binding var tabSelectedModule: NetworkModules
-
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: appModel.selectedExtendedModule) {
-                guard appModel.selectedExtendedModule != currentModule else { return }
-                currentModule <=> appModel.selectedExtendedModule
-            }
-            .onChange(of: appModel.selectedModule, initial: true) {
-                guard let selectedModule = appModel.selectedModule, selectedModule == .editors, currentModule == nil else { return }
-                appModel.selectedExtendedModule <=> .maps
-            }
-            .onAppear {
-                appModel.selectedExtendedModule <=> currentModule
-                guard let currentModule else { return }
-                tabSelectedModule <=> currentModule.module
-            }
-    }
 }
 
 private extension ExtendedSplitBar {

@@ -70,7 +70,9 @@ struct RootGameMapViewer: View {
                 let root = root
                 let itemId = itemId
                 let networkActions = networkActions
-                Task {
+                // Chained behind any earlier content update (2D, 3D or reshare), so the map
+                // state a pin edit right after resuming sends cannot overtake it.
+                root.rootModel.enqueueMapContentSend {
                     let content = await root.mapGameControllable.networkMapContentUpdate(for: itemId)
                     networkActions?.game(content, .generic, nil)
                     Self.sendMasterMapState(root: root, itemId: itemId, networkActions: networkActions)

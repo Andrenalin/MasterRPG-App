@@ -26,18 +26,6 @@ public final class ItemRowTreeModel: Identifiable, Sendable {
         self.level = 0
     }
 
-    @MainActor
-    public required init(from decoder: Decoder) throws {
-        let container: KeyedDecodingContainer<ItemRowTreeModel.CodingKeys> = try decoder.container(keyedBy: ItemRowTreeModel.CodingKeys.self)
-
-        self.id = try container.decode(UUID.self, forKey: ItemRowTreeModel.CodingKeys.id)
-        self.model = try container.decode(ItemRowModel.self, forKey: ItemRowTreeModel.CodingKeys.model)
-        self.level = try container.decode(Int.self, forKey: ItemRowTreeModel.CodingKeys.level)
-        self._expanded = try container.decode(Bool.self, forKey: ItemRowTreeModel.CodingKeys._expanded)
-        self._children = try container.decode([ItemRowTreeModel].self, forKey: ItemRowTreeModel.CodingKeys._children)
-        self._idChildren = try container.decode([UUID : Int].self, forKey: ItemRowTreeModel.CodingKeys._idChildren)
-    }
-
     public static let empty: ItemRowTreeModel = .init(id: UUID(), model: ItemRowModel.empty)
 
     public var selectionId: String {
@@ -46,29 +34,8 @@ public final class ItemRowTreeModel: Identifiable, Sendable {
 }
 
 // Isolated conformances (SE-0470): usable only on the main actor, checked at compile time
-// instead of trapping at runtime. See CODE_AUDIT_19 §4.1.
-extension ItemRowTreeModel: @MainActor Codable {
-    enum CodingKeys: CodingKey {
-        case id
-        case model
-        case level
-        case _expanded
-        case _children
-        case _idChildren
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container: KeyedEncodingContainer<ItemRowTreeModel.CodingKeys> = encoder.container(keyedBy: ItemRowTreeModel.CodingKeys.self)
-
-        try container.encode(self.id, forKey: ItemRowTreeModel.CodingKeys.id)
-        try container.encode(self.model, forKey: ItemRowTreeModel.CodingKeys.model)
-        try container.encode(self.level, forKey: ItemRowTreeModel.CodingKeys.level)
-        try container.encode(self._expanded, forKey: ItemRowTreeModel.CodingKeys._expanded)
-        try container.encode(self._children, forKey: ItemRowTreeModel.CodingKeys._children)
-        try container.encode(self._idChildren, forKey: ItemRowTreeModel.CodingKeys._idChildren)
-    }
-}
-
+// instead of trapping at runtime. See CODE_AUDIT_19 §4.1. The hand-written `Codable` was
+// removed: nothing encodes or decodes a tree model. See CODE_AUDIT_20 §9.11.
 extension ItemRowTreeModel: @MainActor Equatable, @MainActor Hashable {
     public static func == (lhs: ItemRowTreeModel, rhs: ItemRowTreeModel) -> Bool {
         lhs.id == rhs.id &&

@@ -23,6 +23,9 @@ public struct GameShareView<Content: View>: View {
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     @Environment(\.sharingControlActions) private var sharingControlActions
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    /// Insets of the player report capsule, scaling with Dynamic Type. See CODE_AUDIT_20 §8.7.
+    @ScaledMetric(relativeTo: .caption) private var reportHorizontalInset: CGFloat = 8
+    @ScaledMetric(relativeTo: .caption) private var reportVerticalInset: CGFloat = 3
 
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
@@ -35,6 +38,9 @@ public struct GameShareView<Content: View>: View {
                 // See CODE_AUDIT_19 §8.1.
                 if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
                     playerReportRow(for: statuses)
+                        // Informational only: a tap on a control in the content's top-trailing
+                        // corner must reach that control, not this caption.
+                        .allowsHitTesting(false)
                 }
             }
     }
@@ -109,8 +115,8 @@ private extension GameShareView {
         .font(.caption)
         // Drawn over the photo or text below it: a material background keeps it legible.
         // See CODE_AUDIT_19 §8.1.
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
+        .padding(.horizontal, reportHorizontalInset)
+        .padding(.vertical, reportVerticalInset)
         .background(.regularMaterial, in: .capsule)
         .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
         .accessibilityElement(children: .ignore)

@@ -29,6 +29,21 @@ public final class RootModel: Sendable {
     @ObservationIgnored
     @MainActor public var mapsWithUnsharedStructure: Set<UUID> = []
 
+    /// Tail of the chain every game-master send of a map's content update goes through, shared by
+    /// the 2D map, the 3D table and "Refresh Shared Map" so two content updates always reach the
+    /// players in the order they were made. See CODE_AUDIT_19 §3.12, CODE_AUDIT_20 §3.1.
+    @ObservationIgnored
+    @MainActor private var mapContentSendTail: Task<Void, Never>?
+
+    /// Runs `work` after every earlier enqueued send has finished.
+    @MainActor public func enqueueMapContentSend(_ work: @escaping @MainActor () async -> Void) {
+        let previous = mapContentSendTail
+        mapContentSendTail = Task { @MainActor in
+            await previous?.value
+            await work()
+        }
+    }
+
     /// The game master's player/reader preview, shared by the 2D map session and the 3D table.
     /// Each 2D↔3D toggle builds a new table model, which used to start at `.master` again.
     /// See CODE_AUDIT_19 §5.17.

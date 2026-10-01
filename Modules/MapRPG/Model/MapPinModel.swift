@@ -179,6 +179,19 @@ extension MapPinModel {
     /// `public` so the 3D table (`GameRPG`) can render the identical
     /// gray/green/orange/red rule on its pin tokens instead of duplicating
     /// the thresholds.
+    /// The ring's dash pattern for the same bands as `healthBorderColor(for:)`, for people who
+    /// cannot tell the colors apart ("Differentiate Without Color"): solid when healthy,
+    /// dashed when wounded, dotted when critical, finely dotted while unknown.
+    /// See CODE_AUDIT_20 §8.1.
+    public static func healthRingDash(for healthPercent: Double?) -> [CGFloat] {
+        guard let healthPercent else { return [1, 3] }
+        return switch healthPercent {
+        case ..<50: [2, 3]
+        case 50..<80: [8, 4]
+        default: []
+        }
+    }
+
     public static func healthBorderColor(for healthPercent: Double?) -> Color {
         guard let healthPercent else { return .gray }
         return switch healthPercent {

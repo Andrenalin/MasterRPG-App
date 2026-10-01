@@ -508,6 +508,8 @@ extension GameRoot {
         await gameModel.playerController?.stop()
         gameModel.playerController = nil
         await adventureRoot.adventureGameControllable.resetGame()
+        // Bytes peers sent for files not downloaded here are only for the running game.
+        FileUrlDataController.releaseHeldPeerData()
         #if !os(tvOS)
         gameModel.gameTableModel = nil
         #endif

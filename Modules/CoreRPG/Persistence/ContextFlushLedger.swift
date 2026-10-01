@@ -87,8 +87,16 @@ final class ContextFlushLedger: Sendable {
     }
 
     private func didCommit(_ key: ObjectIdentifier) {
-        for model in models(for: key) {
+        let models = models(for: key)
+        for model in models {
             model.commitInFlight()
+        }
+        // A save error clears only once a save really committed and no module still waits to
+        // retry edits a failed save rolled back: a no-op save by another module proves nothing.
+        // See CODE_AUDIT_20 §5.11.
+        guard !models.contains(where: \.hasRetryingOperations) else { return }
+        Task { @MainActor in
+            PersistenceIssueCenter.shared.recordSuccessfulSave()
         }
     }
 
@@ -121,6 +129,29 @@ extension NSManagedObjectContext {
         var objects = errors.compactMap { $0.userInfo[NSValidationObjectErrorKey] as? NSManagedObject }
         let conflicts = nsError.userInfo[NSPersistentStoreSaveConflictsErrorKey] as? [NSMergeConflict] ?? []
         objects += conflicts.map(\.sourceObject)
-        return Set(objects.compactMap { ($0 as? any CoreDataId)?.uuid })
+        return objects.reduce(into: Set<UUID>()) { ids, object in
+            ids.formUnion(Self.owningItemIds(of: object))
+        }
+    }
+
+    /// The id of `object` and of every object that owns it. A child row (an entry, a pin, a
+    /// photo) has its own id, which never equals the operation id of the item it belongs to;
+    /// walking the to-one side of each to-many relationship reaches that item.
+    /// See CODE_AUDIT_20 §5.5.
+    private static func owningItemIds(of object: NSManagedObject) -> Set<UUID> {
+        var ids = Set<UUID>()
+        var visited = Set<NSManagedObjectID>()
+        var pending = [object]
+        while let current = pending.popLast() {
+            guard visited.insert(current.objectID).inserted else { continue }
+            if let uuid = (current as? any CoreDataId)?.uuid { ids.insert(uuid) }
+            for relationship in current.entity.relationshipsByName.values
+            where !relationship.isToMany && relationship.inverseRelationship?.isToMany == true {
+                if let owner = current.value(forKey: relationship.name) as? NSManagedObject {
+                    pending.append(owner)
+                }
+            }
+        }
+        return ids
     }
 }

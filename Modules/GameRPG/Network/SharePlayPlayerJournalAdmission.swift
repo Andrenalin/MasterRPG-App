@@ -41,55 +41,7 @@ enum SharePlayJournalAnnouncementAdmission: Sendable {
 /// Journal callback is released only after an admission metadata message with
 /// the same sender-scoped message ID has arrived through Messenger.
 actor SharePlayPlayerJournalAdmission {
-    private struct Fingerprint: Equatable, Sendable {
-        let envelopeVersion: Int
-        let replyToMessageID: UUID?
-        let masterID: UUID
-        let sender: GameSenderModel
-        let masterState: GameMasterStateModel?
-        let counter: Int
-        let proxyCounter: Int
-        let type: RPGMessageType
-        let subType: RPGMessageActionType
-        let audience: GameMessageAudience
-        let purpose: GameMessagePurpose
-        let targetID: UUID?
-        let itemId: UUID
-        let module: NetworkModules
-        let version: Int
-        let assetVersion: Int?
-        let contentVersion: Int?
-        let timestamp: TimeInterval
-        let journalPayloadDigest: Data?
-
-        init(_ model: GameNetworkModel) {
-            envelopeVersion = model.version
-            replyToMessageID = model.replyToMessageID
-            masterID = model.masterId
-            sender = model.sender
-            masterState = model.masterState
-            counter = model.counter
-            proxyCounter = model.proxyCounter
-            type = model.type
-            subType = model.subType
-            audience = model.audience
-            purpose = model.purpose
-            targetID = model.targetId
-            itemId = model.data.id
-            module = model.data.type
-            version = model.data.version
-            assetVersion = model.data.assetVersion
-            contentVersion = model.data.contentVersion
-            timestamp = model.timestamp
-            if let payload = model.data.data {
-                // Never trust the digest copied into anonymous Journal
-                // metadata. Recompute it from the bytes that actually loaded.
-                journalPayloadDigest = GameNetworkModel.journalDigest(for: payload)
-            } else {
-                journalPayloadDigest = model.journalPayloadDigest
-            }
-        }
-    }
+    private typealias Fingerprint = GameNetworkModel.JournalFingerprint
 
     private struct Admission: Sendable {
         let participantID: UUID

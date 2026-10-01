@@ -127,7 +127,7 @@ private struct OverlayGameMenuMacMenuView: View {
                 OverlayGameMenuWifiView(root: root, isMaster: isMaster, playerController: playerController, marginWidth: marginWidth)
             }
             .foregroundStyle(.secondary)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 
             OverlayGameMenuCloseFieldView(marginWidth: marginWidth)
         }
@@ -182,7 +182,7 @@ private struct OverlayGameMenuCloseFieldView: View {
     var body: some View {
         OverlayGameMenuCloseView(marginWidth: marginWidth)
             .foregroundStyle(.secondary)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
     }
 }
 

@@ -89,7 +89,6 @@ struct MapPinActionView: View {
     let canDrag: Bool
     let actionContext: MapPinActionContext
     let doubleTapAccessibilityLabel: LocalizedStringResource
-    var usesGlassEffects: Bool = true
     var viewportScale: CGFloat = 1
 
     @GestureState private var dragTranslation: CGSize = .zero

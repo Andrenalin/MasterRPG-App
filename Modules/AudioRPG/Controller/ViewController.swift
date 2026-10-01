@@ -64,18 +64,6 @@ public extension ViewController {
             .environment(root)
     }
 
-    @MainActor func menuAudioPlayer(root: AudioRootModel, with id: UUID?) -> some View {
-        Task {
-            do {
-                try await root.gameController.play(id: id, shouldPlay: true)
-            } catch {
-                Logger.gameController.error("ViewController: Failed to start audio playback for \(id?.uuidString ?? "current", privacy: .public): \(error.localizedDescription, privacy: .public)")
-            }
-        }
-        return AudioPlayerBarView()
-            .environment(root)
-    }
-
     @MainActor func viewVolume(root: AudioRootModel, alignment: Alignment) -> some View {
         PlayerVolumeView(root: root, alignment: alignment)
     }

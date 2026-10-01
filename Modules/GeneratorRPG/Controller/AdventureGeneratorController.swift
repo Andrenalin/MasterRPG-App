@@ -32,10 +32,6 @@ final class AdventureSessionModel: ConversationSessionModel {
     var responseErrorContent: String = ""
     var showError: Bool = false
 
-    func dismissError() {
-        showError = false
-    }
-    
     // chat
     var adventureChat: String?
 
@@ -45,17 +41,6 @@ final class AdventureSessionModel: ConversationSessionModel {
     /// Bumped per extraction so a superseded task's cleanup can't clear the busy flag of the
     /// extraction that replaced it. See CODE_AUDIT_18 §5.20.
     var extractionGeneration = 0
-
-    func cancel() {
-        currentTask?.cancel()
-        currentTask = nil
-        conversationEngine.cancelActiveResponse()
-    }
-
-    func cancelExtraction() {
-        currentExtractionTask?.cancel()
-        currentExtractionTask = nil
-    }
 
     // extracting
     var extractSession = LanguageModelSession()

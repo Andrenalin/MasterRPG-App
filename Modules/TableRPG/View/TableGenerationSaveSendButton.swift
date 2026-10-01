@@ -36,7 +36,12 @@ private struct TableGenerationSaveButtonView: View {
 
     var body: some View {
         Button(action: saveAction) {
-            Image(systemName: "square.and.arrow.down")
+            Label {
+                Text("Save", bundle: .module)
+            } icon: {
+                Image(systemName: "square.and.arrow.down")
+            }
+            .labelStyle(.iconOnly)
         }
         .selectedRoundButton(
             title: String(localized: "Save", bundle: .module),

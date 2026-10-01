@@ -56,13 +56,29 @@ struct HostingSessionStoreTests {
     }
 
     @Test("The stored session is reused on the next launch")
-    func storedSessionSurvivesLaunch() {
+    func storedSessionSurvivesLaunch() async {
         let storage = InMemoryJoinCodeStorage()
 
-        let first = HostingSessionStore(storage: storage).sessionId(forPasscode: "1234", proxy: false)
+        let store = HostingSessionStore(storage: storage)
+        let first = store.sessionId(forPasscode: "1234", proxy: false)
+        await store.waitForStoredWrites()
         let nextLaunch = HostingSessionStore(storage: storage).sessionId(forPasscode: "1234", proxy: false)
 
         #expect(first == nextLaunch)
+    }
+
+    @Test("A prewarmed store reads the stored session without a later Keychain read")
+    func prewarmedStoreReusesStoredSession() async {
+        let storage = InMemoryJoinCodeStorage()
+        let firstStore = HostingSessionStore(storage: storage)
+        let first = firstStore.sessionId(forPasscode: "1234", proxy: false)
+        await firstStore.waitForStoredWrites()
+
+        let nextLaunch = HostingSessionStore(storage: storage)
+        await nextLaunch.prewarm()
+
+        #expect(nextLaunch.sessionId(forPasscode: "1234", proxy: false) == first)
+        #expect(nextLaunch.sessionId(forPasscode: "5678", proxy: false) != first, "another code starts a new session")
     }
 }
 #endif

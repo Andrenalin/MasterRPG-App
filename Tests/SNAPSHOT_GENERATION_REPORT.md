@@ -177,7 +177,6 @@ Generated: 25; skipped: 39.
 - Modules/MapRPG/View/DetailFolderListView.swift — #Preview uses local dynamic state
 - Modules/MapRPG/View/DetailListView.swift — #Preview uses local dynamic state
 - Modules/MapRPG/View/MapEditWindow.swift — #Preview uses local dynamic state
-- Modules/MapRPG/View/MapPinActionButtons.swift — #Preview uses local dynamic state
 - Modules/MapRPG/View/MapPinActionView.swift — contains 2 View declarations
 
 ## PdfRPG

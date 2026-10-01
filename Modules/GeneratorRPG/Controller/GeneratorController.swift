@@ -35,29 +35,10 @@ final class GeneratorSessionModel: ConversationSessionModel {
     var responseErrorContent: String = ""
     var showError: Bool = false
 
-    func dismissError() {
-        showError = false
-    }
-    
     // Task management for cancellation
     var currentTask: Task<Void, Never>?
-    func cancel() {
-        currentTask?.cancel()
-        currentTask = nil
-        // Cancelling the wrapper `Task` alone doesn't stop the underlying FoundationModels
-        // stream — without this, a superseded/abandoned generation keeps running in the
-        // background, burning CPU/battery and still writing into `rootModel` after the UI has
-        // moved on. See CODE_AUDIT §5.6.
-        conversationEngine.cancelActiveResponse()
-    }
-
     // Task management for cancellation extraction
     var currentExtractionTask: Task<Void, Never>?
-    func cancelExtraction() {
-        currentExtractionTask?.cancel()
-        currentExtractionTask = nil
-    }
-
     /// Monotonically increasing generation counter. `request(message:rootModel:)`
     /// bumps it before starting a new streamed conversation, and `extract(message:rootModel:)`
     /// inherits that same generation for its own stream. Every partial-stream write

@@ -91,23 +91,26 @@ extension MasterController {
                 )
                 // Send the live map state (not the request echo, whose data is
                 // nil) so the recovering player syncs room visibility and pins.
-                // Targeted: the other players are already up to date.
-                await send(
-                    type: .update,
-                    subtype: .generic,
-                    updated: recovery.content,
-                    origin: origin,
-                    playerId: model.sender.id,
-                    authoritativeMaster: true
-                )
-                await send(
-                    type: .update,
-                    subtype: .mapState,
-                    updated: recovery.state,
-                    origin: origin,
-                    playerId: model.sender.id,
-                    authoritativeMaster: true
-                )
+                // Targeted: the other players are already up to date. Not while the GM
+                // paused "Share Map": the state would reveal what is still private.
+                if mayShareMapState(for: model.data.id) {
+                    await send(
+                        type: .update,
+                        subtype: .generic,
+                        updated: recovery.content,
+                        origin: origin,
+                        playerId: model.sender.id,
+                        authoritativeMaster: true
+                    )
+                    await send(
+                        type: .update,
+                        subtype: .mapState,
+                        updated: recovery.state,
+                        origin: origin,
+                        playerId: model.sender.id,
+                        authoritativeMaster: true
+                    )
+                }
                 if let battleUpdate = root.mapRoot.mapGameControllable.networkBattleRoundUpdate(
                     for: model.data.id
                 ), root.mapRoot.mapGameControllable.battleRoundModel.isRunning {
@@ -374,6 +377,17 @@ extension MasterController {
         return true
     }
 
+    /// Whether the map's content and live state (room visibility, focus, pins) may go out now.
+    /// A paused "Share Map" keeps them private: the map is marked as having unshared structure,
+    /// and resuming or "Refresh Shared Map" sends everything. Every master send of map content or
+    /// state that is not an explicit refresh goes through this check.
+    /// See CODE_AUDIT_19 §5.7, CODE_AUDIT_20 §5.2.
+    func mayShareMapState(for mapId: UUID) -> Bool {
+        guard !root.mapRoot.rootModel.isMapStreaming else { return true }
+        root.mapRoot.rootModel.mapsWithUnsharedStructure.insert(mapId)
+        return false
+    }
+
     /// The requested generation no longer exists. On a direct master, publish
     /// the newly captured generation as a fresh intent. A direct LAN connection
     /// keeps this physical transfer requester-only; SharePlay broadcasts the
@@ -397,6 +411,7 @@ extension MasterController {
             origin: deliveryOrigin,
             authoritativeMaster: true
         )
+        guard mayShareMapState(for: recovery.full.id) else { return }
         await send(
             type: .update,
             subtype: .generic,

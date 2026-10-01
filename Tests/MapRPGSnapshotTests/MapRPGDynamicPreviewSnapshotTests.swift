@@ -241,32 +241,6 @@ struct MapRPGDynamicPreviewSnapshotTests {
         }
     }
 
-    // snapshot-root: MapRPG::MapPinActionButtons
-    @Test("MapPinActionButtons")
-    func mapPinActionButtons() async throws {
-        let pinID = MapRPGDynamicPreviewFixtures.pinID
-        let model = MapPinViewModel(mapPins: [.empty(pinID)], pointer: .empty)
-
-        try await assertDynamicSnapshot("MapPinActionButtons") {
-            MapRPGDoubleNamespaceSnapshotHarness { glassNamespace, photoSpace in
-                MapPinActionButtons(
-                    model: model.mapPinNodes[0],
-                    context: .editor,
-                    placement: MapAdaptiveFanGeometry.placement(
-                        anchor: CGPoint(x: 150, y: 150),
-                        itemCount: MapPinActionContext.editor.actions.count,
-                        viewport: CGRect(x: 0, y: 0, width: 300, height: 300)
-                    ),
-                    glassNamespace: glassNamespace,
-                    photoSpace: photoSpace,
-                    usesGlassEffects: false
-                )
-                .frame(width: 300, height: 300)
-                .background(.blue)
-            }
-        }
-    }
-
     // snapshot-root: MapRPG::MapPinActionView
     @Test("MapPinActionView")
     func mapPinActionView() async throws {
@@ -285,8 +259,7 @@ struct MapRPGDynamicPreviewSnapshotTests {
                     pinScale: 80 / 44,
                     canDrag: true,
                     actionContext: .editor,
-                    doubleTapAccessibilityLabel: "Toggle Player Visibility",
-                    usesGlassEffects: false
+                    doubleTapAccessibilityLabel: "Toggle Player Visibility"
                 )
             }
         }
@@ -312,8 +285,7 @@ struct MapRPGDynamicPreviewSnapshotTests {
                     pinScale: 80 / 44,
                     canDrag: true,
                     actionContext: .gameMaster,
-                    doubleTapAccessibilityLabel: "Toggle Pin Zoom",
-                    usesGlassEffects: false
+                    doubleTapAccessibilityLabel: "Toggle Pin Zoom"
                 )
             }
         }

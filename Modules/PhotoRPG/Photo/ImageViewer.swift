@@ -15,12 +15,36 @@ struct ImageViewer: View {
     let accessibilityHint: String?
     let toolBarModel: GameToolBarModel?
 
-    // Not `private`: read by the gesture-handling extension in ImageViewer+Gestures.swift.
-    @State var viewportModel: ViewportModel
+    /// Holds the viewport model, created on the first read (see `viewportModel`).
+    @MainActor
+    private final class ViewportModelStore {
+        var model: ViewportModel?
+    }
+
+    @State private var viewportModelStore = ViewportModelStore()
     @State private var configuredImageViewport: ImageViewportConfiguration?
 #if !os(tvOS)
     @GestureState var gestureSession = ImageViewportGestureSession()
 #endif
+
+    // Not `private`: read by the gesture-handling extension in ImageViewer+Gestures.swift.
+    /// Created once, on first use, from the view's own inputs. An `init` that built it for
+    /// `State(initialValue:)` allocated an `@Observable` model and measured the image on every
+    /// parent render, and kept only the first. See CODE_AUDIT_20 §7.3.
+    var viewportModel: ViewportModel {
+        if let model = viewportModelStore.model { return model }
+        let imageConfiguration = ImageViewportConfiguration(
+            id: id,
+            imageSize: image.fixedSize,
+            containerSize: containerSize,
+            degrees: photoDegrees
+        )
+        let model = ViewportModel(
+            configuration: ImageViewportGeometry(configuration: imageConfiguration).viewportConfiguration
+        )
+        viewportModelStore.model = model
+        return model
+    }
 
     private var currentDegrees: Double {
         toolBarModel?.degrees(for: id, fallback: photoDegrees)
@@ -72,17 +96,6 @@ struct ImageViewer: View {
         self.accessibilityLabel = accessibilityLabel
         self.accessibilityHint = accessibilityHint
         self.toolBarModel = toolBarModel
-
-        let imageConfiguration = ImageViewportConfiguration(
-            id: id,
-            imageSize: image.fixedSize,
-            containerSize: containerSize,
-            degrees: photoDegrees
-        )
-        let geometry = ImageViewportGeometry(configuration: imageConfiguration)
-        _viewportModel = State(initialValue: ViewportModel(
-            configuration: geometry.viewportConfiguration
-        ))
     }
 
     var body: some View {

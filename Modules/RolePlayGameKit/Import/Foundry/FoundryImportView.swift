@@ -61,7 +61,7 @@ struct FoundryImportView: View {
             }
             .navigationTitle(Text("Import VTT", bundle: .module))
             .navigationBarTitleDisplayModeAll(.inline)
-            .task(id: model.selectionID) {
+            .task(id: model.selectionId) {
                 await model.loadSelectedArtifact()
             }
             .task(id: appModel.pendingVTTImportURL) {
@@ -332,7 +332,7 @@ private struct FoundrySourceSummarySection: View {
 
     var body: some View {
         Section {
-            if let url = model.selectedURL {
+            if let url = model.selectedUrl {
                 LabeledContent {
                     Text(url.lastPathComponent)
                 } label: {
@@ -348,7 +348,7 @@ private struct FoundrySourceSummarySection: View {
             }
             if let package = model.package {
                 LabeledContent {
-                    Text(package.manifest?.title ?? model.selectedURL?.lastPathComponent ?? "Foundry VTT")
+                    Text(package.manifest?.title ?? model.selectedUrl?.lastPathComponent ?? "Foundry VTT")
                 } label: {
                     Text("Package", bundle: .module)
                 }
@@ -494,7 +494,8 @@ private struct FoundryExternalImportReviewView: View {
 
             if !mappedImport.batch.warnings.isEmpty {
                 Section {
-                    ForEach(mappedImport.batch.warnings.prefix(20), id: \.self) { warning in
+                    // Keyed by position: Foundry imports often repeat the same warning.
+                    ForEach(mappedImport.batch.warnings.prefix(20).enumerated(), id: \.offset) { _, warning in
                         Label(warning, systemImage: "exclamationmark.triangle")
                     }
                     if mappedImport.batch.warnings.count > 20 {

@@ -41,4 +41,22 @@ struct PendingHandshakeCapTests {
         }
         #expect(await !sut.shouldAllow(endpoint: endpoint("10.2.0.1")))
     }
+
+    /// CODE_AUDIT_20 §6.1: a connection without a usable endpoint is throttled as one shared
+    /// source instead of skipping every protection.
+    @Test("Connections without an endpoint share one throttle source")
+    func missingEndpointFailsClosed() async {
+        let sut = ConnectionThrottleTracker()
+        var ids: [UUID] = []
+        for _ in 0..<ConnectionThrottleTracker.maximumPendingHandshakesPerSource {
+            #expect(await sut.shouldAllow(endpoint: nil))
+            let id = UUID()
+            ids.append(id)
+            await sut.register(id: id, endpoint: nil)
+            #expect(await sut.isPending(id: id))
+        }
+        #expect(await !sut.shouldAllow(endpoint: nil))
+        // A source with an endpoint is unaffected.
+        #expect(await sut.shouldAllow(endpoint: endpoint("10.0.0.6")))
+    }
 }

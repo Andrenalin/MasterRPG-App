@@ -984,6 +984,22 @@
         }
       }
     },
+    "Health: %lld percent" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesundheit: %lld Prozent"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สุขภาพ: %lld เปอร์เซ็นต์"
+          }
+        }
+      }
+    },
     "Hex Grid" : {
       "localizations" : {
         "de" : {

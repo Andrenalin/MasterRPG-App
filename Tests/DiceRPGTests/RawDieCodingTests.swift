@@ -44,7 +44,7 @@ struct RawDieCodingTests {
 
     @Test("A colour without art for the die falls back to one with art")
     func unsupportedColourFallsBack() {
-        let die = DieModel(id: UUID(), die: .twelve, color: DieModel.ColorCode.D.rawValue)
+        let die = DieModel(id: UUID(), die: .twelve, color: DieModel.ColorCode.E.rawValue)
         #expect(die.name(for: 1) == "D12G-1")
         let supported = DieModel(id: UUID(), die: .twelve, color: DieModel.ColorCode.C.rawValue)
         #expect(supported.name(for: 1) == "D12C-1")

@@ -326,7 +326,9 @@ private struct GameToolBarReshareButtonView<Session: GameToolBarSession>: View {
     var body: some View {
         Button {
             guard let mapId = model.currentMapId else { return }
-            Task {
+            let root = root
+            let networkActions = networkActions
+            root.rootModel.enqueueMapContentSend {
                 let update = await root.gameController.networkMapContentUpdate(for: mapId)
                 networkActions?.game(update, .generic, nil)
             }

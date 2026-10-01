@@ -118,7 +118,7 @@ private struct SubFolderDetailView: View {
                     .accessibilityLabel(Text("Close", bundle: .module))
                 }
                 .background {
-                    Rectangle().fill(Color.adaptiveBackground)
+                    Rectangle().fill(.background)
                 }
                 .transition(.move(edge: .bottom))
         }

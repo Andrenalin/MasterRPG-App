@@ -184,9 +184,16 @@ extension RawDie.Sides: Codable {
         case .ten: self = .ten
         case .twelve: self = .twelve
         case .twenty: self = .twenty
-        case let .number(sides): self = sides == 3 ? .three : .number(sides)
+        case let .number(sides):
+            // A peer or an import can send any Int; `max + 1` in the reroll sort would trap on
+            // `Int.max`. See CODE_AUDIT_20 §5.10.
+            let clamped = min(sides, Self.maximumDecodedSides)
+            self = clamped == 3 ? .three : .number(clamped)
         }
     }
+
+    /// Largest side count accepted when decoding.
+    static let maximumDecodedSides = 1_000_000
 
     public func encode(to encoder: any Encoder) throws {
         let shape: WireShape = switch self {

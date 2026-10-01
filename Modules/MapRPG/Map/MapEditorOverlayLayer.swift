@@ -43,7 +43,8 @@ struct MapViewportOverlayLayer: View {
                 transform: transform,
                 geometry: session.viewport.geometry,
                 viewportRectangle: actionViewportRectangle,
-                containerSize: viewportRectangle.size
+                containerSize: viewportRectangle.size,
+                onDismiss: { session.clearSelections() }
             )
 
             MapNeedleViewportMenuLayer(
@@ -83,6 +84,7 @@ private struct MapPinViewportMenuLayer: View {
     let geometry: ViewportGeometry
     let viewportRectangle: CGRect
     let containerSize: CGSize
+    let onDismiss: () -> Void
 
     var body: some View {
 #if os(iOS) || os(macOS)
@@ -91,7 +93,8 @@ private struct MapPinViewportMenuLayer: View {
                 model: node,
                 context: context,
                 source: source,
-                viewportRectangle: viewportRectangle
+                viewportRectangle: viewportRectangle,
+                onDismiss: onDismiss
             )
             .frame(
                 width: containerSize.width,

@@ -87,10 +87,6 @@ extension SheetRootModel {
         inlineEditingEntryId = entryModel.id
     }
 
-    func isInlineEditing(_ entryModel: SheetModel) -> Bool {
-        inlineEditingEntryId == entryModel.id
-    }
-
     func updateEditType(
         _ editType: SheetModelEditType,
         for entryModel: SheetModel,

@@ -58,6 +58,23 @@ struct BattleRoundPausedSharingTests {
         #expect(root.battleRoundController.nextAttacker())
         #expect(spy.actionsSent.contains(.mapState))
     }
+
+    /// CODE_AUDIT_20 §5.2: the character-sync republish, the replay to a newly ready peer and the
+    /// map repair bundle all send content and state through this gate.
+    @Test("Map content and state are withheld while sharing is paused, and the map is marked")
+    func joinReplayAndRepairHonourPausedSharing() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let master = MasterController(root: root, asProxy: false)
+        let mapId = UUID()
+
+        #expect(master.mayShareMapState(for: mapId))
+        #expect(!root.mapRoot.rootModel.mapsWithUnsharedStructure.contains(mapId))
+
+        root.mapRoot.rootModel.isMapStreaming = false
+
+        #expect(!master.mayShareMapState(for: mapId))
+        #expect(root.mapRoot.rootModel.mapsWithUnsharedStructure.contains(mapId))
+    }
 }
 
 @MainActor

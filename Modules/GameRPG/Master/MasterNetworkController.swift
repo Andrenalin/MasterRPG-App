@@ -81,6 +81,9 @@ final class MasterNetworkController: Sendable {
         self.delegate = MasterNetworkControllerDelegateBox(delegate)
         self.listenerBuilder = listenerBuilder
         self.browserConnectionBuilder = browserConnectionBuilder
+        // Reads the stored hosting session off the main actor, so starting to host never waits
+        // on the Keychain. See CODE_AUDIT_20 §3.7.
+        Task { await hostingSessions.prewarm() }
         Logger.networking.debug("MasterNetworkController: Init")
     }
 
@@ -200,9 +203,9 @@ extension MasterNetworkController: MasterNetworkControllable {
         // the non-async `startStreaming`/`stopStreaming`), and clearing
         // pending entries has no ordering dependency on anything else here.
         Task { await connectionThrottle.clearAllPending() }
-        // The receive loop holds each controller strongly, so dropping the reference never
-        // reaches `deinit`; cancel explicitly or the peer stays connected and black-holed.
-        // See CODE_AUDIT_16 §3.1.
+        // Cancel explicitly: dropping the reference would not close the socket at once, and
+        // `cancel()` is what reports the loss and ends the peer's connection now, instead of
+        // leaving it connected and black-holed. See CODE_AUDIT_16 §3.1, CODE_AUDIT_20 §3.9.
         networkModel.connectionGeneration += 1
         let dropped = networkModel.connections
         networkModel.connections = []
@@ -424,9 +427,16 @@ extension MasterNetworkController {
     func observeConnections() {
         guard let browser = networkModel.browserManager else { return }
         networkModel.observeConnectionsTask?.cancel()
-        networkModel.observeConnectionsTask = Task { @MainActor [weak self] in
-            for await games in Observations({ browser.games }) {
-                guard let self, !Task.isCancelled,
+        // The sequence and the task hold the browser weakly, and the sequence ends with it: a
+        // controller released without `stopStreaming()` must not keep the browser and its
+        // Bonjour browse alive. See CODE_AUDIT_20 §3.5.
+        let changes = Observations<[BrowserGameModel], Never>.untilFinished { [weak browser] in
+            guard let browser else { return .finish }
+            return .next(browser.games)
+        }
+        networkModel.observeConnectionsTask = Task { @MainActor [weak self, weak browser] in
+            for await games in changes {
+                guard let self, let browser, !Task.isCancelled,
                       self.networkModel.browserManager === browser else { return }
                 self.refresh(games: games)
             }

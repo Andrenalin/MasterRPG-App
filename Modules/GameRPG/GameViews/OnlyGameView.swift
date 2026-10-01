@@ -21,7 +21,7 @@ struct OnlyGameView: View {
             )
         }
         .frame(maxWidth: gameScreenModel.sideBarWidth, maxHeight: .infinity, alignment: .trailing)
-        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+        .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
         .offset(x: gameScreenModel.showMainTab == .none ? gameScreenModel.sideBarWidth : 0)
         .opacity(gameScreenModel.showMainTab == .none ? 0 : 1)
         .allowsHitTesting(gameScreenModel.showMainTab != .none)

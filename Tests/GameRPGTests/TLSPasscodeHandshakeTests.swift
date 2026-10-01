@@ -22,6 +22,12 @@ struct TLSPasscodeHandshakeTests {
             store.controllers
         }
 
+        /// The `remoteEndpoint` each accepted connection had when the listener handed it over,
+        /// before its first receive. See CODE_AUDIT_20 §6.1.
+        var acceptedEndpoints: [NWEndpoint?] {
+            store.endpoints
+        }
+
         func start(passcode: String) async throws -> NWEndpoint.Port {
             let listener = try GameListener(using: GameNetworkParameters.builder(passcode: passcode))
             let (ports, portContinuation) = AsyncStream.makeStream(of: NWEndpoint.Port?.self)
@@ -40,6 +46,7 @@ struct TLSPasscodeHandshakeTests {
             let store = store
             runTask = Task {
                 try? await listener.run { connection in
+                    store.recordEndpoint(connection.remoteEndpoint)
                     let controller = ConnectionController(id: UUID(), connection: connection, delegate: delegate)
                     store.append(controller)
                     await controller.startConnection()
@@ -66,6 +73,15 @@ struct TLSPasscodeHandshakeTests {
     private final class ControllerStore: @unchecked Sendable {
         private let lock = NSLock()
         private var stored: [ConnectionController] = []
+        private var storedEndpoints: [NWEndpoint?] = []
+
+        var endpoints: [NWEndpoint?] {
+            lock.withLock { storedEndpoints }
+        }
+
+        func recordEndpoint(_ endpoint: NWEndpoint?) {
+            lock.withLock { storedEndpoints.append(endpoint) }
+        }
 
         var controllers: [ConnectionController] {
             lock.withLock { stored }
@@ -200,6 +216,31 @@ struct TLSPasscodeHandshakeTests {
         #expect(received == "data: after listener")
         #expect(clientTerminal == "lost")
         #expect(serverTerminal == "failed(auth: false)", "the peer closing is reported: \(serverTerminal)")
+    }
+
+    /// The master's throttle, pending-handshake cap and handshake deadline all key on the
+    /// accepted connection's `remoteEndpoint`; it must be a usable host and port before the
+    /// first receive. See CODE_AUDIT_20 §6.1.
+    @Test("An accepted connection has a throttle-able remote endpoint")
+    func acceptedConnectionHasRemoteEndpoint() async throws {
+        let server = Server()
+        let port = try await server.start(passcode: "1234")
+        let delegate = OutcomeDelegate()
+        let controller = client(port: port, passcode: "1234", delegate: delegate)
+        await controller.startConnection()
+        #expect(await server.delegate.outcome(at: 0, timeout: .seconds(10)) == "ready")
+
+        let endpoint = try #require(server.acceptedEndpoints.first ?? nil)
+        guard case .hostPort = endpoint else {
+            Issue.record("accepted connection endpoint is not a host/port: \(endpoint)")
+            await controller.cancel()
+            await server.stop()
+            return
+        }
+        #expect(endpoint.throttleSourceKey != nil)
+
+        await controller.cancel()
+        await server.stop()
     }
 
     private final class OutcomeDelegate: ConnectionControllerDelegate, @unchecked Sendable {

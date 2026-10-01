@@ -15,7 +15,7 @@ protocol AudioPlayerSessionDelegate: Sendable {
 @MainActor
 final class AudioPlayerSessionModel: Sendable {
     weak var delegate: (AnyObject & AudioPlayerSessionDelegate)?
-    private(set) var audioSessionObservers: [NSObjectProtocol] = []
+    private(set) var audioSessionObservers: [Task<Void, Never>] = []
     private(set) var wasPlaying = false
     private(set) var configureTask: Task<Void, Never>?
     
@@ -23,7 +23,7 @@ final class AudioPlayerSessionModel: Sendable {
         self.delegate = delegate
     }
     
-    func reset(audioSessionObservers: [NSObjectProtocol]) {
+    func reset(audioSessionObservers: [Task<Void, Never>]) {
         self.audioSessionObservers = audioSessionObservers
     }
     
@@ -53,6 +53,12 @@ final class AudioPlayerSession: Sendable {
         registerSessionNotifications()
         model.reset(configureTask: Task { await configureAndActivate() })
 #endif
+    }
+
+    /// Whether the initial category/activation is still pending. See CODE_AUDIT_20 §3.2.
+    @MainActor
+    var isConfiguring: Bool {
+        model.configureTask != nil
     }
 
     /// Waits for the initial category/activation so the first track never starts under the
@@ -110,31 +116,35 @@ private extension AudioPlayerSession {
         }
     }
 
+    /// Observes the session's notifications as async sequences on the main actor, so the
+    /// handlers run isolated and need no `assumeMainActorIsolated`. The tasks end with
+    /// `removeAllSessionObservers()`. See CODE_AUDIT_20 §4.3.
     @MainActor
     func registerSessionNotifications() {
         let center = NotificationCenter.default
-        var audioSessionObservers: [NSObjectProtocol] = []
-        audioSessionObservers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: audioSession, queue: .main) { [weak self] note in
-            self?.handleRouteChange(notification: note)
+        let session = audioSession
+        var observers: [Task<Void, Never>] = []
+        observers.append(Task { @MainActor [weak self] in
+            for await note in center.notifications(named: AVAudioSession.routeChangeNotification, object: session) {
+                self?.handleRouteChange(notification: note)
+            }
         })
 
-        audioSessionObservers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: audioSession, queue: .main) { [weak self] note in
-            // Extract the Sendable raw values — the Notification itself must not
-            // cross into the MainActor closure.
-            let typeRaw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
-            let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt
-            // queue: .main ⇒ delivered on the main thread; assumeIsolated is safe and
-            // keeps the wasPlaying write/read strictly ordered (no Task-per-event races).
-            assumeMainActorIsolated {
+        observers.append(Task { @MainActor [weak self] in
+            for await note in center.notifications(named: AVAudioSession.interruptionNotification, object: session) {
+                let typeRaw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+                let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt
                 self?.handleInterruption(typeRaw: typeRaw, optionsRaw: optionsRaw)
             }
         })
 
-        audioSessionObservers.append(center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: audioSession, queue: .main) { [weak self] note in
-            self?.handleMediaServicesReset(notification: note)
+        observers.append(Task { @MainActor [weak self] in
+            for await note in center.notifications(named: AVAudioSession.mediaServicesWereResetNotification, object: session) {
+                self?.handleMediaServicesReset(notification: note)
+            }
         })
-        
-        model.reset(audioSessionObservers: audioSessionObservers)
+
+        model.reset(audioSessionObservers: observers)
     }
 
     func handleRouteChange(notification: Notification) {
@@ -179,6 +189,6 @@ private extension AudioPlayerSession {
 
     @MainActor
     func removeAllSessionObservers() {
-        model.audioSessionObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        model.audioSessionObservers.forEach { $0.cancel() }
     }
 }

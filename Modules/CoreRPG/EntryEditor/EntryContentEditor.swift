@@ -46,7 +46,7 @@ struct EntryContentEditor: View {
         EntryContentEditor(editModel: model, currentFocus: $focus)
             .padding()
     }
-    .background(Color.adaptiveBackground)
+    .background(.background)
     .preferredColorScheme(.light)
     .onAppear {
         model.text = "Sample content with [link](test)"

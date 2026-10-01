@@ -84,12 +84,6 @@ public extension ViewController {
 
 public extension ViewController {
     @MainActor
-    func viewCompactDice(root: DiceRootModel, itemId: UUID) -> some View {
-        let item = root.itemController.itemOrEmpty(for: itemId)
-        return Text(verbatim: item.inlineText)
-    }
-
-    @MainActor
     func viewDice(root: DiceRootModel, with id: UUID?, for resultCategory: ResultCategory, player: Bool) -> some View {
         DiceInline(itemId: id ?? UUID(), resultCategory: resultCategory, player: player)
     }

@@ -23,14 +23,27 @@ public enum FoundryJSONValue: Codable, Equatable, Sendable {
     /// during decode and crash the process via stack overflow. See CODE_AUDIT §5.9.
     static let maximumNestingDepth = 128
 
+    /// Longest coding path accepted when no depth counter is installed.
+    static let maximumUncountedCodingPathLength = 2 * maximumNestingDepth
+
     public init(from decoder: any Decoder) throws {
         let depthCounter = decoder.userInfo[.masterRPGFoundryJSONDepth] as? FoundryJSONDepthCounter
         depthCounter?.depth += 1
         defer { depthCounter?.depth -= 1 }
-        if let depthCounter, depthCounter.depth > Self.maximumNestingDepth {
+        if let depthCounter {
+            if depthCounter.depth > Self.maximumNestingDepth {
+                throw DecodingError.dataCorrupted(DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Foundry JSON nesting exceeds the maximum supported depth of \(Self.maximumNestingDepth)."
+                ))
+            }
+        } else if decoder.codingPath.count > Self.maximumUncountedCodingPathLength {
+            // Decodes from CoreData, the network and `.gmz` imports install no counter, so the
+            // guard lives here: every nesting level adds one coding-path element. The limit
+            // leaves room for the enclosing model's own path. See CODE_AUDIT_20 §6.3.
             throw DecodingError.dataCorrupted(DecodingError.Context(
-                codingPath: decoder.codingPath,
-                debugDescription: "Foundry JSON nesting exceeds the maximum supported depth of \(Self.maximumNestingDepth)."
+                codingPath: [],
+                debugDescription: "Foundry JSON nesting exceeds the maximum supported depth."
             ))
         }
 

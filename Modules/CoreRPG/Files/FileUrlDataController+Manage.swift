@@ -19,7 +19,9 @@ extension FileUrlDataController {
             return fileUrl
         }
         
-        return try await url(for: fileUrl) { url -> FileUrl? in
+        // The real file, never the temp copy of held peer bytes: moving that copy into Documents
+        // left the original behind. See CODE_AUDIT_20 §5.3.
+        return try await deviceUrl(for: fileUrl) { url -> FileUrl? in
             guard let url else { return nil }
             var part = (locationFileManager.relativeUrl(for: fileUrl.rawUrl) ?? fileUrl.rawUrl).absoluteString
             if fileUrl.location == .icloud {

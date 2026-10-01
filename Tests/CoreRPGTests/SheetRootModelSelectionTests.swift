@@ -208,7 +208,6 @@ struct SheetRootModelSelectionTests {
 
         // Then
         #expect(rootModel.inlineEditingEntryId == entries[0].id)
-        #expect(rootModel.isInlineEditing(entries[0]))
         #expect(entries[0].isEditing)
 
         // When
@@ -216,9 +215,7 @@ struct SheetRootModelSelectionTests {
 
         // Then
         #expect(rootModel.inlineEditingEntryId == entries[1].id)
-        #expect(!rootModel.isInlineEditing(entries[0]))
         #expect(!entries[0].isEditing)
-        #expect(rootModel.isInlineEditing(entries[1]))
         #expect(entries[1].isEditing)
     }
 

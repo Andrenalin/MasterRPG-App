@@ -147,7 +147,8 @@ extension MasterController {
     /// structural pin metadata and authoritative live state once the Character
     /// is known so every peer replaces that bootstrap copy immediately.
     private func publishCurrentMapAfterPlayerPinChange() async {
-        guard let mapId = root.mapRoot.mapGameControllable.gameModel.currentItemId else {
+        guard let mapId = root.mapRoot.mapGameControllable.gameModel.currentItemId,
+              mayShareMapState(for: mapId) else {
             return
         }
         await send(

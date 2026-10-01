@@ -68,7 +68,7 @@ public final class LinkHighlightTextModel {
         guard let url = URL(string: searchUrl) else { return }
 
         var repairedText = text
-        _ = LinkReplaceController.linksRepair(for: &repairedText, linkControllable: linkControllable)
+        _ = LinkReplaceController.linksRepair(for: &repairedText)
 
         let occurrenceToggler: ((UUID, NetworkModules) async -> Void)?
         if let toggler {
@@ -132,10 +132,7 @@ extension LinkHighlightTextModel {
         }
 
         var repairedText = text
-        let links = LinkReplaceController.linksRepair(
-            for: &repairedText,
-            linkControllable: linkControllable
-        )
+        let links = LinkReplaceController.linksRepair(for: &repairedText)
         cachedRepairedText = repairedText
         cachedLinks = links
         return (repairedText, links)

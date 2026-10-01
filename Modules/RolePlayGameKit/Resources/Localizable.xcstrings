@@ -86,7 +86,56 @@
       }
     },
     "%lld edits were discarded after repeated save failures." : {
-
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Änderung wurde nach wiederholten Speicherfehlern verworfen."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Änderungen wurden nach wiederholten Speicherfehlern verworfen."
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "ละทิ้งการแก้ไข %lld รายการหลังจากบันทึกล้มเหลวซ้ำ ๆ"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edit was discarded after repeated save failures."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edits were discarded after repeated save failures."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld navigation options" : {
       "comment" : "A description of the number of navigation options.",
@@ -156,6 +205,22 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "A file could not be attached" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Datei konnte nicht angehängt werden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถแนบไฟล์ได้"
           }
         }
       }
@@ -345,7 +410,20 @@
       }
     },
     "Changes could not be saved" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Änderungen konnten nicht gespeichert werden"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ไม่สามารถบันทึกการเปลี่ยนแปลงได้"
+          }
+        }
+      }
     },
     "Changes existing item" : {
       "comment" : "A title for an external import conflict.",
@@ -656,7 +734,20 @@
       }
     },
     "Dismiss" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปิด"
+          }
+        }
+      }
     },
     "Documents" : {
       "localizations" : {

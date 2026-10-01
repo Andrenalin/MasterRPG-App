@@ -1,6 +1,7 @@
 // @copyright André Trettin
 
 import Foundation
+import Synchronization
 
 /// Downloads a remote file with a byte cap enforced while the transfer runs and, unless
 /// private hosts are allowed, a check of every redirect target. `URLSession.download(from:)`
@@ -21,6 +22,13 @@ public enum GuardedRemoteDownload {
     ) async throws -> (fileUrl: URL, response: URLResponse) {
         let delegate = Delegate(maximumBytes: maximumBytes, allowsPrivateHosts: allowsPrivateHosts)
         let (temporaryUrl, response) = try await URLSession.shared.download(from: url, delegate: delegate)
+        // A host name can resolve to a loopback or LAN address, and so can any redirect hop,
+        // which the string check cannot see. The addresses actually connected to are checked
+        // after the transfer; a private one discards the file. See CODE_AUDIT_20 §6.2.
+        if delegate.connectedToPrivateAddress {
+            try? FileManager.default.removeItem(at: temporaryUrl)
+            throw URLError(.cannotConnectToHost)
+        }
         if let response = response as? HTTPURLResponse,
            !(200...299).contains(response.statusCode) {
             try? FileManager.default.removeItem(at: temporaryUrl)
@@ -37,6 +45,11 @@ public enum GuardedRemoteDownload {
     private final class Delegate: NSObject, URLSessionDownloadDelegate, Sendable {
         let maximumBytes: Int
         let allowsPrivateHosts: Bool
+        private let sawPrivateAddress = Mutex(false)
+
+        var connectedToPrivateAddress: Bool {
+            sawPrivateAddress.withLock { $0 }
+        }
 
         init(maximumBytes: Int, allowsPrivateHosts: Bool) {
             self.maximumBytes = maximumBytes
@@ -58,6 +71,17 @@ public enum GuardedRemoteDownload {
             }
             let isAllowed = allowsPrivateHosts ? target.isSupportedRemoteFileUrl : target.isPublicRemoteFileUrl
             completionHandler(isAllowed ? request : nil)
+        }
+
+        func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
+            guard !allowsPrivateHosts else { return }
+            let hasPrivateAddress = metrics.transactionMetrics.contains { transaction in
+                guard let address = transaction.remoteAddress else { return false }
+                return !URL.isPublicAddressLiteral(address)
+            }
+            if hasPrivateAddress {
+                sawPrivateAddress.withLock { $0 = true }
+            }
         }
 
         func urlSession(

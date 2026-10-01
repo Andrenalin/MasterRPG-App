@@ -327,7 +327,7 @@ final class AppDataModel: Identifiable {
         // moves state to `.completed`. For a cancelled/failed scan this simply discards the
         // leftover capture photos instead of letting them accumulate in Documents indefinitely.
         if let rootScanFolder = scanFolderManager?.rootScanFolder {
-            cleanupTask = Task.detached(priority: .background) {
+            cleanupTask = Task(priority: .background) { @concurrent in
                 guard !Task.isCancelled else { return }
                 try? FileManager.default.removeItem(at: rootScanFolder)
             }
@@ -415,11 +415,11 @@ final class AppDataModel: Identifiable {
                 photogrammetrySession = nil
 
                 // Removes snapshots folder to free up space after generating the model.
-                // Genuinely benefits from staying detached (plain file I/O, no MainActor
+                // Genuinely benefits from running off the main actor (plain file I/O, no MainActor
                 // work needed) — tracked so `reset()` can cancel a stale one.
                 if let snapshotsFolder = scanFolderManager?.snapshotsFolder {
                     cleanupTask?.cancel()
-                    cleanupTask = Task.detached(priority: .background) {
+                    cleanupTask = Task(priority: .background) { @concurrent in
                         guard !Task.isCancelled else { return }
                         try? FileManager.default.removeItem(at: snapshotsFolder)
                     }

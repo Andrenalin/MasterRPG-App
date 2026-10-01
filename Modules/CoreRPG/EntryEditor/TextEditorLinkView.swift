@@ -107,11 +107,11 @@ struct AttributedTextEditorSurface: View {
                 maxHeight: maxHeight
             )
             .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: ResolvedAppTheme.panelCornerRadius, style: .continuous)
                     .fill(theme.panelColor.opacity(0.5))
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: ResolvedAppTheme.panelCornerRadius, style: .continuous)
                     .strokeBorder(
                         isFocused
                         ? Color.accentColor
@@ -120,7 +120,7 @@ struct AttributedTextEditorSurface: View {
                     )
             }
 #if !os(macOS)
-            .clipShape(.rect(cornerRadius: 14, style: .continuous))
+            .clipShape(.rect(cornerRadius: ResolvedAppTheme.panelCornerRadius, style: .continuous))
 #endif
 
 #endif

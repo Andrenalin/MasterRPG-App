@@ -58,12 +58,7 @@ struct GeneratorEntity: IndexedEntity {
 extension GeneratorEntity: Transferable {
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .plainText) {
-            Data(
-                """
-                Name: \($0.name)
-                Description: \($0.description)
-                """.utf8
-            )
+            EntitySummaryExport.plainText(name: $0.name, description: $0.description)
         }
     }
 }

@@ -108,11 +108,13 @@ public extension ItemControllable {
         
         var model = Model.empty.copy()
         model.category = type
+        // Protects the new item from the sync-deletion diff until its insert commits, also when
+        // another module's failed save rolls it back. Marked before `replace`: a save by another
+        // module during its suspension could commit the insert first, and nothing would then
+        // clear the mark. See CODE_AUDIT_19 §5.4, CODE_AUDIT_20 §3.3.
+        dataControllable?.markUnsavedInsert(id: model.id)
         do {
             try await dataControllable?.replace(id: model.id, with: model)
-            // Protects the new item from the sync-deletion diff until its insert commits,
-            // also when another module's failed save rolls it back. See CODE_AUDIT_19 §5.4.
-            dataControllable?.markUnsavedInsert(id: model.id)
         } catch {
             // Every sibling mutation below records a failed write instead of silently
             // proceeding as if it succeeded; this path was the one exception. See

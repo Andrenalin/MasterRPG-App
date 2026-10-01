@@ -145,12 +145,10 @@ final class GameTableModel: Sendable {
     /// SwiftUI's automatic cancel-on-id-change only protects re-entrant calls within one of them;
     /// this choke point protects across both.
     var mapChangeTask: Task<Void, Never>?
-    /// The tail of the ordered content-update chain (`sendMapContent(for:force:)`), and the
-    /// number of content updates still pending per map. While one is pending for a map, plain
-    /// state broadcasts for it are left to the chain, which ends with a live map state, so they
-    /// can no longer overtake the content update. See CODE_AUDIT_19 §3.12.
-    @ObservationIgnored
-    var mapContentBroadcastTask: Task<Void, Never>?
+    /// The number of content updates (`sendMapContent(for:force:)`, ordered on the map root's
+    /// shared chain) still pending per map. While one is pending for a map, plain state
+    /// broadcasts for it are left to the chain, which ends with a live map state, so they can no
+    /// longer overtake the content update. See CODE_AUDIT_19 §3.12.
     @ObservationIgnored
     var pendingMapContentBroadcasts: [UUID: Int] = [:]
     /// Signature of every value that affects the rendered board texture.

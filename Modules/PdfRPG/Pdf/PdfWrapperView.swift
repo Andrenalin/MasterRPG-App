@@ -5,6 +5,7 @@ import CoreRPG
 import PDFKit
 import QuickLook
 import SwiftUI
+import Synchronization
 
 #if os(macOS)
 import AppKit
@@ -117,8 +118,7 @@ struct PdfWrapperView: CustomViewRepresentable {
         /// thread, so it is lock-protected; `beginSearch` also cancels the previous scan so
         /// its late matches can't leak into the new one. See CODE_AUDIT_9 §5.4 and
         /// CODE_AUDIT_18 §3.9.
-        private let pendingMatchesLock = NSLock()
-        private var pendingMatches: [PDFSelection] = []
+        private let pendingMatches = Mutex<[MatchHandoff.Selection]>([])
 
         /// Hands a finished scan's matches from PDFKit's search thread to the main actor.
         /// `PDFSelection` isn't `Sendable`; this is sound because nothing touches the
@@ -126,6 +126,11 @@ struct PdfWrapperView: CustomViewRepresentable {
         /// buffer is cleared). Replaces the former app-wide retroactive conformances on
         /// PDFKit types. See CODE_AUDIT_18 §3.9.
         private struct MatchHandoff: @unchecked Sendable {
+            /// One match, wrapped so the buffer's `Mutex` can hold it.
+            struct Selection: @unchecked Sendable {
+                let value: PDFSelection
+            }
+
             let selections: [PDFSelection]
         }
 
@@ -135,7 +140,7 @@ struct PdfWrapperView: CustomViewRepresentable {
 
         @MainActor func beginSearch(_ searchText: String) {
             pdfView?.document?.cancelFindString()
-            pendingMatchesLock.withLock { pendingMatches.removeAll() }
+            pendingMatches.withLock { $0.removeAll() }
             pdfView?.document?.beginFindString(searchText, withOptions: .caseInsensitive)
         }
 
@@ -144,13 +149,13 @@ struct PdfWrapperView: CustomViewRepresentable {
         // `PDFSelection.color` mutation to `documentDidEndDocumentFind`, which hops
         // to the main actor before touching it. See CODE_AUDIT_17 §3.8.
         func didMatchString(_ instance: PDFSelection) {
-            pendingMatchesLock.withLock { pendingMatches.append(instance) }
+            pendingMatches.withLock { $0.append(MatchHandoff.Selection(value: instance)) }
         }
 
         func documentDidEndDocumentFind(_ notification: Notification) {
-            let handoff = pendingMatchesLock.withLock {
-                defer { pendingMatches.removeAll() }
-                return MatchHandoff(selections: pendingMatches)
+            let handoff = pendingMatches.withLock { matches in
+                defer { matches.removeAll() }
+                return MatchHandoff(selections: matches.map(\.value))
             }
             let pdfView = pdfView
             let searchModel = parent.searchModel

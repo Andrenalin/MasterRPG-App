@@ -45,7 +45,7 @@ private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
             .clipShape(Self.iOSPanelShape)
             .background(.ultraThinMaterial, in: Self.iOSPanelShape)
 #elseif !os(visionOS)
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 #endif
             .offset(
                 x: isShown

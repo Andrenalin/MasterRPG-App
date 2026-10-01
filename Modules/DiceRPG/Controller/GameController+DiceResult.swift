@@ -222,17 +222,17 @@ extension GameController {
                 die.roll(rerollOptions: item.rerollOptions)
             }
         }
-        // `Task { }` (unlike `.detached`) inherits the caller's isolation —
+        // A plain `Task { }` inherits the caller's isolation —
         // since this call is made from @MainActor `roll(die:for:)`,
         // `nonisolated` alone was not actually keeping this off the main
-        // actor (see CODE_AUDIT_Game §3.1's mechanism). `.detached` gives it
+        // actor (see CODE_AUDIT_Game §3.1's mechanism). `@concurrent` gives it
         // a genuine off-main starting point for the UserDefaults JSON I/O;
         // `diceResult` is computed here on the main actor (result(itemId:)
         // is itself @MainActor) and handed in by value.
         // See CODE_AUDIT_Game §3.6.
         let diceResult = result(itemId: itemId)
         diceGameModel.diceUpdateWidgetTask?.cancel()
-        diceGameModel.diceUpdateWidgetTask = Task.detached(priority: .utility) { [self] in
+        diceGameModel.diceUpdateWidgetTask = Task(priority: .utility) { @concurrent [self] in
             await diceUpdateWidget(diceResult: diceResult)
         }
     }

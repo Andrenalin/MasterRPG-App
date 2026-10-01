@@ -50,8 +50,8 @@ struct GameStatisticsDataControllerTests {
             at: startedAt.addingTimeInterval(1_800),
             in: store.context
         )
-        try await sut.recordEvent(event, participant: participant, in: store.context)
-        try await sut.recordEvent(event, participant: participant, in: store.context)
+        try await sut.recordEvents([(event, participant)], in: store.context)
+        try await sut.recordEvents([(event, participant)], in: store.context)
         try await sut.finishSession(
             id: sessionID,
             at: startedAt.addingTimeInterval(2_400),

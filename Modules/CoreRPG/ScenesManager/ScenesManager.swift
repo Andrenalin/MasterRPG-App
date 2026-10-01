@@ -14,8 +14,7 @@ import OSLog
 /// The `ScenesManager` provides centralized control over:
 /// - Scene visibility tracking
 /// - Window state management (opening, opened, closing, closed)
-/// - Window and immersive space lifecycle
-/// - Event suppression and handling
+/// - Window and immersive space lifecycle (the Space viewer)
 ///
 /// ## Scene States
 /// Windows can transition through different states:
@@ -30,30 +29,17 @@ import OSLog
 /// }
 /// ```
 ///
-/// ## Scene Events
-/// The manager supports suppressing different types of scene events:
-/// - Opening events: Prevents windows from being opened
-/// - Dismissal events: Prevents windows from being dismissed
-///
 /// ## Example Usage
 /// ```swift
 /// // Basic setup in your app
-/// @Environment(\.scenesManager) var scenesManager
+/// @Environment(ScenesManager.self) var scenesManager
 ///
-/// // Open a window
+/// // Open and dismiss a window
 /// scenesManager.openWindow(.settings)
+/// scenesManager.dismissWindow(.settings)
 ///
-/// // Toggle immersive space
-/// await scenesManager.toggleImmersiveSpace()
-///
-/// // Suppress both open and dismiss events
-/// scenesManager.suppressEvents(for: .settings)
-///
-/// // Suppress specific events
-/// scenesManager.suppressEvents([.openEvent, .dismissEvent], for: .settings)
-///
-/// // Remove suppression
-/// scenesManager.unsuppressEvents(for: .settings)
+/// // Show an item in the immersive Space viewer (visionOS)
+/// await scenesManager.toggleSpaceViewer(selection: selection)
 /// ```
 @MainActor @Observable public final class ScenesManager {
 #if !os(tvOS)

@@ -3,6 +3,7 @@
 import CoreData
 import CoreRPG
 import Foundation
+import os.log
 
 struct GameStatisticsDataController: Sendable {
     func recoverInterruptedSessions(in context: NSManagedObjectContext, at date: Date = .now) async throws {
@@ -114,14 +115,6 @@ struct GameStatisticsDataController: Sendable {
         }
     }
 
-    func recordEvent(
-        _ draft: GameStatisticEventDraft,
-        participant: GameStatisticParticipantDraft?,
-        in context: NSManagedObjectContext
-    ) async throws {
-        try await recordEvents([(draft, participant)], in: context)
-    }
-
     /// Inserts a whole batch with one `perform` and one save, so a burst of pin/map messages
     /// costs one Core Data round trip instead of a fetch and save per message.
     /// See CODE_AUDIT_17 §7.1.
@@ -143,7 +136,10 @@ struct GameStatisticsDataController: Sendable {
                 } else {
                     continue
                 }
-                guard !session.isComplete else { continue }
+                guard !session.isComplete else {
+                    Logger.statistics.debug("Skipped a statistics event of an already completed session")
+                    continue
+                }
 
                 if !draft.deduplicationKey.isEmpty {
                     let scopedKey = "\(draft.sessionId.uuidString)|\(draft.deduplicationKey)"

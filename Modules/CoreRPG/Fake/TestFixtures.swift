@@ -2,8 +2,8 @@
 
 import Foundation
 
-//#if DEBUG
-/// Deterministic test fixtures for UUIDs.
+/// Deterministic test fixtures for UUIDs. Not gated on `DEBUG`: production `#Preview`s use them,
+/// and previews also build in Release. See CODE_AUDIT_20 §9.16.
 ///
 /// These fixtures provide repeatable values for tests, ensuring F.I.R.S.T. principles
 /// (especially Repeatable). Using fixed values instead of `UUID()` prevents
@@ -48,4 +48,3 @@ public extension UUID {
     static let fixtureMap = UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC")!
 
 }
-//#endif

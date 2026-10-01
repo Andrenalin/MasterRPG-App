@@ -75,7 +75,7 @@ struct SheetEntryBeforeInlineView: View {
                     // comes from `inlineSheet.isShareable`, which the containing module sets when it
                     // builds the inline sheet: MapRPG's `SheetController` sets it to false, because a
                     // photo embedded in a Map shares only through the Map itself. See CODE_AUDIT_19 §9.27.
-                    resolvedRowViewer(for: resolvedViewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel, isShareable: inlineSheet.isShareable)
+                    SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel, isShareable: inlineSheet.isShareable)
                         .frame(height: 96)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .clipShape(.rect(cornerRadius: 16))
@@ -98,15 +98,15 @@ struct SheetEntryAfterInlineView: View {
                 switch inlineSheet.sheetType {
                 case .dice:
                     // Use inlineSheet.source for both viewController lookup and rowViewer
-                    resolvedRowViewer(
-                        for: resolvedViewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source, rootModel: rootModel),
+                    SheetRowResolver.rowViewer(
+                        for: SheetRowResolver.viewController(for: inlineSheet.destination.typeId == .value ? inlineSheet.destination : inlineSheet.source, rootModel: rootModel),
                         source: inlineSheet.source,
                         destination: inlineSheet.destination,
                         rootModel: rootModel
                     )
                 case .pdf:
                     // Use inlineSheet.source for both viewController lookup and rowViewer
-                    resolvedRowViewer(for: resolvedViewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel)
+                    SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: inlineSheet.source, rootModel: rootModel), source: inlineSheet.source, destination: inlineSheet.destination, rootModel: rootModel)
                 default:
                     EmptyView()
                 }
@@ -189,18 +189,18 @@ struct SheetEntryMainRowView: View {
                         .font(.headline)
 
                 case .dice:
-                    resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
+                    SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                 case .photo:
-                    resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
+                    SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                         .frame(height: 256)
                         .clipShape(.rect(cornerRadius: 16))
                 case .pdf, .space, .weather:
-                    resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
+                    SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                         .frame(height: 256)
 
                 case .audio:
                     HStack {
-                        resolvedRowViewer(for: resolvedViewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
+                        SheetRowResolver.rowViewer(for: SheetRowResolver.viewController(for: entryModel.source, rootModel: rootModel), source: entryModel.source, destination: entryModel.destination, rootModel: rootModel)
                         LinkHighlightTextView(model: rootModel.linkTextModel(for: .entry(entryModel.source.entryId ?? entryModel.source.itemId), text: audioDisplayText, shareResults: shareResult))
                     }
                     .font(.body)

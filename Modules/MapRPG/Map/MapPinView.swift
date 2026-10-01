@@ -100,20 +100,6 @@ private struct MapPinContentView: View {
         return battleRound.isRunning && battleRound.activePinId == pin.id
     }
 
-    /// Prefers a live read of the linked hit-points entry over the pin's
-    /// broadcast `healthPercent` whenever this pin is a tracked combatant —
-    /// only true on the game master's own screen (see
-    /// `GameController.healthPercent(for:)`) — so the border reacts the
-    /// instant the entry changes instead of waiting for the next push. A
-    /// player has no local combatant for this pin and falls through to the
-    /// last broadcast value.
-    private var healthPercent: Double? {
-        guard let combatant = root.mapGameControllable.battleRoundModel.combatant(pinId: pin.id) else {
-            return pin.healthPercent
-        }
-        return root.mapGameControllable.healthPercent(for: combatant)
-    }
-
     var body: some View {
         root.photoRoot.viewController.mapImage(
             root: root.photoRoot,
@@ -143,15 +129,7 @@ private struct MapPinContentView: View {
             )
         }
         .overlay {
-            // The border doubles as a health bar once a hit-points entry is
-            // linked: red/orange/green by remaining percent, grey while
-            // unknown. A dead pin's black ring always takes precedence.
-            Circle()
-                .strokeBorder(
-                    pin.isDead ? .black : MapPinModel.healthBorderColor(for: healthPercent),
-                    lineWidth: pin.isDead ? 5 : 2
-                )
-                .accessibilityHidden(true)
+            MapPinHealthRing(pinId: pin.id, broadcastHealthPercent: pin.healthPercent, isDead: pin.isDead)
         }
         .overlay {
             if pin.isDead {
@@ -247,9 +225,14 @@ private struct MapPinContentView: View {
         // The ring color (blue = active battle attacker, red = highlighted) is
         // otherwise the only signal for this state — announce it too, mirroring
         // the pattern already used for shown/dead/highlighted below.
-        let base = Text(pinAccessibilityValueResource)
-        guard isActiveBattleAttacker else { return base }
-        return Text("\(base), \(Text("Active Battle Attacker", bundle: .module))")
+        var value = Text(pinAccessibilityValueResource)
+        // The ring color is also the only signal for the remaining hit points: announce the
+        // broadcast percent too. See CODE_AUDIT_20 §8.1.
+        if let healthPercent = pin.healthPercent {
+            value = Text("\(value), \(Text("Health: \(Int(healthPercent.rounded())) percent", bundle: .module))")
+        }
+        guard isActiveBattleAttacker else { return value }
+        return Text("\(value), \(Text("Active Battle Attacker", bundle: .module))")
     }
 
     private var pinAccessibilityValueResource: LocalizedStringResource {
@@ -269,6 +252,46 @@ private struct MapPinContentView: View {
         withAnimation(reduceMotion ? nil : .default) {
             model.handleTap(context: actionContext)
         }
+    }
+}
+
+/// The pin's ring: it doubles as a health bar once a hit-points entry is linked — red, orange
+/// or green by remaining percent, grey while unknown. A dead pin's black ring always takes
+/// precedence. Its own view, so the formula behind the live percent is resolved only when its
+/// inputs or the linked values change, not on every render of the pin during drag and zoom.
+/// See CODE_AUDIT_20 §7.1, §8.1.
+private struct MapPinHealthRing: View {
+    let pinId: UUID
+    let broadcastHealthPercent: Double?
+    let isDead: Bool
+
+    @Environment(MapRootModel.self) private var root
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
+    /// Prefers a live read of the linked hit-points entry over the pin's
+    /// broadcast `healthPercent` whenever this pin is a tracked combatant —
+    /// only true on the game master's own screen (see
+    /// `GameController.healthPercent(for:)`) — so the border reacts the
+    /// instant the entry changes instead of waiting for the next push. A
+    /// player has no local combatant for this pin and falls through to the
+    /// last broadcast value.
+    private var healthPercent: Double? {
+        guard let combatant = root.mapGameControllable.battleRoundModel.combatant(pinId: pinId) else {
+            return broadcastHealthPercent
+        }
+        return root.mapGameControllable.healthPercent(for: combatant)
+    }
+
+    var body: some View {
+        let healthPercent = healthPercent
+        // Without color, the ring pattern carries the health band: solid, dashed, dotted.
+        let dash: [CGFloat] = isDead || !differentiateWithoutColor ? [] : MapPinModel.healthRingDash(for: healthPercent)
+        Circle()
+            .strokeBorder(
+                isDead ? .black : MapPinModel.healthBorderColor(for: healthPercent),
+                style: StrokeStyle(lineWidth: isDead ? 5 : 2, dash: dash)
+            )
+            .accessibilityHidden(true)
     }
 }
 

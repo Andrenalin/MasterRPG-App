@@ -40,7 +40,7 @@ struct GenerationSettings {
 }
 
 /// Token and summarising state mirrored from a `ConversationEngine`.
-struct ConversationState {
+struct ConversationState: Equatable {
     var currentTokenCount = 0
     var maxContextSize = AppConfiguration.TokenManagement.defaultMaxTokens
     var isSummarizing = false
@@ -63,9 +63,39 @@ protocol ConversationSessionModel: AnyObject {
     var session: LanguageModelSession { get set }
     var generationSettings: GenerationSettings { get set }
     var conversationState: ConversationState { get set }
+
+    /// The item this session's conversation currently belongs to — used by
+    /// `GeneratorRootModel.generatorController(for:itemId:)` to clear the transcript when the
+    /// target item changes within the same module.
+    var lastItemId: UUID? { get set }
+    var isLoading: Bool { get set }
+    var responseErrorContent: String { get set }
+    var showError: Bool { get set }
+    /// The running generation and extraction, kept so they can be cancelled.
+    var currentTask: Task<Void, Never>? { get set }
+    var currentExtractionTask: Task<Void, Never>? { get set }
 }
 
 extension ConversationSessionModel {
+    func dismissError() {
+        showError = false
+    }
+
+    func cancel() {
+        currentTask?.cancel()
+        currentTask = nil
+        // Cancelling the wrapper `Task` alone doesn't stop the underlying FoundationModels
+        // stream — without this, a superseded/abandoned generation keeps running in the
+        // background, burning CPU/battery and still writing into `rootModel` after the UI has
+        // moved on. See CODE_AUDIT §5.6.
+        conversationEngine.cancelActiveResponse()
+    }
+
+    func cancelExtraction() {
+        currentExtractionTask?.cancel()
+        currentExtractionTask = nil
+    }
+
     /// Call once from `init`: mirrors every engine state change and loads the context size.
     func observeConversationEngine() {
         conversationEngine.onStateChange = { [weak self] in
@@ -78,11 +108,18 @@ extension ConversationSessionModel {
 
     func syncConversationState() {
         session = conversationEngine.session
-        conversationState.currentTokenCount = conversationEngine.currentTokenCount
-        conversationState.maxContextSize = conversationEngine.maxContextSize
-        conversationState.isSummarizing = conversationEngine.isSummarizing
-        conversationState.isApplyingWindow = conversationEngine.isApplyingWindow
-        conversationState.sessionCount = conversationEngine.sessionCount
+        // One assignment, and none when nothing changed: five separate writes invalidated the
+        // views reading any one of the fields five times per sync. See CODE_AUDIT_20 §7.4.
+        let state = ConversationState(
+            currentTokenCount: conversationEngine.currentTokenCount,
+            maxContextSize: conversationEngine.maxContextSize,
+            isSummarizing: conversationEngine.isSummarizing,
+            isApplyingWindow: conversationEngine.isApplyingWindow,
+            sessionCount: conversationEngine.sessionCount
+        )
+        if state != conversationState {
+            conversationState = state
+        }
     }
 
     func fetchContextSize() async {

@@ -63,7 +63,6 @@ public extension ItemControllable {
         do {
             try await dataControllable?.batchDelete(ids: allItemIds)
             itemDataModel.lastPersistenceError = nil
-            PersistenceIssueCenter.shared.recordSuccessfulSave()
         } catch {
             Logger.itemController.error("resetData() batch delete failed: \(error.localizedDescription, privacy: .public)")
             itemDataModel.lastPersistenceError = error
@@ -75,7 +74,6 @@ public extension ItemControllable {
         do {
             try await dataControllable?.save()
             itemDataModel.lastPersistenceError = nil
-            PersistenceIssueCenter.shared.recordSuccessfulSave()
         } catch {
             // The in-memory edit already applied, so a failed save here leaves the UI
             // showing a change that never reached disk — log and surface it rather than
@@ -87,8 +85,9 @@ public extension ItemControllable {
         AppIntentContentInvalidator.invalidate()
     }
 
-    /// A successful flush commits nothing, so it leaves an earlier save error in place; only
-    /// a successful save clears it. See CODE_AUDIT_19 §5.13.
+    /// A successful flush commits nothing, so it leaves an earlier save error in place; the
+    /// banner's save error is cleared by `ContextFlushLedger` when a save commits.
+    /// See CODE_AUDIT_19 §5.13, CODE_AUDIT_20 §5.11.
     @MainActor func flushPendingOperations() async {
         do {
             try await dataControllable?.flushPendingOperations()
@@ -117,9 +116,19 @@ public extension ItemControllable {
             // CODE_AUDIT_17 §5.1.
             await delete(itemId: id, withFileData: false, withDatabase: false)
         }
+        // A reconciliation that runs mid-session (after a failed id or item fetch) must not
+        // replace the live instance of an item that is already loaded: open views and editors
+        // hold it, and an edit queued but not flushed would be reverted in memory. Known ids are
+        // merged like an incremental sync update; only new ids get a new instance.
+        // See CODE_AUDIT_20 §5.6.
+        let knownIds = Set(itemDataModel.items)
         var updatedItems: [UUID] = []
         for item in sortedModels {
-            setModel(with: item)
+            if knownIds.contains(item.id), itemSync(for: item.id, noGame: true) != nil {
+                mergeUpdates(model: item)
+            } else {
+                setModel(with: item)
+            }
             updatedItems.append(item.id)
         }
         // Unsaved local inserts are kept in `itemData` above; keep them listed too, or they

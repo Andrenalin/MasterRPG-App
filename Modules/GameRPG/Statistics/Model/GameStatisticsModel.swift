@@ -28,6 +28,9 @@ final class GameStatisticsModel: Sendable {
     @ObservationIgnored private var context: NSManagedObjectContext?
     @ObservationIgnored private var setupTask: Task<Void, Never>?
     @ObservationIgnored private var activeSessionID: UUID?
+    /// Set once the final flush is done and the session is being completed: an event recorded
+    /// now would be queued for a session `recordEvents` already skips. See CODE_AUDIT_20 §3.4.
+    @ObservationIgnored private var isClosingSession = false
     @ObservationIgnored private var activeLocalParticipantID: UUID?
     @ObservationIgnored private let dataController = GameStatisticsDataController()
     @ObservationIgnored private let statisticsController = GameStatisticsController()
@@ -138,6 +141,10 @@ final class GameStatisticsModel: Sendable {
               let activeSessionID,
               let activeLocalParticipantID
         else { return }
+        guard !isClosingSession else {
+            Logger.statistics.debug("Dropped a statistics event recorded while the session is closing")
+            return
+        }
 
         let draft = statisticsController.eventDraft(
             for: model,
@@ -271,6 +278,8 @@ final class GameStatisticsModel: Sendable {
     ) async {
         guard let context, let activeSessionID else { return }
         await flushBeforeCompletingSession()
+        isClosingSession = true
+        defer { isClosingSession = false }
         do {
             try await dataController.finishSession(id: activeSessionID, at: date, reason: reason, in: context)
             lastCompletedSessionID = activeSessionID

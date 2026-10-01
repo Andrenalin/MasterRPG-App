@@ -135,7 +135,7 @@ struct CoreRPGDynamicPreviewSnapshotTests {
                 EntryContentEditor(editModel: model, currentFocus: focus)
                     .padding()
             }
-            .background(Color.adaptiveBackground)
+            .background(.background)
             .preferredColorScheme(.light)
         }
     }

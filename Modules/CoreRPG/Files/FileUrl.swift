@@ -262,9 +262,23 @@ public extension URL {
         switch (bytes[0], bytes[1]) {
         case (0, _), (10, _), (127, _), (169, 254), (192, 168): return false
         case (172, 16...31), (100, 64...127): return false
+        // 198.18.0.0/15 (benchmarking), 192.0.0.0/24 (IETF protocol assignments).
+        case (198, 18...19): return false
+        case (192, 0) where bytes[2] == 0: return false
         case (224...255, _): return false
         default: return true
         }
+    }
+
+    /// Whether a resolved address literal, as `URLSessionTaskTransactionMetrics.remoteAddress`
+    /// reports it, is public unicast. An address that does not parse is not public.
+    /// See CODE_AUDIT_20 §6.2.
+    static func isPublicAddressLiteral(_ literal: String) -> Bool {
+        var text = literal.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        if let zone = text.firstIndex(of: "%") { text = String(text[..<zone]) }
+        if let ipv4 = IPv4Address(text) { return isPublic(ipv4) }
+        if let ipv6 = IPv6Address(text) { return isPublic(ipv6) }
+        return false
     }
 
     private static func isPublic(_ address: IPv6Address) -> Bool {
@@ -273,8 +287,15 @@ public extension URL {
         }
         let bytes = [UInt8](address.rawValue)
         guard bytes.count == 16 else { return false }
+        // NAT64 64:ff9b::/96 embeds an IPv4 address that is not checked here; Teredo 2001::/32
+        // and documentation 2001:db8::/32 are never a public file host.
+        let isNAT64 = bytes[0] == 0x00 && bytes[1] == 0x64 && bytes[2] == 0xff && bytes[3] == 0x9b
+            && bytes[4..<12].allSatisfy { $0 == 0 }
+        let isTeredo = bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] == 0x00 && bytes[3] == 0x00
+        let isDocumentation = bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] == 0x0d && bytes[3] == 0xb8
         return !(address.isAny || address.isLoopback || address.isLinkLocal || address.isUniqueLocal
             || address.isMulticast || address.isIPv4Compatabile || address.is6to4
+            || isNAT64 || isTeredo || isDocumentation
             // Site-local fec0::/10 (deprecated but still routed on some LANs).
             || (bytes[0] == 0xfe && bytes[1] & 0xc0 == 0xc0))
     }

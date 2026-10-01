@@ -1,14 +1,16 @@
 // @copyright André Trettin
 
 import CoreGraphics
+import CoreRPG
 
 /// Shared geometry validity checks and bounding-box math. Previously
 /// reimplemented independently across `MapEditorSession`,
 /// `MapCanvasGeometryResolver`, `MapOverlayGeometry`, `MapEntryModel`,
 /// `DisplayConfigEditor`, and `MapRoomCanvas` — see CODE_AUDIT §9.5/§9.6.
 extension CGSize {
+    /// Forwards to CoreRPG's single definition. See CODE_AUDIT_20 §9.9.
     var isFiniteAndPositive: Bool {
-        width.isFinite && height.isFinite && width > 0 && height > 0
+        isValidViewportSize
     }
 }
 

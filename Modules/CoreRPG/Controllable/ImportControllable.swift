@@ -142,14 +142,14 @@ public extension ImportControllable {
     // (`ItemControllable.replaceForGame(policy: .memoryOnly)`), leaving the permanent library and
     // `isGameMode` untouched — used to load a saved game without requiring a game to be running.
     func importUrl(from url: URL, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false) -> Task<Void, any Error> {
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) { @concurrent in
             try await self.performImport(from: url, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
         }
     }
 
     // Convenience for fire-and-forget callers — no progress UI
     func importUrl(from url: URL, withOverwrite: Bool = false) -> Task<Void, any Error> {
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) { @concurrent in
             let importModel = await ItemDataImportModel(importMode: withOverwrite ? .overwrite : .merge)
             try await self.performImport(from: url, importModel: importModel, gameMemoryOnly: false)
         }

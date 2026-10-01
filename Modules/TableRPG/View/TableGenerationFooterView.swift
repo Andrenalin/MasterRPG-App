@@ -16,7 +16,12 @@ struct TableGenerationFooterView: View {
     var body: some View {
         HStack {
             Button(action: closeAction) {
-                Image(systemName: "xmark")
+                Label {
+                    Text("Close", bundle: .module)
+                } icon: {
+                    Image(systemName: "xmark")
+                }
+                .labelStyle(.iconOnly)
             }
             .selectedRoundButton(
                 title: String(localized: "Close", bundle: .module),

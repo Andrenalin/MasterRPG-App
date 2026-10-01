@@ -71,17 +71,22 @@ extension GameTableModel {
         sendMapContent(for: mapId, force: false)
     }
 
-    /// Sends the map's content update, then its live map state, chained behind any earlier
-    /// content update so two quick structural edits arrive in order. `force` bypasses the
+    /// Sends the map's content update, then its live map state, chained (on the map root's shared
+    /// chain) behind any earlier content update so two quick structural edits arrive in order. `force` bypasses the
     /// pause, for the explicit "Refresh Shared Map".
     func sendMapContent(for mapId: UUID, force: Bool) {
-        let previous = mapContentBroadcastTask
         let mapRoot = mapRoot
+        let rootModel = mapRoot.rootModel
         pendingMapContentBroadcasts[mapId, default: 0] += 1
-        mapContentBroadcastTask = Task { [weak self] in
-            await previous?.value
+        rootModel.enqueueMapContentSend { [weak self] in
             let content = await mapRoot.mapGameControllable.networkMapContentUpdate(for: mapId)
-            guard let self else { return }
+            guard let self else {
+                // The table model was released (a 2D↔3D toggle) while the update was
+                // pending: the structural change must still reach the players on the next
+                // explicit send. See CODE_AUDIT_20 §3.1.
+                rootModel.mapsWithUnsharedStructure.insert(mapId)
+                return
+            }
             self.pendingMapContentBroadcasts[mapId, default: 1] -= 1
             if self.pendingMapContentBroadcasts[mapId] == 0 {
                 self.pendingMapContentBroadcasts[mapId] = nil

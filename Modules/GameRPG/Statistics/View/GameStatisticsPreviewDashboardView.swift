@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import CoreRPG
 import SwiftUI
 
 struct GameStatisticsPreviewDashboardView: View {
@@ -36,7 +37,7 @@ struct GameStatisticsPreviewDashboardView: View {
                         Label(section.title, systemImage: section.systemImage)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
-                            .background(.quaternary, in: .rect(cornerRadius: 14))
+                            .background(.quaternary, in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
                     }
                 }
             }

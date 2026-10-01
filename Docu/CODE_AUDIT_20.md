@@ -615,3 +615,73 @@ To spot-check a finding, command-click its `path:line` reference in Xcode; it sh
 - Two agents each reported §3.3 and the held-peer-bytes issue (§5.3 and §3.8); they are merged.
 
 If a finding doesn't reproduce when you open its line, send me the section number and I'll re-investigate.
+
+---
+
+## 13. Remediation status (§3.1–§3.9, §4.1–§4.5, §5.1–§5.11, §6.1–§6.3, §7.1–§7.4, §8.1–§8.10, §9.1–§9.19)
+
+Fixed 2026-10-01 on `develop` (uncommitted at the time of writing). Every fix is tagged `See CODE_AUDIT_20 §x.y` in the code. Items that are only partly fixed or not changed say why. Following §10.5 of this audit, each "fixed" claim was checked by searching for the pattern it names, not only the cited sites.
+
+| § | Status | Fix |
+|---|---|---|
+| 3.1 | Fixed | One shared chain, `RootModel.enqueueMapContentSend`, orders every GM map-content send. The 2D resume, the "Refresh Shared Map" button and the 3D table (`sendMapContent`) all use it. A table model released while its update is pending re-marks `mapsWithUnsharedStructure`. |
+| 3.2 | Fixed | `AudioController.play()` is the one play path: while `AudioPlayerSession.isConfiguring`, it waits for `waitUntilConfigured()` before playing; otherwise it plays synchronously, as before. Covers `toggle()`, the remote `.play`, `AudioPlayPauseButton` and `preparePlay`. |
+| 3.3 | Fixed | `addNew` calls `markUnsavedInsert` before `replace`, so a commit by another module during the flush clears the mark. |
+| 3.4 | Fixed | `GameStatisticsModel` sets `isClosingSession` once the final flush is done. Events recorded after that are logged and dropped instead of queueing for a completed session, and `recordEvents` logs the events it skips. |
+| 3.5 | Fixed | Both `Observations` sequences are `Observations.untilFinished` over a weakly captured `BrowserManager`; the tasks hold neither the browser nor the controller strongly. |
+| 3.6 | Fixed | `refreshMasterSessionId()` returns while the player is `.lost` and already knows a session id. |
+| 3.7 | Fixed | `HostingSessionStore.prewarm()` reads the stored sessions off the main actor (called from `MasterNetworkController.init`); a miss afterwards means "none stored" without a Keychain read. The Keychain write runs in an ordered `@concurrent` task (`waitForStoredWrites()` for tests). |
+| 3.8 | Fixed | `PeerFileDataStore.snapshot(for:)` returns the bytes and a generation under one lock; the temp copy is named `peer-<id>-<generation>`, so a replaced hold can never be shadowed by a stale file. |
+| 3.9 | Fixed | Both comments reworded. |
+| 4.1 | Not changed | A pilot needs the compiler's verdict on each of 61 `assumeMainActorIsolated` sites and 12 `@preconcurrency` conformances, and a runtime check that no framework calls them off the main actor. Not safe to do without running the app. |
+| 4.2 | Fixed | All nine `Task.detached` sites are now `Task(priority:) { @concurrent in … }` (the remaining mentions of `Task.detached` in `Modules/` and `Sources/` are comments). |
+| 4.3 | Partly fixed | The three AVAudioSession observers are `notifications(named:)` sequences on the main actor, with no `assumeMainActorIsolated`. The PDF search buffer is a `Mutex`. `CloudContainerCache` and `ContextFlushLedger` keep their synchronous observers on purpose (they must run on the posting thread). |
+| 4.4 | Partly fixed | The contradictory comment in `presentVTTImport` is corrected. The other delays stand in for UI settling (list scroll, window mount, PDF navigation) and need a device to replace safely. |
+| 4.5 | Partly fixed | `GameNetworkParametersTests` asserts `includePeerToPeer` and the keepalive on the initial parameters. The builder's output is opaque, so the two-device peer-to-peer check is still needed. |
+| 5.1 | Fixed | `copyFile` takes a unique destination name (`suggestedFileName`, never replaces), refuses a destination that is the source, and reads the file through `deviceUrl`. `copyReplacingItem` also returns when read and write URLs are the same file. Tests: `FileUrlDataControllerFileOperationTests`. |
+| 5.2 | Fixed | `MasterController.mayShareMapState(for:)` is the gate: the character-sync republish, the presentation replay, the repair bundle and the fresh-recovery send skip content and state while paused and mark the map in `mapsWithUnsharedStructure`. Test: `BattleRoundPausedSharingTests.joinReplayAndRepairHonourPausedSharing`. |
+| 5.3 | Fixed | Mutating operations (`delete`, `move(name:category:)`, `copyFile`) resolve through `deviceUrl`; `delete` drops the held bytes. The store is process-wide, bounded to 256 MiB (oldest first) and emptied by `GameRoot.performStopGame`. The bytes are still held without a hash comparison when the item has no content hash: that case cannot be verified without the iCloud download, and the overlay is read-only and ends with the game. |
+| 5.4 | Fixed | `resetFile(data:)` writes the new file first with `requireDurableStorage`, then deletes the old one with `deleteReplaced(_:keeping:)`; a write failure throws and keeps the old file. |
+| 5.5 | Fixed | `failingItemIds` walks to-one relationships whose inverse is to-many up to the owning item. With the failing items identified, only they are blamed: other operations keep their retry budget. |
+| 5.6 | Fixed | `updates(_:)` merges ids that are already loaded (`mergeUpdates`) and only creates instances for new ids. |
+| 5.7 | Fixed | `existingUUIDsInContext` adds the context's unsaved inserted objects and removes its deleted ones. |
+| 5.8 | Fixed | `LWWActorID.local` (an install-wide id kept in `UserDefaults`) stamps every local write, so two devices never tie at the same clock. |
+| 5.9 | Fixed | `storedLocation(of:)` is the one notion of where a file lives; `deleteReplaced(_:keeping:)` and `isSameStoredFile` compare resolved locations. Used by §5.1 and §5.4. |
+| 5.10 | Fixed | Decoded side counts are clamped to `RawDie.Sides.maximumDecodedSides` (1,000,000). |
+| 5.11 | Fixed | `ItemControllable.save()` no longer clears the banner's save error. `ContextFlushLedger.didCommit` does, only when a save committed and no module still has operations a failed save rolled back. |
+| 6.1 | Fixed | A connection without a usable endpoint is throttled under one shared source (`ConnectionThrottleTracker.unknownSource`), so the lockout, the pending cap and the handshake deadline still apply. Tests: `missingEndpointFailsClosed`, `acceptedConnectionHasRemoteEndpoint`. |
+| 6.2 | Partly fixed | The reserved ranges (NAT64, Teredo, documentation, `192.0.0.0/24`, `198.18.0.0/15`) are refused. After each download the connected addresses (`URLSessionTaskTransactionMetrics.remoteAddress`, every hop) are checked, and a private one discards the file. The request itself is still sent: pinning the resolved address would need a custom resolver. |
+| 6.3 | Fixed | `FoundryJSONValue.init(from:)` bounds its own nesting through the coding-path length when no counter is installed. Test: `MapWallModelTests.deeplyNestedWallMetadataIsRejectedWithoutADepthCounter`. CODE_AUDIT_19 §13 is corrected. |
+| 7.1 | Fixed | The pin ring is its own view (`MapPinHealthRing`), so the formula is resolved only when its inputs or the linked values change. |
+| 7.2 | Fixed | `TimelineView(.periodic(from: startDate, by: 60))`, and a localized "Game Time" label with a spoken duration. |
+| 7.3 | Fixed | `ImageViewer` creates its `ViewportModel` once, on first read, through a small store; the `init` no longer builds one. |
+| 7.4 | Fixed | `ConversationState` is `Equatable`; `syncConversationState()` assigns it once, and only when it changed. |
+| 8.1 | Fixed | The accessibility value announces the health percent; under "Differentiate Without Color" the ring is solid, dashed or dotted by band (`MapPinModel.healthRingDash`). The 3D pins keep the color rule only. |
+| 8.2 | Fixed | The dismiss button uses the module bundle; the keys have German and Thai translations and a one/other plural; the headline follows the issue ("A file could not be attached"). |
+| 8.3 | Fixed | Reduce Motion skips the move transition and the animation; VoiceOver gets an announcement when an issue appears. |
+| 8.4 | Fixed | A fan button keeps `MapAdaptiveFanGeometry.buttonSize`; tvOS uses the `.glass` button style with a circle border. *Check focus visibility on a tvOS simulator.* |
+| 8.5 | Fixed | Escape closes the popover (focus-based `onKeyPress`); the buttons inside the glass panel are flat tinted circles. |
+| 8.6 | Fixed | The spinner is white only on iOS; `.buttonBorderShape(.capsule)` replaces the clip. |
+| 8.7 | Fixed | The report row ignores hit testing and uses scaled insets. |
+| 8.8 | Fixed | The lightning button is `.focusable(false)`. |
+| 8.9 | Fixed | The warnings are keyed by position. |
+| 8.10 | Partly fixed | `GameModuleListPanel` replaces the computed view; the thumbnail property is gone; `Color.adaptiveBackground` is removed in favour of `.background`; the three Table round buttons have text labels; the onboarding background is semantic. New hard-coded paddings remain to be retired opportunistically. |
+| 9.1 | Fixed | `MapPinActionButtons`, its snapshot test and `usesGlassEffects` are deleted; the fan doc names tvOS and visionOS. |
+| 9.2 | Fixed | The `ScenesManager` header documents only the remaining API. |
+| 9.3 | Fixed | All six entities use `EntitySummaryExport.plainText`. |
+| 9.4 | Partly fixed | The two free functions are `SheetRowResolver` statics and the comments are corrected. The CoreGraphics helpers are consolidated (§9.9). Other widened members (`diceUpdateWidgetTask`, `FileUrlDataController` stored properties) are unchanged. |
+| 9.5 | Fixed | `GameNetworkModel.JournalFingerprint` is the one projection, used by the LAN master and the SharePlay admission. The wider `ID`/`Id` clean-up of that file is left to the next rename pass. |
+| 9.6 | Fixed | One `numberedLinks` loop behind `links(for:)` and `linksRepair(for:)`; the unused parameter is gone. |
+| 9.7 | Fixed | One `ExtendedTabRestorationModifier` (`selectsMapsOnEditors` for the split layout). |
+| 9.8 | Fixed | `dismissError()`, `cancel()` and `cancelExtraction()` are `ConversationSessionModel` defaults; the stored properties are protocol requirements. |
+| 9.9 | Fixed | CoreRPG's `CGSize.isValidViewportSize`/`validViewportSize`/`isFinite` and `CGPoint.isFinite` are public and used by MapRPG and PhotoRPG; the module copies are removed (`isFiniteAndPositive` forwards). |
+| 9.10 | Partly fixed | Removed: `SheetSearchContext`, `viewCompactDice`, `menuAudioPlayer`, `collectPhotos`, `isInlineEditing`, `recordEvent`; `InMemoryJoinCodeStorage` moved to the test target. Kept because their tests assert real behaviour: `isUsed(link:)`, `currentAttachment(for:)`, `coverageDepth(at:)`, `resetUsedLink`, `gameDiceHeight`, and the others not named in the audit. |
+| 9.11 | Fixed | `ItemRowTreeModel`'s hand-written `Codable` is removed. |
+| 9.12 | Fixed | German and Thai for the seven join-flow strings. |
+| 9.13 | Fixed | The orphaned catalog is deleted. |
+| 9.14 | Fixed | `ByteUnit.megabyte` (decimal) and `100 * ByteUnit.megabyte` etc. at the five sites; values unchanged. |
+| 9.15 | Partly fixed | `explicitDirectoryUrl`, `selectedUrl`, `selectionId`, `highlightAndBold` and the two `PortableGame*` file names are renamed. The `ID` casing inside `SharePlayPlayerJournalAdmission` (`participantID` and friends) is unchanged. |
+| 9.16 | Fixed | The commented-out `#if DEBUG` lines are removed and the reason is documented. |
+| 9.17 | Fixed | `ResolvedAppTheme.panelCornerRadius` is used at the 14 listed sites. |
+| 9.18 | Partly fixed | The file-replacement functions are in `EditControllable+File.swift`. `PlayerControllerModel` and `NavigationSend` are not split: that is a move of stateful code with access-control changes, and is better done as its own change. |
+| 9.19 | Fixed | New tests: `FileUrlDataControllerFileOperationTests` (duplicate, rename-then-duplicate, delete with held bytes, replace guard, store budget), the endpoint assertion, the paused-join gate, the deep-nested wall. |

@@ -38,9 +38,9 @@ struct BattleRoundSideOverlay: View {
         )
 #if os(iOS)
         .ignoresSafeArea(.container, edges: .bottom)
-        .glassEffect(in: .rect(topLeadingRadius: 14, topTrailingRadius: 14))
+        .glassEffect(in: .rect(topLeadingRadius: ResolvedAppTheme.panelCornerRadius, topTrailingRadius: ResolvedAppTheme.panelCornerRadius))
 #elseif !os(visionOS)
-        .glassEffect(in: .rect(cornerRadius: 14))
+        .glassEffect(in: .rect(cornerRadius: ResolvedAppTheme.panelCornerRadius))
 #endif
         .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
         .offset(

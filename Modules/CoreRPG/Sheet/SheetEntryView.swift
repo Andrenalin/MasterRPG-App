@@ -120,46 +120,44 @@ struct SheetEntryView<LinkType: LinkDataTransferable>: View {
     }
 }
 
-/// Shared by every extracted subview below that needs to resolve a viewer for a row's source
-/// — kept file-scoped rather than promoted onto `SheetRootModel` to keep this decomposition
-/// self-contained. See CODE_AUDIT §8.2.
+/// Resolves a viewer for a row's source, shared by `SheetEntryView` and the extracted row
+/// subviews in SheetEntryRowViews.swift. A namespace, not free functions: these helpers are
+/// internal to CoreRPG, and a global name for each polluted the module's namespace.
+/// See CODE_AUDIT §8.2, CODE_AUDIT_20 §9.4.
 @MainActor
-func resolvedViewController(for source: ItemRowModel, rootModel: SheetRootModel) -> ViewControllable? {
-    rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
-}
+enum SheetRowResolver {
+    static func viewController(for source: ItemRowModel, rootModel: SheetRootModel) -> ViewControllable? {
+        rootModel.rootManager.rootModel(for: source.typeId)?.viewControllable
+    }
 
-/// Mirrors `resolvedViewController` above: resolves `row`'s model once
-/// here, at this per-row (but not per-item-in-a-list) boundary, instead of
-/// letting `rowViewer`'s leaf re-resolve via `itemSync`/`itemOrEmpty` deep
-/// inside its own `body` — that subscribes the leaf to the *entire*
-/// `itemData` dictionary (Observation tracks a dictionary property at
-/// whole-property granularity), so any item edit in the module
-/// re-invalidates every other open row, not just this one. See
-/// CODE_AUDIT_10 §8.1.
-@MainActor
-private func resolvedModel(for row: ItemRowModel, rootModel: SheetRootModel) -> (any ModelType)? {
-    rootModel.rootManager.itemRootController(for: row.typeId)?.itemControllable.itemSync(for: row.itemId)
-}
+    /// Resolves `row`'s model once here, at this per-row (but not per-item-in-a-list)
+    /// boundary, instead of letting `rowViewer`'s leaf re-resolve via `itemSync`/`itemOrEmpty`
+    /// deep inside its own `body` — that subscribes the leaf to the *entire* `itemData`
+    /// dictionary (Observation tracks a dictionary property at whole-property granularity), so
+    /// any item edit in the module re-invalidates every other open row, not just this one.
+    /// See CODE_AUDIT_10 §8.1.
+    private static func model(for row: ItemRowModel, rootModel: SheetRootModel) -> (any ModelType)? {
+        rootModel.rootManager.itemRootController(for: row.typeId)?.itemControllable.itemSync(for: row.itemId)
+    }
 
-/// Shared by `SheetEntryView` and `SheetEntryMainRowView` below — resolves
-/// `source`/`destination`'s models once here instead of leaving it to
-/// `rowViewer`'s leaf to re-resolve via `itemSync`/`itemOrEmpty` inside its
-/// own `body`. See `resolvedModel`'s doc comment / CODE_AUDIT_10 §8.1.
-@MainActor
-func resolvedRowViewer(
-    for viewController: ViewControllable?,
-    source: ItemRowModel,
-    destination: ItemRowModel,
-    rootModel: SheetRootModel,
-    isShareable: Bool = true
-) -> AnyView? {
-    viewController?.rowViewer(
-        source: source,
-        destination: destination,
-        sourceModel: resolvedModel(for: source, rootModel: rootModel),
-        destinationModel: resolvedModel(for: destination, rootModel: rootModel),
-        isShareable: isShareable
-    )
+    /// Resolves `source`/`destination`'s models once here instead of leaving it to
+    /// `rowViewer`'s leaf to re-resolve via `itemSync`/`itemOrEmpty` inside its own `body`.
+    /// See `model(for:rootModel:)` / CODE_AUDIT_10 §8.1.
+    static func rowViewer(
+        for viewController: ViewControllable?,
+        source: ItemRowModel,
+        destination: ItemRowModel,
+        rootModel: SheetRootModel,
+        isShareable: Bool = true
+    ) -> AnyView? {
+        viewController?.rowViewer(
+            source: source,
+            destination: destination,
+            sourceModel: model(for: source, rootModel: rootModel),
+            destinationModel: model(for: destination, rootModel: rootModel),
+            isShareable: isShareable
+        )
+    }
 }
 
 private extension SheetEntryView {

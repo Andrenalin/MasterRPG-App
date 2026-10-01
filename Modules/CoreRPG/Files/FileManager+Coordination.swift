@@ -69,6 +69,8 @@ extension FileManager {
     func copyReplacingItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
         try await Self.performCoordinatedFileAccess {
             try Self.coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
+                // Replacing a file with itself would delete it. See CODE_AUDIT_20 §5.1.
+                guard readURL.standardizedFileURL.resolvingSymlinksInPath() != writeURL.standardizedFileURL.resolvingSymlinksInPath() else { return }
                 try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                 if FileManager.default.fileExists(atPath: writeURL.path(percentEncoded: false)) {
                     try FileManager.default.removeItem(at: writeURL)

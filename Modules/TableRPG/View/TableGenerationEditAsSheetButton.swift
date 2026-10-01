@@ -25,13 +25,19 @@ struct TableGenerationEditAsSheetButton: View {
             // Same icon in both states — the round button's own `isSelected`
             // styling (a tinted, filled circle vs. a neutral one) is what
             // shows the toggle is on, not a swapped glyph.
+            let title = model.isEditingOutcomeSheet
+                ? String(localized: "Done", bundle: .module)
+                : String(localized: "Edit as Sheet", bundle: .module)
             Button(action: toggle) {
-                Image(systemName: "square.and.pencil")
+                Label {
+                    Text(verbatim: title)
+                } icon: {
+                    Image(systemName: "square.and.pencil")
+                }
+                .labelStyle(.iconOnly)
             }
             .selectedRoundButton(
-                title: model.isEditingOutcomeSheet
-                    ? String(localized: "Done", bundle: .module)
-                    : String(localized: "Edit as Sheet", bundle: .module),
+                title: title,
                 module: .table,
                 isSelected: model.isEditingOutcomeSheet
             )

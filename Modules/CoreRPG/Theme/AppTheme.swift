@@ -53,6 +53,10 @@ public struct ModuleThemeColors: Hashable, Sendable {
 }
 
 public struct ResolvedAppTheme: Hashable, Sendable {
+    /// The corner radius of every floating panel (game side panels, overlays, review cards).
+    /// See CODE_AUDIT_20 §9.17.
+    public static let panelCornerRadius: CGFloat = 14
+
     public let id: AppThemeID
     public let canvas: ThemeColorComponents
     public let canvasEnd: ThemeColorComponents

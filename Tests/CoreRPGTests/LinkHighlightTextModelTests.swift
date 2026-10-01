@@ -92,7 +92,7 @@ struct LinkHighlightTextModelTests {
     }
 
     @Test
-    func hightLightAndBold() async throws {
+    func highlightAndBold() async throws {
         let text = "**Zauber**"
 
         let sut = await LinkHighlightTextModel(linkControllable: FakeLinkController.fake, text: text, highlightedText: "za")

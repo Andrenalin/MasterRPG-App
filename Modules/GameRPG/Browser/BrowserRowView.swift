@@ -47,8 +47,13 @@ struct BrowserRowView: View, Equatable {
                     if isConnecting {
                         // iOS tints the spinner with the accent color, which vanishes on the
                         // prominent (accent) background; match the button's white label instead.
+                        // Only there: a focused prominent tvOS button turns light, and a white
+                        // spinner would vanish exactly while "Connecting…" is shown.
+                        // See CODE_AUDIT_20 §8.6.
                         ProgressView()
+#if os(iOS)
                             .tint(.white)
+#endif
                     } else {
                         switch model.connectionMode {
                         case .observer:
@@ -62,7 +67,8 @@ struct BrowserRowView: View, Equatable {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .clipShape(.capsule)
+            // The border shape, not a clip: a clip cuts off the focus lift, shadow and ring.
+            .buttonBorderShape(.capsule)
             .sheet(isPresented: $isEnteringCode) {
                 GameJoinCodeEntrySheet(
                     deviceName: model.deviceName,

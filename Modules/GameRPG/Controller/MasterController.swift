@@ -27,54 +27,6 @@ final class MasterControllerModel {
         let messageId: UUID
     }
 
-    private struct PlayerJournalAdmission: Equatable, Sendable {
-        let envelopeVersion: Int
-        let replyToMessageId: UUID?
-        let masterId: UUID
-        let sender: GameSenderModel
-        let masterState: GameMasterStateModel?
-        let counter: Int
-        let proxyCounter: Int
-        let type: RPGMessageType
-        let subType: RPGMessageActionType
-        let audience: GameMessageAudience
-        let purpose: GameMessagePurpose
-        let targetId: UUID?
-        let itemId: UUID
-        let module: NetworkModules
-        let version: Int
-        let assetVersion: Int?
-        let contentVersion: Int?
-        let timestamp: TimeInterval
-        let journalPayloadDigest: Data?
-
-        init(_ model: GameNetworkModel) {
-            envelopeVersion = model.version
-            replyToMessageId = model.replyToMessageID
-            masterId = model.masterId
-            sender = model.sender
-            masterState = model.masterState
-            counter = model.counter
-            proxyCounter = model.proxyCounter
-            type = model.type
-            subType = model.subType
-            audience = model.audience
-            purpose = model.purpose
-            targetId = model.targetId
-            itemId = model.data.id
-            module = model.data.type
-            version = model.data.version
-            assetVersion = model.data.assetVersion
-            contentVersion = model.data.contentVersion
-            timestamp = model.timestamp
-            if let payload = model.data.data {
-                journalPayloadDigest = GameNetworkModel.journalDigest(for: payload)
-            } else {
-                journalPayloadDigest = model.journalPayloadDigest
-            }
-        }
-    }
-
     private struct PeerAvailabilitySource: Equatable, Sendable {
         let wireId: UUID?
         let presenterId: UUID
@@ -167,7 +119,7 @@ final class MasterControllerModel {
     private var lastPdfListCounters: [UUID: Int] = [:]
     private var lastSpaceListCounters: [UUID: Int] = [:]
     private var lastSpaceTransformCounters: [SpaceTransformSequenceKey: Int] = [:]
-    private var playerJournalAdmissions: [PlayerJournalAdmissionKey: PlayerJournalAdmission] = [:]
+    private var playerJournalAdmissions: [PlayerJournalAdmissionKey: GameNetworkModel.JournalFingerprint] = [:]
     private var playerJournalAdmissionOrder: [PlayerJournalAdmissionKey] = []
     private static let maximumPlayerJournalAdmissions = 256
     private var peerAvailabilitySources: [PeerAvailabilitySource] = []
@@ -374,7 +326,7 @@ final class MasterControllerModel {
             senderId: model.sender.id,
             messageId: messageId
         )
-        let admission = PlayerJournalAdmission(model)
+        let admission = GameNetworkModel.JournalFingerprint(model)
         if let existing = playerJournalAdmissions[key] {
             // Never let a copied sender/message ID replace the first
             // physically attributed Journal fingerprint.
@@ -397,7 +349,7 @@ final class MasterControllerModel {
             senderId: model.sender.id,
             messageId: messageId
         )
-        return playerJournalAdmissions[key] == PlayerJournalAdmission(model)
+        return playerJournalAdmissions[key] == GameNetworkModel.JournalFingerprint(model)
     }
 
     func resetPlayerJournalAdmissions() {

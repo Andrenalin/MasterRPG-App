@@ -20,8 +20,8 @@ final class FoundryImportModel {
     }
 
     private(set) var loadState = LoadState.notStarted
-    private(set) var selectedURL: URL?
-    private(set) var selectionID = UUID()
+    private(set) var selectedUrl: URL?
+    private(set) var selectionId = UUID()
     private(set) var artifact: FoundryArtifact?
     private(set) var package: FoundryVTTImportPackage? {
         didSet {
@@ -79,8 +79,8 @@ final class FoundryImportModel {
     @discardableResult
     func select(url: URL) -> Bool {
         guard !isSourceSelectionLocked else { return false }
-        selectedURL = url
-        selectionID = UUID()
+        selectedUrl = url
+        selectionId = UUID()
         artifact = nil
         package = nil
         universalVTT = nil
@@ -97,8 +97,8 @@ final class FoundryImportModel {
     }
 
     func loadSelectedArtifact() async {
-        guard let requestedUrl = selectedURL else { return }
-        let requestedSelectionID = selectionID
+        guard let requestedUrl = selectedUrl else { return }
+        let requestedSelectionId = selectionId
         loadState = .loading
         do {
             let detector = detector
@@ -107,7 +107,7 @@ final class FoundryImportModel {
                 try detector.detect(at: url)
             }
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, selectedURL == requestedUrl else { return }
+            guard selectionId == requestedSelectionId, selectedUrl == requestedUrl else { return }
             artifact = detected
             switch detected.kind {
             case .universalVTT:
@@ -120,7 +120,7 @@ final class FoundryImportModel {
                 universalVTT = nil
             }
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, selectedURL == requestedUrl else { return }
+            guard selectionId == requestedSelectionId, selectedUrl == requestedUrl else { return }
             let descriptor = makeSourceDescriptor(sourceURL: requestedUrl)
             let archiveEntries: [ExternalImportSourceEntry]
             do {
@@ -135,7 +135,7 @@ final class FoundryImportModel {
                 fallbackEntries: archiveEntries
             )
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, selectedURL == requestedUrl else { return }
+            guard selectionId == requestedSelectionId, selectedUrl == requestedUrl else { return }
             sourceDescriptor = descriptor
             sourceResolution = resolution
             switch resolution {
@@ -146,32 +146,32 @@ final class FoundryImportModel {
             }
             loadState = .preflight
         } catch is CancellationError {
-            guard selectionID == requestedSelectionID else { return }
+            guard selectionId == requestedSelectionId else { return }
             loadState = .notStarted
         } catch {
-            guard selectionID == requestedSelectionID else { return }
+            guard selectionId == requestedSelectionId else { return }
             loadState = .failed(error.localizedDescription)
         }
     }
 
     func prepareReview(rootManager: RootManager) async {
-        guard let selectedURL, sourceDescriptor != nil, let selectedSourceScopeID else {
+        guard let selectedUrl, sourceDescriptor != nil, let selectedSourceScopeID else {
             loadState = .failed("Choose whether this file updates an existing import or creates a new source.")
             return
         }
-        let requestedSelectionID = selectionID
+        let requestedSelectionId = selectionId
         loadState = .preparingReview
         commitError = nil
         do {
             try Task.checkCancellation()
-            guard selectionID == requestedSelectionID, self.selectedURL == selectedURL else { return }
+            guard selectionId == requestedSelectionId, self.selectedUrl == selectedUrl else { return }
             if let package {
-                let resourceLoader: FoundryResourceLoader = { [reader, selectedURL] resource in
-                    try await reader.resourceData(for: resource, from: selectedURL).data
+                let resourceLoader: FoundryResourceLoader = { [reader, selectedUrl] resource in
+                    try await reader.resourceData(for: resource, from: selectedUrl).data
                 }
                 let mapped = try await FoundryVTTDomainMapper().map(
                     package: package,
-                    sourceURL: selectedURL,
+                    sourceURL: selectedUrl,
                     sourceScopeID: selectedSourceScopeID,
                     selectedCategories: selectedCategories,
                     resourceLoader: resourceLoader
@@ -179,24 +179,24 @@ final class FoundryImportModel {
                 let session = ExternalImportReviewSession(batch: mapped.batch)
                 try await session.preflightConflicts(rootManager: rootManager)
                 try Task.checkCancellation()
-                guard selectionID == requestedSelectionID, self.selectedURL == selectedURL else { return }
+                guard selectionId == requestedSelectionId, self.selectedUrl == selectedUrl else { return }
                 mappedImport = mapped
                 reviewSession = session
                 loadState = .review
             } else if let universalVTT {
-                let resourceLoader: FoundryResourceLoader = { [universalReader, selectedURL] resource in
-                    try await universalReader.resourceData(for: resource, from: selectedURL).data
+                let resourceLoader: FoundryResourceLoader = { [universalReader, selectedUrl] resource in
+                    try await universalReader.resourceData(for: resource, from: selectedUrl).data
                 }
                 let mapped = try await UniversalVTTDomainMapper().map(
                     document: universalVTT,
-                    sourceURL: selectedURL,
+                    sourceURL: selectedUrl,
                     sourceScopeID: selectedSourceScopeID,
                     resourceLoader: resourceLoader
                 )
                 let session = ExternalImportReviewSession(batch: mapped.batch)
                 try await session.preflightConflicts(rootManager: rootManager)
                 try Task.checkCancellation()
-                guard selectionID == requestedSelectionID, self.selectedURL == selectedURL else { return }
+                guard selectionId == requestedSelectionId, self.selectedUrl == selectedUrl else { return }
                 mappedImport = mapped
                 reviewSession = session
                 loadState = .review
@@ -204,19 +204,19 @@ final class FoundryImportModel {
                 loadState = .failed("The selected VTT source is no longer available.")
             }
         } catch is CancellationError {
-            guard selectionID == requestedSelectionID else { return }
+            guard selectionId == requestedSelectionId else { return }
             loadState = .preflight
         } catch {
-            guard selectionID == requestedSelectionID else { return }
+            guard selectionId == requestedSelectionId else { return }
             loadState = .failed(error.localizedDescription)
         }
     }
 
     func commit(appModel: AppModel) async {
-        guard let reviewSession, let mappedImport, let selectedURL, let sourceDescriptor,
+        guard let reviewSession, let mappedImport, let selectedUrl, let sourceDescriptor,
               let selectedSourceScopeID,
               let claimIntent = sourceClaimIntent(for: selectedSourceScopeID) else { return }
-        let requestedSelectionID = selectionID
+        let requestedSelectionId = selectionId
         guard let importToken = appModel.beginExternalImport() else {
             commitError = "Another external import is currently committing. Wait for it to finish and try again."
             return
@@ -239,14 +239,14 @@ final class FoundryImportModel {
             } catch {
                 archiveEntries = []
             }
-            guard isCurrentSelection(requestedSelectionID, url: selectedURL) else { return }
+            guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             let claimResult = try await sourceRegistry.claim(
                 claimIntent,
                 descriptor: sourceDescriptor,
                 fallbackEntries: archiveEntries
             )
             try Task.checkCancellation()
-            guard isCurrentSelection(requestedSelectionID, url: selectedURL) else { return }
+            guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             switch claimResult {
             case .claimed(let claimedScopeID):
                 guard claimedScopeID == selectedSourceScopeID else {
@@ -281,7 +281,7 @@ final class FoundryImportModel {
                     try await adventureRoot.saveExternalImport()
                 }
             )
-            guard isCurrentSelection(requestedSelectionID, url: selectedURL) else { return }
+            guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             self.result = result
             loadState = .finalizing
             let archive = FoundryImportArchive(
@@ -289,7 +289,7 @@ final class FoundryImportModel {
                 sourceScopeID: selectedSourceScopeID,
                 sourceFormat: sourceDescriptor.format,
                 sourceSemanticKey: sourceDescriptor.semanticKey,
-                sourceFileName: selectedURL.lastPathComponent,
+                sourceFileName: selectedUrl.lastPathComponent,
                 package: mappedImport.archivePackage,
                 mappings: selectedMappings(from: mappedImport, session: reviewSession),
                 warnings: mappedImport.batch.warnings
@@ -299,7 +299,7 @@ final class FoundryImportModel {
             } catch {
                 appendArchiveWarning("The RPG data was imported, but its RuleRPG source archive could not be saved: \(error.localizedDescription)")
             }
-            guard isCurrentSelection(requestedSelectionID, url: selectedURL) else { return }
+            guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             do {
                 try await sourceRegistry.register(
                     scopeID: selectedSourceScopeID,
@@ -308,7 +308,7 @@ final class FoundryImportModel {
             } catch {
                 appendArchiveWarning("The RPG data was imported, but its source identity could not be finalized: \(error.localizedDescription)")
             }
-            guard isCurrentSelection(requestedSelectionID, url: selectedURL) else { return }
+            guard isCurrentSelection(requestedSelectionId, url: selectedUrl) else { return }
             loadState = .completed
         } catch is CancellationError {
             commitError = "Import was cancelled and its changes were rolled back."
@@ -340,8 +340,8 @@ final class FoundryImportModel {
 
     func reportSelectionError(_ error: any Error) {
         guard !isSourceSelectionLocked else { return }
-        selectedURL = nil
-        selectionID = UUID()
+        selectedUrl = nil
+        selectionId = UUID()
         artifact = nil
         package = nil
         universalVTT = nil
@@ -396,7 +396,7 @@ final class FoundryImportModel {
     }
 
     private func isCurrentSelection(_ expectedSelectionID: UUID, url: URL) -> Bool {
-        selectionID == expectedSelectionID && selectedURL == url
+        selectionId == expectedSelectionID && selectedUrl == url
     }
 
     private func remapReview(to canonicalScopeID: UUID, rootManager: RootManager) async {

@@ -48,6 +48,9 @@ struct LightningView: View {
         }
         .buttonStyle(.plain)
         .accessibilityHidden(true)
+        // Hidden from accessibility, so it must not take focus either: on Apple TV the focus
+        // engine could land on this invisible full-screen control. See CODE_AUDIT_20 §8.8.
+        .focusable(false)
         .ignoresSafeArea()
         .background {
             // Periodic auto-strike cadence, replacing a `Timer.publish`/Combine

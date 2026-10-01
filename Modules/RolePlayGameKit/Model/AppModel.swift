@@ -534,7 +534,9 @@ extension AppModel {
 
         Task { @MainActor in
             // A route sent before the target window's stack mounted is buffered and replayed
-            // when it mounts (CODE_AUDIT_18 §3.17), so no fixed cross-window delay is needed.
+            // when it mounts (CODE_AUDIT_18 §3.17). The short delay is kept only so the
+            // settings route has applied before the import cover is presented on top of it.
+            // See CODE_AUDIT_20 §4.4.
             target.perform(route: KnownRoutes.settings)
             try? await Task.sleep(for: NavigationTiming.crossWindowRouteDelay)
             target.navigate(to: SettingsRoute.importData, method: .managedCover)

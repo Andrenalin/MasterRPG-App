@@ -14,7 +14,7 @@ struct TabSecondGameView: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        moduleList
+        GameModuleListPanel(root: root, isPlayer: isPlayer)
             .gameSidePanel(
                 isShown: gameScreenModel.showSettingTab != .none,
                 width: gameScreenModel.sideBarWidth,
@@ -23,10 +23,13 @@ struct TabSecondGameView: View {
     }
 }
 
-private extension TabSecondGameView {
-    /// The game master's list pushes module views, so it brings its own navigation stack.
-    @ViewBuilder
-    var moduleList: some View {
+/// The module list inside the side panel. The game master's list pushes module views, so it
+/// brings its own navigation stack. See CODE_AUDIT_20 §8.10.
+private struct GameModuleListPanel: View {
+    let root: GameRoot
+    let isPlayer: Bool
+
+    var body: some View {
         if isPlayer {
             root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: true)
         } else {

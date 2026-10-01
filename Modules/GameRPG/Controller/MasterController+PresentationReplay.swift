@@ -85,6 +85,8 @@ extension MasterController {
             authoritativeMaster: true
         )
         if presentation == .map {
+            // A paused "Share Map" keeps the live map state private. See CODE_AUDIT_20 §5.2.
+            guard mayShareMapState(for: reference.id) else { return }
             let mapUpdate = await root.mapRoot.mapGameControllable.networkMapContentUpdate(for: reference.id)
             await send(
                 type: .update,

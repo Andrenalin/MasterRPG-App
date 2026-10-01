@@ -25,9 +25,19 @@ final class AudioController: Sendable {
 // MARK: - Player controls
 
 extension AudioController {
+    /// Every play path ends here, so the first track can never begin under the default audio
+    /// category (muted by the ring switch, no long-form routing) while the session is still
+    /// being configured. See CODE_AUDIT_19 §3.5, CODE_AUDIT_20 §3.2.
     @MainActor
     func play() {
-        model.player.play()
+        guard model.audioSession?.isConfiguring == true else {
+            model.player.play()
+            return
+        }
+        Task { @MainActor in
+            await model.audioSession?.waitUntilConfigured()
+            model.player.play()
+        }
     }
 
     @MainActor
