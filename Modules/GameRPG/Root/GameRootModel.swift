@@ -29,6 +29,9 @@ final class GameRootModel: Sendable {
     var gameConfig: GameConfigModel = .empty
     var gameRoster: GameRosterModel = .empty
     var gameControl: GameControlModel = .empty
+    /// The players who shared a dice roll from a device without the 3D table, by the name the
+    /// dice overlay lists the roll under. The table shows their dice at its guest seat.
+    var tableGuestNames: Set<String> = []
 
     var startGameTime = Date()
 
@@ -254,6 +257,7 @@ final class GameRootModel: Sendable {
             targetId: targetId,
             audience: resolvedAudience,
             purpose: purpose,
+            senderPlatform: .current,
             data: data
         )
     }
@@ -333,5 +337,18 @@ final class GameRootModel: Sendable {
             }
         }
         latestValueUpdateCounters[key] = counter
+    }
+}
+
+extension GameRootModel {
+    /// Notes whether the player behind a shared dice roll sits at the 3D table. The game
+    /// master has a seat of their own and is never a guest.
+    func noteDiceRollSender(of message: GameNetworkModel) {
+        guard !message.sender.isMaster, !message.senderName.isEmpty else { return }
+        if message.senderPlatform == .visionOS {
+            tableGuestNames.remove(message.senderName)
+        } else {
+            tableGuestNames.insert(message.senderName)
+        }
     }
 }

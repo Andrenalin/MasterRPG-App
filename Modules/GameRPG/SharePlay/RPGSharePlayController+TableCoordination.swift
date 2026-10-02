@@ -5,6 +5,7 @@ import Combine
 import CoreRPG
 import Foundation
 import GroupActivities
+import TabletopKit
 import os.log
 
 // MARK: - SharePlay Coordination Extension
@@ -41,6 +42,7 @@ extension RPGSharePlayController {
         // ever runs after `coordinateWithSession(_:)` has attached — see both call
         // sites' own docs), so `GameObserver`'s fallback re-claim is safe from here on.
         gameTableModel.observer.canAutoClaimSeat = true
+        applySeatPlayerNames(to: gameTableModel, groupSession: groupSession, masterParticipantId: masterId)
 
         let seatTask = Task { [weak self] in
             for await _ in groupSession.$activeParticipants.values {
@@ -51,6 +53,11 @@ extension RPGSharePlayController {
                 gameTableModel.updateSeatsForParticipantChange(
                     groupSession: self.groupSession,
                     isMaster: isMaster,
+                    masterParticipantId: masterId
+                )
+                self.applySeatPlayerNames(
+                    to: gameTableModel,
+                    groupSession: groupSession,
                     masterParticipantId: masterId
                 )
             }
@@ -76,8 +83,67 @@ extension RPGSharePlayController {
                 isMaster: isMaster,
                 masterParticipantId: masterId
             )
+            self.applySeatPlayerNames(
+                to: gameTableModel,
+                groupSession: groupSession,
+                masterParticipantId: masterId
+            )
         }
         trackSessionTask(task, key: Self.masterPinSeatTaskKey)
+    }
+
+    /// A participant's player became known (or left): tell the table who sits where again.
+    @MainActor
+    func refreshSeatPlayerNames() {
+        guard let groupSession, let gameTableModel = seatingGameTableModel else { return }
+        let sessionId = groupSession.id
+        let task = Task { [weak self] in
+            guard let self else { return }
+            let isMaster = self.gameModel?.gameConfig.isMaster ?? false
+            let masterId = await self.masterParticipantId(in: groupSession, isMaster: isMaster)
+            guard !Task.isCancelled, self.groupSession?.id == sessionId else { return }
+            self.applySeatPlayerNames(
+                to: gameTableModel,
+                groupSession: groupSession,
+                masterParticipantId: masterId
+            )
+        }
+        trackSessionTask(task, key: Self.seatPlayerNamesTaskKey)
+    }
+
+    /// Every device seats the participants the same way (`TableSeatAssignment`), so the seat of
+    /// each participant whose player is known gives that seat its player. The master's seat
+    /// carries the master's name; a player's, the name learned from their own messages. A
+    /// participant without a table is ranked like the others but sits nowhere: their dice are
+    /// shown at the guest seat.
+    @MainActor
+    private func applySeatPlayerNames(
+        to gameTableModel: GameTableModel,
+        groupSession: GroupSession<RPGActivity>,
+        masterParticipantId: UUID?
+    ) {
+        let seats = TableSeatAssignment.seats(
+            participantIds: groupSession.activeParticipants.map(\.id),
+            masterParticipantId: masterParticipantId,
+            playerSeatCount: PlayerSeat.playerSeatCount
+        )
+        var names: [TableSeatIdentifier: [String]] = [:]
+        for (participantId, seatIndex) in seats {
+            let name: String?
+            if participantId == masterParticipantId {
+                name = gameModel?.gameConfig.master.name
+            } else if let player = participantPlayers[participantId], player.hasTable {
+                name = player.name
+            } else {
+                name = nil
+            }
+            guard let name, !name.isEmpty else { continue }
+            names[TableSeatIdentifier(seatIndex), default: []].append(name)
+        }
+        names = names.mapValues { $0.sorted() }
+        if gameTableModel.seatPlayerNames != names {
+            gameTableModel.seatPlayerNames = names
+        }
     }
 
     /// The game master's participant id: this device's own on the master, or the participant a
@@ -96,6 +162,7 @@ extension RPGSharePlayController {
 private extension RPGSharePlayController {
     static let seatObservationTaskKey = UUID()
     static let masterPinSeatTaskKey = UUID()
+    static let seatPlayerNamesTaskKey = UUID()
 }
 
 #endif

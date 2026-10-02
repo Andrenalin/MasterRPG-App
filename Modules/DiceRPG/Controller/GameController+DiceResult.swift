@@ -205,9 +205,10 @@ extension GameController {
         }
     }
     
+    /// `playsSound` is off for a die tossed on the 3D table, which makes its own sound there.
     @MainActor
-    func roll(die: DieModel?, for itemId: UUID) {
-        if let diceUrl = Resources.bundle.url(forResource: diceName(for: itemId, isOne: die != nil), withExtension: "m4a") {
+    func roll(die: DieModel?, for itemId: UUID, playsSound: Bool = true) {
+        if playsSound, let diceUrl = Resources.bundle.url(forResource: diceName(for: itemId, isOne: die != nil), withExtension: "m4a") {
             let item = AVPlayerItem(url: diceUrl)
             diceGameModel.audioPlayer.replaceCurrentItem(with: item)
             diceGameModel.audioPlayer.play()

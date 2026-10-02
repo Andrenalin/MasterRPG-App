@@ -152,4 +152,70 @@ public extension ViewController {
         GameToolBar(editController: root.editController, model: session, isMaster: isMaster)
             .environment(root)
     }
+
+    /// Cross-module entry point: the game master's pin action popover for a map surface
+    /// other than the 2D canvas, GameRPG's camera-based 3D table. `source` is the pin's
+    /// frame inside a viewport of `viewportSize`; the returned view fills that viewport,
+    /// like the 2D canvas' own overlay layer. The caller performs the actions.
+    @MainActor
+    func gamePinActionPopover(
+        pin: MapPinModel,
+        source: CGRect,
+        viewportSize: CGSize,
+        safeAreaInsets: EdgeInsets,
+        showsBattleAction: Bool,
+        onDismiss: @escaping @MainActor () -> Void,
+        perform: @escaping @MainActor (MapPinButtonType) -> Void
+    ) -> some View {
+        MapPopover(
+            source: source,
+            viewportRectangle: .unobscuredViewport(size: viewportSize, safeAreaInsets: safeAreaInsets),
+            onDismiss: onDismiss
+        ) {
+            MapPinGameActionMenu(
+                pin: pin,
+                actions: Self.gamePinActions(showsBattleAction: showsBattleAction),
+                axis: .vertical,
+                perform: perform
+            )
+        }
+        .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
+    }
+
+#if os(visionOS)
+    /// The same popover as a RealityKit attachment for the table volume on visionOS: a row
+    /// above the pin, with the arrow's tip at the center of the view's bottom edge.
+    @MainActor
+    func gamePinActionAttachment(
+        pin: MapPinModel,
+        showsBattleAction: Bool,
+        onDismiss: @escaping @MainActor () -> Void,
+        perform: @escaping @MainActor (MapPinButtonType) -> Void
+    ) -> some View {
+        MapPopoverAttachment(onDismiss: onDismiss) {
+            MapPinGameActionMenu(
+                pin: pin,
+                actions: Self.gamePinActions(showsBattleAction: showsBattleAction),
+                axis: .horizontal,
+                perform: perform
+            )
+        }
+    }
+
+    /// The popover panel as a RealityKit attachment around `content`, for the dice results on
+    /// the visionOS table. It is never dismissed; `isInteractive` decides whether `content`
+    /// takes taps or lets them through to the table. Like `gamePinActionAttachment`, the
+    /// arrow's tip is at the center of the view's bottom edge.
+    @MainActor
+    func tablePopoverLabel<Content: View>(
+        isInteractive: Bool,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        MapPopoverAttachment(isInteractive: isInteractive, content: content)
+    }
+#endif
+
+    private static func gamePinActions(showsBattleAction: Bool) -> [MapPinButtonType] {
+        MapPinActionContext.gameMaster.actions.filter { showsBattleAction || $0 != .battle }
+    }
 }

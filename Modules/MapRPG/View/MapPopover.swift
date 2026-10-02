@@ -53,6 +53,39 @@ struct MapPopover<Content: View>: View {
     }
 }
 
+#if os(visionOS)
+/// The popover panel as a RealityKit attachment standing above its source, for a map surface
+/// in a volume (GameRPG's 3D table). A volume has no viewport to place the panel in, so the
+/// arrow stays at the center of the bottom edge and the owner positions the attachment with
+/// the arrow's tip at the source.
+struct MapPopoverAttachment<Content: View>: View {
+    /// Closes the panel from the keyboard. `nil` for a panel that is not dismissed: it does
+    /// not take the focus.
+    var onDismiss: (() -> Void)?
+    /// Whether a panel without `onDismiss` takes taps. One that only shows something lets them
+    /// through to the table behind it.
+    var isInteractive = false
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        let shape = MapPopoverShape(side: .top, arrowOffset: nil)
+        let panel = content
+            .fixedSize()
+            .padding(.bottom, MapPopoverGeometry.arrowLength)
+            .contentShape(shape)
+            // The system glass, unlike in `MapPopoverPanelBackground`: nothing clips an
+            // attachment, and a material without a window behind it is all but invisible.
+            .glassBackgroundEffect(in: shape)
+
+        if let onDismiss {
+            panel.modifier(MapPopoverDismissal(onDismiss: onDismiss))
+        } else {
+            panel.allowsHitTesting(isInteractive)
+        }
+    }
+}
+#endif
+
 /// The panel's glass: Liquid Glass, and a material on visionOS, where Liquid Glass is
 /// unavailable.
 private struct MapPopoverPanelBackground: ViewModifier {
@@ -106,14 +139,24 @@ private struct MapPopoverDismissal: ViewModifier {
 }
 
 /// A rounded panel with an arrow on the edge facing the popover's source.
-struct MapPopoverShape: Shape {
+struct MapPopoverShape: InsettableShape {
     let side: MapPopoverSide
-    let arrowOffset: CGFloat
+    /// The arrow tip's position along its edge; `nil` centers it.
+    let arrowOffset: CGFloat?
     var cornerRadius: CGFloat = MapPopoverGeometry.cornerRadius
     var arrowLength: CGFloat = MapPopoverGeometry.arrowLength
     var arrowWidth: CGFloat = MapPopoverGeometry.arrowWidth
+    /// Insets the whole outline, the arrow included. The system glass on visionOS asks for it.
+    var insetAmount: CGFloat = 0
+
+    func inset(by amount: CGFloat) -> MapPopoverShape {
+        var shape = self
+        shape.insetAmount += amount
+        return shape
+    }
 
     func path(in rect: CGRect) -> Path {
+        let rect = rect.insetBy(dx: insetAmount, dy: insetAmount)
         let edge = side.arrowEdge
         let body = CGRect(
             x: rect.minX + (edge == .leading ? arrowLength : 0),
@@ -123,8 +166,8 @@ struct MapPopoverShape: Shape {
         )
         let radius = max(0, min(cornerRadius, body.width / 2, body.height / 2))
         let halfWidth = arrowWidth / 2
-        let tipX = body.minX + arrowOffset
-        let tipY = body.minY + arrowOffset
+        let tipX = body.minX + (arrowOffset ?? body.width / 2)
+        let tipY = body.minY + (arrowOffset ?? body.height / 2)
 
         var path = Path()
         path.move(to: CGPoint(x: body.minX + radius, y: body.minY))
@@ -182,6 +225,32 @@ private extension MapPopoverSide {
         case .bottom: .top
         case .top: .bottom
         }
+    }
+}
+
+extension CGRect {
+    /// The part of a viewport of `size` that a popover may use. System bars and visionOS
+    /// ornaments can visually cover a full-screen map without belonging to its hit-test
+    /// tree, so viewport controls are placed only in the unobscured rectangle.
+    static func unobscuredViewport(size: CGSize, safeAreaInsets: EdgeInsets) -> CGRect {
+        func safeInset(_ value: CGFloat) -> CGFloat {
+            value.isFinite ? max(0, value) : 0
+        }
+        let viewport = CGRect(origin: .zero, size: size)
+        let top = safeInset(safeAreaInsets.top)
+        let leading = safeInset(safeAreaInsets.leading)
+        let bottom = safeInset(safeAreaInsets.bottom)
+        let trailing = safeInset(safeAreaInsets.trailing)
+        let rectangle = CGRect(
+            x: viewport.minX + leading,
+            y: viewport.minY + top,
+            width: viewport.width - leading - trailing,
+            height: viewport.height - top - bottom
+        )
+        guard rectangle.width > 0, rectangle.height > 0 else {
+            return viewport
+        }
+        return rectangle
     }
 }
 

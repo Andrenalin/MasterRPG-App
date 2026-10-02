@@ -97,8 +97,8 @@ struct Die20: EntityEquipment {
         // — the die is parked off-table whenever this holds, so its
         // orientation is irrelevant. Handled before the face lookup so it doesn't trip the
         // "invalid value" fallback below, which is for genuine sync issues.
-        guard state.value != 0 else { return .init() }
-        guard let normal = Self.faceNormals[state.value] else {
+        guard state.value != TableDieValue.parked else { return .init() }
+        guard let normal = Self.faceNormals[TableDieValue.face(state.value)] else {
             // `state.value` arrives via TabletopKit's synchronized `UpdateEquipmentAction<DieState>`,
             // so a version skew or corrupted/delayed sync payload could plausibly deliver an
             // out-of-range value here. Log and fall back to the identity orientation instead of
@@ -270,7 +270,7 @@ struct Die: EntityEquipment {
     // Return the orientation of the die entity to a given value face up.
     func restingOrientation(state: DieState) -> Rotation3D {
         // The die asset's default orientation shows 6 on top (+y), 2 on the right (+x), and 3 on the front (+z).
-        switch state.value {
+        switch TableDieValue.face(state.value) {
             case 0:
                 // This table's own sentinel for a currently-unused pool slot
                 // (see `GameSetup.maxDicePerType`) — the die is hidden

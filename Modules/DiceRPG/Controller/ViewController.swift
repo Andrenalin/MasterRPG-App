@@ -78,6 +78,13 @@ public extension ViewController {
         RootDiceOverlay()
             .environment(root)
     }
+
+    /// The dice overlay's entry for another player: name, supporter crown and the result of
+    /// the dice they last shared. `diceId` comes from `DiceGameStorable.playerDiceId(named:)`.
+    @MainActor func dicePlayerResultView(root: DiceRootModel, diceId: UUID) -> some View {
+        DicePlayerLabel(playerId: diceId, isEditing: false)
+            .environment(root)
+    }
 }
 
 // MARK: - Dice

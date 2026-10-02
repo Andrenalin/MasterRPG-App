@@ -483,6 +483,7 @@
       }
     },
     "Add Pin to Battle Round" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2490,6 +2491,7 @@
       }
     },
     "Hide Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2574,6 +2576,7 @@
       }
     },
     "Highlight Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3114,6 +3117,7 @@
       }
     },
     "Mark Pin Dead" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4171,6 +4175,7 @@
       }
     },
     "Remove Pin Highlight" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4215,6 +4220,7 @@
       }
     },
     "Reset Pin Zoom" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4231,6 +4237,7 @@
       }
     },
     "Resize Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4265,6 +4272,7 @@
       }
     },
     "Revive Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4959,6 +4967,7 @@
       }
     },
     "Show Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5741,6 +5750,7 @@
       }
     },
     "Zoom Pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -101,6 +101,27 @@ enum GameMessagePurpose: Int, Codable, Hashable, Sendable {
     case assetRequest = 2
 }
 
+/// The kind of device a game message was sent from. A player who is not on Vision Pro has no
+/// seat at the 3D table; their dice are shown at the table's guest seat instead.
+enum GamePlatform: String, Codable, Sendable {
+    case iOS
+    case macOS
+    case tvOS
+    case visionOS
+
+    static var current: GamePlatform {
+#if os(visionOS)
+        .visionOS
+#elseif os(tvOS)
+        .tvOS
+#elseif os(macOS)
+        .macOS
+#else
+        .iOS
+#endif
+    }
+}
+
 struct GameNetworkModel: Codable, Sendable {
     /// Wire format generations:
     /// - 1: shipped 2.6 app — players/controls/features travel inside
@@ -144,6 +165,10 @@ struct GameNetworkModel: Codable, Sendable {
     /// attributed Messenger admission carries this value, binding otherwise
     /// anonymous Journal bytes to the participant that announced them.
     var journalPayloadDigest: Data?
+    /// The device the sender plays on. `nil` from an app version that does not say, which is
+    /// treated like any device without the 3D table. Not part of the sender's identity, so
+    /// not of the Journal fingerprint either.
+    var senderPlatform: GamePlatform?
     var data: NetworkCodableDataType
 
     init(
@@ -163,6 +188,7 @@ struct GameNetworkModel: Codable, Sendable {
         purpose: GameMessagePurpose = .event,
         journalAdmissionOnly: Bool? = nil,
         journalPayloadDigest: Data? = nil,
+        senderPlatform: GamePlatform? = nil,
         data: NetworkCodableDataType
     ) {
         self.version = version
@@ -181,6 +207,7 @@ struct GameNetworkModel: Codable, Sendable {
         self.purpose = purpose
         self.journalAdmissionOnly = journalAdmissionOnly
         self.journalPayloadDigest = journalPayloadDigest
+        self.senderPlatform = senderPlatform
         self.data = data
     }
 
@@ -218,6 +245,7 @@ struct GameNetworkModel: Codable, Sendable {
         case purpose
         case journalAdmissionOnly
         case journalPayloadDigest
+        case senderPlatform
         case data
         // legacy layouts and compatibility superset
         case gameConfig
@@ -240,6 +268,10 @@ struct GameNetworkModel: Codable, Sendable {
         purpose = try container.decodeIfPresent(GameMessagePurpose.self, forKey: .purpose) ?? .legacy
         journalAdmissionOnly = try container.decodeIfPresent(Bool.self, forKey: .journalAdmissionOnly)
         journalPayloadDigest = try container.decodeIfPresent(Data.self, forKey: .journalPayloadDigest)
+        // A platform this version does not know is no reason to drop the message.
+        senderPlatform = (try? container.decodeIfPresent(String.self, forKey: .senderPlatform))
+            .flatMap { $0 }
+            .flatMap(GamePlatform.init(rawValue:))
         data = try container.decode(NetworkCodableDataType.self, forKey: .data)
 
         if let sender = try container.decodeIfPresent(GameSenderModel.self, forKey: .sender) {
@@ -315,6 +347,7 @@ struct GameNetworkModel: Codable, Sendable {
         try container.encode(purpose, forKey: .purpose)
         try container.encodeIfPresent(journalAdmissionOnly, forKey: .journalAdmissionOnly)
         try container.encodeIfPresent(journalPayloadDigest, forKey: .journalPayloadDigest)
+        try container.encodeIfPresent(senderPlatform, forKey: .senderPlatform)
         let configV1 = v1Model.gameConfig
         try container.encode(configV1, forKey: .gameConfig)
         try container.encode(GameRosterSuperset(players: configV1.players, controls: configV1.controls, features: configV1.features), forKey: .gameRoster)

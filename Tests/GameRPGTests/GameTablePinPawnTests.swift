@@ -85,7 +85,7 @@ struct GameTablePinPawnTests {
         #expect(pawn.entity.components[AccessibilityComponent.self]?.value != nil)
     }
 
-    @Test("Game-master menu stays above the selected pawn without inheriting pawn zoom")
+    @Test("Game-master menu points at the selected pawn without inheriting pawn zoom")
     func gameMasterMenuStaysOutsidePawnScaleHierarchy() async throws {
         // Given
         let pin = MapPinModel(id: PinPawnTestID.gameMasterPin, name: "Dragon")
@@ -93,20 +93,24 @@ struct GameTablePinPawnTests {
         let pawn = try #require(fixture.game.setup.pinPawns.first { $0.pinId == pin.id })
         let attachment = Entity()
         fixture.game.registerPinMenuAttachment(attachment)
+        fixture.game.pinMenuAttachmentHeightChanged(0.06)
 
         // When
-        fixture.game.pinLongPressed(pinId: pin.id)
+        fixture.game.pinTapped(pinId: pin.id)
 
-        // Then
-        let expectedPosition = SIMD3<Float>(
+        // Then: the anchor, at the arrow's tip, sits above the pawn; the attachment hangs
+        // above it by half its own height.
+        let anchor = fixture.game.pinMenuPopover.entity
+        let expectedAnchorPosition = SIMD3<Float>(
             pawn.entity.position.x,
-            pawn.entity.position.y + 0.09,
+            pawn.entity.position.y + GameTableModel.pinMenuArrowTipHeight,
             pawn.entity.position.z
         )
         #expect(attachment.isEnabled)
-        #expect(attachment.position == expectedPosition)
-        #expect(attachment.parent === fixture.game.renderer.root)
-        #expect(attachment.parent !== pawn.entity)
+        #expect(anchor.position == expectedAnchorPosition)
+        #expect(attachment.position == SIMD3<Float>(0, 0.03, 0))
+        #expect(attachment.parent === anchor)
+        #expect(anchor.parent === fixture.game.renderer.root)
         #expect(pawn.entity.parent === fixture.game.setup.pinContainer)
 
         // When
@@ -115,8 +119,9 @@ struct GameTablePinPawnTests {
         // Then
         #expect(pawn.entity.scale == SIMD3<Float>(repeating: 4))
         #expect(attachment.scale == SIMD3<Float>(repeating: 1))
-        #expect(attachment.parent === fixture.game.renderer.root)
-        #expect(attachment.position == expectedPosition)
+        #expect(anchor.scale == SIMD3<Float>(repeating: 1))
+        #expect(anchor.parent === fixture.game.renderer.root)
+        #expect(anchor.position == expectedAnchorPosition)
     }
 
     @Test("Player taps mutate the live pin and send targeted map-pin updates")

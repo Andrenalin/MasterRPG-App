@@ -65,12 +65,13 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     /// Fires once each tossed die's physics simulation has a final resting outcome. `outcome.pose` is
     /// the simulation's own result — the die's actual final table-space position/rotation — so
     /// setting it here is what makes the die retain that resting state. The face value is this
-    /// game's own concern, so it is picked here rather than read off `outcome.restingOrientation`.
+    /// game's own concern, so it is picked here rather than read off `outcome.restingOrientation`:
+    /// the player's sheet rolls its own die (`GameTableModel.rollTossedDie`).
     @MainActor
     func onTossStart(interaction: TabletopInteraction, outcomes: [TabletopInteraction.TossOutcome]) {
         for outcome in outcomes {
             guard let die20 = game.tabletopGame.equipment(of: Die20.self, matching: outcome.id) else { continue }
-            let nextValue = Int.random(in: 1 ... 20)
+            let nextValue = game.rollTossedDie(outcome.id) ?? Int.random(in: 1 ... 20)
             interaction.addAction(.updateEquipment(die20, value: nextValue, pose: outcome.pose))
         }
     }

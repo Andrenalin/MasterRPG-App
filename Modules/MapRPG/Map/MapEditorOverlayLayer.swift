@@ -14,24 +14,12 @@ struct MapViewportOverlayLayer: View {
         CGRect(origin: .zero, size: session.viewport.configuration.containerSize)
     }
 
-    /// System bars and visionOS ornaments can visually cover the map without
-    /// belonging to its hit-test tree. Keep the map full-screen, but place
-    /// viewport controls only in the unobscured rectangle.
+    /// The map stays full-screen; viewport controls go only in the unobscured rectangle.
     private var actionViewportRectangle: CGRect {
-        let top = safeInset(safeAreaInsets.top)
-        let leading = safeInset(safeAreaInsets.leading)
-        let bottom = safeInset(safeAreaInsets.bottom)
-        let trailing = safeInset(safeAreaInsets.trailing)
-        let rectangle = CGRect(
-            x: viewportRectangle.minX + leading,
-            y: viewportRectangle.minY + top,
-            width: viewportRectangle.width - leading - trailing,
-            height: viewportRectangle.height - top - bottom
+        .unobscuredViewport(
+            size: session.viewport.configuration.containerSize,
+            safeAreaInsets: safeAreaInsets
         )
-        guard rectangle.width > 0, rectangle.height > 0 else {
-            return viewportRectangle
-        }
-        return rectangle
     }
 
     var body: some View {
@@ -69,10 +57,6 @@ struct MapViewportOverlayLayer: View {
             height: viewportRectangle.height,
             alignment: .topLeading
         )
-    }
-
-    private func safeInset(_ value: CGFloat) -> CGFloat {
-        value.isFinite ? max(0, value) : 0
     }
 }
 

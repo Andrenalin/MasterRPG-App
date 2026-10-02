@@ -33,22 +33,58 @@ extension GameTableModel {
     func clearPinSelection() {
         selectedPinId = nil
         selectedPin = nil
-        pinMenuAttachment?.isEnabled = false
+        pinMenuPopover.hide()
     }
 
     func updatePinMenuAttachmentPosition(cachedPawn: PinPawn? = nil) {
         guard isGameMaster,
               selectedPin != nil,
               let selectedPinId,
-              let attachment = pinMenuAttachment,
               let pawn = cachedPawn ?? setup.pinPawns.first(where: { $0.pinId == selectedPinId }) else {
-            pinMenuAttachment?.isEnabled = false
+            pinMenuPopover.hide()
             return
         }
         let pinPosition = pawn.entity.position
-        attachment.position = SIMD3<Float>(pinPosition.x, pinPosition.y + 0.09, pinPosition.z)
-        attachment.isEnabled = true
+        pinMenuPopover.show(at: SIMD3<Float>(
+            pinPosition.x,
+            pinPosition.y + Self.pinMenuArrowTipHeight,
+            pinPosition.z
+        ))
     }
+
+    /// How far above a pin's base the popover's arrow ends: just clear of a zoomed token's
+    /// top, which is the tallest a token gets.
+    static let pinMenuArrowTipHeight: Float = 0.03
+
+#if !os(visionOS)
+    /// Projects the selected pin into the table view for the pin action popover. Runs every
+    /// rendered frame; `project` maps a scene position to the table view's coordinate space.
+    func updatePinMenuSource(project: (SIMD3<Float>) -> CGPoint?) {
+        guard isGameMaster,
+              selectedPin != nil,
+              let selectedPinId,
+              let pawn = setup.pinPawns.first(where: { $0.pinId == selectedPinId }) else {
+            if pinMenuSource != nil {
+                pinMenuSource = nil
+            }
+            return
+        }
+        let bounds = pawn.entity.visualBounds(relativeTo: nil)
+        let corners = TablePinMenuSource.corners(min: bounds.min, max: bounds.max)
+        let source = TablePinMenuSource.frame(enclosing: corners.map(project)).map {
+            TablePinMenuSource(pinId: selectedPinId, frame: $0)
+        }
+        guard let source else {
+            if pinMenuSource != nil {
+                pinMenuSource = nil
+            }
+            return
+        }
+        if source.differsVisibly(from: pinMenuSource) {
+            pinMenuSource = source
+        }
+    }
+#endif
 
     /// Pin drag: follow the finger on the board plane. Runs on every `.onChanged` delta —
     /// potentially dozens of times per second during one drag — so the resolved pawn is
@@ -163,6 +199,21 @@ extension GameTableModel {
             broadcastMapEdit(for: mapId)
         } else {
             sendPlayerPinUpdate(mapId: mapId, pinId: pinId)
+        }
+    }
+
+    /// Performs an action of the game master's pin action popover on the selected pin.
+    func performSelectedPinAction(_ action: MapPinButtonType) {
+        switch action {
+        case .dead: toggleSelectedPinDead()
+        case .visibility: toggleSelectedPinVisibility()
+        case .resize: resizeSelectedPin()
+        case .zoom: toggleSelectedPinZoom()
+        case .highlight: toggleSelectedPinHighlight()
+        case .battle: addSelectedPinToBattleRound()
+        case .remove, .copy, .photo:
+            // Map editor actions; the game master's popover doesn't offer them.
+            break
         }
     }
 

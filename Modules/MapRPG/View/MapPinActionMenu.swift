@@ -21,12 +21,12 @@ struct MapPinActionMenuStack: View {
             VStack(spacing: 8) {
                 ForEach(context.actions, id: \.self) { type in
                     // The panel is glass already: flat buttons, no glass inside glass.
-                    MapPinActionMenuButton(
-                        model: model,
-                        type: type,
-                        context: context,
-                        photoSpace: photoSpace
-                    )
+                    MapPinActionMenuButton(pin: model.pin, type: type) {
+                        model.perform(type, context: context)
+                    }
+                    .applyIf(type == .photo) {
+                        $0.matchedTransitionSource(id: type.label, in: photoSpace)
+                    }
                 }
             }
         }
@@ -42,25 +42,48 @@ struct MapPinActionMenuStack: View {
     }
 }
 
-struct MapPinActionMenuButton: View {
-    let model: MapPinNode
-    let type: MapPinButtonType
-    let context: MapPinActionContext
-    let photoSpace: Namespace.ID
+/// The game master's pin actions for a map surface without a `MapPinNode`: GameRPG's 3D
+/// table, which performs the actions itself. A column next to the pin on the camera-based
+/// table, a row above it in the visionOS volume.
+struct MapPinGameActionMenu: View {
+    let pin: MapPinModel
+    let actions: [MapPinButtonType]
+    let axis: Axis
+    let perform: @MainActor (MapPinButtonType) -> Void
 
-    private var pin: MapPinModel { model.pin }
+    private var layout: AnyLayout {
+        axis == .vertical
+            ? AnyLayout(VStackLayout(spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 8))
+    }
+
+    var body: some View {
+        GlassEffectContainerAll {
+            layout {
+                ForEach(actions, id: \.self) { type in
+                    MapPinActionMenuButton(pin: pin, type: type) {
+                        perform(type)
+                    }
+                }
+            }
+        }
+        // Half of the default `padding()` inset.
+        .padding(8)
+    }
+}
+
+struct MapPinActionMenuButton: View {
+    let pin: MapPinModel
+    let type: MapPinButtonType
+    let action: () -> Void
 
     var body: some View {
         MapPopoverButton(
             title: Text(type.localizedLabel(for: pin)),
             systemImage: type.systemImage(for: pin),
-            tint: type.tint(for: pin)
-        ) {
-            model.perform(type, context: context)
-        }
-        .applyIf(type == .photo) {
-            $0.matchedTransitionSource(id: type.label, in: photoSpace)
-        }
+            tint: type.tint(for: pin),
+            action: action
+        )
     }
 }
 
@@ -120,6 +143,15 @@ struct MapPinPhotoSelectionModifier: ViewModifier {
     HStack(alignment: .top) {
         MapPinActionMenuStack(model: model.mapPinNodes[0], context: .editor)
         MapPinActionMenuStack(model: model.mapPinNodes[0], context: .gameMaster)
+    }
+    .background(Color.blue.gradient)
+}
+
+#Preview("Game Table Pin Actions") {
+    let pin = MapPinModel.empty(MapModel.previewId)
+    VStack {
+        MapPinGameActionMenu(pin: pin, actions: MapPinActionContext.gameMaster.actions, axis: .horizontal) { _ in }
+        MapPinGameActionMenu(pin: pin, actions: MapPinActionContext.gameMaster.actions, axis: .vertical) { _ in }
     }
     .background(Color.blue.gradient)
 }

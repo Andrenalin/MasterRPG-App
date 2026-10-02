@@ -748,6 +748,18 @@ final class RPGSharePlayController {
     weak var playBack: AVPlaybackCoordinator?
     weak var audioCoordinator: AudioListenerCoordinator?
 
+    /// The player behind each session participant: the name their game messages carry, and
+    /// whether they play on Vision Pro and so sit at the 3D table. Learned from the
+    /// authenticated player messages a participant sends itself; the table uses it to tell which
+    /// player sits at which seat. See `bindPlayer(named:hasTable:participantId:)`.
+    @ObservationIgnored
+    var participantPlayers: [UUID: ParticipantPlayer] = [:]
+
+    struct ParticipantPlayer: Equatable {
+        let name: String
+        let hasTable: Bool
+    }
+
 #if os(visionOS)
     weak var tabletopGame: TabletopGame?
     /// The table whose seats follow this session, so a late master pin can re-seat it.

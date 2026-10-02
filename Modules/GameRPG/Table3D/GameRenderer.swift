@@ -122,6 +122,12 @@ final class GameRenderer: TabletopGame.RenderDelegate {
         }
     }
 
+    /// TabletopKit's per-frame callback, with the state it is about to draw: the only place that
+    /// sees whether a die is still travelling to where its state puts it.
+    func onUpdate(timeInterval: Double, snapshot: TableSnapshot, visualState: TableVisualState) {
+        game?.updateDiceResults(snapshot: snapshot, visualState: visualState)
+    }
+
     /// Applies a uniform scale to the complete table scene.
     func applyScale(_ scale: Float) {
         root.scale = SIMD3<Float>(repeating: scale)

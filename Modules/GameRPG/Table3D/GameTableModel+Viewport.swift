@@ -33,6 +33,9 @@ extension GameTableModel {
         if isGameMaster {
             displayMode = root.mapRoot.rootModel.gameDisplayMode
         }
+#if os(visionOS)
+        diceRoot = root.diceRoot
+#endif
     }
 
     var pointer: MapPinModel? {

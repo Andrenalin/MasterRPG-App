@@ -29,6 +29,7 @@ extension GameNetworkController: SharePlayControllerDelegate {
     func sharePlayLostPlayer(id: UUID) async {
         let lostPinnedMaster = await model.playerDelegate?
             .isPinnedSharePlayMasterParticipant(id: id) == true
+        sharePlayStore.unbindPlayer(participantId: id)
         await sharePlayPlayerJournalAdmission.participantLeft(id)
         if lostPinnedMaster {
             await sharePlayDeferredPeerGroupEvents.reset()
@@ -250,6 +251,17 @@ extension GameNetworkController: SharePlayControllerDelegate {
                 }
             }
         } else {
+            // The pinned master may relay LAN players' messages into SharePlay; those players
+            // are not session participants and have no seat at the 3D table.
+            let isRelayedByMaster = await model.playerDelegate?
+                .isPinnedSharePlayMasterParticipant(id: id) == true
+            if !isRelayedByMaster {
+                sharePlayStore.bindPlayer(
+                    named: message.senderName,
+                    hasTable: message.senderPlatform == .visionOS,
+                    participantId: id
+                )
+            }
             // Match the LAN-ingress ordering: once the physical SharePlay
             // sender is authenticated, peer-visible player intent must cross
             // the bridge before the master canonicalizes it. Otherwise a

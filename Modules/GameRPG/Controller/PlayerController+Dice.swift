@@ -38,6 +38,7 @@ extension PlayerController {
             case .show, .store:
                 try await root.diceRoot.diceGameControllable.updateGame(data: model.data, hide: model.subType == .store, focus: model.subType == .show)
             case .generic:
+                root.gameModel.noteDiceRollSender(of: model)
                 _ = root.diceRoot.diceGameControllable.addGameDiceResult(
                     data: model.data,
                     name: model.senderName,

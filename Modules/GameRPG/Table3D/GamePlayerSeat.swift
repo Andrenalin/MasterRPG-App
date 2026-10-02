@@ -21,7 +21,7 @@ struct PlayerSeat: TableSeat {
     viewing position and this view's ornaments/dice-bar (see `GameSetup`'s
     own doc for why — without an active SharePlay session, nothing else
     rotates the table to face whichever seat is claimed).
-    `assignSeatsForSharePlay` claims seats 1...5 in this array's order, so
+    `assignSeatsForSharePlay` claims seats 1...4 in this array's order, so
     joining players fill West-then-East, near-band-then-far-band, exactly
     matching the order below. Every short-edge/long-side seat still sits a
     full table-length/-width beyond the table center along its own axis —
@@ -39,9 +39,15 @@ struct PlayerSeat: TableSeat {
         .init(position: .init(x: -Double(GameMetrics.tableWidth), z: -0.5), rotation: .degrees(270)),
         // East side, far band (toward North).
         .init(position: .init(x: Double(GameMetrics.tableWidth), z: -0.5), rotation: .degrees(90)),
-        // North (far, -Z) short edge — the sixth seat.
+        // North (far, -Z) short edge — the guest seat, see `guestSeat`.
         .init(position: .init(x: 0, z: -Double(GameMetrics.tableLength)), rotation: .degrees(180))
     ]
+
+    /// The seat opposite the game master: the last of `seatPoses`. No device claims it; it is
+    /// where the dice of the players without a table of their own are shown.
+    @MainActor static var guestSeat: TableSeatIdentifier { TableSeatIdentifier(seatPoses.count - 1) }
+    /// The seats Vision Pro players are assigned to: all but the master's and the guest seat.
+    @MainActor static var playerSeatCount: Int { seatPoses.count - 2 }
 
     init(id: TableSeatIdentifier, pose: TableVisualState.Pose2D) {
         self.id = id

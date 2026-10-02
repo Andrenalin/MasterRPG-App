@@ -66,6 +66,35 @@ final class GameTableModel: Sendable {
     /// d6 exist). `nil` when the whole set mirrored. Surfaced by `GameTableView`.
     var diceOverflowCount: Int?
 
+    /// The dice groups — a seat's dice, or one guest's — that have been rolled and lie still, so
+    /// their result popover is up. Kept up to date by `updateDiceResults(snapshot:visualState:)`
+    /// on every frame.
+    var shownDiceGroups: Set<TableDiceGroup> = []
+    /// The dice of the players without a table, at the guest seat: who has which dice of that
+    /// seat's pool. Every device derives it from the rolls it knows (`applyGuestRolls(_:)`).
+    var guestGroups: [TableGuestDice.Group] = []
+    /// The players sitting at each seat, by the name their game messages carry; the dice
+    /// overlay lists a player's shared dice under the same name. Learned from SharePlay (see
+    /// `RPGSharePlayController.refreshSeatPlayerNames()`); several players can share a seat.
+    var seatPlayerNames: [TableSeatIdentifier: [String]] = [:]
+    /// Where each dice group's result popover stands.
+    @ObservationIgnored
+    var diceResultPopovers: [TableDiceGroup: TablePopoverAnchor] = [:]
+    /// Since when each group's rolled dice have been lying still with the same faces.
+    @ObservationIgnored
+    var diceRestingSince: [TableDiceGroup: (faces: [Int], start: ContinuousClock.Instant)] = [:]
+    /// The dice sheet `applyDiceRoll` last mirrored onto the local seat, and which of its dice
+    /// each table die stands for, so a die tossed by hand can be rolled by its sheet.
+    @ObservationIgnored
+    var mirroredSheet: (diceId: UUID, dieIds: [EquipmentIdentifier: UUID])?
+    /// The value the sheet gave each die tossed by hand. `applyDiceRoll` leaves such a die to
+    /// its toss for as long as the sheet still has that value, instead of lining it up again.
+    @ObservationIgnored
+    var handTossedDice: [EquipmentIdentifier: Int] = [:]
+    /// The dice module, which rolls a die tossed by hand.
+    @ObservationIgnored
+    weak var diceRoot: DiceRootModel?
+
     /// Re-mirrors the focused dice set once the local player's seat claim lands. A claim is a
     /// synced TabletopKit action that is only confirmed asynchronously, so `applyDiceRoll` can
     /// find no `localSeat` when `GameTableView` first calls it; `GameObserver.playerChangedSeats`
@@ -113,7 +142,7 @@ final class GameTableModel: Sendable {
     /// The local player's own pin id (== the player's game id); nil on the master.
     var playerPinId: UUID?
     /// Set by `assignSeatsForSharePlay` to the party's player count whenever there are (or may be)
-    /// more players than the table's non-master seats (`PlayerSeat.seatPoses.count - 1`), meaning
+    /// more players than the table's non-master seats (`PlayerSeat.playerSeatCount`), meaning
     /// this device's seat, and that seat's dice pool, may be shared with another player. `nil` when
     /// every player has an exclusive seat. Surfaced by `GameTableView`.
     var sharedSeatPlayerCount: Int?
@@ -121,7 +150,14 @@ final class GameTableModel: Sendable {
     /// not represented here because multiple shared pins may be highlighted.
     var selectedPinId: UUID?
     var selectedPin: MapPinModel?
-    var pinMenuAttachment: Entity?
+    /// Where the pin action popover stands as a RealityKit attachment, on visionOS.
+    let pinMenuPopover = TablePopoverAnchor(name: "PinMenuAnchor")
+#if !os(visionOS)
+    /// The selected pin's frame in the table view, which the pin action popover points at.
+    /// Recomputed every rendered frame, because the system's camera controls move the camera
+    /// without telling SwiftUI.
+    var pinMenuSource: TablePinMenuSource?
+#endif
     /// Resolved once per drag gesture by `pinDragChanged(pinId:position:)` and cleared by
     /// `pinDragEnded(pinId:position:)`, so the per-tick drag path doesn't re-scan `pinPawns`.
     var cachedDragPawn: (pinId: UUID, pawn: PinPawn)?
@@ -186,6 +222,16 @@ final class GameTableModel: Sendable {
 #endif
     }
 }
+
+#if os(visionOS)
+/// A set of dice on the table with a result popover of its own.
+enum TableDiceGroup: Hashable {
+    /// A seat's own dice.
+    case seat(TableSeatIdentifier)
+    /// The dice of one guest at the guest seat: an index into `GameTableModel.guestGroups`.
+    case guest(Int)
+}
+#endif
 
 extension Logger {
     static let gameTable = Logger(subsystem: subsystem, category: "GameTable")

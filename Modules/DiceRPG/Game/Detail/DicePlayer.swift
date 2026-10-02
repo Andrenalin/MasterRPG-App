@@ -45,7 +45,7 @@ struct DicePlayer: View {
                     await root.gameController.toggleHidden(playerId: playerId)
                 }
             } label: {
-                playerLabel(playerId: playerId)
+                DicePlayerLabel(playerId: playerId, isEditing: true)
             }
             .accessibilityLabel(
                 root.gameController.isPlayerHidden(playerId: playerId)
@@ -57,7 +57,7 @@ struct DicePlayer: View {
             )
             .opacity(0.75)
         } else {
-            playerLabel(playerId: playerId)
+            DicePlayerLabel(playerId: playerId, isEditing: false)
                 .padding(8)
                 .contentShape(.capsule)
 #if !os(visionOS)
@@ -66,10 +66,39 @@ struct DicePlayer: View {
         }
     }
 
-    @ViewBuilder
-    private func playerLabel(playerId: UUID) -> some View {
+    private func playerName(playerId: UUID) -> String {
+        DicePlayerLabel.playerName(of: root.gameController.gameItem(for: playerId))
+    }
+
+    private func playerDice(playerId: UUID) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(root.gameController.gameItem(for: playerId).dice) { die in
+                VStack {
+                    DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: resultColor(for: die.id, playerId: playerId))
+                        .padding(4)
+                    Spacer()
+                }
+                .frame(height: root.viewController.height(for: root.gameController.gameItem(for: playerId)))
+            }
+        }
+    }
+
+    private func resultColor(for dieId: UUID, playerId: UUID) -> [Bool] {
+        root.gameController.resultColor(for: dieId, itemId: playerId)
+    }
+}
+
+/// A player's name, supporter crown and the result of the dice they last shared. Also the dice
+/// result of another seat on the 3D table.
+struct DicePlayerLabel: View {
+    let playerId: UUID
+    let isEditing: Bool
+
+    @Environment(DiceRootModel.self) private var root
+
+    var body: some View {
         HStack(alignment: .top, spacing: 4) {
-            Text(verbatim: playerName(playerId: playerId))
+            Text(verbatim: Self.playerName(of: root.gameController.gameItem(for: playerId)))
                 .lineLimit(1)
                 .truncationMode(.head)
                 .font(.footnote)
@@ -90,7 +119,7 @@ struct DicePlayer: View {
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
             }
 
-            if diceDisplayModel.isEditing {
+            if isEditing {
                 Image(systemName: root.gameController.isPlayerHidden(playerId: playerId) ? "plus.circle" : "x.circle.fill")
                     .contentTransition(.symbolEffect(.replace.wholeSymbol))
                     .accessibilityHidden(true)
@@ -99,29 +128,13 @@ struct DicePlayer: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func playerName(playerId: UUID) -> String {
-        let name = root.gameController.gameItem(for: playerId).name
+    /// The player's first name.
+    static func playerName(of dice: DiceModel) -> String {
+        let name = dice.name
         if let firstName = name.split(separator: " ").first {
             return String(firstName)
         }
         return name
-    }
-
-    private func playerDice(playerId: UUID) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            ForEach(root.gameController.gameItem(for: playerId).dice) { die in
-                VStack {
-                    DieViewerView(gameController: root.gameController, diceId: playerId, die: die, withoutResult: false, resultColor: resultColor(for: die.id, playerId: playerId))
-                        .padding(4)
-                    Spacer()
-                }
-                .frame(height: root.viewController.height(for: root.gameController.gameItem(for: playerId)))
-            }
-        }
-    }
-
-    private func resultColor(for dieId: UUID, playerId: UUID) -> [Bool] {
-        root.gameController.resultColor(for: dieId, itemId: playerId)
     }
 }
 

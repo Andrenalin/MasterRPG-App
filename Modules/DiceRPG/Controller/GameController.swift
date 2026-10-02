@@ -49,6 +49,18 @@ public protocol DiceGameStorable: Sendable {
     func updateGame(data: NetworkCodableDataType, hide: Bool, focus: Bool) async throws
     
     @MainActor func number(for diceId: UUID, result: String) -> Int
+    /// Rolls one die of a dice set the way the sheet does, and shares the result like a roll
+    /// of the whole set. For a die tossed by hand on the 3D table; the sheet makes no sound for
+    /// it. Returns the face the die shows, or `nil` if the set has no such die.
+    @MainActor func rollDie(_ dieId: UUID, of diceId: UUID, networkActions: NetworkActions?) -> Int?
+    /// Whether the dice overlay shows a result line for this dice set: one that sums up or
+    /// compares.
+    @MainActor func showsResult(for diceId: UUID) -> Bool
+    /// The dice a player last shared, as the dice overlay lists them; `nil` if there are none
+    /// or this device has hidden that player's dice.
+    @MainActor func playerDiceId(named playerName: String) -> UUID?
+    /// The dice every other player last shared, as the dice overlay lists them, hidden or not.
+    @MainActor var sharedPlayerDice: [DiceModel] { get }
     @MainActor func validateForValue(diceId: UUID, compareValue: Int?)
     @MainActor func resetPlayerDice(to playerIds: [String])
 }

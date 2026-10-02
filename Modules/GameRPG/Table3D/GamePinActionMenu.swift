@@ -3,126 +3,81 @@
 #if os(iOS) || os(macOS) || os(visionOS)
 import CoreRPG
 import MapRPG
-import PhotoRPG
 import SwiftUI
 
+// The game master's pin actions on the 3D table: the same popover as on the 2D map
+// (`MapPopover`), pointing at the selected pin. The camera-based table draws it in the table
+// view over the pin's projection; the visionOS volume shows it as an attachment above the pin.
+
+#if os(visionOS)
+/// The pin action popover as the table volume's "pin-menu" attachment.
 @MainActor
 struct GamePinActionMenu: View {
     let game: GameTableModel
 
+    @Environment(\.physicalMetrics) private var physicalMetrics
+
     var body: some View {
         if let pin = game.selectedPin, game.isGameMaster {
-            GamePinActionMenuContent(game: game, pin: pin)
-        }
-    }
-}
-
-@MainActor
-private struct GamePinActionMenuContent: View {
-    let game: GameTableModel
-    let pin: MapPinModel
-
-    var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack { GamePinMenuButtons(game: game, pin: pin) }
-            ScrollView(.horizontal) { HStack { GamePinMenuButtons(game: game, pin: pin) } }
-                .scrollIndicators(.hidden)
-        }
-        .padding()
-    }
-}
-
-/// The menu's buttons, as their own `View` so both `ViewThatFits` layouts share one definition.
-@MainActor
-private struct GamePinMenuButtons: View {
-    let game: GameTableModel
-    let pin: MapPinModel
-
-    var body: some View {
-        Group {
-            GamePinMenuButton(
-                title: pin.isDead
-                    ? LocalizedStringResource("Revive Pin", bundle: .module)
-                    : LocalizedStringResource("Mark Pin Dead", bundle: .module),
-                systemImage: pin.isDead ? "heart.fill" : "xmark",
-                isSelected: pin.isDead,
-                action: game.toggleSelectedPinDead
+            game.mapRoot.viewController.gamePinActionAttachment(
+                pin: pin,
+                showsBattleAction: game.canAddSelectedPinToBattleRound,
+                onDismiss: { game.clearPinSelection() },
+                perform: { game.performSelectedPinAction($0) }
             )
-            GamePinMenuButton(
-                title: pin.isShown
-                    ? LocalizedStringResource("Hide Pin", bundle: .module)
-                    : LocalizedStringResource("Show Pin", bundle: .module),
-                systemImage: pin.isShown ? "eye.slash" : "eye",
-                isSelected: pin.isShown,
-                action: game.toggleSelectedPinVisibility
-            )
-            GamePinMenuButton(
-                title: LocalizedStringResource("Resize Pin", bundle: .module),
-                systemImage: "square.resize",
-                isSelected: false,
-                action: game.resizeSelectedPin
-            )
-            GamePinMenuButton(
-                title: pin.isZoom
-                    ? LocalizedStringResource("Reset Pin Zoom", bundle: .module)
-                    : LocalizedStringResource("Zoom Pin", bundle: .module),
-                systemImage: pin.isZoom ? "minus.magnifyingglass" : "plus.magnifyingglass",
-                isSelected: pin.isZoom,
-                action: game.toggleSelectedPinZoom
-            )
-            GamePinMenuButton(
-                title: pin.isHighlighted
-                    ? LocalizedStringResource("Remove Pin Highlight", bundle: .module)
-                    : LocalizedStringResource("Highlight Pin", bundle: .module),
-                systemImage: pin.isHighlighted ? "circle.fill" : "circle",
-                isSelected: pin.isHighlighted,
-                action: game.toggleSelectedPinHighlight
-            )
-            if game.canAddSelectedPinToBattleRound {
-                GamePinMenuButton(
-                    title: LocalizedStringResource("Add Pin to Battle Round", bundle: .module),
-                    systemImage: "person.badge.plus",
-                    isSelected: false,
-                    action: game.addSelectedPinToBattleRound
+            // The model raises the attachment by half its height, so the arrow's tip, at the
+            // bottom of this view, ends at the pin.
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                game.pinMenuAttachmentHeightChanged(
+                    Float(physicalMetrics.convert(height, to: .meters))
                 )
             }
         }
     }
 }
+#else
+/// The pin action popover over the camera-based table. Fills the table view, whose coordinate
+/// space `GameTableModel.pinMenuSource` is in.
+@MainActor
+struct GamePinActionMenu: View {
+    let game: GameTableModel
+    let viewport: GameTableViewport
 
-private struct GamePinMenuButton: View {
-    let title: LocalizedStringResource
-    let systemImage: String
-    let isSelected: Bool
-    let action: @MainActor () -> Void
+    /// The pin the popover is open on: selected, and already projected into the table view.
+    private var presentedPin: MapPinModel? {
+        guard game.isGameMaster,
+              let pin = game.selectedPin,
+              game.pinMenuSource?.pinId == pin.id else { return nil }
+        return pin
+    }
 
     var body: some View {
-        Button(action: action) {
-            Label {
-                Text(title)
-            } icon: {
-                Image(systemName: systemImage)
+        ZStack(alignment: .topLeading) {
+            if let pin = presentedPin, let source = game.pinMenuSource {
+                game.mapRoot.viewController.gamePinActionPopover(
+                    pin: pin,
+                    source: source.frame,
+                    viewportSize: viewport.size,
+                    safeAreaInsets: viewport.safeAreaInsets,
+                    showsBattleAction: game.canAddSelectedPinToBattleRound,
+                    onDismiss: { game.clearPinSelection() },
+                    perform: { game.performSelectedPinAction($0) }
+                )
+                .transition(.opacity)
             }
         }
-        .selectedRoundButton(
-            title: String(localized: title),
-            module: .table,
-            isSelected: isSelected
-        )
+        // Fades the popover in and out; following the pin stays immediate.
+        .animation(.default, value: presentedPin?.id)
     }
 }
 
-#Preview("Pin actions") {
-    let game = GameTableModel(mapRoot: .preview, photoRoot: .preview)
-    let pin = MapPinModel(
-        id: UUID(),
-        name: "Goblin Guard",
-        color: .red,
-        location: CGPoint(x: 160, y: 120)
-    )
-
-    GamePinActionMenuContent(game: game, pin: pin)
-        .padding()
+/// The table view's size and the part of it system bars cover.
+struct GameTableViewport: Equatable {
+    var size = CGSize.zero
+    var safeAreaInsets = EdgeInsets()
 }
+#endif
 
 #endif

@@ -58,7 +58,7 @@ final class GameSetup {
      already face (see `WindowVisionList`, `GameTableView`) — with the
      table's long sides running away from the viewer along Z instead of
      spanning left-right in front of them. Four more seats flank those long
-     (West/East) sides in two bands, near master first, then a sixth seat
+     (West/East) sides in two bands, near master first, then the guest seat
      opposite the master on the far (-Z, North) short edge — see
      `PlayerSeat.seatPoses`. Each seat's own dice sit in that margin,
      between the map and the seat itself (`PlayerSeat.diceLayout`). Without
@@ -68,7 +68,7 @@ final class GameSetup {
      see `RPGSharePlayController`), so the master's own seat is placed here,
      near-edge, to already line up with a solo tester's fixed vantage.
 
-                    North: seat 6 (far)
+              North: guest seat (far, index 5)
                          +--+
                          |#6|
                          +--+

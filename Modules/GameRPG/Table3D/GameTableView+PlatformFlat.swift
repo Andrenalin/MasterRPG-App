@@ -4,6 +4,7 @@
 import Combine
 import CoreRPG
 import MapRPG
+import PhotoRPG
 import RealityKit
 import SwiftUI
 
@@ -127,6 +128,10 @@ private struct GameTableRealityContent: View {
     /// Tracks the in-flight room toggle/focus request so a rapid second tap cancels the
     /// first instead of both racing `GameTableModel`'s fog recomposite.
     @State private var roomActionCoordinator = RoomActionCoordinator()
+    /// The table view's geometry, which the pin action popover is placed in.
+    @State private var viewport = GameTableViewport()
+    /// Projects scene positions into this view for the pin action popover.
+    @State private var projector = GameTableProjector()
 
     var body: some View {
         RealityView { content in
@@ -135,6 +140,7 @@ private struct GameTableRealityContent: View {
             content.add(game.renderer.camera)
             content.cameraTarget = game.setup.board.entity
             installAccessibilitySubscriptionsIfNeeded()
+            installPinMenuTracking(in: content)
         } update: { content in
             content.camera = .virtual
         }
@@ -146,10 +152,13 @@ private struct GameTableRealityContent: View {
         // drag component for every touch, leaving only pinch-zoom to
         // `.orbit` itself; `tableRotateGesture` adds the two-finger rotate.
         .realityViewCameraControls(.orbit)
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { size in
-            game.renderer.updateCamera(for: size)
+        .onGeometryChange(for: GameTableViewport.self) { proxy in
+            GameTableViewport(size: proxy.size, safeAreaInsets: proxy.safeAreaInsets)
+        } action: { newViewport in
+            if viewport.size != newViewport.size {
+                game.renderer.updateCamera(for: newViewport.size)
+            }
+            viewport = newViewport
         }
         // One physical drag, up to three meanings, tried in this order via `.exclusively(before:)`:
         //  1. `pinDragGesture` — a touch starting on a pin moves that pin (entity-targeted, so its
@@ -173,9 +182,10 @@ private struct GameTableRealityContent: View {
                     .padding()
             }
         }
-        .overlay(alignment: .bottom) {
-            GamePinActionMenu(game: game)
-                .padding()
+        // Above the gestures and the toolbar: the popover is drawn in this view's coordinate
+        // space, next to the selected pin.
+        .overlay(alignment: .topLeading) {
+            GamePinActionMenu(game: game, viewport: viewport)
         }
         .onDisappear {
             roomActionCoordinator.cancel()
@@ -352,6 +362,21 @@ private struct GameTableRealityContent: View {
             }
     }
 
+    /// Keeps `GameTableModel.pinMenuSource` on the selected pin. The system's camera controls
+    /// orbit and zoom without telling SwiftUI, so the pin is projected again on every rendered
+    /// frame; the model publishes only a visible change.
+    private func installPinMenuTracking(in content: RealityViewCameraContent) {
+        projector.content = content
+        // Captured weakly and directly, so the scene's handler holds neither the model nor
+        // this view value, nor the content it renders into.
+        _ = content.subscribe(to: SceneEvents.Update.self) { [weak game, weak projector] _ in
+            guard let game, let content = projector?.content else { return }
+            game.updatePinMenuSource { position in
+                content.project(point: position, to: .local)
+            }
+        }
+    }
+
     private func installAccessibilitySubscriptionsIfNeeded() {
         guard accessibilitySubscriptions.isEmpty,
               let scene = game.renderer.root.scene else { return }
@@ -382,6 +407,13 @@ private struct GameTableRealityContent: View {
     }
 }
 
+/// Holds the reality view's content for the pin action popover's projection. Owned by the view's
+/// state, so a scene event handler can reach the content without keeping it alive.
+@MainActor
+private final class GameTableProjector {
+    var content: RealityViewCameraContent?
+}
+
 private extension EntityTargetValue where Value == DragGesture.Value {
     @MainActor
     func tablePosition(relativeTo parent: Entity) -> SIMD3<Float>? {
@@ -399,5 +431,47 @@ private extension EntityTargetValue where Value == DragGesture.Value {
 
 #Preview("3D Table") {
     GameTableView(root: .preview)
+}
+
+/// A table with one selected pin, without a map: enough for the pin action popover to appear.
+private struct GameTablePinActionsPreview: View {
+    @State private var game = makeGame()
+    @State private var accessibilitySubscriptions: [any Cancellable] = []
+
+    var body: some View {
+        GameTableRealityContent(
+            root: .preview,
+            game: game,
+            accessibilitySubscriptions: $accessibilitySubscriptions,
+            showsEmbeddedToolbar: false
+        )
+        .background(.black.gradient)
+        .task {
+            await game.renderer.loadAssets()
+        }
+    }
+
+    private static func makeGame() -> GameTableModel {
+        let game = GameTableModel(mapRoot: .preview, photoRoot: .preview)
+        let pin = MapPinModel(id: UUID(), name: "Goblin Guard", color: .red, location: .zero)
+        let pawn = PinPawn(pin: pin, pointsToMeters: MapTableProjection.fallbackPointsToMeters)
+        pawn.update(
+            pin: pin,
+            position: SIMD3<Float>(0.2, MapTableProjection.pinHeight, -0.1),
+            hiddenForMaster: false,
+            pointsToMeters: MapTableProjection.fallbackPointsToMeters
+        )
+        game.setup.pinContainer.addChild(pawn.entity)
+        game.setup.pinPawns.append(pawn)
+        game.isGameMaster = true
+        game.selectedPinId = pin.id
+        game.selectedPin = pin
+        return game
+    }
+}
+
+#Preview("3D Table pin actions") {
+    GameTablePinActionsPreview()
+        .frame(width: 800, height: 600)
 }
 #endif

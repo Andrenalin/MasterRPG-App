@@ -31,9 +31,9 @@ final class GameObserver: TabletopGame.Observer {
 
         // A value of 0 is the table's "parked, unused slot" sentinel (see `Die20.init`), not a roll.
         if let (die20, state) = newSnapshot.equipment(of: Die20.self, matching: action.equipmentID) {
-            if state.value != 0 { die20.playTossSound() }
+            if state.value != TableDieValue.parked { die20.playTossSound() }
         } else if let (die, state) = newSnapshot.equipment(of: Die.self, matching: action.equipmentID) {
-            if state.value != 0 { die.playTossSound() }
+            if state.value != TableDieValue.parked { die.playTossSound() }
         }
     }
 
@@ -52,6 +52,12 @@ final class GameObserver: TabletopGame.Observer {
             Task { @MainActor [renderer] in
                 renderer.game?.applyFocusedDiceRollForLocalSeat?()
             }
+        }
+
+        // Whoever sits at the lowest seat places the dice of the players without a table; with
+        // a seat changing hands that can now be this device. Deferred for the same reason.
+        Task { @MainActor [renderer] in
+            renderer.game?.syncGuestDice()
         }
     }
 

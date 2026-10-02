@@ -922,6 +922,7 @@ extension RPGSharePlayController {
         journalAddLimiter.cancelAll()
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
+        participantPlayers = [:]
         packageReceiver.reset()
         gameModel?.attachments = [:]
         if groupSession != nil {

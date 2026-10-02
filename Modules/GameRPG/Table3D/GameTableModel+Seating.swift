@@ -60,7 +60,8 @@ extension GameTableModel {
     /// Assigns seats to SharePlay participants. The master always gets seat 0; players fill
     /// seats `1...playerSeatCount` in `TableSeatAssignment`'s deterministic order.
     ///
-    /// The table has `PlayerSeat.seatPoses.count - 1` player seats, so a larger party shares
+    /// The table has `PlayerSeat.playerSeatCount` player seats (the seat opposite the master is
+    /// kept for the players without a table, see `PlayerSeat.guestSeat`), so a larger party shares
     /// seats (and their dice pools). That is reported through `sharedSeatPlayerCount`. When
     /// `masterParticipantId` is unknown the master still occupies a rank, so a party larger than
     /// the seat count is treated as possibly shared.
@@ -86,7 +87,7 @@ extension GameTableModel {
             return
         }
 
-        let playerSeatCount = PlayerSeat.seatPoses.count - 1
+        let playerSeatCount = PlayerSeat.playerSeatCount
         guard let assignment = TableSeatAssignment.seat(
             localParticipantId: groupSession.localParticipant.id,
             participantIds: groupSession.activeParticipants.map(\.id),

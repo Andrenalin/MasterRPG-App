@@ -467,3 +467,25 @@ extension RPGSharePlayController {
         }
     }
 }
+
+// MARK: - Participant players
+
+extension RPGSharePlayController {
+    /// Records which player a participant is. Called for a player message that arrived from
+    /// the participant itself and passed the sender checks.
+    func bindPlayer(named name: String, hasTable: Bool, participantId: UUID) {
+        let player = ParticipantPlayer(name: name, hasTable: hasTable)
+        guard !name.isEmpty, participantPlayers[participantId] != player else { return }
+        participantPlayers[participantId] = player
+#if os(visionOS)
+        refreshSeatPlayerNames()
+#endif
+    }
+
+    func unbindPlayer(participantId: UUID) {
+        guard participantPlayers.removeValue(forKey: participantId) != nil else { return }
+#if os(visionOS)
+        refreshSeatPlayerNames()
+#endif
+    }
+}

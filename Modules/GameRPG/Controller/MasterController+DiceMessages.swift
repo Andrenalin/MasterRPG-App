@@ -52,6 +52,7 @@ extension MasterController {
                     isMaster: model.sender.isMaster
                 )
             }
+            root.gameModel.noteDiceRollSender(of: model)
             let (_, resultCategory) = root.diceRoot.diceGameControllable.addGameDiceResult(
                 data: model.data,
                 name: model.senderName,

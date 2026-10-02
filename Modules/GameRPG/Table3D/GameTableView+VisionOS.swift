@@ -16,6 +16,10 @@ import TabletopKit
 public struct GameTableView: View {
     let root: GameRoot
 
+    /// Handed on to the dice result attachments, which host the dice overlay's own views.
+    @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
+    @Environment(\.networkActions) private var networkActions
+
     @State private var game: GameTableModel?
     @State private var activityManager: GroupActivityManager?
     @State private var scaleController = TableScaleGestureController()
@@ -79,6 +83,11 @@ public struct GameTableView: View {
                     if let pinMenu = attachments.entity(for: "pin-menu") {
                         loadedGame.registerPinMenuAttachment(pinMenu)
                     }
+                    for group in loadedGame.diceResultGroups {
+                        if let diceResult = attachments.entity(for: GameDiceResultPopover.attachmentId(for: group)) {
+                            loadedGame.registerDiceResultAttachment(diceResult, for: group)
+                        }
+                    }
 
                 } update: { content, _ in
                     // Re-anchor to the volume floor when the user resizes the volume.
@@ -88,6 +97,20 @@ public struct GameTableView: View {
                 } attachments: {
                     Attachment(id: "pin-menu") {
                         GamePinActionMenu(game: loadedGame)
+                    }
+                    // One per dice group: every seat's dice, and every guest's at the guest
+                    // seat, can show a result at the same time.
+                    ForEach(loadedGame.diceResultGroups, id: \.self) { group in
+                        Attachment(id: GameDiceResultPopover.attachmentId(for: group)) {
+                            GameDiceResultPopover(
+                                root: root,
+                                game: loadedGame,
+                                group: group,
+                                diceDisplayModel: diceDisplayModel,
+                                appGameStateModel: appGameStateModel,
+                                networkActions: networkActions
+                            )
+                        }
                     }
                 }
                 .tabletopGame(loadedGame.tabletopGame, parent: loadedGame.renderer.root) { _ in
@@ -265,6 +288,11 @@ public struct GameTableView: View {
             guard let game else { return }
             applyCurrentFocusedDiceRoll(to: game)
         }
+        // The players without a table have no dice of their own here: their shared rolls are
+        // shown at the guest seat. See `GameTableModel.applyGuestRolls(_:)`.
+        .onChange(of: guestRolls, initial: false) { _, rolls in
+            game?.applyGuestRolls(rolls)
+        }
         .task {
             await scaleController.start()
         }
@@ -279,6 +307,7 @@ public struct GameTableView: View {
             // `RealityView` mount's `content.add(renderer.root)` to walk back
             // over. See `GameTableModel.registerPinMenuAttachment(_:)`'s doc.
             game?.detachPinMenuAttachment()
+            game?.detachDiceResultAttachments()
             root.gameModel.shareState.mode = .window
             root.networkStore.sharePlayStore.applyShareState()
             if root.gameModel.gameTableModel === game {
@@ -304,6 +333,7 @@ public struct GameTableView: View {
             game.applyFocusedDiceRollForLocalSeat = Self.focusedDiceHandler(for: game, diceRoot: root.diceRoot)
             await game.handleMapChange(isGameMaster: game.isGameMaster)
             applyCurrentFocusedDiceRoll(to: game)
+            game.applyGuestRolls(guestRolls)
             return
         }
 
@@ -351,6 +381,7 @@ public struct GameTableView: View {
         // was already showing a result on the 2D screen would sit at its
         // default face on the table until someone rolled again.
         applyCurrentFocusedDiceRoll(to: initializedGame)
+        initializedGame.applyGuestRolls(guestRolls)
     }
 
     /// Creates `activityManager`, which is what actually calls
@@ -432,6 +463,21 @@ public struct GameTableView: View {
     /// updates the table — and every rolled result. Changes on every roll,
     /// including a re-roll of the same dice, unlike `focusItemIds` alone
     /// (which only changes when the *selection* changes).
+    /// The last shared roll of every player who is not on Vision Pro, as the dice overlay has
+    /// it, reduced to the dice the table has: d20 and d6.
+    private var guestRolls: [TableGuestRoll] {
+        let guestNames = root.gameModel.tableGuestNames
+        return root.diceRoot.diceGameControllable.sharedPlayerDice
+            .filter { guestNames.contains($0.name) }
+            .map { dice in
+                TableGuestRoll(
+                    name: dice.name,
+                    d20: dice.dice.filter { $0.die.max == 20 }.compactMap(\.result.last),
+                    d6: dice.dice.filter { $0.die.max == 6 }.compactMap(\.result.last)
+                )
+            }
+    }
+
     private var focusedDiceSignature: [Int] {
         guard let focusId = root.diceRoot.diceGameControllable.gameModel.focusItemIds.first,
               let diceModel = root.diceRoot.diceGameControllable.gameModel.itemData[focusId] as? DiceModel else {

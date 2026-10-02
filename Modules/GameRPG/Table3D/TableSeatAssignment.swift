@@ -48,4 +48,27 @@ enum TableSeatAssignment {
             sharedPlayerCount: mayShare ? players.count : nil
         )
     }
+
+    /// The seat index of every participant, as each of them computes it for itself: 0 for the
+    /// master, `seat(localParticipantId:...)`'s for a player. Lets a device tell who sits where.
+    static func seats(
+        participantIds: [UUID],
+        masterParticipantId: UUID?,
+        playerSeatCount: Int
+    ) -> [UUID: Int] {
+        var seats: [UUID: Int] = [:]
+        for participantId in participantIds {
+            if participantId == masterParticipantId {
+                seats[participantId] = 0
+            } else if let assignment = seat(
+                localParticipantId: participantId,
+                participantIds: participantIds,
+                masterParticipantId: masterParticipantId,
+                playerSeatCount: playerSeatCount
+            ) {
+                seats[participantId] = assignment.seatIndex
+            }
+        }
+        return seats
+    }
 }

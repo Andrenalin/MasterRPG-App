@@ -88,14 +88,7 @@ extension GameController {
         
         let rollFunction = {
             roll(die: nil, for: itemId)
-            
-            if let networkActions {
-                Task {
-                    let sendedResult = resultCategory ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.config.module)
-                    let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
-                    networkActions.game(result, .generic, nil)
-                }
-            }
+            shareRoll(of: itemId, networkActions: networkActions, resultCategory: resultCategory)
         }
         
         if rollSynced {
@@ -117,6 +110,45 @@ extension GameController {
         }
     }
     
+    /// Sends a dice set's current result to the game, as every roll does.
+    @MainActor
+    private func shareRoll(of itemId: UUID, networkActions: NetworkActions?, resultCategory: ResultCategory? = nil) {
+        guard let networkActions else { return }
+        Task {
+            let sendedResult = resultCategory ?? gameItem(for: itemId).resultCategory ?? ResultCategory(id: itemId, module: itemController.config.module)
+            let result = await createDiceResult(for: itemId, resultCategory: sendedResult)
+            networkActions.game(result, .generic, nil)
+        }
+    }
+
+    @MainActor
+    func rollDie(_ dieId: UUID, of diceId: UUID, networkActions: NetworkActions?) -> Int? {
+        guard gameModel.itemData[diceId] is DiceModel,
+              let die = gameItem(for: diceId).dice.first(where: { $0.id == dieId }) else { return nil }
+        roll(die: die.resetResults(), for: diceId, playsSound: false)
+        shareRoll(of: diceId, networkActions: networkActions)
+        return gameItem(for: diceId).dice.first(where: { $0.id == dieId })?.result.last
+    }
+
+    @MainActor
+    func showsResult(for diceId: UUID) -> Bool {
+        guard gameModel.itemData[diceId] is DiceModel else { return false }
+        let item = gameItem(for: diceId)
+        return item.sumUp || item.compareOption != .off
+    }
+
+    @MainActor
+    func playerDiceId(named playerName: String) -> UUID? {
+        guard let dice = diceGameModel.playerDice.first(where: { $0.name == playerName }),
+              !isPlayerHidden(playerId: dice.id) else { return nil }
+        return dice.id
+    }
+
+    @MainActor
+    var sharedPlayerDice: [DiceModel] {
+        diceGameModel.playerDice
+    }
+
     /// The 9 single-die roll-sound variants, indexed 0-8. Kept as one array
     /// (raw values, not the `Resources.Dice` cases themselves — the enum
     /// isn't `Sendable`) so the sound count and the selection range

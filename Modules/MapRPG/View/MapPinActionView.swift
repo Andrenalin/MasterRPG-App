@@ -21,7 +21,9 @@ enum MapPinActionContext: Equatable {
     }
 }
 
-enum MapPinButtonType: String, Hashable {
+/// Public because GameRPG's 3D table performs the game master's actions itself; see
+/// `ViewController.gamePinActionPopover`.
+public enum MapPinButtonType: String, Hashable, Sendable {
     case remove, copy, photo, resize, dead, visibility, zoom, highlight, battle
 
     func systemImage(for pin: MapPinModel) -> String {

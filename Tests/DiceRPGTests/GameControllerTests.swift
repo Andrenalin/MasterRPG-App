@@ -17,6 +17,46 @@ struct GameControllerTests {
         #expect(sut.gameModel.items.first == dice.id)
     }
 
+    @Test func tossedDieIsRolledByItsSheetAlone() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+        let activeDice = sut.gameItem(for: dice.id)
+        activeDice.dice = GameControllerTests.diceResult(values: [[3], [4], [5]])
+        let tossed = try #require(activeDice.dice.first)
+
+        let face = try #require(sut.rollDie(tossed.id, of: dice.id, networkActions: nil))
+
+        let rolled = sut.gameItem(for: dice.id).dice
+        #expect(rolled[0].result.last == face)
+        #expect((1...rolled[0].die.max).contains(face))
+        // The other dice keep their results.
+        #expect(rolled[1].result == [4])
+        #expect(rolled[2].result == [5])
+        #expect(sut.rollDie(UUID(), of: dice.id, networkActions: nil) == nil)
+        #expect(sut.rollDie(tossed.id, of: UUID(), networkActions: nil) == nil)
+    }
+
+    @Test func overlayResultLookupsForTheTable() async throws {
+        let (root, dice) = await GameControllerTests.setupDice()
+        let sut = root.gameController
+
+        let item = sut.gameItem(for: dice.id)
+        item.sumUp = false
+        item.compareOption = .off
+        #expect(!sut.showsResult(for: dice.id))
+        item.sumUp = true
+        #expect(sut.showsResult(for: dice.id))
+        #expect(!sut.showsResult(for: UUID()))
+
+        let playerDice = DiceModel(id: UUID(), name: "Anna Example", dice: [])
+        sut.setGame(item: playerDice, itemId: playerDice.id)
+        sut.diceGameModel.playerDice = [playerDice]
+        #expect(sut.playerDiceId(named: "Anna Example") == playerDice.id)
+        #expect(sut.playerDiceId(named: "Nobody") == nil)
+        await sut.toggleHidden(playerId: playerDice.id)
+        #expect(sut.playerDiceId(named: "Anna Example") == nil)
+    }
+
     @Test func gameSessionStateAndPlayerDice() async throws {
         let (root, dice) = await GameControllerTests.setupDice()
         let sut = root.gameController

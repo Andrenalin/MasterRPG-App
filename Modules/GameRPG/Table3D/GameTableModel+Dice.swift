@@ -25,12 +25,18 @@ extension GameTableModel {
     ///
     /// Only slots whose synced value or pose actually changes are submitted: each `addAction` is a
     /// SharePlay message and plays the toss sound, so re-parking already-parked dice was pure noise.
+    ///
+    /// A die the sheet has not rolled yet is mirrored as `TableDieValue.unrolled`, so no device
+    /// shows a result for it. A die tossed by hand got its value from the sheet already (see
+    /// `rollTossedDie(_:)`) and stays where it landed until the sheet gives it another one.
     func applyDiceRoll(_ diceModel: DiceModel) {
+        mirroredSheet = nil
         guard let seat = localSeat,
               let d20Ids = setup.playerD20Ids[seat],
               let d6Ids = setup.playerD6Ids[seat],
               let seatPose = setup.seats.first(where: { $0.id == seat })?.initialState.pose
         else { return }
+        var sheetDieIds: [EquipmentIdentifier: UUID] = [:]
 
         // Compare the *resolved* side count (`RawDie.max`), not the `Sides` enum case: a die
         // authored through the sheet's UI can end up as `.number(20)` instead of `.twenty`, and
@@ -44,18 +50,21 @@ extension GameTableModel {
         for (index, dieId) in d20Ids.enumerated() {
             guard let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) else { continue }
             let target = index < usedD20Count
-                ? (value: d20Dice[index].result.last ?? 1, pose: layout[index])
-                : (value: 0, pose: .parkedDicePose)
+                ? (value: d20Dice[index].result.last ?? TableDieValue.unrolled, pose: layout[index])
+                : (value: TableDieValue.parked, pose: .parkedDicePose)
             updateDieSlot(equipment, target: target)
+            if index < usedD20Count { sheetDieIds[dieId] = d20Dice[index].id }
         }
 
         for (index, dieId) in d6Ids.enumerated() {
             guard let equipment = tabletopGame.equipment(of: Die.self, matching: dieId) else { continue }
             let target = index < usedD6Count
-                ? (value: d6Dice[index].result.last ?? 1, pose: layout[usedD20Count + index])
-                : (value: 0, pose: .parkedDicePose)
+                ? (value: d6Dice[index].result.last ?? TableDieValue.unrolled, pose: layout[usedD20Count + index])
+                : (value: TableDieValue.parked, pose: .parkedDicePose)
             updateDieSlot(equipment, target: target)
+            if index < usedD6Count { sheetDieIds[dieId] = d6Dice[index].id }
         }
+        mirroredSheet = (diceModel.id, sheetDieIds)
 
         let overflowCount = diceModel.dice.count - usedD20Count - usedD6Count
         diceOverflowCount = overflowCount > 0 ? overflowCount : nil
@@ -67,10 +76,15 @@ extension GameTableModel {
     }
 
     /// Submits a slot update only if it differs from the synced state.
-    private func updateDieSlot<Equip: Equipment>(
+    func updateDieSlot<Equip: Equipment>(
         _ equipment: Equip,
         target: (value: Int, pose: TableVisualState.Pose2D)
     ) where Equip.State == DieState {
+        if handTossedDice[equipment.id] == target.value {
+            // The toss put this value on the table and decides where the die lies.
+            return
+        }
+        handTossedDice[equipment.id] = nil
         var current: DieState?
         tabletopGame.withCurrentSnapshot { snapshot in
             current = snapshot.equipment(of: Equip.self, matching: equipment.id)?.1
@@ -90,6 +104,22 @@ extension GameTableModel {
         return abs(lhs.position.x - rhs.position.x) < tolerance
             && abs(lhs.position.z - rhs.position.z) < tolerance
             && abs(lhs.rotation.radians - rhs.rotation.radians) < tolerance
+    }
+
+    /// The value of a die tossed by hand. The local player's own die is rolled by its sheet,
+    /// so the toss is a roll like any other: it shows in the dice overlay and is shared with
+    /// the game. `nil` for any other die — the master tossing a player's die cannot roll that
+    /// player's sheet — which then gets a value from the table alone.
+    func rollTossedDie(_ dieId: EquipmentIdentifier) -> Int? {
+        guard let mirroredSheet,
+              let sheetDieId = mirroredSheet.dieIds[dieId],
+              let value = diceRoot?.diceGameControllable.rollDie(
+                  sheetDieId,
+                  of: mirroredSheet.diceId,
+                  networkActions: networkActions
+              ) else { return nil }
+        handTossedDice[dieId] = value
+        return value
     }
 
     /// Whether `dieId` belongs to one of the table's dice pools.
@@ -112,7 +142,7 @@ extension GameTableModel {
     /// path a physical toss uses.
     func tossDieForAccessibility(dieId: EquipmentIdentifier, sides: Int) {
         guard canControlDie(dieId) else { return }
-        let result = Int.random(in: 1...sides)
+        let result = rollTossedDie(dieId) ?? Int.random(in: 1...sides)
         if let equipment = tabletopGame.equipment(of: Die20.self, matching: dieId) {
             tabletopGame.addAction(
                 .updateEquipment(equipment, value: result, seatControl: nil, pose: nil, boundingBox: nil, context: 0)
