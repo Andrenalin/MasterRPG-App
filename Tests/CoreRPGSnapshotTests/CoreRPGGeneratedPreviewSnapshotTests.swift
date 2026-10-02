@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 @testable import CoreRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct CoreRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: CoreRPG::MeshAnimationView
     @Test("MeshAnimationView")
@@ -1845,7 +1845,6 @@ private func assertPreviewSnapshot<Content: View>(
             .environment(AppSettingsModel.previewFixture())
             .environment(AppWindowSizeModel())
             .environment(AppFocusModel())
-            .environment(SearchBarVisibleModel())
             .environment(SearchBarVisibleModel())
             .environment(ScenesManager())
             .environment(OptionKeyDownModel())

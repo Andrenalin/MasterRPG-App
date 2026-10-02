@@ -13,7 +13,7 @@ ACTIVE_PROMOTION_STARTED=0
 ACTIVE_TRANSACTION_COMMITTED=0
 
 usage() {
-    echo "Usage: $0 <verify|record> <26|27|both> [additional xcodebuild arguments...]"
+    echo "Usage: $0 <verify|record> <27> [additional xcodebuild arguments...]"
     echo
     echo "  verify  Compares references without writing them."
     echo "  record  Records into a clean staging tree, verifies it, then replaces the reference tree."
@@ -95,11 +95,8 @@ case "$ACTION" in
 esac
 
 case "$TOOLCHAIN" in
-    26|27)
+    27)
         TOOLCHAINS=("$TOOLCHAIN")
-        ;;
-    both)
-        TOOLCHAINS=(26 27)
         ;;
     *)
         usage
@@ -111,13 +108,6 @@ derived_data_for_major() {
     local major="$1"
 
     case "$major" in
-        26)
-            if [[ -n "${SNAPSHOT_DERIVED_DATA_26:-}" ]]; then
-                echo "$SNAPSHOT_DERIVED_DATA_26"
-            else
-                echo "$MANAGED_DERIVED_DATA_ROOT/Xcode26"
-            fi
-            ;;
         27)
             if [[ -n "${SNAPSHOT_DERIVED_DATA_27:-}" ]]; then
                 echo "$SNAPSHOT_DERIVED_DATA_27"
@@ -132,11 +122,6 @@ cleanup_managed_derived_data() {
     local major="$1"
 
     case "$major" in
-        26)
-            if [[ -z "${SNAPSHOT_DERIVED_DATA_26:-}" ]]; then
-                rm -rf "$MANAGED_DERIVED_DATA_ROOT/Xcode26"
-            fi
-            ;;
         27)
             if [[ -z "${SNAPSHOT_DERIVED_DATA_27:-}" ]]; then
                 rm -rf "$MANAGED_DERIVED_DATA_ROOT/Xcode27"
@@ -155,13 +140,9 @@ run_tests() {
     shift 3
 
     case "$major" in
-        26)
-            xcode_app="${XCODE26_APP:-/Applications/Xcode-26.6.0.app}"
-            destination="${SNAPSHOT_DESTINATION_26:-platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5}"
-            ;;
         27)
-            xcode_app="${XCODE27_APP:-/Applications/Xcode-27.0.0-Beta.4.app}"
-            destination="${SNAPSHOT_DESTINATION_27:-platform=iOS Simulator,name=iPhone 17 Pro,OS=27.0}"
+            xcode_app="${XCODE27_APP:-/Applications/Xcode27-RC.app}"
+            destination="${SNAPSHOT_DESTINATION_27:-platform=iOS Simulator,name=iPhone 18 Pro,OS=27.0}"
             ;;
     esac
     derived_data="$(derived_data_for_major "$major")"
@@ -181,10 +162,12 @@ run_tests() {
     echo "Destination: $destination"
     echo "Derived data: $derived_data"
 
-    # The MasterSnapshot plan expands these build settings into the simulator
-    # test process. Shell-prefixed variables are intentionally not used because
-    # xcodebuild does not forward arbitrary parent-process variables to tests.
+    # xcodebuild forwards parent-process variables carrying the TEST_RUNNER_
+    # prefix to the simulator test process and strips the prefix, so the plan
+    # needs no snapshot-specific environment entries.
     DEVELOPER_DIR="$xcode_app/Contents/Developer" \
+    TEST_RUNNER_SNAPSHOT_RECORD_MODE="$record_mode" \
+    TEST_RUNNER_SNAPSHOT_BASELINE_VARIANT="$baseline_variant" \
         xcodebuild test \
             -project "$ROOT_DIR/MasterRPG.xcodeproj" \
             -scheme MasterRPG \
@@ -199,9 +182,7 @@ run_tests() {
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             EAGER_LINKING=NO \
-            "$@" \
-            "SNAPSHOT_RECORD_MODE_BUILD_SETTING=$record_mode" \
-            "SNAPSHOT_BASELINE_VARIANT_BUILD_SETTING=$baseline_variant"
+            "$@"
 }
 
 png_count() {

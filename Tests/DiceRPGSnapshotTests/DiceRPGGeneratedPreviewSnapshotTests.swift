@@ -9,7 +9,7 @@ import CoreRPG
 @testable import DiceRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct DiceRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: DiceRPG::DiceFocusActionBar
     @Test("DiceFocusActionBar")

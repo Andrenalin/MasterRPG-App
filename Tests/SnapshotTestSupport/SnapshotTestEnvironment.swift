@@ -27,7 +27,7 @@ enum SnapshotReferenceLocation {
         guard let encodedVersion = encodedXcodeVersion(in: bundle) else {
             preconditionFailure(
                 "The snapshot test bundle does not contain DTXcode. "
-                    + "Set \(environmentKey) to an explicit value such as Xcode26 or Xcode27."
+                    + "Set \(environmentKey) to an explicit value such as Xcode27."
             )
         }
 
@@ -74,8 +74,8 @@ enum SnapshotReferenceLocation {
             : suffix
         guard !version.isEmpty, version.allSatisfy(\.isNumber) else {
             preconditionFailure(
-                "\(environmentKey) must be an Xcode major-version folder such as Xcode26 "
-                    + "or its Xcode26Recording staging variant; "
+                "\(environmentKey) must be an Xcode major-version folder such as Xcode27 "
+                    + "or its Xcode27Recording staging variant; "
                     + "received \(value)."
             )
         }
@@ -91,14 +91,6 @@ enum SnapshotReferenceLocation {
         default:
             return nil
         }
-    }
-}
-
-/// Snapshot suites are excluded on Xcode 26 in source so every plan and scheme
-/// observes the same policy without tag filters or build-configuration flags.
-enum SnapshotTestAvailability {
-    static var isDisabledForCurrentXcode: Bool {
-        SnapshotReferenceLocation.xcodeMajorVersion == 26
     }
 }
 

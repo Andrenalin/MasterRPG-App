@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 @testable import SpaceRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct SpaceRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: SpaceRPG::SpaceQuickLook
     @Test("SpaceQuickLook")

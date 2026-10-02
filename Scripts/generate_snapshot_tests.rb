@@ -228,9 +228,10 @@ def generated_test(module_name, cases, imports)
                               assertRepositorySnapshot(
                                   of: content(appModel)
                                       .environmentSetUp(appModel)
+                                      .environment(AppFocusModel())
+                                      .environment(SearchBarVisibleModel())
                                       .cloudKitAccountChecksEnabled(false)
                                       .itemStateRestorationEnabled(false)
-                                      .rolePlayStateRestorationEnabled(false)
                                       .rolePlayDatabaseInitializationEnabled(false)
                                       .meshAnimationEnabled(false)
                                       .deterministicSnapshotEnvironment()
@@ -276,13 +277,14 @@ def generated_test(module_name, cases, imports)
                                       .environment(AppNavigationModel(appGameStateModel: appGameStateModel))
                                       .environment(AppSettingsModel.previewFixture())
                                       .environment(AppWindowSizeModel())
+                                      .environment(AppFocusModel())
+                                      .environment(SearchBarVisibleModel())
                                       .environment(ScenesManager())
                                       .environment(OptionKeyDownModel())
                                       .environment(GroupItemSelectionModel())
                                       .environment(ItemRootController.previewFixture())
                                       .cloudKitAccountChecksEnabled(false)
                                       .itemStateRestorationEnabled(false)
-                                      .navigationSceneRestorationEnabled(false)
                                       .meshAnimationEnabled(false)
                                       .deterministicSnapshotEnvironment()
                                       .transaction { transaction in
@@ -311,6 +313,8 @@ def generated_test(module_name, cases, imports)
                               assertRepositorySnapshot(
                                   of: content()
                                       .modifier(MockRootViewModifier(root: root))
+                                      .environment(AppFocusModel())
+                                      .environment(SearchBarVisibleModel())
                                       .modelContainer(container)
                                       .deterministicSnapshotEnvironment()
                                       .transaction { transaction in
@@ -352,6 +356,8 @@ def generated_test(module_name, cases, imports)
                               assertRepositorySnapshot(
                                   of: content()
                                       .modifier(MockRootViewModifier(modelContext: container.mainContext, root: root))
+                                      .environment(AppFocusModel())
+                                      .environment(SearchBarVisibleModel())
                                       .modelContainer(container)
                                       .deterministicSnapshotEnvironment()
                                       .transaction { transaction in
@@ -392,6 +398,8 @@ def generated_test(module_name, cases, imports)
                               assertRepositorySnapshot(
                                   of: content()
                                       .modifier(#{mock_root_modifier})
+                                      .environment(AppFocusModel())
+                                      .environment(SearchBarVisibleModel())
                                       .modelContainer(container)
                                       .deterministicSnapshotEnvironment()
                                       .transaction { transaction in
@@ -435,7 +443,7 @@ def generated_test(module_name, cases, imports)
     #{import_lines}@testable import #{module_name}
 
     @MainActor
-    @Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+    @Suite(.serialized, .snapshots, .tags(.snapshot))
     struct #{suite_name} {
     #{tests}
 

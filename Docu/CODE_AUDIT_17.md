@@ -700,6 +700,7 @@ Baseline: 1,795 production Swift files (~194,861 LOC). Files over 500 LOC: **33*
 - **Why:** Snapshot coverage silently drops on Xcode 26.
 - **Action:** Time-box the Xcode 26 disable, delete the commented-out test in favour of an `AppIntentsTesting` target, and share a generic `MockRoot`.
 - **Severity:** Low
+- **Status (2026-10-02):** PARTLY FIXED. The Xcode 26 disable is removed: `SnapshotTestAvailability` and the `.disabled(if:)` suite trait are gone, and the runner, generator and coverage audit only know the Xcode 27 toolchain. The commented-out test and the duplicated `MockRoot` are unchanged.
 
 ---
 

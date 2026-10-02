@@ -17,7 +17,7 @@ TEST_GLOB = "Tests/**/*.swift"
 EXCLUSIONS_PATH = ROOT.join("Scripts/snapshot_view_exclusions.txt")
 SNAPSHOT_SUPPORT_PATH = ROOT.join("Tests/SnapshotTestSupport/SnapshotTestEnvironment.swift")
 SNAPSHOT_ROOT = ROOT.join("Snapshots")
-BASELINE_VARIANTS = %w[Xcode26 Xcode27].freeze
+BASELINE_VARIANTS = %w[Xcode27].freeze
 
 View = Struct.new(
   :key,

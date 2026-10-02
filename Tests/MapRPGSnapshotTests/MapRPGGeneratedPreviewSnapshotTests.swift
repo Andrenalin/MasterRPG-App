@@ -17,7 +17,7 @@ import TipKit
 @testable import MapRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct MapRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: MapRPG::AnimatedMap
     @Test("AnimatedMap")
@@ -272,6 +272,8 @@ struct MapRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier(modelContext: container.mainContext))
+                .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

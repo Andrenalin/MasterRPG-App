@@ -11,7 +11,7 @@ import PDFKit
 @testable import GeneratorRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct GeneratorRPGGeneratedPreviewSnapshotTests {
     // snapshot-root: GeneratorRPG::CheckLanguageSupport
     @Test("CheckLanguageSupport")
@@ -181,6 +181,8 @@ struct GeneratorRPGGeneratedPreviewSnapshotTests {
         assertRepositorySnapshot(
             of: content()
                 .modifier(MockRootViewModifier())
+                .environment(AppFocusModel())
+                .environment(SearchBarVisibleModel())
                 .modelContainer(container)
                 .deterministicSnapshotEnvironment()
                 .transaction { transaction in

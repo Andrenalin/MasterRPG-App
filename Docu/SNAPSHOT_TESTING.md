@@ -8,13 +8,12 @@ Every suite calls `assertRepositorySnapshot`. The shared wrapper passes an expli
 
 ```text
 Snapshots/
-├── Xcode26/<SnapshotTestTarget>/<SnapshotSuite>/*.png
 └── Xcode27/<SnapshotTestTarget>/<SnapshotSuite>/*.png
 ```
 
 SwiftUI pixels can differ between Xcode releases. The wrapper reads `DTXcode` from the loaded `.xctest` bundle and automatically selects the matching major-version tree. The command-line runner forwards recording overrides with Xcode's `TEST_RUNNER_` environment convention; the shared test plans contain no snapshot-specific environment configuration.
 
-Every framework has separate `<Module>Tests` and `<Module>SnapshotTests` targets. Source-directory ownership performs the split, so unit plans cannot discover snapshot suites accidentally. Snapshot suites are disabled in source when their test bundle reports Xcode 26; no test-plan filters or build flags are required for that policy.
+Every framework has separate `<Module>Tests` and `<Module>SnapshotTests` targets. Source-directory ownership performs the split, so unit plans cannot discover snapshot suites accidentally.
 
 Most cases are generated directly from their view's same-file `#Preview`, keeping the preview and snapshot fixture identical. Regenerate committed cases after editing previews:
 
@@ -44,7 +43,7 @@ A recording is transactional:
 
 1. Point-Free records into an empty `Snapshots/Xcode27Recording` staging tree.
 2. The runner requires at least one PNG and verifies the entire staged tree with record mode `never`. Starting from an empty tree also removes obsolete images and Finder metadata from the result.
-3. The verified tree replaces `Snapshots/Xcode26` or `Snapshots/Xcode27`, while the previous tree is retained as a temporary backup.
+3. The verified tree replaces `Snapshots/Xcode27`, while the previous tree is retained as a temporary backup.
 4. A final read-only run removes the baseline override and proves that the test bundle's `DTXcode` selects the promoted tree automatically.
 
 If recording, staged verification, promotion, or final verification fails or is interrupted, the previous canonical tree is restored. Point-Free reports intentionally recorded cases as failures, so a nonzero recording pass is expected; both subsequent verification passes must succeed.
@@ -55,9 +54,9 @@ Xcode 27 CI should call `verify`, which prevents writes and fails when a referen
 ./Scripts/run_snapshot_tests.sh verify 27
 ```
 
-Use an iPhone 17 Pro running iOS 27.0. The Xcode 26 tree remains historical; source-level suite traits prevent it from executing.
+Use an iPhone 18 Pro running iOS 27.0. Xcode 27 is the only supported snapshot toolchain; a test bundle built with another Xcode major version looks for its own `Snapshots/Xcode<major>` tree and fails because no reference exists.
 
-The default uses `/Applications/Xcode-27.0.0-Beta.3.app`. Override it with `XCODE27_APP`, or override the destination with `SNAPSHOT_DESTINATION_27`.
+The default uses `/Applications/Xcode27-RC.app`. Override it with `XCODE27_APP`, or override the destination with `SNAPSHOT_DESTINATION_27`.
 
 Default DerivedData is created below `TMPDIR` and deleted after the run. Set `SNAPSHOT_DERIVED_DATA_27` to opt into a persistent caller-owned cache; an explicit override path is never deleted by the script.
 
@@ -78,7 +77,7 @@ func adventureRoot() async throws { /* ... */ }
 - every registered root is attached to a Swift Testing `@Test` with a Point-Free snapshot assertion;
 - every snapshot assertion uses the shared deterministic environment and a serialized `.snapshots` suite;
 - every assertion resolves through `assertRepositorySnapshot` rather than an adjacent `Tests/**/__Snapshots__` directory;
-- both toolchain roots exist and each Xcode 27 suite has a migrated reference directory;
+- the Xcode 27 toolchain root exists and each suite has a reference directory in it;
 - at least 80% declaration-level snapshot coverage across eligible views.
 
 Run the structural audit with:

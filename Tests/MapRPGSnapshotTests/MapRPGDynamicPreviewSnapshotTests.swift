@@ -15,7 +15,7 @@ import Testing
 @testable import MapRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct MapRPGDynamicPreviewSnapshotTests {
     // snapshot-root: MapRPG::DisplayMapViewer
     @Test("DisplayMapViewer")

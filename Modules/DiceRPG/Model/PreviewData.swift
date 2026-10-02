@@ -180,6 +180,7 @@ extension DiceModel {
             DieModel(
                 id: UUID(uuid: (0x81, 0x5B, 0xFF, 0x42, 0x1D, 0xB4, 0x4F, 0x6D, 0x96, 0x12, 0xAA, 0x52, 0xA4, 0xB3, 0xE2, 0x00)),
                 die: RawDie.ten,
+                color: DieModel.ColorCode.A.rawValue,
                 rotation: 0.0,
                 result: [],
                 displayState: 0
@@ -187,6 +188,7 @@ extension DiceModel {
             DieModel(
                 id: UUID(uuid: (0x4C, 0xC8, 0x9B, 0xC8, 0x12, 0x90, 0x41, 0xAE, 0x9F, 0xAE, 0xE9, 0x8E, 0xA5, 0xD0, 0xF3, 0x4C)),
                 die: RawDie.ten,
+                color: DieModel.ColorCode.B.rawValue,
                 rotation: 0.0,
                 result: [],
                 displayState: 0
@@ -219,6 +221,7 @@ extension DiceModel {
             DieModel(
                 id: UUID(uuid: (0xCA, 0xE4, 0xEF, 0xCB, 0xD0, 0x79, 0x42, 0x49, 0x83, 0x78, 0xB0, 0x1E, 0x09, 0x53, 0x68, 0x6B)),
                 die: RawDie.ten,
+                color: DieModel.ColorCode.C.rawValue,
                 rotation: 0.0,
                 result: [],
                 displayState: 0
@@ -226,6 +229,7 @@ extension DiceModel {
             DieModel(
                 id: UUID(uuid: (0x1E, 0xA3, 0x96, 0xF4, 0x8B, 0x11, 0x4B, 0x29, 0x9F, 0x22, 0x0B, 0x3E, 0xA2, 0x9C, 0x35, 0xAC)),
                 die: RawDie.ten,
+                color: DieModel.ColorCode.D.rawValue,
                 rotation: 0.0,
                 result: [],
                 displayState: 0

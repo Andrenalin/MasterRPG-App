@@ -8,7 +8,7 @@ import Testing
 @testable import AudioRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct AudioRPGDynamicPreviewSnapshotTests {
     // snapshot-root: AudioRPG::AudioPlayerPlaybackControls
     @Test("AudioPlayerPlaybackControls")

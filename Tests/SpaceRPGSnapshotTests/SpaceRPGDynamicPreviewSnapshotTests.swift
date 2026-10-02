@@ -8,7 +8,7 @@ import Testing
 @testable import SpaceRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct SpaceRPGDynamicPreviewSnapshotTests {
     // snapshot-root: SpaceRPG::DetailRootView
     @Test("DetailRootView")

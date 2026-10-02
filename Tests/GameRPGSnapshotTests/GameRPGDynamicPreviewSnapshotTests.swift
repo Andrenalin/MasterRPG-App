@@ -11,7 +11,7 @@ import Testing
 @testable import GameRPG
 
 @MainActor
-@Suite(.disabled(if: SnapshotTestAvailability.isDisabledForCurrentXcode, "Snapshot tests are disabled on Xcode 26."), .serialized, .snapshots, .tags(.snapshot))
+@Suite(.serialized, .snapshots, .tags(.snapshot))
 struct GameRPGDynamicPreviewSnapshotTests {
     // snapshot-root: GameRPG::AttachmentSection
     @Test("AttachmentSection")
