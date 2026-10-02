@@ -4,10 +4,9 @@ import CoreGraphics
 import CoreRPG
 import Foundation
 
-// Fan-placement math lives in MapOverlayFanGeometry.swift, loupe placement
-// math in MapOverlayLoupeGeometry.swift, and their shared CGPoint/CGRect
-// helpers in MapOverlayGeometryHelpers.swift — split out of this file. See
-// CODE_AUDIT §9.13.
+// Loupe placement math lives in MapOverlayLoupeGeometry.swift, and the shared
+// CGRect helpers in MapOverlayGeometryHelpers.swift — split out of this file.
+// See CODE_AUDIT §9.13.
 
 /// Pure needle-drag conversion. Gesture locations are expressed in viewport
 /// space while persisted room coordinates live in logical map space.

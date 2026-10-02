@@ -329,8 +329,6 @@ enum NeedleMapPinButtonType: String, CaseIterable, Hashable {
         case .add: "plus"
         }
     }
-
-    var label: String { rawValue.capitalized }
 }
 
 #Preview(traits: .mockData) {

@@ -7,7 +7,7 @@ import Testing
 
 @testable import MapRPG
 
-@Suite("Map pin popover geometry")
+@Suite("Map popover geometry")
 struct MapPopoverGeometryTests {
     private let viewport = CGRect(x: 0, y: 0, width: 1_000, height: 800)
     private let contentSize = CGSize(width: 80, height: 320)
@@ -94,6 +94,70 @@ struct MapPopoverGeometryTests {
         // Clamped back into the viewport, the panel overlaps its pin.
         #expect(placement.isFullyVisible)
         #expect(placement.frame.intersects(source))
+    }
+
+    @Test("Needle popover sits in a row above the needle and points down at its head")
+    func needleRowPrefersTop() {
+        // Given
+        let needle = CGRect(x: 478, y: 300, width: 44, height: 110)
+        let rowSize = CGSize(width: 112, height: 56)
+
+        // When
+        let placement = MapPopoverGeometry.placement(
+            source: needle,
+            contentSize: rowSize,
+            viewport: viewport,
+            preferredSides: [.top, .bottom]
+        )
+
+        // Then
+        #expect(placement.side == .top)
+        #expect(placement.isFullyVisible)
+        #expect(placement.frame.maxY == needle.minY - MapPopoverGeometry.sourceGap)
+        #expect(placement.frame.size == CGSize(
+            width: rowSize.width,
+            height: rowSize.height + MapPopoverGeometry.arrowLength
+        ))
+        #expect(placement.frame.minX + placement.arrowOffset == needle.midX)
+    }
+
+    @Test("Needle popover flips below the needle tip when there is no room above")
+    func needleRowFlipsBelow() {
+        // Given
+        let needle = CGRect(x: 478, y: 20, width: 44, height: 110)
+
+        // When
+        let placement = MapPopoverGeometry.placement(
+            source: needle,
+            contentSize: CGSize(width: 112, height: 56),
+            viewport: viewport,
+            preferredSides: [.top, .bottom]
+        )
+
+        // Then
+        #expect(placement.side == .bottom)
+        #expect(placement.isFullyVisible)
+        #expect(placement.frame.minY == needle.maxY + MapPopoverGeometry.sourceGap)
+        #expect(!placement.frame.intersects(needle))
+    }
+
+    @Test("Needle popover never moves beside the needle, and stays inside the viewport at a side edge")
+    func needleRowStaysVerticalAtSideEdge() {
+        // Given
+        let needle = CGRect(x: 0, y: 300, width: 44, height: 110)
+
+        // When
+        let placement = MapPopoverGeometry.placement(
+            source: needle,
+            contentSize: CGSize(width: 112, height: 56),
+            viewport: viewport,
+            preferredSides: [.top, .bottom]
+        )
+
+        // Then
+        #expect(placement.side == .top)
+        #expect(placement.frame.minX == MapPopoverGeometry.edgeInset)
+        #expect(placement.isFullyVisible)
     }
 
     @Test("Popover is invalid until its content has been measured")

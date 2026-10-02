@@ -2,19 +2,9 @@
 
 import CoreGraphics
 
-/// Shared `CGPoint`/`CGRect` helpers used by the map overlay geometry family
-/// (`MapOverlayGeometry.swift`, `MapOverlayFanGeometry.swift`,
-/// `MapOverlayLoupeGeometry.swift`) — hoisted out when that file was split.
-/// See CODE_AUDIT §9.13.
-extension CGPoint {
-    func clamped(to rect: CGRect) -> CGPoint {
-        CGPoint(
-            x: min(max(x, rect.minX), rect.maxX),
-            y: min(max(y, rect.minY), rect.maxY)
-        )
-    }
-}
-
+/// Shared `CGRect` helpers used by the map overlay geometry family
+/// (`MapOverlayGeometry.swift`, `MapOverlayLoupeGeometry.swift`) — hoisted out
+/// when that file was split. See CODE_AUDIT §9.13.
 extension CGRect {
     var center: CGPoint {
         CGPoint(x: midX, y: midY)
