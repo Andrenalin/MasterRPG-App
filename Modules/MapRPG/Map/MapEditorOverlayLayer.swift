@@ -87,7 +87,6 @@ private struct MapPinViewportMenuLayer: View {
     let onDismiss: () -> Void
 
     var body: some View {
-#if os(iOS) || os(macOS)
         if let node = expandedNode, context != .none, let source = pinRectangle(for: node) {
             MapPinActionPopover(
                 model: node,
@@ -104,36 +103,8 @@ private struct MapPinViewportMenuLayer: View {
             .transition(.opacity)
             .zIndex(10)
         }
-#else
-        if let node = expandedNode, context != .none {
-            let anchor = geometry.viewportPoint(fromContent: node.pin.location, transform: transform)
-            let placement = MapAdaptiveFanGeometry.verticalPlacement(
-                anchor: anchor,
-                itemCount: context.actions.count,
-                viewport: viewportRectangle,
-                preferredDirection: .bottom
-            )
-            if placement.isValid {
-                MapPinActionMenuFan(
-                    model: node,
-                    context: context,
-                    placement: placement
-                )
-                .frame(
-                    width: containerSize.width,
-                    height: containerSize.height,
-                    alignment: .topLeading
-                )
-                // Scale transitions can temporarily separate Liquid Glass
-                // rendering from Button hit regions on touch/spatial input.
-                .transition(.opacity)
-                .zIndex(10)
-            }
-        }
-#endif
     }
 
-#if os(iOS) || os(macOS)
     /// The pin's on-screen frame, used as the popover source. Derived from the
     /// displayed transform, so the popover follows the pin while panning.
     private func pinRectangle(for node: MapPinNode) -> CGRect? {
@@ -151,7 +122,6 @@ private struct MapPinViewportMenuLayer: View {
             height: height
         )
     }
-#endif
 
     private var expandedNode: MapPinNode? {
         pins.isExpandedId.flatMap(pins.pinNode(for:))

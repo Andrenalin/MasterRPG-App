@@ -5,12 +5,10 @@ import PhotoRPG
 import SwiftUI
 
 // Pin action menu in the style of the game master's side menu
-// (`MasterModuleWindowMenu`): circular Liquid Glass buttons, and bordered
-// buttons on visionOS. On iOS and macOS the buttons sit in a popover-styled
-// panel pointing at the pin; on tvOS and visionOS they fan out next to the pin.
-// The actions are the same as `MapPinActionContext.actions`.
+// (`MasterModuleWindowMenu`): circular buttons in a popover-styled glass panel
+// pointing at the pin, on every platform. The actions are the same as
+// `MapPinActionContext.actions`.
 
-#if os(iOS) || os(macOS)
 /// Presents the expanded pin's actions in a popover-styled glass panel.
 ///
 /// The panel is drawn in viewport space instead of using a system popover. A
@@ -25,11 +23,11 @@ struct MapPinActionPopover: View {
     let source: CGRect
     /// The unobscured viewport area the panel must stay inside.
     let viewportRectangle: CGRect
-    /// Closes the panel. Called by Escape, which a system popover would handle itself.
+    /// Closes the panel. Called by Escape (the Menu button on tvOS), which a
+    /// system popover would handle itself.
     let onDismiss: () -> Void
 
     @State private var contentSize = CGSize.zero
-    @FocusState private var isFocused: Bool
 
     var body: some View {
         let placement = MapPopoverGeometry.placement(
@@ -50,11 +48,53 @@ struct MapPinActionPopover: View {
             // Taps between the buttons must not fall through and clear the
             // pin selection on the canvas.
             .contentShape(shape)
-            .glassEffect(.regular, in: shape)
+            .modifier(MapPopoverPanelBackground(shape: shape))
             .opacity(placement.isValid ? 1 : 0)
             .position(x: placement.frame.midX, y: placement.frame.midY)
-            // Escape closes the panel on macOS and with a hardware keyboard on iPad, as it does
-            // a system popover. See CODE_AUDIT_20 §8.5.
+            .modifier(MapPopoverDismissal(onDismiss: onDismiss))
+    }
+}
+
+/// The panel's glass: Liquid Glass, and a material on visionOS, where Liquid Glass is
+/// unavailable.
+private struct MapPopoverPanelBackground: ViewModifier {
+    let shape: MapPopoverShape
+
+    func body(content: Content) -> some View {
+#if os(visionOS)
+        // Not `glassBackgroundEffect`: the system glass is its own 3D layer. Inside the
+        // canvas' clip it stays at the viewport origin instead of following the pin, and
+        // the buttons on it are not drawn.
+        content.background(.regularMaterial, in: shape)
+#elseif os(tvOS)
+        // The section lets the focus engine reach the panel from a pin that is not
+        // directly in line with it.
+        content
+            .glassEffect(.regular, in: shape)
+            .focusSection()
+#else
+        content.glassEffect(.regular, in: shape)
+#endif
+    }
+}
+
+/// Closes the panel from the keyboard or the remote, as a system popover does.
+private struct MapPopoverDismissal: ViewModifier {
+    let onDismiss: () -> Void
+
+#if !os(tvOS)
+    @FocusState private var isFocused: Bool
+#endif
+
+    func body(content: Content) -> some View {
+#if os(tvOS)
+        // The focus engine has to land on the buttons, so the panel itself must not be
+        // focusable; the Menu button closes it while one of them is focused.
+        content.onExitCommand(perform: onDismiss)
+#else
+        // Escape closes the panel on macOS and with a hardware keyboard on iPad and
+        // visionOS, as it does a system popover. See CODE_AUDIT_20 §8.5.
+        content
             .focusable()
             .focused($isFocused)
             .focusEffectDisabled()
@@ -63,6 +103,7 @@ struct MapPinActionPopover: View {
                 return .handled
             }
             .task { isFocused = true }
+#endif
     }
 }
 
@@ -145,7 +186,6 @@ private extension MapPopoverSide {
         }
     }
 }
-#endif
 
 /// A vertical column of pin action buttons, laid out like the master side menu.
 struct MapPinActionMenuStack: View {
@@ -163,8 +203,7 @@ struct MapPinActionMenuStack: View {
                         model: model,
                         type: type,
                         context: context,
-                        photoSpace: photoSpace,
-                        layout: .panel
+                        photoSpace: photoSpace
                     )
                 }
             }
@@ -181,58 +220,11 @@ struct MapPinActionMenuStack: View {
     }
 }
 
-/// Places the pin action buttons on the adaptive fan next to the pin
-/// (tvOS and visionOS; iOS and macOS use `MapPinActionPopover`).
-struct MapPinActionMenuFan: View {
-    let model: MapPinNode
-    let context: MapPinActionContext
-    let placement: MapAdaptiveFanPlacement
-
-    @Namespace private var photoSpace
-
-    var body: some View {
-        GlassEffectContainerAll {
-            ZStack(alignment: .topLeading) {
-                ForEach(context.actions.enumerated(), id: \.element) { index, type in
-                    MapPinActionMenuButton(
-                        model: model,
-                        type: type,
-                        context: context,
-                        photoSpace: photoSpace,
-                        layout: .fan
-                    )
-                    // Position must remain the outer layout modifier. Applying
-                    // glass or a content shape after `position` resolves them
-                    // against the full map.
-                    .position(placement.center(at: index) ?? placement.sourceAnchor)
-                    .zIndex(Double(index + 1))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
-        .modifier(
-            MapPinPhotoSelectionModifier(
-                model: model,
-                context: context,
-                photoSpace: photoSpace
-            )
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-}
-
 struct MapPinActionMenuButton: View {
-    /// Where the button is placed: in the glass panel of the popover, or on the fan.
-    enum Layout {
-        case panel
-        case fan
-    }
-
     let model: MapPinNode
     let type: MapPinButtonType
     let context: MapPinActionContext
     let photoSpace: Namespace.ID
-    var layout: Layout = .panel
 
     private var pin: MapPinModel { model.pin }
 
@@ -247,10 +239,10 @@ struct MapPinActionMenuButton: View {
             }
             .labelStyle(.iconOnly)
             .imageScale(.large)
-            .modifier(MapPinActionButtonSize(layout: layout))
+            .padding(8)
             .contentShape(.circle)
         }
-        .modifier(MapPinActionButtonAppearance(tint: type.tint(for: pin), layout: layout))
+        .modifier(MapPinActionButtonAppearance(tint: type.tint(for: pin)))
         .help(Text(type.localizedLabel(for: pin)))
         .applyIf(type == .photo) {
             $0.matchedTransitionSource(id: type.label, in: photoSpace)
@@ -258,56 +250,22 @@ struct MapPinActionMenuButton: View {
     }
 }
 
-/// The fan spaces its buttons for `MapAdaptiveFanGeometry.buttonSize`, so a fan button keeps
-/// that size whatever the platform's font or button insets are; a panel button is sized by its
-/// content. See CODE_AUDIT_20 §8.4.
-private struct MapPinActionButtonSize: ViewModifier {
-    let layout: MapPinActionMenuButton.Layout
-
-    func body(content: Content) -> some View {
-        switch layout {
-        case .panel:
-            content.padding(8)
-        case .fan:
-            content.frame(
-                width: MapAdaptiveFanGeometry.buttonSize.width,
-                height: MapAdaptiveFanGeometry.buttonSize.height
-            )
-        }
-    }
-}
-
-/// Mirrors `GameWindowButtonAppearance`: tinted glass circles on the fan, flat tinted circles
-/// inside the (already glass) popover panel, bordered buttons on visionOS and the glass button
-/// style on tvOS, whose focus feedback comes from the style.
+/// Flat tinted circles inside the (already glass) popover panel. tvOS and visionOS use the
+/// bordered button style, whose focus and hover feedback comes from the style.
 private struct MapPinActionButtonAppearance: ViewModifier {
     let tint: Color
-    let layout: MapPinActionMenuButton.Layout
 
     func body(content: Content) -> some View {
-#if os(visionOS)
+#if os(tvOS) || os(visionOS)
         content
             .buttonStyle(.bordered)
             .buttonBorderShape(.circle)
             .tint(tint)
-#elseif os(tvOS)
-        content
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .tint(tint)
 #else
-        switch layout {
-        case .panel:
-            content
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .background(tint.opacity(0.7), in: .circle)
-        case .fan:
-            content
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .glassEffect(.regular.tint(tint.opacity(0.7)).interactive(), in: .circle)
-        }
+        content
+            .buttonStyle(.plain)
+            .foregroundStyle(.white)
+            .background(tint.opacity(0.7), in: .circle)
 #endif
     }
 }
