@@ -72,6 +72,26 @@ struct SheetRootModelSelectionTests {
         #expect(linkedSheet.isShown)
     }
 
+    /// The header name and the description row cache their own `LinkHighlightTextModel`
+    /// (`.item` / `.itemContent`), which ignores the `text` argument once cached — so a
+    /// reconcile has to reset both, or a renamed description keeps showing the old text.
+    @Test func reconcileRefreshesCachedItemNameAndDescriptionText() {
+        let (rootModel, _) = makeRootModel()
+        let sheetModel = rootModel.sheetModel
+        let itemId = sheetModel.source.itemId
+        let nameModel = rootModel.linkTextModel(for: .item(itemId), text: sheetModel.name)
+        let descriptionModel = rootModel.linkTextModel(for: .itemContent(itemId), text: "Old description")
+
+        sheetModel.name = "Renamed"
+        sheetModel.description = "New description"
+        sheetModel.hasChanged = true
+        rootModel.performReconcile()
+
+        #expect(nameModel.text == "Renamed")
+        #expect(descriptionModel.text == "New description")
+        #expect(!sheetModel.hasChanged)
+    }
+
     @Test func duplicateDomainIdentifiersReceiveDistinctModelIDsAndSelectIndependently() async throws {
         let sharedItemID = UUID()
         let sharedEntryID = UUID()

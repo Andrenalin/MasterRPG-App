@@ -55,8 +55,10 @@ extension SheetRootModel {
     private func resetChangedLinkModels(in sheetModel: SheetModel) {
         if sheetModel.hasChanged {
             let lookupId = sheetModel.source.entryId ?? sheetModel.source.itemId
+            // Keys must match the ones `SheetView` renders with: `.item` for the header
+            // name, `.itemContent` for the description row below it.
             linkTextModel[.item(sheetModel.source.itemId)]?.reset(text: sheetModel.name)
-            linkTextModel[.entry(lookupId)]?.reset(text: sheetModel.description)
+            linkTextModel[.itemContent(sheetModel.source.itemId)]?.reset(text: sheetModel.description)
             linkTextModel[.entryContent(lookupId)]?.reset(text: sheetModel.description)
             sheetModel.hasChanged = false
         }
