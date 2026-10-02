@@ -75,13 +75,14 @@ struct MapEditor: View {
                             isTileEditor: configuration.isTileEditor
                         )
                     )
-#if os(iOS)
                     // The map renders beneath the editor bars, while their
                     // material remains an explicit non-map interaction layer.
                     // Toolbar taps therefore cannot fall through and append a
                     // room coordinate.
-                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar, .bottomBar)
-                    .toolbarBackgroundVisibility(.visible, for: .navigationBar, .bottomBar)
+                    .modifier(MapEditorBottomBarBackdropModifier())
+#if os(iOS)
+                    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                    .toolbarBackgroundVisibility(.visible, for: .navigationBar)
                     // The title and subtitle toolbar items would otherwise open
                     // the large-title bar, which covers a tall strip of the map.
                     .navigationBarTitleDisplayMode(.inline)
@@ -360,6 +361,29 @@ private struct MapEditorCanvasSafeAreaModifier: ViewModifier {
             content.ignoresSafeArea(.container, edges: [.top, .bottom])
         } else {
             content
+        }
+#else
+        content
+#endif
+    }
+}
+
+/// Blurs the map under the editor's bottom bar on iOS and visionOS, like the navigation bar's
+/// material, to show that the map takes no taps there.
+///
+/// `toolbarBackground(_:for:)` draws nothing for `.bottomBar` since iOS 26, and visionOS has no
+/// bar background at all, so the editor draws the strip itself.
+private struct MapEditorBottomBarBackdropModifier: ViewModifier {
+    func body(content: Content) -> some View {
+#if os(iOS) || os(visionOS)
+        content.overlay(alignment: .bottom) {
+            // A zero-height view on the safe area's bottom edge. Its background extends over
+            // the bottom safe area, which is exactly the strip the bar covers.
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 0)
+                .background(.ultraThinMaterial, ignoresSafeAreaEdges: .bottom)
+                .accessibilityHidden(true)
         }
 #else
         content
