@@ -82,6 +82,9 @@ struct MapEditor: View {
                     // room coordinate.
                     .toolbarBackground(.ultraThinMaterial, for: .navigationBar, .bottomBar)
                     .toolbarBackgroundVisibility(.visible, for: .navigationBar, .bottomBar)
+                    // The title and subtitle toolbar items would otherwise open
+                    // the large-title bar, which covers a tall strip of the map.
+                    .navigationBarTitleDisplayMode(.inline)
 #endif
                 }
             } else {
