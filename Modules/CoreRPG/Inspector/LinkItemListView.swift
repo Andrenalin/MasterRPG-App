@@ -118,7 +118,9 @@ public struct LinkItemListView: View {
                     )
                     .applyIf(type != .inspector && type != .selectionInline) { content in
                         content
-                            .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true)
+                            // A link window is closed with its window controls; only a
+                            // modal presentation needs the checkmark button.
+                            .toolbarItemListModifier(root: root, listControllable: root.folderLinkControllable, parentModel: nil, modal: true, showsDismissButton: type != .window)
                             .searchItemList(listControllable: root.folderLinkControllable)
                             .navigationTitle(Text(verbatim: root.configurable.module.title))
                     }

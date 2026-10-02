@@ -4,8 +4,10 @@ import SwiftUI
 import TipKit
 
 extension View {
-    public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessible)?, modal: Bool = false, dismissHandler: (() -> Void)? = nil) -> some View {
-        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal, dismissHandler: dismissHandler))
+    /// - Parameter showsDismissButton: Whether a `modal` list gets the checkmark button that
+    ///   closes it. Pass `false` for a list in its own window, which the window controls close.
+    public func toolbarItemListModifier(root: any ItemRootControllable, listControllable: any FolderListControllable, parentModel: (any ItemDataAccessible)?, modal: Bool = false, showsDismissButton: Bool = true, dismissHandler: (() -> Void)? = nil) -> some View {
+        modifier(ToolbarItemListViewModifier(root: root, listController: listControllable, parentModel: parentModel, modal: modal, showsDismissButton: showsDismissButton, dismissHandler: dismissHandler))
     }
 }
 
@@ -14,6 +16,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
     let listController: any FolderListControllable
     let parentModel: (any ItemDataAccessible)?
     let modal: Bool
+    let showsDismissButton: Bool
     let dismissHandler: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
@@ -51,7 +54,7 @@ struct ToolbarItemListViewModifier: ViewModifier {
 
 #if !os(macOS)
                 ToolbarItem(placement: .confirmationAction) {
-                    if modal == true {
+                    if modal == true && showsDismissButton {
                         ToolbarItemListDismissButtonView(dismissHandler: dismissHandler)
 #if os(visionOS)
                             .foregroundStyle(.primary)
@@ -187,12 +190,17 @@ private struct ToolbarItemListSecondaryActionMenuView: View {
 
     @ViewBuilder
     var body: some View {
-        // Use opacity/hidden instead of conditional presence to keep the toolbar preference
-        // tree stable across selection mode changes and navigation transitions.
-        MenuSelectionButtonView(listDisplayModel: listDisplayModel)
-            .opacity(!listDisplayModel.isSelectionMode && modal == false ? 1 : 0)
-            .allowsHitTesting(!listDisplayModel.isSelectionMode && modal == false)
-            .accessibilityHidden(listDisplayModel.isSelectionMode || modal)
+        // A link window (`modal`) has no selection mode. Opacity does not hide an item that
+        // collapsed into the overflow menu, so the button has to be left out there; `modal`
+        // never changes for a given list, which keeps the toolbar preference tree stable.
+        if modal == false {
+            // Use opacity/hidden instead of conditional presence to keep the toolbar preference
+            // tree stable across selection mode changes and navigation transitions.
+            MenuSelectionButtonView(listDisplayModel: listDisplayModel)
+                .opacity(listDisplayModel.isSelectionMode ? 0 : 1)
+                .allowsHitTesting(!listDisplayModel.isSelectionMode)
+                .accessibilityHidden(listDisplayModel.isSelectionMode)
+        }
         if parentModel == nil && modal == false {
             ControlGroup {
                 // `showTip: false` — the `.primaryAction` toolbar item above already carries
