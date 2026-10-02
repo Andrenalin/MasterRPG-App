@@ -113,19 +113,6 @@ private struct GameOverlayCapsuleControlStyleModifier: ViewModifier {
 }
 
 #if os(iOS) || os(macOS)
-/// A hit-test rectangle centred on the view that is never smaller than the
-/// HIG minimum touch target. Used as a `contentShape` it enlarges the tappable
-/// area of a compact control without changing its layout size.
-private struct MinimumHitAreaShape: Shape {
-    var minimumSize: CGFloat = 44
-
-    func path(in rect: CGRect) -> Path {
-        let width = max(rect.width, minimumSize)
-        let height = max(rect.height, minimumSize)
-        return Path(CGRect(x: rect.midX - width / 2, y: rect.midY - height / 2, width: width, height: height))
-    }
-}
-
 private struct GameOverlayControlButtonStyle: ButtonStyle {
     let isSelected: Bool
     let tint: Color
@@ -136,7 +123,7 @@ private struct GameOverlayControlButtonStyle: ButtonStyle {
             .padding(8)
             .glassEffect(glass, in: .circle)
             // Keeps the compact glass size but hit-tests at least 44×44 pt (HIG).
-            .contentShape(MinimumHitAreaShape())
+            .minimumHitArea()
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
     }
 
@@ -159,7 +146,7 @@ private struct GameOverlayCapsuleButtonStyle: ButtonStyle {
             .padding(8)
             .glassEffect(glass, in: .capsule)
             // Keeps the compact glass size but hit-tests at least 44×44 pt (HIG).
-            .contentShape(MinimumHitAreaShape())
+            .minimumHitArea()
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
     }
 

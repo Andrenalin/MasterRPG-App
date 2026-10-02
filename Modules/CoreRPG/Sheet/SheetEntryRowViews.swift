@@ -172,11 +172,13 @@ struct SheetEntryMainRowView: View {
                         Text("Ask AI about this entry", bundle: .module)
                     } icon: {
                         Image(systemName: "questionmark.bubble")
+                            .imageScale(.large)
                     }
+                    .padding(8)
+                    .minimumHitArea()
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
-                .frame(minWidth: 44, minHeight: 44)
                 .disabled(!hasDetailContent)
                 .help(Text("Ask AI about this entry", bundle: .module))
             }
@@ -294,21 +296,21 @@ struct SheetEntryEditTypeIndicatorView: View {
                 } icon: {
                     Image(systemName: entryModel.editType.icon)
                 }
+                .padding(4)
+                .background {
+                    Circle().stroke(
+                        theme.tint(for: entryModel.source.typeId).opacity(0.3)
+                    )
+                }
+                // Enlarges the tap target to 44×44 pt without growing the row or
+                // stretching the stroked circle — see CODE_AUDIT_Sheet §8.2. Lives on
+                // the label so it's the shape the button itself hit-tests with.
+                .minimumHitArea()
             }
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
             .imageScale(.small)
             .foregroundStyle(.foreground, .tint)
-            .padding(4)
-            .background {
-                Circle().stroke(
-                    theme.tint(for: entryModel.source.typeId).opacity(0.3)
-                )
-            }
-            // Matches SheetEntryMainRowView's "Ask AI about this entry" button — see
-            // CODE_AUDIT_Sheet §8.2. Applied after `.background` so it enlarges the tap
-            // target without stretching the stroked circle to fill it.
-            .frame(minWidth: 44, minHeight: 44)
 #if !os(tvOS)
             .popover(isPresented: $isPickerPresented, arrowEdge: .leading) {
                 Picker(

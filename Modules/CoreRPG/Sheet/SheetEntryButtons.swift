@@ -38,6 +38,8 @@ struct SheetEntryEditButton: View {
             }
             .applyIf(onlyIcon) {
                 $0.labelStyle(.iconOnly)
+                    .padding(8)
+                    .minimumHitArea()
             }
         }
         .borderLessTVButtonStyle()

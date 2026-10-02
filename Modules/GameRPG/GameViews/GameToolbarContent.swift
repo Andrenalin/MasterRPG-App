@@ -69,6 +69,7 @@ struct GameToolbarContent: ToolbarContent {
             )
 
             BatteryView()
+                .padding(.trailing, 8)
         }
 
         if role == .master || root.gameModel.gameType != .observer {

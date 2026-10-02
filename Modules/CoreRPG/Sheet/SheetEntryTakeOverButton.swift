@@ -22,12 +22,14 @@ struct SheetEntryTakeOverButton: View {
             }
             .applyIf(onlyIcon) {
                 $0.labelStyle(.iconOnly)
+                    .imageScale(.large)
+                    .padding(8)
+                    .minimumHitArea()
             }
         }
         .applyIf(onlyIcon) {
             $0
                 .buttonStyle(.borderless)
-                .frame(minWidth: 44, minHeight: 44)
                 .foregroundStyle(.green)
                 .help(Text("Take over generated content", bundle: .module))
         }

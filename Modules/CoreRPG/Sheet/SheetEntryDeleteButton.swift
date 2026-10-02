@@ -23,11 +23,12 @@ struct SheetEntryDeleteButton: View {
             }
             .applyIf(onlyIcon) {
                 $0.labelStyle(.iconOnly)
+                    .padding(8)
+                    .minimumHitArea()
             }
         }
         .foregroundStyle(.white, .red, .red)
         .borderLessTVButtonStyle()
-        .applyIf(onlyIcon) { $0.frame(minWidth: 44, minHeight: 44) }
         .keyboardShortcutAll("r", modifiers: .shift)
     }
 }
