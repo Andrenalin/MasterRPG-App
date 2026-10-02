@@ -44,7 +44,7 @@ struct WindowLinkList: Scene {
 
             windowGroup(model: appModel, module: .weather, key: "0", content: appModel.weatherRoot.viewController.linkListView(type: .window, itemSelectionModel: appModel.weatherRoot.linkSelectionModel))
         }
-        .defaultSize(CGSize(width: 400, height: 800))
+        .defaultSize(CGSize(width: 500, height: 800))
     }
     
     private func windowGroup<Content: View>(model: AppModel, module: NetworkModules, key: KeyEquivalent, content: Content) -> some Scene {
