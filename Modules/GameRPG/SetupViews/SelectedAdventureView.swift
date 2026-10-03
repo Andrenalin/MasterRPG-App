@@ -174,10 +174,12 @@ private struct SelectedAdventureViewImportOrClearButtonView: View {
         !root.mapRoot.gameControllable.gameModel.items.isEmpty
     }
 
+    /// Clears the saved game from every module, not only maps: the other modules kept their
+    /// staged copies (and files) until the next game. See CODE_AUDIT_Folder §5.25.
     private func clearMapGameItems() {
-        let mapGameControllable = root.mapRoot.gameControllable
+        let adventureGameControllable = root.adventureRoot.adventureGameControllable
         Task {
-            await mapGameControllable.reset()
+            await adventureGameControllable.resetGame()
         }
     }
 }

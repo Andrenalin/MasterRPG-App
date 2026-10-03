@@ -185,20 +185,22 @@ extension GameController: TableGameStorable {
             return true
         }
 
-        let previousIdentities = await tableObjectIdentities()
-
         // Import into game memory first. Do not call generic updateGame here:
         // even its hidden/store path appends the root to gameModel.items and can
         // accidentally turn a cache-only package into the current presentation.
         // Persisting before the CRDT merge would also overwrite a player's
         // same-ID Table with the master's raw snapshot.
+        let appliedIds: Set<UUID>
         do {
-            try await importNetwork(from: encodedData)
+            appliedIds = try await importNetwork(from: encodedData)[.table] ?? []
         } catch {
             throw ItemGameStorableError.networkDecoding
         }
 
-        let importedTables = await newlyImportedTables(comparedWith: previousIdentities)
+        // The ids the import wrote, not a change of object identity: a table already in game
+        // memory is updated in place, so a second delivery of an edited table looked like
+        // nothing was imported. See CODE_AUDIT_Folder §5.10.
+        let importedTables = await gameTables(for: appliedIds)
         var importedVersions = await versions(of: importedTables)
         guard importedTables[itemId] != nil else { return false }
 
@@ -235,27 +237,19 @@ extension GameController: TableGameStorable {
     }
 
     @MainActor
-    private func tableObjectIdentities() -> [UUID: ObjectIdentifier] {
-        gameModel.itemData.reduce(into: [:]) { result, entry in
-            guard let table = entry.value as? TableModel else { return }
-            result[entry.key] = ObjectIdentifier(table)
-        }
-    }
-
-    @MainActor
-    private func newlyImportedTables(comparedWith previous: [UUID: ObjectIdentifier]) -> [UUID: TableModel] {
-        gameModel.itemData.reduce(into: [:]) { result, entry in
-            guard let table = entry.value as? TableModel,
-                  previous[entry.key] != ObjectIdentifier(table)
-            else { return }
-            result[entry.key] = table
+    private func gameTables(for ids: Set<UUID>) -> [UUID: TableModel] {
+        ids.reduce(into: [:]) { result, id in
+            if let table = gameModel.itemData[id] as? TableModel {
+                result[id] = table
+            }
         }
     }
 
     @MainActor
     private func persistCurrentTable(itemId: UUID) {
         guard let table = gameModel.itemData[itemId] as? TableModel else { return }
-        itemController.replaceForGame(model: table, isInsert: true, policy: .persist)
+        // Merged with the player's library copy, keeping its folder. See CODE_AUDIT_Folder §5.23.
+        itemController.persistFromGame(model: table, authoritative: false)
     }
 
     @MainActor

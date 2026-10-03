@@ -114,6 +114,13 @@ public extension EditControllable {
         item.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         editorModel.cacheItemListModel.reset(cacheType: .name, itemId: item.id, text: item.name.markDownText())
         save(updated: item, message: String(localized: "Typing", bundle: .module).localizedString, forceSave: forceSave)
+        // A folder's name is part of its descendants' file paths. Renaming it left their files
+        // under the old name. Only when the rename is persisted. See CODE_AUDIT_Folder §5.30.
+        if item.isFolder, forceSave || !itemControllable.itemDataModel.isGameMode {
+            for childId in item.entries.map(\.childId) where itemControllable.itemSync(for: childId, noGame: true)?.parentId == item.id {
+                movedFileTree(itemId: childId)
+            }
+        }
     }
 
     @MainActor func reset(tags: [String], itemId: UUID, forceSave: Bool = false) {
@@ -164,6 +171,9 @@ public extension EditControllable {
     
     @MainActor private func updateTags(addedTags: [String], removedTags: [String]) {
         tagController.add(tags: addedTags, module: itemControllable.config.module)
+        // Removed tags lose their count too; otherwise they stayed in suggestions forever.
+        // See CODE_AUDIT_Folder §5.19.
+        tagController.remove(tags: removedTags, module: itemControllable.config.module)
     }
 }
 
@@ -221,16 +231,22 @@ public extension EditControllable {
 
     @MainActor func willRepairOrphan(itemId: UUID) {}
 
+    /// Removes `itemId` from every folder other than its own parent. After an import moved the
+    /// item (to another folder or to root), its old folder still listed it. The loop used to
+    /// stop at the first folder that did not contain the item, and skipped items moved to
+    /// root entirely. See CODE_AUDIT_Folder §5.6.
     @MainActor func repairFolder(itemId: UUID) {
-        guard let item = editModel(for: itemId), item.parentId != nil else { return }
+        guard let item = itemControllable.itemSync(for: itemId) else { return }
+        let parentId = item.parentId
         for id in itemControllable.itemDataModel.items {
-            guard id != item.parentId, let checkItem = itemControllable.itemSync(for: id), checkItem.isFolder else { continue }
-            guard let index = checkItem.entries.firstIndex(where: { $0.childId == itemId }) else { return }
-            guard let folderItem = editModel(for: id) else { return }
-            folderItem.entries.remove(at: index)
+            guard id != parentId,
+                  let checkItem = itemControllable.itemSync(for: id),
+                  checkItem.isFolder,
+                  checkItem.entries.contains(where: { $0.childId == itemId }),
+                  let folderItem = editModel(for: id) else { continue }
+            folderItem.entries.removeAll { $0.childId == itemId }
             save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module).localizedString)
         }
-        guard item.entries.isEmpty else { return }
     }
     
 }
@@ -238,8 +254,17 @@ public extension EditControllable {
 // MARK: - Group Items / Carousel Items
 
 public extension EditControllable {
+    /// Groups `childId` under the item `itemId`: the child is hidden and shown only as part of
+    /// that item. Folders and collections are not groups — a collection only references its
+    /// members and a folder only places them — so for those parents this adds the member like
+    /// "Add into" does, without hiding it. See CODE_AUDIT_Folder §5.16.
     @MainActor func addGroup(itemId: UUID, childId: UUID, forceSave: Bool = false) {
         guard let item = editModel(for: itemId) else { return }
+        if item.specialCategory {
+            guard item.id != childId, item.hasEntry(entryId: childId) == false else { return }
+            addItem(itemId: childId, parentId: itemId)
+            return
+        }
         guard item.id != childId && item.hasEntry(entryId: childId) == false else { return }
         let childItem = itemControllable.itemOrEmpty(for: childId)
         guard childItem.category != .folder && childItem.category != itemControllable.collectionCategory  else { return }
@@ -267,9 +292,57 @@ public extension EditControllable {
 
 // MARK: - Folder / Collection
 
+/// Where a folder or collection membership edit reads and writes.
+public enum FolderEditScope: Sendable {
+    /// The permanent library copy, persisted also during a running game. Edits from the library
+    /// UI use this: a plain `save` lands in game memory only during a game and is lost at game
+    /// end, while the file moves it triggers are real. See CODE_AUDIT_Folder §5.21.
+    case library
+    /// Whatever `editModel(for:)`/`save(updated:message:)` use now — the import repair, which
+    /// runs on game deliveries too.
+    case current
+}
+
 public extension EditControllable {
     @MainActor func addItem(itemId: UUID, parentId: UUID?) {
-        guard let parentId, itemId != parentId, let parentItem = editModel(for: parentId), var item = editModel(for: itemId) else { return }
+        addItem(itemId: itemId, parentId: parentId, scope: .library)
+    }
+
+    @MainActor func remove(itemId: UUID, parentId: UUID, oneUp: Bool) {
+        guard let parentItem = folderEditModel(for: parentId, scope: .library) else { return }
+        if parentItem.isFolder, itemControllable.itemSync(for: itemId, noGame: true)?.parentId == parentId {
+            removeItemFromParent(itemId: itemId, oneUp: oneUp, scope: .library)
+        } else {
+            // A collection, or a folder whose entry for this item is stale (the item lives in
+            // another folder or at root): only the entry is removed. Going through the item's own
+            // parent here left the stale entry with no way to remove it. See CODE_AUDIT_Folder §5.30.
+            parentItem.entries.removeAll(where: { $0.childId == itemId })
+            saveFolderEdit(parentItem, message: String(localized: "Removed item", bundle: .module).localizedLowercase.localizedString, scope: .library)
+        }
+    }
+
+    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true) {
+        removeItemFromParent(itemId: itemId, oneUp: oneUp, moveFiles: moveFiles, scope: .current)
+    }
+
+    @MainActor func cleanFolder(itemId: UUID) {
+        guard let item = editModel(for: itemId) else { return }
+        item.entries.removeAll {
+            guard let child = itemControllable.itemSync(for: $0.childId) else { return true }
+            if child.parentId != itemId {
+                return true
+            }
+            return false
+        }
+        save(updated: item, message: String(localized: "update folder", bundle: .module).localizedString)
+    }
+}
+
+extension EditControllable {
+    @MainActor func addItem(itemId: UUID, parentId: UUID?, scope: FolderEditScope) {
+        guard let parentId, itemId != parentId,
+              let parentItem = folderEditModel(for: parentId, scope: scope),
+              var item = folderEditModel(for: itemId, scope: scope) else { return }
         // Refuse a link that would make `itemId` an ancestor of itself: if `parentId` is
         // already reachable by descending from `itemId` through folder/collection membership,
         // linking `itemId` under `parentId` below would close the loop. Every recursive
@@ -277,19 +350,22 @@ public extension EditControllable {
         // `entries`/`childId` graph assuming it's acyclic and has no cycle guard of its own.
         guard !isDescendant(parentId, of: itemId) else { return }
         if parentItem.isFolder && item.parentId != nil {
-            removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false)
+            removeItemFromParent(itemId: itemId, oneUp: false, moveFiles: false, scope: scope)
+            guard let refreshed = folderEditModel(for: itemId, scope: scope) else { return }
+            item = refreshed
         }
 
         if item.isFolder && (parentItem.specialCategory && !parentItem.isFolder) {
             return
         }
-        
+
         var entries = parentItem.entries
         if parentItem.category != .item {
             let entry = Model.Entry.newChild(id: itemId)
             if parentItem.category == .folder {
                 entries.removeAll { $0.childId == itemId }
             }
+            // A collection only references its members and may list one several times.
             entries.append(entry)
             if parentItem.category == .folder {
                 entries = entries.sorted {
@@ -306,18 +382,38 @@ public extension EditControllable {
             if parentItem.category == .item {
                 item.displayState <=> 1
             }
-            save(updated: item, message: String(localized: "Added parent", bundle: .module).localizedString)
+            saveFolderEdit(item, message: String(localized: "Added parent", bundle: .module).localizedString, scope: scope)
             shouldCheckForMove = true
         }
 
         if parentItem.category != .item {
             parentItem.entries <=> entries
         }
-        save(updated: parentItem, message: String(localized: "Added item", bundle: .module).localizedString)
-        
+        saveFolderEdit(parentItem, message: String(localized: "Added item", bundle: .module).localizedString, scope: scope)
+
         if shouldCheckForMove {
-            movedFile(itemId: itemId)
+            movedFileTree(itemId: itemId)
         }
+    }
+
+    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true, scope: FolderEditScope) {
+        guard var item = folderEditModel(for: itemId, scope: scope), let parentId = item.parentId else { return }
+        item.parentId = nil
+        saveFolderEdit(item, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString, scope: scope)
+
+        guard let parentItem = folderEditModel(for: parentId, scope: scope) else { return }
+        var entries = parentItem.entries
+        entries.removeAll(where: { $0.childId == itemId })
+        parentItem.entries = entries
+        saveFolderEdit(parentItem, message: String(localized: "Removed item", bundle: .module).localizedLowercase.localizedString, scope: scope)
+
+        guard oneUp && parentItem.parentId != nil else {
+            if moveFiles {
+                movedFileTree(itemId: itemId)
+            }
+            return
+        }
+        addItem(itemId: itemId, parentId: parentItem.parentId, scope: scope)
     }
 
     /// Returns true if `candidateId` is reachable from `rootId` by descending through folder/
@@ -336,48 +432,45 @@ public extension EditControllable {
         return false
     }
 
-    @MainActor func remove(itemId: UUID, parentId: UUID, oneUp: Bool) {
-        guard let parentItem = editModel(for: parentId) else { return }
-        if parentItem.isFolder {
-            removeItemFromParent(itemId: itemId, oneUp: oneUp)
-        } else {
-            var entries = parentItem.entries
-            entries.removeAll(where: { $0.childId == itemId })
-            parentItem.entries = entries
-            save(updated: parentItem, message: String(localized: "Removed item", bundle: .module).localizedLowercase.localizedString)
+    @MainActor public func folderEditModel(for itemId: UUID, scope: FolderEditScope) -> Model? {
+        switch scope {
+        case .library:
+            itemControllable.itemSync(for: itemId, noGame: true)?.copy() as? Model
+        case .current:
+            editModel(for: itemId)
         }
     }
 
-    @MainActor func removeItemFromParent(itemId: UUID, oneUp: Bool, moveFiles: Bool = true) {
-        guard var item = editModel(for: itemId), let parentId = item.parentId else { return }
-        item.parentId = nil
-        save(updated: item, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString)
-            
-        guard let parentItem = editModel(for: parentId) else { return }
-        var entries = parentItem.entries
-        entries.removeAll(where: { $0.childId == itemId })
-        parentItem.entries = entries
-        save(updated: parentItem, message: String(localized: "Removed item", bundle: .module).localizedLowercase.localizedString)
-        
-        guard oneUp && parentItem.parentId != nil else {
-            if moveFiles {
-                movedFile(itemId: itemId)
+    @MainActor public func saveFolderEdit(_ item: Model, message: String, scope: FolderEditScope) {
+        switch scope {
+        case .current:
+            save(updated: item, message: message)
+        case .library:
+            validateBeforeSave(model: item)
+            guard !itemControllable.libraryModel(id: item.id, matches: item) else { return }
+            if let stored = itemControllable.itemSync(for: item.id, noGame: true) {
+                editorModel.undoManaged.previousValue(stored.copy(), title: message)
             }
-            return
+            itemControllable.persistMembershipChange(model: item)
         }
-        addItem(itemId: itemId, parentId: parentItem.parentId)
     }
-    
-    @MainActor func cleanFolder(itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
-        item.entries.removeAll {
-            guard let child = itemControllable.itemSync(for: $0.childId) else { return true }
-            if child.parentId != itemId {
-                return true
+
+    /// Moves the files of `itemId` and, for a folder, of everything below it, to match their
+    /// folder path. Moving a folder used to leave its descendants' files at the old path.
+    /// See CODE_AUDIT_Folder §5.30.
+    @MainActor func movedFileTree(itemId: UUID) {
+        var visited: Set<UUID> = []
+        var stack = [itemId]
+        while let current = stack.popLast(), visited.count < FolderTreeDepthLimit.max * FolderTreeDepthLimit.max {
+            guard visited.insert(current).inserted,
+                  let item = itemControllable.itemSync(for: current, noGame: true) else { continue }
+            movedFile(itemId: current)
+            if item.isFolder {
+                stack.append(contentsOf: item.entries.map(\.childId).filter {
+                    itemControllable.itemSync(for: $0, noGame: true)?.parentId == current
+                })
             }
-            return false
         }
-        save(updated: item, message: String(localized: "update folder", bundle: .module).localizedString)
     }
 }
 
@@ -406,7 +499,11 @@ public extension EditControllable {
         }
 
         collectChildren(from: items)
-        
+
+        // A folder and its child selected together listed the child twice.
+        // See CODE_AUDIT_Folder §5.30.
+        var seenIds: Set<UUID> = []
+        allRemovingItems = allRemovingItems.filter { seenIds.insert($0.itemId).inserted }
         allRemovingItems.forEach {
             markForDeletion(itemId: $0.itemId)
         }
@@ -447,9 +544,17 @@ public extension EditControllable {
         await recordOperation("EditControllable.delete(itemId:)")
 
         guard let item = await itemControllable.item(for: itemId) as? Model else { return }
+        let isTrashed = item.displayState == DisplayStateMask.totalHidden.rawValue
         await willDeleteChildren(of: item)
         for entry in item.entries {
             if item.category == .folder {
+                // Only a child that still belongs to this folder is part of it: a child the
+                // delete panel kept was moved out, and an entry left behind by a move can point
+                // at an item that lives elsewhere now. Purging a trashed folder deletes only
+                // children that are trashed themselves. See CODE_AUDIT_Folder §5.1.
+                guard let child = itemControllable.itemSync(for: entry.childId),
+                      child.parentId == item.id,
+                      !isTrashed || child.displayState == DisplayStateMask.totalHidden.rawValue else { continue }
                 await Task.yield()
                 await delete(itemId: entry.childId, visited: visited)
             } else if !item.specialCategory {
@@ -457,8 +562,12 @@ public extension EditControllable {
                 reset(displayState: 0, itemId: entry.childId)
             }
         }
-        
-        tagController.remove(tags: item.tags, module: itemControllable.config.module)
+
+        // A trashed item already gave its tags back in `markForDeletion`.
+        // See CODE_AUDIT_Folder §5.19.
+        if !isTrashed {
+            tagController.remove(tags: item.tags, module: itemControllable.config.module)
+        }
         linkRegisterController.repairLinks(for: [ItemRowModel(itemId: itemId, typeId: itemControllable.config.module)])
         linkRegisterController.resetUsedLink(for: ItemRowModel(itemId: itemId, typeId: itemControllable.config.module))
         
@@ -483,23 +592,25 @@ public extension EditControllable {
     @MainActor func duplicate(item: any ItemDataAccessible) async {
         await recordOperation("EditControllable.duplicate(item:)")
 
-        guard let model = editModel(for: item.id) else { return }
+        guard let model = folderEditModel(for: item.id, scope: .library) else { return }
         let originalParentId = model.parentId
-        let duplicate = await duplicateRecursively(model: model)
+        let duplicate = await duplicateRecursively(model: model, parentId: nil, visited: [])
 
         // Re-register the duplicate in the same parent folder
         if let parentId = originalParentId {
             addItem(itemId: duplicate.id, parentId: parentId)
         }
 
-        // Add the duplicate as a new reference in every collection that contains the original
-        if !model.isFolder {
+        // Add the duplicate as a new reference in every collection that contains the original.
+        // A collection only references its members, so this does not change the copy's
+        // visibility; `addGroup` hid it. See CODE_AUDIT_Folder §5.16.
+        if !model.specialCategory {
             let originalId = item.id
             for containerId in itemControllable.itemDataModel.items {
-                guard let container = itemControllable.itemSync(for: containerId),
-                      container.category == itemControllable.collectionCategory,
+                guard let container = itemControllable.itemSync(for: containerId, noGame: true),
+                      container.category.isCollection,
                       container.entries.contains(where: { $0.childId == originalId }) else { continue }
-                addGroup(itemId: containerId, childId: duplicate.id)
+                addItem(itemId: duplicate.id, parentId: containerId)
             }
         }
     }
@@ -511,18 +622,25 @@ public extension EditControllable {
     /// deleting the duplicate later deleted the real originals too) or at newly-random,
     /// now-nonexistent ids (for modules where `Entry.childId` is derived from the
     /// entry's own `id`, silently emptying the copy). See CODE_AUDIT_EditItem §5.1-§5.4.
-    @MainActor private func duplicateRecursively(model: Model) async -> Model {
-        await duplicateRecursively(model: model, visited: [])
-    }
-
+    ///
+    /// The copy gets its parent before it is stored. Setting it on the stored instance
+    /// afterwards compared the instance with itself inside `replace` and never persisted it.
+    /// The copy is persisted also during a running game. See CODE_AUDIT_Folder §5.5, §5.21.
+    ///
     /// - Parameter visited: Ids already visited on this recursive duplicate walk — same
     ///   cycle-defense rationale as `delete(itemId:visited:)`. See CODE_AUDIT_17 §5.14.
-    @MainActor private func duplicateRecursively(model: Model, visited: Set<UUID>) async -> Model {
+    @MainActor private func duplicateRecursively(model: Model, parentId: UUID?, visited: Set<UUID>) async -> Model {
         var visited = visited
         visited.insert(model.id)
 
-        let duplicate = model.duplicate()
-        itemControllable.replace(model: duplicate, isInsert: true)
+        var duplicate = model.duplicate()
+        duplicate.parentId = parentId
+        if model.category.isCollection {
+            // A collection's copy references the same members; `Entry.duplicate()` mints new
+            // ids, which for modules whose entry id is the member id pointed at nothing.
+            duplicate.entries = model.entries.map { Model.Entry.newChild(id: $0.childId) }
+        }
+        itemControllable.replace(model: duplicate, isInsert: true, forceSave: true)
 
         if let fileUrl = model.fileUrl {
             // File-to-file, and a failure is reported instead of silently leaving the copy
@@ -530,7 +648,7 @@ public extension EditControllable {
             do {
                 try await resetFile(copying: fileUrl, itemId: duplicate.id)
             } catch {
-                Logger.editController.error("duplicate(model:) failed to copy the file: \(error.localizedDescription, privacy: .public)")
+                Logger.editController.error("duplicate(model:) failed to copy the file: \(error.localizedDescription, privacy: .private)")
                 itemControllable.itemDataModel.lastPersistenceError = error
                 PersistenceIssueCenter.shared.recordFileError(error)
             }
@@ -544,86 +662,147 @@ public extension EditControllable {
         var newEntries: [Model.Entry] = []
         for entry in model.entries {
             guard !visited.contains(entry.childId), visited.count < FolderTreeDepthLimit.max,
-                  let childModel = editModel(for: entry.childId) else { continue }
-            var dupChild = await duplicateRecursively(model: childModel, visited: visited)
-            dupChild.parentId = duplicate.id
-            itemControllable.replace(model: dupChild, isInsert: false)
+                  let childModel = folderEditModel(for: entry.childId, scope: .library),
+                  childModel.parentId == model.id else { continue }
+            let dupChild = await duplicateRecursively(model: childModel, parentId: duplicate.id, visited: visited)
             newEntries.append(Model.Entry.newChild(id: dupChild.id))
         }
-        if let folderModel = editModel(for: duplicate.id) {
+        if let folderModel = folderEditModel(for: duplicate.id, scope: .library) {
             folderModel.entries = newEntries
-            save(updated: folderModel, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
+            saveFolderEdit(folderModel, message: String(localized: "Duplicate folder", bundle: .module).localizedString, scope: .library)
         }
         return duplicate
     }
-    
+
     @MainActor func markForDeletion(itemId: UUID) {
-        guard var item = editModel(for: itemId) else { return }
+        guard var item = editModel(for: itemId),
+              item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
+        // Idempotent: the delete panel marks again on Remove, and a second pass removed the
+        // tags twice. See CODE_AUDIT_Folder §5.19.
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
-        item.displayState = 2
+        item.displayState = DisplayStateMask.totalHidden.rawValue
         save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString)
     }
-    
+
     @MainActor func restore(itemId: UUID) {
+        restore(itemIds: [itemId])
+    }
+
+    /// Restores `itemIds` together. A child restored with its folder keeps its place in the
+    /// folder; restored one by one, the folder detached its still-trashed children first and
+    /// each child then landed at root. A child restored without its folder is taken out of the
+    /// folder's entries as well, so purging the folder later cannot delete it.
+    /// See CODE_AUDIT_Folder §5.1, §5.4.
+    @MainActor func restore(itemIds: [UUID]) {
+        let restoring = Set(itemIds)
+        for itemId in itemIds {
+            restore(itemId: itemId, restoring: restoring)
+        }
+    }
+
+    @MainActor private func restore(itemId: UUID, restoring: Set<UUID>) {
         trackOperation("EditControllable.restore(itemId:)")
 
-        guard var item = editModel(for: itemId) else { return }
+        // Only trashed items are restored: Cancel in an entry-removal panel passes items that
+        // were never trashed, and "restoring" them unhid group-hidden items.
+        guard var item = editModel(for: itemId),
+              item.displayState == DisplayStateMask.totalHidden.rawValue else { return }
+        let trashed = DisplayStateMask.totalHidden.rawValue
 
-        // If this is a folder being restored, handle children based on their deletion state
         if item.category == .folder {
+            // Children still in the trash that are not restored with the folder are detached
+            // from it, in both directions; entries for items that live elsewhere are dropped.
+            var keptEntries = item.entries
             for entry in item.entries {
-                if var entryItem = editModel(for: entry.childId) {
-                    if entryItem.displayState == DisplayStateMask.totalHidden.rawValue {
-                        // Child is still marked for deletion — detach it from the restored folder
-                        entryItem.parentId = nil
-                        save(updated: entryItem, message: String(localized: "Restore parent", bundle: .module).localizedString)
-                    } else {
-                        entryItem.parentId = item.id
-                        entryItem.displayState = 1
-                        save(updated: entryItem, message: String(localized: "Restore parent", bundle: .module).localizedString)
+                guard var child = editModel(for: entry.childId) else {
+                    keptEntries.removeAll { $0.childId == entry.childId }
+                    continue
+                }
+                if child.displayState == trashed && !restoring.contains(child.id) {
+                    keptEntries.removeAll { $0.childId == child.id }
+                    if child.parentId == item.id {
+                        child.parentId = nil
+                        save(updated: child, message: String(localized: "Restore parent", bundle: .module).localizedString)
                     }
+                } else if child.parentId != item.id {
+                    keptEntries.removeAll { $0.childId == child.id }
                 }
             }
+            item.entries = keptEntries
         } else {
             willRestore(item: &item)
-            // If this is a child being restored, check if its parent folder still exists and is not deleted
-            if let parentId = item.parentId, let parentItem = editModel(for: parentId), parentItem.displayState == DisplayStateMask.totalHidden.rawValue {
-                // Parent folder is deleted, move child to root level
+        }
+
+        // A parent that stays in the trash (or is gone): the item moves to root, and leaves the
+        // parent's entries so the parent's purge cannot reach it.
+        if let parentId = item.parentId, !restoring.contains(parentId) {
+            let parentItem = editModel(for: parentId)
+            if parentItem == nil || parentItem?.displayState == trashed {
                 item.parentId = nil
+                if let parentItem, parentItem.entries.contains(where: { $0.childId == item.id }) {
+                    parentItem.entries.removeAll { $0.childId == item.id }
+                    save(updated: parentItem, message: String(localized: "Restore item", bundle: .module).localizedString)
+                }
             }
         }
 
         tagController.add(tags: item.tags, module: itemControllable.config.module)
-        item.displayState = 0
+        item.displayState = DisplayStateMask.fullVisible.rawValue
         save(updated: item, message: String(localized: "Restore item", bundle: .module).localizedString)
     }
-    
+
     @MainActor func removeItem(offsets: IndexSet, itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
-        let removedEntries = item.entries.enumerated().filter { offsets.contains($0.offset) }
+        guard let item = folderEditModel(for: itemId, scope: .library) else { return }
+        let rowIds = item.memberRowIds()
+        removeMembers(rowIds: Set(offsets.compactMap { rowIds.indices.contains($0) ? rowIds[$0] : nil }), from: itemId)
+    }
+
+    /// Removes the members shown by the list rows `rowIds` from the folder or collection
+    /// `itemId`. Rows are resolved to entries by id: the visible list can be filtered, skip
+    /// trashed members or show nested rows, so its positions are not positions in `entries`.
+    /// A folder's removed children move to root. See CODE_AUDIT_Folder §5.15.
+    @MainActor func removeMembers(rowIds: Set<UUID>, from itemId: UUID) {
+        guard let item = folderEditModel(for: itemId, scope: .library), !rowIds.isEmpty else { return }
+        let memberRowIds = item.memberRowIds()
+        let removedOffsets = IndexSet(memberRowIds.indices.filter { rowIds.contains(memberRowIds[$0]) })
+        guard !removedOffsets.isEmpty else { return }
+        let removedEntries = removedOffsets.map { item.entries[$0] }
         var entries = item.entries
-        entries.remove(atOffsets: offsets)
+        entries.remove(atOffsets: removedOffsets)
         item.entries = entries
 
         if item.category == .folder {
             // For folders, move children to root level (set parentId = nil) instead of deleting them
-            for (_, entry) in removedEntries {
-                if var childItem = editModel(for: entry.childId) {
+            for entry in removedEntries {
+                if var childItem = folderEditModel(for: entry.childId, scope: .library), childItem.parentId == item.id {
                     childItem.parentId = nil
-                    save(updated: childItem, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString)
+                    saveFolderEdit(childItem, message: String(localized: "Removed parent", bundle: .module).localizedLowercase.localizedString, scope: .library)
+                    movedFileTree(itemId: childItem.id)
                 }
             }
         }
         // For non-folder containers (collections), just remove from entries (no need to modify children)
-        save(updated: item, message: String(localized: "Delete item", bundle: .module).localizedString)
+        saveFolderEdit(item, message: String(localized: "Delete item", bundle: .module).localizedString, scope: .library)
     }
-    
+
     @MainActor func moveItems(source: IndexSet, destination: Int, itemId: UUID) {
-        guard let item = editModel(for: itemId) else { return }
+        guard let item = folderEditModel(for: itemId, scope: .library) else { return }
         var entries = item.entries
         entries.move(fromOffsets: source, toOffset: destination)
         item.entries = entries
-        save(updated: item, message: String(localized: "Move entries", bundle: .module).localizedString)
+        saveFolderEdit(item, message: String(localized: "Move entries", bundle: .module).localizedString, scope: .library)
+    }
+
+    /// Moves the member shown by row `rowId` to the position of the member shown by
+    /// `targetRowId` in the folder or collection `itemId`. Resolved by row id, not by list
+    /// position. See CODE_AUDIT_Folder §5.15.
+    @MainActor func moveMember(rowId: UUID, to targetRowId: UUID, in itemId: UUID) {
+        guard let item = folderEditModel(for: itemId, scope: .library) else { return }
+        let memberRowIds = item.memberRowIds()
+        guard let from = memberRowIds.firstIndex(of: rowId),
+              let to = memberRowIds.firstIndex(of: targetRowId),
+              from != to else { return }
+        moveItems(source: IndexSet(integer: from), destination: to > from ? to + 1 : to, itemId: itemId)
     }
 }
 

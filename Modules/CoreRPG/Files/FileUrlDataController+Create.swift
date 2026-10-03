@@ -283,6 +283,46 @@ public extension FileUrlDataController {
         }
     }
 
+    /// Removes the file `fileUrl` points at, found by its path; bookmarks are left alone. For
+    /// files an import wrote that no item references. See CODE_AUDIT_Folder §5.26.
+    func removeStoredFile(_ fileUrl: FileUrl) async {
+        guard let location = storedLocation(of: fileUrl) else { return }
+        _ = await removeFileLoggingFailure(at: location)
+    }
+
+    /// Where imported bytes for `fileUrl` are written. The sender's relative path is used when
+    /// nothing is there, or when the file there already holds exactly these bytes and no item
+    /// in `referencedFileUrls` uses it (it is then reused, not rewritten). Otherwise the next
+    /// free name in the same folder is taken: imported bytes used to overwrite whatever file
+    /// had that name, including another item's file or a newer local version.
+    /// See CODE_AUDIT_Folder §5.2.
+    func importDestination(for fileUrl: FileUrl, contentHash: String, referencedFileUrls: [FileUrl]) async throws -> FileUrl {
+        guard fileUrl.location != .url else { return fileUrl }
+        let destination = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
+        let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: destination)
+        guard exists else { return fileUrl }
+        let destinationPath = Self.normalizedPath(destination)
+        let isReferenced = referencedFileUrls.contains { referenced in
+            storedLocation(of: referenced).map { Self.normalizedPath($0) == destinationPath } ?? false
+        }
+        if !isReferenced,
+           let existingHash = try? await FileManager.default.contentHash(coordinatingAccessAt: destination),
+           existingHash == contentHash {
+            return fileUrl
+        }
+        let relative = cloudDocumentController.nameUrl(fullUrl: destination)
+        let folder = relative.deletingLastPathComponent().path(percentEncoded: false)
+        let name = try await cloudDocumentController.suggestedFileName(for: folder, filename: relative.lastPathComponent)
+        return FileUrl(
+            fileId: fileUrl.fileId,
+            url: relative.deletingLastPathComponent().appending(component: name),
+            location: .newCloud,
+            module: fileUrl.module,
+            relativeUrl: nil,
+            contentHash: fileUrl.contentHash
+        )
+    }
+
     /// Whether two references resolve to the same stored file.
     func isSameStoredFile(_ lhs: FileUrl, _ rhs: FileUrl) -> Bool {
         guard let lhsLocation = storedLocation(of: lhs), let rhsLocation = storedLocation(of: rhs) else { return false }

@@ -23,11 +23,7 @@ struct ContextMenuMultiController {
         return [currentSelected]
     }
     
-    func selectionId(currentSelected: UUID?) -> [UUID] {
-        guard let currentSelected else { return listModel.selection }
-        return listModel.ids(selectedItemIds: [currentSelected])
-    }
-    
+
     func parentItem(currentSelected: UUID?) -> (any ItemDataAccessible)? {
         guard let selectedId = selection(currentSelected: currentSelected).first, let parentId = itemController.itemSync(for: selectedId)?.parentId else { return nil }
         return itemController.itemSync(for: parentId)
@@ -63,7 +59,7 @@ struct ContextMenuMultiController {
     }
     
     func deleteItem(currentSelected: UUID?) -> [ItemRowModel] {
-        let removed = listModel.deleteItems(ids: selectionId(currentSelected: currentSelected))
+        let removed = listModel.deleteItems(ids: selection(currentSelected: currentSelected))
         for item in removed {
             editController.removeFromEditors(itemId: item.itemId)
         }

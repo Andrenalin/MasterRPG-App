@@ -115,14 +115,17 @@ private extension ListRowItemView {
     /// Distinguishes "drop this sibling row to reorder" from "drop an external item to add it
     /// here" purely by list membership — reuses the same `draggable`/`dropDestination` pair for
     /// both, the same approach used by `SheetView`/`SheetEntryView` for entry reordering.
+    /// Reorders by row id, not list position: the list can be filtered, skip trashed members
+    /// or show nested rows, so its positions are not positions in the parent's entries.
+    /// See CODE_AUDIT_Folder §5.15.
     func handleDrop(name: String, itemId: UUID, entryId: UUID?) {
         guard let parentModel else { return }
-        if let sourceIndex = listModel.list.firstIndex(where: { $0.source.itemId == itemId }),
-           let targetIndex = listModel.list.firstIndex(where: { $0.id == item.id }),
-           sourceIndex != targetIndex {
+        if let sourceRow = listModel.list.first(where: { $0.source.itemId == itemId && $0.level == 0 }),
+           let sourceRowId = sourceRow.source.entryId,
+           let targetRowId = item.source.entryId,
+           sourceRow.id != item.id {
             withAnimation {
-                let destination = targetIndex > sourceIndex ? targetIndex + 1 : targetIndex
-                root.editControllable.moveItems(source: IndexSet(integer: sourceIndex), destination: destination, itemId: parentModel.id)
+                root.editControllable.moveMember(rowId: sourceRowId, to: targetRowId, in: parentModel.id)
             }
         } else {
             addLink(name: name, itemId: itemId, entryId: entryId)
@@ -134,7 +137,9 @@ private extension ListRowItemView {
         withAnimation {
             root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
             listController.scheduleDetailSearch()
-            root.folderListControllable.resetFilter()
+            // A fresh search, not `resetFilter()`, which rebuilt from stale results and left the
+            // moved item at root as well. See CODE_AUDIT_Folder §5.29.
+            root.folderListControllable.update(debounce: false)
             Task {
                 await MasterRPGTips.donateContentOrganized()
             }

@@ -44,8 +44,8 @@ struct FolderListControllerTests {
 
     // MARK: - buildList / resetFilter
 
-    @Test("Empty results guard: resetFilter keeps current list when results are empty")
-    func resetFilterKeepsListWhenResultsEmpty() async {
+    @Test("Empty results guard: a text search with no results keeps the current list")
+    func resetFilterKeepsListWhenSearchHasNoResults() async {
         let root = await makeRoot()
         let itemId = await root.itemController.addNew(type: .item)
         root.editController.reset(name: "Alpha", itemId: itemId)
@@ -55,11 +55,26 @@ struct FolderListControllerTests {
         let beforeCount = root.folderListController.listModel.list.count
         #expect(beforeCount > 0, "List must be populated after first search")
 
-        // Setting results to empty then calling resetFilter must leave the list intact
+        // A text search that found nothing keeps the list (no flicker; the overlay covers it)
+        root.folderListController.searchModel.searchText = "zzz"
         root.folderListController.searchModel.results = []
         root.folderListController.resetFilter()
         #expect(root.folderListController.listModel.list.count == beforeCount,
-                "resetFilter with empty results must preserve the existing list (guard)")
+                "resetFilter with empty search results must preserve the existing list (guard)")
+    }
+
+    @Test("Without search text, empty results empty the list (CODE_AUDIT_Folder §5.14)")
+    func resetFilterEmptiesListWhenNothingIsLeft() async {
+        let root = await makeRoot()
+        let itemId = await root.itemController.addNew(type: .item)
+        root.editController.reset(name: "Alpha", itemId: itemId)
+        await searchList(root)
+        #expect(!root.folderListController.listModel.list.isEmpty)
+
+        // The last item is gone (removed, moved away, deleted by sync): the stale row must go too.
+        root.folderListController.searchModel.results = []
+        root.folderListController.resetFilter()
+        #expect(root.folderListController.listModel.list.isEmpty)
     }
 
     @Test("performSearch populates list with visible items in alphabetical order (empty search)")

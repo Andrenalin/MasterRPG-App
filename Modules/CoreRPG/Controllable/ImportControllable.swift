@@ -10,6 +10,13 @@ public enum ImportMode: Hashable, Sendable, CaseIterable {
     case merge, overwrite, manual
 }
 
+/// A file an import wrote for an item, and the file that item had before.
+/// See CODE_AUDIT_Folder §5.26.
+struct ImportedFileWrite: Sendable {
+    let written: FileUrl
+    let previous: FileUrl?
+}
+
 /// Where the items of one module stream go, decided once when the stream starts.
 /// See CODE_AUDIT_Folder §3.4.
 struct ImportApplyPolicy: Sendable {
@@ -111,6 +118,20 @@ public final class ItemDataImportModel {
     var reviewModel: ImportReviewModel? = nil
 
     var pendingModules: [NetworkModules: [ImportReviewItemModel]] = [:]
+
+    /// The ids each module's import actually wrote (merged, overwritten or loaded into game
+    /// memory); items an unchanged merge skipped are not included. Lets a game delivery see
+    /// what a package changed without comparing object identities. See CODE_AUDIT_Folder §5.10,
+    /// §5.22.
+    public private(set) var appliedItemIds: [NetworkModules: Set<UUID>] = [:]
+
+    /// Files a manual-review import wrote while parsing; cleaned up once the review is applied
+    /// or cancelled. See CODE_AUDIT_Folder §5.2.
+    var reviewFileWrites: [(module: NetworkModules, itemId: UUID, write: ImportedFileWrite)] = []
+
+    func recordApplied(_ itemId: UUID, module: NetworkModules) {
+        appliedItemIds[module, default: []].insert(itemId)
+    }
     var withOverwrite: Bool { importMode == .overwrite }
     var isFinalizingImport: Bool {
         isImportRunning
@@ -240,15 +261,21 @@ public extension ImportControllable {
                             guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !policy.isUntrustedSource, peerPolicy: peerPolicy) else {
                                 continue
                             }
+                            var fileWrite: ImportedFileWrite?
                             if let itemFile {
-                                if try await addFile(data: itemFile, to: newItem, forceSave: forceSave) {
+                                let added = try await addFile(data: itemFile, to: newItem, forceSave: forceSave)
+                                if added.reusesLocalFile {
                                     locallyReusedFileIds.insert(newItem.id)
                                 }
+                                fileWrite = added.write
                             }
                             if await itemControllable.shouldDeferGameModeFolderImport(newItem, writesGameMemory: policy.writesGameMemory) {
                                 deferredFolderItems.append((newItem, newItem.id))
                             } else {
                                 await applyImportedItem(newItem, id: newItem.id, policy: policy, importModel: importModel, locallyReusedFileIds: locallyReusedFileIds)
+                            }
+                            if let fileWrite {
+                                await settleImportedFile(fileWrite, itemId: newItem.id, policy: policy, importModel: importModel)
                             }
                             importedIds.insert(newItem.id)
                         } catch {
@@ -478,20 +505,34 @@ private extension ImportControllable {
         // in that id list too, so add it there ourselves.
         guard !policy.gameMemoryOnly else {
             replaceForGameAndCount(importableItem, id: id, itemController: itemController, importModel: importModel)
+            importModel.recordApplied(id, module: itemController.config.module)
             return
         }
 
         let writePolicy: GameMutationPolicy = policy.writesGameMemory ? .memoryOnly : .persist
         switch policy.mode {
         case .merge:
-            if let finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory) {
+            var finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory)
+            if !policy.writesGameMemory {
+                let merged = finalItem
+                finalItem = itemController.restoringTrashedItem(merged: merged, imported: importableItem)
+                if let restored = finalItem as? any ItemDataAccessible, restored.displayState != DisplayStateMask.totalHidden.rawValue,
+                   itemController.itemSync(for: id, noGame: true)?.displayState == DisplayStateMask.totalHidden.rawValue {
+                    // Trashing gave the tags back; restoring takes them again.
+                    editControllable.tagController.add(tags: restored.tags, module: itemController.config.module)
+                }
+            }
+            if let finalItem {
                 itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
                 editControllable.repairFolder(itemId: id)
+                importModel.recordApplied(id, module: itemController.config.module)
             }
 
         case .overwrite:
-            itemController.replaceImportedModel(model: importableItem, isInsert: true, policy: writePolicy)
+            let finalItem = policy.writesGameMemory ? importableItem : itemController.keepingLocalFolderChildren(importableItem)
+            itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
             editControllable.repairFolder(itemId: id)
+            importModel.recordApplied(id, module: itemController.config.module)
 
         case .manual:
             let merged = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory) as? any ItemDataAccessible
@@ -499,6 +540,21 @@ private extension ImportControllable {
         }
 
         importModel.importedItems += 1
+    }
+
+    /// Cleans up after a file the import wrote for `itemId`. A library import keeps the file the
+    /// item references now and removes the other; files of game-memory items are removed at game
+    /// end, and files of a manual review once the review is applied or cancelled.
+    /// See CODE_AUDIT_Folder §5.2, §5.26.
+    @MainActor
+    func settleImportedFile(_ fileWrite: ImportedFileWrite, itemId: UUID, policy: ImportApplyPolicy, importModel: ItemDataImportModel) async {
+        if policy.gameMemoryOnly || policy.writesGameMemory {
+            itemControllable.fileUrlDataController?.model.gameMemoryFiles.append(fileWrite.written)
+        } else if policy.mode == .manual {
+            importModel.reviewFileWrites.append((itemControllable.config.module, itemId, fileWrite))
+        } else {
+            await itemControllable.settleImportedFile(fileWrite, itemId: itemId)
+        }
     }
 
     /// Runs the post-import folder and orphan repair for `importedIds`. In an unstructured task:
@@ -522,6 +578,9 @@ private extension ImportControllable {
         importModel: ItemDataImportModel
     ) {
         itemController.replaceForGame(model: importableItem, isInsert: true, policy: .memoryOnly)
+        if !itemController.itemDataModel.isGameMode {
+            itemController.itemDataModel.isSavedGameStaged = true
+        }
         if !itemController.itemDataModel.gameItems.contains(id) {
             itemController.itemDataModel.gameItems.insert(id, at: 0)
         }
@@ -718,8 +777,10 @@ private extension ImportControllable {
         }
     }
 
-    @MainActor func addFile(data: Data, to item: any ItemDataAccessible, forceSave: Bool) async throws -> Bool {
-        guard let fileUrlDataController, var fileUrl = item.fileUrl else { return false }
+    /// Stores the imported bytes of `item`'s file. Returns whether a game delivery reuses the
+    /// local file, and the file it wrote (if any) for `settleImportedFile` to clean up after.
+    @MainActor func addFile(data: Data, to item: any ItemDataAccessible, forceSave: Bool) async throws -> (reusesLocalFile: Bool, write: ImportedFileWrite?) {
+        guard let fileUrlDataController, var fileUrl = item.fileUrl else { return (false, nil) }
         var item = item
         let module = itemControllable.config.module.rawValue
         let importedHash = FileUrl.contentHash(of: data)
@@ -743,7 +804,7 @@ private extension ImportControllable {
             if forceSave == false, let localItem = itemControllable.itemSync(for: item.id, noGame: true) {
                 item.parentId = localItem.parentId
             }
-            return forceSave == false
+            return (forceSave == false, nil)
         }
 
         if let localFileUrl {
@@ -752,16 +813,29 @@ private extension ImportControllable {
             Logger.importController.debug("Import addFile writes new file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) hash=\(importedHash, privacy: .public) forceSave=\(forceSave, privacy: .public)")
         }
 
+        // Never over another item's file, or over a newer local version of this one: a taken
+        // path gets the next free name. See CODE_AUDIT_Folder §5.2.
+        fileUrl = try await fileUrlDataController.importDestination(
+            for: fileUrl,
+            contentHash: importedHash,
+            referencedFileUrls: itemControllable.libraryFileUrls()
+        )
         fileUrl.resetData(data)
         do {
-            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension)
+            // A library import must not count an item whose file never reached disk; the
+            // in-memory fallback is lost at relaunch. Game deliveries keep it.
+            // See CODE_AUDIT_Folder §5.26.
+            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension, requireDurableStorage: forceSave)
             Logger.importController.debug("Import addFile stored imported file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) storedUrl=\((updated ?? fileUrl).rawUrl.absoluteString, privacy: .private) storedHash=\((updated ?? fileUrl).contentHash ?? "nil", privacy: .public)")
-            await itemControllable.reset(fileUrl: updated ?? fileUrl, item: &item)
+            let stored = updated ?? fileUrl
+            await itemControllable.reset(fileUrl: stored, item: &item)
+            return (false, ImportedFileWrite(written: stored, previous: localFileUrl))
         } catch {
-            Logger.importController.error("Cannot save bookmark \(module, privacy: .public), file stored as data")
+            guard !forceSave else { throw error }
+            Logger.importController.error("Cannot store the delivered file \(module, privacy: .public), keeping it in memory for the game")
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
+            return (false, nil)
         }
-        return false
     }
 
     /// The existing item's local file URL when the imported bytes are unchanged.

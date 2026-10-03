@@ -39,10 +39,9 @@ extension SearchListController: SearchRootControllable {
     @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
         guard let item = searchController.itemControllable.itemSync(for: focusId),
               item.specialCategory else { return [] }
-        let results = item.entries.compactMap { entry -> SearchResult? in
+        let results = zip(item.entries, item.memberRowIds()).compactMap { entry, entryId -> SearchResult? in
             guard let child = searchController.itemControllable.itemSync(for: entry.childId),
                   child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
-            let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
             var result = SearchResult(
                 itemId: child.id, itemName: child.name,
                 module: searchController.itemControllable.config.module,
@@ -111,10 +110,9 @@ extension SearchLinkController: SearchRootControllable {
     @MainActor public func syncExpandResults(focusId: UUID) -> [SearchResult] {
         guard let item = searchController.itemControllable.itemSync(for: focusId) else { return [] }
         if item.specialCategory {
-            let results = item.entries.compactMap { entry -> SearchResult? in
+            let results = zip(item.entries, item.memberRowIds()).compactMap { entry, entryId -> SearchResult? in
                 guard let child = searchController.itemControllable.itemSync(for: entry.childId),
                       child.displayState == DisplayStateMask.fullVisible.rawValue else { return nil }
-                let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
                 var result = SearchResult(
                     itemId: child.id, itemName: child.name,
                     module: searchController.itemControllable.config.module,

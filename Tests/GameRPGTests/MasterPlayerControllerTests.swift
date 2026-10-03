@@ -189,7 +189,9 @@ final class MasterPlayerControllerTests {
         #expect(result!.subType == .ok)
         #expect(await rootPlayer.audioRoot.gameController.currentId == audioId)
         #expect(rootPlayer.audioRoot.gameController.gameItem(for: audioId).version == version)
-        #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 1)
+        // The persisted reveal brings the audio it references along (CODE_AUDIT_Folder §5.22).
+        let referencedIds = Set(rootSut.audioRoot.itemController.itemSync(for: audioId)?.entries.map(\.childId) ?? [])
+        #expect(rootPlayer.audioRoot.itemController.itemDataModel.items.count == 1 + referencedIds.count)
 
         response = try await sut.handle(result!)
         #expect(nil == response)

@@ -70,13 +70,24 @@ public final class ItemDataModel: Sendable {
     public let version: Int
            
     public var isGameMode: Bool = false
-    
+
+    /// A saved game is loaded into game memory but the game has not started. Until it starts,
+    /// reads keep showing the library: preferring the staged game copies made every view and
+    /// export show the saved versions, and the first edit wrote the saved state into the
+    /// permanent item. See CODE_AUDIT_Folder §5.25.
+    public internal(set) var isSavedGameStaged = false
+
     public func resetGame(start: Bool = false) {
         isGameMode = start
+        if !start {
+            isSavedGameStaged = false
+        }
     }
-    
+
     func item(for itemId: UUID, noGame: Bool = false) -> ModelType? {
-        guard noGame == false, let gameItem = gameItemData[itemId] else { return itemData[itemId] }
+        guard noGame == false,
+              isGameMode || !isSavedGameStaged,
+              let gameItem = gameItemData[itemId] else { return itemData[itemId] }
         return gameItem
     }
     

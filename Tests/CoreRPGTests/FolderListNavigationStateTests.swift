@@ -69,8 +69,14 @@ struct FolderListNavigationStateTests {
         folder.children = [makeRow(name: "Child")]
         let model = FolderListModel(navigationModel: ModuleNavigationModel())
         model.list = [folder]
+        model.cacheListModels[folder.id] = folder
         model.selected = folder.id
         let controller = FakeFolderListController(listModel: model)
+        // The list is rebuilt from the search results on every toggle; an empty-text search
+        // with no results now means an empty list (CODE_AUDIT_Folder §5.14).
+        controller.searchModel.results = [
+            SearchResult(itemId: folder.id, itemName: "Folder", module: .none, category: .folder, relevanceScore: 0)
+        ]
 
         // When
         let opened = controller.toggleSelectedFolder()

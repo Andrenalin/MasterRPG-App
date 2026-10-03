@@ -507,7 +507,10 @@ extension DiceModel: nonisolated ItemDuplicatable {
         return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
             let dupDice = dice.map { $0.duplicate() }
-            return DiceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, dice: dupDice, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, entries: entries.map { $0.duplicate() }, parentId: parentId)
+            // Starts outside any folder; the duplicate flow files it. `resultCategory` is left
+            // out on purpose (asserted by `DiceModelTests.assignAndDuplicate`).
+            // See CODE_AUDIT_Folder §5.27.
+            return DiceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, dice: dupDice, sumUp: sumUp, modifier: modifier, percentDice: percentDice, compareOption: compareOption, compareValue: compareValue, coupValues: coupValues, coupOnlyOnFirstDie: coupOnlyOnFirstDie, fumbleValues: fumbleValues, fumbleOnlyOnFirstDie: fumbleOnlyOnFirstDie, rerollOptions: rerollOptions, reorderDice: reorderDice, addDiceEvery: addDiceEvery, entries: entries.map { $0.duplicate() }, parentId: nil)
     
         }
     }

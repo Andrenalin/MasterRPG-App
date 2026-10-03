@@ -769,3 +769,40 @@ Status of §3 after the remediation pass. **Fixed** = changed, and the iOS, macO
 | 3.17 | Fixed | The review apply is a session-owned task that release waits for. The parse-time existing item is now a copy; if the library item changed while the sheet was open, the reviewed result is merged onto it. |
 | 3.18 | Partly | Duplicate is ignored while one is running (both menus). File copies never replace an existing file and retry the next free name. The in-memory-bytes branch of `copyFile` still writes with overwrite. |
 | 3.19 | Fixed | `resetFile(url:)` is queued and re-reads the item; root searches discard superseded results; `mergeUpdates` drops the cache before the model changes; sync batches use one ordered stream consumer and batches queued before `resetData()` are skipped; the `Task {}` wrappers are removed; the import scans check cancellation and a picked file gets a coordinated read first. |
+
+### Status of §5 (2026-10-03)
+
+Built for iOS, macOS, tvOS and visionOS with zero warnings; the `MasterRPG` unit test plan passes. Regression tests added: `Tests/SpaceRPGTests/FolderOperationAuditTests.swift` (§5.1, §5.4, §5.5, §5.6, §5.15, §5.16, §5.17, §5.19, §5.30), `Tests/CoreRPGTests/FolderAuditModelTests.swift` (§5.7, §5.17, §5.18, §5.25), `Tests/TableRPGTests/ImportGameAuditTests.swift` (§5.8, §5.10, §5.20, §5.23) and `Tests/PhotoRPGTests/FolderAuditPhotoTests.swift` (§5.5 against an in-memory store, §5.11, §5.13). Two existing tests were updated because they asserted the old behaviour (§5.14). Product decisions taken: collection membership never changes visibility and a collection may list an item more than once (§5.16, §5.17); folder operations from the library UI are persisted during a game (§5.21); imported files get unique names plus cleanup rather than a separate game cache (§5.2); a merge import restores a trashed item (§5.20).
+
+| § | Status | Notes |
+|---|---|---|
+| 5.1 | Fixed | A child restored without its folder leaves the folder's entries; a folder purge recurses only into children that still point at it (and, in a trashed folder, are trashed themselves). |
+| 5.2 | Fixed | `importDestination` never writes over a file another item (or a newer local version) uses; the file the final item does not reference is removed (`settleImportedFile`); manual-review files are settled after Apply or Cancel; game-memory files are removed at game end. Game deliveries still use library storage, under unique names (decision). |
+| 5.3 | Fixed | `resetGame()` resets `siblingModuleRoots`, Rule included. |
+| 5.4 | Fixed | `restore(itemIds:)` restores a batch: a child restored with its folder keeps its place. |
+| 5.5 | Fixed | Duplicates get their parent before they are stored; file paths are persisted with `persistFileUrl`. |
+| 5.6 | Fixed | Scans every folder and handles the moved-to-root case. |
+| 5.7 | Fixed | `selectionItemIds` maps row ids to item ids; the pass-through helpers are gone. |
+| 5.8 | Fixed | Overwrite (and a reviewed "New") keeps the local children that still belong to the folder. |
+| 5.9 | Fixed | Reviewed deletions go to the trash; kept children of a deleted folder move to root; the repair runs over applied items; deletion candidates have their own "Not in Import" section (de/th added). |
+| 5.10 | Fixed | `importNetwork` returns the ids each module wrote (`ItemDataImportModel.appliedItemIds`); Table uses them instead of object identity. |
+| 5.11 | Fixed | One sanitised, id-suffixed file name per image; a failed write throws instead of saving the photo. |
+| 5.12 | Fixed | Any dismissal other than Remove counts as Cancel; the removal list is cleared when the panel closes; Delete with nothing selected does not open the panel; restoring skips items that were never trashed. |
+| 5.13 | Fixed | Uses the close branch of `toggleFolder`. |
+| 5.14 | Fixed | The previous list is kept only while a text search found nothing. |
+| 5.15 | Fixed | `moveMember(rowId:to:in:)` and `removeMembers(rowIds:from:)` resolve rows to entries by row id. |
+| 5.16 | Fixed | Duplicates join collections with `addItem` (no visibility change); a collection's copy references the same members; `addGroup` on a folder or collection adds a reference without hiding. |
+| 5.17 | Fixed | Repeated members are allowed (decision); `memberRowIds()` gives one row id per occurrence. |
+| 5.18 | Fixed | `FolderEntryMerge` de-duplicates folder entries by member (`childId:`) in all nine union models. |
+| 5.19 | Fixed | `updateTags` decrements removed tags; `markForDeletion` is idempotent; the purge and restore count tags only for trashed items. |
+| 5.20 | Fixed | A visible imported copy restores a trashed item with the backup's folder placement and its tags. |
+| 5.21 | Fixed | Library-scoped folder edits (`FolderEditScope.library`) are persisted during a game; only the membership fields are mirrored into a loaded game copy. Folder renames during a game move descendant files only when persisted. |
+| 5.22 | Partly | `.persist` stores the written items reachable from the delivered item through its members (a playlist's tracks); `ItemGameModel.apply` no longer returns its always-empty list. A character's grouped values (linked through `valueId`, not member entries) are not covered. |
+| 5.23 | Fixed | `persistFromGame` merges with the library copy (or takes an authoritative delivery as sent) and keeps the local folder and visibility; the game copy is left alone. |
+| 5.24 | Partly | A delivery with version 0 and data is imported instead of being treated as present. A content-digest version for the models without one was not added: it must be identical on both devices after a merge, which needs its own design. |
+| 5.25 | Fixed | A staged saved game no longer shadows the library until the game starts (`isSavedGameStaged`); "Clear Saved Game" resets every module; a player enters game mode before the controller can process messages. |
+| 5.26 | Fixed | Superseded and unused import files are removed; library imports require durable storage and count a failed write as a failed item; game-memory files are removed at game end. |
+| 5.27 | Partly | All twelve `duplicate()` start outside folders; Adventure carries `diceId`. Dice still drops `resultCategory`: `DiceModelTests.assignAndDuplicate` asserts that, so it was left as intended. |
+| 5.28 | Fixed | The Map item controller exposes its cache controller; the root keeps `nil` (maps draw their own rows). |
+| 5.29 | Fixed | Menu-bar Move/Add and drag-and-drop refresh with `update(debounce: false)`; Delete is disabled for every collection kind; "New Folder" ignores a second press. It still creates the folder at root, as its label says. |
+| 5.30 | Fixed | All eight: stale entries removable; cycle-safe `folderPath`; folder moves and renames move descendant files (an item's own rename still does not move its file); search-built children get their parent; on-appear restore uses the item id and live generation; cached rows refresh a replaced model instance; removal list de-duplicated; the Character refresh reads the library copy. |

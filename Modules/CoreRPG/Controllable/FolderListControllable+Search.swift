@@ -22,8 +22,11 @@ extension FolderListControllable {
 
     private func buildList() -> [FolderListItemModel] {
         let results = searchModel.results
-        guard !results.isEmpty else { return listModel.list }
         let isSearching = !searchModel.searchText.isEmpty
+        // The previous list is kept only while a text search found nothing (no flicker; the
+        // "no results" overlay covers it). Without search text an empty result means the list
+        // is empty now; keeping the old rows showed removed items. See CODE_AUDIT_Folder §5.14.
+        guard !results.isEmpty else { return isSearching ? listModel.list : [] }
         var flat: [FolderListItemModel] = []
         for result in results {
             appendToFlat(result: result, level: 0, isSearching: isSearching, flat: &flat)
@@ -54,8 +57,8 @@ extension FolderListControllable {
     func buildDetailListItems() -> [FolderListItemModel] {
         let detailModel = listModel.detailListModel
         let results = searchModel.detailResults
-        guard !results.isEmpty else { return detailModel?.list ?? [] }
         let isSearching = !searchModel.searchText.isEmpty
+        guard !results.isEmpty else { return isSearching ? (detailModel?.list ?? []) : [] }
         var flat: [FolderListItemModel] = []
         for result in results {
             appendToFlat(result: result, level: 0, isSearching: isSearching, flat: &flat, cache: detailModel)
@@ -79,7 +82,13 @@ extension FolderListControllable {
 
         // Sync children from what the search returned (search owns the structure)
         if !result.children.isEmpty {
-            item.children = result.children.map { mapResult($0, level: level + 1, cache: cache) }
+            // The parent link is set here too, not only on lazy loads, so "Close parent folder"
+            // works for rows a search opened. See CODE_AUDIT_Folder §5.30.
+            item.children = result.children.map { childResult in
+                let child = mapResult(childResult, level: level + 1, cache: cache)
+                child.parentId = item.id
+                return child
+            }
         }
 
         // Open state: search auto-opens matched folders; clears → restore user state.
@@ -140,8 +149,13 @@ extension FolderListControllable {
             cached.level = level
             cached.canOpen = canOpen
             cached.childFocusId = result.childFocusId
-            if cached.model == nil {
-                cached.model = itemControllable.itemSync(for: result.itemId)
+            // Refresh the model reference when the store holds a different instance now (an
+            // external import replaces existing items); a row kept showing the old one.
+            // See CODE_AUDIT_Folder §5.30.
+            if let current = itemControllable.itemSync(for: result.itemId) {
+                if cached.model.map({ ($0 as AnyObject) !== (current as AnyObject) }) ?? true {
+                    cached.model = current
+                }
             }
             return cached
         }

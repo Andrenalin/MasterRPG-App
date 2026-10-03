@@ -219,14 +219,15 @@ extension AdventureModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> AdventureModel {
         return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
-            return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil)
+            // Carries `diceId` too. See CODE_AUDIT_Folder §5.27.
+            return AdventureModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: nil, groupId: nil)
     
         }
     }
 
     nonisolated func duplicateWithoutCopy() -> AdventureModel {
         return assumeMainActorIsolated {
-            AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId)
+            AdventureModel(id: UUID(), name: name, description: description, tags: tags, category: category, displayState: displayState, photoId: photoId, diceId: diceId, entries: entries.map { $0.duplicate() }, parentId: parentId, groupId: groupId)
         }
     }
 }

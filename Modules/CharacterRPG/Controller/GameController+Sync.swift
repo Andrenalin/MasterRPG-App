@@ -56,6 +56,12 @@ extension GameController {
               let encodedData = data.data
         else { throw ItemGameStorableError.wrongData }
         try await importNetwork(from: encodedData, forceSave: true, peerPolicy: policy)
+        // The live game copy is refreshed by the import itself: a `forceSave` write goes through
+        // `ItemControllable.replace`, whose `syncGameMemoryIfLoaded` updates the loaded game copy
+        // in place. The block below re-read that same game copy and replaced it with itself; it
+        // now reads the library copy, so it only acts if the import ever stops doing that.
+        // See CODE_AUDIT_Folder §5.30.
+        //
         // A full-package resync (sent on reconnect, or whenever the master's
         // cached version differs from what the player advertises) only merges
         // into the persisted library above — `gameItem(for:)`, and everything
@@ -79,7 +85,7 @@ extension GameController {
         // `ItemControllable.replaceInGameMemory(model:)`'s "existing" branch
         // and `syncGameMemoryIfLoaded`.
         if let existing = gameModel.itemData[data.id] as? ValueModel,
-           let refreshed = itemController.itemSync(for: data.id)?.copy() {
+           let refreshed = itemController.itemSync(for: data.id, noGame: true)?.copy() {
             _ = existing.replace(with: refreshed)
         }
     }

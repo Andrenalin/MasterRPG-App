@@ -10,6 +10,11 @@ import Synchronization
 @MainActor @Observable
 public final class FileUrlDataModel {
     var folders: [FileUrlViewModel] = []
+
+    /// Files an import wrote for items that live only in game memory (game deliveries, a loaded
+    /// saved game). Removed at game end unless a library item references them by then.
+    /// See CODE_AUDIT_Folder §5.26.
+    @ObservationIgnored var gameMemoryFiles: [FileUrl] = []
 }
 
 public struct FileUrlDataController: Sendable {

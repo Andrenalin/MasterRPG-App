@@ -12,7 +12,8 @@ struct MoveItemIntoButton: View {
             ForEach(folders) { folder in
                 Button {
                     menuController.moveItem(currentSelected: root.currentSelectedItemId, to: folder)
-                    root.folderListControllable.resetFilter()
+                    // Same refresh as the context menu. See CODE_AUDIT_Folder §5.29.
+                    root.folderListControllable.update(debounce: false)
                 } label: {
                     Label { Text(folder.name) } icon: { Image(systemName: "folder") }
                 }

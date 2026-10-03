@@ -16,7 +16,10 @@ import SwiftUI
 
     var name: String { id.title }
     var addedItems: [ImportReviewItemModel] { reviewItems.filter { $0.kind == .added } }
-    var changedItems: [ImportReviewItemModel] { reviewItems.filter { $0.kind == .different } }
+    var changedItems: [ImportReviewItemModel] { reviewItems.filter { $0.kind == .different && !$0.isDeletion } }
+    /// Local items the file does not contain, listed apart from real changes: choosing the
+    /// imported version deletes them. See CODE_AUDIT_Folder §5.9.
+    var notInImportItems: [ImportReviewItemModel] { reviewItems.filter(\.isDeletion) }
     var blockedReferenceCount: Int { reviewItems.filter(\.hasBlockingReference).count }
 }
 

@@ -129,7 +129,7 @@ extension AudioModel: nonisolated ItemDiffComparable {
         let mergedEntries: CRDTDataUpdate<[AudioEntryModel]>
         if mergedCategory.wrappedValue == .folder {
             // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
-            let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name)
+            let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name, childId: \.childId)
             mergedEntries = CRDTDataUpdate(wrappedValue: combined)
         } else {
             mergedEntries = entries_.merged(other: other.entries_)
@@ -175,7 +175,8 @@ extension AudioModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> AudioModel {
         assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
-            return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
+            // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
+            return AudioModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: nil)
         }
     }
 }

@@ -24,7 +24,7 @@ extension MapModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> MapModel {
         return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
-            return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, walls: walls, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: parentId)
+            return MapModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, entries: entries.map { $0.duplicate() }, displayConfig: displayConfig, photoId: photoId, width: width, height: height, mapPins: mapPins, walls: walls, pinScale: pinScale, hexMapScale: hexMapScale, scale: scale, degrees: degrees, parentId: nil)
 
         }
     }

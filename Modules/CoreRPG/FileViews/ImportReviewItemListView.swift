@@ -27,6 +27,18 @@ struct ImportReviewItemListView: View {
                     Text("Changed", bundle: .module)
                 }
             }
+
+            if !module.notInImportItems.isEmpty {
+                Section {
+                    ForEach(module.notInImportItems) { item in
+                        ImportReviewItemRow(item: item)
+                    }
+                } header: {
+                    Text("Not in Import", bundle: .module)
+                } footer: {
+                    Text("These items are in your library but not in the imported file. Choosing the imported version deletes them.", bundle: .module)
+                }
+            }
         }
         .themedListSurface()
     }

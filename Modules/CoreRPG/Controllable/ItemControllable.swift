@@ -196,6 +196,13 @@ public extension ItemControllable {
     }
     
     @MainActor func replace(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
+        replace(model: model, isInsert: isInsert, forceSave: forceSave, syncGameMemory: true)
+    }
+
+    /// - Parameter syncGameMemory: `false` leaves a loaded game-memory copy alone; the caller
+    ///   mirrors only the fields it changed. Copying the whole library state into it would drop
+    ///   that copy's session-only changes. See CODE_AUDIT_Folder §5.21, §5.23.
+    @MainActor func replace(model: ModelType?, isInsert: Bool, forceSave: Bool, syncGameMemory: Bool) {
         guard let model = model as? Model else { return }
         if itemDataModel.isGameMode == true && forceSave == false {
             replaceInGameMemory(model: model)
@@ -215,7 +222,9 @@ public extension ItemControllable {
                 }
                 itemDataModel.publishContentWidgetSnapshot()
             }
-            syncGameMemoryIfLoaded(with: original)
+            if syncGameMemory {
+                syncGameMemoryIfLoaded(with: original)
+            }
         } else {
             if isInsert {
                 do {
@@ -226,7 +235,49 @@ public extension ItemControllable {
                 }
             }
             resetModel(with: model)
-            syncGameMemoryIfLoaded(with: model)
+            if syncGameMemory {
+                syncGameMemoryIfLoaded(with: model)
+            }
+        }
+    }
+
+    /// Persists a game-memory item into the library. The sender's snapshot is merged with the
+    /// library copy (or taken as sent, for an `authoritative` delivery such as the game
+    /// master's map) and always keeps the local folder placement and visibility. Writing the
+    /// raw snapshot lost local edits and moved the item to the sender's folder.
+    /// See CODE_AUDIT_Folder §5.23.
+    @MainActor func persistFromGame(model: ModelType, authoritative: Bool) {
+        guard let model = model as? Model else { return }
+        guard let library = itemSync(for: model.id, noGame: true) else {
+            replace(model: model, isInsert: true, forceSave: true)
+            return
+        }
+        var persisted: Model
+        if authoritative {
+            persisted = model.copy()
+        } else {
+            guard let merged = mergeSync(with: model, forceMerge: true, noGame: true) as? Model else { return }
+            persisted = merged
+        }
+        persisted.parentId = library.parentId
+        persisted.displayState = library.displayState
+        // The game copy keeps what the game shows; only the library is written.
+        replace(model: persisted, isInsert: true, forceSave: true, syncGameMemory: false)
+    }
+
+    /// Persists a folder or collection membership change made in the library UI, also during a
+    /// running game, and mirrors only the membership fields into a loaded game-memory copy.
+    /// See CODE_AUDIT_Folder §5.21.
+    @MainActor func persistMembershipChange(model: ModelType) {
+        guard let model = model as? Model else { return }
+        replace(model: model, isInsert: false, forceSave: true, syncGameMemory: false)
+        if var gameItem = itemDataModel.gameItemData[model.id] as? Model {
+            if gameItem.parentId != model.parentId {
+                gameItem.parentId = model.parentId
+            }
+            if model.specialCategory, gameItem.entries != model.entries {
+                gameItem.entries = model.entries
+            }
         }
     }
 
@@ -279,6 +330,62 @@ public extension ItemControllable {
         } else {
             linkRegisterController.register(links: model.linkRegisterModels)
         }
+    }
+
+    /// The file references of every permanent-library item, except `excludedId`.
+    @MainActor func libraryFileUrls(excluding excludedId: UUID? = nil) -> [FileUrl] {
+        itemDataModel.items.compactMap { itemId in
+            guard itemId != excludedId else { return nil }
+            return itemSync(for: itemId, noGame: true)?.fileUrl
+        }
+    }
+
+    /// After an import applied `itemId`, keeps whichever of the file it wrote and the item's
+    /// previous file the library item references now, and removes the other one unless another
+    /// item uses it. Imports used to leave the superseded file (or an unused new one) behind.
+    /// See CODE_AUDIT_Folder §5.26.
+    @MainActor internal func settleImportedFile(_ file: ImportedFileWrite, itemId: UUID) async {
+        guard let controller = fileUrlDataController else { return }
+        let current = itemSync(for: itemId, noGame: true)?.fileUrl
+        let others = libraryFileUrls(excluding: itemId)
+        func isUsedElsewhere(_ fileUrl: FileUrl) -> Bool {
+            others.contains { controller.isSameStoredFile($0, fileUrl) }
+        }
+        if let current, controller.isSameStoredFile(current, file.written) {
+            if let previous = file.previous, !controller.isSameStoredFile(previous, file.written), !isUsedElsewhere(previous) {
+                await controller.deleteReplaced(previous, keeping: file.written)
+            }
+        } else if !isUsedElsewhere(file.written) {
+            await controller.removeStoredFile(file.written)
+        }
+    }
+
+    /// Merge keeps the local display state and folder placement, so an item in the local trash
+    /// stayed there after re-importing a backup that has it, and was purged at the next launch.
+    /// A visible imported copy restores it, with the backup's folder placement. Returns `merged`
+    /// unchanged when there is nothing to restore. See CODE_AUDIT_Folder §5.20.
+    @MainActor func restoringTrashedItem(merged: ModelType?, imported: ModelType) -> ModelType? {
+        let trashed = DisplayStateMask.totalHidden.rawValue
+        guard let imported = imported as? Model, imported.displayState != trashed,
+              let local = itemSync(for: imported.id, noGame: true), local.displayState == trashed else { return merged }
+        var restored = ((merged as? Model) ?? local).copy()
+        restored.displayState = imported.displayState
+        restored.parentId = imported.parentId
+        return restored
+    }
+
+    /// An imported folder may be a partial copy: a subset export lists only the exported
+    /// children. Overwriting the local folder with it dropped its other children, which then
+    /// vanished from the folder list. The local children that still belong to the folder are
+    /// kept. See CODE_AUDIT_Folder §5.8.
+    @MainActor func keepingLocalFolderChildren(_ model: ModelType) -> ModelType {
+        guard let imported = model as? Model, imported.isFolder,
+              let local = itemSync(for: imported.id, noGame: true) else { return model }
+        let localChildren = local.entries.filter { itemSync(for: $0.childId, noGame: true)?.parentId == local.id }
+        guard !localChildren.isEmpty else { return model }
+        let result = imported.copy()
+        result.entries = FolderEntryMerge.merged(local: imported.entries, remote: localChildren, id: \.id, name: \.name, childId: \.childId)
+        return result
     }
 
     /// Whether the permanent-library copy of `id` still equals `snapshot`; both absent counts as

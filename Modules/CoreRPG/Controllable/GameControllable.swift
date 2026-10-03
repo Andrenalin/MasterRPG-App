@@ -99,12 +99,10 @@ public final class ItemGameModel {
         }
     }
 
-    /// Reads `items` itself, synchronously, as the "previously visible" baseline —
-    /// rather than taking it as a parameter read by the caller before an `await` gap —
-    /// so a concurrent call can't mutate `items` in between the read and this mutation.
-    /// See CODE_AUDIT_EditItem §3.3.
-    func apply(itemId: UUID, item: ModelType, hide: Bool) -> [ModelType] {
-        let previousIds = items
+    /// Shows `itemId` (moved to the front) or, for `hide`, only caches it. The list of "other
+    /// newly visible items" it used to return was always empty; the dependents a delivery wrote
+    /// come from the import instead. See CODE_AUDIT_EditItem §3.3, CODE_AUDIT_Folder §5.22.
+    func apply(itemId: UUID, item: ModelType, hide: Bool) {
         if hide {
             if !items.contains(itemId) {
                 items.append(itemId)
@@ -119,11 +117,6 @@ public final class ItemGameModel {
         }
 
         itemData[itemId] = item
-        guard !hide else { return [] }
-        return Set(items)
-            .subtracting(previousIds)
-            .subtracting([itemId])
-            .compactMap { itemData[$0] }
     }
 
     func item(for itemId: UUID) -> ModelType? {
@@ -236,6 +229,21 @@ public extension GameControllable {
         await itemControllable.itemDataModel.resetGame()
         await gameModel.reset()
         await resetGameState()
+        await removeGameMemoryFiles()
+    }
+
+    /// Removes the files imports wrote for items that only lived in this game's memory (game
+    /// deliveries, a loaded saved game), unless a library item references them by now.
+    /// See CODE_AUDIT_Folder §5.26.
+    @MainActor
+    private func removeGameMemoryFiles() async {
+        guard let controller = itemControllable.fileUrlDataController else { return }
+        let files = controller.model.gameMemoryFiles
+        controller.model.gameMemoryFiles = []
+        let libraryFiles = itemControllable.libraryFileUrls()
+        for file in files where !libraryFiles.contains(where: { controller.isSameStoredFile($0, file) }) {
+            await controller.removeStoredFile(file)
+        }
     }
     
     @MainActor func resetGameState() {}
@@ -344,7 +352,16 @@ public extension GameControllable {
 
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
         let generation = await gameModel.resetGeneration
-        guard await hasItem(id: itemId, version: data.version) == false else {
+        // Version 0 means the model has no version of its own (Dice, Adventure, Generator, …),
+        // not "any version": a delivered package is imported instead of being dropped because a
+        // copy exists. See CODE_AUDIT_Folder §5.24.
+        let isAlreadyPresent: Bool
+        if data.version == 0, data.data != nil {
+            isAlreadyPresent = false
+        } else {
+            isAlreadyPresent = await hasItem(id: itemId, version: data.version)
+        }
+        guard !isAlreadyPresent else {
             if await !hasLocalFileData(for: itemId) {
                 guard data.data != nil else { return false }
                 try await updateGame(data: data, hide: !save, deep: false)
@@ -367,7 +384,7 @@ public extension GameControllable {
             gameModel.insert(itemId: item.id, item: item)
         }
         if save, let model = gameModel.itemData[itemId] {
-            itemControllable.replaceForGame(model: model, isInsert: true, policy: .persist)
+            itemControllable.persistFromGame(model: model, authoritative: false)
         }
         return true
     }
@@ -394,9 +411,10 @@ public extension GameControllable {
     /// what the master just sent. See CODE_AUDIT / player-character-sync-gaps.
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, policy: GameMutationPolicy, importMode: ImportMode = .merge) async throws {
         let generation = await gameModel.resetGeneration
+        var appliedIds: Set<UUID> = []
         if let encodedData = data.data {
             do {
-                try await importNetwork(from: encodedData, importMode: importMode)
+                appliedIds = try await importNetwork(from: encodedData, importMode: importMode)[itemControllable.config.module] ?? []
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
@@ -406,24 +424,60 @@ public extension GameControllable {
             let module = itemControllable.config.module
             guard data.type == module else { throw ItemGameStorableError.wrongData }
         }
-        try await applyGameUpdate(itemId: data.id, hide: hide, policy: policy, generation: generation)
+        try await applyGameUpdate(
+            itemId: data.id,
+            hide: hide,
+            policy: policy,
+            dependentIds: appliedIds.subtracting([data.id]),
+            authoritative: importMode == .overwrite,
+            generation: generation
+        )
     }
 
     /// Shows (and for `.persist` stores) the delivered item in one main-actor step. A game reset
     /// during the import above must not re-populate the cleared game model or persist the
     /// delivery, so the reset generation is re-checked here. See CODE_AUDIT_Folder §3.11.
+    ///
+    /// `.persist` also stores the other items of this module the package wrote (a playlist's
+    /// tracks, a character's grouped values); the old dependent list was always empty, so they
+    /// stayed in game memory and vanished at game end. Each is merged with the library copy and
+    /// keeps its local folder and visibility. See CODE_AUDIT_Folder §5.22, §5.23.
     @MainActor
-    private func applyGameUpdate(itemId: UUID, hide: Bool, policy: GameMutationPolicy, generation: Int) throws {
+    private func applyGameUpdate(itemId: UUID, hide: Bool, policy: GameMutationPolicy, dependentIds: Set<UUID>, authoritative: Bool, generation: Int) throws {
         guard gameModel.resetGeneration == generation else { throw CancellationError() }
         let gameItem: ModelType? = gameModel.item(for: itemId)
         guard let item = gameItem ?? itemControllable.itemSync(for: itemId) else { throw ItemGameStorableError.itemMissing }
-        let otherItems = gameModel.apply(itemId: itemId, item: item, hide: hide)
-        if policy == .persist {
-            itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
-            for otherItem in otherItems {
-                itemControllable.replaceForGame(model: otherItem, isInsert: true, policy: .persist)
+        gameModel.apply(itemId: itemId, item: item, hide: hide)
+        guard policy == .persist else { return }
+        itemControllable.persistFromGame(model: item, authoritative: authoritative)
+        for dependent in members(of: itemId, within: dependentIds) {
+            itemControllable.persistFromGame(model: dependent, authoritative: authoritative)
+        }
+    }
+
+    /// The items of `candidateIds` reachable from `itemId` through `entries` (a playlist's
+    /// tracks, a collection's members, recursively). Other items of the package — the sender's
+    /// ancestor folders or collections that contain the delivered item — describe the sender's
+    /// library and are not persisted with it. See CODE_AUDIT_Folder §5.22.
+    @MainActor
+    private func members(of itemId: UUID, within candidateIds: Set<UUID>) -> [ModelType] {
+        func gameOrLibraryItem(_ id: UUID) -> ModelType? {
+            let gameItem: ModelType? = gameModel.item(for: id)
+            return gameItem ?? itemControllable.itemSync(for: id)
+        }
+        var found: [ModelType] = []
+        var visited: Set<UUID> = [itemId]
+        var stack = [itemId]
+        while let current = stack.popLast(), visited.count <= candidateIds.count + 1 {
+            guard let item = gameOrLibraryItem(current) as? any ItemDataAccessible else { continue }
+            for childId in item.entries.map(\.childId) where candidateIds.contains(childId) && visited.insert(childId).inserted {
+                if let child = gameOrLibraryItem(childId) {
+                    found.append(child)
+                    stack.append(childId)
+                }
             }
         }
+        return found
     }
     
     @MainActor
@@ -437,8 +491,9 @@ public extension GameControllable {
     /// Runs off the caller's (usually main) actor: parsing the byte stream reads blocks of up to
     /// 512 MB. Model creation and storage still hop to the main actor per item.
     /// See CODE_AUDIT_15 §3.3.
-    @concurrent
-    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge, peerPolicy: PeerImportPolicy? = nil) async throws {
+    /// Returns the ids each module's import wrote (see `ItemDataImportModel.appliedItemIds`).
+    @concurrent @discardableResult
+    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge, peerPolicy: PeerImportPolicy? = nil) async throws -> [NetworkModules: Set<UUID>] {
         // A bulk import or repair holds the data-mutation lock: apply this package after it
         // instead of interleaving with its writes. See CODE_AUDIT_Folder §3.5.
         await DataMutationCoordinator.shared.waitUntilIdle()
@@ -449,5 +504,6 @@ public extension GameControllable {
         let importController = await exportControllable.rootImportController
         let importModel = await ItemDataImportModel(importMode: importMode, peerPolicy: peerPolicy)
         try await importController.importStream(from: stream, forceSave: forceSave, importModel: importModel)
+        return await importModel.appliedItemIds
     }
 }

@@ -213,12 +213,13 @@ public extension FolderListModel {
         return list.first(where: { $0.id == selected })?.source.itemId ?? selected
     }
 
+    /// The item ids of the selected rows. `selection` holds row ids, which for a row inside an
+    /// expanded folder or collection are entry or path ids, not item ids; passing them on
+    /// unchanged made every multi-select action skip those rows. See CODE_AUDIT_Folder §5.7.
     var selectionItemIds: [UUID] {
-        selection
-    }
-
-    func ids(selectedItemIds: [UUID]) -> [UUID] {
-        selectedItemIds
+        selection.map { rowId in
+            list.first(where: { $0.id == rowId })?.source.itemId ?? rowId
+        }
     }
 }
 

@@ -9,14 +9,19 @@ import os.log
 // MARK: - Files
 
 public extension EditControllable {
+    /// The item's path below the module folder: its folder names and its own name. Walks up the
+    /// `parentId` chain iteratively with a cycle guard; a parent cycle from imported or merged
+    /// data recursed until the stack overflowed. See CODE_AUDIT_Folder §5.30.
     @MainActor func folderPath(itemId: UUID?) async -> String {
-        guard let itemId, let item = editModel(for: itemId) else { return "" }
-        var name = ""
-        if let parentId = item.parentId {
-            name = await folderPath(itemId: parentId) + "/"
+        var names: [String] = []
+        var visited: Set<UUID> = []
+        var currentId = itemId
+        while let id = currentId, visited.count < FolderTreeDepthLimit.max, visited.insert(id).inserted,
+              let item = editModel(for: id) {
+            names.append(item.name)
+            currentId = item.parentId
         }
-        name.append(item.name)
-        return name
+        return names.reversed().joined(separator: "/")
     }
     
     /// Queues `operation` behind every file operation already queued for `itemId` and returns its
@@ -53,7 +58,10 @@ public extension EditControllable {
     }
 
     @MainActor private func moveFileToFolderPath(itemId: UUID) async {
-        guard let fileUrlDataController, let item = editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
+        guard let fileUrlDataController,
+              let item = itemControllable.itemSync(for: itemId, noGame: true),
+              let oldFileUrl = item.fileUrl,
+              item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
         let path = await folderPath(itemId: itemId)
         let newFileUrl: FileUrl?
         do {
@@ -65,14 +73,16 @@ public extension EditControllable {
             return
         }
         guard let newFileUrl else { return }
-        guard let current = editModel(for: itemId) else {
+        guard let current = itemControllable.itemSync(for: itemId, noGame: true) else {
             // Deleted while its file moved: the delete removed the old path, so the moved
             // file would be left with no item.
             fileUrlDataController.delete(newFileUrl)
             return
         }
         guard current.fileUrl == oldFileUrl else { return }
-        reset(fileUrl: newFileUrl, itemId: itemId)
+        // The move on disk is real, so the new path is persisted also during a running game.
+        // See CODE_AUDIT_Folder §5.21.
+        itemControllable.persistFileUrl(newFileUrl, itemId: itemId)
     }
 
     /// Replaces the item's file with the file at `url`, or removes it when `url` is nil. Queued
@@ -169,7 +179,9 @@ public extension EditControllable {
         guard let fileUrl = try await fileUrlDataController.copyFile(source, fileId: item.id, to: destination) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        reset(fileUrl: fileUrl, itemId: itemId)
+        // A duplicate is persisted also during a running game, and so is its copied file.
+        // See CODE_AUDIT_Folder §5.21.
+        itemControllable.persistFileUrl(fileUrl, itemId: itemId)
     }
 
     /// Replaces the item's file with `data`. The new file is written before the old one is

@@ -96,9 +96,8 @@ public extension SearchControllable {
         if let focusId {
             guard let folder = await itemControllable.item(for: focusId) else { return [] }
             var results: [SearchResult] = []
-            for entry in folder.entries {
+            for (entry, entryId) in zip(folder.entries, folder.memberRowIds()) {
                 guard !Task.isCancelled else { break }
-                let entryId = entry.id == entry.childId ? entry.id.childPath(of: folder.id) : entry.id
                 if let node = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, searchEntries: searchEntries, includeTags: includeTags) {
                     results.append(node)
                 }
@@ -157,12 +156,11 @@ public extension SearchControllable {
             // no children and let the UI open/close on demand.
             var childNodes: [SearchResult] = []
             if !searchText.isEmpty {
-                for entry in item.entries {
+                for (entry, entryId) in zip(item.entries, item.memberRowIds()) {
                     guard !Task.isCancelled else { break }
                     // Yield periodically so a large folder/collection tree doesn't monopolize
                     // the main actor in one unbroken stretch during a single search pass.
                     await Task.yield()
-                    let entryId = entry.id == entry.childId ? entry.id.childPath(of: item.id) : entry.id
                     if let child = await buildFolderTreeNode(itemId: entry.childId, searchText: searchText, displayMode: displayMode, parentEntryId: entryId, searchEntries: searchEntries, includeTags: includeTags, depth: depth + 1) {
                         childNodes.append(child)
                     }
@@ -325,6 +323,23 @@ extension UUID {
             p.8  ^ s.8,  p.9  ^ s.9,  p.10 ^ s.10, p.11 ^ s.11,
             p.12 ^ s.12, p.13 ^ s.13, p.14 ^ s.14, p.15 ^ s.15
         ))
+    }
+}
+
+public extension ItemDataAccessible {
+    /// The list-row id of each member of this folder or collection, in `entries` order. Unique
+    /// per row: an entry whose id is the member's own id gets a path id below this parent (see
+    /// `childPath(of:)`), and a member a collection lists more than once gets one id per
+    /// occurrence. Repeated members used to share one row id. See CODE_AUDIT_Folder §5.17.
+    func memberRowIds() -> [UUID] {
+        var occurrences: [UUID: UInt8] = [:]
+        return entries.map { entry in
+            let base = entry.id == entry.childId ? entry.id.childPath(of: id) : entry.id
+            let occurrence = occurrences[base, default: 0]
+            occurrences[base] = occurrence &+ 1
+            guard occurrence > 0 else { return base }
+            return base.childPath(of: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, occurrence)))
+        }
     }
 }
 

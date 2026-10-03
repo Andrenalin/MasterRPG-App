@@ -418,6 +418,10 @@ extension GameRoot {
         #if os(visionOS)
         gameModel.shareState.isMaster = false
         #endif
+        // Game mode before the player controller can process anything: a package the master
+        // sends while connecting was written to the permanent library otherwise. A failed start
+        // resets it again in `stopGame()`. See CODE_AUDIT_Folder §5.25.
+        adventureRoot.startGame()
         let player = PlayerController(root: self, asGameMaster: mode == .demo)
         gameModel.playerController = player
 

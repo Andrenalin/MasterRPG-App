@@ -201,7 +201,10 @@ private extension ListRootView {
     /// Used by `onDeleteCommand` (macOS) and the `triggerDelete` onChange handler.
     func deleteItems(offsets: IndexSet) {
         if let parentModel {
-            root.editControllable.removeItem(offsets: offsets, itemId: parentModel.id)
+            // By row id: list positions are not positions in the parent's entries.
+            // See CODE_AUDIT_Folder §5.15.
+            let rowIds = Set(offsets.compactMap { listModel.list.indices.contains($0) ? listModel.list[$0].source.entryId : nil })
+            root.editControllable.removeMembers(rowIds: rowIds, from: parentModel.id)
             listModel.deleteItems(offsets: offsets)
         } else {
             let removingItems = listController.delete(offsets: offsets)
@@ -290,11 +293,14 @@ private struct ListView: View {
             // module and back can recreate this view (fresh `@State`), so the scroll offset
             // isn't always preserved for free.
             let recordedScrollId = listModel.scrollId
-            let initialSelected = listModel.selected
+            // The item id, not the row id, and the live generation: a literal 0 made the
+            // restore a no-op after the first navigation reset. See CODE_AUDIT_Folder §5.30.
+            let initialSelectedItemId = listModel.selectedItemId
+            let selectionGeneration = listModel.selectionGeneration
             await Task.yield()
             guard !Task.isCancelled else { return }
-            if let selectedId = initialSelected {
-                listController.applyPostUpdateSelection(previousSelectedId: selectedId, selectionGeneration: 0)
+            if let initialSelectedItemId {
+                listController.applyPostUpdateSelection(previousSelectedId: initialSelectedItemId, selectionGeneration: selectionGeneration)
             }
             if let recordedScrollId {
                 scrollPosition = ScrollPosition(id: recordedScrollId, anchor: .top)

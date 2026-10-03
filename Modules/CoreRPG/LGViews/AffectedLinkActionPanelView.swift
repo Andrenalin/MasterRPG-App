@@ -15,6 +15,10 @@ public struct AffectedLinkActionPanelView: View {
     
     @Environment(\.navigator) private var navigator
     @Environment(\.colorScheme) private var colorScheme
+
+    /// Set by Remove and Cancel. A sheet dismissed any other way (swipe, Escape outside the
+    /// button) counts as Cancel. See CODE_AUDIT_Folder §5.12.
+    @State private var isResolved = false
         
     public var body: some View {
         ManagedNavigationStack {
@@ -39,6 +43,7 @@ public struct AffectedLinkActionPanelView: View {
                     Button {
                         let removedItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? $0.item : nil }
                         let restoredItems = removeEntryList.linkTree.compactMap { $0.canRemoved ? nil : $0.item }
+                        isResolved = true
                         if let action {
                             action(removedItems)
                         } else {
@@ -57,7 +62,8 @@ public struct AffectedLinkActionPanelView: View {
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
-                        restoreItems(models: removeEntryList.linkTree.map { $0.item })
+                        isResolved = true
+                        restoreItems(models: removeEntryList.removeItems)
                         navigator.dismiss()
                     } label: {
                         Label {
@@ -76,6 +82,17 @@ public struct AffectedLinkActionPanelView: View {
         .task(id: removeEntryList.removeItems) {
             removeEntryList.linkTree = await AffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
         }
+        .onDisappear {
+            // The items were trashed before the panel opened; a dismissal without Remove keeps
+            // nothing trashed the user did not confirm. The list is cleared either way, so a
+            // later panel never shows (or restores) this deletion's items.
+            // See CODE_AUDIT_Folder §5.12.
+            if !isResolved, action == nil {
+                restoreItems(models: removeEntryList.removeItems)
+            }
+            removeEntryList.removeItems = []
+            removeEntryList.linkTree = []
+        }
     }
 }
 
@@ -90,10 +107,10 @@ private extension AffectedLinkActionPanelView {
         }
     }
     
+    /// Restores `models` together, so a folder and its children come back as they were.
+    /// See CODE_AUDIT_Folder §5.4.
     @MainActor func restoreItems(models: [ItemRowModel]) {
-        for model in models {
-            root.editControllable.restore(itemId: model.itemId)
-        }
+        root.editControllable.restore(itemIds: models.map(\.itemId))
         root.folderListControllable.scheduleSearch()
     }
 

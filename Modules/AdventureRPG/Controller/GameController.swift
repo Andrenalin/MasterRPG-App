@@ -75,9 +75,10 @@ extension GameController: AdventureStoreGameable {
     @MainActor
     func resetGame() async {
         await reset()
-        // See CODE_AUDIT §9.5 — loops over the shared sibling list instead of
-        // hand-listing each of the 9 modules.
-        for sibling in root.siblingModuleRootsExcludingRule {
+        // The same roots `AdventureRootModel.startGame()` puts into game mode, Rule included:
+        // skipping Rule left it in game mode after every game, so its edits went to game memory
+        // only and were lost at relaunch. See CODE_AUDIT §9.5, CODE_AUDIT_Folder §5.3.
+        for sibling in root.siblingModuleRoots {
             await sibling.gameControllable.reset()
         }
     }

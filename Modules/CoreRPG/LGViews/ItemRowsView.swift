@@ -44,7 +44,8 @@ struct ItemRowsView: View {
         withAnimation {
             root.editControllable.addItem(itemId: itemId, parentId: parentModel.id)
             listController.scheduleDetailSearch()
-            root.folderListControllable.resetFilter()
+            // A fresh search, not `resetFilter()`. See CODE_AUDIT_Folder §5.29.
+            root.folderListControllable.update(debounce: false)
             Task {
                 await MasterRPGTips.donateContentOrganized()
             }

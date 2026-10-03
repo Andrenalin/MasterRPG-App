@@ -191,11 +191,12 @@ extension EditController {
 
 extension EditController {
     @MainActor public func duplicate(item: any ItemDataAccessible) async {
-        guard let model = editModel(for: item.id) else { return }
+        guard let model = folderEditModel(for: item.id, scope: .library) else { return }
         let originalParentId = model.parentId
-        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true, visited: [model.id])
+        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true, parentId: nil, visited: [model.id])
+        // Persisted also during a running game. See CODE_AUDIT_Folder §5.21.
         for copy in copies {
-            itemControllable.replace(model: copy, isInsert: true)
+            itemControllable.replace(model: copy, isInsert: true, forceSave: true)
         }
 
         // For folders: rebuild entries with independent, recursively-duplicated child
@@ -205,20 +206,23 @@ extension EditController {
         // plain `entry.duplicate()` produced by `AdventureModel.duplicate()`, which
         // mints a new random `id` and so pointed at nothing. See
         // CODE_AUDIT_EditItem §5.3.
-        if item.isFolder, let copyFolder = editModel(for: copyId) {
+        if item.isFolder, let copyFolder = folderEditModel(for: copyId, scope: .library) {
             copyFolder.entries = await duplicateFolderEntries(of: item.id, newParentId: copyId, visited: [item.id])
-            save(updated: copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString)
+            saveFolderEdit(copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString, scope: .library)
         }
 
         if let parentId = originalParentId {
             addItem(itemId: copyId, parentId: parentId)
         }
+        // A collection only references its members: the copy joins every collection of the
+        // original without changing its visibility. See CODE_AUDIT_Folder §5.16.
+        guard !model.specialCategory else { return }
         let originalId = item.id
         for containerId in itemControllable.itemDataModel.items {
-            guard let container = itemControllable.itemSync(for: containerId),
-                  container.category == itemControllable.collectionCategory,
+            guard let container = itemControllable.itemSync(for: containerId, noGame: true),
+                  container.category.isCollection,
                   container.entries.contains(where: { $0.childId == originalId }) else { continue }
-            addGroup(itemId: containerId, childId: copyId)
+            addItem(itemId: copyId, parentId: containerId)
         }
     }
 
@@ -233,39 +237,46 @@ extension EditController {
     /// corrupted sync data) recursing forever — mirrors the same fix applied to
     /// `LinkController.collectLinks`. See CODE_AUDIT §5.7.
     @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID, visited: Set<UUID>) async -> [AdventureEntryModel] {
-        guard let originalFolder = editModel(for: originalFolderId) else { return [] }
+        guard let originalFolder = folderEditModel(for: originalFolderId, scope: .library) else { return [] }
         var newEntries: [AdventureEntryModel] = []
         for entry in originalFolder.entries {
-            guard !visited.contains(entry.childId), let childModel = editModel(for: entry.childId) else { continue }
+            guard !visited.contains(entry.childId),
+                  let childModel = folderEditModel(for: entry.childId, scope: .library),
+                  childModel.parentId == originalFolderId else { continue }
             var visited = visited
             visited.insert(entry.childId)
-            let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, visited: visited)
+            let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, parentId: newParentId, visited: visited)
             for copy in childCopies {
-                itemControllable.replace(model: copy, isInsert: true)
+                itemControllable.replace(model: copy, isInsert: true, forceSave: true)
             }
-            if let childCopy = editModel(for: childCopyId) {
-                childCopy.parentId = newParentId
-                if childModel.isFolder {
-                    childCopy.entries = await duplicateFolderEntries(of: childModel.id, newParentId: childCopyId, visited: visited)
-                }
-                save(updated: childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString)
+            if childModel.isFolder, let childCopy = folderEditModel(for: childCopyId, scope: .library) {
+                childCopy.entries = await duplicateFolderEntries(of: childModel.id, newParentId: childCopyId, visited: visited)
+                saveFolderEdit(childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString, scope: .library)
             }
             newEntries.append(Model.Entry.newChild(id: childCopyId))
         }
         return newEntries
     }
 
-    @MainActor private func duplicateSubAdventure(model: AdventureModel, withCopy: Bool, visited: Set<UUID>) -> ([AdventureModel], UUID) {
+    /// The copy gets its folder parent before it is stored: setting it on the stored instance
+    /// afterwards is never persisted. See CODE_AUDIT_Folder §5.5.
+    @MainActor private func duplicateSubAdventure(model: AdventureModel, withCopy: Bool, parentId: UUID?, visited: Set<UUID>) -> ([AdventureModel], UUID) {
         let copyItem = withCopy ? model.duplicate() : model.duplicateWithoutCopy()
+        copyItem.parentId = parentId
         var copies: [AdventureModel] = [copyItem]
+        if model.category.isCollection {
+            // A collection's copy references the same members. See CODE_AUDIT_Folder §5.16.
+            copyItem.entries = model.entries.map { Model.Entry.newChild(id: $0.childId) }
+            return (copies, copyItem.id)
+        }
         var newEntries: [AdventureEntryModel] = []
         for entry in model.entries {
             var duplicatedEntry = entry.duplicate()
             if let adventureId = entry.adventureId, !visited.contains(adventureId),
-               let childModel = itemControllable.itemSync(for: adventureId) as? AdventureModel {
+               let childModel = itemControllable.itemSync(for: adventureId, noGame: true) as? AdventureModel {
                 var visited = visited
                 visited.insert(adventureId)
-                let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, visited: visited)
+                let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, parentId: nil, visited: visited)
                 childCopies.first?.groupId = copyItem.id
                 copies.append(contentsOf: childCopies)
                 duplicatedEntry.adventureId = childCopyId

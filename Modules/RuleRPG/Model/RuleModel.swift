@@ -182,7 +182,7 @@ extension RuleModel: ItemDiffComparable {
         let mergedEntries: CRDTDataUpdate<[RuleEntryModel]>
         if mergedCategory.wrappedValue == .folder {
             // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
-            let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name)
+            let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name, childId: \.childId)
             mergedEntries = CRDTDataUpdate(wrappedValue: combined)
         } else {
             mergedEntries = entries_.merged(other: other.entries_)

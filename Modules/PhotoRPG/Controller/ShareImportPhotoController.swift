@@ -11,7 +11,9 @@ import UniformTypeIdentifiers
 @MainActor public struct ShareImportPhotoController: Sendable {
     public init() {}
 
-    public func addNewPhoto(context: NSManagedObjectContext, data: Data, name: String, text: String) async -> (UUID, String) {
+    /// Throws when the image could not be written, instead of saving a photo whose file exists
+    /// only in memory and is gone after relaunch. See CODE_AUDIT_Folder §5.11.
+    public func addNewPhoto(context: NSManagedObjectContext, data: Data, name: String, text: String) async throws -> (UUID, String) {
         let dataController = DataController(context: context, token: NetworkModules.photo.token)
         let model = PhotoModel.empty.copy()
         model.category = .entry
@@ -24,13 +26,16 @@ import UniformTypeIdentifiers
         // (`#`, unencoded `%`/`?`, ...); `.appending(component:)` percent-encodes it,
         // unlike `URL(string:)` which would return nil. `URL(filePath:)` is non-failable,
         // unlike the `URL(string: "/")!` this replaced.
-        let fileUrl = URL(filePath: "/").appending(component: "\(name).\(filenameExtension)")
+        let fileUrl = URL(filePath: "/").appending(component: Self.fileName(for: name, photoId: model.id, extension: filenameExtension))
         var dataFileUrl = FileUrl(fileId: model.id, url: fileUrl, location: .newCloud, module: NetworkModules.photo.token, relativeUrl: nil)
         dataFileUrl.resetData(data)
 
         let fileUrlDataController = FileUrlDataController(moduleFolder: NetworkModules.photo.token, fileTypes: [.image], filenameExtension: filenameExtension)
 
-        model.fileUrl = try? await fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: filenameExtension)
+        guard let storedFileUrl = try await fileUrlDataController.createNewFileUrl(fileId: model.id, unconvertedFileUrl: dataFileUrl, pathExtension: filenameExtension, requireDurableStorage: true) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        model.fileUrl = storedFileUrl
 
         // Snapshot on the MainActor; only the Sendable value crosses into the context.
         let snapshot = dataController.makeSnapshot(from: model)
@@ -39,5 +44,15 @@ import UniformTypeIdentifiers
             dataController.applySnapshot(snapshot, into: dbmodel)
         }
         return (model.id, model.url(linkNumber: 0))
+    }
+
+    /// A file name of its own for every shared image: all images of one share used
+    /// `<name>.<ext>`, so they overwrote each other and any library photo of that name. Path
+    /// separators are replaced, and an empty name gets a default. See CODE_AUDIT_Folder §5.11.
+    static func fileName(for name: String, photoId: UUID, extension filenameExtension: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacing(/[\/\\:]/, with: "-")
+        let base = trimmed.isEmpty ? "Photo" : trimmed
+        return "\(base)-\(photoId.uuidString.prefix(8)).\(filenameExtension)"
     }
 }

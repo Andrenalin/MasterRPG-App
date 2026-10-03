@@ -138,7 +138,12 @@ struct PlayerMasterControllerTests {
         #expect(resendAudioData.data.type == .audio)
         #expect(await env.masterRoot.audioRoot.gameController.currentId == audioId)
         #expect(env.masterRoot.audioRoot.gameController.gameItem(for: audioId).version == version)
-        #expect(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 1)
+        // The persisted delivery brings the audio it references along (CODE_AUDIT_Folder §5.22).
+        let referencedIds = Set(env.playerRoot.audioRoot.itemController.itemSync(for: audioId)?.entries.map(\.childId) ?? [])
+        #expect(env.masterRoot.audioRoot.itemController.itemDataModel.items.count == 1 + referencedIds.count)
+        for referencedId in referencedIds {
+            #expect(env.masterRoot.audioRoot.itemController.itemSync(for: referencedId, noGame: true) != nil)
+        }
         let persistedAudio = try #require(env.masterRoot.audioRoot.itemController.itemSync(for: audioId, noGame: true))
         #expect(persistedAudio.version == version)
         #expect(persistedAudio.fileUrl != nil)

@@ -122,7 +122,7 @@ extension SpaceModel: nonisolated ItemDiffComparable {
             let mergedEntries: CRDTDataUpdate<[SpaceEntryModel]>
             if mergedCategory.wrappedValue == .folder {
                 // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
-                let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name)
+                let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name, childId: \.childId)
                 mergedEntries = CRDTDataUpdate(wrappedValue: combined)
             } else {
                 mergedEntries = entries_.merged(other: other.entries_)
@@ -178,7 +178,8 @@ extension SpaceModel: nonisolated ItemDuplicatable {
     nonisolated public func duplicate() -> SpaceModel {
         return assumeMainActorIsolated {
             let copyName = duplicateName(from: name)
-            return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: parentId)
+            // The copy starts outside any folder; the duplicate flow files it. See CODE_AUDIT_Folder §5.27.
+            return SpaceModel(id: UUID(), name: copyName, description: description, tags: tags, category: category, displayState: displayState, degrees: degrees, fileUrl: nil, entries: entries.map { $0.duplicate() }, parentId: nil)
     
         }
     }

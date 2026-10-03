@@ -7059,6 +7059,40 @@
           }
         }
       }
+    },
+    "Not in Import" : {
+      "comment" : "Heading of the import review section listing library items the imported file does not contain.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht im Import"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่อยู่ในการนำเข้า"
+          }
+        }
+      }
+    },
+    "These items are in your library but not in the imported file. Choosing the imported version deletes them." : {
+      "comment" : "Footer of the import review section listing library items the imported file does not contain.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Einträge sind in deiner Bibliothek, aber nicht in der importierten Datei. Wählst du die importierte Version, werden sie gelöscht."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รายการเหล่านี้อยู่ในคลังของคุณแต่ไม่อยู่ในไฟล์ที่นำเข้า การเลือกเวอร์ชันที่นำเข้าจะลบรายการเหล่านี้"
+          }
+        }
+      }
     }
   },
   "version" : "1.3"

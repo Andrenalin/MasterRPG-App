@@ -264,11 +264,15 @@ private struct DeleteItemView: View {
 
     var body: some View {
         Button(role: .destructive) {
+            var removingItems: [ItemRowModel] = []
             withAnimation {
-                let removingItems = controller.deleteItem(currentSelected: currentSelected)
+                removingItems = controller.deleteItem(currentSelected: currentSelected)
                 guard !removingItems.isEmpty else { return }
                 root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
             }
+            // Nothing selected: opening the panel showed the previous deletion's list.
+            // See CODE_AUDIT_Folder §5.12.
+            guard !removingItems.isEmpty else { return }
             navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         } label: {
             Label {
@@ -280,7 +284,9 @@ private struct DeleteItemView: View {
         #if !os(tvOS)
         .keyboardShortcut(.delete, modifiers: .command)
         #endif
-        .disabled((parentItem?.category ?? .entry) == .collection)
+        // Every collection kind (album, playlist, dice bag, …), not only `.collection`: in a
+        // collection's list Delete would remove the item itself. See CODE_AUDIT_Folder §5.29.
+        .disabled(parentItem?.category.isCollection ?? false)
     }
 }
 
