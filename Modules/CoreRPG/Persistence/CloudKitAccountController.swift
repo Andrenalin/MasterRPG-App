@@ -57,7 +57,7 @@ public struct CloudKitAccountController {
                 return .unavailable
             }
         } catch {
-            Logger.persistenceController.error("Cannot check iCloud account: \(error.localizedDescription, privacy: .public)")
+            Logger.persistenceController.error("Cannot check iCloud account: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return .unavailable
     }

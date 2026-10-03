@@ -64,7 +64,7 @@ import os.log
                     }
                     return results
                 } catch {
-                    Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                    Logger.coreDataController.error("tagdata error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                     return []
                 }
             }
@@ -149,7 +149,7 @@ public extension LinkRegisterController {
                 if context.hasChanges { try context.save() }
             } catch {
                 context.rollbackRestoringFlushedOperations(after: error)
-                Logger.coreDataController.error("link resetData error \(error.localizedDescription, privacy: .public)")
+                Logger.coreDataController.error("link resetData error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
     }
@@ -207,7 +207,7 @@ public extension LinkRegisterController {
                 }
             }
         } catch {
-            Logger.coreDataController.error("link save error \(error.localizedDescription, privacy: .public)")
+            Logger.coreDataController.error("link save error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             // Restore the affected-source set cleared above so the next `save()`
             // retries this batch instead of silently dropping the pending link
             // change. See CODE_AUDIT_17 §5.5.

@@ -74,7 +74,7 @@ public extension ItemControllable {
             try await dataControllable?.batchDelete(ids: allItemIds)
             itemDataModel.lastPersistenceError = nil
         } catch {
-            Logger.itemController.error("resetData() batch delete failed: \(error.localizedDescription, privacy: .public)")
+            Logger.itemController.error("resetData() batch delete failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             itemDataModel.lastPersistenceError = error
             PersistenceIssueCenter.shared.recordSaveError(error)
         }
@@ -88,7 +88,7 @@ public extension ItemControllable {
             // The in-memory edit already applied, so a failed save here leaves the UI
             // showing a change that never reached disk — log and surface it rather than
             // silently discarding the failure. See CODE_AUDIT §5.1, CODE_AUDIT_19 §5.13.
-            Logger.itemController.error("save() failed: \(error.localizedDescription, privacy: .public)")
+            Logger.itemController.error("save() failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             itemDataModel.lastPersistenceError = error
             PersistenceIssueCenter.shared.recordSaveError(error)
         }
@@ -102,7 +102,7 @@ public extension ItemControllable {
         do {
             try await dataControllable?.flushPendingOperations()
         } catch {
-            Logger.itemController.error("flushPendingOperations() failed: \(error.localizedDescription, privacy: .public)")
+            Logger.itemController.error("flushPendingOperations() failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             itemDataModel.lastPersistenceError = error
             PersistenceIssueCenter.shared.recordSaveError(error)
         }

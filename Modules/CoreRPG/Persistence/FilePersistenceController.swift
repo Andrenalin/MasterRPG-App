@@ -56,11 +56,11 @@ extension FilePersistenceController {
                 let backupUrl = loadUrl.appendingPathExtension("corrupt")
                 try? FileManager.default.removeItem(at: backupUrl)
                 try? FileManager.default.moveItem(at: loadUrl, to: backupUrl)
-                Logger.filePersistenceController.error("Stored file is undecodable, kept as \(backupUrl.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                Logger.filePersistenceController.error("Stored file is undecodable, kept as \(backupUrl.lastPathComponent, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 return []
             }
         } catch {
-            Logger.filePersistenceController.error("Error loading data \(error.localizedDescription, privacy: .public)")
+            Logger.filePersistenceController.error("Error loading data \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return []
     }
@@ -75,7 +75,7 @@ extension FilePersistenceController {
         do {
             try FilePersistenceController.saveModel(data: data, into: saveUrl)
         } catch {
-            Logger.filePersistenceController.error("Error saving data \(error.localizedDescription, privacy: .public)")
+            Logger.filePersistenceController.error("Error saving data \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

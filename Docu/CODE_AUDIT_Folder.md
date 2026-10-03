@@ -24,7 +24,7 @@ Top items to address, in priority order:
 6. **[High] `repairFolder` aborts at the first folder that does not contain the item** — §5.6 — `Modules/CoreRPG/Controllable/EditControllable.swift:224-234`. The post-import folder repair almost never runs, and an Overwrite import of a subset export truncates the local folder (§5.8).
 7. **[High] Multi-select actions use row ids as item ids** — §5.7 — `Modules/CoreRPG/Model/FolderListModel.swift:215-217`. Move, duplicate, export and delete silently skip every selected row inside an expanded folder.
 8. **[High] Manual review deletes without the trash and runs no repair** — §5.9 — `Modules/CoreRPG/FileViews/ImportProgressPanelView.swift:304-318`. Folder children become invisible and links, tags and parent entries are left dangling.
-9. **[High] Player packages reach the master with no import policy, and the policy is keyed by bare UUID** — §6.1, §6.2 — `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift:87-107`. A connected player can replace arbitrary items in the game master's session and library.
+9. **[High] Player packages reach the master with no import policy, and the policy is keyed by bare UUID** — §6.1, §6.2 (both won't fix) — `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift:87-107`. A connected player can replace arbitrary items in the game master's session and library.
 10. **[High] Cancelling a Foundry commit makes its own rollback fail, and a multi-file drop creates one item** — §3.1, §3.2 — `Modules/CoreRPG/Import/ExternalImportReviewSession.swift:301-332`, `Modules/CoreRPG/Controllable/FolderListControllable.swift:321`.
 
 ---
@@ -452,6 +452,7 @@ Checked and found sound: the Foundry ZIP reader validates paths, caps sizes, bou
 - **Why:** A connected player can send a reveal with a fresh id and a package holding items for any module and any existing id. Each one replaces the master's game-memory copy, which every reader prefers; the file blocks are written to disk (§5.2); the master then re-exports the tampered copies as canonical. Reaching this needs a connected peer (LAN PIN or a FaceTime call), which is the trust model already accepted for the player's own character.
 - **Action:** Build a module-restricted policy for every package from a non-master sender, and check package contents against the envelope's id and type before applying.
 - **Severity:** High
+- **Status:** Won't fix (decided 2026-10-03). The attack is possible, but it is not an issue in practice: SharePlay games run among FaceTime friends, and local-network games are played by people who know each other. A public local-network game needs its join code. The decision is commented at `updateGame(data:hide:deep:)` in `Modules/CoreRPG/Controllable/GameControllable.swift` and at the four master call sites.
 
 ### 6.2 `PeerImportPolicy` is keyed by bare UUID, capped per package, and its folder repair is memory-only
 - **Location:** `Modules/CoreRPG/Controllable/ImportControllable.swift:24-52, 409-415`; `Modules/GameRPG/Root/GameRootModel.swift:310-316`; `Modules/CoreRPG/Controllable/EditControllable.swift:371-381`
@@ -462,6 +463,7 @@ Checked and found sound: the Foundry ZIP reader validates paths, caps sizes, bou
   - **Planted folder.** An admitted new folder may list game-master-owned ids. `cleanFolder` strips them only in game memory, so after the game the library folder still lists them, and deleting it deletes them (§5.1).
 - **Action:** Key ownership by module and id, cap per sender per session, strip unadmitted child ids from admitted folders before applying, and run post-import repair with the import's own `forceSave`.
 - **Severity:** High
+- **Status:** Won't fix (decided 2026-10-03). This only applies in a game session, when the master imports a player's character package; normal file imports and saved games do not use `PeerImportPolicy`. All three gaps need a deliberately crafted package: a normal character package repeats the same ids, never moves an id to another module and holds no folder listing the master's items. The same trust model as §6.1 applies: SharePlay games run among FaceTime friends, local-network games are played by people who know each other, and a public local-network game needs its join code. The decision is commented on `PeerImportPolicy` in `Modules/CoreRPG/Controllable/ImportControllable.swift` and at its call site in `Modules/GameRPG/Controller/MasterController+ValueMessages.swift`.
 
 ### 6.3 Percent-encoded slashes may pass the traversal filter on read paths
 - **Location:** `Modules/CoreRPG/Files/CloudDocumentController.swift:67-85, 270-277`; `Modules/CoreRPG/Files/FileUrl.swift:180-184`
@@ -469,6 +471,7 @@ Checked and found sound: the Foundry ZIP reader validates paths, caps sizes, bou
 - **Why:** Unverified: this assumes `pathComponents` yields `../../x` as one component for `..%2F..%2Fx`. If so, a metadata-only item resolves outside the module folder for reads, and a later `createGameData` would send that file to players. Writes are re-split and stay inside. `UntrustedImportTests` has no encoded-slash case. If confirmed this is High.
 - **Action:** Reject or split components containing a slash after decoding, assert the standardised result stays under the module root, and add a test.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-03. Confirmed real (High): `URL(string: "..%2F..%2Fx.pdf").pathComponents` is the single component `../../x.pdf`, and `append(path:)` re-split it, so the file resolved two folders above the module. `safeComponents` now splits each component at `/` before dropping `.`/`..`, `hasTraversalComponents` flags a component that contains a slash, and both `fullUrl` builders return the module folder if the result is not inside it. `UntrustedImportTests` covers four encoded-slash paths and `sanitizedForImport`.
 
 ### 6.4 Foundry image normalisation allows 400-megapixel decodes
 - **Location:** `Modules/RolePlayGameKit/Import/Foundry/FoundryMediaNormalizer.swift:124-133, 172-207`
@@ -476,6 +479,7 @@ Checked and found sound: the Foundry ZIP reader validates paths, caps sizes, bou
 - **Why:** A small, highly compressible image declaring that size needs about 1.6 GB twice, which kills the app on iOS during commit; an out-of-memory kill bypasses rollback.
 - **Action:** Lower the pixel budget and downsample with ImageIO thumbnailing.
 - **Severity:** Medium
+- **Status:** Fixed 2026-10-03. The header must declare its size, at most 16,384 px per axis and 150 MP. The image is decoded by ImageIO thumbnailing to at most 8192 px on the longest edge (`AKImage.maximumDecodedPixelSize`, the size the app displays at) with orientation applied, and is redrawn on white only when it has an alpha channel. `FoundryMediaNormalizerTests` covers downsampling, the refused header and the white flattening.
 
 ### 6.5 Logs publish file error text and user tag names
 - **Location:** `Modules/CoreRPG/Controllable/ImportControllable.swift:235, 245, 262, 303`; `Modules/CoreRPG/Controllable/EditControllable+File.swift:84`; `Modules/CoreRPG/Controllable/EditControllable.swift:45-51, 152, 162, 518`; `Modules/CoreRPG/Files/CloudDocumentController.swift:42-45`
@@ -483,6 +487,7 @@ Checked and found sound: the Foundry ZIP reader validates paths, caps sizes, bou
 - **Why:** Cocoa file errors include the user's file name or path, and tag names are user-authored; both land unredacted in the system log.
 - **Action:** Log error domain and code as public with the description private, and pass a fixed operation identifier.
 - **Severity:** Low
+- **Status:** Fixed 2026-10-03. A new `Error.logIdentifier` (domain and code) is logged as public with the description as private, at all 46 CoreRPG sites that published `localizedDescription`. Import failures go through `logImportFailure(_:)` instead of a public title. `saveChanges` passes the fixed identifier `EditControllable.saveChanges(to:name:)` to the operation counter.
 
 ---
 
@@ -737,8 +742,8 @@ Spot-check pattern: open Xcode and command-click the `path:line` reference; it s
 - **§5.12** — open `Modules/CoreRPG/LGViews/ListRootContextMenu.swift`, lines `270-277`: marking happens before navigation, and navigation runs even when the guard returned.
 - **§3.1** — open `Modules/CoreRPG/Files/FileManager+Coordination.swift`, line `259` (`try Task.checkCancellation()` at the top of `acquire`) and `Modules/CoreRPG/Import/ExternalImportReviewSession.swift`, lines `301-309` (rollback runs in the same task).
 - **§3.2** — open `Modules/CoreRPG/Files/FileDropDelegate.swift`, lines `31-47` (one call per provider) and `Modules/CoreRPG/Controllable/FolderListControllable.swift`, line `321` (the in-flight guard).
-- **§6.1** — open `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift`, line `95`: `updateGame` is called with the player's package and no policy.
-- **§6.2** — open `Modules/CoreRPG/Controllable/ImportControllable.swift`, lines `42-52` and `Modules/GameRPG/Root/GameRootModel.swift`, lines `310-316`: a new policy per message, seeded with ids stored per sender without a module. The three-step exploit chain was traced by the audit agent; I confirmed the policy code, not the chain.
+- **§6.1** — open `Modules/GameRPG/Controller/MasterController+PhotoMessages.swift`, line `97`: `updateGame` is called with the player's package and no policy. Won't fix: accepted trust model, see §6.1.
+- **§6.2** — open `Modules/CoreRPG/Controllable/ImportControllable.swift`, lines `50-60` and `Modules/GameRPG/Root/GameRootModel.swift`, lines `310-316`: a new policy per message, seeded with ids stored per sender without a module. The three-step exploit chain was traced by the audit agent; I confirmed the policy code, not the chain. Won't fix: accepted trust model, see §6.2.
 
 Medium and Low findings from the three audit agents were not all re-opened; those I could not confirm, or that depend on timing, say "unverified" in their Why line. If a finding does not reproduce when you visit the line, tell me the reference and I will re-investigate.
 

@@ -857,7 +857,9 @@ public extension EditControllable {
     }
 
     @MainActor func saveChanges(to newValue: Model, name: String, forceSave: Bool = false) {
-        trackOperation("EditControllable.saveChanges(to:name:\(name))")
+        // A fixed identifier: the counter logs it as public, and `name` can carry a user tag
+        // ("Add <tag>"). See CODE_AUDIT_Folder §6.5.
+        trackOperation("EditControllable.saveChanges(to:name:)")
 
         if let previous = itemControllable.itemSync(for: newValue.id) as? Model {
             let (added, removed) = newValue.changedLinkRegisterModels(oldValue: previous)

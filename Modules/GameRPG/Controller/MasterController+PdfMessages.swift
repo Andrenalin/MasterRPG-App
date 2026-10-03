@@ -91,6 +91,8 @@ extension MasterController {
                 // import fallback: import the player's bytes as the master's
                 // own canonical copy, then relay exactly what was received.
                 guard model.data.data != nil else { return nil }
+                // No import policy for the player's package: accepted, see `updateGame(data:hide:deep:)`
+                // (CODE_AUDIT_Folder §6.1, won't fix).
                 try await root.pdfRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                 gameModel.markSentGameItem(
                     type: .pdf,

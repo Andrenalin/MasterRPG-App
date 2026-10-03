@@ -39,6 +39,13 @@ struct ImportApplyPolicy: Sendable {
 /// introduced by this same peer before, or does not exist here yet — a package can never
 /// overwrite another item the device already owns. The item count is capped as well.
 /// See CODE_AUDIT_15 §5.2.
+///
+/// Known gaps, accepted by design and never to be fixed (CODE_AUDIT_Folder §6.2): ids are not
+/// keyed by module, the cap is per package rather than per session, and a new folder's entries
+/// pointing at existing items are stripped only in game memory. Each needs a deliberately crafted
+/// package, and only players the game master knows can connect: SharePlay runs among FaceTime
+/// friends, a local-network game is played by people at the same table, and a public
+/// local-network game needs its join code.
 @MainActor
 public final class PeerImportPolicy {
     public static let defaultMaximumItems = 256
@@ -286,7 +293,7 @@ public extension ImportControllable {
                             // A single undecodable item is skipped (and reported); cancelling stops the import.
                             if error is CancellationError { throw error }
                             await recordFailedItem(importModel)
-                            await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
+                            await logImportFailure(error)
                         }
                     default:
                         throw ItemDataImportableError.unsupportedDataType
@@ -295,7 +302,7 @@ public extension ImportControllable {
                     // Framing errors (a truncated block, an unknown token) mean the rest of the
                     // stream cannot be trusted, so they fail the import instead of being logged
                     // while the import reports success. See CODE_AUDIT_15 §5.7.
-                    await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
+                    await logImportFailure(error)
                     throw error
                 }
             }
@@ -354,6 +361,13 @@ public extension ImportControllable {
     }
 
     // MARK: - Import Lifecycle
+
+    /// The error's domain and code are public, its description (which can name the user's file)
+    /// is private. It was logged in the public title. See CODE_AUDIT_Folder §6.5.
+    func logImportFailure(_ error: any Error) async {
+        let token = await self.token()
+        Logger.importController.error("Import error \(token, privacy: .public): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+    }
 
     func logImport(title: String, count: Int, importModel: ItemDataImportModel) async {
         let token = await self.token()

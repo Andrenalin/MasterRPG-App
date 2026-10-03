@@ -277,7 +277,7 @@ public extension AKImage {
             return removeWhiteBackground ? image.removeWhiteBackground() : image
 #endif
         } catch let error {
-            Logger.cacheController.error("QLThumbnail failed \(error.localizedDescription, privacy: .public)")
+            Logger.cacheController.error("QLThumbnail failed \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
 #endif
         return nil

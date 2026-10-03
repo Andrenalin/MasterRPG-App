@@ -81,6 +81,9 @@ struct CloudDocumentController: Sendable {
         CloudDocumentController.safeComponents(compPath).forEach {
             nameUrl.append(path: $0)
         }
+        // A second line of defence: whatever the components were, the result stays inside the
+        // module folder. See CODE_AUDIT_Folder §6.3.
+        guard CloudDocumentController.isContained(nameUrl, in: moduleUrl) else { return moduleUrl }
         return nameUrl
     }
 
@@ -89,6 +92,7 @@ struct CloudDocumentController: Sendable {
         CloudDocumentController.safeComponents(filePath.split(separator: "/").map(String.init)).forEach {
             url.append(path: $0)
         }
+        guard CloudDocumentController.isContained(url, in: moduleUrl) else { return moduleUrl }
         return url
     }
 
@@ -273,13 +277,27 @@ extension CloudDocumentController {
     /// (`..`, `.`) together with empty and root segments. Every builder that turns a
     /// decoded `FileUrl` path into a file-system URL goes through this.
     /// See CODE_AUDIT_15 §5.1.
+    ///
+    /// A component is split at `/` first: `pathComponents` decodes `..%2F..%2Fx` into the
+    /// single component `../../x`, which passed the filter and was split again by
+    /// `append(path:)`, so the file resolved outside the module folder. See CODE_AUDIT_Folder §6.3.
     static func safeComponents(_ components: [String]) -> [String] {
-        components.filter { !$0.isEmpty && $0 != "/" && $0 != "." && $0 != ".." }
+        components
+            .flatMap { $0.split(separator: "/", omittingEmptySubsequences: true).map(String.init) }
+            .filter { $0 != "." && $0 != ".." }
     }
 
-    /// Whether `url` contains a segment `safeComponents(_:)` would drop as a traversal.
+    /// Whether `url` contains a segment `safeComponents(_:)` would drop or split as a traversal.
     static func hasTraversalComponents(_ url: URL) -> Bool {
-        url.pathComponents.contains { $0 == ".." || $0 == "." }
+        url.pathComponents.contains { $0 == ".." || $0 == "." || ($0 != "/" && $0.contains("/")) }
+    }
+
+    /// Whether `url` lies inside `root` once `.` and `..` are resolved.
+    static func isContained(_ url: URL, in root: URL) -> Bool {
+        let rootPath = root.standardizedFileURL.path(percentEncoded: false)
+        let path = url.standardizedFileURL.path(percentEncoded: false)
+        let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+        return path == rootPath || path.hasPrefix(prefix)
     }
 }
 

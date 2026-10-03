@@ -390,6 +390,13 @@ public extension GameControllable {
         return true
     }
 
+    /// Imports a delivered package without a `PeerImportPolicy`. The master also calls this for
+    /// a player's asset package when it has no copy of the revealed item, so a connected player
+    /// could in principle replace items of any module in the master's game.
+    ///
+    /// Accepted by design, never to be fixed (CODE_AUDIT_Folder §6.1): only players the game
+    /// master knows can connect. SharePlay runs among FaceTime friends, a local-network game is
+    /// played by people at the same table, and a public local-network game needs its join code.
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool) async throws {
         try await updateGame(data: data, hide: hide, deep: deep, policy: hide ? .memoryOnly : .persist, importMode: .merge)
     }

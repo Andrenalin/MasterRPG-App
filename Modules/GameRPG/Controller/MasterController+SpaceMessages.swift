@@ -105,6 +105,8 @@ extension MasterController {
                 // (and the master's own display) converge on it without a
                 // redundant re-export round trip.
                 guard model.data.data != nil else { return nil }
+                // No import policy for the player's package: accepted, see `updateGame(data:hide:deep:)`
+                // (CODE_AUDIT_Folder §6.1, won't fix).
                 try await root.spaceRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                 gameModel.markSentGameItem(
                     type: .space,

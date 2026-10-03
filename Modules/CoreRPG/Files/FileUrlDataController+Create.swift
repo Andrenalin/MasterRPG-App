@@ -45,7 +45,7 @@ public extension FileUrlDataController {
                     }
                 }
             } catch {
-                Logger.fileStore.error("Different device or different user \(error.localizedDescription, privacy: .public)")
+                Logger.fileStore.error("Different device or different user \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
 
@@ -57,7 +57,7 @@ public extension FileUrlDataController {
             // Write uses batched coordination internally now (createDirectory + write)
             try await cloudDocumentController.write(data: oldData, to: filePath)
         } catch {
-            Logger.fileStore.error("Cannot create file in cloud app group \(error.localizedDescription, privacy: .public)")
+            Logger.fileStore.error("Cannot create file in cloud app group \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             if requireDurableStorage {
                 throw error
             }
@@ -74,7 +74,7 @@ public extension FileUrlDataController {
         do {
             try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
         } catch {
-            Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
+            Logger.fileStore.error("Cannot bookmark file \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return FileUrl(fileId: fileId, url: fileURL, location: .newCloud, module: unconvertedFileUrl.module, relativeUrl: nil, contentHash: contentHash)
     }
@@ -133,7 +133,7 @@ public extension FileUrlDataController {
         do {
             try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: fullUrl)
         } catch {
-            Logger.fileStore.error("Cannot bookmark file \(error.localizedDescription, privacy: .public)")
+            Logger.fileStore.error("Cannot bookmark file \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         let contentHash = try await FileManager.default.contentHash(coordinatingAccessAt: fullUrl)
         return FileUrl(fileId: fileId, url: nameUrl, location: .newCloud, module: source.module, relativeUrl: nil, contentHash: contentHash)
@@ -193,7 +193,7 @@ public extension FileUrlDataController {
                 // Streamed, not read into memory. See CODE_AUDIT_19 §7.1.
                 resolvedContentHash = try await FileManager.default.contentHash(coordinatingAccessAt: url)
             } catch {
-                Logger.fileStore.error("Cannot read picker file to compute contentHash \(error.localizedDescription, privacy: .public)")
+                Logger.fileStore.error("Cannot read picker file to compute contentHash \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 resolvedContentHash = nil
             }
         }
@@ -229,7 +229,7 @@ public extension FileUrlDataController {
                 
                 return existingId.isEqual(newId)
             } catch {
-                Logger.fileStore.debug("Cannot compare file identifiers: \(error.localizedDescription, privacy: .public)")
+                Logger.fileStore.debug("Cannot compare file identifiers: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 return false
             }
         } ?? false
@@ -359,7 +359,7 @@ public extension FileUrlDataController {
             return true
         } catch {
             guard (error as NSError).code == NSFileNoSuchFileError else {
-                Logger.fileStore.error("Cannot delete file, keeping bookmark for retry \(error.localizedDescription, privacy: .public)")
+                Logger.fileStore.error("Cannot delete file, keeping bookmark for retry \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 return false
             }
             return true

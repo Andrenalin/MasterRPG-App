@@ -107,7 +107,7 @@ public extension SyncDataControllable {
                     await itemControllable.delete(itemId: staleId, withFileData: false, withDatabase: false)
                 }
             } catch {
-                Logger.syncDataControllable.error("updateFromSync deletion diff failed, reconciling: \(error.localizedDescription, privacy: .public)")
+                Logger.syncDataControllable.error("updateFromSync deletion diff failed, reconciling: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 needsReconciliation = true
             }
         }
@@ -127,7 +127,7 @@ public extension SyncDataControllable {
                     itemControllable.resetModel(with: model)
                 }
             } catch {
-                Logger.syncDataControllable.error("updateFromSync insert \(insertedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                Logger.syncDataControllable.error("updateFromSync insert \(insertedId, privacy: .public) failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 needsReconciliation = true
             }
         }
@@ -139,7 +139,7 @@ public extension SyncDataControllable {
                 // Use mergeUpdates to avoid database writes during sync
                 await itemControllable.mergeUpdates(model: model)
             } catch {
-                Logger.syncDataControllable.error("updateFromSync update \(updatedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                Logger.syncDataControllable.error("updateFromSync update \(updatedId, privacy: .public) failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 needsReconciliation = true
             }
         }
@@ -159,7 +159,7 @@ public extension SyncDataControllable {
             // Mirrors `updateFromSync`'s logging above — this full-table reconciliation
             // only runs once, at `start()`, so a failure here otherwise leaves no trace
             // of why items never loaded at launch. See CODE_AUDIT_EditItem §5.9.
-            Logger.syncDataControllable.error("fetchUpdates() failed: \(error.localizedDescription, privacy: .public)")
+            Logger.syncDataControllable.error("fetchUpdates() failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 }

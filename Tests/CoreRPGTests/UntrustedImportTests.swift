@@ -41,6 +41,39 @@ struct UntrustedImportTests {
         }
     }
 
+    @Test("An encoded slash cannot climb out of the module folder (CODE_AUDIT_Folder §6.3)", arguments: [
+        "..%2F..%2FStores%2FPrivate%2Fprivate.sqlite",
+        "/..%2F..%2Fsecret.pdf",
+        "a%2F..%2F..%2F..%2Fb",
+        "..%2f..%2fx"
+    ])
+    func encodedSlashStaysInsideModuleFolder(path: String) throws {
+        let controller = CloudDocumentController(modulePath: "Pdfs")
+        let moduleRoot = normalizedPath(controller.fullUrl(filePath: ""))
+        let hostile = try #require(URL(string: path))
+
+        let resolved = normalizedPath(controller.fullUrl(fileUrl: hostile))
+
+        #expect(resolved.hasPrefix(moduleRoot + "/"), "\(path) escaped to \(resolved)")
+        #expect(CloudDocumentController.hasTraversalComponents(hostile))
+    }
+
+    @Test("sanitizedForImport splits an encoded-slash traversal (CODE_AUDIT_Folder §6.3)")
+    func sanitizedEncodedSlash() throws {
+        let hostile = FileUrl(
+            fileId: UUID(),
+            url: try #require(URL(string: "..%2F..%2FStores%2Fprivate.sqlite")),
+            location: .newCloud,
+            module: "Photos",
+            relativeUrl: nil
+        )
+
+        let sanitized = hostile.sanitizedForImport()
+
+        #expect(sanitized.rawUrl.pathComponents.allSatisfy { $0 == "/" || (!$0.contains("/") && $0 != "..") })
+        #expect(sanitized.rawUrl.lastPathComponent == "private.sqlite")
+    }
+
     @Test("A clean relative path keeps resolving to the same file")
     func cleanPathIsUnchanged() {
         let controller = CloudDocumentController(modulePath: "Photos")

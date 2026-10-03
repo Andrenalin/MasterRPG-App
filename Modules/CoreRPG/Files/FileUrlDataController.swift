@@ -244,7 +244,7 @@ public extension FileUrlDataController {
         do {
             try FileManager.default.startDownloadingUbiquitousItem(at: url)
         } catch {
-            Logger.fileStore.error("Cannot start the iCloud download of \(url.lastPathComponent, privacy: .private): \(error.localizedDescription, privacy: .public)")
+            Logger.fileStore.error("Cannot start the iCloud download of \(url.lastPathComponent, privacy: .private): \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return false
     }

@@ -134,7 +134,7 @@ extension FileBookmarkController {
             }
             return url
         } catch {
-            Logger.bookmarkStore.error("Resolving Bookmark: \(fileId, privacy: .public) with error: \(error.localizedDescription, privacy: .public)")
+            Logger.bookmarkStore.error("Resolving Bookmark: \(fileId, privacy: .public) with error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return nil
     }

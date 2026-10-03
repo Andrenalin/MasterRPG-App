@@ -387,7 +387,7 @@ public extension CoreDataController {
                     objects.forEach { context.delete($0) }
                     try saveCoreDataThrowing()
                 } catch {
-                    Logger.coreDataController.error("Batch delete error: \(error.localizedDescription, privacy: .public)")
+                    Logger.coreDataController.error("Batch delete error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                     context.rollbackRestoringFlushedOperations(after: error)
                     throw error
                 }
@@ -461,7 +461,7 @@ private extension CoreDataController {
             }
             return models
         } catch {
-            Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
+            Logger.coreDataController.error("fetch error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             throw error
         }
     }
@@ -493,7 +493,7 @@ private extension CoreDataController {
             }
             return ids
         } catch {
-            Logger.coreDataController.error("fetch error \(error.localizedDescription, privacy: .public)")
+            Logger.coreDataController.error("fetch error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             throw error
         }
     }
@@ -515,7 +515,7 @@ private extension CoreDataController {
             }
             return result
         } catch {
-            Logger.coreDataController.error("fetch id \(uuid, privacy: .public) error \(error.localizedDescription, privacy: .public)")
+            Logger.coreDataController.error("fetch id \(uuid, privacy: .public) error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return nil
     }
@@ -524,7 +524,7 @@ private extension CoreDataController {
         do {
             try saveCoreDataThrowing()
         } catch {
-            Logger.coreDataController.error("save error \(error.localizedDescription, privacy: .public)")
+            Logger.coreDataController.error("save error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 

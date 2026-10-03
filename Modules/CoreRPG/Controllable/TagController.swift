@@ -44,7 +44,7 @@ public struct TagController: Sendable {
                         result[module, default: [:]][tag] = TagModel(module: module, title: tag, count: Int(tagModel.count))
                     }
                 } catch {
-                    Logger.coreDataController.error("tagdata error \(error.localizedDescription, privacy: .public)")
+                    Logger.coreDataController.error("tagdata error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                     return [:]
                 }
             }
@@ -113,7 +113,7 @@ public struct TagController: Sendable {
                 if context.hasChanges { try context.save() }
             } catch {
                 context.rollbackRestoringFlushedOperations(after: error)
-                Logger.coreDataController.error("tag resetData error \(error.localizedDescription, privacy: .public)")
+                Logger.coreDataController.error("tag resetData error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
     }
@@ -170,7 +170,7 @@ public struct TagController: Sendable {
                 }
             }
         } catch {
-            Logger.coreDataController.error("tag save error \(error.localizedDescription, privacy: .public)")
+            Logger.coreDataController.error("tag save error \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             // Restore the affected-module set cleared above so the next `save()`
             // retries this batch instead of silently dropping the pending tag
             // change. See CODE_AUDIT_17 §5.5.

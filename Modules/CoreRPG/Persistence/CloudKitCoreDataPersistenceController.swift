@@ -43,7 +43,7 @@ public struct CloudKitCoreDataPersistenceController {
             do {
                 try fileManager.createDirectory(at: privateStoreFolderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription, privacy: .public)")
+                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 model.error = .loadModel
             }
         }
@@ -125,7 +125,7 @@ public struct CloudKitCoreDataPersistenceController {
                 do {
                     try container.initializeCloudKitSchema()
                 } catch {
-                    Logger.persistenceController.error("\(#function): initializeCloudKitSchema failed: \(error.localizedDescription, privacy: .public)")
+                    Logger.persistenceController.error("\(#function): initializeCloudKitSchema failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 }
                 Logger.persistenceController.info("initializeCloudKitSchema succeeded")
 #else
@@ -200,7 +200,7 @@ public struct CloudKitCoreDataPersistenceController {
                         // real failure (quota, not-authenticated, schema), not just "still
                         // in progress" — surface it instead of masking it as `.inProgress`.
                         // See CODE_AUDIT_17 §5.8.
-                        Logger.persistenceController.error("CloudKit setup failed: \(error.localizedDescription, privacy: .public)")
+                        Logger.persistenceController.error("CloudKit setup failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                         update = .syncState(.failed(error.localizedDescription))
                     } else {
                         Logger.persistenceController.info("CloudKit setup in progress")
@@ -212,7 +212,7 @@ public struct CloudKitCoreDataPersistenceController {
                         Logger.persistenceController.info("CloudKit import succeeded")
                         update = .importSucceeded(Date())
                     } else if let error = event.error {
-                        Logger.persistenceController.error("CloudKit import error: \(error.localizedDescription, privacy: .public)")
+                        Logger.persistenceController.error("CloudKit import error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                         update = .syncState(.failed(error.localizedDescription))
                     } else {
                         update = .syncState(.inProgress)
@@ -227,7 +227,7 @@ public struct CloudKitCoreDataPersistenceController {
                         // UI kept showing "succeeded" from the last import while local edits
                         // never reached iCloud. Surface it the same way import failures are.
                         // See CODE_AUDIT_17 §5.8.
-                        Logger.persistenceController.error("CloudKit export error: \(error.localizedDescription, privacy: .public)")
+                        Logger.persistenceController.error("CloudKit export error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                         update = .syncState(.failed(error.localizedDescription))
                     } else {
                         update = .syncState(.inProgress)

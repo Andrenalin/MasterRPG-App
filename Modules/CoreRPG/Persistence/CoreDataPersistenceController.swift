@@ -149,7 +149,7 @@ public struct CoreDataPersistenceController {
             do {
                 try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.localizedDescription, privacy: .public)")
+                Logger.persistenceController.error("PersistenceController #\(#function) Failed to create the store folder: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 model.error = .loadModel
             }
         }

@@ -87,7 +87,8 @@ extension MasterController {
             // GM-approved / SharePlay call), so do not restrict the primary id here.
             // The package comes from a player: it may write that player's Character and
             // items it introduces, never another item this device already owns.
-            // See CODE_AUDIT_15 §5.2.
+            // See CODE_AUDIT_15 §5.2. The policy's known gaps are accepted, see
+            // `PeerImportPolicy` (CODE_AUDIT_Folder §6.2, won't fix).
             let policy = root.gameModel.peerImportPolicy(senderId: model.sender.id, primaryItemId: characterId)
             try await root.characterRoot.valueGameControllable.updatePlayer(data: model.data, policy: policy)
             root.gameModel.recordPeerImport(policy, senderId: model.sender.id)

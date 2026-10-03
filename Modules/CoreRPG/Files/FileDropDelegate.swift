@@ -39,7 +39,7 @@ public struct FileDropDelegate: DropDelegate {
                 } else if let error {
                     // Previously dropped silently — the drop looked like a no-op with no
                     // indication a file was rejected. See CODE_AUDIT_9 §4.1.
-                    Logger.fileStore.error("FileDropDelegate: failed to load dropped URL: \(error.localizedDescription, privacy: .public)")
+                    Logger.fileStore.error("FileDropDelegate: failed to load dropped URL: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 }
             }
         }

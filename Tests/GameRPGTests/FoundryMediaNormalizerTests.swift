@@ -1,6 +1,8 @@
 // @copyright André Trettin
 
+import CoreGraphics
 import Foundation
+import ImageIO
 import Testing
 import UniformTypeIdentifiers
 
@@ -78,6 +80,40 @@ struct FoundryMediaNormalizerTests {
         }
     }
 
+    @Test("A large image is stored downsampled to the size the app displays (CODE_AUDIT_Folder §6.4)")
+    func downsamplesLargeImage() async throws {
+        let plan = try #require(FoundryMediaNormalizer.plan(for: "maps/wide.png"))
+        let source = try makePNG(width: 9_000, height: 16)
+
+        let converted = try await plan.normalize(source)
+
+        let image = try #require(decodedImage(converted))
+        #expect(image.width == 8_192)
+        #expect(image.height < 16)
+    }
+
+    @Test("An image declaring more pixels than the budget is refused before decoding (CODE_AUDIT_Folder §6.4)")
+    func rejectsOversizedHeader() async throws {
+        let plan = try #require(FoundryMediaNormalizer.plan(for: "maps/huge.png"))
+        let source = try makePNG(width: 16_385, height: 1)
+
+        await #expect(throws: FoundryMediaNormalizationError.invalidImage) {
+            try await plan.normalize(source)
+        }
+    }
+
+    @Test("Transparent areas become white, not black (CODE_AUDIT_Folder §6.4)")
+    func flattensTransparencyOnWhite() async throws {
+        let plan = try #require(FoundryMediaNormalizer.plan(for: "icons/clear.png"))
+        let source = try makePNG(width: 8, height: 8, transparent: true)
+
+        let converted = try await plan.normalize(source)
+
+        let image = try #require(decodedImage(converted))
+        let pixel = try #require(firstPixel(of: image))
+        #expect(pixel.allSatisfy { $0 > 240 }, "expected white, got \(pixel)")
+    }
+
     @Test("PCM WAV becomes an MPEG-4 audio container")
     func convertsWAVToMPEG4Audio() async throws {
         // Given
@@ -96,6 +132,55 @@ struct FoundryMediaNormalizerTests {
 }
 
 private extension FoundryMediaNormalizerTests {
+    struct ImageFixtureError: Error {}
+
+    func makePNG(width: Int, height: Int, transparent: Bool = false) throws -> Data {
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { throw ImageFixtureError() }
+        if !transparent {
+            context.setFillColor(CGColor(red: 0.2, green: 0.4, blue: 0.6, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        }
+        guard let image = context.makeImage() else { throw ImageFixtureError() }
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.png.identifier as CFString, 1, nil) else {
+            throw ImageFixtureError()
+        }
+        CGImageDestinationAddImage(destination, image, nil)
+        guard CGImageDestinationFinalize(destination) else { throw ImageFixtureError() }
+        return output as Data
+    }
+
+    func decodedImage(_ data: Data) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+    }
+
+    func firstPixel(of image: CGImage) -> [UInt8]? {
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let drawn = pixel.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(
+                data: buffer.baseAddress,
+                width: 1,
+                height: 1,
+                bitsPerComponent: 8,
+                bytesPerRow: 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+            ) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+            return true
+        }
+        return drawn ? Array(pixel.prefix(3)) : nil
+    }
+
     func makeSilentPCMWave(sampleRate: UInt32 = 8_000, sampleCount: UInt32 = 2_000) -> Data {
         let channelCount: UInt16 = 1
         let bitsPerSample: UInt16 = 16

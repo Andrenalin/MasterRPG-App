@@ -79,7 +79,7 @@ public struct PersistentHistoryCleaner {
             await PersistentHistoryTimestampUpdater.shared.advanceTimestamps(for: allActors, to: cleanupTimestamp)
             Logger.persistentHistory.info("Updated timestamps for \(allActors.count) actors to \(cleanupTimestamp, privacy: .public)")
         } catch {
-            Logger.persistentHistory.error("Clean History error: \(error.localizedDescription, privacy: .public)")
+            Logger.persistentHistory.error("Clean History error: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 }
@@ -182,7 +182,7 @@ private actor PersistentHistoryProcessor {
                 await self?.process()
             } catch is CancellationError {
             } catch {
-                Logger.persistentHistory.error("Persistent history debounce failed: \(error.localizedDescription, privacy: .public)")
+                Logger.persistentHistory.error("Persistent history debounce failed: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
             }
         }
     }
@@ -232,7 +232,7 @@ private actor PersistentHistoryProcessor {
                 Logger.persistentHistory.info("Processed \(transactions.count, privacy: .public) transactions")
             }
         } catch {
-            Logger.persistentHistory.error("Failed to fetch history: \(error.localizedDescription, privacy: .public)")
+            Logger.persistentHistory.error("Failed to fetch history: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
     

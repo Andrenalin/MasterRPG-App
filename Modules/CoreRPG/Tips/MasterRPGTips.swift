@@ -133,7 +133,7 @@ public enum MasterRPGTips {
                 try Tips.resetDatastore()
             } catch {
                 Logger.tipKit.error(
-                    "Unable to reset the TipKit datastore: \(error.localizedDescription, privacy: .public)"
+                    "Unable to reset the TipKit datastore: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)"
                 )
             }
         }
@@ -145,7 +145,7 @@ public enum MasterRPGTips {
             Logger.tipKit.debug("TipKit was already configured for this process")
         } catch {
             Logger.tipKit.error(
-                "Unable to configure TipKit: \(error.localizedDescription, privacy: .public)"
+                "Unable to configure TipKit: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)"
             )
         }
 

@@ -49,6 +49,8 @@ extension MasterController {
                     await send(type: .reveal, subtype: .show, updated: canonical)
                 } catch ItemGameStorableError.itemMissing {
                     guard model.data.data != nil else { return nil }
+                    // No import policy for the player's package: accepted, see `updateGame(data:hide:deep:)`
+                    // (CODE_AUDIT_Folder §6.1, won't fix).
                     try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
                     await send(type: .reveal, subtype: .show, updated: model.data)
                 } catch {

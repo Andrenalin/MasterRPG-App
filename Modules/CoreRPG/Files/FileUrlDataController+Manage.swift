@@ -64,7 +64,7 @@ extension FileUrlDataController {
 
             return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
         } catch {
-            Logger.fileStore.error("Error moving file \(error.localizedDescription, privacy: .public)")
+            Logger.fileStore.error("Error moving file \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
         return nil
     }
@@ -87,7 +87,7 @@ extension FileUrlDataController {
         do {
             try await fileBookmarkController.saveBookmark(fileId: fileId, fileUrl: url)
         } catch {
-            Logger.fileStore.error("Cannot create file locally \(error.localizedDescription, privacy: .public)")
+            Logger.fileStore.error("Cannot create file locally \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
         }
     }
 }
