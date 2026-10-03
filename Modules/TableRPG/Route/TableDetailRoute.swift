@@ -75,11 +75,15 @@ struct TableDetailRouteDestinationView: View {
         switch route {
         case .folder(let itemId):
             if let model = root.itemController.itemSync(for: itemId), let parentId = model.parentId, let parentModel = root.itemController.itemSync(for: parentId) {
-                DetailListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)))
+                DetailFolderControllerReader(listController: root.folderListController, itemId: itemId, parentModel: parentModel, navigationModel: root.navigationModel) { folderListController in
+                    DetailListView(root: root, model: model, folderListController: folderListController)
+                }
             }
         case .folderInline(let itemId):
             if let model = root.itemController.itemSync(for: itemId), let parentId = model.parentId, let parentModel = root.itemController.itemSync(for: parentId) {
-                DetailFolderListView(root: root, model: model, folderListController: root.folderListController.copy(listModel: FolderListModel(parentModel: parentModel, navigationModel: root.navigationModel)), isSubFolder: true)
+                DetailFolderControllerReader(listController: root.folderListController, itemId: itemId, parentModel: parentModel, navigationModel: root.navigationModel) { folderListController in
+                    DetailFolderListView(root: root, model: model, folderListController: folderListController, isSubFolder: true)
+                }
             }
 
 #if !os(tvOS)

@@ -24,6 +24,8 @@ struct SpecialCategoryFolderIndicator: View {
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(.rect)
             .accessibilityLabel(Text("Toggle Folder", bundle: .module))
+            // VoiceOver reads whether the folder is open. See CODE_AUDIT_Folder §8.5.
+            .accessibilityValue(item.isOpen ? Text("Expanded", bundle: .module) : Text("Collapsed", bundle: .module))
         }
     }
 }

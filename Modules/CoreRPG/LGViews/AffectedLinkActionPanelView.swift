@@ -14,7 +14,8 @@ public struct AffectedLinkActionPanelView: View {
     let action: (([ItemRowModel]) -> Void)?
     
     @Environment(\.navigator) private var navigator
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     /// Set by Remove and Cancel. A sheet dismissed any other way (swipe, Escape outside the
     /// button) counts as Cancel. See CODE_AUDIT_Folder §5.12.
@@ -28,7 +29,7 @@ public struct AffectedLinkActionPanelView: View {
                         if let link = item.link {
                             Label(link.title, systemImage: link.module.icon)
                         } else {
-                            linkHeaderView(for: item)
+                            AffectedLinkHeaderRow(item: item, name: itemName(item: item), removeEntryList: removeEntryList)
                         }
                     }
                     .listRowInsets(item.link == nil ? .none : EdgeInsets(top: 0, leading: 40, bottom: 0, trailing: 0))
@@ -37,7 +38,9 @@ public struct AffectedLinkActionPanelView: View {
             }
             .themedListSurface()
             .frame(minHeight: 300)
-            .navigationTitle(Text("Mark for remove \(removeEntryList.linkTree.filter { $0.canRemoved }.count) Item", bundle: .module))
+            // Plural-aware: "Mark for remove N Item" read wrong for any count but one.
+            // See CODE_AUDIT_Folder §8.5.
+            .navigationTitle(Text("Mark \(removeEntryList.linkTree.filter { $0.canRemoved }.count) items for removal", bundle: .module))
             .toolbar {
                 ToolbarItem(placement: .destructiveAction) {
                     Button {
@@ -125,55 +128,16 @@ private extension AffectedLinkActionPanelView {
         return removeEntryList.linkTree.filter { $0.canRemoved }.isEmpty
     }
     
+    /// Item rows use the theme's panel colour; rows of items that link to it use the system red,
+    /// which adapts to dark mode and increased contrast, stronger when contrast is increased.
+    /// Fixed black, white and red ignored both. See CODE_AUDIT_Folder §8.5.
     func colorBackground(for item: RemoveLinkTreeModel) -> Color {
         if item.link == nil {
-#if os(macOS)
-            return .clear
-#else
-            return colorScheme == .dark ? Color.black : Color.white
-#endif
-        } else {
-            return colorScheme == .dark ? Color.red.opacity(0.25) : Color.red.opacity(0.7)
+            return theme.panelColor
         }
+        return Color.red.opacity(colorSchemeContrast == .increased ? 0.45 : 0.25)
     }
-    
-    
-    func linkHeaderView(for item: RemoveLinkTreeModel) -> some View {
-        HStack {
-            if item.counter == 0 {
-                Image(systemName: "checkmark")
-            } else {
-                if item.canRemoved {
-                    Button {
-                        guard let index = removeEntryList.linkTree.firstIndex(where: { $0.id == item.id }) else { return }
-                        withAnimation { removeEntryList.linkTree[index].canRemoved.toggle() }
-                    } label: {
-                        Label {
-                            Text("Unmark", bundle: .module)
-                        } icon: {
-                            Image(systemName: "checkmark.seal")
-                        }
-                    }
-                } else {
-                    Button(role: .destructive) {
-                        guard let index = removeEntryList.linkTree.firstIndex(where: { $0.id == item.id }) else { return }
-                        withAnimation { removeEntryList.linkTree[index].canRemoved.toggle() }
-                    } label: {
-                        Label {
-                            Text("Mark", bundle: .module)
-                        } icon: {
-                            Image(systemName: "xmark.seal")
-                        }
-                    }
-                }
-            }
-            Text(itemName(item: item))
-#if !os(tvOS)
-                .badge(item.counter)
-#endif
-        }
-    }
-        
+
     private var nameNotSet: String {
         String(localized: "Untitled", bundle: .module).localizedString
     }
@@ -210,5 +174,46 @@ private extension AffectedLinkActionPanelView {
             result.append(contentsOf: items)
         }
         return result
+    }
+}
+
+/// An item the panel deletes, with its Mark/Unmark toggle and the number of items linking to it.
+/// A view struct instead of a function returning view content. See CODE_AUDIT_Folder §8.3.
+private struct AffectedLinkHeaderRow: View {
+    let item: RemoveLinkTreeModel
+    let name: String
+    let removeEntryList: RemoveEntryListModel
+
+    var body: some View {
+        HStack {
+            if item.counter == 0 {
+                Image(systemName: "checkmark")
+            } else if item.canRemoved {
+                Button(action: toggle) {
+                    Label {
+                        Text("Unmark", bundle: .module)
+                    } icon: {
+                        Image(systemName: "checkmark.seal")
+                    }
+                }
+            } else {
+                Button(role: .destructive, action: toggle) {
+                    Label {
+                        Text("Mark", bundle: .module)
+                    } icon: {
+                        Image(systemName: "xmark.seal")
+                    }
+                }
+            }
+            Text(name)
+#if !os(tvOS)
+                .badge(item.counter)
+#endif
+        }
+    }
+
+    private func toggle() {
+        guard let index = removeEntryList.linkTree.firstIndex(where: { $0.id == item.id }) else { return }
+        withAnimation { removeEntryList.linkTree[index].canRemoved.toggle() }
     }
 }

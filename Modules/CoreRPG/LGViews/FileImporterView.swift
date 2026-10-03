@@ -18,6 +18,9 @@ public struct FileImporterView: View {
 
     @State private var showImporter = false
     @State private var showRemoteURLImporter = false
+    /// A picker failure, shown instead of being dropped: a failed pick looked like nothing
+    /// happened. See CODE_AUDIT_Folder §8.6.
+    @State private var pickerError: String?
 
     public var body: some View {
 #if !os(tvOS)
@@ -50,10 +53,28 @@ public struct FileImporterView: View {
                 .selectedRoundButton(title: importUrlTitle, module: module, isSelected: showRemoteURLImporter)
             }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: fileTypes) { result in
-                guard let url = try? result.get() else { return }
-                Task {
-                    await editControllable.resetFile(url: url, itemId: itemId)
+                switch result {
+                case .success(let url):
+                    Task {
+                        await editControllable.resetFile(url: url, itemId: itemId)
+                    }
+                case .failure(let error):
+                    pickerError = error.localizedDescription
                 }
+            }
+            .alert(
+                Text("File Not Imported", bundle: .module),
+                isPresented: Binding {
+                    pickerError != nil
+                } set: { isPresented in
+                    if !isPresented { pickerError = nil }
+                }
+            ) {
+                Button(String(localized: "OK", bundle: .module), role: .cancel) {
+                    pickerError = nil
+                }
+            } message: {
+                Text(verbatim: pickerError ?? "")
             }
             .remoteFileURLImporter(
                 isPresented: $showRemoteURLImporter,

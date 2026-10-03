@@ -12,6 +12,10 @@ struct RemoveItemViewModifier: ViewModifier {
     let isLeading: Bool
     let action: () async -> Void
 
+    /// The room left for the badge, scaled with Dynamic Type like the badge symbol itself; the
+    /// fixed points kept a large badge overlapping the content. See CODE_AUDIT_Folder §8.4.
+    @ScaledMetric(relativeTo: .body) private var badgeInset: CGFloat = 12
+
     func body(content: Content) -> some View {
         Button {
             Task {
@@ -19,12 +23,12 @@ struct RemoveItemViewModifier: ViewModifier {
             }
         } label: {
             content
-                .padding(.top, 4)
-                .padding(.leading, isLeading ? 12 : 0)
-                .padding(.trailing, isLeading ? 0 : 12)
+                .padding(.top, badgeInset / 3)
+                .padding(.leading, isLeading ? badgeInset : 0)
+                .padding(.trailing, isLeading ? 0 : badgeInset)
                 .overlay(alignment: isLeading ? .topLeading : .topTrailing) {
                     Image(systemName: "minus.circle.fill")
-                        .offset(x: isLeading ? -4 : 4, y: -8)
+                        .offset(x: (isLeading ? -badgeInset : badgeInset) / 3, y: -badgeInset * 2 / 3)
                         .foregroundStyle(.white, .red)
                         .accessibilityHidden(true)
                 }

@@ -30,7 +30,14 @@ struct ListRootContextMenu: View {
             AddItemView(controller: controller, currentSelected: currentSelected, listController: listController, title: title)
             MoveItemView(controller: controller, currentSelected: currentSelected, listController: listController, title: title)
         }
-        removeActions(parent: parent)
+        RemoveFromParentActions(
+            root: root,
+            controller: controller,
+            listController: listController,
+            currentSelected: currentSelected,
+            parent: parent,
+            title: title
+        )
         Divider()
         OpenFolderView(listController: listController, currentSelected: currentSelected, title: title)
         CloseParentFolderView(listController: listController, currentSelected: currentSelected)
@@ -61,15 +68,6 @@ private extension ListRootContextMenu {
         parentItem ?? controller.parentItem(currentSelected: currentSelected)
     }
 
-    @ViewBuilder func removeActions(parent: (any ItemDataAccessible)?) -> some View {
-        if controller.hasDifferentFolders(for: parent) {
-            removeItemView(oneUp: true)
-        }
-        if parent?.specialCategory ?? false {
-            removeItemView(oneUp: false)
-        }
-    }
-
     var listDisplayModel: ListDisplayModel {
         listController?.listDisplayModel ?? ListDisplayModel()
     }
@@ -83,33 +81,75 @@ private extension ListRootContextMenu {
         }
         return root.configurable.module == .table && !item.specialCategory
     }
+}
 
-    func removeEntryTitle(oneUp: Bool) -> String {
-        guard let parent else { return String(localized: "Unknown", bundle: .module).localizedString }
-        if parent.isFolder {
-            var toName = String(localized: "Root", bundle: .module).localizedString
-            if oneUp, let parentId = parent.parentId, let parentParent = root.itemControllable.itemSync(for: parentId) {
-                toName = parentParent.name
-            }
-            return String(localized: "\(parent.name) to \(toName)", bundle: .module).localizedString
-        } else {
-            return parent.category.title
+/// "Remove from folder" (to the folder's parent, or to root) and "Remove from collection".
+/// View structs instead of functions returning view content. See CODE_AUDIT_Folder §8.3.
+private struct RemoveFromParentActions: View {
+    let root: any ItemRootControllable
+    let controller: ContextMenuMultiController
+    let listController: (any FolderListControllable)?
+    let currentSelected: UUID?
+    let parent: (any ItemDataAccessible)?
+    let title: String
+
+    var body: some View {
+        if controller.hasDifferentFolders(for: parent) {
+            RemoveFromParentButton(
+                root: root,
+                controller: controller,
+                listController: listController,
+                currentSelected: currentSelected,
+                parent: parent,
+                title: title,
+                oneUp: true
+            )
+        }
+        if parent?.specialCategory ?? false {
+            RemoveFromParentButton(
+                root: root,
+                controller: controller,
+                listController: listController,
+                currentSelected: currentSelected,
+                parent: parent,
+                title: title,
+                oneUp: false
+            )
         }
     }
-    
-    func removeItemView(oneUp: Bool) -> some View {
+}
+
+private struct RemoveFromParentButton: View {
+    let root: any ItemRootControllable
+    let controller: ContextMenuMultiController
+    let listController: (any FolderListControllable)?
+    let currentSelected: UUID?
+    let parent: (any ItemDataAccessible)?
+    let title: String
+    let oneUp: Bool
+
+    var body: some View {
         Button {
             controller.removeItemsFromFolder(currentSelected: currentSelected, parentId: parent?.id, oneUp: oneUp)
             listController?.update(debounce: false)
         } label: {
             Label {
-                Text("Remove \(title) from \(removeEntryTitle(oneUp: oneUp))", bundle: .module)
+                Text("Remove \(title) from \(destinationTitle)", bundle: .module)
             } icon: {
                 Image(systemName: "rectangle.stack.badge.minus")
             }
         }
     }
 
+    private var destinationTitle: String {
+        guard let parent else { return String(localized: "Unknown", bundle: .module).localizedString }
+        guard parent.isFolder else { return parent.category.title }
+        var toName = String(localized: "Root", bundle: .module).localizedString
+        if oneUp, let parentId = parent.parentId, let parentParent = root.itemControllable.itemSync(for: parentId) {
+            toName = parentParent.name
+        }
+        return String(localized: "\(parent.name) to \(toName)", bundle: .module).localizedString
+    }
 }
 
 private struct GenerateItemView: View {

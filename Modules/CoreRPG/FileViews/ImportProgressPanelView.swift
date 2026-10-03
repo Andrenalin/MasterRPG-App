@@ -25,7 +25,7 @@ public struct ImportProgressPanelView: View {
         self.isSaveGame = true
         self.initialURL = nil
         self.onImported = onImported
-        _mutationSession = State(initialValue: ImportMutationSession())
+        self.sessionHandlers = ImportMutationSession.Handlers()
     }
 
     public init(
@@ -44,13 +44,11 @@ public struct ImportProgressPanelView: View {
         self.isSaveGame = false
         self.initialURL = initialURL
         self.onImported = nil
-        _mutationSession = State(
-            initialValue: ImportMutationSession(
-                beginDataMutationHandler: beginDataMutationHandler,
-                endDataMutationHandler: endDataMutationHandler,
-                beginSaveDeferral: beginSaveDeferral,
-                endSaveDeferral: endSaveDeferral
-            )
+        self.sessionHandlers = ImportMutationSession.Handlers(
+            beginDataMutation: beginDataMutationHandler,
+            endDataMutation: endDataMutationHandler,
+            beginSaveDeferral: beginSaveDeferral,
+            endSaveDeferral: endSaveDeferral
         )
     }
 
@@ -60,6 +58,7 @@ public struct ImportProgressPanelView: View {
     let isSaveGame: Bool
     let initialURL: URL?
     let onImported: (@MainActor (URL) -> Void)?
+    private let sessionHandlers: ImportMutationSession.Handlers
 
     @Environment(\.navigator) private var navigator
 
@@ -68,9 +67,14 @@ public struct ImportProgressPanelView: View {
     @State private var outcome: ImportOutcome = .notStarted
     @State private var applyErrorMessage: String?
     @State private var isApplyingReview = false
-    @State private var mutationSession: ImportMutationSession
+    /// Created when an import first needs it, not in `init`: a `State` initial value is built
+    /// on every init of the view, and every one but the first was discarded.
+    /// See CODE_AUDIT_Folder §8.2.
+    @State private var mutationSession: ImportMutationSession?
 
-    @State private var loadUrl: URL?
+    /// The file to import and which attempt this is. Keyed on the URL alone, picking the same
+    /// file again after a failed import did not restart the task. See CODE_AUDIT_Folder §8.6.
+    @State private var importRequest: ImportRequest?
     @State private var proposedUrl: URL?
 
     public var body: some View {
@@ -86,7 +90,7 @@ public struct ImportProgressPanelView: View {
                     },
                     onApply: { await applyReview() }
                 )
-                .interactiveDismissDisabled(mutationSession.isActive || isApplyingReview)
+                .interactiveDismissDisabled(isSessionActive || isApplyingReview)
                 .alert(
                     Text("Import Unavailable", bundle: .module),
                     isPresented: Binding(
@@ -117,7 +121,7 @@ public struct ImportProgressPanelView: View {
                             outcome: outcome,
                             importModel: importModel,
                             showImportFileChooser: $showImportFileChooser,
-                            loadUrl: $loadUrl,
+                            loadUrl: loadUrlBinding,
                             proposedUrl: $proposedUrl,
                             urlProvider: urlProvider,
                             isSaveGame: isSaveGame
@@ -131,13 +135,13 @@ public struct ImportProgressPanelView: View {
                     .themedSurface()
                     .navigationTitle(Text("Importing", bundle: .module))
                     .navigationBarTitleDisplayModeAll(.inline)
-                    .task(id: loadUrl) {
-                        guard let loadUrl else { return }
+                    .task(id: importRequest) {
+                        guard let loadUrl = importRequest?.url else { return }
                         guard beginDataMutation() else {
                             outcome = .failed(dataMutationUnavailableMessage)
                             return
                         }
-                        guard mutationSession.canStartImport else {
+                        guard session.canStartImport else {
                             outcome = .failed(dataMutationUnavailableMessage)
                             return
                         }
@@ -145,7 +149,7 @@ public struct ImportProgressPanelView: View {
                         outcome = .running
                         let task = importController.importUrl(
                             from: loadUrl, importModel: importModel, gameMemoryOnly: isSaveGame)
-                        guard mutationSession.trackImportTask(task) else {
+                        guard session.trackImportTask(task) else {
                             task.cancel()
                             outcome = .failed(dataMutationUnavailableMessage)
                             return
@@ -176,19 +180,19 @@ public struct ImportProgressPanelView: View {
                                 ? .cancelled : .failed(error.localizedDescription)
                         }
                     }
-                    .interactiveDismissDisabled(mutationSession.isActive)
+                    .interactiveDismissDisabled(isSessionActive)
 
                     #if !os(tvOS)
                         .fileImporter(
                             isPresented: $showImportFileChooser,
                             allowedContentTypes: [isSaveGame ? .gmsDocument : .rpgDocument]
                         ) { result in
-                            do {
-                                loadUrl = try result.get()
+                            // A cancelled picker does not call back; a failure is reported.
+                            switch result {
+                            case .success(let url):
+                                startImport(of: url)
                                 outcome = .running
-                            } catch is CancellationError {
-                                outcome = .cancelled
-                            } catch {
+                            case .failure(let error):
                                 outcome = .failed(error.localizedDescription)
                             }
                         }
@@ -216,7 +220,7 @@ public struct ImportProgressPanelView: View {
                                     Image(systemName: "checkmark")
                                 }
                             }
-                            .disabled(importModel.isImportRunning || mutationSession.isActive)
+                            .disabled(importModel.isImportRunning || isSessionActive)
                         }
                     }
                 }
@@ -224,23 +228,23 @@ public struct ImportProgressPanelView: View {
             }
         }
         .onChange(of: initialURL, initial: true) { _, newURL in
-            guard let newURL, loadUrl == nil, proposedUrl == nil else { return }
+            guard let newURL, importRequest == nil, proposedUrl == nil else { return }
             proposedUrl = newURL
             importModel.importMode = .manual
         }
         .onChange(of: outcome, initial: false) { old, new in
-            guard old != .finished, new == .finished, let loadUrl else { return }
+            guard old != .finished, new == .finished, let loadUrl = importRequest?.url else { return }
             onImported?(loadUrl)
         }
         .onDisappear {
-            mutationSession.cancelImportAndReleaseInBackground()
+            mutationSession?.cancelImportAndReleaseInBackground()
             let session = mutationSession
             let importModel = importModel
             let rootManager = rootManager
             Task { @MainActor in
                 // After the release (which waits for the parse): remove files a review that was
                 // never applied wrote. See CODE_AUDIT_Folder §5.2.
-                await session.release(cancelImport: true)
+                await session?.release(cancelImport: true)
                 await Self.settleReviewFiles(importModel: importModel, rootManager: rootManager)
             }
         }
@@ -263,7 +267,7 @@ private extension ImportProgressPanelView {
         if let reviewModel = importModel.reviewModel, let rootManager {
             // The session owns the apply, so a dismissal mid-apply waits for it before the
             // final save and lock release. See CODE_AUDIT_Folder §3.17.
-            await mutationSession.runApply {
+            await session.runApply {
                 for module in reviewModel.modules {
                     guard let root = rootManager.rootModel(for: module.id) else { continue }
                     var appliedIds: Set<UUID> = []
@@ -298,12 +302,47 @@ private extension ImportProgressPanelView {
         )
     }
 
+    struct ImportRequest: Equatable {
+        let url: URL
+        let attempt: Int
+    }
+
+    /// `loadUrl` for the sections that choose a file: every set is a new attempt.
+    var loadUrlBinding: Binding<URL?> {
+        Binding {
+            importRequest?.url
+        } set: { url in
+            guard let url else {
+                importRequest = nil
+                return
+            }
+            startImport(of: url)
+        }
+    }
+
+    func startImport(of url: URL) {
+        importRequest = ImportRequest(url: url, attempt: (importRequest?.attempt ?? 0) + 1)
+    }
+
+    var isSessionActive: Bool {
+        mutationSession?.isActive ?? false
+    }
+
+    /// The mutation session, created on first use. Only called from actions and tasks, never
+    /// while `body` is evaluated.
+    var session: ImportMutationSession {
+        if let mutationSession { return mutationSession }
+        let session = ImportMutationSession(handlers: sessionHandlers)
+        mutationSession = session
+        return session
+    }
+
     func beginDataMutation() -> Bool {
-        mutationSession.beginDataMutation()
+        session.beginDataMutation()
     }
 
     func endDataMutation() async {
-        await mutationSession.release(cancelImport: false)
+        await mutationSession?.release(cancelImport: false)
     }
 
     func cancelAndDismiss() {
@@ -314,7 +353,7 @@ private extension ImportProgressPanelView {
         let importModel = importModel
         let rootManager = rootManager
         Task { @MainActor in
-            await mutationSession.release(cancelImport: true)
+            await mutationSession?.release(cancelImport: true)
             // Files the parse wrote for a review that is now cancelled. See CODE_AUDIT_Folder §5.2.
             await Self.settleReviewFiles(importModel: importModel, rootManager: rootManager)
             navigator.dismiss()
@@ -397,6 +436,14 @@ private extension ImportProgressPanelView {
 
 @MainActor @Observable
 private final class ImportMutationSession {
+    /// The hooks a presenter passes in; plain values the view keeps until it creates the session.
+    struct Handlers {
+        var beginDataMutation: (@MainActor () -> Bool)?
+        var endDataMutation: (@MainActor () async -> Void)?
+        var beginSaveDeferral: (@MainActor () -> UUID)?
+        var endSaveDeferral: (@MainActor (UUID) -> Void)?
+    }
+
     private let beginDataMutationHandler: (@MainActor () -> Bool)?
     private let endDataMutationHandler: (@MainActor () async -> Void)?
     private let beginSaveDeferral: (@MainActor () -> UUID)?
@@ -415,16 +462,11 @@ private final class ImportMutationSession {
     @ObservationIgnored private var applyTask: Task<Void, Never>?
     @ObservationIgnored private var cleanupTask: Task<Void, Never>?
 
-    init(
-        beginDataMutationHandler: (@MainActor () -> Bool)? = nil,
-        endDataMutationHandler: (@MainActor () async -> Void)? = nil,
-        beginSaveDeferral: (@MainActor () -> UUID)? = nil,
-        endSaveDeferral: (@MainActor (UUID) -> Void)? = nil
-    ) {
-        self.beginDataMutationHandler = beginDataMutationHandler
-        self.endDataMutationHandler = endDataMutationHandler
-        self.beginSaveDeferral = beginSaveDeferral
-        self.endSaveDeferral = endSaveDeferral
+    init(handlers: Handlers) {
+        self.beginDataMutationHandler = handlers.beginDataMutation
+        self.endDataMutationHandler = handlers.endDataMutation
+        self.beginSaveDeferral = handlers.beginSaveDeferral
+        self.endSaveDeferral = handlers.endSaveDeferral
     }
 
     func beginDataMutation() -> Bool {

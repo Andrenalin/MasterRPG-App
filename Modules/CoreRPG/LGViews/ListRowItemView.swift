@@ -14,6 +14,12 @@ struct ListRowItemView: View, Equatable {
 
     @State private var isDropTargeted = false
 
+    /// Indent per folder level and row insets, scaled with Dynamic Type: a fixed 16-point indent
+    /// stayed small next to large text. See CODE_AUDIT_Folder §8.4.
+    @ScaledMetric(relativeTo: .body) private var indentPerLevel: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var trailingInset: CGFloat = 8
+    @ScaledMetric(relativeTo: .body) private var verticalInset: CGFloat = 2
+
     /// `root`/`listController` are existentials (capability bags, not row content) and
     /// `menuController`/`listModel`/`focusedRowId` are long-lived reference/binding
     /// dependencies passed down unchanged across parent redraws — none of those are compared.
@@ -43,8 +49,8 @@ struct ListRowItemView: View, Equatable {
         }
         .buttonStyle(.plain)
         .focused(focusedRowId, equals: item.id)
-        .padding(.trailing, 8)
-        .padding(.leading, CGFloat(item.level * 16))
+        .padding(.trailing, trailingInset)
+        .padding(.leading, CGFloat(item.level) * indentPerLevel)
         .selectListItem(
             isActive: listController.listDisplayModel.isSelectionMode,
             action: selectRow,
@@ -75,7 +81,7 @@ struct ListRowItemView: View, Equatable {
         .applyIf(!canReorder && parentModel != nil) {
             $0.dropDestination(for: root.configurable.module, isEnabled: true, handler: addLink)
         }
-        .padding(EdgeInsets(top: 2, leading: leadingPadding, bottom: 2, trailing: 0))
+        .padding(EdgeInsets(top: verticalInset, leading: leadingPadding, bottom: verticalInset, trailing: 0))
     }
 }
 

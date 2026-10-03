@@ -815,3 +815,14 @@ Built for iOS, macOS, tvOS and visionOS with zero warnings; the `MasterRPG` unit
 | 7.2 | Fixed | No commit-wide attachment cache: each attachment is loaded for its own item and released after it. Its hash is computed once off the main actor and passed to the transient file. The installed file and a reusable existing file are verified by streamed hash. Repair snapshots were already limited to reachable items (§3.6). |
 | 7.3 | Fixed | Link resets use the per-source index (`sourceItems`). Folder entries are repaired once per import batch and once per reviewed module (`repairFolders(itemIds:)`). The review sheet memory builds an item only when the sheet reads it, and caches it. The decision signature is a hash, not a joined string. |
 | 7.4 | Fixed | `FolderListModel` keeps a row index by row id and by item id, rebuilt on the first lookup after `list` changes. Selection, scroll restoration and folder actions use it. Row equality returns early for the same instance. The Move/Add commands enable themselves with an early-exit check and build their lists only in the menu content. |
+
+### Status of §8 (2026-10-03)
+
+| § | Status | Notes |
+|---|--------|-------|
+| 8.1 | Fixed | The ten detail routes (20 call sites) wrap their view in `DetailFolderControllerReader`. It keeps one controller in `@State` per route item and folder, and refreshes the folder model when a sync replaces its instance. |
+| 8.2 | Fixed | The view keeps the session's handlers as plain values and creates `ImportMutationSession` on first use from an action or task. The body treats a missing session as inactive. |
+| 8.3 | Fixed | `RemoveFromParentActions` and `RemoveFromParentButton` in the context menu, and `AffectedLinkHeaderRow` in the delete panel, replace the three view-returning functions. |
+| 8.4 | Fixed | The row indent and insets, the remove badge's inset and offsets, and the importer paddings are `@ScaledMetric`. The importer spacer uses default spacing. The 44-point hit target and the corner radius stay as design constants. |
+| 8.5 | Fixed | The folder chevron reports "Expanded"/"Collapsed" as its accessibility value. The panel title is a plural string ("Mark %lld items for removal", with German plurals). Item rows use the theme's panel colour; link rows use system red, stronger with increased contrast. |
+| 8.6 | Fixed | `FileImporterView` shows picker failures in an alert. The import panel runs from `.task(id: importRequest)` with an attempt counter, so picking the same file again restarts it. The unreachable `CancellationError` branch is gone. |
