@@ -1,12 +1,13 @@
 // @copyright André Trettin
 
 import Foundation
+import Synchronization
 
 extension FileManager {
 
     func fileExists(coordinatingAccessAt fileURL: URL) async throws -> (exists: Bool, isDirectory: Bool) {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(readingItemAt: fileURL) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: fileURL) { url in
                 var isDir: ObjCBool = false
                 let coordinatedExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
                 return (coordinatedExists, isDir.boolValue)
@@ -15,32 +16,32 @@ extension FileManager {
     }
     
     func createDirectory(coordinatingAccessAt dirURL: URL, withIntermediateDirectories: Bool) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(writingItemAt: dirURL, options: .forMerging) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: dirURL, options: .forMerging) { url in
                 try FileManager.default.createDirectory(at: url, withIntermediateDirectories: withIntermediateDirectories)
             }
         }
     }
     
     func removeItem(coordinatingAccessAt dirURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(writingItemAt: dirURL, options: .forDeleting) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: dirURL, options: .forDeleting) { url in
                 try FileManager.default.removeItem(at: url)
             }
         }
     }
     
     public func copyItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
                 try FileManager.default.copyItem(at: readURL, to: writeURL)
             }
         }
     }
 
     func moveItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(writingItemAt: fromURL, writingItemAt: toURL) { readURL, writeURL in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: fromURL, writingItemAt: toURL) { readURL, writeURL in
                 try FileManager.default.moveItem(at: readURL, to: writeURL)
             }
         }
@@ -48,8 +49,8 @@ extension FileManager {
 
     func contentsOfDirectory(coordinatingAccessAt dirURL: URL) async throws -> [URL] {
         let keys: [URLResourceKey] = [.nameKey, .isDirectoryKey, .isReadableKey, .ubiquitousItemIsDownloadingKey]
-        return try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(readingItemAt: dirURL) { url in
+        return try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: dirURL) { url in
                 try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])
             }
         }
@@ -57,8 +58,8 @@ extension FileManager {
     
     /// The streamed content hash of the file at `url`. See CODE_AUDIT_19 §7.1.
     func contentHash(coordinatingAccessAt url: URL) async throws -> String {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(readingItemAt: url) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: url) { url in
                 try FileUrl.contentHash(ofFileAt: url)
             }
         }
@@ -67,8 +68,8 @@ extension FileManager {
     /// Copies a file to `toURL` without reading it into memory, creating the parent folder and
     /// replacing a file already there. See CODE_AUDIT_19 §7.1.
     func copyReplacingItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
                 // Replacing a file with itself would delete it. See CODE_AUDIT_20 §5.1.
                 guard readURL.standardizedFileURL.resolvingSymlinksInPath() != writeURL.standardizedFileURL.resolvingSymlinksInPath() else { return }
                 try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -80,39 +81,52 @@ extension FileManager {
         }
     }
 
+    /// Copies a file to `toURL`, creating the parent folder, and throws `fileWriteFileExists`
+    /// instead of replacing a file that is already there. A caller that picked `toURL` as a free
+    /// name can retry with the next one, so two copies racing for one name never overwrite each
+    /// other. See CODE_AUDIT_Folder §3.18.
+    func copyItemWithoutReplacing(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: []) { readURL, writeURL in
+                try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileManager.default.copyItem(at: readURL, to: writeURL)
+            }
+        }
+    }
+
     func contentsOfFile(coordinatingAccessAt url: URL) async throws -> Data {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(readingItemAt: url) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: url) { url in
                 try Data(contentsOf: url)
             }
         }
     }
 
     public func download(coordinatingAccessAt url: URL) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(writingItemAt: url) { newUrl in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: url) { newUrl in
                 try FileManager.default.startDownloadingUbiquitousItem(at: newUrl)
             }
         }
     }
 
     func write(_ data: Data, coordinatingAccessTo url: URL) async throws {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(writingItemAt: url) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: url) { url in
                 try data.write(to: url)
             }
         }
     }
     
     func updateFile<T: Sendable>(coordinatingAccessTo url: URL, in block: @escaping @Sendable (URL) throws -> T) async throws -> T {
-        try await Self.performCoordinatedFileAccess {
-            try Self.coordinate(writingItemAt: url) { url in
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, writingItemAt: url) { url in
                 try block(url)
             }
         }
     }
     
-    private static func performCoordinatedFileAccess<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
+    private static func performCoordinatedFileAccess<T: Sendable>(_ operation: @escaping @Sendable (CoordinationCancellation) throws -> T) async throws -> T {
         // NSFileCoordinator is synchronous and can block while waiting on file presenters or
         // an iCloud download. Run it away from caller tasks so user-initiated work suspends
         // instead of blocking its thread — and cap how many of these blocking calls hold a
@@ -123,18 +137,29 @@ extension FileManager {
         // The blocking call runs on a dedicated `OperationQueue` thread, not a cooperative-pool
         // thread: waiting on an iCloud download used to pin up to 4 pool threads (most of the
         // pool on a 6-core device). The limiter above keeps this queue from building a backlog.
-        // The operation itself isn't cancellation-aware (neither was the former detached task).
         // See CODE_AUDIT_18 §7.3.
+        //
+        // Cancelling the calling task cancels the coordinator the operation is blocked in, so a
+        // read waiting on an iCloud download returns (and frees its limiter slot) instead of
+        // holding it until the download finishes. See CODE_AUDIT_Folder §3.13.
+        let cancellation = CoordinationCancellation()
         do {
-            let result = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, any Error>) in
-                coordinationQueue.addOperation {
-                    continuation.resume(with: Result { try operation() })
+            let result = try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, any Error>) in
+                    coordinationQueue.addOperation {
+                        continuation.resume(with: Result { try operation(cancellation) })
+                    }
                 }
+            } onCancel: {
+                cancellation.cancel()
             }
             await CoordinatedAccessLimiter.shared.release()
             return result
         } catch {
             await CoordinatedAccessLimiter.shared.release()
+            // A cancelled coordinator reports `NSUserCancelledError`; surface it as the
+            // cancellation it is.
+            if cancellation.isCancelled { throw CancellationError() }
             throw error
         }
     }
@@ -153,10 +178,10 @@ extension FileManager {
         return try block(url)
     }
     
-    private static func coordinate<T>(readingItemAt url: URL, options: NSFileCoordinator.ReadingOptions = [], with block: (URL) throws -> T) throws -> T {
+    private static func coordinate<T>(_ cancellation: CoordinationCancellation, readingItemAt url: URL, options: NSFileCoordinator.ReadingOptions = [], with block: (URL) throws -> T) throws -> T {
         var coordinatorError: NSError?
         var result: Result<T, Swift.Error>?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
+        let coordinator = cancellation.makeCoordinator()
         coordinator.coordinate(readingItemAt: url, options: options, error: &coordinatorError) { url in
             result = Result { try execute(block, onSecurityScopedResource: url) }
         }
@@ -171,10 +196,10 @@ extension FileManager {
         return try result.get()
     }
     
-    private static func coordinate<T>(writingItemAt url: URL, options: NSFileCoordinator.WritingOptions = [], with block: (URL) throws -> T) throws -> T {
+    private static func coordinate<T>(_ cancellation: CoordinationCancellation, writingItemAt url: URL, options: NSFileCoordinator.WritingOptions = [], with block: (URL) throws -> T) throws -> T {
         var coordinatorError: NSError?
         var result: Result<T, Swift.Error>?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
+        let coordinator = cancellation.makeCoordinator()
         coordinator.coordinate(writingItemAt: url, options: options, error: &coordinatorError) { url in
             result = Result { try execute(block, onSecurityScopedResource: url) }
         }
@@ -189,10 +214,10 @@ extension FileManager {
         return try result.get()
     }
     
-    private static func coordinate<T>(readingItemAt readURL: URL, readOptions: NSFileCoordinator.ReadingOptions = [], writingItemAt writeURL: URL, writeOptions: NSFileCoordinator.WritingOptions = [], with block: (_ readURL: URL, _ writeURL: URL) throws -> T) throws -> T {
+    private static func coordinate<T>(_ cancellation: CoordinationCancellation, readingItemAt readURL: URL, readOptions: NSFileCoordinator.ReadingOptions = [], writingItemAt writeURL: URL, writeOptions: NSFileCoordinator.WritingOptions = [], with block: (_ readURL: URL, _ writeURL: URL) throws -> T) throws -> T {
         var coordinatorError: NSError?
         var result: Result<T, Swift.Error>?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
+        let coordinator = cancellation.makeCoordinator()
         coordinator.coordinate(readingItemAt: readURL, options: readOptions, writingItemAt: writeURL, options: writeOptions, error: &coordinatorError) { (read: URL, write: URL) in
             result = Result {
                 try execute(onSecurityScopedResource: read, and: write, with: block)
@@ -209,10 +234,10 @@ extension FileManager {
         return try result.get()
     }
 
-    private static func coordinate<T>(writingItemAt sourceURL: URL, writingItemAt destinationURL: URL, with block: (_ sourceURL: URL, _ destinationURL: URL) throws -> T) throws -> T {
+    private static func coordinate<T>(_ cancellation: CoordinationCancellation, writingItemAt sourceURL: URL, writingItemAt destinationURL: URL, with block: (_ sourceURL: URL, _ destinationURL: URL) throws -> T) throws -> T {
         var coordinatorError: NSError?
         var result: Result<T, Swift.Error>?
-        let coordinator = NSFileCoordinator(filePresenter: nil)
+        let coordinator = cancellation.makeCoordinator()
         coordinator.coordinate(writingItemAt: sourceURL, options: .forMoving, writingItemAt: destinationURL, options: .forReplacing, error: &coordinatorError) { (read: URL, write: URL) in
             result = Result {
                 try execute(onSecurityScopedResource: read, and: write, with: block)
@@ -237,6 +262,48 @@ extension FileManager {
             secondScope.stop()
         }
         return try block(firstURL, secondURL)
+    }
+}
+
+/// Lets a task's cancellation reach the `NSFileCoordinator` a coordinated operation is blocked
+/// in. A coordinator created after cancellation is cancelled straight away, so the operation
+/// returns `NSUserCancelledError` instead of starting. See CODE_AUDIT_Folder §3.13.
+final class CoordinationCancellation: Sendable {
+    /// `NSFileCoordinator.cancel()` may be called from any thread, but the class is not
+    /// annotated `Sendable`; this box carries it into the lock and across threads.
+    private final class CoordinatorBox: @unchecked Sendable {
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+    }
+
+    private struct State: Sendable {
+        var box: CoordinatorBox?
+        var isCancelled = false
+    }
+
+    private let state = Mutex(State())
+
+    var isCancelled: Bool {
+        state.withLock { $0.isCancelled }
+    }
+
+    func makeCoordinator() -> NSFileCoordinator {
+        let box = CoordinatorBox()
+        let isCancelled = state.withLock { state in
+            state.box = box
+            return state.isCancelled
+        }
+        if isCancelled {
+            box.coordinator.cancel()
+        }
+        return box.coordinator
+    }
+
+    func cancel() {
+        let box = state.withLock { state in
+            state.isCancelled = true
+            return state.box
+        }
+        box?.coordinator.cancel()
     }
 }
 

@@ -8,10 +8,8 @@ struct DuplicateItemButton: View {
 
     var body: some View {
         Button {
-            if let item {
-                Task {
-                    await root.editControllable.duplicate(item: item)
-                }
+            if let itemId = root.currentSelectedItemId {
+                root.editControllable.duplicateIgnoringRepeats(itemIds: [itemId])
             }
         } label: {
             Label {

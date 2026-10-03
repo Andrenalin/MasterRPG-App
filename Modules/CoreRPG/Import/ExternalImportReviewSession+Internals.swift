@@ -89,9 +89,13 @@ extension ExternalImportReviewSession {
         }
     }
 
+    /// The items the import repair of one module can change, taken before the repair runs and
+    /// again after it. Rollback restores an item only if it still looks as the repair left it,
+    /// so a write by sync or a game during the commit is not reverted. See CODE_AUDIT_Folder §3.6.
     struct RepairSnapshot {
         let module: NetworkModules
-        let models: [any ModelType]
+        let beforeRepair: [UUID: any ModelType]
+        var afterRepair: [UUID: any ModelType]?
         let linkRegister: LinkRegisterSnapshot
         let tags: TagSnapshot
     }
@@ -349,7 +353,14 @@ extension ExternalImportReviewSession {
                 errors.append("Could not restore \(repairSnapshot.module.title) repair state: controller unavailable.")
                 continue
             }
-            for model in repairSnapshot.models {
+            for (itemId, model) in repairSnapshot.beforeRepair {
+                // Nothing to undo, or another writer changed the item after the repair: keep
+                // the current state instead of reverting someone else's change.
+                if controller.libraryModel(id: itemId, matches: model) { continue }
+                if let afterRepair = repairSnapshot.afterRepair,
+                   !controller.libraryModel(id: itemId, matches: afterRepair[itemId]) {
+                    continue
+                }
                 do {
                     try controller.replaceForExternalImport(model: model, isInsert: true)
                 } catch {

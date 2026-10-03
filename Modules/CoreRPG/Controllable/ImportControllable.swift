@@ -10,6 +10,23 @@ public enum ImportMode: Hashable, Sendable, CaseIterable {
     case merge, overwrite, manual
 }
 
+/// Where the items of one module stream go, decided once when the stream starts.
+/// See CODE_AUDIT_Folder §3.4.
+struct ImportApplyPolicy: Sendable {
+    let mode: ImportMode
+    let forceSave: Bool
+    /// A saved-game load: items go to game memory only, whatever the mode.
+    let gameMemoryOnly: Bool
+    /// A game delivery that started during a running game: items go to game memory only.
+    let writesGameMemory: Bool
+    let isUntrustedSource: Bool
+
+    /// The post-import folder repair runs for everything but manual review and saved-game loads.
+    var repairsImportedItems: Bool {
+        mode != .manual && !gameMemoryOnly
+    }
+}
+
 /// What a game peer's package may write into this device's library. A peer is only trusted
 /// with its own data, so an item is admitted when it is the peer's primary item, was
 /// introduced by this same peer before, or does not exist here yet — a package can never
@@ -156,7 +173,10 @@ public extension ImportControllable {
     }
 
     func importStream(from inputStream: InputStream, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false) async throws {
-        guard !Task.isCancelled && inputStream.hasBytesAvailable else { return }
+        // Every cancellation exit throws, so a cancelled import is never reported as finished.
+        // See CODE_AUDIT_Folder §3.3.
+        try Task.checkCancellation()
+        guard inputStream.hasBytesAvailable else { return }
 
         try await additionalImport(from: inputStream, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly)
 
@@ -164,6 +184,7 @@ public extension ImportControllable {
         var itemCount = 0
         var version = 0
         while inputStream.hasBytesAvailable {
+            try Task.checkCancellation()
             guard let moduleHeader = try inputStream.readOptionalHeader() else { break }
             if moduleHeader.token == token {
                 itemCount = moduleHeader.counter
@@ -184,99 +205,100 @@ public extension ImportControllable {
 
         await logImport(title: "importStream", count: itemCount, importModel: importModel)
 
-        let importsFromUntrustedSource = await importModel.isUntrustedSource
+        let policy = await applyPolicy(importModel: importModel, forceSave: forceSave, gameMemoryOnly: gameMemoryOnly)
         let peerPolicy = await importModel.peerPolicy
         var currentFile: Data?
         var importedIds: Set<UUID> = []
         var locallyReusedFileIds: Set<UUID> = []
         var deferredFolderItems: [(item: ModelType, id: UUID)] = []
 
-        var counter = 0
-        while !Task.isCancelled && counter < itemCount {
-            guard inputStream.hasBytesAvailable else { throw ItemDataImportableError.notEnoughData }
+        do {
+            var counter = 0
+            while counter < itemCount {
+                try Task.checkCancellation()
+                guard inputStream.hasBytesAvailable else { throw ItemDataImportableError.notEnoughData }
 
-            do {
-                let (dataSize, dataToken) = try inputStream.readItemHeader()
-                let data = try inputStream.readData(size: dataSize)
+                do {
+                    let (dataSize, dataToken) = try inputStream.readItemHeader()
+                    let data = try inputStream.readData(size: dataSize)
 
-                switch dataToken {
-                case ExportDataToken.file.rawValue:
-                    currentFile = data
-                case ExportDataToken.item.rawValue:
-                    counter += 1
-                    // A file token belongs to the item that immediately follows it —
-                    // consume it here so a later file-less item cannot inherit it.
-                    let itemFile = currentFile
-                    currentFile = nil
-                    do {
-                        // decode constructs models, which may be @MainActor — `decode` is
-                        // itself `@MainActor`, so `await` alone hops for the decode call
-                        // (no `MainActor.run` wrapper needed); the wire format is unchanged.
-                        let itemVersion = version
-                        let newItem = try await itemControllable.decode(data: data, with: JSONCoding.decoder, version: itemVersion)
-                        guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !importsFromUntrustedSource, peerPolicy: peerPolicy) else {
-                            continue
-                        }
-                        if let itemFile {
-                            if try await addFile(data: itemFile, to: newItem, forceSave: forceSave) {
-                                locallyReusedFileIds.insert(newItem.id)
+                    switch dataToken {
+                    case ExportDataToken.file.rawValue:
+                        currentFile = data
+                    case ExportDataToken.item.rawValue:
+                        counter += 1
+                        // A file token belongs to the item that immediately follows it —
+                        // consume it here so a later file-less item cannot inherit it.
+                        let itemFile = currentFile
+                        currentFile = nil
+                        do {
+                            // decode constructs models, which may be @MainActor — `decode` is
+                            // itself `@MainActor`, so `await` alone hops for the decode call
+                            // (no `MainActor.run` wrapper needed); the wire format is unchanged.
+                            let itemVersion = version
+                            let newItem = try await itemControllable.decode(data: data, with: JSONCoding.decoder, version: itemVersion)
+                            guard await prepareDecodedItem(newItem, allowsPrivateRemoteHosts: !policy.isUntrustedSource, peerPolicy: peerPolicy) else {
+                                continue
                             }
+                            if let itemFile {
+                                if try await addFile(data: itemFile, to: newItem, forceSave: forceSave) {
+                                    locallyReusedFileIds.insert(newItem.id)
+                                }
+                            }
+                            if await itemControllable.shouldDeferGameModeFolderImport(newItem, writesGameMemory: policy.writesGameMemory) {
+                                deferredFolderItems.append((newItem, newItem.id))
+                            } else {
+                                await applyImportedItem(newItem, id: newItem.id, policy: policy, importModel: importModel, locallyReusedFileIds: locallyReusedFileIds)
+                            }
+                            importedIds.insert(newItem.id)
+                        } catch {
+                            // A single undecodable item is skipped (and reported); cancelling stops the import.
+                            if error is CancellationError { throw error }
+                            await recordFailedItem(importModel)
+                            await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
                         }
-                        if await itemControllable.shouldDeferGameModeFolderImport(newItem, forceSave: forceSave) {
-                            deferredFolderItems.append((newItem, newItem.id))
-                        } else {
-                            try await addItem(importedItem: newItem, id: newItem.id, forceSave: forceSave, importModel: importModel, gameMemoryOnly: gameMemoryOnly, locallyReusedFileIds: locallyReusedFileIds)
-                        }
-                        importedIds.insert(newItem.id)
-                    } catch {
-                        // A single undecodable item is skipped (and reported); cancelling stops the import.
-                        if error is CancellationError { throw error }
-                        await recordFailedItem(importModel)
-                        await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
+                    default:
+                        throw ItemDataImportableError.unsupportedDataType
                     }
-                    break
-                default:
-                    throw ItemDataImportableError.unsupportedDataType
+                } catch {
+                    // Framing errors (a truncated block, an unknown token) mean the rest of the
+                    // stream cannot be trusted, so they fail the import instead of being logged
+                    // while the import reports success. See CODE_AUDIT_15 §5.7.
+                    await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
+                    throw error
                 }
-            } catch {
-                // Framing errors (a truncated block, an unknown token) mean the rest of the
-                // stream cannot be trusted, so they fail the import instead of being logged
-                // while the import reports success. See CODE_AUDIT_15 §5.7.
-                await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
-                throw error
             }
-        }
 
-        guard !Task.isCancelled else { return }
-        for deferredFolderItem in deferredFolderItems {
-            do {
-                try await addItem(
-                    importedItem: deferredFolderItem.item,
+            try Task.checkCancellation()
+            for deferredFolderItem in deferredFolderItems {
+                await applyImportedItem(
+                    deferredFolderItem.item,
                     id: deferredFolderItem.id,
-                    forceSave: forceSave,
+                    policy: policy,
                     importModel: importModel,
-                    gameMemoryOnly: gameMemoryOnly,
                     locallyReusedFileIds: locallyReusedFileIds
                 )
-            } catch {
-                await logImport(title: "Error: \(error.localizedDescription)", count: 0, importModel: importModel)
             }
+        } catch {
+            // The items applied so far stay; repair their folder links before failing, or a
+            // child whose folder comes later in the stream stays orphaned until the user runs
+            // Validate. See CODE_AUDIT_Folder §3.3.
+            if policy.repairsImportedItems {
+                await repairImportedItems(importedIds)
+            }
+            throw error
         }
 
-        let mode = await importModel.importMode
-        if mode == .manual {
+        if policy.mode == .manual {
             // Collect local items absent from the import stream as deletion candidates
-            if itemCount > 0 {
-                let module = itemControllable.config.module
-                let ic = itemControllable
-                let allLocalIds = await localItemIds(of: ic)
-                for deletedId in allLocalIds.subtracting(importedIds) {
-                    await appendDeletionReviewItem(deletedId: deletedId, module: module, itemController: ic, importModel: importModel)
-                }
+            let module = itemControllable.config.module
+            let ic = itemControllable
+            let allLocalIds = await localItemIds(of: ic)
+            for deletedId in allLocalIds.subtracting(importedIds) {
+                await appendDeletionReviewItem(deletedId: deletedId, module: module, itemController: ic, importModel: importModel)
             }
-        } else if !gameMemoryOnly {
-            let cc = ConvertController(itemController: itemControllable, editController: editControllable)
-            await cc.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds)
+        } else if policy.repairsImportedItems {
+            await repairImportedItems(importedIds)
         }
 
         try await finalImport(
@@ -345,6 +367,12 @@ private extension ImportControllable {
     func performImport(from url: URL, importModel: ItemDataImportModel, gameMemoryOnly: Bool) async throws {
         let securityScope = url.startSecurityScopedAccess()
         defer { securityScope.stop() }
+        // A coordinated read first: a picked iCloud file that is still a placeholder downloads on
+        // the file-coordination queue here, instead of while a cooperative-pool thread blocks in
+        // `InputStream.read`. See CODE_AUDIT_Folder §3.19.
+        guard try await FileManager.default.fileExists(coordinatingAccessAt: url).exists else {
+            throw ItemDataImportableError.openError
+        }
         guard let inputStream = InputStream(url: url) else { throw ItemDataImportableError.openError }
 
         inputStream.open()
@@ -389,11 +417,6 @@ private extension ImportControllable {
         importModel.failedItems += 1
     }
 
-    @MainActor
-    private func incrementImportedItems(_ importModel: ItemDataImportModel) {
-        importModel.importedItems += 1
-    }
-
     // MARK: - Item Application
 
     /// Makes a freshly decoded item safe to apply: its file description came out of the imported
@@ -415,14 +438,35 @@ private extension ImportControllable {
         return true
     }
 
-    func addItem(importedItem: ModelType, id: UUID, forceSave: Bool, importModel: ItemDataImportModel, gameMemoryOnly: Bool = false, locallyReusedFileIds: Set<UUID> = []) async throws {
-        let mode = await importModel.importMode
+    /// Captures, once per module stream, where its items go. Reading `isGameMode` separately at
+    /// every step let a game that ended mid-package send later items of the same package to the
+    /// permanent library. See CODE_AUDIT_Folder §3.4.
+    @MainActor
+    func applyPolicy(importModel: ItemDataImportModel, forceSave: Bool, gameMemoryOnly: Bool) -> ImportApplyPolicy {
+        ImportApplyPolicy(
+            mode: importModel.importMode,
+            forceSave: forceSave,
+            gameMemoryOnly: gameMemoryOnly,
+            writesGameMemory: !forceSave && itemControllable.itemDataModel.isGameMode,
+            isUntrustedSource: importModel.isUntrustedSource
+        )
+    }
+
+    /// Normalises, merges, writes and folder-repairs one decoded item in a single main-actor
+    /// step, so no sync or user edit can land between the merge and the write and be
+    /// overwritten by the stale merge result. See CODE_AUDIT_Folder §3.4.
+    @MainActor
+    func applyImportedItem(_ importedItem: ModelType, id: UUID, policy: ImportApplyPolicy, importModel: ItemDataImportModel, locallyReusedFileIds: Set<UUID>) {
         let itemController = itemControllable
-        let editCtrl = editControllable
-        let normalizedImportedItem = await itemController.normalizedImportedItem(from: importedItem)
-        guard let importableItem = await itemController.gameModeImportedItem(from: normalizedImportedItem, forceSave: forceSave, locallyReusedFileIds: locallyReusedFileIds) else {
-            await incrementImportedItems(importModel)
-            try Task.checkCancellation()
+        // A memory-only game delivery whose game has ended since the package started has no
+        // game memory left to go to, and must not fall through to the library.
+        guard !policy.writesGameMemory || itemController.itemDataModel.isGameMode else {
+            Logger.importController.info("Import dropped an item of a game package that arrived after the game ended module=\(itemController.config.module.rawValue, privacy: .public)")
+            return
+        }
+        let normalizedImportedItem = itemController.normalizedImportedItem(from: importedItem)
+        guard let importableItem = itemController.gameModeImportedItem(from: normalizedImportedItem, writesGameMemory: policy.writesGameMemory, locallyReusedFileIds: locallyReusedFileIds) else {
+            importModel.importedItems += 1
             return
         }
 
@@ -432,31 +476,42 @@ private extension ImportControllable {
         // (`gameItemData`); nothing considers the item "in the running game" — `gameItems`
         // stays the authority for that (see `ItemGameModel.currentItemId`/`.items`) — until it's
         // in that id list too, so add it there ourselves.
-        guard !gameMemoryOnly else {
-            await replaceForGameAndCount(importableItem, id: id, itemController: itemController, importModel: importModel)
-            try Task.checkCancellation()
+        guard !policy.gameMemoryOnly else {
+            replaceForGameAndCount(importableItem, id: id, itemController: itemController, importModel: importModel)
             return
         }
 
-        switch mode {
+        let writePolicy: GameMutationPolicy = policy.writesGameMemory ? .memoryOnly : .persist
+        switch policy.mode {
         case .merge:
-            let finalItem = await itemController.merge(with: importableItem, forceMerge: forceSave)
-            if let finalItem {
-                await itemController.replaceImportedModel(model: finalItem, isInsert: true, forceSave: forceSave)
-                await editCtrl.repairFolder(itemId: id)
+            if let finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory) {
+                itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
+                editControllable.repairFolder(itemId: id)
             }
 
         case .overwrite:
-            await itemController.replaceImportedModel(model: importableItem, isInsert: true, forceSave: forceSave)
-            await editCtrl.repairFolder(itemId: id)
+            itemController.replaceImportedModel(model: importableItem, isInsert: true, policy: writePolicy)
+            editControllable.repairFolder(itemId: id)
 
         case .manual:
-            let merged = await itemController.merge(with: importableItem) as? any ItemDataAccessible
-            await recordManualReview(importableItem: importableItem, merged: merged, id: id, itemController: itemController, importModel: importModel)
+            let merged = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory) as? any ItemDataAccessible
+            recordManualReview(importableItem: importableItem, merged: merged, id: id, itemController: itemController, importModel: importModel)
         }
 
-        await incrementImportedItems(importModel)
-        try Task.checkCancellation()
+        importModel.importedItems += 1
+    }
+
+    /// Runs the post-import folder and orphan repair for `importedIds`. In an unstructured task:
+    /// the repair stops at `Task.isCancelled`, and after a cancelled import it must still run
+    /// for the items already applied. See CODE_AUDIT_Folder §3.3.
+    func repairImportedItems(_ importedIds: Set<UUID>) async {
+        guard !importedIds.isEmpty else { return }
+        let itemController = itemControllable
+        let editController = editControllable
+        await Task { @MainActor in
+            let repair = ConvertController(itemController: itemController, editController: editController)
+            await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: importedIds)
+        }.value
     }
 
     @MainActor
@@ -482,7 +537,9 @@ private extension ImportControllable {
         importModel: ItemDataImportModel
     ) {
         guard let imported = importableItem as? any ItemDataAccessible else { return }
-        let existing = itemController.itemSync(for: id)
+        // A copy, not the live item: applying the review compares it with the library item to
+        // detect a change made while the review sheet was open. See CODE_AUDIT_Folder §3.17.
+        let existing: (any ItemDataAccessible)? = itemController.itemSync(for: id, noGame: true)?.copy()
         let module = itemController.config.module
 
         if existing != nil && merged == nil {
@@ -648,6 +705,7 @@ private extension ImportControllable {
         await logImport(title: "skip", count: itemCount, importModel: importModel)
         var counter = 0
         while counter < itemCount {
+            try Task.checkCancellation()
             guard inputStream.hasBytesAvailable else {
                 throw ItemDataImportableError.notEnoughData
             }
@@ -744,8 +802,8 @@ private extension ImportControllable {
 
 private extension ItemControllable {
     @MainActor
-    func shouldDeferGameModeFolderImport(_ item: ModelType, forceSave: Bool) -> Bool {
-        guard forceSave == false, itemDataModel.isGameMode, let imported = item as? Model else { return false }
+    func shouldDeferGameModeFolderImport(_ item: ModelType, writesGameMemory: Bool) -> Bool {
+        guard writesGameMemory, let imported = item as? Model else { return false }
         return imported.category == .folder
     }
 
@@ -757,8 +815,8 @@ private extension ItemControllable {
     }
 
     @MainActor
-    func gameModeImportedItem(from item: ModelType, forceSave: Bool, locallyReusedFileIds: Set<UUID>) -> ModelType? {
-        guard forceSave == false, itemDataModel.isGameMode, var imported = (item as? Model)?.copy() else { return item }
+    func gameModeImportedItem(from item: ModelType, writesGameMemory: Bool, locallyReusedFileIds: Set<UUID>) -> ModelType? {
+        guard writesGameMemory, var imported = (item as? Model)?.copy() else { return item }
 
         if locallyReusedFileIds.contains(imported.id), let localItem = itemSync(for: imported.id, noGame: true) {
             imported.parentId = localItem.parentId

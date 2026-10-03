@@ -15,8 +15,15 @@ public extension ItemControllable {
     }
 
     @MainActor func merge(with model: ModelType, forceMerge: Bool = false) async -> ModelType? {
+        mergeSync(with: model, forceMerge: forceMerge)
+    }
+
+    /// `merge(with:forceMerge:)` without a suspension point, so a caller can merge against the
+    /// current item and write the result in one main-actor step. `noGame` merges against the
+    /// permanent-library copy instead of a loaded game-memory copy. See CODE_AUDIT_Folder §3.4.
+    @MainActor func mergeSync(with model: ModelType, forceMerge: Bool = false, noGame: Bool = false) -> ModelType? {
         guard forceMerge == true || itemDataModel.isGameMode == false else { return model }
-        guard let model = model as? Model, let current = await self.item(for: model.id) else { return model }
+        guard let model = model as? Model, let current = itemSync(for: model.id, noGame: noGame) else { return model }
         if model.isSame(current) {
             return nil
         }
@@ -35,6 +42,9 @@ public extension ItemControllable {
 
 public extension ItemControllable {
     @MainActor func resetData() async {
+        // A sync batch queued before the reset must not re-insert or merge into the emptied
+        // module afterwards. See CODE_AUDIT_Folder §3.19.
+        itemDataModel.discardQueuedSyncBatches()
         let allItemIds = itemDataModel.items
 
         // Clean up cache and internal state for each item
@@ -98,14 +108,17 @@ public extension ItemControllable {
         }
     }
 
-    @MainActor func updates(_ models: [ModelType]) async {
+    /// - Parameter unsavedBeforeFetch: the unsaved-insert ids read before `models` was fetched.
+    ///   An insert that commits while the fetch runs is in neither the fetch nor a later read of
+    ///   the unsaved ids, so both reads are combined. See CODE_AUDIT_Folder §3.10.
+    @MainActor func updates(_ models: [ModelType], unsavedBeforeFetch: Set<UUID> = []) async {
         let sortedModels = models.compactMap { $0 as? Model }.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         // O(n) set membership instead of an O(n·m) nested `.contains` scan — this runs on
         // every full CloudKit sync reconciliation. See CODE_AUDIT_EditItem §7.1.
         let sortedModelIds = Set(sortedModels.map(\.id))
         // Locally created items whose insert is still queued are not in the store yet; they
         // are not deletions. See CODE_AUDIT_18 §5.2.
-        let unsavedInsertIds = await dataControllable?.unsavedInsertIds() ?? []
+        let unsavedInsertIds = unsavedBeforeFetch.union(await dataControllable?.unsavedInsertIds() ?? [])
         let deletedIds = itemDataModel.items.filter { !sortedModelIds.contains($0) && !unsavedInsertIds.contains($0) }
         for id in deletedIds {
             // Full-table reconciliation (a store swap, or the once-at-launch initial
@@ -121,11 +134,17 @@ public extension ItemControllable {
         // hold it, and an edit queued but not flushed would be reverted in memory. Known ids are
         // merged like an incremental sync update; only new ids get a new instance.
         // See CODE_AUDIT_20 §5.6.
+        // Changed files drop their image cache first, while nothing below has run yet: the
+        // apply loop must not suspend, or a concurrent insert could be lost by `resetItems`.
+        // See CODE_AUDIT_Folder §3.19.
+        for item in sortedModels where itemSync(for: item.id, noGame: true) != nil {
+            await invalidateCacheForChangedFile(of: item)
+        }
         let knownIds = Set(itemDataModel.items)
         var updatedItems: [UUID] = []
         for item in sortedModels {
             if knownIds.contains(item.id), itemSync(for: item.id, noGame: true) != nil {
-                mergeUpdates(model: item)
+                applyMergedUpdate(model: item)
             } else {
                 setModel(with: item)
             }

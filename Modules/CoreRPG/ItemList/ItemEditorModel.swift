@@ -35,6 +35,15 @@ public final class ItemEditorModel: Sendable {
     
     @ObservationIgnored public var undoManaged: UndoManaged<ModelType?>
 
+    /// The running duplicate started from any menu of this module. A second Duplicate press
+    /// while it runs is ignored. See CODE_AUDIT_Folder §3.18.
+    @ObservationIgnored var duplicateTask: Task<Void, Never>?
+
+    /// The last queued file operation per item. Each new move or replacement of an item's file
+    /// waits for the previous one, so two operations on one file never interleave.
+    /// See CODE_AUDIT_Folder §3.8, §3.19.
+    @ObservationIgnored var fileOperationTails: [UUID: (token: UUID, task: Task<Void, Never>)] = [:]
+
     func reset() {
         if undoManaged.value != nil {
             undoManaged.resetValue(nil)

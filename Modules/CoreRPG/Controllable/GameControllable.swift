@@ -130,7 +130,13 @@ public final class ItemGameModel {
         itemData[itemId]
     }
     
+    /// Incremented by every `reset()`. A delivery or reveal compares it before and after its
+    /// suspensions, so work that started in a game which has since been reset does not
+    /// re-populate the cleared game model. See CODE_AUDIT_Folder §3.11.
+    @ObservationIgnored public private(set) var resetGeneration = 0
+
     func reset() {
+        resetGeneration &+= 1
         items = []
         itemData.removeAll()
         playerReports.removeAll()
@@ -303,9 +309,14 @@ public extension GameControllable {
     @MainActor
     private func backfillContentHashIfNeeded(itemId: UUID) async {
         guard let fileUrlDataController = itemControllable.fileUrlDataController else { return }
-        guard var item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl, fileUrl.contentHash == nil else { return }
+        guard let fileUrl = itemControllable.itemSync(for: itemId)?.fileUrl, fileUrl.contentHash == nil else { return }
         guard let data = try? await fileUrlDataController.loadData(for: fileUrl) else { return }
-        item.fileUrl = FileUrl(
+        // The file may have been replaced while it loaded: only stamp the hash onto the file
+        // that was read. The hash is written as a field update on a copy — setting it on the
+        // stored instance and calling `replace` compared the instance with itself and never
+        // persisted. See CODE_AUDIT_Folder §3.11.
+        guard itemControllable.itemSync(for: itemId)?.fileUrl == fileUrl else { return }
+        let hashedFileUrl = FileUrl(
             fileId: fileUrl.fileId,
             url: fileUrl.rawUrl,
             location: fileUrl.location,
@@ -313,7 +324,7 @@ public extension GameControllable {
             relativeUrl: nil,
             contentHash: FileUrl.contentHash(of: data)
         )
-        itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
+        itemControllable.persistFileUrl(hashedFileUrl, itemId: itemId)
     }
 
     func share(id: UUID) async -> NetworkCodableDataType {
@@ -332,21 +343,33 @@ public extension GameControllable {
     }
 
     func reveal(itemId: UUID, data: NetworkCodableDataType, save: Bool) async throws -> Bool {
+        let generation = await gameModel.resetGeneration
         guard await hasItem(id: itemId, version: data.version) == false else {
             if await !hasLocalFileData(for: itemId) {
                 guard data.data != nil else { return false }
                 try await updateGame(data: data, hide: !save, deep: false)
                 return await hasLocalFileData(for: itemId)
             }
-            _ = await setCurrent(itemId: itemId)
-            if save, let model = await gameModel.itemData[itemId] {
-                await itemControllable.replaceForGame(model: model, isInsert: true, policy: .persist)
-            }
-            return true
+            return await completeReveal(itemId: itemId, save: save, generation: generation)
         }
         guard data.data != nil else { return false }
         try await updateGame(data: data, hide: !save, deep: false)
         return await hasLocalFileData(for: itemId)
+    }
+
+    /// Makes an already-available item current (and persists it for `save`) in one main-actor
+    /// step, after checking the game was not reset while `reveal` awaited the file checks.
+    /// See CODE_AUDIT_Folder §3.11.
+    @MainActor
+    private func completeReveal(itemId: UUID, save: Bool, generation: Int) -> Bool {
+        guard gameModel.resetGeneration == generation else { return false }
+        if !gameModel.moveToFront(itemId: itemId), let item = itemControllable.itemSync(for: itemId) {
+            gameModel.insert(itemId: item.id, item: item)
+        }
+        if save, let model = gameModel.itemData[itemId] {
+            itemControllable.replaceForGame(model: model, isInsert: true, policy: .persist)
+        }
+        return true
     }
 
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool) async throws {
@@ -370,9 +393,12 @@ public extension GameControllable {
     /// reveal/repair resend) can never silently win the merge and discard
     /// what the master just sent. See CODE_AUDIT / player-character-sync-gaps.
     func updateGame(data: NetworkCodableDataType, hide: Bool, deep: Bool, policy: GameMutationPolicy, importMode: ImportMode = .merge) async throws {
+        let generation = await gameModel.resetGeneration
         if let encodedData = data.data {
             do {
                 try await importNetwork(from: encodedData, importMode: importMode)
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 throw ItemGameStorableError.networkDecoding
             }
@@ -380,17 +406,22 @@ public extension GameControllable {
             let module = itemControllable.config.module
             guard data.type == module else { throw ItemGameStorableError.wrongData }
         }
+        try await applyGameUpdate(itemId: data.id, hide: hide, policy: policy, generation: generation)
+    }
 
-        var item = await gameModel.item(for: data.id)
-        if item == nil {
-            item = await itemControllable.item(for: data.id)
-        }
-        guard let item else { throw ItemGameStorableError.itemMissing }
-        let otherItems = await gameModel.apply(itemId: data.id, item: item, hide: hide)
+    /// Shows (and for `.persist` stores) the delivered item in one main-actor step. A game reset
+    /// during the import above must not re-populate the cleared game model or persist the
+    /// delivery, so the reset generation is re-checked here. See CODE_AUDIT_Folder §3.11.
+    @MainActor
+    private func applyGameUpdate(itemId: UUID, hide: Bool, policy: GameMutationPolicy, generation: Int) throws {
+        guard gameModel.resetGeneration == generation else { throw CancellationError() }
+        let gameItem: ModelType? = gameModel.item(for: itemId)
+        guard let item = gameItem ?? itemControllable.itemSync(for: itemId) else { throw ItemGameStorableError.itemMissing }
+        let otherItems = gameModel.apply(itemId: itemId, item: item, hide: hide)
         if policy == .persist {
-            await itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
+            itemControllable.replaceForGame(model: item, isInsert: true, policy: .persist)
             for otherItem in otherItems {
-                await itemControllable.replaceForGame(model: otherItem, isInsert: true, policy: .persist)
+                itemControllable.replaceForGame(model: otherItem, isInsert: true, policy: .persist)
             }
         }
     }
@@ -408,6 +439,10 @@ public extension GameControllable {
     /// See CODE_AUDIT_15 §3.3.
     @concurrent
     func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge, peerPolicy: PeerImportPolicy? = nil) async throws {
+        // A bulk import or repair holds the data-mutation lock: apply this package after it
+        // instead of interleaving with its writes. See CODE_AUDIT_Folder §3.5.
+        await DataMutationCoordinator.shared.waitUntilIdle()
+        try Task.checkCancellation()
         let stream = InputStream(data: data)
         stream.open()
         defer { stream.close() }

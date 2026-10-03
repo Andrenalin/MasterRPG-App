@@ -21,11 +21,4 @@ public enum ListSearchTiming {
     /// selecting it, rather than selecting an id the list hasn't rendered yet.
     public static let selectionRestoreRenderDelay: Duration = .milliseconds(50)
 
-    /// Gives a newly created item's async file import/CRDT sync time to settle before
-    /// persisting it.
-    public static let newItemSettleDelay: Duration = .seconds(1.0)
-
-    /// Gives the list one moment to finish reflecting a newly added/selected item before
-    /// presenting the header editor sheet on top of it.
-    public static let headerEditorPresentationDelay: Duration = .seconds(0.25)
 }

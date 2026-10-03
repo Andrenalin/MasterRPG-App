@@ -69,18 +69,16 @@ extension FileUrlDataController {
         return nil
     }
 
-    public func move(fileUrl: FileUrl?, to destination: String) async -> FileUrl? {
+    /// Moves a `.newCloud` file to `destination`. Returns `nil` when the file is not one this
+    /// controller moves; throws when the move fails, so the caller can surface it.
+    /// See CODE_AUDIT_Folder §3.8.
+    public func move(fileUrl: FileUrl?, to destination: String) async throws -> FileUrl? {
         await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.move(fileUrl:to:)", file: "FileUrlDataController.swift")
-        
-        do {
-            guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
-            await bookmark(url: fullUrl, fileId: fileUrl.fileId)
 
-            return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
-        } catch {
-            Logger.fileStore.error("Error moving file \(error.localizedDescription, privacy: .public)")
-        }
-        return nil
+        guard let fileUrl, fileUrl.location == .newCloud, let (fullUrl, relativeUrl) = try await cloudDocumentController.move(url: fileUrl.rawUrl, newName: destination) else { return nil }
+        await bookmark(url: fullUrl, fileId: fileUrl.fileId)
+
+        return FileUrl(fileId: fileUrl.fileId, url: relativeUrl, location: fileUrl.location, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
     }
 
     private func bookmark(url: URL, fileId: UUID) async {

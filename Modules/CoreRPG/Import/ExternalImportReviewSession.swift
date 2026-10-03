@@ -213,6 +213,12 @@ public final class ExternalImportReviewSession {
                     if let supersededFile = attachmentResult.supersededFile {
                         supersededFiles.append(CreatedFile(module: item.module, fileUrl: supersededFile))
                     }
+                    // `attach` suspends. A sync or game write to this item in the meantime would
+                    // be overwritten by a candidate built from the earlier read, so the commit
+                    // stops and rolls back instead. See CODE_AUDIT_Folder §3.6.
+                    guard itemController.libraryModel(id: item.id, matches: previous) else {
+                        throw ExternalImportError.itemChangedDuringImport(itemId: item.id, module: item.module)
+                    }
                 }
 
                 if mergedWasUnchanged && !attachmentChanged {
@@ -249,13 +255,15 @@ public final class ExternalImportReviewSession {
                       let root = rootManager.rootModel(for: module) else { continue }
 
                 // Folder and orphan repair can update parents/children which were not
-                // selected for import. Capture the complete surrounding state, plus
-                // the shared auxiliary indexes, before allowing those legacy editor
-                // operations to run.
+                // selected for import. Capture the items it can reach, plus the shared
+                // auxiliary indexes, before allowing those legacy editor operations to run;
+                // a snapshot of the whole module made rollback revert unrelated items that
+                // changed during the commit. See CODE_AUDIT_Folder §3.6.
+                let repairScope = root.itemControllable.externalImportRepairScope(importedIds: importedIDs)
                 repairSnapshots.append(
                     RepairSnapshot(
                         module: module,
-                        models: root.itemControllable.externalImportSnapshots(excluding: importedIDs),
+                        beforeRepair: root.itemControllable.externalImportSnapshots(ids: repairScope),
                         linkRegister: LinkRegisterSnapshot(controller: root.editControllable.linkRegisterController),
                         tags: TagSnapshot(controller: root.editControllable.tagController)
                     )
@@ -271,6 +279,8 @@ public final class ExternalImportReviewSession {
                         importedIds: importedIDs
                     )
                 }
+                repairSnapshots[repairSnapshots.count - 1].afterRepair =
+                    root.itemControllable.externalImportSnapshots(ids: repairScope)
                 try failureReporter.rethrowRecordedError()
                 try Task.checkCancellation()
             }
@@ -281,18 +291,22 @@ public final class ExternalImportReviewSession {
 
             // The new models and binaries are durable now. Only at this point is it safe to
             // remove binaries replaced by this import; rollback can no longer restore them.
-            for superseded in supersededFiles {
-                guard let fileController = rootManager.rootModel(for: superseded.module)?
-                    .itemControllable.fileUrlDataController else { continue }
-                do {
-                    try await deleteCreatedFile(superseded.fileUrl, using: fileController)
-                } catch {
-                    // The import itself already committed durably; a failed cleanup here
-                    // is an orphaned file on disk, not data loss. Log it so it's diagnosable
-                    // instead of vanishing silently. See CODE_AUDIT.md §5.2.
-                    Logger.importController.error("ExternalImport: failed to delete superseded file \(superseded.fileUrl.fileId, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            // Run in an unstructured task: a cancellation arriving now must not leave the
+            // replaced files behind. See CODE_AUDIT_Folder §3.1.
+            await Task { @MainActor in
+                for superseded in supersededFiles {
+                    guard let fileController = rootManager.rootModel(for: superseded.module)?
+                        .itemControllable.fileUrlDataController else { continue }
+                    do {
+                        try await self.deleteCreatedFile(superseded.fileUrl, using: fileController)
+                    } catch {
+                        // The import itself already committed durably; a failed cleanup here
+                        // is an orphaned file on disk, not data loss. Log it so it's diagnosable
+                        // instead of vanishing silently. See CODE_AUDIT.md §5.2.
+                        Logger.importController.error("ExternalImport: failed to delete superseded file \(superseded.fileUrl.fileId, privacy: .public): \(error.localizedDescription, privacy: .private)")
+                    }
                 }
-            }
+            }.value
 
             let finalResult = accumulator.result
             result = finalResult
@@ -301,21 +315,29 @@ public final class ExternalImportReviewSession {
         } catch {
             let originalError = error
             phase = .rollingBack
-            var rollbackErrors = await rollback(
-                mutations: mutations,
-                repairSnapshots: repairSnapshots,
-                createdFiles: createdFiles,
-                rootManager: rootManager
-            )
             // Persist restored snapshots only when commit actually mutated
             // something. Cancellation before the first item remains write-free.
-            if !mutations.isEmpty || !repairSnapshots.isEmpty || !createdFiles.isEmpty {
-                do {
-                    try await consolidatedSave()
-                } catch {
-                    rollbackErrors.append("Could not persist restored models: \(error.localizedDescription)")
+            let needsSave = !mutations.isEmpty || !repairSnapshots.isEmpty || !createdFiles.isEmpty
+            // The rollback runs in an unstructured task, which does not inherit the
+            // cancellation that may have caused it: every created-file removal goes through
+            // coordinated file access, which refuses to start in a cancelled task, so a user
+            // cancel left the installed attachments behind. See CODE_AUDIT_Folder §3.1.
+            let rollbackErrors = await Task { @MainActor [mutations, repairSnapshots, createdFiles] in
+                var errors = await self.rollback(
+                    mutations: mutations,
+                    repairSnapshots: repairSnapshots,
+                    createdFiles: createdFiles,
+                    rootManager: rootManager
+                )
+                if needsSave {
+                    do {
+                        try await consolidatedSave()
+                    } catch {
+                        errors.append("Could not persist restored models: \(error.localizedDescription)")
+                    }
                 }
-            }
+                return errors
+            }.value
             currentItemID = nil
             if !rollbackErrors.isEmpty {
                 let rollbackError = ExternalImportError.rollbackIncomplete(

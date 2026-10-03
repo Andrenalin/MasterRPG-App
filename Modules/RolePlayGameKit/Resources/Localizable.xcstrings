@@ -293,6 +293,23 @@
         }
       }
     },
+    "Another import or repair operation is currently changing RPG data. Try again when it finishes." : {
+      "comment" : "Error shown when the example data cannot be installed because another import or repair is running.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein anderer Import- oder Reparaturvorgang ändert derzeit RPG-Daten. Versuche es erneut, wenn er abgeschlossen ist."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ขณะนี้มีการนำเข้าหรือซ่อมแซมอื่นกำลังเปลี่ยนข้อมูล RPG โปรดลองอีกครั้งเมื่อดำเนินการเสร็จ"
+          }
+        }
+      }
+    },
     "Asset references" : {
       "localizations" : {
         "de" : {
@@ -827,6 +844,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ข้อมูลตัวอย่าง"
+          }
+        }
+      }
+    },
+    "Example Data Not Installed" : {
+      "comment" : "Title of the alert shown when installing the example data on first launch failed.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beispieldaten nicht installiert"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ได้ติดตั้งข้อมูลตัวอย่าง"
           }
         }
       }
@@ -2596,6 +2630,23 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "โหลดโมเดลฐานข้อมูลไม่สำเร็จ การติดตั้งแอปอาจเสียหาย โปรดลบและติดตั้งแอปใหม่ ไม่สามารถกู้คืนได้"
+          }
+        }
+      }
+    },
+    "The example data could not be installed: %@" : {
+      "comment" : "Message of the alert shown when installing the example data failed. The argument is the error description.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Beispieldaten konnten nicht installiert werden: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่สามารถติดตั้งข้อมูลตัวอย่างได้: %@"
           }
         }
       }

@@ -270,8 +270,7 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
             CoreRPG.ImportProgressPanelView(
                 rootManager: nil,
                 urlProvider: FakeExampleUrlProvider(),
-                importController: FakeImportController.fake,
-                saveDeferredHandler: nil
+                importController: FakeImportController.fake
             )
         }
     }

@@ -11,7 +11,6 @@ struct AppImportView: View {
     }
 
     let appModel: AppModel
-    @State private var nativeImportSaveDeferral: UUID?
     @State private var selectedSection = ImportSection.masterRPG
         
     var body: some View {
@@ -53,16 +52,16 @@ struct AppImportView: View {
                     urlProvider: appModel,
                     importController: importController,
                     initialURL: appModel.pendingImportURL,
-                    endDataMutationHandler: {
+                    endDataMutationHandler: { [appModel] in
                         await appModel.save()
                     },
-                    saveDeferredHandler: { value in
-                        if value, nativeImportSaveDeferral == nil {
-                            nativeImportSaveDeferral = appModel.beginSaveDeferral()
-                        } else if !value, let token = nativeImportSaveDeferral {
-                            appModel.endSaveDeferral(token)
-                            nativeImportSaveDeferral = nil
-                        }
+                    // Capture only the app model: the import session keeps the token and can
+                    // release it after this view is gone. See CODE_AUDIT_Folder §3.16.
+                    beginSaveDeferral: { [appModel] in
+                        appModel.beginSaveDeferral()
+                    },
+                    endSaveDeferral: { [appModel] token in
+                        appModel.endSaveDeferral(token)
                     }
                 )
             case .foundry:

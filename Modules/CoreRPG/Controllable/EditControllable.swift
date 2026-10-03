@@ -465,6 +465,21 @@ public extension EditControllable {
         await itemControllable.delete(itemId: itemId)
     }
     
+    /// Duplicates `itemIds` in order, unless a duplicate started from any menu of this module is
+    /// still running: a second press is ignored instead of starting an overlapping copy of the
+    /// same files. See CODE_AUDIT_Folder §3.18.
+    @MainActor func duplicateIgnoringRepeats(itemIds: [UUID]) {
+        guard editorModel.duplicateTask == nil, !itemIds.isEmpty else { return }
+        let editorModel = editorModel
+        editorModel.duplicateTask = Task { @MainActor in
+            defer { editorModel.duplicateTask = nil }
+            for itemId in itemIds {
+                guard let item = itemControllable.itemSync(for: itemId) else { continue }
+                await duplicate(item: item)
+            }
+        }
+    }
+
     @MainActor func duplicate(item: any ItemDataAccessible) async {
         await recordOperation("EditControllable.duplicate(item:)")
 

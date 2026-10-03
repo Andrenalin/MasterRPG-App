@@ -56,6 +56,33 @@ struct ImportControllerTests {
         assertRegisteredNestedLinks(in: importedRoot, linkedTables: linkedTables)
     }
 
+    @Test("A cancelled import throws instead of finishing silently (CODE_AUDIT_Folder §3.3)")
+    func cancelledImportThrows() async throws {
+        let sourceRoot = TableRootModel.testRoot(diceRoot: DiceRootModel.testRoot(), pdfRoot: PdfRootModel.testRoot())
+        let tableId = sourceRoot.itemController.addNewSync(type: .item)
+        sourceRoot.editController.save(updated: TableModel(id: tableId, name: "Loot", entries: []), message: "Create table")
+        let exportIds = sourceRoot.exportController.exporting(itemIds: ItemModuleIds(ids: Set([tableId]), module: .table))
+        let stream = OutputStream.toMemory()
+        stream.open()
+        _ = try await sourceRoot.exportController.export(itemIds: exportIds, into: stream)
+        stream.close()
+        let data = try #require(stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data)
+
+        let importedRoot = TableRootModel.testRoot(diceRoot: DiceRootModel.testRoot(), pdfRoot: PdfRootModel.testRoot())
+        let importTask = Task { @MainActor in
+            let importStream = InputStream(data: data)
+            importStream.open()
+            defer { importStream.close() }
+            try await importedRoot.importController.importStream(from: importStream, forceSave: false)
+        }
+        importTask.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await importTask.value
+        }
+        #expect(importedRoot.itemController.itemDataModel.items.isEmpty)
+    }
+
     private func createNestedLinkedTables(in root: TableRootModel) -> NestedLinkedTables {
         let tableCId = root.itemController.addNewSync(type: .item)
         let entryCId = UUID()

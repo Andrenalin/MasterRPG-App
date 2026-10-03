@@ -335,17 +335,26 @@ extension AppModel {
         }
     }
 
-    public func installExampleData(isGerman: Bool = false) {
-        let importController = adventureRoot.importControllable
+    /// Imports the bundled example data and returns once it is saved. Holds the data-mutation
+    /// lock and defers opportunistic saves like the file import does, and throws when the
+    /// import fails, so the caller reports the real result instead of assuming success.
+    /// See CODE_AUDIT_Folder §3.7.
+    public func installExampleData(isGerman: Bool = false) async throws {
         let bundle = RPGResources.Resources.bundle
         let name = isGerman ? RPGResources.Resources.exampleFirstGermanData : RPGResources.Resources.exampleFirstData
-        guard let url = bundle.url(forResource: name, withExtension: "gmz") else { return }
-        let task = importController.importUrl(from: url)
-        Task {
-            if case .success = await task.result {
-                refreshTipEligibility()
-            }
+        guard let url = bundle.url(forResource: name, withExtension: "gmz") else {
+            throw CocoaError(.fileNoSuchFile)
         }
+        guard let mutationToken = beginExclusiveDataMutation() else {
+            throw ExampleDataInstallError.dataMutationActive
+        }
+        let saveDeferral = beginSaveDeferral()
+        let result = await adventureRoot.importControllable.importUrl(from: url).result
+        endSaveDeferral(saveDeferral)
+        await save()
+        endExclusiveDataMutation(mutationToken)
+        try result.get()
+        refreshTipEligibility()
     }
 
     public func windowPlacement(for module: NetworkModules) -> WindowPlacementPosition {
@@ -657,5 +666,18 @@ extension AppModel {
         )
         model.selectedExtendedModule = .maps
         return model
+    }
+}
+
+/// Why the example data could not be installed.
+public enum ExampleDataInstallError: LocalizedError {
+    /// Another import or repair is changing the RPG data.
+    case dataMutationActive
+
+    public var errorDescription: String? {
+        switch self {
+        case .dataMutationActive:
+            String(localized: "Another import or repair operation is currently changing RPG data. Try again when it finishes.", bundle: .module)
+        }
     }
 }

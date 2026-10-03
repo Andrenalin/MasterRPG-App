@@ -35,7 +35,8 @@ public struct ImportProgressPanelView: View {
         initialURL: URL? = nil,
         beginDataMutationHandler: (@MainActor () -> Bool)? = nil,
         endDataMutationHandler: (@MainActor () async -> Void)? = nil,
-        saveDeferredHandler: (@MainActor (Bool) -> Void)? = nil
+        beginSaveDeferral: (@MainActor () -> UUID)? = nil,
+        endSaveDeferral: (@MainActor (UUID) -> Void)? = nil
     ) {
         self.rootManager = rootManager
         self.urlProvider = urlProvider
@@ -47,7 +48,8 @@ public struct ImportProgressPanelView: View {
             initialValue: ImportMutationSession(
                 beginDataMutationHandler: beginDataMutationHandler,
                 endDataMutationHandler: endDataMutationHandler,
-                saveDeferredHandler: saveDeferredHandler
+                beginSaveDeferral: beginSaveDeferral,
+                endSaveDeferral: endSaveDeferral
             )
         )
     }
@@ -250,10 +252,14 @@ private extension ImportProgressPanelView {
         }
 
         if let reviewModel = importModel.reviewModel, let rootManager {
-            for module in reviewModel.modules {
-                guard let root = rootManager.rootModel(for: module.id) else { continue }
-                for item in module.reviewItems {
-                    await apply(item: item, root: root)
+            // The session owns the apply, so a dismissal mid-apply waits for it before the
+            // final save and lock release. See CODE_AUDIT_Folder §3.17.
+            await mutationSession.runApply {
+                for module in reviewModel.modules {
+                    guard let root = rootManager.rootModel(for: module.id) else { continue }
+                    for item in module.reviewItems {
+                        await Self.apply(item: item, root: root)
+                    }
                 }
             }
         }
@@ -301,7 +307,7 @@ private extension ImportProgressPanelView {
         return false
     }
 
-    func apply(item: ImportReviewItemModel, root: any ItemRootControllable) async {
+    static func apply(item: ImportReviewItemModel, root: any ItemRootControllable) async {
         let itemModel = item.itemModel
         if item.isDeletion {
             if itemModel.decision == .imported {
@@ -313,7 +319,16 @@ private extension ImportProgressPanelView {
             guard itemModel.hasOverrides, itemModel.item.existing != nil else { return }
         }
         guard let model = itemModel.materializedItem() as? any Observable & ItemDataAccessible else { return }
-        root.itemControllable.replaceImportedModel(model: model, isInsert: true, forceSave: true)
+        // The review was built from the library item as it was at parse time. If it changed
+        // while the sheet was open (sync, another window), merge the reviewed result onto the
+        // current item instead of overwriting that change. See CODE_AUDIT_Folder §3.17.
+        var finalModel: any ModelType = model
+        if let parsed = itemModel.item.existing as? any Observable & ItemDataAccessible,
+           !root.itemControllable.libraryModel(id: item.id, matches: parsed),
+           let merged = root.itemControllable.mergeSync(with: model, forceMerge: true, noGame: true) {
+            finalModel = merged
+        }
+        root.itemControllable.replaceImportedModel(model: finalModel, isInsert: true, forceSave: true)
         root.editControllable.repairFolder(itemId: item.id)
     }
 }
@@ -322,24 +337,32 @@ private extension ImportProgressPanelView {
 private final class ImportMutationSession {
     private let beginDataMutationHandler: (@MainActor () -> Bool)?
     private let endDataMutationHandler: (@MainActor () async -> Void)?
-    private let saveDeferredHandler: (@MainActor (Bool) -> Void)?
+    private let beginSaveDeferral: (@MainActor () -> UUID)?
+    private let endSaveDeferral: (@MainActor (UUID) -> Void)?
 
     private(set) var isActive = false
 
     var canStartImport: Bool { importTask == nil }
 
     @ObservationIgnored private var coordinatorToken: UUID?
+    /// Held by the session, not the presenting view: release runs from a task that can outlive
+    /// the view, and reading the view's `@State` after teardown is not supported.
+    /// See CODE_AUDIT_Folder §3.16.
+    @ObservationIgnored private var saveDeferralToken: UUID?
     @ObservationIgnored private var importTask: Task<Void, any Error>?
+    @ObservationIgnored private var applyTask: Task<Void, Never>?
     @ObservationIgnored private var cleanupTask: Task<Void, Never>?
 
     init(
         beginDataMutationHandler: (@MainActor () -> Bool)? = nil,
         endDataMutationHandler: (@MainActor () async -> Void)? = nil,
-        saveDeferredHandler: (@MainActor (Bool) -> Void)? = nil
+        beginSaveDeferral: (@MainActor () -> UUID)? = nil,
+        endSaveDeferral: (@MainActor (UUID) -> Void)? = nil
     ) {
         self.beginDataMutationHandler = beginDataMutationHandler
         self.endDataMutationHandler = endDataMutationHandler
-        self.saveDeferredHandler = saveDeferredHandler
+        self.beginSaveDeferral = beginSaveDeferral
+        self.endSaveDeferral = endSaveDeferral
     }
 
     func beginDataMutation() -> Bool {
@@ -353,8 +376,21 @@ private final class ImportMutationSession {
         }
 
         isActive = true
-        saveDeferredHandler?(true)
+        if saveDeferralToken == nil {
+            saveDeferralToken = beginSaveDeferral?()
+        }
         return true
+    }
+
+    /// Runs the review apply as a task the session owns, so `release` waits for it before the
+    /// final save and lock release. See CODE_AUDIT_Folder §3.17.
+    func runApply(_ work: @escaping @MainActor () async -> Void) async {
+        let task = Task { @MainActor in
+            await work()
+        }
+        applyTask = task
+        await task.value
+        applyTask = nil
     }
 
     /// Retains the parser task so every exit path can wait until parsing has stopped mutating data.
@@ -377,8 +413,10 @@ private final class ImportMutationSession {
         guard isActive else { return }
 
         let parserTask = importTask
+        let applyTask = applyTask
         let task = Task { @MainActor [self] in
             _ = await parserTask?.result
+            await applyTask?.value
             await self.finishRelease()
         }
         cleanupTask = task
@@ -400,7 +438,10 @@ private final class ImportMutationSession {
     private func finishRelease() async {
         guard isActive else { return }
 
-        saveDeferredHandler?(false)
+        if let saveDeferralToken {
+            endSaveDeferral?(saveDeferralToken)
+            self.saveDeferralToken = nil
+        }
         await endDataMutationHandler?()
 
         if let coordinatorToken {
@@ -417,8 +458,7 @@ private final class ImportMutationSession {
     ImportProgressPanelView(
         rootManager: nil,
         urlProvider: FakeExampleUrlProvider(),
-        importController: FakeImportController.fake,
-        saveDeferredHandler: nil
+        importController: FakeImportController.fake
     )
 }
 

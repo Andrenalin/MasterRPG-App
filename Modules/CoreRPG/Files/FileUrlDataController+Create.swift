@@ -89,8 +89,23 @@ public extension FileUrlDataController {
     /// See CODE_AUDIT_19 §7.1, CODE_AUDIT_20 §5.1.
     @concurrent
     func copyFile(_ source: FileUrl, fileId: UUID, to requestedUrl: URL) async throws -> FileUrl? {
-        let relativeUrl = try await uniqueDestination(for: requestedUrl)
+        // Choosing a free name and copying are two steps, so a second copy can take the same
+        // name in between. The copy itself never replaces a file: a collision fails and the next
+        // free name is tried. See CODE_AUDIT_Folder §3.18.
+        for attempt in 1...Self.maximumCopyNameAttempts {
+            let relativeUrl = try await uniqueDestination(for: requestedUrl)
+            do {
+                return try await copyFile(source, fileId: fileId, toFreeName: relativeUrl)
+            } catch let error as CocoaError where error.code == .fileWriteFileExists && attempt < Self.maximumCopyNameAttempts {
+                continue
+            }
+        }
+        throw CocoaError(.fileWriteFileExists)
+    }
 
+    private static let maximumCopyNameAttempts = 5
+
+    private func copyFile(_ source: FileUrl, fileId: UUID, toFreeName relativeUrl: URL) async throws -> FileUrl? {
         if source.hasUnconvertedData {
             guard let data = try await loadData(for: source) else { return nil }
             var unconverted = FileUrl(fileId: fileId, url: relativeUrl, location: .newCloud, module: source.module, relativeUrl: nil)
@@ -108,7 +123,7 @@ public extension FileUrlDataController {
             guard Self.normalizedPath(sourceUrl) != destinationPath else {
                 throw CocoaError(.fileWriteFileExists)
             }
-            try await cloudDocumentController.copy(from: sourceUrl, to: filePath)
+            try await cloudDocumentController.copyWithoutReplacing(from: sourceUrl, to: filePath)
             return true
         }
         guard copied == true else { return nil }

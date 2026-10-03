@@ -41,6 +41,31 @@ public final class PlayerVersionLedger {
         apply([:], for: playerId)
     }
 
+    /// The versions currently recorded for `playerId`, keyed by item.
+    public func versions(for playerId: UUID) -> [UUID: Int] {
+        playerVersions.reduce(into: [:]) { result, entry in
+            if let version = entry.value[playerId] {
+                result[entry.key] = version
+            }
+        }
+    }
+
+    /// Applies a full scan of `playerId`'s versions that was gathered over suspensions, starting
+    /// from `snapshot`. An item whose entry changed while the scan ran (for example through
+    /// `setMasterVersion`) keeps that newer entry instead of the scanned value.
+    /// See CODE_AUDIT_Folder §3.11.
+    public func apply(scanned: [UUID: Int], for playerId: UUID, startedFrom snapshot: [UUID: Int]) {
+        let current = versions(for: playerId)
+        var result: [UUID: Int] = [:]
+        for (itemId, version) in scanned where current[itemId] == snapshot[itemId] {
+            result[itemId] = version
+        }
+        for itemId in Set(current.keys).union(snapshot.keys) where current[itemId] != snapshot[itemId] {
+            result[itemId] = current[itemId]
+        }
+        apply(result, for: playerId)
+    }
+
     public func version(for itemId: UUID, playerId: UUID) -> Int? {
         playerVersions[itemId]?[playerId]
     }
@@ -123,12 +148,16 @@ public extension FileVersionGameControllable {
     }
 
     func fileList(allPlayers: Bool, with masterId: UUID) async -> NetworkCodableDataType {
+        let snapshot = versionLedger.versions(for: masterId)
         let localVersions = await localFileVersions()
         let request: ListRequest
         if allPlayers {
-            versionLedger.apply(localVersions, for: masterId)
-            rebuildFileReports(masterVersions: localVersions, masterId: masterId)
-            request = ListRequest(list: localVersions, players: versionLedger.playerVersions)
+            // The scan suspends per item; a master version set meanwhile is kept, not
+            // overwritten by the older scanned value. See CODE_AUDIT_Folder §3.11.
+            versionLedger.apply(scanned: localVersions, for: masterId, startedFrom: snapshot)
+            let masterVersions = versionLedger.versions(for: masterId)
+            rebuildFileReports(masterVersions: masterVersions, masterId: masterId)
+            request = ListRequest(list: masterVersions, players: versionLedger.playerVersions)
         } else {
             request = ListRequest(list: localVersions, players: [:])
         }
@@ -152,10 +181,11 @@ public extension FileVersionGameControllable {
             versionLedger.replace(with: versions)
             rebuildFileReports(masterVersions: request.list, masterId: masterId)
         } else {
-            let masterVersions = await localFileVersions()
-            versionLedger.apply(masterVersions, for: masterId)
+            let snapshot = versionLedger.versions(for: masterId)
+            let scannedVersions = await localFileVersions()
+            versionLedger.apply(scanned: scannedVersions, for: masterId, startedFrom: snapshot)
             versionLedger.apply(request.list, for: playerId)
-            rebuildFileReports(masterVersions: masterVersions, masterId: masterId)
+            rebuildFileReports(masterVersions: versionLedger.versions(for: masterId), masterId: masterId)
         }
         return true
     }

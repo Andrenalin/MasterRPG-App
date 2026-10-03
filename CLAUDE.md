@@ -25,6 +25,7 @@ xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPho
 ## Tech Stack
 - **Language**: Swift 6.3 and `SWIFT_STRICT_CONCURRENCY = complete` for all targets
 - **Build Setting**: Swift 6.0, SWIFT_STRICT_CONCURRENCY = complete, no default actor isolation (for skill swift concurrency)
+- **Approachable concurrency**: `SWIFT_APPROACHABLE_CONCURRENCY = YES`, so a `nonisolated` async function runs on its caller's actor (often the main actor). Mark CPU or I/O work `@concurrent`, or run it through `runOffCallerExecutor`, to leave the caller's actor; protocol-extension functions such as `importStream`, `updateGame` and `reveal` run wherever they are called from.
 - **SDK**: iOS26, iPadOS26, tvOS26, visionOS26, macOS26 or later
 - Swift 6.3 or later, using modern Swift concurrency. Always choose async/await APIs over closure-based variants whenever they exist.
 - SwiftUI backed up by `@Observable` classes for shared data.

@@ -35,6 +35,22 @@ enum ItemPersistenceFailureScope {
     @TaskLocal static var reporter: ItemPersistenceFailureReporter?
 }
 
+extension ItemControllable {
+    /// Hands a persistence error to the installed transaction reporter, or, outside such a
+    /// transaction, logs and surfaces it the way `save()` does. Without the fallback a failed
+    /// write left no trace while the UI showed the edit as saved. See CODE_AUDIT_Folder §3.14.
+    @MainActor func recordPersistenceFailure(_ error: any Error, operation: String) {
+        if let reporter = ItemPersistenceFailureScope.reporter {
+            reporter.record(error)
+            return
+        }
+        let nsError = error as NSError
+        Logger.itemController.error("\(operation, privacy: .public) failed: \(nsError.domain, privacy: .public) \(nsError.code, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        itemDataModel.lastPersistenceError = error
+        PersistenceIssueCenter.shared.recordSaveError(error)
+    }
+}
+
 enum ItemTransactionMutationError: LocalizedError {
     case incompatibleModel
 
@@ -119,7 +135,7 @@ public extension ItemControllable {
             // Every sibling mutation below records a failed write instead of silently
             // proceeding as if it succeeded; this path was the one exception. See
             // CODE_AUDIT_EditItem §5.8.
-            ItemPersistenceFailureScope.reporter?.record(error)
+            recordPersistenceFailure(error, operation: "ItemControllable.addNew")
         }
         resetModel(with: model)
         await save()
@@ -131,12 +147,12 @@ public extension ItemControllable {
     }
     
     @MainActor func delete(itemId: UUID, withFileData: Bool = true, withDatabase: Bool = true) async {
-        
-        guard let item = await self.item(for: itemId) else { return }
-        let entries = item.entries
-        for entry in entries {
-            await cacheControllable?.remove(itemId: entry.id)
-        }
+        guard let item = itemSync(for: itemId) else { return }
+
+        // Leave memory before the first suspension: from here on no editor, import or sync
+        // can find the item and queue a fresh upsert for it while the deletion below awaits.
+        // Removing it last left that window open for the whole delete. See CODE_AUDIT_Folder §3.9.
+        itemDataModel.resetModel(id: item.id)
 
         // Drop any not-yet-flushed queued edit for this id — including on the
         // memory-only sync-deletion path (`withDatabase == false`), which
@@ -146,6 +162,10 @@ public extension ItemControllable {
         // CODE_AUDIT_17 §5.7.
         await dataControllable?.removePendingOperations(for: itemId)
 
+        for entry in item.entries {
+            await cacheControllable?.remove(itemId: entry.id)
+        }
+
         if withDatabase {
             await CloudKitOperationCounter.shared.recordOperation(
                 function: "ItemControllable.delete(itemId:withFileData:\(withFileData))",
@@ -154,8 +174,11 @@ public extension ItemControllable {
             do {
                 try await dataControllable?.delete(id: item.id)
             } catch {
-                ItemPersistenceFailureScope.reporter?.record(error)
+                recordPersistenceFailure(error, operation: "ItemControllable.delete")
             }
+            // An upsert queued while the delete above was suspended would recreate the row on
+            // the next flush. See CODE_AUDIT_Folder §3.9.
+            await dataControllable?.removePendingOperations(for: itemId)
         }
         if let fileUrlDataController, let fileUrl = item.fileUrl {
             await cacheControllable?.remove(itemId: itemId)
@@ -163,8 +186,7 @@ public extension ItemControllable {
                 fileUrlDataController.delete(fileUrl)
             }
         }
-        
-        itemDataModel.resetModel(id: item.id)
+
         itemDataModel.publishContentWidgetSnapshot()
     }
     
@@ -186,7 +208,7 @@ public extension ItemControllable {
                 do {
                     try dataControllable?.replaceSync(id: original.id, with: original.copy())
                 } catch {
-                    ItemPersistenceFailureScope.reporter?.record(error)
+                    recordPersistenceFailure(error, operation: "ItemControllable.replace")
                 }
                 if resort {
                     resortItem(changed: original)
@@ -200,7 +222,7 @@ public extension ItemControllable {
                     try dataControllable?.replaceSync(id: model.id, with: model.copy())
                     dataControllable?.markUnsavedInsert(id: model.id)
                 } catch {
-                    ItemPersistenceFailureScope.reporter?.record(error)
+                    recordPersistenceFailure(error, operation: "ItemControllable.replace(insert)")
                 }
             }
             resetModel(with: model)
@@ -235,7 +257,21 @@ public extension ItemControllable {
     /// must use this method instead of plain `replace(model:isInsert:forceSave:)`.
     @MainActor func replaceImportedModel(model: ModelType?, isInsert: Bool, forceSave: Bool = false) {
         guard let model = model as? Model else { return }
+        registerImportedLinks(of: model)
+        replace(model: model, isInsert: isInsert, forceSave: forceSave)
+    }
 
+    /// `replaceImportedModel(model:isInsert:forceSave:)` with the destination decided by the
+    /// caller instead of read from `isGameMode` at write time: an import captures it once when
+    /// it starts, so a game ending mid-package cannot switch later items of the same package
+    /// to the permanent library. See CODE_AUDIT_Folder §3.4.
+    @MainActor func replaceImportedModel(model: ModelType?, isInsert: Bool, policy: GameMutationPolicy) {
+        guard let model = model as? Model else { return }
+        registerImportedLinks(of: model)
+        replaceForGame(model: model, isInsert: isInsert, policy: policy)
+    }
+
+    @MainActor private func registerImportedLinks(of model: Model) {
         if let previous = itemSync(for: model.id)?.copy() {
             let changes = model.changedLinkRegisterModels(oldValue: previous)
             linkRegisterController.deregister(links: changes.removed)
@@ -243,8 +279,43 @@ public extension ItemControllable {
         } else {
             linkRegisterController.register(links: model.linkRegisterModels)
         }
+    }
 
-        replace(model: model, isInsert: isInsert, forceSave: forceSave)
+    /// Whether the permanent-library copy of `id` still equals `snapshot`; both absent counts as
+    /// equal. Lets a caller that suspended after taking `snapshot` detect a write that landed in
+    /// between. See CODE_AUDIT_Folder §3.6, §3.17.
+    @MainActor func libraryModel(id: UUID, matches snapshot: (any ModelType)?) -> Bool {
+        let current = itemSync(for: id, noGame: true)
+        switch (current, snapshot) {
+        case (nil, nil):
+            return true
+        case let (current?, snapshot?):
+            guard let snapshot = snapshot as? Model else { return false }
+            return current == snapshot
+        default:
+            return false
+        }
+    }
+
+    /// Persists `fileUrl` on the permanent-library copy of `itemId` and mirrors only that field
+    /// into a loaded game-memory copy. A whole-model `replace` would either be skipped (when
+    /// handed the stored instance) or overwrite the game copy's session-only changes with the
+    /// library state. See CODE_AUDIT_Folder §3.11.
+    @MainActor func persistFileUrl(_ fileUrl: FileUrl, itemId: UUID) {
+        if let library = itemSync(for: itemId, noGame: true), library.fileUrl != fileUrl {
+            var updated = library.copy()
+            updated.fileUrl = fileUrl
+            if library.replace(with: updated) {
+                do {
+                    try dataControllable?.replaceSync(id: library.id, with: library.copy())
+                } catch {
+                    recordPersistenceFailure(error, operation: "ItemControllable.persistFileUrl")
+                }
+            }
+        }
+        if var gameItem = itemDataModel.gameItemData[itemId] as? Model, gameItem.fileUrl != fileUrl {
+            gameItem.fileUrl = fileUrl
+        }
     }
 
     /// Stages one exact model snapshot for an external-import transaction and
@@ -301,12 +372,28 @@ public extension ItemControllable {
 
     /// Exact copies of the current library models used to cover repair effects
     /// that can reach parents or children outside the selected import batch.
-    @MainActor func externalImportSnapshots(excluding excludedIDs: Set<UUID>) -> [any ModelType] {
-        itemDataModel.items.compactMap { itemId -> (any ModelType)? in
-            guard !excludedIDs.contains(itemId),
-                  let item = itemSync(for: itemId, noGame: true) else { return nil }
-            return item.copy()
+    @MainActor func externalImportSnapshots(ids: Set<UUID>) -> [UUID: any ModelType] {
+        ids.reduce(into: [:]) { snapshots, itemId in
+            if let item = itemSync(for: itemId, noGame: true) {
+                snapshots[itemId] = item.copy()
+            }
         }
+    }
+
+    /// The items outside `importedIds` that the import repair (`ConvertController`) can change:
+    /// the folder parent each imported item may be removed from, and the entry children whose
+    /// display state an un-grouping resets. Snapshotting only these keeps a rollback from
+    /// reverting unrelated items of the module. See CODE_AUDIT_Folder §3.6.
+    @MainActor func externalImportRepairScope(importedIds: Set<UUID>) -> Set<UUID> {
+        var scope: Set<UUID> = []
+        for itemId in importedIds {
+            guard let item = itemSync(for: itemId, noGame: true) else { continue }
+            if let parentId = item.parentId {
+                scope.insert(parentId)
+            }
+            scope.formUnion(item.entries.map(\.childId))
+        }
+        return scope.subtracting(importedIds).filter { itemSync(for: $0, noGame: true) != nil }
     }
 
     @MainActor func replaceForGame(model: ModelType?, isInsert: Bool, policy: GameMutationPolicy) {
@@ -334,7 +421,24 @@ public extension ItemControllable {
         }
     }
 
-    @MainActor func mergeUpdates(model: ModelType) {
+    /// Applies a synced copy of an existing item. The image cache for a changed file is dropped
+    /// before the model changes, so a view re-rendering from the new model never reads the old
+    /// cached bytes. See CODE_AUDIT_Folder §3.19.
+    @MainActor func mergeUpdates(model: ModelType) async {
+        await invalidateCacheForChangedFile(of: model)
+        applyMergedUpdate(model: model)
+    }
+
+    /// Drops the image cache of the stored item when `model` carries a different file.
+    @MainActor func invalidateCacheForChangedFile(of model: ModelType) async {
+        guard let model = model as? Model,
+              let original = itemSync(for: model.id, noGame: true),
+              original.fileUrl?.contentHash != model.fileUrl?.contentHash else { return }
+        await cacheControllable?.remove(itemId: original.id)
+    }
+
+    /// The synchronous part of `mergeUpdates(model:)`; the caller drops the cache first.
+    @MainActor func applyMergedUpdate(model: ModelType) {
         guard let model = model as? Model, let original = self.itemSync(for: model.id, noGame: true) else { return }
         let resort = original.name != model.name
         // Re-derive the in-memory link register from the merged value, mirroring
@@ -344,20 +448,13 @@ public extension ItemControllable {
         // device stayed invisible to "used by" lookups on this device until the
         // user happened to re-save the item locally. See CODE_AUDIT_17 §5.9.
         let previous = original.copy()
-        let previousContentHash = previous.fileUrl?.contentHash
         if original.replace(with: model) {
             let changes = original.changedLinkRegisterModels(oldValue: previous)
             linkRegisterController.deregister(links: changes.removed)
             linkRegisterController.register(links: changes.added)
-            // Another device's replacement of this item's file (same id, new content
-            // hash) previously left the image/thumbnail cache serving the stale bytes
-            // across relaunches, since only local editors dropped the cache. See
-            // CODE_AUDIT_17 §5.13.
-            if original.fileUrl?.contentHash != previousContentHash {
-                Task { @MainActor in
-                    await self.cacheControllable?.remove(itemId: original.id)
-                }
-            }
+            // Another device's replacement of this item's file (same id, new content hash)
+            // used to leave the image cache serving the stale bytes; `mergeUpdates` drops it
+            // before this runs. See CODE_AUDIT_17 §5.13, CODE_AUDIT_Folder §3.19.
             if resort {
                 resortItem(changed: original)
             }

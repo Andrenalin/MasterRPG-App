@@ -264,6 +264,7 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
     case attachmentHashMismatch(attachmentID: UUID)
     case attachmentInstallFailed(attachmentID: UUID)
     case duplicateAttachmentFileID(UUID)
+    case itemChangedDuringImport(itemId: UUID, module: NetworkModules)
     case rollbackIncomplete(originalError: String, rollbackErrors: [String])
 
     public var errorDescription: String? {
@@ -288,6 +289,8 @@ public enum ExternalImportError: LocalizedError, Equatable, Sendable {
             "The attachment could not be installed."
         case .duplicateAttachmentFileID(let fileID):
             "More than one selected attachment uses file id \(fileID.uuidString)."
+        case .itemChangedDuringImport(let itemId, let module):
+            "\(module.title) item \(itemId.uuidString) changed on this device while its attachment was installed. Nothing was imported; start the import again."
         case .rollbackIncomplete(let originalError, let rollbackErrors):
             "The import failed (\(originalError)), and rollback was incomplete: \(rollbackErrors.joined(separator: "; "))"
         }

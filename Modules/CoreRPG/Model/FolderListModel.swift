@@ -39,10 +39,11 @@ public final class FolderListModel {
     var addedModelId: UUID?
     var selectionGeneration: Int = 0
 
-    /// Tracks an in-flight `FolderListControllable.add(type:url:root:)` call. Non-nil while
-    /// an item/folder/collection is being created — `add()` checks this to ignore a
-    /// double-tap instead of starting a second, independent creation.
+    /// The last queued `FolderListControllable.add(type:url:root:)` call, `nil` once every queued
+    /// add finished. A plain Add is ignored while it is set (double-tap protection); adds that
+    /// carry a dropped file queue behind it. See CODE_AUDIT_Folder §3.2.
     @ObservationIgnored var addItemTask: Task<Void, Never>?
+    @ObservationIgnored var addItemToken: UUID?
 
     // MARK: - Selection
     private var isSelectionMode: Bool

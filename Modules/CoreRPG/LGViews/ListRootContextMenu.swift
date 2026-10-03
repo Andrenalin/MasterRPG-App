@@ -100,9 +100,7 @@ private extension ListRootContextMenu {
     func removeItemView(oneUp: Bool) -> some View {
         Button {
             controller.removeItemsFromFolder(currentSelected: currentSelected, parentId: parent?.id, oneUp: oneUp)
-            Task {
-                listController?.update(debounce: false)
-            }
+            listController?.update(debounce: false)
         } label: {
             Label {
                 Text("Remove \(title) from \(removeEntryTitle(oneUp: oneUp))", bundle: .module)
@@ -241,9 +239,7 @@ private struct DuplicateItemView: View {
 
     var body: some View {
         Button {
-            Task {
-                await controller.duplicateItem(currentSelected: currentSelected)
-            }
+            controller.duplicateItem(currentSelected: currentSelected)
         } label: {
             Label {
                 Text("Duplicate \(title)", bundle: .module)
@@ -371,9 +367,7 @@ private struct MoveItemView: View {
             ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
                 Button {
                     controller.moveItem(currentSelected: currentSelected, to: folder)
-                    Task {
-                        listController?.update(debounce: false)
-                    }
+                    listController?.update(debounce: false)
                 } label: {
                     Label {
                         Text(folder.name)
@@ -403,9 +397,7 @@ private struct AddItemView: View {
             ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
                 Button {
                     controller.addItem(currentSelected: currentSelected, to: folder)
-                    Task {
-                        listController?.update(debounce: false)
-                    }
+                    listController?.update(debounce: false)
                 } label: {
                     Label {
                         Text(folder.name)

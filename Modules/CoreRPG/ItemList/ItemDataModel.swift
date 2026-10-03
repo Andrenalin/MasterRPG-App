@@ -2,14 +2,24 @@
 
 import Foundation
 import Observation
+import Synchronization
 
 public typealias ModelType = Observable & Sendable
+
+/// One CloudKit change notification for a module, numbered in the order it arrived.
+struct SyncBatch: Sendable {
+    let sequence: UInt64
+    let deletedIds: [UUID]
+    let insertedIds: [UUID]
+    let updatedIds: [UUID]
+}
 
 @MainActor @Observable
 public final class ItemDataModel: Sendable {
     public init(categoryTags: [ItemListCategory], version: Int = 2024) {
         self.categoryTags = categoryTags
         self.version = version
+        (syncBatches, syncBatchContinuation) = AsyncStream<SyncBatch>.makeStream()
     }
 
     // Injected after construction, once the async Core Data context becomes available —
@@ -30,10 +40,31 @@ public final class ItemDataModel: Sendable {
     public var gameItems: [UUID] = []
     public var gameItemData: [UUID: ModelType] = [:]
 
-    /// Cancel-and-replace handle for `SyncDataControllable.updateFromSync`, so
-    /// overlapping CloudKit change notifications for this module can't race each other
-    /// applying deletes/inserts/updates out of order. See CODE_AUDIT_EditItem §3.2.
-    @ObservationIgnored public var pendingSyncTask: Task<Void, Never>?
+    /// CloudKit change batches for this module, applied one at a time by a single consumer
+    /// task in the order they were enqueued. A stream instead of a chain of tasks: the chain
+    /// only kept arrival order if the tasks that built it happened to run first-in, first-out.
+    /// See CODE_AUDIT_EditItem §3.2, CODE_AUDIT_Folder §3.19.
+    nonisolated let syncBatches: AsyncStream<SyncBatch>
+    nonisolated let syncBatchContinuation: AsyncStream<SyncBatch>.Continuation
+    nonisolated private let syncBatchSequence = Mutex<UInt64>(0)
+    @ObservationIgnored var syncBatchConsumer: Task<Void, Never>?
+    /// Batches numbered up to this value were queued before a data reset and are skipped.
+    @ObservationIgnored private(set) var discardedSyncBatchSequence: UInt64 = 0
+
+    /// Queues one change notification. Safe to call from the Core Data observer's thread.
+    nonisolated func enqueueSyncBatch(deletedIds: [UUID], insertedIds: [UUID], updatedIds: [UUID]) {
+        let sequence = syncBatchSequence.withLock { value -> UInt64 in
+            value += 1
+            return value
+        }
+        syncBatchContinuation.yield(SyncBatch(sequence: sequence, deletedIds: deletedIds, insertedIds: insertedIds, updatedIds: updatedIds))
+    }
+
+    /// Skips every batch queued so far; called when the module's data is reset, so a batch from
+    /// before the reset no longer applies after it.
+    func discardQueuedSyncBatches() {
+        discardedSyncBatchSequence = syncBatchSequence.withLock { $0 }
+    }
 
     public let categoryTags: [ItemListCategory]
     public let version: Int

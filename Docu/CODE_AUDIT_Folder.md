@@ -741,3 +741,31 @@ Spot-check pattern: open Xcode and command-click the `path:line` reference; it s
 - **§6.2** — open `Modules/CoreRPG/Controllable/ImportControllable.swift`, lines `42-52` and `Modules/GameRPG/Root/GameRootModel.swift`, lines `310-316`: a new policy per message, seeded with ids stored per sender without a module. The three-step exploit chain was traced by the audit agent; I confirmed the policy code, not the chain.
 
 Medium and Low findings from the three audit agents were not all re-opened; those I could not confirm, or that depend on timing, say "unverified" in their Why line. If a finding does not reproduce when you visit the line, tell me the reference and I will re-investigate.
+
+---
+
+## 13. Remediation status (2026-10-03)
+
+Status of §3 after the remediation pass. **Fixed** = changed, and the iOS, macOS, tvOS and visionOS apps build with zero warnings; the `MasterRPG` unit test plan passes (1,830 tests). Regression tests added: `Tests/CoreRPGTests/FolderAuditConcurrencyTests.swift` (§3.5, §3.11, §3.19) and `cancelledImportThrows` in `Tests/TableRPGTests/ImportControllerTests.swift` (§3.3). Timing-dependent races were fixed by reading the code; they are *not runtime-verified*.
+
+| § | Status | Notes |
+|---|---|---|
+| 3.1 | Fixed | Rollback, its consolidated save, and the superseded-file cleanup run in unstructured tasks, which do not inherit the cancellation. |
+| 3.2 | Fixed | A plain Add still ignores a double tap; adds that carry a dropped file queue behind the running one, so a drop of N files creates N items. |
+| 3.3 | Fixed | Every cancellation exit throws; the targeted folder repair runs for the already-applied ids on cancel and error, shielded from the cancellation. |
+| 3.4 | Fixed | One synchronous `@MainActor` `applyImportedItem` per item (normalise, merge, write, repair). Game-memory vs. library is captured once per module stream (`ImportApplyPolicy`); a memory-only delivery arriving after the game ended is dropped. |
+| 3.5 | Fixed | Decision: sync batches and game network imports `waitUntilIdle()` and then apply; bulk writers take the lock; direct UI edits stay uncoordinated. The example install takes the lock (§3.7). |
+| 3.6 | Fixed | After the `attach` suspension the library item is compared with the pre-read copy; a change aborts and rolls back (`itemChangedDuringImport`). Repair snapshots cover only the items the repair can reach and are restored only if they still look as the repair left them. |
+| 3.7 | Fixed | `installExampleData` is `async throws`, holds the mutation lock and save deferral; the first-launch alert shows the real result, with a new failure alert (de/th translations added). |
+| 3.8 | Fixed | File operations are queued per item (`enqueueFileOperation`); the item is re-read after the move; a file moved for a deleted item is removed; move errors reach `PersistenceIssueCenter`. |
+| 3.9 | Fixed | The item leaves memory before the first suspension; pending operations are purged again after the database delete. |
+| 3.10 | Fixed | Unsaved-insert ids are read before and after each fetch and combined; an "inserted" id already in memory is merged like an update. |
+| 3.11 | Fixed | `ItemGameModel.resetGeneration` is re-checked after the import in `updateGame` and in `reveal`; the apply and persist run in one main-actor step. The hash backfill re-checks the file after loading and writes through `persistFileUrl`. Ledger scans merge per item (`apply(scanned:for:startedFrom:)`). |
+| 3.12 | Fixed | The share extension's in-memory image branch decodes through `runOffCallerExecutor`; `CLAUDE.md` documents approachable concurrency. |
+| 3.13 | Partly | Cancelling the caller now cancels the `NSFileCoordinator` it is blocked in. A separate slot pool for download-triggering reads was not added. |
+| 3.14 | Fixed | `recordPersistenceFailure` logs and surfaces the error when no transaction reporter is installed. |
+| 3.15 | Fixed | The 1 s settle and 0.25 s editor delays are gone: the add awaits the file attach, the save and the list refresh, and opens the header editor only if the new item is still selected. The 50 ms render delay stays, with a re-check of the user's selection. |
+| 3.16 | Fixed | The import session owns the save-deferral token; `AppImportView` passes closures that capture only the app model. |
+| 3.17 | Fixed | The review apply is a session-owned task that release waits for. The parse-time existing item is now a copy; if the library item changed while the sheet was open, the reviewed result is merged onto it. |
+| 3.18 | Partly | Duplicate is ignored while one is running (both menus). File copies never replace an existing file and retry the next free name. The in-memory-bytes branch of `copyFile` still writes with overwrite. |
+| 3.19 | Fixed | `resetFile(url:)` is queued and re-reads the item; root searches discard superseded results; `mergeUpdates` drops the cache before the model changes; sync batches use one ordered stream consumer and batches queued before `resetData()` are skipped; the `Task {}` wrappers are removed; the import scans check cancellation and a picked file gets a coordinated read first. |

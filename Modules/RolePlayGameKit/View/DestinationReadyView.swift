@@ -13,8 +13,9 @@ struct DestinationReadyView: View {
     // Fix #4: single Identifiable enum replaces three separate Bool @State
     // properties. Only one alert can be active at a time; using an enum makes
     // that constraint explicit and prevents the three-alert priority ambiguity.
-    private enum ActiveAlert: Identifiable {
+    private enum ActiveAlert: Identifiable, Hashable {
         case firstLaunch, dataInstalled, validateDatabase
+        case dataInstallFailed(String)
         var id: Self { self }
     }
 
@@ -70,11 +71,19 @@ struct DestinationReadyView: View {
                 switch kind {
                 case .firstLaunch:
                     Button {
-                        appModel.installExampleData(isGerman: locale.identifier.hasPrefix("de"))
                         appModel.settingsModel.firstLaunch = false
-                        // Yield so dismiss completes before we present the
-                        // follow-up alert.
-                        Task { @MainActor in activeAlert = .dataInstalled }
+                        let isGerman = locale.identifier.hasPrefix("de")
+                        // The follow-up alert reports the real result once the import has
+                        // finished (which also lets this alert's dismissal complete first),
+                        // not "installed" before it ran. See CODE_AUDIT_Folder §3.7.
+                        Task { @MainActor in
+                            do {
+                                try await appModel.installExampleData(isGerman: isGerman)
+                                activeAlert = .dataInstalled
+                            } catch {
+                                activeAlert = .dataInstallFailed(error.localizedDescription)
+                            }
+                        }
                     } label: {
                         Text("Initialize", bundle: .module)
                     }
@@ -85,7 +94,7 @@ struct DestinationReadyView: View {
                         Text("Not now", bundle: .module)
                     }
 
-                case .dataInstalled:
+                case .dataInstalled, .dataInstallFailed:
                     Button(role: .cancel) { } label: { Text("OK", bundle: .module) }
 
                 case .validateDatabase:
@@ -107,6 +116,8 @@ struct DestinationReadyView: View {
                     Text("This is the first launch and there is no data in the database. Do you want to initialize the database with example data? No download is required — the example data is pre-bundled.", bundle: .module)
                 case .dataInstalled:
                     Text("The example data has been installed. You will find the data in the other sections.", bundle: .module)
+                case .dataInstallFailed(let reason):
+                    Text("The example data could not be installed: \(reason)", bundle: .module)
                 case .validateDatabase:
                     Text("It is recommended to validate the database to ensure your data is consistent.", bundle: .module)
                 }
@@ -127,6 +138,7 @@ struct DestinationReadyView: View {
         switch activeAlert {
         case .firstLaunch:      Text("First Launch", bundle: .module)
         case .dataInstalled:    Text("Example Data", bundle: .module)
+        case .dataInstallFailed: Text("Example Data Not Installed", bundle: .module)
         case .validateDatabase: Text("Validate Database", bundle: .module)
         case nil:               Text(verbatim: "")
         }

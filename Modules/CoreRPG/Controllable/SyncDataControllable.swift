@@ -44,99 +44,117 @@ public extension SyncDataControllable {
 
     @Sendable
     func updateFromSync(deletedIds: [UUID], insertedIds: [UUID], updatedIds: [UUID]) {
+        // Queued synchronously, in the order the notifications arrive, and applied by one
+        // consumer task. Previously each notification started a task that chained itself onto
+        // `pendingSyncTask`, which only kept arrival order if those tasks happened to run
+        // first-in, first-out. See CODE_AUDIT §3.1, CODE_AUDIT_Folder §3.19.
+        let dataModel = itemControllable.itemDataModel
+        dataModel.enqueueSyncBatch(deletedIds: deletedIds, insertedIds: insertedIds, updatedIds: updatedIds)
         Task { @MainActor in
-            // Chain onto (rather than cancel) any still-in-flight sync from a previous
-            // notification, so overlapping CloudKit change batches for this module apply
-            // in arrival order without ever discarding part of an in-flight batch. This
-            // used to `cancel()` the previous task instead: since each loop below checked
-            // cancellation per-item, a notification arriving mid-batch could cut off the
-            // previous batch's remaining deletes, leaving those items permanently "deleted
-            // in Core Data, still present in ItemDataModel" until the app relaunched — and
-            // if the user then edited/saved one of those ghost items, `CoreDataController`
-            // would silently recreate (and re-sync) the row it had already deleted. See
-            // CODE_AUDIT §3.1. Awaiting the predecessor's `.value` preserves the original
-            // ordering guarantee (mirrors the intent behind `FolderListControllable`'s own
-            // cancel-and-replace pattern, see CODE_AUDIT_EditItem §3.2) without dropping work.
-            let previousTask = itemControllable.itemDataModel.pendingSyncTask
-            itemControllable.itemDataModel.pendingSyncTask = Task(priority: .userInitiated) {
-                await previousTask?.value
-                await CloudKitOperationCounter.shared.recordOperation(
-                    function: "SyncDataControllable.updateFromSync(deleted:\(deletedIds.count) inserted:\(insertedIds.count) updated:\(updatedIds.count))",
-                    file: "SyncDataControllable.swift"
-                )
+            startSyncConsumerIfNeeded()
+        }
+    }
 
-                // Process deletions — diff the reported ids against Core Data's actual
-                // current ids rather than trusting `deletedIds` directly.
-                // `CoreDataChangeObserver` can report a placeholder (freshly-generated,
-                // meaningless) UUID for a deleted object it can no longer resolve once
-                // Core Data has already turned it into an unfulfillable fault — acting on
-                // that placeholder directly is a guaranteed no-op, silently dropping the
-                // deletion. Diffing against a fresh id fetch is what the producer's own
-                // contract ("consumers diff against fetched ids") assumes. See CODE_AUDIT §3.2.
-                //
-                // A failed id fetch skips only this diff: the inserts and updates below still
-                // apply, and a full reconciliation afterwards catches the deletions. A later
-                // notification carries only its own ids, so it would never retry them.
-                // See CODE_AUDIT_19 §5.11.
-                var needsReconciliation = false
-                if !deletedIds.isEmpty {
-                    do {
-                        let currentIds = Set(try await dataControllable.fetchIds())
-                        // An item created on this device whose insert is still queued is not in
-                        // Core Data yet either: it must not be mistaken for a remote deletion,
-                        // or deleting it would also drop its queued insert for good.
-                        // See CODE_AUDIT_18 §5.2.
-                        let unsavedInsertIds = await dataControllable.unsavedInsertIds()
-                        let staleIds = itemControllable.itemDataModel.items.filter {
-                            !currentIds.contains($0) && !unsavedInsertIds.contains($0)
-                        }
-                        for staleId in staleIds {
-                            await itemControllable.delete(itemId: staleId, withFileData: false, withDatabase: false)
-                        }
-                    } catch {
-                        Logger.syncDataControllable.error("updateFromSync deletion diff failed, reconciling: \(error.localizedDescription, privacy: .public)")
-                        needsReconciliation = true
-                    }
-                }
-
-                // Process insertions
-                // The data is ALREADY in Core Data (we're fetching from it!)
-                // We only need to update in-memory models, NOT save back to database
-                for insertedId in insertedIds {
-                    do {
-                        guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
-                        // `resetModel(with:)` is itself `@MainActor` — `await` alone hops, same as
-                        // `delete(itemId:...)` above; no `MainActor.run` wrapper needed.
-                        itemControllable.resetModel(with: model)
-                    } catch {
-                        Logger.syncDataControllable.error("updateFromSync insert \(insertedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
-                        needsReconciliation = true
-                    }
-                }
-
-                // Process updates
-                for updatedId in updatedIds {
-                    do {
-                        guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
-                        // Use mergeUpdates to avoid database writes during sync
-                        itemControllable.mergeUpdates(model: model)
-                    } catch {
-                        Logger.syncDataControllable.error("updateFromSync update \(updatedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
-                        needsReconciliation = true
-                    }
-                }
-
-                if needsReconciliation {
-                    await fetchUpdates()
-                }
+    @MainActor private func startSyncConsumerIfNeeded() {
+        let dataModel = itemControllable.itemDataModel
+        guard dataModel.syncBatchConsumer == nil else { return }
+        dataModel.syncBatchConsumer = Task(priority: .userInitiated) { @MainActor in
+            for await batch in dataModel.syncBatches {
+                guard batch.sequence > dataModel.discardedSyncBatchSequence else { continue }
+                // A bulk import or repair holds the data-mutation lock; apply after it instead
+                // of interleaving with its writes. See CODE_AUDIT_Folder §3.5.
+                await DataMutationCoordinator.shared.waitUntilIdle()
+                guard batch.sequence > dataModel.discardedSyncBatchSequence else { continue }
+                await apply(batch)
             }
+        }
+    }
+
+    @MainActor private func apply(_ batch: SyncBatch) async {
+        await CloudKitOperationCounter.shared.recordOperation(
+            function: "SyncDataControllable.updateFromSync(deleted:\(batch.deletedIds.count) inserted:\(batch.insertedIds.count) updated:\(batch.updatedIds.count))",
+            file: "SyncDataControllable.swift"
+        )
+
+        // Process deletions — diff the reported ids against Core Data's actual
+        // current ids rather than trusting `deletedIds` directly.
+        // `CoreDataChangeObserver` can report a placeholder (freshly-generated,
+        // meaningless) UUID for a deleted object it can no longer resolve once
+        // Core Data has already turned it into an unfulfillable fault — acting on
+        // that placeholder directly is a guaranteed no-op, silently dropping the
+        // deletion. Diffing against a fresh id fetch is what the producer's own
+        // contract ("consumers diff against fetched ids") assumes. See CODE_AUDIT §3.2.
+        //
+        // A failed id fetch skips only this diff: the inserts and updates below still
+        // apply, and a full reconciliation afterwards catches the deletions. A later
+        // notification carries only its own ids, so it would never retry them.
+        // See CODE_AUDIT_19 §5.11.
+        var needsReconciliation = false
+        if !batch.deletedIds.isEmpty {
+            do {
+                // An item created on this device whose insert is still queued is not in
+                // Core Data yet either: it must not be mistaken for a remote deletion, or
+                // deleting it would also drop its queued insert for good. See CODE_AUDIT_18 §5.2.
+                // Read before and after the fetch: an insert that commits while the fetch runs
+                // is in neither the fetch nor a later read alone. See CODE_AUDIT_Folder §3.10.
+                let unsavedBeforeFetch = await dataControllable.unsavedInsertIds()
+                let currentIds = Set(try await dataControllable.fetchIds())
+                let unsavedInsertIds = unsavedBeforeFetch.union(await dataControllable.unsavedInsertIds())
+                let staleIds = itemControllable.itemDataModel.items.filter {
+                    !currentIds.contains($0) && !unsavedInsertIds.contains($0)
+                }
+                for staleId in staleIds {
+                    await itemControllable.delete(itemId: staleId, withFileData: false, withDatabase: false)
+                }
+            } catch {
+                Logger.syncDataControllable.error("updateFromSync deletion diff failed, reconciling: \(error.localizedDescription, privacy: .public)")
+                needsReconciliation = true
+            }
+        }
+
+        // Process insertions
+        // The data is ALREADY in Core Data (we're fetching from it!)
+        // We only need to update in-memory models, NOT save back to database
+        for insertedId in batch.insertedIds {
+            do {
+                guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
+                // An "inserted" record can carry an id that is already loaded (the same package
+                // imported on two devices): merge it like an update instead of replacing the
+                // live instance and listing the id twice. See CODE_AUDIT_Folder §3.10.
+                if itemControllable.itemSync(for: insertedId, noGame: true) != nil {
+                    await itemControllable.mergeUpdates(model: model)
+                } else {
+                    itemControllable.resetModel(with: model)
+                }
+            } catch {
+                Logger.syncDataControllable.error("updateFromSync insert \(insertedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                needsReconciliation = true
+            }
+        }
+
+        // Process updates
+        for updatedId in batch.updatedIds {
+            do {
+                guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
+                // Use mergeUpdates to avoid database writes during sync
+                await itemControllable.mergeUpdates(model: model)
+            } catch {
+                Logger.syncDataControllable.error("updateFromSync update \(updatedId, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                needsReconciliation = true
+            }
+        }
+
+        if needsReconciliation {
+            await fetchUpdates()
         }
     }
 
     private func fetchUpdates() async {
         do {
+            // Read before the fetch as well; see `updates(_:unsavedBeforeFetch:)`.
+            let unsavedBeforeFetch = await dataControllable.unsavedInsertIds()
             let newItems = try await dataControllable.fetchAll()
-            await itemControllable.updates(newItems)
+            await itemControllable.updates(newItems, unsavedBeforeFetch: unsavedBeforeFetch)
         } catch {
             // Mirrors `updateFromSync`'s logging above — this full-table reconciliation
             // only runs once, at `start()`, so a failure here otherwise leaves no trace

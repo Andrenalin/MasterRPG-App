@@ -74,13 +74,26 @@ extension FolderListControllable {
         defer { trace?.end() }
         
         Logger.folderListControllable.info("🔍 [Search] Starting ASYNC search - source: '\(source)', text: '\(searchText, privacy: .private)', displayMode: \(displayMode.rawValue)")
-        
-        searchModel.isSearching = true
-        defer { searchModel.isSearching = false }
 
-        let newResults = await searchRootControllable.results(text: searchModel.searchText)
+        searchModel.searchGeneration &+= 1
+        let generation = searchModel.searchGeneration
+        searchModel.isSearching = true
+        defer {
+            // Only the latest search clears the flag; an older one finishing late must not.
+            if searchModel.searchGeneration == generation {
+                searchModel.isSearching = false
+            }
+        }
+
+        let newResults = await searchRootControllable.results(text: searchText)
         guard !Task.isCancelled else {
             Logger.folderListControllable.info("⚠️ [Search] Cancelled - source: '\(source)', text: '\(searchText, privacy: .private)'")
+            return
+        }
+        // A newer search started while this one ran (possibly one outside `currentTask`, such
+        // as the first-appearance search): its results win. See CODE_AUDIT_Folder §3.19.
+        guard searchModel.searchGeneration == generation else {
+            Logger.folderListControllable.info("⚠️ [Search] Superseded - source: '\(source)', text: '\(searchText, privacy: .private)'")
             return
         }
         searchModel.results = newResults
@@ -204,11 +217,15 @@ public extension FolderListControllable {
         guard listModel.selectionGeneration == selectionGeneration else { return }
         if let addedModelId = listModel.addedModelId,
            let addedItem = listModel.list.first(where: { $0.source.itemId == addedModelId }) {
+            let selectedWhenScheduled = listModel.selected
             Task(name: "List Selection Restore") { @MainActor in
+                // A render delay for the new row, not a synchronisation point.
                 try? await Task.sleep(for: ListSearchTiming.selectionRestoreRenderDelay)
                 // Re-check: a second, newer update may have advanced the generation while this
                 // delayed task was sleeping — don't clobber a newer selection with a stale one.
                 guard listModel.selectionGeneration == selectionGeneration else { return }
+                // Nor a row the user selected meanwhile. See CODE_AUDIT_Folder §3.15.
+                guard listModel.selected == selectedWhenScheduled || listModel.selected == addedItem.id else { return }
                 listModel.listSelection = Set(arrayLiteral: addedItem.id)
             }
             listModel.addedModelId = nil
@@ -311,54 +328,82 @@ public extension FolderListControllable {
 // MARK: List change
 
 extension FolderListControllable {
-    /// Ignores a double-tap instead of starting a second, independent creation: once an
-    /// `add()` is in flight (`listModel.addItemTask != nil`), further calls are dropped until
-    /// it completes. The target parent is captured up front rather than re-read from
-    /// `listModel` at completion — otherwise a folder-selection change during the multi-step
-    /// async chain below could silently file the new item under whatever folder happened to
-    /// be selected when the task finished, not the one selected when "Add" was tapped.
+    /// Creates an item, folder or collection and selects it. The target parent is captured up
+    /// front rather than re-read from `listModel` at completion — otherwise a folder-selection
+    /// change during the multi-step async chain below could silently file the new item under
+    /// whatever folder happened to be selected when the task finished.
+    ///
+    /// A plain Add (no file) is ignored while another add runs, so a double tap does not create
+    /// two items. Adds that carry a dropped file queue behind the running one instead: a drop of
+    /// several files calls this once per file, and each must become an item.
+    /// See CODE_AUDIT_Folder §3.2.
     func add(type: EditControllerAddType, url: URL?, root: any ItemRootControllable) {
-        guard listModel.addItemTask == nil else { return }
+        if url == nil, listModel.addItemTask != nil { return }
 
         let hasParent = listModel.parentModel != nil
         let targetParentId = listModel.selectedParentId
-
+        let previous = listModel.addItemTask
+        let token = UUID()
+        listModel.addItemToken = token
         listModel.addItemTask = Task {
-            defer { listModel.addItemTask = nil }
-            guard let model = await root.editControllable.addNew(type: type) else { return }
-            if let url {
-                await root.editControllable.resetFile(url: url, itemId: model.id)
+            await previous?.value
+            await performAdd(type: type, url: url, root: root, hasParent: hasParent, targetParentId: targetParentId)
+            if listModel.addItemToken == token {
+                listModel.addItemTask = nil
+                listModel.addItemToken = nil
             }
-            try? await Task.sleep(for: ListSearchTiming.newItemSettleDelay)
-            await root.itemControllable.save()
-            if hasParent {
-                root.editControllable.addItem(itemId: model.id, parentId: targetParentId)
-                // Reset parent list filter when adding to folder/collection
-                root.folderListControllable.resetFilter()
-            }
-            guard let updatedModel = root.itemControllable.itemSync(for: model.id) else { return }
-            listModel.addedModelId = model.id
-            resetFilter()
-            listModel.set(selectedItemId: updatedModel.id)
-            listModel.scrollId = listModel.selected
-            try? await Task.sleep(for: ListSearchTiming.headerEditorPresentationDelay)
-            // File-backed modules (Audio, Pdf, Photo, Space) derive the item's name from the
-            // picked file, so let the user pick a file first instead of popping the header editor.
-            // Folders/collections have no file to pick, so they still open the header editor.
-            let skipsHeaderEditor = type == .item && root.viewControllable.skipsHeaderEditorOnCreate
-            if !skipsHeaderEditor {
-                root.navigationModel.openHeaderEditor = true
-            }
+        }
+    }
 
-            switch type {
-            case .item:
-                await MasterRPGTips.donateItemCreated()
-            case .folder, .collection:
-                await MasterRPGTips.donateContentOrganized()
-            }
-            if let rootManager = root.rootManager {
-                MasterRPGTips.refreshEligibility(rootManager: rootManager)
-            }
+    private func performAdd(type: EditControllerAddType, url: URL?, root: any ItemRootControllable, hasParent: Bool, targetParentId: UUID?) async {
+        guard let model = await root.editControllable.addNew(type: type) else { return }
+        if let url {
+            await root.editControllable.resetFile(url: url, itemId: model.id)
+        }
+        // The file attach above is awaited, so the item is complete here; a fixed settle
+        // delay used to stand in for that. See CODE_AUDIT_Folder §3.15.
+        await root.itemControllable.save()
+        if hasParent {
+            root.editControllable.addItem(itemId: model.id, parentId: targetParentId)
+            // Reset parent list filter when adding to folder/collection
+            root.folderListControllable.resetFilter()
+        }
+        guard let updatedModel = root.itemControllable.itemSync(for: model.id) else { return }
+        listModel.addedModelId = model.id
+        // Wait for the list to be rebuilt from a fresh search, so the new row exists before it
+        // is selected and the editor opens over it. See CODE_AUDIT_Folder §3.15.
+        await refreshAndWait()
+        listModel.set(selectedItemId: updatedModel.id)
+        listModel.scrollId = listModel.selected
+        // File-backed modules (Audio, Pdf, Photo, Space) derive the item's name from the
+        // picked file, so let the user pick a file first instead of popping the header editor.
+        // Folders/collections have no file to pick, so they still open the header editor.
+        let skipsHeaderEditor = type == .item && root.viewControllable.skipsHeaderEditorOnCreate
+        // Only open the editor over the new item: the user may have selected another one while
+        // the item was created.
+        if !skipsHeaderEditor, listModel.selectedItemId == model.id {
+            root.navigationModel.openHeaderEditor = true
+        }
+
+        switch type {
+        case .item:
+            await MasterRPGTips.donateItemCreated()
+        case .folder, .collection:
+            await MasterRPGTips.donateContentOrganized()
+        }
+        if let rootManager = root.rootManager {
+            MasterRPGTips.refreshEligibility(rootManager: rootManager)
+        }
+    }
+
+    /// Runs `update(debounce: false)` and returns once the list has been rebuilt. A newer
+    /// refresh (the observation stream) can replace the one started here; the latest one is
+    /// awaited.
+    private func refreshAndWait() async {
+        update(debounce: false)
+        while let task = searchModel.currentTask {
+            await task.value
+            if searchModel.currentTask == task { break }
         }
     }
         

@@ -53,6 +53,12 @@ public final class SearchModel: Sendable {
         didSet { oldValue?.cancel() }
     }
 
+    /// Incremented when a root search starts. A search that finishes after a newer one started
+    /// discards its results instead of overwriting the newer ones; this also covers searches
+    /// started outside `currentTask`, which cancel-and-replace does not reach.
+    /// See CODE_AUDIT_Folder §3.19.
+    @ObservationIgnored var searchGeneration = 0
+
     /// Separate token for tag-suggestion lookups so they never cancel — or get cancelled by —
     /// the main search running on `currentTask`.
     @ObservationIgnored var tagTask: Task<Void, Never>? {

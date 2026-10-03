@@ -36,7 +36,7 @@ struct TableDiceResultTests {
         // The same orientation, written as the negated quaternion.
         let negated = Pose3D(
             position: goal.position,
-            rotation: Rotation3D(quaternion: simd_quatd(vector: -goal.rotation.quaternion.vector))
+            rotation: Rotation3D(simd_quatd(vector: -goal.rotation.quaternion.vector))
         )
 
         #expect(TableDiceRest.isAtRest(pose: goal, goal: goal))

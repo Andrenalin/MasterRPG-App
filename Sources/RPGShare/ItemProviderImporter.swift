@@ -102,7 +102,11 @@ private extension ItemProviderImporter {
         try Task.checkCancellation()
 
         if case .data(let data) = item {
-            return ImageItem(imageData: downsampledIfNeeded(data))
+            // Off the caller's executor: under approachable concurrency this nonisolated
+            // function runs on the caller's actor (the main actor here), and decoding an image
+            // above the raw-size cap would hitch the extension's UI. See CODE_AUDIT_Folder §3.12.
+            let imageData = try await runOffCallerExecutor { downsampledIfNeeded(data) }
+            return ImageItem(imageData: imageData)
         }
 
         guard case .url(let url) = item else {

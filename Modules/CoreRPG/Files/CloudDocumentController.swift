@@ -158,6 +158,12 @@ struct CloudDocumentController: Sendable {
         try await FileManager.default.copyReplacingItem(coordinatingAccessFrom: sourceUrl, to: fullUrl(filePath: filePath))
     }
 
+    /// Like `copy(from:to:)`, but throws `fileWriteFileExists` when `filePath` is already taken
+    /// instead of replacing that file. See CODE_AUDIT_Folder §3.18.
+    func copyWithoutReplacing(from sourceUrl: URL, to filePath: String) async throws {
+        try await FileManager.default.copyItemWithoutReplacing(coordinatingAccessFrom: sourceUrl, to: fullUrl(filePath: filePath))
+    }
+
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newCategory:)", file: "CloudDocumentController.swift")
         

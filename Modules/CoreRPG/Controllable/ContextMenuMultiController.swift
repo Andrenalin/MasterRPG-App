@@ -58,12 +58,8 @@ struct ContextMenuMultiController {
         }
     }
     
-    @MainActor func duplicateItem(currentSelected: UUID?) async {
-        let selection = selection(currentSelected: currentSelected)
-        for itemId in selection {
-            guard let item = itemController.itemSync(for: itemId) else { continue }
-            await editController.duplicate(item: item)
-        }
+    @MainActor func duplicateItem(currentSelected: UUID?) {
+        editController.duplicateIgnoringRepeats(itemIds: selection(currentSelected: currentSelected))
     }
     
     func deleteItem(currentSelected: UUID?) -> [ItemRowModel] {

@@ -19,18 +19,73 @@ public extension EditControllable {
         return name
     }
     
-    @MainActor func movedFile(itemId: UUID) {
-        Task {
-            guard let fileUrlDataController, let item = editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
-            let path = await folderPath(itemId: itemId)
-            let newFileUrl = await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
-            if let newFileUrl {
-                reset(fileUrl: newFileUrl, itemId: item.id)
+    /// Queues `operation` behind every file operation already queued for `itemId` and returns its
+    /// task. Registration is synchronous, so operations run in call order. An operation must not
+    /// await another queued operation for the same item, or it waits on itself.
+    /// See CODE_AUDIT_Folder §3.8, §3.19.
+    @MainActor func enqueueFileOperation<T: Sendable>(
+        itemId: UUID,
+        _ operation: @escaping @MainActor @Sendable () async throws -> T
+    ) -> Task<T, any Error> {
+        let previous = editorModel.fileOperationTails[itemId]?.task
+        let task = Task { @MainActor () async throws -> T in
+            await previous?.value
+            return try await operation()
+        }
+        let token = UUID()
+        let editorModel = editorModel
+        let tail = Task { @MainActor in
+            _ = await task.result
+            if editorModel.fileOperationTails[itemId]?.token == token {
+                editorModel.fileOperationTails[itemId] = nil
             }
         }
+        editorModel.fileOperationTails[itemId] = (token, tail)
+        return task
     }
-    
+
+    /// Moves the item's file to match its folder. Queued per item, so two quick moves end in the
+    /// final folder, and the item is re-read after the move. See CODE_AUDIT_Folder §3.8.
+    @MainActor func movedFile(itemId: UUID) {
+        _ = enqueueFileOperation(itemId: itemId) {
+            await moveFileToFolderPath(itemId: itemId)
+        }
+    }
+
+    @MainActor private func moveFileToFolderPath(itemId: UUID) async {
+        guard let fileUrlDataController, let item = editModel(for: itemId), let oldFileUrl = item.fileUrl, item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
+        let path = await folderPath(itemId: itemId)
+        let newFileUrl: FileUrl?
+        do {
+            newFileUrl = try await fileUrlDataController.move(fileUrl: oldFileUrl, to: path)
+        } catch {
+            Logger.editController.error("movedFile(itemId:) failed to move the file: \(error.localizedDescription, privacy: .private)")
+            itemControllable.itemDataModel.lastPersistenceError = error
+            PersistenceIssueCenter.shared.recordFileError(error)
+            return
+        }
+        guard let newFileUrl else { return }
+        guard let current = editModel(for: itemId) else {
+            // Deleted while its file moved: the delete removed the old path, so the moved
+            // file would be left with no item.
+            fileUrlDataController.delete(newFileUrl)
+            return
+        }
+        guard current.fileUrl == oldFileUrl else { return }
+        reset(fileUrl: newFileUrl, itemId: itemId)
+    }
+
+    /// Replaces the item's file with the file at `url`, or removes it when `url` is nil. Queued
+    /// with the item's other file operations. See CODE_AUDIT_Folder §3.19.
     @MainActor func resetFile(url: URL?, itemId: UUID) async {
+        _ = await enqueueFileOperation(itemId: itemId) {
+            await replaceFile(url: url, itemId: itemId)
+        }.result
+    }
+
+    /// The body of `resetFile(url:itemId:)`; callers that already run inside a queued file
+    /// operation for `itemId` call this directly.
+    @MainActor private func replaceFile(url: URL?, itemId: UUID) async {
         guard let fileUrlDataController, let item = editModel(for: itemId) else { return }
 
         // Check if we have an existing file
@@ -59,7 +114,8 @@ public extension EditControllable {
         let securityScope = url.startSecurityScopedAccess()
         defer { securityScope.stop() }
 
-        if item.name.isEmpty {
+        // Re-read: a name typed while the awaits above ran must not be replaced by the file name.
+        if editModel(for: itemId)?.name.isEmpty == true {
             let ext = url.pathExtension.isEmpty ? "" : ".\(url.pathExtension)"
             let name = url.lastPathComponent.replacing(ext, with: "")
             reset(name: name, itemId: itemId)
@@ -70,6 +126,11 @@ public extension EditControllable {
             // copy error, scope failure) used to leave the item with no file on every device.
             // See CODE_AUDIT_19 §5.9.
             let updatedFileUrl = try await fileUrlDataController.createFileUrl(fileId: itemId, url: url, module: itemControllable.config.module.token, category: folderPath(itemId: item.parentId))
+            guard editModel(for: itemId) != nil else {
+                // Deleted while the new file was created: nothing would reference it.
+                fileUrlDataController.delete(updatedFileUrl)
+                return
+            }
             reset(fileUrl: updatedFileUrl, itemId: itemId)
             if let replacedFileUrl {
                 await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: updatedFileUrl)
@@ -81,7 +142,7 @@ public extension EditControllable {
         } catch {
             // The old file and its reference are kept. Log and surface the failure so the
             // user learns the attach failed. See CODE_AUDIT_EditItem §5.7, CODE_AUDIT_19 §5.9.
-            Logger.editController.error("resetFile(url:itemId:) failed to create file url: \(error.localizedDescription, privacy: .public)")
+            Logger.editController.error("resetFile(url:itemId:) failed to create file url: \(error.localizedDescription, privacy: .private)")
             itemControllable.itemDataModel.lastPersistenceError = error
             PersistenceIssueCenter.shared.recordFileError(error)
         }
@@ -90,6 +151,12 @@ public extension EditControllable {
     /// Gives `itemId` its own copy of `source`, named like `resetFile(data:itemId:path:)` names
     /// new files, copied file-to-file. See CODE_AUDIT_19 §7.1.
     @MainActor func resetFile(copying source: FileUrl, itemId: UUID) async throws {
+        try await enqueueFileOperation(itemId: itemId) {
+            try await copyFile(source, itemId: itemId)
+        }.value
+    }
+
+    @MainActor private func copyFile(_ source: FileUrl, itemId: UUID) async throws {
         guard let fileUrlDataController, let item = editModel(for: itemId) else { return }
         var folder = await folderPath(itemId: item.parentId)
         if !folder.isEmpty {
@@ -110,11 +177,19 @@ public extension EditControllable {
     /// to memory-only bytes), and the old file is never deleted when the new one resolves to the
     /// same location. See CODE_AUDIT_20 §5.4.
     @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
+        try await enqueueFileOperation(itemId: itemId) {
+            try await writeFile(data: data, itemId: itemId)
+        }.value
+    }
+
+    @MainActor private func writeFile(data: Data?, itemId: UUID) async throws {
         guard let item = editModel(for: itemId) else { return }
         let replacedFileUrl = item.fileUrl
         guard let data else {
             if replacedFileUrl != nil {
-                await resetFile(url: nil, itemId: itemId)
+                // Already inside this item's queued file operation; calling the queued
+                // `resetFile(url:itemId:)` here would wait on itself.
+                await replaceFile(url: nil, itemId: itemId)
             }
             return
         }
