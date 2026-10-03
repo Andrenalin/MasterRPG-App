@@ -375,6 +375,7 @@
       }
     },
     "Convert to group" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -611,6 +612,7 @@
       }
     },
     "Duplicate folder" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

@@ -32,9 +32,7 @@ struct LinkTableModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(diceRoot: DiceRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.diceRoot = diceRoot
-
+    @MainActor init(itemController: ItemController, tagController: TagController) {
         self.tagController = tagController
         self.itemController = itemController
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
@@ -43,7 +41,6 @@ struct EditController: Sendable {
         self.tableEditModel = TableEditModel()
     }
 
-    let diceRoot: DiceRootModel
     let itemController: ItemController
     let tagController: TagController
     let editorModel: ItemEditorModel
@@ -110,12 +107,7 @@ extension EditController {
     }
 
     @MainActor func merge(itemId: UUID, entries: [TableEntryModel]) -> [TableEntryModel] {
-        guard let item = editModel(for: itemId) else { return entries }
-        return entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.content = entry.content
-            return foundEntry ?? entry
-        }
+        entriesMatchedByName(itemId: itemId, entries: entries)
     }
     // `merge(itemId:entries:recoverEntries:forceSave:)` uses `EntryDataEditable`'s
     // shared default (see CODE_AUDIT_EditItem §9.2) — this module's behavior was

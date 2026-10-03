@@ -32,7 +32,7 @@ public final class GeneratorRootModel {
         self.gameController = gameController
         let linkController = LinkController(itemController: itemController)
         self.linkController = linkController
-        let editController = EditController(itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
+        let editController = EditController(itemController: itemController, tagController: tagController)
         self.editController = editController
         let importController = ImportController(itemController: itemController, editController: editController)
         self.importController = importController

@@ -16,8 +16,7 @@ struct SyncBatch: Sendable {
 
 @MainActor @Observable
 public final class ItemDataModel: Sendable {
-    public init(categoryTags: [ItemListCategory], version: Int = 2024) {
-        self.categoryTags = categoryTags
+    public init(version: Int = 2024) {
         self.version = version
         (syncBatches, syncBatchContinuation) = AsyncStream<SyncBatch>.makeStream()
     }
@@ -66,7 +65,6 @@ public final class ItemDataModel: Sendable {
         discardedSyncBatchSequence = syncBatchSequence.withLock { $0 }
     }
 
-    public let categoryTags: [ItemListCategory]
     public let version: Int
            
     public var isGameMode: Bool = false

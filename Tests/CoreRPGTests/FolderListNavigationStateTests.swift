@@ -98,7 +98,6 @@ private extension FolderListNavigationStateTests {
         return FolderListItemModel(
             id: id,
             source: ItemRowModel(itemId: id, typeId: .none),
-            destination: nil,
             level: 0,
             isShown: false
         )

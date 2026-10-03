@@ -15,7 +15,7 @@ struct FakeItemRootControllerFixture {
         let config = FakeModuleConfiguration()
         let navigationModel = ModuleNavigationModel()
         let linkRegisterController = LinkRegisterController(root: nil)
-        let itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        let itemDataModel = ItemDataModel()
         let itemController = FakeItemController(
             config: config,
             dataControllable: dataControllable,

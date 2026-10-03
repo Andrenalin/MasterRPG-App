@@ -10,7 +10,6 @@ public final class RemoveEntryListModel {
     }
 
     public var removeItems: [ItemRowModel] = []
-    var showDeleteAlert: Bool = false
     var linkTree: [RemoveLinkTreeModel] = []
 }
 

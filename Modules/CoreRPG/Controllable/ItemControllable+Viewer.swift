@@ -9,15 +9,6 @@ import os.log
 // MARK: - Viewer
 
 public extension ItemControllable {
-    @MainActor func children(itemId: UUID) -> [Model] {
-        guard let parent = itemSync(for: itemId) else { return [] }
-        return parent.entries.map(\.childId).compactMap {
-            itemSync(for: $0)
-        }
-    }
-    
-    @MainActor func subChildren(itemId: UUID, entryId: UUID?) -> [Model] { return [] }
-        
     func item(for itemId: UUID) async -> Model? {
         await itemDataModel.item(for: itemId) as? Model
     }

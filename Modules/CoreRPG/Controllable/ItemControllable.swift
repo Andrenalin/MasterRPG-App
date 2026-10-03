@@ -73,9 +73,6 @@ public protocol ItemControllable: Sendable  {
     
     @MainActor var linkRegisterController: LinkRegisterController { get }
     var itemDataModel: ItemDataModel { get }
-    
-    @MainActor func children(itemId: UUID) -> [Model]
-    @MainActor func subChildren(itemId: UUID, entryId: UUID?) -> [Model]
 }
 
 // MARK: - Configuration

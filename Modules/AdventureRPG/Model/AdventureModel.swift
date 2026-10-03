@@ -155,14 +155,11 @@ extension AdventureModel: nonisolated ItemLinkRegistrable {
 }
 
 extension AdventureModel: nonisolated ItemDiffComparable {
-    /// Folders used to merge `entries` as a union of both sides' child ids instead of the
-    /// whole-array last-write-wins used by every other property here (and by every other
-    /// category's entries) — with no tombstone for removed children, that union silently
-    /// resurrected a deletion made offline on one device once the next CloudKit merge ran.
-    /// Uses the same whole-array LWW as everything else instead: the tradeoff is that two
-    /// devices concurrently adding *different* children to the same folder while offline
-    /// will have one side's addition lost rather than both being kept — preferred over
-    /// silently undoing a user's explicit deletion. See CODE_AUDIT §5.3.
+    /// Folders merge their members by the rule every module shares: the union of both sides,
+    /// so two devices that add different children offline keep both. A member removed on one
+    /// device does not come back: after the import, the child's own `parentId` decides
+    /// (`EditControllable.repairFolders(itemIds:)`). That replaces the whole-array
+    /// last-writer-wins this model used for folders (CODE_AUDIT §5.3). See CODE_AUDIT_Folder §9.8.
     nonisolated public func merge(_ other: AdventureModel) -> AdventureModel {
         return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
@@ -175,7 +172,7 @@ extension AdventureModel: nonisolated ItemDiffComparable {
                 displayState: other.displayState,
                 photoId: photoId_.merged(other: other.photoId_),
                 diceId: other.diceId,
-                entries: entries_.merged(other: other.entries_),
+                entries: FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId),
                 parentId: other.parentId,
                 groupId: other.groupId
             )

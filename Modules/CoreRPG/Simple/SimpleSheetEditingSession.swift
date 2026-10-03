@@ -49,7 +49,7 @@ public final class SimpleSheetEditingSession {
     ///     item's own name, which is never shown or edited.
     public init(module: NetworkModules, name: String = "") {
         let config = SimpleModuleConfiguration(module: module)
-        let itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        let itemDataModel = ItemDataModel()
         let linkRegisterController = LinkRegisterController(root: nil)
         let itemController = SimpleItemController(config: config, linkRegisterController: linkRegisterController, itemDataModel: itemDataModel)
 

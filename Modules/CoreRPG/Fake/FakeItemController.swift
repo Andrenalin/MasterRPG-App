@@ -13,5 +13,5 @@ struct FakeItemController: ItemControllable {
     var itemDataModel: ItemDataModel
         
     @MainActor
-    static let fake = FakeItemController(config: FakeModuleConfiguration(), linkRegisterController: LinkRegisterController.fake, itemDataModel: ItemDataModel(categoryTags: [.all]))
+    static let fake = FakeItemController(config: FakeModuleConfiguration(), linkRegisterController: LinkRegisterController.fake, itemDataModel: ItemDataModel())
 }

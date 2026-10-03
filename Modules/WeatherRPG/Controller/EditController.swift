@@ -11,7 +11,7 @@ final class WeatherEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
+    @MainActor init(itemController: ItemController, tagController: TagController) {
         self.tagController = tagController
         self.itemController = itemController
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)

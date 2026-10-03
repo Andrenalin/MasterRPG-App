@@ -78,7 +78,7 @@ struct FolderAuditConcurrencyTests {
 
     @Test("Sync batches queued before a data reset are skipped (§3.19)")
     func syncBatchesQueuedBeforeResetAreDiscarded() async throws {
-        let model = ItemDataModel(categoryTags: [])
+        let model = ItemDataModel()
         let beforeReset = UUID()
         let afterReset = UUID()
         model.enqueueSyncBatch(deletedIds: [], insertedIds: [beforeReset], updatedIds: [])

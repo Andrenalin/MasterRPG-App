@@ -27,8 +27,11 @@ struct ListRootContextMenu: View {
         DuplicateItemView(controller: controller, currentSelected: currentSelected, title: title)
         if !listDisplayModel.isListMode {
             Divider()
-            AddItemView(controller: controller, currentSelected: currentSelected, listController: listController, title: title)
-            MoveItemView(controller: controller, currentSelected: currentSelected, listController: listController, title: title)
+            FolderPlacementMenu(isFolder: false, controller: controller, currentSelected: currentSelected, listController: listController)
+                #if !os(tvOS)
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+                #endif
+            FolderPlacementMenu(isFolder: true, controller: controller, currentSelected: currentSelected, listController: listController)
         }
         RemoveFromParentActions(
             root: root,
@@ -39,8 +42,8 @@ struct ListRootContextMenu: View {
             title: title
         )
         Divider()
-        OpenFolderView(listController: listController, currentSelected: currentSelected, title: title)
-        CloseParentFolderView(listController: listController, currentSelected: currentSelected)
+        OpenFolderButton(listController: listController, itemId: currentSelected, title: title)
+        CloseFolderButton(listController: listController, itemId: currentSelected)
         Divider()
         ExportItemView(controller: controller, currentSelected: currentSelected, title: title)
         GroupEditView(controller: controller, currentSelected: currentSelected, title: title)
@@ -221,57 +224,6 @@ private struct EditItemView: View {
     }
 }
 
-private struct OpenFolderView: View {
-    let listController: (any FolderListControllable)?
-    let currentSelected: UUID?
-    let title: String
-
-    var body: some View {
-        Button {
-            withAnimation {
-                _ = listController?.toggleFolder(itemId: currentSelected)
-            }
-        } label: {
-            Label {
-                Text(
-                    (listController?.isFolderOpen(itemId: currentSelected) ?? false)
-                        ? "Close \(title)"
-                        : "Open \(title)",
-                    bundle: .module
-                )
-            } icon: {
-                Image(
-                    systemName: (listController?.isFolderOpen(itemId: currentSelected) ?? false)
-                        ? "chevron.up"
-                        : "chevron.down"
-                )
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut(.space, modifiers: [])
-        #endif
-        .disabled(!(listController?.canToggleFolder(itemId: currentSelected) ?? false))
-    }
-}
-
-private struct CloseParentFolderView: View {
-    let listController: (any FolderListControllable)?
-    let currentSelected: UUID?
-
-    var body: some View {
-        Button {
-            withAnimation { listController?.closeParentFolder(of: currentSelected ?? UUID()) }
-        } label: {
-            Label {
-                Text("Close parent folder", bundle: .module)
-            } icon: {
-                Image(systemName: "chevron.up")
-            }
-        }
-        .disabled(!(listController?.hasParentFolder(itemId: currentSelected) ?? false))
-    }
-}
-
 private struct DuplicateItemView: View {
     let controller: ContextMenuMultiController
     let currentSelected: UUID?
@@ -401,69 +353,6 @@ private struct BatchExtractionView: View {
     }
 }
 #endif
-
-private struct MoveItemView: View {
-    let controller: ContextMenuMultiController
-    let currentSelected: UUID?
-    let listController: (any FolderListControllable)?
-    let title: String
-
-    var body: some View {
-        Menu {
-            ForEach(controller.folderItems(currentSelected: currentSelected)) { folder in
-                Button {
-                    controller.moveItem(currentSelected: currentSelected, to: folder)
-                    listController?.update(debounce: false)
-                } label: {
-                    Label {
-                        Text(folder.name)
-                    } icon: {
-                        Image(systemName: "folder")
-                    }
-                }
-            }
-        } label: {
-            Label {
-                Text("Move \(title) into", bundle: .module)
-            } icon: {
-                Image(systemName: "folder")
-            }
-        }
-    }
-}
-
-private struct AddItemView: View {
-    let controller: ContextMenuMultiController
-    let currentSelected: UUID?
-    let listController: (any FolderListControllable)?
-    let title: String
-
-    var body: some View {
-        Menu {
-            ForEach(controller.collectionItems(currentSelected: currentSelected)) { folder in
-                Button {
-                    controller.addItem(currentSelected: currentSelected, to: folder)
-                    listController?.update(debounce: false)
-                } label: {
-                    Label {
-                        Text(folder.name)
-                    } icon: {
-                        Image(systemName: controller.collectionIcon)
-                    }
-                }
-            }
-        } label: {
-            Label {
-                Text("Add \(title) into", bundle: .module)
-            } icon: {
-                Image(systemName: controller.collectionIcon)
-            }
-        }
-        #if !os(tvOS)
-        .keyboardShortcut("a", modifiers: [.command, .shift])
-        #endif
-    }
-}
 
 #Preview {
     let fixture = FakeItemRootControllerFixture()

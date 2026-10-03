@@ -181,7 +181,7 @@ public final class MapRootModel {
         LinkController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)
     }()
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
+        EditController(root: self, itemController: itemController, tagController: searchModel.tagController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(root: self, audioRoot: audioRoot, diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, characterRoot: characterRoot, itemController: itemController)

@@ -18,7 +18,7 @@ final class MapEditModel: Sendable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: MapRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
+    @MainActor init(root: MapRootModel, itemController: ItemController, tagController: TagController) {
         self.root = root
 
         self.tagController = tagController
@@ -370,12 +370,7 @@ extension EditController {
 
 extension EditController {
     @MainActor func merge(itemId: UUID, entries: [MapEntryModel]) -> [MapEntryModel] {
-        guard let item = editModel(for: itemId) else { return entries }
-        return entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.content = entry.content
-            return foundEntry ?? entry
-        }
+        entriesMatchedByName(itemId: itemId, entries: entries)
     }
 
     /// `forceSave` is intentionally not threaded through: map changes made while a
@@ -384,11 +379,7 @@ extension EditController {
     /// controller (e.g. `addMonsters`), which relies on the same `isGameMode` gate.
     @MainActor func merge(itemId: UUID, entries: [MapEntryModel], recoverEntries: [ItemRowModel]?, forceSave: Bool) -> [ItemRowModel] {
         guard let item = editModel(for: itemId) else { return [] }
-        var newEntries = entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.content = entry.content
-            return foundEntry ?? entry
-        }
+        var newEntries = entriesMatchedByName(itemId: itemId, entries: entries)
         let removedIds = Set(item.entries.map { $0.id }).subtracting(newEntries.map { $0.id })
         let module = itemController.config.module
         let itemRowModels = removedIds.map { ItemRowModel(itemId: item.id, entryId: $0, typeId: module) }

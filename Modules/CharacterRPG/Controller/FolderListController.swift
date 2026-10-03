@@ -1,31 +1,26 @@
 // @copyright André Trettin
 
 import CoreRPG
+import Foundation
 
-import SwiftUI
-
-@MainActor
-struct FolderListController: FolderListControllable {
-    let listModel: FolderListModel
-    let listDisplayModel: ListDisplayModel
-    let itemControllable: any ItemControllable
-    let searchRootControllable: any SearchRootControllable
-    let cacheListItemModel = CacheItemListModel()
-
-    func detailDestination(for itemId: UUID) -> any NavigationDestination {
+/// This module's list destinations for the shared `GenericFolderListController`.
+/// See CODE_AUDIT_Folder §9.4.
+enum CharacterListRoutes: FolderListRouting {
+    static func detail(for itemId: UUID) -> any NavigationDestination {
         CharacterRoute.detail(itemId)
     }
 
-    func folderDestination(for itemId: UUID) -> any NavigationDestination {
+    static func folder(for itemId: UUID) -> any NavigationDestination {
         CharacterDetailRoute.folder(itemId)
     }
 
-    func folderInlineDestination(for itemId: UUID) -> any NavigationDestination {
+    static func folderInline(for itemId: UUID) -> any NavigationDestination {
         CharacterDetailRoute.folderInline(itemId)
     }
 
-    func viewerDestination(for itemId: UUID) -> any NavigationDestination {
+    static func viewer(for itemId: UUID) -> any NavigationDestination {
         DetailRoute.viewer(itemId)
     }
-
 }
+
+typealias FolderListController = GenericFolderListController<CharacterListRoutes>

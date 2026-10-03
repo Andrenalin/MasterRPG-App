@@ -21,11 +21,9 @@ struct DetailFolderListView: View {
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
 
-        // See `ItemDetailRootView.bottomOverlayBar`'s own doc for why this
-        // is a parameter on it rather than chained on here — CODE_AUDIT_10
-        // §9.11.
-        ItemDetailRootView(
+        DetailFolderList(
             root: root.rootController,
+            openFileWindowModel: root.openFileWindowModel,
             detailListController: folderListController,
             selectedModel: model,
             configuration: .init(disableHideHeader: true, isSubFolder: isSubFolder),
@@ -34,8 +32,7 @@ struct DetailFolderListView: View {
             DiceOverlayView(model: model)
         } editor: {
             DetailEditorView(model: model)
-        }
-        .openFileWindowOverlay(root.openFileWindowModel) { itemId, dismiss in
+        } viewer: { itemId, dismiss in
             root.viewController.viewer(
                 root: root,
                 itemId: itemId,

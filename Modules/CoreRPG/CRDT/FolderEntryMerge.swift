@@ -44,3 +44,35 @@ public enum FolderEntryMerge {
         return sorted.filter { seenChildren.insert(childId($0)).inserted }
     }
 }
+
+public extension FolderEntryMerge {
+    /// The entries-merge rule every item model uses. A folder keeps the union of both sides'
+    /// members; which of them stay is then decided by each child's own `parentId`, once the
+    /// import that merged them is applied (`EditControllable.repairFolders(itemIds:)`), so a
+    /// member removed on one device does not come back. Every other category merges its entry
+    /// list as one last-writer-wins value.
+    ///
+    /// Nine models carried their own copy of this choice, Adventure used last-writer-wins for
+    /// folders, Dice had no folder case and Pdf unioned every category. See CODE_AUDIT_Folder §9.8.
+    static func mergedEntries<Entry: Equatable>(
+        category: ItemListCategory,
+        local: CRDTDataUpdate<[Entry]>,
+        remote: CRDTDataUpdate<[Entry]>,
+        id: (Entry) -> UUID,
+        name: (Entry) -> String,
+        childId: @escaping (Entry) -> UUID,
+        combine: (_ local: Entry, _ remote: Entry) -> Entry = { local, _ in local }
+    ) -> CRDTDataUpdate<[Entry]> {
+        guard category == .folder else { return local.merged(other: remote) }
+        let members = merged(
+            local: local.wrappedValue,
+            remote: remote.wrappedValue,
+            id: id,
+            name: name,
+            childId: childId,
+            combine: combine
+        )
+        // The merged update marker, not a fresh one: merging two equal folders stays idempotent.
+        return CRDTDataUpdate(wrappedValue: members, update: local.$update.merged(other: remote.$update))
+    }
+}

@@ -118,14 +118,8 @@ extension PhotoModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: PhotoModel) -> PhotoModel {
         return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
-            let mergedEntries: CRDTDataUpdate<[PhotoEntryModel]>
-            if mergedCategory.wrappedValue == .folder {
-                // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
-                let combined = FolderEntryMerge.merged(local: entries, remote: other.entries, id: \.id, name: \.name, childId: \.childId)
-                mergedEntries = CRDTDataUpdate(wrappedValue: combined)
-            } else {
-                mergedEntries = entries_.merged(other: other.entries_)
-            }
+            // Folders union their members, other categories last-writer-wins. See CODE_AUDIT_Folder §9.8.
+            let mergedEntries = FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId)
             return PhotoModel(
                 id: id,
                 name: name_.merged(other: other.name_),

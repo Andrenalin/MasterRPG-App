@@ -175,7 +175,7 @@ public final class AdventureRootModel {
     @ObservationIgnored var linkController: LinkController
     let sheetController: SheetController
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
+        EditController(itemController: itemController, tagController: searchModel.tagController)
     }()
     @ObservationIgnored lazy var exportController: ExportController = {
         ExportController(root: self, itemController: itemController)

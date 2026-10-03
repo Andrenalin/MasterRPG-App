@@ -154,10 +154,3 @@ extension WallclockTimestamp: CustomDebugStringConvertible {
     }
 }
 
-#if DEBUG
-    extension WallclockTimestamp: ApproxSizeable {
-        public func sizeInBytes() -> Int {
-            MemoryLayout<TimeInterval>.size(ofValue: clock) + MemoryLayout<ActorID>.size(ofValue: actorId)
-        }
-    }
-#endif

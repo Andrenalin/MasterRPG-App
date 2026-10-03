@@ -119,7 +119,6 @@ struct RuleQuickEntryEditor: View {
     }
 
     private func finishSaving() {
-        root.editController.editorModel.hasChangedEntries += 1
         root.editController.editorModel.sheetRootModel?.updateParent()
         navigator.dismiss()
     }

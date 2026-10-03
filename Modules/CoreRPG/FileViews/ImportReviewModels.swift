@@ -27,12 +27,9 @@ import SwiftUI
     nonisolated static func == (lhs: ImportReviewItemModel, rhs: ImportReviewItemModel) -> Bool { lhs.id == rhs.id }
     nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
-    init(id: UUID, kind: ImportReviewItemModel.ChangeKind, existingStatus: String, importedStatus: String, mergedStatus: String, itemModel: SingleItemImportModel, isDeletion: Bool = false) {
+    init(id: UUID, kind: ImportReviewItemModel.ChangeKind, itemModel: SingleItemImportModel, isDeletion: Bool = false) {
         self.id = id
         self.kind = kind
-        self.existingStatus = existingStatus
-        self.importedStatus = importedStatus
-        self.mergedStatus = mergedStatus
         self.itemModel = itemModel
         self.isDeletion = isDeletion
     }
@@ -72,9 +69,6 @@ import SwiftUI
     }
 
     let kind: ChangeKind
-    let existingStatus: String
-    let importedStatus: String
-    let mergedStatus: String
     let itemModel: SingleItemImportModel
     /// Local item missing from the import stream; decision `.imported` deletes it on apply.
     let isDeletion: Bool
@@ -120,10 +114,6 @@ import SwiftUI
     func select(moduleId: ImportReviewModule.ID) {
         selectedModuleId = moduleId
         selectedItemId = modules.first { $0.id == moduleId }?.reviewItems.first?.id
-    }
-
-    func select(itemId: ImportReviewItemModel.ID) {
-        selectedItemId = itemId
     }
 
     /// Model of a linked item for display: prefers the import batch (imported items are
@@ -215,22 +205,5 @@ import SwiftUI
                 }
             }
         }
-    }
-
-    func setDecision(_ decision: SingleReviewDecision, for itemId: ImportReviewItemModel.ID) {
-        itemModel(for: itemId)?.applyItemDecision(decision)
-    }
-
-    func setPropertyDecision(_ decision: SingleReviewDecision, propertyId: UUID, itemId: ImportReviewItemModel.ID) {
-        itemModel(for: itemId)?.setPropertyDecision(decision, propertyId: propertyId)
-    }
-
-    private func itemModel(for itemId: ImportReviewItemModel.ID) -> SingleItemImportModel? {
-        for module in modules {
-            if let item = module.reviewItems.first(where: { $0.id == itemId }) {
-                return item.itemModel
-            }
-        }
-        return nil
     }
 }

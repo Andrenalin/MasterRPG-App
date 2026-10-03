@@ -15,7 +15,7 @@ import Testing
 /// it a clean surface for testing the shared `FolderListControllable` protocol extension.
 ///
 /// Coverage: buildList / appendToFlat open-state logic, toggleFolder branches,
-/// resetItemOnce, resetParent, resetDetail / performDetailSearch, canOpenFolder,
+/// resetItemOnce, resetDetail / performDetailSearch, canOpenFolder,
 /// hasParentFolder, toggleParentFolder, closeParentFolder, and mapResult canOpen sync.
 @MainActor
 struct FolderListControllerTests {
@@ -205,56 +205,6 @@ struct FolderListControllerTests {
         await controller.resetItemOnce()
         #expect(controller.listModel.list.isEmpty,
                 "Second call must be a no-op — list stays empty because no search was triggered")
-    }
-
-    // MARK: - resetParent
-
-    @Test("resetParent sets filterId and triggers a scoped search")
-    func resetParentSetsFilterId() async {
-        let root = await makeRoot()
-
-        let folderId = await root.itemController.addNew(type: .folder)
-        let childId  = await root.itemController.addNew(type: .item)
-        root.editController.addItem(itemId: childId, parentId: folderId)
-        guard let folderModel = root.itemController.itemSync(for: folderId) else {
-            #expect(Bool(false), "Folder must exist")
-            return
-        }
-
-        root.folderListController.resetParent(model: folderModel)
-
-        #expect(root.folderListController.searchModel.filterId == folderId,
-                "filterId must be set to the folder's id")
-        #expect(root.folderListController.listModel.updatedOnce == true,
-                "updatedOnce must be marked true after resetParent")
-    }
-
-    @Test("resetParent with a folder sets listMode to .folder")
-    func resetParentFolderSetsFolderMode() async {
-        let root = await makeRoot()
-
-        let folderId = await root.itemController.addNew(type: .folder)
-        guard let folderModel = root.itemController.itemSync(for: folderId) else {
-            #expect(Bool(false))
-            return
-        }
-
-        root.folderListController.listDisplayModel.listMode = .list  // start in list
-        root.folderListController.resetParent(model: folderModel)
-
-        #expect(root.folderListController.listDisplayModel.listMode == .folder,
-                "resetParent with a folder item must switch listMode to .folder")
-    }
-
-    @Test("resetParent(nil) clears filterId")
-    func resetParentNilClearsFilterId() async {
-        let root = await makeRoot()
-
-        root.folderListController.searchModel.filterId = UUID()  // set something first
-        root.folderListController.resetParent(model: nil)
-
-        #expect(root.folderListController.searchModel.filterId == nil,
-                "resetParent(nil) must clear filterId")
     }
 
     // MARK: - resetDetail / performDetailSearch

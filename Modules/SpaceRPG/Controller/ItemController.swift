@@ -8,10 +8,10 @@ struct ItemController: Sendable {
     @MainActor init(config: ModuleConfiguration) {
         self.config = config
 
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        self.itemDataModel = ItemDataModel()
         self.collectionCategory = config.collectionCategory
 
-        let fileUrlDataController = FileUrlDataController(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension)
+        let fileUrlDataController = FileUrlDataController(config: config)
         self.fileUrlDataController = fileUrlDataController
         self.cacheController = CacheController(fileUrlDataController: fileUrlDataController)
     }

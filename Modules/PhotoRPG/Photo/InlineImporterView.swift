@@ -16,124 +16,57 @@ struct InlineImporterView: View, Equatable {
         self.itemId = itemId
         self.preopen = preopen
         self.layoutDown = layoutDown
-        self._isExpanded = State(wrappedValue: preopen)
     }
-    
+
     let itemId: UUID
     let preopen: Bool
     let layoutDown: Bool
-    
-    @Environment(PhotoRootModel.self) private var root
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-#if !os(tvOS)
-    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
-    @State private var selectedItem: PhotosPickerItem? = nil
-#endif
-    
-    @Namespace var glassNamespace
-    
-    @State private var isExpanded: Bool
-    
-    @State private var showImporter = false
-    @State private var showRemoteURLImporter = false
-    @State private var showCamera = false
-    @State private var showLibrary = false
-    @State private var showImagePlayground = false
-    
+
     var body: some View {
 #if os(visionOS)
-        InlineImporterContentView(
-            itemId: itemId,
-            layoutDown: layoutDown,
-            isExpanded: $isExpanded,
-            showImporter: $showImporter,
-            showRemoteURLImporter: $showRemoteURLImporter,
-            showCamera: $showCamera,
-            showLibrary: $showLibrary,
-            showImagePlayground: $showImagePlayground,
-            selectedItem: $selectedItem
-        )
-#elseif os(tvOS)
-        GlassEffectContainer {
-            InlineImporterContentView(
-                itemId: itemId,
-                layoutDown: layoutDown,
-                isExpanded: $isExpanded,
-                showImporter: $showImporter,
-                showRemoteURLImporter: $showRemoteURLImporter,
-                showCamera: $showCamera,
-                showLibrary: $showLibrary,
-                showImagePlayground: $showImagePlayground
-            )
-        }
+        InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
 #else
         GlassEffectContainer {
-            InlineImporterContentView(
-                itemId: itemId,
-                layoutDown: layoutDown,
-                isExpanded: $isExpanded,
-                showImporter: $showImporter,
-                showRemoteURLImporter: $showRemoteURLImporter,
-                showCamera: $showCamera,
-                showLibrary: $showLibrary,
-                showImagePlayground: $showImagePlayground,
-                selectedItem: $selectedItem
-            )
+            InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
         }
 #endif
     }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
-        // uses this to decide whether to skip re-rendering, and both drive stored state
-        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
-        // change for the same `itemId`. See CODE_AUDIT_9 §5.1.
+        // uses this to decide whether to skip re-rendering, and both drive the fan (its
+        // initial state and orientation). See CODE_AUDIT_9 §5.1.
         lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
     }
 }
 
-// MARK: - Extracted subviews (CODE_AUDIT §8.3)
-//
-// Gives SwiftUI its own diffing boundary, instead of the previous computed
-// `some View` property on `InlineImporterView` itself.
-
 private struct InlineImporterContentView: View {
     let itemId: UUID
+    let preopen: Bool
     let layoutDown: Bool
 
     @Environment(PhotoRootModel.self) private var root
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    @Binding var isExpanded: Bool
-    @Binding var showImporter: Bool
-    @Binding var showRemoteURLImporter: Bool
-    @Binding var showCamera: Bool
-    @Binding var showLibrary: Bool
-    @Binding var showImagePlayground: Bool
 #if !os(tvOS)
-    @Binding var selectedItem: PhotosPickerItem?
+    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
+    @State private var selectedItem: PhotosPickerItem?
 #endif
 
+    @State private var showImporter = false
+    @State private var showRemoteURLImporter = false
+    @State private var showCamera = false
+    @State private var showLibrary = false
+    @State private var showImagePlayground = false
     @State private var importErrorMessage: String?
 
     var body: some View {
-        ZStack {
-            button(type: .file)
-            button(type: .url)
-            button(type: .library)
-            button(type: .camera)
-            button(type: .playground)
-
-            Button {
-                withAnimation(reduceMotion ? nil : .default) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                Label { Text(importerTitle) } icon: { Image(systemName: "photo.badge.plus") }
-                .frame(width: 32, height: 32)
-            }
-            .selectedRoundButton(title: importerTitle, module: .space, isSelected: isExpanded)
-        }
+        ImporterFanView(
+            title: String(localized: "Importer", bundle: .module),
+            systemImage: "photo.badge.plus",
+            module: .photo,
+            preopen: preopen,
+            layoutDown: layoutDown,
+            items: fanItems
+        )
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
             switch result {
@@ -206,29 +139,39 @@ private struct InlineImporterContentView: View {
             return true
         }
 #endif
-        .alert(
-            Text("Import Failed", bundle: .module),
-            isPresented: Binding(
-                get: { importErrorMessage != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        importErrorMessage = nil
-                    }
-                }
-            )
-        ) {
-            Button(role: .cancel) {
-                importErrorMessage = nil
-            } label: {
-                Text("OK", bundle: .module)
+        .importFailureAlert(message: $importErrorMessage)
+    }
+
+    /// Only the importers this device can use: the camera sheet exists on iOS only, and Image
+    /// Playground only where the system supports it. See CODE_AUDIT_Folder §9.6.
+    private var fanItems: [ImporterFanItem] {
+        var types: [PhotoImporterButtonType] = []
+#if !os(tvOS)
+        types += [.file, .url, .library]
+#endif
+#if os(iOS)
+        types.append(.camera)
+#endif
+#if !os(tvOS)
+        if supportsImagePlayground {
+            types.append(.playground)
+        }
+#endif
+        return types.map { type in
+            ImporterFanItem(id: type.rawValue, title: type.localizedLabel, systemImage: type.systemImage) {
+                show(type)
             }
-        } message: {
-            Text(verbatim: importErrorMessage ?? "")
         }
     }
 
-    private var importerTitle: String {
-        String(localized: "Importer", bundle: .module)
+    private func show(_ type: PhotoImporterButtonType) {
+        switch type {
+        case .file: showImporter.toggle()
+        case .url: showRemoteURLImporter.toggle()
+        case .library: showLibrary.toggle()
+        case .camera: showCamera.toggle()
+        case .playground: showImagePlayground.toggle()
+        }
     }
 
     private func update(id: UUID, image: AKImage?) async {
@@ -238,39 +181,6 @@ private struct InlineImporterContentView: View {
             importErrorMessage = error.localizedDescription
         }
     }
-
-    private func button(type: PhotoImporterButtonType) -> some View {
-        return Button {
-            switch type {
-            case .file:
-                showImporter.toggle()
-            case .url:
-                showRemoteURLImporter.toggle()
-            case .library:
-                showLibrary.toggle()
-            case .camera:
-                showCamera.toggle()
-            case .playground:
-                showImagePlayground.toggle()
-            }
-        } label: {
-            Label {
-                Text(type.localizedLabel)
-            } icon: {
-                Image(systemName: type.systemImage)
-            }
-            .frame(width: 32, height: 32)
-            .opacity(isExpanded ? 1 : 0)
-        }
-        .allowsHitTesting(isExpanded)
-        .accessibilityHidden(!isExpanded)
-        .selectedRoundButton(title: type.localizedLabel, module: .photo, isSelected: false)
-        .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
-        .animation(
-            reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
-            value: isExpanded
-        )
-    }
 }
 
 #Preview(traits: .mockData) {
@@ -278,7 +188,7 @@ private struct InlineImporterContentView: View {
     ZStack {
         Color
             .blue
-        
+
         InlineImporterView(itemId: root.itemController.itemDataModel.items[0], preopen: true, layoutDown: true)
     }
 }

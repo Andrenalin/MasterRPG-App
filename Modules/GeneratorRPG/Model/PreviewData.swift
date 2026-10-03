@@ -90,11 +90,11 @@ extension ItemController {
 
 extension EditController {
     @MainActor
-    static var preview: EditController = {
+    static var preview: EditController {
         let controller = GeneratorRootModel.preview.editController
         controller.setCurrentItem(to: .preview)
         return controller
-    }()
+    }
 }
 
 extension GameController {

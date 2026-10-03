@@ -64,6 +64,55 @@ struct FolderPerformanceAuditTests {
         #expect(childIds(root, of: staleFolderId).isEmpty)
     }
 
+    @Test("A folder of the batch lists exactly the children whose parent it is (§9.8)")
+    func batchFolderFollowsItsChildren() async throws {
+        let root = await makeRoot()
+        let folderId = await addItem(root, name: "Folder", type: .folder)
+        let otherFolderId = await addItem(root, name: "Other", type: .folder)
+        let keptId = await addItem(root, name: "Kept")
+        let movedId = await addItem(root, name: "Moved")
+        let unlistedId = await addItem(root, name: "Unlisted")
+        root.editController.addItem(itemId: keptId, parentId: folderId)
+        root.editController.addItem(itemId: movedId, parentId: otherFolderId)
+        // The union of a merge brought the moved member back into the folder's list.
+        try appendStaleEntry(root, folderId: folderId, childId: movedId)
+        // A child whose parent is the folder but which the folder does not list.
+        let unlisted = try #require(root.editController.editModel(for: unlistedId))
+        unlisted.parentId = folderId
+        root.editController.save(updated: unlisted, message: "parent")
+
+        root.editController.repairFolders(itemIds: [folderId])
+
+        #expect(Set(childIds(root, of: folderId)) == [keptId, unlistedId])
+        #expect(childIds(root, of: otherFolderId) == [movedId])
+    }
+
+    @Test("An item of the batch joins its folder when the folder does not list it (§9.8)")
+    func batchItemJoinsItsFolder() async throws {
+        let root = await makeRoot()
+        let folderId = await addItem(root, name: "Folder", type: .folder)
+        let itemId = await addItem(root, name: "Item")
+        let item = try #require(root.editController.editModel(for: itemId))
+        item.parentId = folderId
+        root.editController.save(updated: item, message: "parent")
+
+        root.editController.repairFolders(itemIds: [itemId])
+
+        #expect(childIds(root, of: folderId) == [itemId])
+    }
+
+    @Test("A member not known on this device stays listed (§9.8)")
+    func unknownMemberStays() async throws {
+        let root = await makeRoot()
+        let folderId = await addItem(root, name: "Folder", type: .folder)
+        let unknownId = UUID()
+        try appendStaleEntry(root, folderId: folderId, childId: unknownId)
+
+        root.editController.repairFolders(itemIds: [folderId])
+
+        #expect(childIds(root, of: folderId) == [unknownId])
+    }
+
     @Test("The Move/Add check agrees with the target list (§7.4)")
     func moveTargetCheckMatchesList() async {
         let root = await makeRoot()

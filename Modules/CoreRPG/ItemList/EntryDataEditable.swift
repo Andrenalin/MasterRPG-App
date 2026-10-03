@@ -233,6 +233,22 @@ public extension EntryDataEditable {
         merge(itemId: itemId, entries: entries, recoverEntries: recoverEntries, forceSave: false)
     }
 
+    /// Matches edited entries to the item's existing entries by name, so an entry keeps its id
+    /// (and links to it) when only its content changed. Each existing entry is used at most
+    /// once: with a plain first match, two entries of the same name collapsed onto one id.
+    /// Adventure had this fix, the copies in Map, Table and Character did not.
+    /// See CODE_AUDIT_Folder §9.10.
+    @MainActor func entriesMatchedByName(itemId: UUID, entries: [Model.Entry]) -> [Model.Entry] {
+        guard let item = editModel(for: itemId) else { return entries }
+        var available = item.entries
+        return entries.map { entry in
+            guard let index = available.firstIndex(where: { $0.name == entry.name }) else { return entry }
+            var matched = available.remove(at: index)
+            matched.content = entry.content
+            return matched
+        }
+    }
+
     /// Default `merge(itemId:entries:recoverEntries:forceSave:)`: computes the merged
     /// entries via `merge(itemId:entries:)` (module-specific matching), then applies the
     /// shared "diff removed ids → check link usage → replace-or-report" skeleton that

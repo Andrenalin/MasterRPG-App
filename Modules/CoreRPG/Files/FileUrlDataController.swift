@@ -41,6 +41,13 @@ public struct FileUrlDataController: Sendable {
         )
     }
 
+    /// The file controller of a file-backed module, built from its configuration. The four
+    /// file-backed item controllers repeated this construction. See CODE_AUDIT_Folder §9.5.
+    @MainActor
+    public init(config: any ModuleConfigurable) {
+        self.init(moduleFolder: config.module.token, fileTypes: config.fileTypes, filenameExtension: config.filenameExtension)
+    }
+
     @MainActor
     init(
         moduleFolder: String,

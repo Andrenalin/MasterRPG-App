@@ -34,7 +34,7 @@ public struct LinkCharacterModuleTransferable: LinkDataTransferable {
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: CharacterRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
+    @MainActor init(root: CharacterRootModel, itemController: ItemController, tagController: TagController) {
         self.root = root
 
         self.tagController = tagController
@@ -217,21 +217,6 @@ extension EditController {
         return root.linkController.linkText(model: item, entry: entry)
     }
     
-    @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {
-        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return [] }
-        return item.entries.compactMap {
-            guard $0.id != sourceEntryId, let valueId = $0.valueId else { return nil }
-            return FolderRepresentable(id: valueId, name: $0.name)
-        }
-    }
-
-    @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? {
-        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return nil }
-        let resolvedParentId = item.groupId ?? item.parentId
-        guard let resolvedParentId, let parent = itemControllable.itemSync(for: resolvedParentId) as? Model else { return nil }
-        return FolderRepresentable(id: parent.id, name: parent.name)
-    }
-
     /// Whether `parentFolder(itemId:)` resolved via the value-group hierarchy
     /// (`groupId` — e.g. an entry inside a "Skills" sub-group, whose owning
     /// character it can legitimately move back out to) as opposed to falling
@@ -270,31 +255,11 @@ extension EditController {
         save(updated: item, message: String(localized: "remove photos", bundle: .module).localizedString)
     }
 
-    // `isOrphanedHidden`/`willRepairOrphan`/`willRestore` use `EditControllable`'s
-    // shared `GroupableModel`-constrained default now that `ValueModel` conforms to
-    // `GroupableModel` — see CODE_AUDIT_EditItem §9.5.
+    // `addNewGroup`, `convertToGroup`, `canBecomeGroup`, `groupFolders`, `parentFolder`,
+    // `willDeleteChildren` and `isOrphanedHidden`/`willRepairOrphan`/`willRestore` are the
+    // shared `GroupableModel`-constrained defaults. See CODE_AUDIT_EditItem §9.5,
+    // CODE_AUDIT_Folder §9.9.
 
-    @MainActor func willDeleteChildren(of item: ValueModel) async {
-        guard item.category != .folder else { return }
-        for entry in item.entries {
-            guard let valueId = entry.valueId else { continue }
-            await Task.yield()
-            await delete(itemId: valueId)
-        }
-    }
-
-    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
-        let groupId = await itemController.addNew(type: .item)
-        reset(hidden: true, itemId: groupId)
-        guard let group = editModel(for: groupId) else { return groupId }
-        group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
-        var entry = Model.Entry.empty
-        entry.name = group.name
-        entry.valueId = groupId
-        add(entry: entry, itemId: itemId)
-        return entry.id
-    }
     
     @MainActor func addItemAsGroup(itemId: UUID, groupId: UUID, forceSave: Bool = false) async -> UUID {
         reset(hidden: true, itemId: groupId, forceSave: forceSave)
@@ -309,35 +274,6 @@ extension EditController {
     }
 
 
-    @MainActor func canBecomeGroup(itemId: UUID) -> Bool {
-        guard let item = itemControllable.itemSync(for: itemId) as? ValueModel else { return false }
-        return item.groupId == nil
-    }
-
-    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
-        guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return UUID() }
-
-        let groupId: UUID
-        if let existingItemId, let existingGroup = editModel(for: existingItemId) {
-            groupId = existingItemId
-            existingGroup.groupId = itemId
-            existingGroup.isGroupHiddenToggle = true
-            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module).localizedString)
-            item.entries[index].name = existingGroup.name
-            item.entries[index].value = existingGroup.description
-        } else {
-            groupId = await itemController.addNew(type: .item)
-            reset(hidden: true, itemId: groupId)
-            guard let group = editModel(for: groupId) else { return groupId }
-            group.name = item.entries[index].name.withoutLink()
-            group.description = item.entries[index].value
-            group.groupId = itemId
-            save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
-        }
-        item.entries[index].valueId = groupId
-        save(updated: item, message: String(localized: "Convert to group", bundle: .module).localizedString)
-        return groupId
-    }
     
     @MainActor func update(itemId: UUID, entryId: UUID, name: String, content: String, forceSave: Bool) {
         guard let item = editModel(for: itemId) else { return }

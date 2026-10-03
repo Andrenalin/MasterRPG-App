@@ -8,7 +8,7 @@ struct ItemController: Sendable {
     @MainActor init(config: ModuleConfiguration, photoRoot: PhotoRootModel) {
         self.config = config
 
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        self.itemDataModel = ItemDataModel()
         self.collectionCategory = config.collectionCategory
         
         self.cacheController = CacheController(photoRoot: photoRoot)

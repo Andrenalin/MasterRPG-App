@@ -35,7 +35,6 @@ struct SpecialCategoryFolderIndicator: View {
         let item = FolderListItemModel(
             id: .fixture1,
             source: ItemRowModel(itemId: .fixture2, typeId: .none),
-            destination: nil,
             level: 0,
             isShown: false
         )

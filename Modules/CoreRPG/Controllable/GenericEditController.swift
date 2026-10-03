@@ -11,10 +11,12 @@ import Foundation
 /// Module-specific extra *behavior* (no extra stored state, just extra methods — e.g.
 /// PdfRPG's bookmark helpers) can still live in a same-file
 /// `extension GenericEditController<PdfModel> { ... }`, mirroring
-/// `GenericItemController`. A module that needs an extra *stored* property
-/// (GeneratorRPG's `selectionReference`) can't use this — a stored property can't be
-/// added later via extension — and keeps its own bespoke `EditController` instead.
-/// See CODE_AUDIT_EditItem §9.1.
+/// `GenericItemController`. A module keeps its own `EditController` when it needs an extra
+/// *stored* property (a stored property can't be added via extension), or a protocol
+/// conformance another module already adds to a specialisation: `GenericEditController<PdfModel>`
+/// conforms to `EntryDataEditable`, and a generic type can't conform to one protocol twice, so
+/// RuleRPG's `EntryDataEditable` controller stays its own type.
+/// See CODE_AUDIT_EditItem §9.1, CODE_AUDIT_Folder §9.3.
 public struct GenericEditController<
     Model: ItemDataAccessible & ItemDiffComparable & ItemLinkRegistrable & ModelType
 >: Sendable {

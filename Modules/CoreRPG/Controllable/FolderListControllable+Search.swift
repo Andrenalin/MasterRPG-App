@@ -162,7 +162,6 @@ extension FolderListControllable {
         let item = FolderListItemModel(
             id: id,
             source: ItemRowModel(itemId: result.itemId, entryId: result.entryId, typeId: result.module),
-            destination: nil,
             level: level,
             isShown: false
         )

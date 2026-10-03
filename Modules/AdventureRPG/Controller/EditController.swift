@@ -59,8 +59,7 @@ private struct AdventureSupplementalLinkRepresentations: TransferRepresentation 
 }
 
 struct EditController: Sendable {
-    @MainActor init(root: AdventureRootModel, itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.root = root
+    @MainActor init(itemController: ItemController, tagController: TagController) {
         self.tagController = tagController
         self.itemController = itemController
         let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
@@ -68,8 +67,6 @@ struct EditController: Sendable {
         self.editorModel = editorModel
         self.adventureEditModel = AdventureEditModel()
     }
-
-    let root: AdventureRootModel
 
     let itemController: ItemController
     let tagController: TagController
@@ -114,148 +111,36 @@ extension EditController {
 
 // MARK: - Group Management
 
-extension EditController {
-    @MainActor func addNewGroup(itemId: UUID) async -> UUID {
-        let groupId = await itemController.addNew(type: .item)
-        reset(hidden: true, itemId: groupId)
-        guard let group = editModel(for: groupId) else { return groupId }
-        group.groupId = itemId
-        save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
-        var entry = Model.Entry.empty
-        entry.name = group.name
-        entry.adventureId = groupId
-        add(entry: entry, itemId: itemId)
-        return entry.id
-    }
-
-    @MainActor func canBecomeGroup(itemId: UUID) -> Bool {
-        guard let item = itemControllable.itemSync(for: itemId) as? AdventureModel else { return false }
-        return item.groupId == nil
-    }
-
-    @MainActor func convertToGroup(itemId: UUID, entryId: UUID, existingItemId: UUID?) async -> UUID {
-        guard let item = editModel(for: itemId), let index = item.entries.firstIndex(where: { $0.id == entryId }) else { return UUID() }
-
-        let groupId: UUID        
-        if let existingItemId, let existingGroup = editModel(for: existingItemId) {
-            groupId = existingItemId
-            existingGroup.groupId = itemId
-            existingGroup.isGroupHiddenToggle = true
-            save(updated: existingGroup, message: String(localized: "prepare group", bundle: .module).localizedString)
-            item.entries[index].name = existingGroup.name
-            item.entries[index].content = existingGroup.description
-        } else {
-            groupId = await itemController.addNew(type: .item)
-            reset(hidden: true, itemId: groupId)
-            guard let group = editModel(for: groupId) else { return groupId }
-            group.name = item.entries[index].name.withoutLink()
-            group.description = item.entries[index].content
-            group.groupId = itemId
-            save(updated: group, message: String(localized: "prepare group", bundle: .module).localizedString)
-        }
-        item.entries[index].adventureId = groupId
-        save(updated: item, message: String(localized: "Convert to group", bundle: .module).localizedString)
-        return groupId
-    }
-
-    @MainActor func groupFolders(itemId: UUID, sourceEntryId: UUID) -> [FolderRepresentable] {
-        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return [] }
-        return item.entries.compactMap {
-            guard $0.id != sourceEntryId, let adventureId = $0.adventureId else { return nil }
-            return FolderRepresentable(id: adventureId, name: $0.name)
-        }
-    }
-
-    @MainActor func parentFolder(itemId: UUID) -> FolderRepresentable? {
-        guard let item = itemControllable.itemSync(for: itemId) as? Model else { return nil }
-        let resolvedParentId = item.groupId ?? item.parentId
-        guard let resolvedParentId, let parent = itemControllable.itemSync(for: resolvedParentId) as? Model else { return nil }
-        return FolderRepresentable(id: parent.id, name: parent.name)
-    }
-
-    // `isOrphanedHidden`/`willRepairOrphan`/`willRestore` use `EditControllable`'s
-    // shared `GroupableModel`-constrained default now that `AdventureModel` conforms to
-    // `GroupableModel` — see CODE_AUDIT_EditItem §9.5.
-
-    @MainActor func willDeleteChildren(of item: AdventureModel) async {
-        guard item.category != .folder else { return }
-        for entry in item.entries {
-            guard let adventureId = entry.adventureId else { continue }
-            await Task.yield()
-            await delete(itemId: adventureId)
-        }
-    }
-}
+// The group functions (`addNewGroup`, `convertToGroup`, …) and `isOrphanedHidden`/
+// `willRepairOrphan`/`willRestore` are the shared `GroupableModel`-constrained defaults.
+// See CODE_AUDIT_EditItem §9.5, CODE_AUDIT_Folder §9.9.
 
 // MARK: - Duplicate with sub-groups
 
 extension EditController {
     @MainActor public func duplicate(item: any ItemDataAccessible) async {
         guard let model = folderEditModel(for: item.id, scope: .library) else { return }
-        let originalParentId = model.parentId
-        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: true, parentId: nil, visited: [model.id])
-        // Persisted also during a running game. See CODE_AUDIT_Folder §5.21.
+        let copyId = storeSubAdventureCopies(of: model, withCopy: true, parentId: nil)
+
+        // A folder's members get independent copies too, all the way down. Its member entries
+        // (`entry.childId`) are not the "convert to group" links (`entry.adventureId`) that
+        // `duplicateSubAdventure` follows. See CODE_AUDIT_EditItem §5.3.
+        if model.isFolder {
+            await duplicateFolderMembers(of: model.id, into: copyId) { member, parentId in
+                storeSubAdventureCopies(of: member, withCopy: false, parentId: parentId)
+            }
+        }
+        placeDuplicate(copyId, of: model)
+    }
+
+    /// Copies `model` with its groups and stores every copy; returns the copy's id. Persisted
+    /// also during a running game. See CODE_AUDIT_Folder §5.21.
+    @MainActor private func storeSubAdventureCopies(of model: AdventureModel, withCopy: Bool, parentId: UUID?) -> UUID {
+        let (copies, copyId) = duplicateSubAdventure(model: model, withCopy: withCopy, parentId: parentId, visited: [model.id])
         for copy in copies {
             itemControllable.replace(model: copy, isInsert: true, forceSave: true)
         }
-
-        // For folders: rebuild entries with independent, recursively-duplicated child
-        // copies. `duplicateSubAdventure` above only follows the unrelated
-        // `entry.adventureId` "convert to group" relationship — a folder's actual
-        // membership entries (`entry.childId == entry.id`) were otherwise left as the
-        // plain `entry.duplicate()` produced by `AdventureModel.duplicate()`, which
-        // mints a new random `id` and so pointed at nothing. See
-        // CODE_AUDIT_EditItem §5.3.
-        if item.isFolder, let copyFolder = folderEditModel(for: copyId, scope: .library) {
-            copyFolder.entries = await duplicateFolderEntries(of: item.id, newParentId: copyId, visited: [item.id])
-            saveFolderEdit(copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString, scope: .library)
-        }
-
-        if let parentId = originalParentId {
-            addItem(itemId: copyId, parentId: parentId)
-        }
-        // A collection only references its members: the copy joins every collection of the
-        // original without changing its visibility. See CODE_AUDIT_Folder §5.16.
-        guard !model.specialCategory else { return }
-        let originalId = item.id
-        for containerId in itemControllable.itemDataModel.items {
-            guard let container = itemControllable.itemSync(for: containerId, noGame: true),
-                  container.category.isCollection,
-                  container.entries.contains(where: { $0.childId == originalId }) else { continue }
-            addItem(itemId: copyId, parentId: containerId)
-        }
-    }
-
-    /// Recursively duplicates every folder-membership child of `originalFolderId`
-    /// (`entry.childId`, distinct from the `entry.adventureId` "convert to group"
-    /// relationship `duplicateSubAdventure` handles), reparenting each copy under
-    /// `newParentId`, and recursing into any child that is itself a folder so nested
-    /// folder structures get independent copies all the way down. See
-    /// CODE_AUDIT_EditItem §5.3.
-    ///
-    /// `visited` guards against a self-referential folder/group hierarchy (e.g. from
-    /// corrupted sync data) recursing forever — mirrors the same fix applied to
-    /// `LinkController.collectLinks`. See CODE_AUDIT §5.7.
-    @MainActor private func duplicateFolderEntries(of originalFolderId: UUID, newParentId: UUID, visited: Set<UUID>) async -> [AdventureEntryModel] {
-        guard let originalFolder = folderEditModel(for: originalFolderId, scope: .library) else { return [] }
-        var newEntries: [AdventureEntryModel] = []
-        for entry in originalFolder.entries {
-            guard !visited.contains(entry.childId),
-                  let childModel = folderEditModel(for: entry.childId, scope: .library),
-                  childModel.parentId == originalFolderId else { continue }
-            var visited = visited
-            visited.insert(entry.childId)
-            let (childCopies, childCopyId) = duplicateSubAdventure(model: childModel, withCopy: false, parentId: newParentId, visited: visited)
-            for copy in childCopies {
-                itemControllable.replace(model: copy, isInsert: true, forceSave: true)
-            }
-            if childModel.isFolder, let childCopy = folderEditModel(for: childCopyId, scope: .library) {
-                childCopy.entries = await duplicateFolderEntries(of: childModel.id, newParentId: childCopyId, visited: visited)
-                saveFolderEdit(childCopy, message: String(localized: "Duplicate child", bundle: .module).localizedString, scope: .library)
-            }
-            newEntries.append(Model.Entry.newChild(id: childCopyId))
-        }
-        return newEntries
+        return copyId
     }
 
     /// The copy gets its folder parent before it is stored: setting it on the stored instance
@@ -320,14 +205,7 @@ extension EditController {
     /// second one silently overwrote the first's content under one shared id. See
     /// CODE_AUDIT §5.4.
     @MainActor func merge(itemId: UUID, entries: [AdventureEntryModel]) -> [AdventureEntryModel] {
-        guard let item = editModel(for: itemId) else { return entries }
-        var availableEntries = item.entries
-        return entries.map { entry in
-            guard let index = availableEntries.firstIndex(where: { $0.name == entry.name }) else { return entry }
-            var foundEntry = availableEntries.remove(at: index)
-            foundEntry.content = entry.content
-            return foundEntry
-        }
+        entriesMatchedByName(itemId: itemId, entries: entries)
     }
     // `merge(itemId:entries:recoverEntries:forceSave:)` uses `EntryDataEditable`'s
     // shared default (see CODE_AUDIT_EditItem §9.2) — this module's behavior was

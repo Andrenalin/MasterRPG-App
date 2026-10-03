@@ -612,9 +612,6 @@ struct CoreRPGDynamicPreviewSnapshotTests {
         return ImportReviewItemModel(
             id: .fixture1,
             kind: .different,
-            existingStatus: existing.name,
-            importedStatus: imported.name,
-            mergedStatus: merged.name,
             itemModel: itemModel
         )
     }

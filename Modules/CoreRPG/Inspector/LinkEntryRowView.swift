@@ -30,7 +30,6 @@ struct LinkEntryRowView: View {
         item: FolderListItemModel(
             id: UUID(),
             source: ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .none),
-            destination: nil,
             level: 0,
             isShown: true
         ),

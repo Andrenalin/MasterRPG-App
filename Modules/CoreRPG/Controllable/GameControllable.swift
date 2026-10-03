@@ -60,15 +60,9 @@ public final class ItemGameModel {
         }
     }
     
-    func append(itemId: UUID, item: ModelType, onlyItem: Bool = false) {
-        if !onlyItem {
-            items.append(itemId)
-        }
-        itemData[itemId] = item
-    }
-
-    func append(itemId: UUID) {
+    func append(itemId: UUID, item: ModelType) {
         items.append(itemId)
+        itemData[itemId] = item
     }
 
     func insert(itemId: UUID, item: ModelType) {
@@ -86,17 +80,6 @@ public final class ItemGameModel {
             items.insert(itemId, at: 0)
         }
         return true
-    }
-
-    func insert(itemId: UUID, at index: Int?, removeIndex: Int?) {
-        if let removeIndex {
-            items.remove(at: removeIndex)
-        }
-        if let index {
-            items.insert(itemId, at: index)
-        } else {
-            items.append(itemId)
-        }
     }
 
     /// Shows `itemId` (moved to the front) or, for `hide`, only caches it. The list of "other

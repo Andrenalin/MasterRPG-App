@@ -1,6 +1,6 @@
 // @copyright André Trettin
 
-import CoreRPG
+@testable import CoreRPG
 import Foundation
 import DiceRPG
 import PdfRPG

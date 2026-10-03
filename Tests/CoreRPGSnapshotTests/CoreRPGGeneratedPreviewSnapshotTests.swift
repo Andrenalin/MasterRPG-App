@@ -565,7 +565,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 let item = FolderListItemModel(
                     id: .fixture1,
                     source: ItemRowModel(itemId: .fixture2, typeId: .none),
-                    destination: nil,
                     level: 0,
                     isShown: true
                 )
@@ -598,7 +597,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 item: FolderListItemModel(
                     id: UUID(),
                     source: ItemRowModel(itemId: UUID(), entryId: UUID(), typeId: .none),
-                    destination: nil,
                     level: 0,
                     isShown: true
                 ),
@@ -1069,7 +1067,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 let item = FolderListItemModel(
                     id: .fixture1,
                     source: ItemRowModel(itemId: .fixture2, typeId: .none),
-                    destination: nil,
                     level: 0,
                     isShown: false
                 )
@@ -1116,7 +1113,6 @@ struct CoreRPGGeneratedPreviewSnapshotTests {
                 let item = FolderListItemModel(
                     id: .fixture1,
                     source: ItemRowModel(itemId: .fixture2, typeId: .none),
-                    destination: nil,
                     level: 0,
                     isShown: false
                 )

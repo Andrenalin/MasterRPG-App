@@ -16,7 +16,6 @@ struct FolderAuditModelTests {
         let rootRow = FolderListItemModel(
             id: rootItemId,
             source: ItemRowModel(itemId: rootItemId, typeId: .photo),
-            destination: nil,
             level: 0,
             isShown: false
         )
@@ -24,7 +23,6 @@ struct FolderAuditModelTests {
         let childRow = FolderListItemModel(
             id: childRowId,
             source: ItemRowModel(itemId: childItemId, entryId: childRowId, typeId: .photo),
-            destination: nil,
             level: 1,
             isShown: false
         )
@@ -93,7 +91,7 @@ struct FolderAuditModelTests {
     @Test("A staged saved game does not shadow the library until the game starts (§5.25)")
     func stagedSavedGameDoesNotShadowLibrary() {
         let itemId = UUID()
-        let model = ItemDataModel(categoryTags: [])
+        let model = ItemDataModel()
         model.itemData[itemId] = FakeItemModel(id: itemId, name: "Library")
         model.gameItemData[itemId] = FakeItemModel(id: itemId, name: "Saved")
         model.isSavedGameStaged = true
@@ -110,11 +108,56 @@ struct FolderAuditModelTests {
     @Test("A running game's copies are preferred as before (§5.25)")
     func gameCopiesArePreferredWithoutStagedSave() {
         let itemId = UUID()
-        let model = ItemDataModel(categoryTags: [])
+        let model = ItemDataModel()
         model.itemData[itemId] = FakeItemModel(id: itemId, name: "Library")
         model.gameItemData[itemId] = FakeItemModel(id: itemId, name: "Game")
 
         #expect((model.item(for: itemId) as? FakeItemModel)?.name == "Game")
         #expect((model.item(for: itemId, noGame: true) as? FakeItemModel)?.name == "Library")
+    }
+}
+
+/// CODE_AUDIT_Folder §9.8: the one entries-merge rule of every model.
+@Suite("Shared entries merge rule")
+@MainActor
+struct SharedEntriesMergeTests {
+    private func entries(_ names: [String]) -> [FakeEntryModel] {
+        names.map { FakeEntryModel(id: UUID(), name: $0, content: "") }
+    }
+
+    @Test("A folder keeps the members of both sides")
+    func folderUnion() {
+        let local = CRDTDataUpdate(wrappedValue: entries(["A"]))
+        let remote = CRDTDataUpdate(wrappedValue: entries(["B"]))
+
+        let merged = FolderEntryMerge.mergedEntries(
+            category: .folder, local: local, remote: remote, id: \.id, name: \.name, childId: \.childId
+        )
+
+        #expect(merged.wrappedValue.map(\.name) == ["A", "B"])
+    }
+
+    @Test("Other categories take one side's whole list")
+    func otherCategoriesLastWriterWins() {
+        let local = CRDTDataUpdate(wrappedValue: entries(["A"]))
+        let remote = CRDTDataUpdate(wrappedValue: entries(["B"]))
+
+        let merged = FolderEntryMerge.mergedEntries(
+            category: .item, local: local, remote: remote, id: \.id, name: \.name, childId: \.childId
+        )
+
+        #expect(merged.wrappedValue == local.wrappedValue || merged.wrappedValue == remote.wrappedValue)
+    }
+
+    @Test("Merging equal folders is idempotent")
+    func folderMergeIsIdempotent() {
+        let folder = CRDTDataUpdate(wrappedValue: entries(["A"]))
+
+        let merged = FolderEntryMerge.mergedEntries(
+            category: .folder, local: folder, remote: folder, id: \.id, name: \.name, childId: \.childId
+        )
+
+        #expect(merged.wrappedValue == folder.wrappedValue)
+        #expect(merged.update == folder.update)
     }
 }

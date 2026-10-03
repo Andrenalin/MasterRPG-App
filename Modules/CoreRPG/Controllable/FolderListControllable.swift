@@ -123,7 +123,7 @@ extension FolderListControllable {
     }
 
     /// Fire-and-forget root search for call sites that cannot `await` (e.g. synchronous
-    /// protocol-extension callbacks like `resetParent`, `toggleFolder`, and the search field).
+    /// protocol-extension callbacks like `toggleFolder` and the search field).
     @MainActor func scheduleSearch() {
         runSearch(source: "scheduleSearch", kind: .root, debounceText: true)
     }
@@ -240,44 +240,12 @@ public extension FolderListControllable {
         }
     }
     
-    func copyModel(parentModel: (any ItemDataAccessible)?) -> FolderListModel {
-        let newModel = FolderListModel(parentModel: parentModel, navigationModel: listModel.navigationModel)
-        // Pre-populate the cache with any already-loaded children of the parent folder/collection
-        // so the detail list can render immediately while the background search runs.
-        if let parentModel {
-            for entry in parentModel.entries {
-                // Children are keyed by entry.id (folder membership identity)
-                if let cached = listModel.cacheListModels[entry.id] {
-                    newModel.cacheListModels[entry.id] = cached
-                }
-                // Also try childId for items cached in list mode (id == itemId)
-                let childId = entry.childId
-                if childId != entry.id, let cached = listModel.cacheListModels[childId] {
-                    newModel.cacheListModels[childId] = cached
-                }
-            }
-        }
-        return newModel
-    }
-
     func resetItemOnce() async {
         guard listModel.updatedOnce == false else { return }
         listModel.updatedOnce = true
         await performSearch(source: "resetItemOnce")
     }
 
-    func resetParent(model: (any ItemDataAccessible)?) {
-        listModel.resetParent(model: model)
-        listModel.updatedOnce = true
-        // Scope the next search to this folder/collection's direct children
-        searchRootControllable.searchModel.filterId = model?.id
-        
-        if let model {
-            listDisplayModel.listMode <=> model.category == .folder ? .folder : .list
-        }
-        scheduleSearch()
-    }
-    
     /// Called when a folder/collection is selected as the detail page's parent.
     /// Creates (or resets) `listModel.detailListModel` scoped to `model`, then populates it.
     ///
@@ -286,7 +254,8 @@ public extension FolderListControllable {
     /// assign `currentTask` around the same time and would otherwise cancel this first populate
     /// before the detail list is ever built — the cause of the focused inspector being blank on
     /// first launch. Subsequent filter-field searches still go through the coalescing pipeline.
-    /// The detail cache is warm-started in `copyModel`, so revisited parents redisplay instantly.
+    /// The detail cache is warm-started in `resetDetailList(parentModel:)`, so revisited parents
+    /// redisplay instantly.
     func resetDetail(model: (any ItemDataAccessible)) {
         listModel.resetDetailList(parentModel: model)
         listModel.detailListModel?.updatedOnce = true
@@ -297,10 +266,6 @@ public extension FolderListControllable {
     /// `parentModel != nil`. Routes through the single coalescing pipeline (`runSearch`).
     @MainActor func scheduleDetailSearch() {
         runSearch(source: "scheduleDetailSearch", kind: .detail, debounceText: true)
-    }
-
-    func selectedModel(for selectedId: UUID?) -> (any ItemDataAccessible)? {
-        itemControllable.itemSync(for: selectedId ?? listModel.selected ?? UUID())
     }
 
     /// Routes to `detailListModel` when a parent scope is active (`parentModel != nil`);

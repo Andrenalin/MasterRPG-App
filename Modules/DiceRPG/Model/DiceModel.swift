@@ -406,13 +406,15 @@ extension DiceModel: nonisolated ItemDiffComparable {
         return assumeMainActorIsolated {
             let mergedDice = dice_.merged(other: other.dice_)
             let isLeftDice = mergedDice.update == dice_.update
+            let mergedCategory = category_.merged(other: other.category_)
             return DiceModel(
                 id: id,
                 name: name_.merged(other: other.name_),
                 description: description_.merged(other: other.description_),
                 tags: tags_.merged(other: other.tags_),
-                category: category_.merged(other: other.category_),
-                displayState: displayState,
+                category: mergedCategory,
+                // The local side's visibility, as in every other model. See CODE_AUDIT_Folder §9.8.
+                displayState: other.displayState,
                 dice: mergedDice,
                 sumUp: isLeftDice ? sumUp : other.sumUp,
                 modifier: isLeftDice ? modifier : other.modifier,
@@ -431,7 +433,9 @@ extension DiceModel: nonisolated ItemDiffComparable {
                 // scalar field in this initializer that wasn't arbitrated
                 // like its siblings. See CODE_AUDIT_13 §5.3.
                 resultCategory: isLeftDice ? resultCategory : other.resultCategory,
-                entries: entries_.merged(other: other.entries_),
+                // Folders union their members, other categories last-writer-wins.
+                // See CODE_AUDIT_Folder §9.8.
+                entries: FolderEntryMerge.mergedEntries(category: mergedCategory.wrappedValue, local: entries_, remote: other.entries_, id: \.id, name: \.name, childId: \.childId),
                 parentId: other.parentId
             )
     

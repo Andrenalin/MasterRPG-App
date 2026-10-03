@@ -2,12 +2,6 @@
 
 import Foundation
 
-#if os(macOS)
-import AppKit
-#elseif !os(tvOS)
-import UIKit
-#endif
-
 @MainActor
 struct ContextMenuMultiController {
     let editController: any EditControllable
@@ -32,16 +26,6 @@ struct ContextMenuMultiController {
     func hasDifferentFolders(for parent: (any ItemDataAccessible)?) -> Bool {
         guard let parent, parent.isFolder else { return false }
         return parent.parentId != nil
-    }
-    
-    func itemCategory(currentSelected: UUID?) -> ItemListCategory {
-        let selection = selection(currentSelected: currentSelected)
-        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return .entry }
-        if selection.count > 1 {
-            return .entry
-        } else {
-            return model.category
-        }
     }
     
     func itemName(currentSelected: UUID?) -> String {
@@ -71,73 +55,39 @@ struct ContextMenuMultiController {
         return InternalRoute.export(ids: selection)
     }
     
-    func generateLink(currentSelected: UUID?) {
-        let selection = self.selection(currentSelected: currentSelected)
-        
-        let linkText = selection.compactMap { id -> String? in
-            guard let model = itemController.itemSync(for: id) else { return nil }
-            return model.url(linkNumber: 0)
-        }.joined(separator: ", ")
-        
-#if os(macOS)
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(linkText, forType: .string)
-#elseif !os(tvOS)
-        let pasteboard = UIPasteboard.general
-        pasteboard.string = linkText
-#endif
-    }
-    
     func groupEditor(currentSelected: UUID?) -> any NavigationDestination {
         let selection = selection(currentSelected: currentSelected)
         return InternalRoute.groupEditor(ids: selection)
     }
     
-    func folderItems(currentSelected: UUID?) -> [FolderRepresentable] {
+    /// The folders (`isFolder`) or collections the selection can be placed in: those next to
+    /// the first selected item.
+    func placementTargets(currentSelected: UUID?, isFolder: Bool) -> [FolderRepresentable] {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return [] }
-        let folders = itemController.collections(isFolder: true, in: model.parentId)
-        return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
-    }
-    
-    /// Whether `folderItems(currentSelected:)` would list anything. See CODE_AUDIT_Folder §7.4.
-    func hasFolderItems(currentSelected: UUID?) -> Bool {
-        let selection = selection(currentSelected: currentSelected)
-        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return false }
-        return itemController.hasCollections(isFolder: true, in: model.parentId)
-    }
-
-    func moveItem(currentSelected: UUID?, to folder: FolderRepresentable) {
-        let selection = selection(currentSelected: currentSelected)
-        for itemId in selection {
-            guard let model = itemController.itemSync(for: itemId) else { continue }
-            editController.addItem(itemId: model.id, parentId: folder.id)
+        return itemController.collections(isFolder: isFolder, in: model.parentId).map {
+            FolderRepresentable(id: $0.id, name: $0.name)
         }
     }
-    
-    func collectionItems(currentSelected: UUID?) -> [FolderRepresentable] {
-        let selection = selection(currentSelected: currentSelected)
-        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return [] }
-        let folders = itemController.collections(isFolder: false, in: model.parentId)
-        return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
-    }
-    
-    /// Whether `collectionItems(currentSelected:)` would list anything. See CODE_AUDIT_Folder §7.4.
-    func hasCollectionItems(currentSelected: UUID?) -> Bool {
+
+    /// Whether `placementTargets(currentSelected:isFolder:)` would list anything.
+    /// See CODE_AUDIT_Folder §7.4.
+    func hasPlacementTargets(currentSelected: UUID?, isFolder: Bool) -> Bool {
         let selection = selection(currentSelected: currentSelected)
         guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return false }
-        return itemController.hasCollections(isFolder: false, in: model.parentId)
+        return itemController.hasCollections(isFolder: isFolder, in: model.parentId)
     }
 
-    func addItem(currentSelected: UUID?, to folder: FolderRepresentable) {
-        let selection = selection(currentSelected: currentSelected)
-        for itemId in selection {
+    /// Moves the selection into a folder or adds it to a collection; `addItem(itemId:parentId:)`
+    /// decides which by the target's category. Move and Add had two identical copies.
+    /// See CODE_AUDIT_Folder §9.7.
+    func place(currentSelected: UUID?, in target: FolderRepresentable) {
+        for itemId in selection(currentSelected: currentSelected) {
             guard let model = itemController.itemSync(for: itemId) else { continue }
-            editController.addItem(itemId: model.id, parentId: folder.id)
+            editController.addItem(itemId: model.id, parentId: target.id)
         }
     }
-    
+
     func removeItemsFromFolder(currentSelected: UUID?, parentId: UUID?, oneUp: Bool) {
         guard let parentId else { return }
         let selection = selection(currentSelected: currentSelected)

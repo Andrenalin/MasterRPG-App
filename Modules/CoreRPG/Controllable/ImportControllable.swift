@@ -139,7 +139,6 @@ public final class ItemDataImportModel {
     func recordApplied(_ itemId: UUID, module: NetworkModules) {
         appliedItemIds[module, default: []].insert(itemId)
     }
-    var withOverwrite: Bool { importMode == .overwrite }
     var isFinalizingImport: Bool {
         isImportRunning
             && totalImportingItems > 0
@@ -169,7 +168,6 @@ public enum ItemDataImportableError: Error {
     case openError
     case notEnoughData
     case unsupportedDataType
-    case fileWithoutItem
     case cancel
 }
 
@@ -193,9 +191,9 @@ public extension ImportControllable {
     }
 
     // Convenience for fire-and-forget callers — no progress UI
-    func importUrl(from url: URL, withOverwrite: Bool = false) -> Task<Void, any Error> {
+    func importUrl(from url: URL) -> Task<Void, any Error> {
         Task(priority: .userInitiated) { @concurrent in
-            let importModel = await ItemDataImportModel(importMode: withOverwrite ? .overwrite : .merge)
+            let importModel = await ItemDataImportModel(importMode: .merge)
             try await self.performImport(from: url, importModel: importModel, gameMemoryOnly: false)
         }
     }
@@ -352,14 +350,6 @@ public extension ImportControllable {
         )
     }
 
-    // Convenience for game networking imports — no progress tracking needed
-    func importStream(from inputStream: InputStream, forceSave: Bool) async throws {
-        // `ItemDataImportModel.init()` is itself `@MainActor` — `await` alone hops
-        // there, no `MainActor.run` wrapper needed.
-        let importModel = await ItemDataImportModel()
-        try await importStream(from: inputStream, forceSave: forceSave, importModel: importModel)
-    }
-
     // MARK: - Import Lifecycle
 
     /// The error's domain and code are public, its description (which can name the user's file)
@@ -398,9 +388,6 @@ public extension ImportControllable {
         let reviewItemModel = ImportReviewItemModel(
             id: deletedId,
             kind: .different,
-            existingStatus: deletedIA.name,
-            importedStatus: "Not in import",
-            mergedStatus: deletedIA.name,
             itemModel: itemModel,
             isDeletion: true
         )
@@ -654,9 +641,6 @@ private extension ImportControllable {
         let reviewItemModel = ImportReviewItemModel(
             id: id,
             kind: kind,
-            existingStatus: existing?.name ?? "Not in library",
-            importedStatus: imported.name,
-            mergedStatus: kind == .different ? "Merged" : "Ready to add",
             itemModel: itemModel
         )
         importModel.pendingModules[module, default: []].append(reviewItemModel)

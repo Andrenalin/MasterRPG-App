@@ -114,23 +114,19 @@ extension PdfModel: nonisolated ItemDiffComparable {
     nonisolated public func merge(_ other: PdfModel) -> PdfModel {
         return assumeMainActorIsolated {
             let mergedCategory = category_.merged(other: other.category_)
-            // Per-id union (not `entries_.merged`'s whole-array last-writer-wins) so a
-            // bookmark added independently on two devices before syncing isn't silently
-            // discarded; entries present on both sides get their own CRDT fields merged
-            // via `PdfEntryModel.merge`. See CODE_AUDIT_Pdf §5.2.
-            // Deterministic union (name, then id). See CODE_AUDIT_18 §9.9.
-            let combined = FolderEntryMerge.merged(
-                local: entries,
-                remote: other.entries,
+            // The rule every module shares: folders union their members (an entry on both
+            // sides keeps its own CRDT fields merged via `PdfEntryModel.merge`), a PDF's
+            // bookmarks merge as one last-writer-wins list. The per-bookmark union of
+            // CODE_AUDIT_Pdf §5.2 was given up by decision. See CODE_AUDIT_Folder §9.8.
+            let mergedEntries = FolderEntryMerge.mergedEntries(
+                category: mergedCategory.wrappedValue,
+                local: entries_,
+                remote: other.entries_,
                 id: \.id,
                 name: \.name,
+                childId: \.childId,
                 combine: { local, remote in local.merge(remote) }
             )
-            // Merge the `update` marker CRDT too (not a fresh random UUID) so that
-            // merging two otherwise-identical models is idempotent, matching
-            // `CRDTDataUpdate.merged`'s own convention.
-            let mergedUpdate = entries_.$update.merged(other: other.entries_.$update)
-            let mergedEntries = CRDTDataUpdate(wrappedValue: combined, update: mergedUpdate)
             return PdfModel(
                 id: id,
                 name: name_.merged(other: other.name_),

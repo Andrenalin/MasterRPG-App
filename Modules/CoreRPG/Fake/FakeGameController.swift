@@ -7,7 +7,7 @@ struct FakeGameController: GameControllable {
         itemControllable: any ItemControllable = FakeItemController.fake,
         exportControllable: any ExportControllable = FakeExportController.fake,
         importControllable: any ImportControllable = FakeImportController.fake,
-        gameModel: ItemGameModel = ItemGameModel(itemDataModel: ItemDataModel(categoryTags: []))
+        gameModel: ItemGameModel = ItemGameModel(itemDataModel: ItemDataModel())
     ) {
         self.itemControllable = itemControllable
         self.exportControllable = exportControllable

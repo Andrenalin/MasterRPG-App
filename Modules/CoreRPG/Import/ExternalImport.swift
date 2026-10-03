@@ -189,10 +189,6 @@ public struct ExternalImportBatch: Identifiable, Sendable {
     public let provenance: ExternalImportProvenance
     public let items: [ExternalImportBatchItem]
     public let warnings: [String]
-
-    /// External imports intentionally have partial scope. The commit API has no
-    /// deletion decision and does not compare this list with the local library.
-    public var isPartial: Bool { true }
 }
 
 // MARK: - Decisions & Status

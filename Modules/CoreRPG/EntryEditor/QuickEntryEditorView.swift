@@ -74,7 +74,6 @@ public struct QuickEntryEditorView<EditController: EntryDataEditable, Inspector:
                         // The standalone item editor always persists, even while a game
                         // is running — unlike in-game quick-edit surfaces, which stay memory-only.
                         _ = editController.merge(itemId: model.id, entries: model.entries, recoverEntries: editorModel.removeItems, forceSave: true)
-                        root.editControllable.editorModel.hasChangedEntries += 1
                         root.editControllable.editorModel.sheetRootModel?.updateParent()
                         navigator.dismiss()
                     }
@@ -181,7 +180,6 @@ private extension QuickEntryEditorView {
                     // is running — unlike in-game quick-edit surfaces, which stay memory-only.
                     editorModel.removeItems = editController.merge(itemId: model.id, entries: entries, recoverEntries: nil, forceSave: true)
                     if editorModel.removeItems.isEmpty {
-                        root.editControllable.editorModel.hasChangedEntries += 1
                         root.editControllable.editorModel.sheetRootModel?.updateParent()
                         navigator.dismiss()
                     } else {

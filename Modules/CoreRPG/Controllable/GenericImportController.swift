@@ -10,8 +10,8 @@ import Foundation
 /// ```swift
 /// typealias ImportController = GenericImportController<ItemController, EditController>
 /// ```
-/// `AdventureRPG` and `RuleRPG` keep their own bespoke `ImportController` — they need extra
-/// behavior this generic shape doesn't cover. See CODE_AUDIT §9.2.
+/// `AdventureRPG` keeps its own `ImportController` for its additional and final module
+/// imports. See CODE_AUDIT §9.2, CODE_AUDIT_Folder §9.3.
 public struct GenericImportController<Item: ItemControllable & Sendable, Edit: EditControllable & Sendable>: ImportControllable, Sendable {
     @MainActor public init(itemController: Item, editController: Edit) {
         self.itemController = itemController

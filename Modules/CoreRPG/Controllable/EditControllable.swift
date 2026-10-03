@@ -81,7 +81,6 @@ public extension EditControllable {
     @MainActor func update(id: UUID, name: String, description: String, category: ItemListCategory, tags: [String], forceSave: Bool = false) {
         reset(name: name, itemId: id, forceSave: forceSave)
         reset(description: description, itemId: id, forceSave: forceSave)
-        reset(name: name, itemId: id, forceSave: forceSave)
         reset(category: category, itemId: id, forceSave: forceSave)
         reset(tags: tags, itemId: id, forceSave: forceSave)
     }
@@ -148,27 +147,6 @@ public extension EditControllable {
         save(updated: item, message: String(localized: "Change file", bundle: .module).localizedString)
     }
 
-    @MainActor func add(tag: String, itemId: UUID) {
-        guard var item = editModel(for: itemId) else { return }
-        guard !tag.isEmpty else { return }
-        guard !item.tags.contains(where: { $0 == tag }) else { return }
-        var tags = item.tags
-        tags.append(tag)
-        updateTags(addedTags: [tag], removedTags: [])
-        item.tags = tags.sorted(by: { $0.localizedCompare($1) == .orderedAscending })
-        save(updated: item, message: String(localized: "Add \(tag)", bundle: .module).localizedString)
-    }
-
-    @MainActor func remove(tag: String, itemId: UUID) {
-        guard var item = editModel(for: itemId) else { return }
-        var tags = item.tags
-        guard let index = tags.firstIndex(of: tag) else { return }
-        tags.remove(at: index)
-        item.tags = tags
-        updateTags(addedTags: [], removedTags: [tag])
-        save(updated: item, message: String(localized: "Remove \(tag)", bundle: .module).localizedString)
-    }
-    
     @MainActor private func updateTags(addedTags: [String], removedTags: [String]) {
         tagController.add(tags: addedTags, module: itemControllable.config.module)
         // Removed tags lose their count too; otherwise they stayed in suggestions forever.
@@ -241,27 +219,62 @@ public extension EditControllable {
 
     /// `repairFolder(itemId:)` for a whole import batch in one pass over the library: run per
     /// item, an import of n items walked every item n times. See CODE_AUDIT_Folder §7.3.
+    ///
+    /// The child decides membership (CODE_AUDIT_Folder §9.8): a folder lists exactly the known
+    /// items whose `parentId` is that folder.
+    /// - An item of the batch leaves every other folder and is added to its own folder if that
+    ///   folder does not list it, for example when the folder came earlier in the import.
+    /// - A folder of the batch, whose members the merge unioned, drops members that now live
+    ///   elsewhere (a removal made on another device does not come back) and lists the local
+    ///   children it is missing. Members not known on this device stay; they may still arrive.
     @MainActor func repairFolders(itemIds: Set<UUID>) {
         var parentIds: [UUID: UUID] = [:]
         var rootItemIds: Set<UUID> = []
+        var batchFolderIds: Set<UUID> = []
+        var batchChildrenByParent: [UUID: [UUID]] = [:]
         for itemId in itemIds {
             guard let item = itemControllable.itemSync(for: itemId) else { continue }
+            if item.isFolder {
+                batchFolderIds.insert(itemId)
+            }
             if let parentId = item.parentId {
                 parentIds[itemId] = parentId
+                batchChildrenByParent[parentId, default: []].append(itemId)
             } else {
                 rootItemIds.insert(itemId)
             }
         }
         guard !parentIds.isEmpty || !rootItemIds.isEmpty else { return }
-        func isStale(_ childId: UUID, in folderId: UUID) -> Bool {
-            rootItemIds.contains(childId) || parentIds[childId].map { $0 != folderId } ?? false
+
+        // Children of the batch's folders by their own parent, in one pass over the library.
+        var childrenByFolder: [UUID: [UUID]] = [:]
+        if !batchFolderIds.isEmpty {
+            for id in itemControllable.itemDataModel.items {
+                guard let parentId = itemControllable.itemSync(for: id)?.parentId,
+                      batchFolderIds.contains(parentId) else { continue }
+                childrenByFolder[parentId, default: []].append(id)
+            }
         }
+
         for id in itemControllable.itemDataModel.items {
-            guard let checkItem = itemControllable.itemSync(for: id),
-                  checkItem.isFolder,
-                  checkItem.entries.contains(where: { isStale($0.childId, in: id) }),
+            guard let checkItem = itemControllable.itemSync(for: id), checkItem.isFolder else { continue }
+            let isBatchFolder = batchFolderIds.contains(id)
+            func isStale(_ childId: UUID) -> Bool {
+                if rootItemIds.contains(childId) { return true }
+                if let parentId = parentIds[childId] { return parentId != id }
+                guard isBatchFolder, let child = itemControllable.itemSync(for: childId) else { return false }
+                return child.parentId != id
+            }
+            let listed = Set(checkItem.entries.map(\.childId))
+            var missing: [UUID] = []
+            for childId in (batchChildrenByParent[id] ?? []) + (isBatchFolder ? childrenByFolder[id] ?? [] : [])
+            where !listed.contains(childId) && !missing.contains(childId) {
+                missing.append(childId)
+            }
+            guard checkItem.entries.contains(where: { isStale($0.childId) }) || !missing.isEmpty,
                   let folderItem = editModel(for: id) else { continue }
-            folderItem.entries.removeAll { isStale($0.childId, in: id) }
+            folderItem.entries.removeAll { isStale($0.childId) }
+            folderItem.entries.append(contentsOf: missing.map { Model.Entry.newChild(id: $0) })
             save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module).localizedString)
         }
     }
@@ -610,46 +623,72 @@ public extension EditControllable {
         await recordOperation("EditControllable.duplicate(item:)")
 
         guard let model = folderEditModel(for: item.id, scope: .library) else { return }
-        let originalParentId = model.parentId
-        let duplicate = await duplicateRecursively(model: model, parentId: nil, visited: [])
-
-        // Re-register the duplicate in the same parent folder
-        if let parentId = originalParentId {
-            addItem(itemId: duplicate.id, parentId: parentId)
-        }
-
-        // Add the duplicate as a new reference in every collection that contains the original.
-        // A collection only references its members, so this does not change the copy's
-        // visibility; `addGroup` hid it. See CODE_AUDIT_Folder §5.16.
-        if !model.specialCategory {
-            let originalId = item.id
-            for containerId in itemControllable.itemDataModel.items {
-                guard let container = itemControllable.itemSync(for: containerId, noGame: true),
-                      container.category.isCollection,
-                      container.entries.contains(where: { $0.childId == originalId }) else { continue }
-                addItem(itemId: duplicate.id, parentId: containerId)
+        let duplicate = await duplicateItem(model, parentId: nil)
+        if model.isFolder {
+            await duplicateFolderMembers(of: model.id, into: duplicate.id) { child, parentId in
+                await duplicateItem(child, parentId: parentId).id
             }
+        }
+        placeDuplicate(duplicate.id, of: model)
+    }
+
+    /// Puts a duplicate where its original is: in the original's folder, and in every collection
+    /// that lists the original. A collection only references its members, so this does not
+    /// change the copy's visibility. `original` is the permanent-library item.
+    /// Shared by every module's duplicate. See CODE_AUDIT_Folder §5.16, §9.9.
+    @MainActor func placeDuplicate(_ copyId: UUID, of original: any ItemDataAccessible) {
+        if let parentId = original.parentId {
+            addItem(itemId: copyId, parentId: parentId)
+        }
+        guard !original.specialCategory else { return }
+        for containerId in itemControllable.itemDataModel.items {
+            guard let container = itemControllable.itemSync(for: containerId, noGame: true),
+                  container.category.isCollection,
+                  container.entries.contains(where: { $0.childId == original.id }) else { continue }
+            addItem(itemId: copyId, parentId: containerId)
         }
     }
 
-    /// Duplicates `model`, its attached file (if any), and — when it's a folder — every
-    /// child, recursing into any child that is itself a folder. Without the recursion, a
-    /// nested folder's own `entries` were left pointing at the *original* grandchildren
-    /// (for modules where `Entry.childId` is a separate stored field, aliasing them —
-    /// deleting the duplicate later deleted the real originals too) or at newly-random,
-    /// now-nonexistent ids (for modules where `Entry.childId` is derived from the
-    /// entry's own `id`, silently emptying the copy). See CODE_AUDIT_EditItem §5.1-§5.4.
+    /// Duplicates the members of folder `originalFolderId` into its copy `copyFolderId`,
+    /// recursing into members that are folders themselves, and stores the copy's new member
+    /// list. `duplicateMember` copies one member under the given parent and returns the copy's
+    /// id. Only members whose own parent is the folder are copied: a stale entry can point at
+    /// an item that lives elsewhere.
+    ///
+    /// Shared by every module's duplicate, with one recursion guard: `visited` stops a cycle in
+    /// the folder graph, `FolderTreeDepthLimit.max` bounds deep nesting.
+    /// See CODE_AUDIT_EditItem §5.1-§5.4, CODE_AUDIT_Folder §5.1, §9.9.
+    @MainActor func duplicateFolderMembers(
+        of originalFolderId: UUID,
+        into copyFolderId: UUID,
+        visited: Set<UUID> = [],
+        duplicateMember: (_ member: Model, _ parentId: UUID) async -> UUID
+    ) async {
+        guard !visited.contains(originalFolderId), visited.count < FolderTreeDepthLimit.max,
+              let originalFolder = folderEditModel(for: originalFolderId, scope: .library) else { return }
+        let visited = visited.union([originalFolderId])
+        var newEntries: [Model.Entry] = []
+        for entry in originalFolder.entries {
+            guard !visited.contains(entry.childId),
+                  let member = folderEditModel(for: entry.childId, scope: .library),
+                  member.parentId == originalFolderId else { continue }
+            let memberCopyId = await duplicateMember(member, copyFolderId)
+            if member.isFolder {
+                await duplicateFolderMembers(of: member.id, into: memberCopyId, visited: visited, duplicateMember: duplicateMember)
+            }
+            newEntries.append(Model.Entry.newChild(id: memberCopyId))
+        }
+        guard let copyFolder = folderEditModel(for: copyFolderId, scope: .library) else { return }
+        copyFolder.entries = newEntries
+        saveFolderEdit(copyFolder, message: String(localized: "Duplicate folder", bundle: .module).localizedString, scope: .library)
+    }
+
+    /// Duplicates `model` and its attached file (if any), without its folder members.
     ///
     /// The copy gets its parent before it is stored. Setting it on the stored instance
     /// afterwards compared the instance with itself inside `replace` and never persisted it.
     /// The copy is persisted also during a running game. See CODE_AUDIT_Folder §5.5, §5.21.
-    ///
-    /// - Parameter visited: Ids already visited on this recursive duplicate walk — same
-    ///   cycle-defense rationale as `delete(itemId:visited:)`. See CODE_AUDIT_17 §5.14.
-    @MainActor private func duplicateRecursively(model: Model, parentId: UUID?, visited: Set<UUID>) async -> Model {
-        var visited = visited
-        visited.insert(model.id)
-
+    @MainActor private func duplicateItem(_ model: Model, parentId: UUID?) async -> Model {
         var duplicate = model.duplicate()
         duplicate.parentId = parentId
         if model.category.isCollection {
@@ -669,24 +708,6 @@ public extension EditControllable {
                 itemControllable.itemDataModel.lastPersistenceError = error
                 PersistenceIssueCenter.shared.recordFileError(error)
             }
-        }
-
-        guard model.isFolder else { return duplicate }
-
-        // Create independent copies of each child — recursively, so a nested folder gets
-        // its own independent copies of its children too — and rebuild the new folder's
-        // entries to point at them.
-        var newEntries: [Model.Entry] = []
-        for entry in model.entries {
-            guard !visited.contains(entry.childId), visited.count < FolderTreeDepthLimit.max,
-                  let childModel = folderEditModel(for: entry.childId, scope: .library),
-                  childModel.parentId == model.id else { continue }
-            let dupChild = await duplicateRecursively(model: childModel, parentId: duplicate.id, visited: visited)
-            newEntries.append(Model.Entry.newChild(id: dupChild.id))
-        }
-        if let folderModel = folderEditModel(for: duplicate.id, scope: .library) {
-            folderModel.entries = newEntries
-            saveFolderEdit(folderModel, message: String(localized: "Duplicate folder", bundle: .module).localizedString, scope: .library)
         }
         return duplicate
     }

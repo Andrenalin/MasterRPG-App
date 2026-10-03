@@ -2,23 +2,18 @@
 
 import CoreRPG
 import Foundation
-import TableRPG
 
 struct ItemController: Sendable {
-    @MainActor init(config: ModuleConfiguration, tableRoot: TableRootModel) {
+    @MainActor init(config: ModuleConfiguration) {
         self.config = config
 
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        self.itemDataModel = ItemDataModel()
         self.collectionCategory = config.collectionCategory
-
-        self.tableRoot = tableRoot
     }
 
     let config: ModuleConfigurable
     let collectionCategory: ItemListCategory
     let itemDataModel: ItemDataModel
-
-    let tableRoot: TableRootModel
 }
 
 extension ItemController: ItemControllable {
@@ -27,10 +22,3 @@ extension ItemController: ItemControllable {
     @MainActor var dataControllable: (any DataPersistenceControllable)? { itemDataModel.dataController }
 }
 
-extension ItemController {
-    @MainActor func subChildren(itemId: UUID, entryId: UUID?) -> [Model] {
-        guard let entryId, let parent = itemSync(for: itemId) else { return [] }
-        guard let valueId = parent[entryId].valueId, let value = itemSync(for: valueId) else { return [] }
-        return [value]
-    }
-}

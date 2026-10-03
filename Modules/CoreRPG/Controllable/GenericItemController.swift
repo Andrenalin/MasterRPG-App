@@ -18,7 +18,7 @@ public struct GenericItemController<
 >: Sendable {
     @MainActor public init(config: ModuleConfigurable) {
         self.config = config
-        self.itemDataModel = ItemDataModel(categoryTags: config.categoryTags)
+        self.itemDataModel = ItemDataModel()
         self.collectionCategory = config.collectionCategory
     }
 

@@ -21,7 +21,6 @@ public final class ExternalImportReviewSession {
     public private(set) var phase: ExternalImportPhase = .reviewing
     public private(set) var completedItemCount = 0
     public private(set) var selectedItemCount = 0
-    public private(set) var currentItemID: UUID?
     public private(set) var result: ExternalImportResult?
     public private(set) var errorDescription: String?
     public var isDecisionEditingEnabled: Bool {
@@ -38,13 +37,6 @@ public final class ExternalImportReviewSession {
     public func setDecision(_ decision: ExternalImportDecision, for item: ExternalImportBatchItem) {
         guard isDecisionEditingEnabled else { return }
         decisions[Self.decisionKey(for: item)] = decision
-    }
-
-    public func setDecision(_ decision: ExternalImportDecision, itemId: UUID, module: NetworkModules) {
-        guard isDecisionEditingEnabled else { return }
-        let item = batch.items.first { $0.id == itemId && $0.module == module }
-        decisions[item.map(Self.decisionKey(for:))
-            ?? DecisionKey(module: module, itemId: itemId)] = decision
     }
 
     public func setDecisionForAll(_ decision: ExternalImportDecision) {
@@ -70,7 +62,7 @@ public final class ExternalImportReviewSession {
                 try Task.checkCancellation()
             }
             guard let controller = rootManager.rootModel(for: item.module)?.itemControllable,
-                  let existing = controller.itemSync(for: item.id, noGame: true) else {
+                  controller.itemSync(for: item.id, noGame: true) != nil else {
                 statuses[Self.key(for: item)] = .new
                 continue
             }
@@ -78,7 +70,6 @@ public final class ExternalImportReviewSession {
             statuses[Self.key(for: item)] = merged == nil && item.attachment == nil
                 ? .unchanged
                 : .changed
-            _ = existing
         }
         conflictStatuses = statuses
     }
@@ -120,7 +111,6 @@ public final class ExternalImportReviewSession {
         }
         selectedItemCount = orderedItems.count
         completedItemCount = 0
-        currentItemID = nil
         result = nil
         errorDescription = nil
         phase = .committing
@@ -142,7 +132,6 @@ public final class ExternalImportReviewSession {
         do {
             for item in orderedItems {
                 try Task.checkCancellation()
-                currentItemID = item.id
 
                 guard let root = rootManager.rootModel(for: item.module) else {
                     throw ExternalImportError.unsupportedModule(item.module)
@@ -245,7 +234,6 @@ public final class ExternalImportReviewSession {
             }
 
             try Task.checkCancellation()
-            currentItemID = nil
             phase = .repairing
             for module in Self.supportedModuleOrder {
                 try Task.checkCancellation()
@@ -336,7 +324,6 @@ public final class ExternalImportReviewSession {
                 }
                 return errors
             }.value
-            currentItemID = nil
             if !rollbackErrors.isEmpty {
                 let rollbackError = ExternalImportError.rollbackIncomplete(
                     originalError: originalError.localizedDescription,

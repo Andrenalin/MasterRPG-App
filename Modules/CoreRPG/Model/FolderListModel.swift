@@ -26,7 +26,6 @@ public final class FolderListModel {
 
     // MARK: - Items
     @ObservationIgnored var parentModel: (any ItemDataAccessible)?
-    public var parentItemId: UUID? { parentModel?.id }
 
     @ObservationIgnored var updatedOnce: Bool = false
 
@@ -41,7 +40,6 @@ public final class FolderListModel {
     public var cacheListModels: [UUID: FolderListItemModel] = [:]
     // MARK: - List navigation
     public var selectedParentId: UUID?
-    var level: Int = 0
     var addedModelId: UUID?
     var selectionGeneration: Int = 0
 
@@ -138,11 +136,6 @@ extension FolderListModel {
         list.remove(atOffsets: offsets)
     }
 
-    func item(itemId: UUID?) -> FolderListItemModel? {
-        guard let itemId else { return nil }
-        return row(itemId: itemId)
-    }
-
     /// The row with this row id.
     func row(id: UUID) -> FolderListItemModel? {
         indexedRows().byId[id]
@@ -172,10 +165,6 @@ extension FolderListModel {
 // MARK: - Detail List
 
 public extension FolderListModel {
-    func resetParent(model: (any ItemDataAccessible)?) {
-        resetListModel(parentModel: model)
-    }
-    
     @MainActor func resetDetailList(parentModel: any ItemDataAccessible) {
         if detailListModel == nil {
             detailListModel = FolderListModel(parentModel: parentModel, navigationModel: navigationModel)
@@ -269,28 +258,22 @@ public extension FolderListModel {
 
 @MainActor @Observable
 public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hashable {
-    public init(id: UUID, source: ItemRowModel, destination: ItemRowModel?, level: Int, isShown: Bool, lastIsShown: Bool = false, isHidden: Bool = false, isFolded: Bool = false) {
+    public init(id: UUID, source: ItemRowModel, level: Int, isShown: Bool, lastIsShown: Bool = false) {
         self.id = id
         self.source = source
-        self.destination = destination ?? source
         self.level = level
         self.isOpen = isShown
         self.lastIsOpen = lastIsShown
-        self.isHidden = isHidden
-        self.isFolded = isFolded
     }
     
     // identifier
     public let id: UUID
     public let source: ItemRowModel // for reference it could be link to another module
-    public let destination: ItemRowModel // is the same as source if not link
     public var level: Int
 
     // display state
     public var isOpen: Bool
     public var lastIsOpen: Bool = false
-    public var isHidden: Bool = false
-    public var isFolded: Bool = false
     
     // children
     public var parentId: UUID?
@@ -316,18 +299,15 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     public var model: (any ItemDataAccessible)? = nil
 
     /// Creates an independent copy of this item and its entire children tree.
-    /// Used by `resetDetailLink` to seed a `detailListModel` with pre-loaded items from the
+    /// Used by `resetDetailList(parentModel:)` to seed a `detailListModel` with pre-loaded items from the
     /// main list without sharing references — each model can evolve independently.
     public func deepCopy() -> FolderListItemModel {
         let copy = FolderListItemModel(
             id: id,
             source: source,
-            destination: destination,
             level: level,
             isShown: isOpen,
-            lastIsShown: lastIsOpen,
-            isHidden: isHidden,
-            isFolded: isFolded
+            lastIsShown: lastIsOpen
         )
         copy.parentId          = parentId
         copy.canOpen           = canOpen
@@ -341,7 +321,6 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(source)
-        hasher.combine(destination)
         hasher.combine(level)
     }
 
@@ -352,16 +331,9 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
         if lhs === rhs { return true }
         return lhs.id == rhs.id &&
         lhs.source == rhs.source &&
-        lhs.destination == rhs.destination &&
         lhs.level == rhs.level &&
         lhs.isOpen == rhs.isOpen &&
         lhs.lastIsOpen == rhs.lastIsOpen &&
-        lhs.isHidden == rhs.isHidden &&
-        lhs.isFolded == rhs.isFolded &&
         lhs.children == rhs.children
-    }
-    
-    func model(root: RootManager) -> (any ItemDataAccessible)? {
-        root.itemRootController(for: source.typeId)?.itemControllable.itemSync(for: source.itemId)
     }
 }

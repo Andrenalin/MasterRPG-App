@@ -14,8 +14,6 @@ public final class ItemEditorModel: Sendable {
         undoManaged.value
     }
 
-    public var hasChangedEntries: Int = 0
-
     public var deactivateEntryEditor: Bool = false
     
     public var cacheItemListModel: CacheItemListModel = CacheItemListModel()
@@ -43,11 +41,4 @@ public final class ItemEditorModel: Sendable {
     /// waits for the previous one, so two operations on one file never interleave.
     /// See CODE_AUDIT_Folder §3.8, §3.19.
     @ObservationIgnored var fileOperationTails: [UUID: (token: UUID, task: Task<Void, Never>)] = [:]
-
-    func reset() {
-        if undoManaged.value != nil {
-            undoManaged.resetValue(nil)
-        }
-        cacheItemListModel.resetItemLink()
-    }
 }

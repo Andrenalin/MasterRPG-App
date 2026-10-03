@@ -1,7 +1,7 @@
 // @copyright André Trettin
 
 #if canImport(Testing)
-import CoreRPG
+@testable import CoreRPG
 import Foundation
 import Testing
 

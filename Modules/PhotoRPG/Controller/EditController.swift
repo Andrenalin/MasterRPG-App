@@ -8,25 +8,12 @@ import AppKit
 import UIKit
 #endif
 
-struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.tagController = tagController
-        self.itemController = itemController
-        let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
-        let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
-        self.editorModel = editorModel
-    }
+/// The shared `GenericEditController`; the photo behaviour below needs no stored state of its
+/// own. See CODE_AUDIT_Folder §9.3.
+typealias EditController = GenericEditController<PhotoModel>
 
-    let itemController: ItemController
-    let tagController: TagController
-    let editorModel: ItemEditorModel
-}
-
-extension EditController: EditControllable {
-    typealias Model = PhotoModel
-
-    var cacheController: CacheController? { itemController.cacheController }
-    var itemControllable: any ItemControllable { itemController }
+extension EditController {
+    var cacheController: CacheController? { itemControllable.cacheControllable as? CacheController }
 }
 
 extension EditController {
@@ -36,9 +23,9 @@ extension EditController {
         guard let image = await cacheController?.photo(for: item.id), let data = image.jpegData(compressionQuality: JPEGQuality.export) else { return }
 
         var dataUrl = fileUrl
-        dataUrl.convertFile(data, fileExtension: itemController.config.filenameExtension)
+        dataUrl.convertFile(data, fileExtension: itemControllable.config.filenameExtension)
 
-        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemController.config.filenameExtension)
+        let newFileUrl = try await fileUrlDataController?.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataUrl, pathExtension: itemControllable.config.filenameExtension)
         await itemControllable.cacheControllable?.remove(itemId: itemId)
         reset(fileUrl: newFileUrl, itemId: item.id)
     }
@@ -46,7 +33,7 @@ extension EditController {
     @MainActor func isNotJpegPhoto(itemId: UUID) -> Bool {
         guard let item = editModel(for: itemId) else { return false }
         guard let fileUrl = item.fileUrl else { return false }
-        return !(fileUrl.fileExtension == itemController.config.filenameExtension || fileUrl.fileExtension == "jpeg")
+        return !(fileUrl.fileExtension == itemControllable.config.filenameExtension || fileUrl.fileExtension == "jpeg")
     }
 
     func loadImage(cacheType: CacheItemListModel.CacheType, item: Model, itemId: UUID, fileUrl: FileUrl?, reset: Bool = false) async -> AKImage? {

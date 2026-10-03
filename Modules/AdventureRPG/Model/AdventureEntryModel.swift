@@ -121,3 +121,11 @@ extension AdventureEntryModel {
     }
 }
 #endif
+
+/// The entry's group link for the shared group functions. See CODE_AUDIT_Folder §9.9.
+extension AdventureEntryModel: GroupableEntry {
+    public var groupItemId: UUID? {
+        get { adventureId }
+        set { adventureId = newValue }
+    }
+}

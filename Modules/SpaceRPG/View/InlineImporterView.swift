@@ -4,9 +4,11 @@ import CoreRPG
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Labels and symbols of the importer buttons. The fan geometry lives in CoreRPG's
+/// `ImporterFanView`. See CODE_AUDIT_Folder §9.6.
 enum ImporterButtonType: String {
     case file, url, scanner
-    
+
     var systemImage: String {
         switch self {
         case .file:
@@ -17,7 +19,7 @@ enum ImporterButtonType: String {
             return "doc.viewfinder"
         }
     }
-    
+
     var localizedLabel: String {
         switch self {
         case .file:
@@ -27,46 +29,6 @@ enum ImporterButtonType: String {
         case .scanner:
             String(localized: "3D Scanner", bundle: .module)
         }
-    }
-    
-    var duration: CGFloat {
-        switch self {
-        case .file:
-            return 0.5
-        case .url:
-            return 0.55
-        case .scanner:
-            return 0.6
-        }
-    }
-    
-    func offset(expanded: Bool, layoutDown: Bool) -> CGSize {
-        guard expanded else {
-            return .zero
-        }
-        
-        switch self {
-        case .file:
-            return offset(atIndex: 0, layoutDown: layoutDown)
-        case .url:
-            return offset(atIndex: 1, layoutDown: layoutDown)
-        case .scanner:
-            return offset(atIndex: 2, layoutDown: layoutDown)
-        }
-    }
-    
-    private func offset(atIndex index: Int, layoutDown: Bool) -> CGSize {
-        let radius: CGFloat = 120
-        let startAngleDeg = -180.0
-        let step = 90.0 / Double(3 - 1)
-        
-        let angleDeg = startAngleDeg + (Double(index) * step)
-        let angleRad = angleDeg * .pi / 180
-        
-        let x = cos(angleRad) * radius
-        let y = sin(angleRad) * radius * (layoutDown ? -1 : 1)
-        
-        return CGSize(width: x, height: y)
     }
 }
 
@@ -81,76 +43,47 @@ struct InlineImporterView: View, Equatable {
     let preopen: Bool
     let layoutDown: Bool
 
-    @Namespace var glassNamespace
-
     var body: some View {
 #if os(visionOS)
         InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
-            .id(preopen)
 #else
         GlassEffectContainer {
             InlineImporterContentView(itemId: itemId, preopen: preopen, layoutDown: layoutDown)
-                .id(preopen)
         }
 #endif
     }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         // `preopen`/`layoutDown` must be included: `.equatable()` (see ViewController.swift)
-        // uses this to decide whether to skip re-rendering, and both drive stored state
-        // (`isExpanded`'s seed, the button-fan's orientation) that must update when they
-        // change for the same `itemId`. `.id(preopen)` above (not just this comparison) is what
-        // actually forces `InlineImporterContentView`'s `@State private var isExpanded` to
-        // re-seed on a `preopen` change — `@State`'s initial value is otherwise only applied
-        // the first time a view identity is created, regardless of what a later `init` passes.
-        // See CODE_AUDIT_Space §5.6 (supersedes the identical-looking but incomplete fix
-        // referenced by the old CODE_AUDIT_9 §5.1 comment here).
+        // uses this to decide whether to skip re-rendering, and both drive the fan (its
+        // initial state, re-seeded by `ImporterFanView` on a `preopen` change, and its
+        // orientation). See CODE_AUDIT_Space §5.6.
         lhs.itemId == rhs.itemId && lhs.preopen == rhs.preopen && lhs.layoutDown == rhs.layoutDown
     }
 }
 
 private struct InlineImporterContentView: View {
-    init(itemId: UUID, preopen: Bool, layoutDown: Bool) {
-        self.itemId = itemId
-        self.layoutDown = layoutDown
-        self._isExpanded = State(wrappedValue: preopen)
-    }
-
     let itemId: UUID
+    let preopen: Bool
     let layoutDown: Bool
 
     @Environment(SpaceRootModel.self) private var root
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var canScan: Bool = false
-
-    @State private var isExpanded: Bool
 
     @State private var showImporter = false
     @State private var showRemoteURLImporter = false
     @State private var showScanner = false
+    @State private var importErrorMessage: String?
 
     var body: some View {
-        ZStack {
-            ImporterFanButton(type: .file, isExpanded: isExpanded, layoutDown: layoutDown) {
-                showImporter.toggle()
-            }
-            ImporterFanButton(type: .url, isExpanded: isExpanded, layoutDown: layoutDown) {
-                showRemoteURLImporter.toggle()
-            }
-            ImporterFanButton(type: .scanner, isExpanded: isExpanded, layoutDown: layoutDown) {
-                showScanner.toggle()
-            }
-
-            Button {
-                withAnimation(reduceMotion ? nil : .default) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                Label { Text(importerTitle) } icon: { Image(systemName: "graph.3d") }
-                    .frame(width: 32, height: 32)
-            }
-            .selectedRoundButton(title: importerTitle, module: .space, isSelected: isExpanded)
-        }
+        ImporterFanView(
+            title: String(localized: "Importer", bundle: .module),
+            systemImage: "graph.3d",
+            module: .space,
+            preopen: preopen,
+            layoutDown: layoutDown,
+            items: fanItems
+        )
         .task {
 #if os(iOS) && !targetEnvironment(simulator)
             canScan = await ConfigCaptureObject.isSupported()
@@ -158,9 +91,14 @@ private struct InlineImporterContentView: View {
         }
 #if !os(tvOS)
         .fileImporter(isPresented: $showImporter, allowedContentTypes: root.config.fileTypes) { result in
-            guard let url = try? result.get() else { return }
-            Task {
-                await root.editController.resetFile(url: url, itemId: itemId)
+            // A failed pick is reported, not dropped. See CODE_AUDIT_Folder §9.6.
+            switch result {
+            case .success(let url):
+                Task {
+                    await root.editController.resetFile(url: url, itemId: itemId)
+                }
+            case .failure(let error):
+                importErrorMessage = error.localizedDescription
             }
         }
         .remoteFileURLImporter(
@@ -196,39 +134,32 @@ private struct InlineImporterContentView: View {
             root.isScanning3D = isShowing
         }
 #endif
+        .importFailureAlert(message: $importErrorMessage)
     }
 
-    private var importerTitle: String {
-        String(localized: "Importer", bundle: .module)
-    }
-}
-
-private struct ImporterFanButton: View {
-    let type: ImporterButtonType
-    let isExpanded: Bool
-    let layoutDown: Bool
-    let action: () -> Void
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        Button(action: action) {
-            Label {
-                Text(type.localizedLabel)
-            } icon: {
-                Image(systemName: type.systemImage)
-            }
-            .frame(width: 32, height: 32)
-            .opacity(isExpanded ? 1 : 0)
+    /// Only the importers this device can use: the 3D scanner needs object capture support.
+    /// See CODE_AUDIT_Folder §9.6.
+    private var fanItems: [ImporterFanItem] {
+        var types: [ImporterButtonType] = []
+#if !os(tvOS)
+        types += [.file, .url]
+#endif
+        if canScan {
+            types.append(.scanner)
         }
-        .allowsHitTesting(isExpanded)
-        .accessibilityHidden(!isExpanded)
-        .selectedRoundButton(title: type.localizedLabel, module: .space, isSelected: false)
-        .offset(type.offset(expanded: isExpanded, layoutDown: layoutDown))
-        .animation(
-            reduceMotion ? nil : .spring(duration: type.duration * 3, bounce: 0.2),
-            value: isExpanded
-        )
+        return types.map { type in
+            ImporterFanItem(id: type.rawValue, title: type.localizedLabel, systemImage: type.systemImage) {
+                show(type)
+            }
+        }
+    }
+
+    private func show(_ type: ImporterButtonType) {
+        switch type {
+        case .file: showImporter.toggle()
+        case .url: showRemoteURLImporter.toggle()
+        case .scanner: showScanner.toggle()
+        }
     }
 }
 

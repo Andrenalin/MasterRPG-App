@@ -35,7 +35,7 @@ public final class CharacterRootModel {
         self.photoRoot = photoRoot
         self.tableRoot = tableRoot
 
-        let itemController = ItemController(config: config, tableRoot: tableRoot)
+        let itemController = ItemController(config: config)
         self.itemController = itemController
         self.exportController = ExportController(diceRoot: diceRoot, pdfRoot: pdfRoot, photoRoot: photoRoot, tableRoot: tableRoot, itemController: itemController)
         let searchController = SearchController(itemController: itemController)
@@ -117,7 +117,7 @@ public final class CharacterRootModel {
         SheetController(itemController: itemController, linkController: linkController)
     }()
     @ObservationIgnored lazy var editController: EditController = {
-        EditController(root: self, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: searchModel.tagController)
+        EditController(root: self, itemController: itemController, tagController: searchModel.tagController)
     }()
     @ObservationIgnored var exportController: ExportController
     @ObservationIgnored lazy var gameController: GameController = {

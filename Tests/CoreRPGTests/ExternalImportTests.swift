@@ -42,7 +42,6 @@ struct ExternalImportTests {
         )
         let session = ExternalImportReviewSession(batch: batch)
 
-        #expect(batch.isPartial)
         #expect(session.phase == .reviewing)
         #expect(session.decision(for: item) == .merge)
         #expect(root.itemControllable.itemSync(for: itemId) == nil)
@@ -77,7 +76,7 @@ struct ExternalImportTests {
         )
 
         session.setDecision(.replace, for: first)
-        session.setDecision(.skip, itemId: secondID, module: .adventure)
+        session.setDecision(.skip, for: second)
 
         #expect(session.decision(for: first) == .replace)
         #expect(session.decision(for: second) == .skip)

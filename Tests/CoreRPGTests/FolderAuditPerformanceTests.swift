@@ -92,9 +92,6 @@ struct FolderAuditPerformanceTests {
         let reviewItem = ImportReviewItemModel(
             id: itemId,
             kind: .different,
-            existingStatus: "",
-            importedStatus: "",
-            mergedStatus: "",
             itemModel: itemModel
         )
         let reviewModel = ImportReviewModel(modules: [ImportReviewModule(id: .adventure, reviewItems: [reviewItem])])
@@ -111,7 +108,6 @@ struct FolderAuditPerformanceTests {
         FolderListItemModel(
             id: id,
             source: ItemRowModel(itemId: itemId, typeId: .photo),
-            destination: nil,
             level: level,
             isShown: false
         )

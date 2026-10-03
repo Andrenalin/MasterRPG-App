@@ -215,9 +215,6 @@ struct ReviewSheetMemoryTests {
         let reviewItem = ImportReviewItemModel(
             id: itemId,
             kind: .different,
-            existingStatus: "Existing",
-            importedStatus: "Imported",
-            mergedStatus: "Merged",
             itemModel: itemModel
         )
         let currentSheet = sheet(itemId: itemId, entryIDs: [.fixture3, .fixture4])
@@ -285,9 +282,6 @@ struct ReviewSheetMemoryTests {
         let reviewItem = ImportReviewItemModel(
             id: itemId,
             kind: .different,
-            existingStatus: "Existing",
-            importedStatus: "Imported",
-            mergedStatus: "Merged",
             itemModel: itemModel
         )
         let foreignA = sheetRow(itemId: foreignItemID, entryID: entryA, name: "Foreign A")
@@ -375,9 +369,6 @@ struct ReviewSheetMemoryTests {
         let reviewItem = ImportReviewItemModel(
             id: item.id,
             kind: .different,
-            existingStatus: "Existing",
-            importedStatus: "Imported",
-            mergedStatus: "Merged",
             itemModel: itemModel
         )
         let currentSheet = sheet(itemId: item.id, entryIDs: [entry.id])
@@ -482,9 +473,6 @@ struct ReviewSheetMemoryTests {
         return ImportReviewItemModel(
             id: itemId,
             kind: kind,
-            existingStatus: existing.name,
-            importedStatus: imported.name,
-            mergedStatus: merged.name,
             itemModel: itemModel,
             isDeletion: isDeletion
         )
@@ -501,9 +489,6 @@ struct ReviewSheetMemoryTests {
         return ImportReviewItemModel(
             id: .fixture1,
             kind: .different,
-            existingStatus: "Existing",
-            importedStatus: "Imported",
-            mergedStatus: "Merged",
             itemModel: itemModel
         )
     }
@@ -534,7 +519,7 @@ struct ReviewSheetMemoryTests {
     }
 
     private func fakeController(with item: FakeItemModel) -> FakeItemController {
-        let itemDataModel = ItemDataModel(categoryTags: [.all])
+        let itemDataModel = ItemDataModel()
         itemDataModel.items = [item.id]
         itemDataModel.itemData[item.id] = item
 

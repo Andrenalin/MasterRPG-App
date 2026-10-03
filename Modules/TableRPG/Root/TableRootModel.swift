@@ -62,7 +62,7 @@ public final class TableRootModel {
         self.gameController = gameController
         let linkController = LinkController(diceRoot: diceRoot, pdfRoot: pdfRoot, itemController: itemController, gameController: gameController)
         self.linkController = linkController
-        let editController = EditController(diceRoot: diceRoot, itemController: itemController, linkController: linkController, sheetController: sheetController, tagController: tagController)
+        let editController = EditController(itemController: itemController, tagController: tagController)
         self.editController = editController
         let importController = ImportController(itemController: itemController, editController: editController)
         self.importController = importController

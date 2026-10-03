@@ -291,3 +291,11 @@ extension ValueEntryModel {
     }
 }
 #endif
+
+/// The entry's group link for the shared group functions. See CODE_AUDIT_Folder §9.9.
+extension ValueEntryModel: GroupableEntry {
+    public var groupItemId: UUID? {
+        get { valueId }
+        set { valueId = newValue }
+    }
+}

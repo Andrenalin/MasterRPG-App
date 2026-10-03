@@ -145,12 +145,7 @@ extension EditController {
     }
 
     @MainActor func merge(itemId: UUID, entries: [ValueEntryModel]) -> [ValueEntryModel] {
-        guard let item = editModel(for: itemId) else { return entries }
-        return entries.map { entry in
-            var foundEntry = item.entries.first(where: { $0.name == entry.name })
-            foundEntry?.value = entry.value
-            return foundEntry ?? entry
-        }
+        entriesMatchedByName(itemId: itemId, entries: entries)
     }
     // `merge(itemId:entries:recoverEntries:forceSave:)` uses `EntryDataEditable`'s
     // shared default (see CODE_AUDIT_EditItem §9.2) — this module's behavior was

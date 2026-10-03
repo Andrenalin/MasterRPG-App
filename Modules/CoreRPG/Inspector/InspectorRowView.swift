@@ -170,7 +170,7 @@ struct InspectorRowView: View {
                 withAnimation { root.folderLinkControllable.toggleParentFolder(item: item) }
             } label: {
                 Label {
-                    Text("Close parent folder", bundle: .module)
+                    Text("Close Parent Folder", bundle: .module)
                 } icon: {
                     Image(systemName: "folder.circle")
                 }
@@ -241,7 +241,6 @@ private struct InspectorRowViewFolderChevronView: View {
         let item = FolderListItemModel(
             id: .fixture1,
             source: ItemRowModel(itemId: .fixture2, typeId: .none),
-            destination: nil,
             level: 0,
             isShown: true
         )

@@ -3,29 +3,9 @@
 import CoreRPG
 import Foundation
 
-struct EditController: Sendable {
-    @MainActor init(itemController: ItemController, linkController: LinkController, sheetController: SheetController, tagController: TagController) {
-        self.tagController = tagController
-        self.itemController = itemController
-        let sheetEditorModel = SheetEditorModel(module: itemController.config.module)
-        let editorModel = ItemEditorModel(sheetEditorModel: sheetEditorModel)
-        self.editorModel = editorModel
-        self.selectionReference = ItemSelectionModel()
-    }
-
-    let itemController: ItemController
-    let tagController: TagController
-    let editorModel: ItemEditorModel
-    let selectionReference: ItemSelectionModel
-}
-
-// MARK: - EditControllable
-
-extension EditController: EditControllable {
-    typealias Model = GeneratorModel
-    
-    var itemControllable: any ItemControllable { itemController }
-}
+/// The shared `GenericEditController`: the never-read `selectionReference` was the only stored
+/// state of its own. See CODE_AUDIT_Folder §9.2, §9.3.
+typealias EditController = GenericEditController<GeneratorModel>
 
 // MARK: - Module Editor
 
