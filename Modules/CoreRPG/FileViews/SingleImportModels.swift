@@ -272,6 +272,23 @@ extension SingleItemImportModel {
         return "\(decision.rawValue)|\(propertySignature)|\(entrySignature)"
     }
 
+    /// The decisions `decisionSignature` describes, without building its strings.
+    func combineDecisions(into hasher: inout Hasher) {
+        hasher.combine(decision)
+        for property in properties {
+            hasher.combine(property.id)
+            hasher.combine(property.decision)
+        }
+        for entry in entries {
+            hasher.combine(entry.id)
+            hasher.combine(entry.decision)
+            for property in entry.properties {
+                hasher.combine(property.id)
+                hasher.combine(property.decision)
+            }
+        }
+    }
+
     func materializedItem() -> any ItemDataAccessible {
         var result = item.item(for: decision).copy()
         for property in properties {

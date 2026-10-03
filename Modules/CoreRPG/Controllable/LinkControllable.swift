@@ -314,11 +314,8 @@ public extension LinkControllable {
     /// Call unconditionally inside `validateLinks(on:)` — safe no-op when the item has no links.
     @MainActor func resetLinkRegister<M: ItemLinkRegistrable>(_ item: M) {
         let register = itemControllable.linkRegisterController
-        var existing: [LinkRegisterModel] = []
-        for links in register.model.items.values {
-            existing.append(contentsOf: links.filter { $0.source.itemId == item.id })
-        }
-        register.deregister(links: existing)
+        // The per-source index, not a scan of every destination's links. See CODE_AUDIT_Folder §7.3.
+        register.deregister(links: register.model.sourceItems[item.id] ?? [])
         register.register(links: item.linkRegisterModels)
     }
 

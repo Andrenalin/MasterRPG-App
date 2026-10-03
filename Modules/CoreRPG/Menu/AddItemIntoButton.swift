@@ -7,17 +7,10 @@ struct AddItemIntoButton: View {
     let root: any ItemRootControllable
 
     var body: some View {
-        let collections = self.collections
         Menu {
-            ForEach(collections) { folder in
-                Button {
-                    menuController.addItem(currentSelected: root.currentSelectedItemId, to: folder)
-                    // Same refresh as the context menu. See CODE_AUDIT_Folder §5.29.
-                    root.folderListControllable.update(debounce: false)
-                } label: {
-                    Label { Text(folder.name) } icon: { Image(systemName: root.itemControllable.collectionCategory.icon) }
-                }
-            }
+            // The collection list is built only for the menu's content; the command itself only
+            // asks whether there is one. See CODE_AUDIT_Folder §7.4.
+            AddItemIntoMenuContent(root: root)
         } label: {
             Label {
                 Text("Add \(item?.name ?? "") into", bundle: .module)
@@ -25,20 +18,29 @@ struct AddItemIntoButton: View {
                 Image(systemName: root.itemControllable.collectionCategory.icon)
             }
         }
-        .disabled(collections.isEmpty)
-    }
-
-    private var menuController: ContextMenuMultiController {
-        ContextMenuMultiController(editController: root.editControllable, itemController: root.itemControllable, listModel: root.folderListControllable.listModel)
-    }
-
-    private var collections: [FolderRepresentable] {
-        menuController.collectionItems(currentSelected: root.currentSelectedItemId)
+        .disabled(!root.menuController.hasCollectionItems(currentSelected: root.currentSelectedItemId))
     }
 
     private var item: (any ItemDataAccessible)? {
         guard let selectedItemId = root.currentSelectedItemId else { return nil }
         return root.itemControllable.itemOrEmpty(for: selectedItemId)
+    }
+}
+
+private struct AddItemIntoMenuContent: View {
+    let root: any ItemRootControllable
+
+    var body: some View {
+        let menuController = root.menuController
+        ForEach(menuController.collectionItems(currentSelected: root.currentSelectedItemId)) { collection in
+            Button {
+                menuController.addItem(currentSelected: root.currentSelectedItemId, to: collection)
+                // Same refresh as the context menu. See CODE_AUDIT_Folder §5.29.
+                root.folderListControllable.update(debounce: false)
+            } label: {
+                Label { Text(collection.name) } icon: { Image(systemName: root.itemControllable.collectionCategory.icon) }
+            }
+        }
     }
 }
 

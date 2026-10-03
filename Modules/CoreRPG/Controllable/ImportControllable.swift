@@ -232,6 +232,8 @@ public extension ImportControllable {
         var importedIds: Set<UUID> = []
         var locallyReusedFileIds: Set<UUID> = []
         var deferredFolderItems: [(item: ModelType, id: UUID)] = []
+        // Folder entries are repaired once for the batch. See CODE_AUDIT_Folder §7.3.
+        var folderRepairIds: Set<UUID> = []
 
         do {
             var counter = 0
@@ -272,7 +274,9 @@ public extension ImportControllable {
                             if await itemControllable.shouldDeferGameModeFolderImport(newItem, writesGameMemory: policy.writesGameMemory) {
                                 deferredFolderItems.append((newItem, newItem.id))
                             } else {
-                                await applyImportedItem(newItem, id: newItem.id, policy: policy, importModel: importModel, locallyReusedFileIds: locallyReusedFileIds)
+                                if await applyImportedItem(newItem, id: newItem.id, policy: policy, importModel: importModel, locallyReusedFileIds: locallyReusedFileIds) {
+                                    folderRepairIds.insert(newItem.id)
+                                }
                             }
                             if let fileWrite {
                                 await settleImportedFile(fileWrite, itemId: newItem.id, policy: policy, importModel: importModel)
@@ -298,18 +302,23 @@ public extension ImportControllable {
 
             try Task.checkCancellation()
             for deferredFolderItem in deferredFolderItems {
-                await applyImportedItem(
+                let applied = await applyImportedItem(
                     deferredFolderItem.item,
                     id: deferredFolderItem.id,
                     policy: policy,
                     importModel: importModel,
                     locallyReusedFileIds: locallyReusedFileIds
                 )
+                if applied {
+                    folderRepairIds.insert(deferredFolderItem.id)
+                }
             }
+            await repairFolders(folderRepairIds)
         } catch {
             // The items applied so far stay; repair their folder links before failing, or a
             // child whose folder comes later in the stream stays orphaned until the user runs
             // Validate. See CODE_AUDIT_Folder §3.3.
+            await repairFolders(folderRepairIds)
             if policy.repairsImportedItems {
                 await repairImportedItems(importedIds)
             }
@@ -479,22 +488,24 @@ private extension ImportControllable {
         )
     }
 
-    /// Normalises, merges, writes and folder-repairs one decoded item in a single main-actor
-    /// step, so no sync or user edit can land between the merge and the write and be
-    /// overwritten by the stale merge result. See CODE_AUDIT_Folder §3.4.
-    @MainActor
-    func applyImportedItem(_ importedItem: ModelType, id: UUID, policy: ImportApplyPolicy, importModel: ItemDataImportModel, locallyReusedFileIds: Set<UUID>) {
+    /// Normalises, merges and writes one decoded item in a single main-actor step, so no sync or
+    /// user edit can land between the merge and the write and be overwritten by the stale merge
+    /// result. See CODE_AUDIT_Folder §3.4. Returns whether the item was written to a module list
+    /// whose folders `repairFolders` must then check; the caller repairs once per batch.
+    /// See CODE_AUDIT_Folder §7.3.
+    @discardableResult @MainActor
+    func applyImportedItem(_ importedItem: ModelType, id: UUID, policy: ImportApplyPolicy, importModel: ItemDataImportModel, locallyReusedFileIds: Set<UUID>) -> Bool {
         let itemController = itemControllable
         // A memory-only game delivery whose game has ended since the package started has no
         // game memory left to go to, and must not fall through to the library.
         guard !policy.writesGameMemory || itemController.itemDataModel.isGameMode else {
             Logger.importController.info("Import dropped an item of a game package that arrived after the game ended module=\(itemController.config.module.rawValue, privacy: .public)")
-            return
+            return false
         }
         let normalizedImportedItem = itemController.normalizedImportedItem(from: importedItem)
         guard let importableItem = itemController.gameModeImportedItem(from: normalizedImportedItem, writesGameMemory: policy.writesGameMemory, locallyReusedFileIds: locallyReusedFileIds) else {
             importModel.importedItems += 1
-            return
+            return false
         }
 
         // A saved-game load never touches the permanent library — write straight into this
@@ -506,10 +517,11 @@ private extension ImportControllable {
         guard !policy.gameMemoryOnly else {
             replaceForGameAndCount(importableItem, id: id, itemController: itemController, importModel: importModel)
             importModel.recordApplied(id, module: itemController.config.module)
-            return
+            return false
         }
 
         let writePolicy: GameMutationPolicy = policy.writesGameMemory ? .memoryOnly : .persist
+        var needsFolderRepair = false
         switch policy.mode {
         case .merge:
             var finalItem = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory)
@@ -524,14 +536,14 @@ private extension ImportControllable {
             }
             if let finalItem {
                 itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
-                editControllable.repairFolder(itemId: id)
+                needsFolderRepair = true
                 importModel.recordApplied(id, module: itemController.config.module)
             }
 
         case .overwrite:
             let finalItem = policy.writesGameMemory ? importableItem : itemController.keepingLocalFolderChildren(importableItem)
             itemController.replaceImportedModel(model: finalItem, isInsert: true, policy: writePolicy)
-            editControllable.repairFolder(itemId: id)
+            needsFolderRepair = true
             importModel.recordApplied(id, module: itemController.config.module)
 
         case .manual:
@@ -540,6 +552,13 @@ private extension ImportControllable {
         }
 
         importModel.importedItems += 1
+        return needsFolderRepair
+    }
+
+    @MainActor
+    func repairFolders(_ itemIds: Set<UUID>) {
+        guard !itemIds.isEmpty else { return }
+        editControllable.repairFolders(itemIds: itemIds)
     }
 
     /// Cleans up after a file the import wrote for `itemId`. A library import keeps the file the
@@ -783,7 +802,8 @@ private extension ImportControllable {
         guard let fileUrlDataController, var fileUrl = item.fileUrl else { return (false, nil) }
         var item = item
         let module = itemControllable.config.module.rawValue
-        let importedHash = FileUrl.contentHash(of: data)
+        // Hashed once, off the main actor; `resetData` below reuses it. See CODE_AUDIT_Folder §7.1.
+        let importedHash = await FileUrl.computeContentHash(of: data)
         let localFileUrl = itemControllable.itemSync(for: item.id, noGame: true)?.fileUrl
 
         // Reuse the existing file when the binary is unchanged — do not write the same file again
@@ -820,7 +840,7 @@ private extension ImportControllable {
             contentHash: importedHash,
             referencedFileUrls: itemControllable.libraryFileUrls()
         )
-        fileUrl.resetData(data)
+        fileUrl.resetData(data, contentHash: importedHash)
         do {
             // A library import must not count an item whose file never reached disk; the
             // in-memory fallback is lost at relaunch. Game deliveries keep it.
@@ -857,11 +877,13 @@ private extension ImportControllable {
            await fileUrlDataController?.hasDownloadedData(for: existingFileUrl) == false {
             return existingFileUrl
         }
-        guard let data = try? await fileUrlDataController?.loadData(for: existingFileUrl) else { return nil }
-        guard FileUrl.contentHash(of: data) == importedHash else { return nil }
+        // Streamed from disk off the main actor instead of loading the whole file to hash it.
+        // See CODE_AUDIT_Folder §7.1.
+        guard let existingHash = try? await fileUrlDataController?.contentHash(for: existingFileUrl),
+              existingHash == importedHash else { return nil }
         guard forceSave else { return existingFileUrl }
 
-        existingFileUrl.resetContentHash(of: data)
+        existingFileUrl.resetContentHash(existingHash)
         persist(fileUrl: existingFileUrl, itemId: itemId)
         return existingFileUrl
     }

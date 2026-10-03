@@ -31,7 +31,13 @@ public final class FolderListModel {
     @ObservationIgnored var updatedOnce: Bool = false
 
     // MARK: - Display list
-    public var list: [FolderListItemModel] = []
+    public var list: [FolderListItemModel] = [] {
+        didSet { rowIndex = nil }
+    }
+    /// Rows by row id and by item id, built on the first lookup after `list` changes: selection,
+    /// menu commands and folder actions looked rows up with a linear scan on every body
+    /// evaluation. See CODE_AUDIT_Folder §7.4.
+    @ObservationIgnored private var rowIndex: (byId: [UUID: FolderListItemModel], byItemId: [UUID: FolderListItemModel])?
     public var cacheListModels: [UUID: FolderListItemModel] = [:]
     // MARK: - List navigation
     public var selectedParentId: UUID?
@@ -68,7 +74,7 @@ public final class FolderListModel {
 
 extension FolderListModel {
     func recordVisibleScrollPosition(_ id: UUID?) {
-        guard let id, list.contains(where: { $0.id == id }) else { return }
+        guard let id, row(id: id) != nil else { return }
         lastNonNilScrollId = id
     }
 
@@ -78,15 +84,15 @@ extension FolderListModel {
     ) -> UUID? {
         if prioritizesSelection,
            let selection,
-           list.contains(where: { $0.id == selection }) {
+           row(id: selection) != nil {
             return selection
         }
         if let lastNonNilScrollId,
-           list.contains(where: { $0.id == lastNonNilScrollId }) {
+           row(id: lastNonNilScrollId) != nil {
             return lastNonNilScrollId
         }
         if let selection,
-           list.contains(where: { $0.id == selection }) {
+           row(id: selection) != nil {
             return selection
         }
         return nil
@@ -134,7 +140,32 @@ extension FolderListModel {
 
     func item(itemId: UUID?) -> FolderListItemModel? {
         guard let itemId else { return nil }
-        return list.first(where: { $0.source.itemId == itemId })
+        return row(itemId: itemId)
+    }
+
+    /// The row with this row id.
+    func row(id: UUID) -> FolderListItemModel? {
+        indexedRows().byId[id]
+    }
+
+    /// The first row showing this item, as `list.first { $0.source.itemId == itemId }`.
+    func row(itemId: UUID) -> FolderListItemModel? {
+        indexedRows().byItemId[itemId]
+    }
+
+    private func indexedRows() -> (byId: [UUID: FolderListItemModel], byItemId: [UUID: FolderListItemModel]) {
+        // Read through the getter, so a view using a lookup still observes `list`.
+        let rows = list
+        if let rowIndex { return rowIndex }
+        var byId: [UUID: FolderListItemModel] = [:]
+        var byItemId: [UUID: FolderListItemModel] = [:]
+        for row in rows {
+            if byId[row.id] == nil { byId[row.id] = row }
+            if byItemId[row.source.itemId] == nil { byItemId[row.source.itemId] = row }
+        }
+        let index = (byId, byItemId)
+        rowIndex = index
+        return index
     }
 }
 
@@ -204,13 +235,13 @@ public extension FolderListModel {
 
     func set(selectedItemId: UUID) {
         // Resolve to FolderListItemModel.id (may be entryId for folder children)
-        selected = list.first(where: { $0.source.itemId == selectedItemId })?.id ?? selectedItemId
+        selected = row(itemId: selectedItemId)?.id ?? selectedItemId
     }
 
     var selectedItemId: UUID? {
         guard let selected else { return nil }
         // For folder children id == entryId; return the actual item UUID for navigation
-        return list.first(where: { $0.id == selected })?.source.itemId ?? selected
+        return row(id: selected)?.source.itemId ?? selected
     }
 
     /// The item ids of the selected rows. `selection` holds row ids, which for a row inside an
@@ -218,7 +249,7 @@ public extension FolderListModel {
     /// unchanged made every multi-select action skip those rows. See CODE_AUDIT_Folder §5.7.
     var selectionItemIds: [UUID] {
         selection.map { rowId in
-            list.first(where: { $0.id == rowId })?.source.itemId ?? rowId
+            row(id: rowId)?.source.itemId ?? rowId
         }
     }
 }
@@ -315,6 +346,10 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     }
 
     public static func == (lhs: FolderListItemModel, rhs: FolderListItemModel) -> Bool {
+        // Rebuilt lists reuse the cached row instances, and `@Observable` compares the old and
+        // new `list` on every assignment: without this, each comparison walked every row's
+        // whole children tree. See CODE_AUDIT_Folder §7.4.
+        if lhs === rhs { return true }
         return lhs.id == rhs.id &&
         lhs.source == rhs.source &&
         lhs.destination == rhs.destination &&

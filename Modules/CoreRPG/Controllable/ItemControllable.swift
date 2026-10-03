@@ -105,11 +105,25 @@ public extension ItemControllable {
 
 public extension ItemControllable {
     @MainActor func collections(isFolder: Bool, in parentId: UUID?) -> [Model] {
-        return itemDataModel.items.compactMap { itemId -> Model? in
-            guard let item = itemSync(for: itemId),
-                  item.displayState == DisplayStateMask.fullVisible.rawValue && item.parentId == parentId && (item.category == (isFolder ? .folder : collectionCategory)) else { return nil }
+        itemDataModel.items.compactMap { itemId -> Model? in
+            guard let item = itemSync(for: itemId), isMoveTarget(item, isFolder: isFolder, in: parentId) else { return nil }
             return item
         }
+    }
+
+    /// Whether `collections(isFolder:in:)` would return anything, stopping at the first match:
+    /// the Move/Add commands only need this to enable themselves, on every body evaluation.
+    /// See CODE_AUDIT_Folder §7.4.
+    @MainActor func hasCollections(isFolder: Bool, in parentId: UUID?) -> Bool {
+        itemDataModel.items.contains { itemId in
+            itemSync(for: itemId).map { isMoveTarget($0, isFolder: isFolder, in: parentId) } ?? false
+        }
+    }
+
+    @MainActor private func isMoveTarget(_ item: Model, isFolder: Bool, in parentId: UUID?) -> Bool {
+        item.displayState == DisplayStateMask.fullVisible.rawValue
+            && item.parentId == parentId
+            && item.category == (isFolder ? .folder : collectionCategory)
     }
 }
 

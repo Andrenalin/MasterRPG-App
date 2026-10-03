@@ -346,6 +346,8 @@ private extension ImportProgressPanelView {
         }
         let repairIds = appliedIds.union(detachedIds)
         guard !repairIds.isEmpty else { return }
+        // One pass over the folders for every applied item. See CODE_AUDIT_Folder §7.3.
+        editController.repairFolders(itemIds: appliedIds)
         let repair = ConvertController(itemController: root.itemControllable, editController: editController)
         await repair.repairImportedItems(reportModel: ValidateRepairModel(), importedIds: repairIds)
     }
@@ -389,7 +391,6 @@ private extension ImportProgressPanelView {
         // A reviewed folder may be a partial copy from a subset export. See CODE_AUDIT_Folder §5.8.
         finalModel = root.itemControllable.keepingLocalFolderChildren(finalModel)
         root.itemControllable.replaceImportedModel(model: finalModel, isInsert: true, forceSave: true)
-        root.editControllable.repairFolder(itemId: item.id)
         return .applied
     }
 }

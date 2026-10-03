@@ -46,7 +46,8 @@ public struct FileUrl: Equatable, Hashable, Codable, Sendable {
     /// Creates the transient file descriptor used by staged external imports.
     /// No file is written until `FileUrlDataController.createNewFileUrl` receives
     /// this value during the commit phase.
-    public init(importedData data: Data, fileId: UUID, filename: String, module: String) {
+    /// Pass `contentHash` when the caller already hashed `data`, so it is not hashed again.
+    public init(importedData data: Data, fileId: UUID, filename: String, module: String, contentHash: String? = nil) {
         let basename = URL(filePath: filename).lastPathComponent
         let safeBasename = basename.isEmpty ? "attachment" : basename
         let encodedBasename = safeBasename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "attachment"
@@ -55,7 +56,7 @@ public struct FileUrl: Equatable, Hashable, Codable, Sendable {
         self.location = .newCloud
         self.module = module
         self.data = data
-        self.contentHash = Self.contentHash(of: data)
+        self.contentHash = contentHash ?? Self.contentHash(of: data)
     }
 }
 
@@ -82,6 +83,12 @@ public extension FileUrl {
 
     static func contentHash(of data: Data) -> String {
         Data(SHA256.hash(data: data)).base64EncodedString()
+    }
+
+    /// `contentHash(of:)` on the concurrent executor: hashing a 500 MB PDF or USDZ blocked the
+    /// calling (usually the main) actor for the whole SHA-256 pass. See CODE_AUDIT_Folder §7.1.
+    @concurrent static func computeContentHash(of data: Data) async -> String {
+        contentHash(of: data)
     }
 
     /// `contentHash(of:)` of the file at `url`, read in 1 MB chunks instead of loading the
@@ -129,10 +136,21 @@ public extension FileUrl {
         self.contentHash = Self.contentHash(of: data)
     }
 
+    /// Attaches `data` whose hash the caller already computed, so it is hashed only once.
+    mutating func resetData(_ data: Data, contentHash: String) {
+        self.data = data
+        self.contentHash = contentHash
+    }
+
     /// Calculates the content hash without attaching the data, e.g. when backfilling
     /// the hash for a legacy item whose file is already on disk.
     mutating func resetContentHash(of data: Data) {
         self.contentHash = Self.contentHash(of: data)
+    }
+
+    /// Sets a content hash computed elsewhere, e.g. streamed from the file on disk.
+    mutating func resetContentHash(_ contentHash: String) {
+        self.contentHash = contentHash
     }
 
     mutating func convertFile(_ data: Data, fileExtension: String) {

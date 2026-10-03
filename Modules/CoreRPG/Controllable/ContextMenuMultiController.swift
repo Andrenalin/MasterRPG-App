@@ -101,6 +101,13 @@ struct ContextMenuMultiController {
         return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
     }
     
+    /// Whether `folderItems(currentSelected:)` would list anything. See CODE_AUDIT_Folder §7.4.
+    func hasFolderItems(currentSelected: UUID?) -> Bool {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return false }
+        return itemController.hasCollections(isFolder: true, in: model.parentId)
+    }
+
     func moveItem(currentSelected: UUID?, to folder: FolderRepresentable) {
         let selection = selection(currentSelected: currentSelected)
         for itemId in selection {
@@ -116,6 +123,13 @@ struct ContextMenuMultiController {
         return folders.map { FolderRepresentable(id: $0.id, name: $0.name) }
     }
     
+    /// Whether `collectionItems(currentSelected:)` would list anything. See CODE_AUDIT_Folder §7.4.
+    func hasCollectionItems(currentSelected: UUID?) -> Bool {
+        let selection = selection(currentSelected: currentSelected)
+        guard let itemId = selection.first, let model = itemController.itemSync(for: itemId) else { return false }
+        return itemController.hasCollections(isFolder: false, in: model.parentId)
+    }
+
     func addItem(currentSelected: UUID?, to folder: FolderRepresentable) {
         let selection = selection(currentSelected: currentSelected)
         for itemId in selection {
@@ -130,5 +144,11 @@ struct ContextMenuMultiController {
         for itemId in selection {
             editController.remove(itemId: itemId, parentId: parentId, oneUp: oneUp)
         }
+    }
+}
+
+extension ItemRootControllable {
+    @MainActor var menuController: ContextMenuMultiController {
+        ContextMenuMultiController(editController: editControllable, itemController: itemControllable, listModel: folderListControllable.listModel)
     }
 }

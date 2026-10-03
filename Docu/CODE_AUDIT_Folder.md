@@ -806,3 +806,12 @@ Built for iOS, macOS, tvOS and visionOS with zero warnings; the `MasterRPG` unit
 | 5.28 | Fixed | The Map item controller exposes its cache controller; the root keeps `nil` (maps draw their own rows). |
 | 5.29 | Fixed | Menu-bar Move/Add and drag-and-drop refresh with `update(debounce: false)`; Delete is disabled for every collection kind; "New Folder" ignores a second press. It still creates the folder at root, as its label says. |
 | 5.30 | Fixed | All eight: stale entries removable; cycle-safe `folderPath`; folder moves and renames move descendant files (an item's own rename still does not move its file); search-built children get their parent; on-appear restore uses the item id and live generation; cached rows refresh a replaced model instance; removal list de-duplicated; the Character refresh reads the library copy. |
+
+### Status of §7 (2026-10-03)
+
+| § | Status | Notes |
+|---|--------|-------|
+| 7.1 | Partly | Imported bytes are hashed once, on the concurrent executor (`FileUrl.computeContentHash`), and `resetData(_:contentHash:)` reuses that hash. Existing files are hashed streamed from disk (`FileUrlDataController.contentHash(for:)`) when checking for reuse and when backfilling a missing hash. Export copies each file into the package stream in 1 MB blocks (`readHandle(for:)`) instead of loading it whole. By decision, the wire format is unchanged: a game package is still one in-memory payload on both ends. |
+| 7.2 | Fixed | No commit-wide attachment cache: each attachment is loaded for its own item and released after it. Its hash is computed once off the main actor and passed to the transient file. The installed file and a reusable existing file are verified by streamed hash. Repair snapshots were already limited to reachable items (§3.6). |
+| 7.3 | Fixed | Link resets use the per-source index (`sourceItems`). Folder entries are repaired once per import batch and once per reviewed module (`repairFolders(itemIds:)`). The review sheet memory builds an item only when the sheet reads it, and caches it. The decision signature is a hash, not a joined string. |
+| 7.4 | Fixed | `FolderListModel` keeps a row index by row id and by item id, rebuilt on the first lookup after `list` changes. Selection, scroll restoration and folder actions use it. Row equality returns early for the same instance. The Move/Add commands enable themselves with an early-exit check and build their lists only in the menu content. |

@@ -55,6 +55,27 @@ struct ImportGameAuditTests {
         #expect(root.itemController.itemSync(for: otherId)?.parentId == folderId)
     }
 
+    @Test("An import repairs the folders of all its items in one pass (§7.3)")
+    func importRepairsStaleFolderEntriesOnce() async throws {
+        let root = makeRoot()
+        let folderId = addTable(root, name: "Folder", type: .folder)
+        let staleFolderId = addTable(root, name: "Stale", type: .folder)
+        let firstId = addTable(root, name: "First")
+        let secondId = addTable(root, name: "Second")
+        root.editController.addItem(itemId: firstId, parentId: folderId)
+        root.editController.addItem(itemId: secondId, parentId: folderId)
+        let data = try await export([firstId, secondId], from: root)
+        // Entries a sync merge can leave behind in another folder.
+        let staleFolder = try #require(root.editController.editModel(for: staleFolderId))
+        staleFolder.entries.append(contentsOf: [TableEntryModel.newChild(id: firstId), TableEntryModel.newChild(id: secondId)])
+        root.editController.save(updated: staleFolder, message: "stale")
+
+        try await importFile(data, into: root, mode: .overwrite)
+
+        #expect(root.itemController.itemSync(for: staleFolderId)?.entries.isEmpty == true)
+        #expect(Set(root.itemController.itemSync(for: folderId)?.entries.map(\.childId) ?? []) == [firstId, secondId])
+    }
+
     @Test("A merge import restores an item from the trash (§5.20)")
     func mergeImportRestoresTrashedItem() async throws {
         let root = makeRoot()

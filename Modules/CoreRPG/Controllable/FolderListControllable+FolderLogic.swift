@@ -81,7 +81,7 @@ extension FolderListControllable {
     /// Closes it the way the chevron does: setting only `isOpen` left the children listed, and
     /// the next rebuild reopened the folder from `lastIsOpen`. See CODE_AUDIT_Folder §5.13.
     func closeParentFolder(of itemId: UUID) {
-        guard let item = listModel.list.first(where: { $0.source.itemId == itemId }) else { return }
+        guard let item = listModel.row(itemId: itemId) else { return }
         guard let parentId = item.parentId, let parentItem = listModel.cacheListModels[parentId] else { return }
         if parentItem.isOpen {
             toggleFolder(item: parentItem)
@@ -94,7 +94,7 @@ extension FolderListControllable {
 
     /// Opens `itemId` if it is a closed folder that can be expanded or was explicitly closed.
     func openFolder(itemId: UUID) {
-        guard let item = listModel.list.first(where: { $0.source.itemId == itemId }),
+        guard let item = listModel.row(itemId: itemId),
               (item.canOpen || item.wasExplicitlyClosed) && !item.isOpen else { return }
         toggleFolder(item: item)
     }
@@ -102,22 +102,23 @@ extension FolderListControllable {
     /// Returns true if `itemId` is a closed item that can be expanded or was explicitly closed.
     func canOpenFolder(itemId: UUID?) -> Bool {
         guard let itemId,
-              let item = listModel.list.first(where: { $0.source.itemId == itemId }) else { return false }
+              let item = listModel.row(itemId: itemId) else { return false }
         return (item.canOpen || item.wasExplicitlyClosed) && !item.isOpen
     }
 
     /// Returns true if `itemId` has an open parent folder in the visible tree.
     func hasParentFolder(itemId: UUID?) -> Bool {
         guard let itemId,
-              let item = listModel.list.first(where: { $0.source.itemId == itemId }),
+              let item = listModel.row(itemId: itemId),
               let parentId = item.parentId, let parentItem = listModel.cacheListModels[parentId] else { return false }
         return parentItem.isOpen
     }
 
+    /// The row with this row id, else the first row showing this item. Indexed lookups instead
+    /// of a scan per call: the Open Folder command asks three times per body evaluation.
+    /// See CODE_AUDIT_Folder §7.4.
     private func folderItem(itemId: UUID?) -> FolderListItemModel? {
         guard let itemId else { return nil }
-        return listModel.list.first {
-            $0.id == itemId || $0.source.itemId == itemId
-        }
+        return listModel.row(id: itemId) ?? listModel.row(itemId: itemId)
     }
 }

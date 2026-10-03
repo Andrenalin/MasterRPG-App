@@ -79,11 +79,9 @@ public struct ConvertController: Sendable {
 
     @MainActor private func resetLinkRegister(for item: any ItemLinkRegistrable) {
         let register = editController.linkRegisterController
-        var existing: [LinkRegisterModel] = []
-        for links in register.model.items.values {
-            existing.append(contentsOf: links.filter { $0.source.itemId == item.id })
-        }
-        register.deregister(links: existing)
+        // The per-source index, not a scan of every destination's links per repaired item.
+        // See CODE_AUDIT_Folder §7.3.
+        register.deregister(links: register.model.sourceItems[item.id] ?? [])
         register.register(links: item.linkRegisterModels)
     }
 }

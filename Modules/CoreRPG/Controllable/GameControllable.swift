@@ -318,7 +318,8 @@ public extension GameControllable {
     private func backfillContentHashIfNeeded(itemId: UUID) async {
         guard let fileUrlDataController = itemControllable.fileUrlDataController else { return }
         guard let fileUrl = itemControllable.itemSync(for: itemId)?.fileUrl, fileUrl.contentHash == nil else { return }
-        guard let data = try? await fileUrlDataController.loadData(for: fileUrl) else { return }
+        // Streamed from disk off the main actor, not loaded whole. See CODE_AUDIT_Folder §7.1.
+        guard let contentHash = try? await fileUrlDataController.contentHash(for: fileUrl) else { return }
         // The file may have been replaced while it loaded: only stamp the hash onto the file
         // that was read. The hash is written as a field update on a copy — setting it on the
         // stored instance and calling `replace` compared the instance with itself and never
@@ -330,7 +331,7 @@ public extension GameControllable {
             location: fileUrl.location,
             module: fileUrl.module,
             relativeUrl: nil,
-            contentHash: FileUrl.contentHash(of: data)
+            contentHash: contentHash
         )
         itemControllable.persistFileUrl(hashedFileUrl, itemId: itemId)
     }

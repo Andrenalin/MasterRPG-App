@@ -138,7 +138,6 @@ public final class ExternalImportReviewSession {
         var repairSnapshots: [RepairSnapshot] = []
         var createdFiles: [CreatedFile] = []
         var supersededFiles: [CreatedFile] = []
-        var loadedAttachments: [UUID: LoadedAttachment] = [:]
 
         do {
             for item in orderedItems {
@@ -199,7 +198,6 @@ public final class ExternalImportReviewSession {
                         item: item,
                         existingModel: existing,
                         fileController: fileController,
-                        loadedAttachments: &loadedAttachments,
                         createdFiles: &createdFiles
                     )
                     candidate = attachmentResult.model

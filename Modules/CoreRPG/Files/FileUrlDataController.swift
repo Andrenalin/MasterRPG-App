@@ -260,6 +260,33 @@ public extension FileUrlDataController {
         }
     }
 
+    /// The content hash of the file's bytes, never on the caller's actor: a stored file is read
+    /// from disk in blocks, bytes held in memory are hashed on the concurrent executor. Loading
+    /// a large file whole and hashing it on the main actor cost a full SHA-256 pass there.
+    /// See CODE_AUDIT_Folder §7.1.
+    func contentHash(for fileUrl: FileUrl) async throws -> String? {
+        if let data = fileUrl.data {
+            return await FileUrl.computeContentHash(of: data)
+        }
+        if let held = peerFiles.data(for: fileUrl.fileId) {
+            return await FileUrl.computeContentHash(of: held)
+        }
+        return try await url(for: fileUrl) { url async throws -> String? in
+            guard let url else { return nil }
+            return try await FileManager.default.contentHash(coordinatingAccessAt: url)
+        }
+    }
+
+    /// An open handle on the file's bytes, for copying a large file in blocks instead of loading
+    /// it whole. Bytes that are only in memory are reached through the same temporary copy
+    /// `url(for:action:)` gives every reader. See CODE_AUDIT_Folder §7.1.
+    func readHandle(for fileUrl: FileUrl) async throws -> FileHandle? {
+        try await url(for: fileUrl) { url async throws -> FileHandle? in
+            guard let url else { return nil }
+            return try await FileManager.default.fileHandle(coordinatingReadingAt: url)
+        }
+    }
+
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) async throws -> T?) async rethrows -> T? {
         if let heldUrl = heldPeerFileUrl(for: fileUrl) {
             return try await action(heldUrl)

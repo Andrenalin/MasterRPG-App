@@ -345,10 +345,8 @@ public extension ExportControllable {
             let data = try await encoded(item)
 
             if await !exportModel.exportWithoutFileData {
-                if let fileData = await inlineFiles(for: itemId) {
-                    try outputStream.append(counter: fileData.count, token: ExportDataToken.file.rawValue)
-                    try outputStream.write(data: fileData)
-                } else if await hasFileData(for: itemId) {
+                let fileWritten = try await appendFile(for: itemId, to: outputStream)
+                if !fileWritten, await hasFileData(for: itemId) {
                     // The item has a file, but reading it failed — record it instead of
                     // silently writing a backup that looks complete. See §5.10.
                     await recordMissingFileData(for: itemId, exportModel: exportModel)
@@ -371,13 +369,41 @@ public extension ExportControllable {
         exportModel.exportedItems += 1
     }
 
-    @MainActor private func inlineFiles(for itemId: UUID) async -> Data? {
-        guard let fileUrlDataController, let item = await itemControllable.item(for: itemId), let fileUrl = item.fileUrl else { return nil }
-        // Previously fell back to the cached thumbnail re-encoded as JPEG for photos —
-        // that silently changes the exported format (transparency and original bytes
-        // lost, hashes differ) while still reporting the export as successful. Report
-        // the read failure instead of substituting different bytes. See §5.10.
-        return try? await fileUrlDataController.loadData(for: fileUrl)
+    /// Writes the item's file as one `file` block, copied from disk in 1 MB pieces: loading it
+    /// whole first held a large PDF or USDZ in memory next to the export stream. Returns `false`
+    /// when the item has no file or it cannot be opened, so the caller reports it. A read that
+    /// fails after the block header was written throws: the stream can no longer be completed.
+    /// See CODE_AUDIT_Folder §7.1.
+    private func appendFile(for itemId: UUID, to outputStream: OutputStream) async throws -> Bool {
+        // Never the cached thumbnail re-encoded as JPEG in place of an unreadable photo: that
+        // silently changes the exported bytes while reporting success. See §5.10.
+        guard let fileUrlDataController, let fileUrl = await exportedFileUrl(for: itemId) else { return false }
+        if let data = fileUrl.data {
+            try outputStream.append(counter: data.count, token: ExportDataToken.file.rawValue)
+            try outputStream.write(data: data)
+            return true
+        }
+        guard let handle = try? await fileUrlDataController.readHandle(for: fileUrl) else { return false }
+        defer { try? handle.close() }
+        guard let size = try? handle.seekToEnd(), (try? handle.seek(toOffset: 0)) != nil,
+              let byteCount = Int(exactly: size) else { return false }
+
+        try outputStream.append(counter: byteCount, token: ExportDataToken.file.rawValue)
+        let blockSize = 1 << 20
+        var remaining = byteCount
+        while remaining > 0 {
+            try Task.checkCancellation()
+            guard let block = try handle.read(upToCount: min(blockSize, remaining)), !block.isEmpty else {
+                throw ItemDataExportableError.streamError
+            }
+            try outputStream.write(data: block)
+            remaining -= block.count
+        }
+        return true
+    }
+
+    @MainActor private func exportedFileUrl(for itemId: UUID) async -> FileUrl? {
+        await itemControllable.item(for: itemId)?.fileUrl
     }
 
     @MainActor private func hasFileData(for itemId: UUID) async -> Bool {

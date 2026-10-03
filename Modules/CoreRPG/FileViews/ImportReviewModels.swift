@@ -103,13 +103,18 @@ import SwiftUI
         selectedModule?.reviewItems.first { $0.id == selectedItemId }
     }
 
-    var sheetMemorySignature: String {
-        modules.flatMap { module in
-            module.reviewItems.map { item in
-                "\(module.id.rawValue):\(item.id.uuidString):\(item.itemModel.decisionSignature)"
+    /// Changes when any decision of the review changes. Hashed instead of joined into one string
+    /// per body evaluation; only compared within the running session. See CODE_AUDIT_Folder §7.3.
+    var sheetMemorySignature: Int {
+        var hasher = Hasher()
+        for module in modules {
+            hasher.combine(module.id)
+            for item in module.reviewItems {
+                hasher.combine(item.id)
+                item.itemModel.combineDecisions(into: &hasher)
             }
         }
-        .joined(separator: "|")
+        return hasher.finalize()
     }
 
     func select(moduleId: ImportReviewModule.ID) {
@@ -144,37 +149,38 @@ import SwiftUI
         sheetMemory(overriding: (itemId, module, decision))
     }
 
+    /// Builds a review item only when the sheet reads it: the sheet shows one item and the items
+    /// it links to, but every item of the review was materialised (copied) on each rebuild.
+    /// See CODE_AUDIT_Folder §7.3.
     private func sheetMemory(
         overriding override: (itemId: UUID, module: NetworkModules, decision: SingleReviewDecision)?
     ) -> ReviewSheetMemory {
-        var items: [NetworkModules: [UUID: any ItemDataAccessible]] = [:]
-        var hiddenItemIds: [NetworkModules: Set<UUID>] = [:]
-
+        var reviewItems: [NetworkModules: [UUID: ImportReviewItemModel]] = [:]
         for module in modules {
             for item in module.reviewItems {
-                let overriddenDecision: SingleReviewDecision?
-                if let override, override.itemId == item.id, override.module == module.id {
-                    overriddenDecision = override.decision
-                } else {
-                    overriddenDecision = nil
-                }
-                let decision = overriddenDecision ?? item.itemModel.decision
-
-                if (item.isDeletion && decision == .imported) ||
-                    (item.kind == .added && decision == .existing) {
-                    hiddenItemIds[module.id, default: []].insert(item.id)
-                    continue
-                }
-
-                if let overriddenDecision {
-                    items[module.id, default: [:]][item.id] = item.itemModel.materializedItem(for: overriddenDecision)
-                } else {
-                    items[module.id, default: [:]][item.id] = item.itemModel.materializedItem()
-                }
+                reviewItems[module.id, default: [:]][item.id] = item
             }
         }
 
-        return ReviewSheetMemory(items: items, hiddenItemIds: hiddenItemIds)
+        return ReviewSheetMemory { [reviewItems] itemId, module in
+            guard let item = reviewItems[module]?[itemId] else { return .notInReview }
+            let overriddenDecision: SingleReviewDecision?
+            if let override, override.itemId == itemId, override.module == module {
+                overriddenDecision = override.decision
+            } else {
+                overriddenDecision = nil
+            }
+            let decision = overriddenDecision ?? item.itemModel.decision
+
+            if (item.isDeletion && decision == .imported) ||
+                (item.kind == .added && decision == .existing) {
+                return .hidden
+            }
+            if let overriddenDecision {
+                return .item(item.itemModel.materializedItem(for: overriddenDecision))
+            }
+            return .item(item.itemModel.materializedItem())
+        }
     }
 
     /// Builds the reference list for every review item once all items are imported.

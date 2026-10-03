@@ -188,7 +188,6 @@ extension ExternalImportReviewSession {
         item: ExternalImportBatchItem,
         existingModel: (any ModelType)?,
         fileController: FileUrlDataController,
-        loadedAttachments: inout [UUID: LoadedAttachment],
         createdFiles: inout [CreatedFile]
     ) async throws -> AttachmentResult {
         let existingFileUrl = item.fileUrl(from: existingModel)
@@ -209,10 +208,10 @@ extension ExternalImportReviewSession {
             )
         }
 
-        let loaded = try await loadAndValidate(
-            attachment,
-            cache: &loadedAttachments
-        )
+        // Loaded for this item only and released when `attach` returns: every attachment id
+        // belongs to one item, so a commit-wide cache was never hit and held every converted
+        // file of a large world in memory at once. See CODE_AUDIT_Folder §7.2.
+        let loaded = try await loadAndValidate(attachment)
         if let reusable = await reusableFileUrl(
             existingFileUrl,
             expectedHash: loaded.contentHash,
@@ -240,7 +239,8 @@ extension ExternalImportReviewSession {
             importedData: loaded.data,
             fileId: storageID,
             filename: safeName,
-            module: item.module.token
+            module: item.module.token,
+            contentHash: loaded.contentHash
         )
         guard let stored = try await fileController.createNewFileUrl(
             fileId: storageID,
@@ -255,8 +255,9 @@ extension ExternalImportReviewSession {
         // cancellation, or model-attachment failure is handled by the transaction's
         // normal rollback path, whose cleanup failures are retried and reported.
         createdFiles.append(CreatedFile(module: item.module, fileUrl: stored))
-        guard let installedData = try await fileController.loadData(for: stored),
-              FileUrl.contentHash(of: installedData) == loaded.contentHash else {
+        // Verified with the hash streamed from disk, not by reading the installed file back
+        // into memory. See CODE_AUDIT_Folder §7.2.
+        guard try await fileController.contentHash(for: stored) == loaded.contentHash else {
             throw ExternalImportError.attachmentInstallFailed(attachmentID: attachment.id)
         }
         let updatedModel = try modelByAttaching(stored, to: model, item: item)
@@ -269,25 +270,7 @@ extension ExternalImportReviewSession {
         )
     }
 
-    func loadAndValidate(
-        _ attachment: ExternalImportAttachment,
-        cache: inout [UUID: LoadedAttachment]
-    ) async throws -> LoadedAttachment {
-        if let cached = cache[attachment.id] {
-            if let expectedByteCount = attachment.expectedByteCount,
-               cached.data.count != expectedByteCount {
-                throw ExternalImportError.attachmentSizeMismatch(
-                    attachmentID: attachment.id,
-                    expected: expectedByteCount,
-                    actual: cached.data.count
-                )
-            }
-            if let expectedHash = attachment.contentHash,
-               cached.contentHash != expectedHash {
-                throw ExternalImportError.attachmentHashMismatch(attachmentID: attachment.id)
-            }
-            return cached
-        }
+    func loadAndValidate(_ attachment: ExternalImportAttachment) async throws -> LoadedAttachment {
         try Task.checkCancellation()
         let data = try await attachment.load()
         try Task.checkCancellation()
@@ -299,13 +282,12 @@ extension ExternalImportReviewSession {
                 actual: data.count
             )
         }
-        let hash = FileUrl.contentHash(of: data)
+        // Off the main actor; the transient file below reuses it. See CODE_AUDIT_Folder §7.1.
+        let hash = await FileUrl.computeContentHash(of: data)
         if let expectedHash = attachment.contentHash, hash != expectedHash {
             throw ExternalImportError.attachmentHashMismatch(attachmentID: attachment.id)
         }
-        let loaded = LoadedAttachment(data: data, contentHash: hash)
-        cache[attachment.id] = loaded
-        return loaded
+        return LoadedAttachment(data: data, contentHash: hash)
     }
 
     func reusableFileUrl(
@@ -318,10 +300,11 @@ extension ExternalImportReviewSession {
         if existing.contentHash == expectedHash {
             return await fileController.hasLocalData(for: existing) ? existing : nil
         }
+        // Streamed from disk, not loaded whole. See CODE_AUDIT_Folder §7.1.
         guard existing.contentHash == nil,
-              let data = try? await fileController.loadData(for: existing),
-              FileUrl.contentHash(of: data) == expectedHash else { return nil }
-        existing.resetContentHash(of: data)
+              let existingHash = try? await fileController.contentHash(for: existing),
+              existingHash == expectedHash else { return nil }
+        existing.resetContentHash(existingHash)
         return existing
     }
 

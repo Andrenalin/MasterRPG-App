@@ -236,15 +236,32 @@ public extension EditControllable {
     /// stop at the first folder that did not contain the item, and skipped items moved to
     /// root entirely. See CODE_AUDIT_Folder §5.6.
     @MainActor func repairFolder(itemId: UUID) {
-        guard let item = itemControllable.itemSync(for: itemId) else { return }
-        let parentId = item.parentId
+        repairFolders(itemIds: [itemId])
+    }
+
+    /// `repairFolder(itemId:)` for a whole import batch in one pass over the library: run per
+    /// item, an import of n items walked every item n times. See CODE_AUDIT_Folder §7.3.
+    @MainActor func repairFolders(itemIds: Set<UUID>) {
+        var parentIds: [UUID: UUID] = [:]
+        var rootItemIds: Set<UUID> = []
+        for itemId in itemIds {
+            guard let item = itemControllable.itemSync(for: itemId) else { continue }
+            if let parentId = item.parentId {
+                parentIds[itemId] = parentId
+            } else {
+                rootItemIds.insert(itemId)
+            }
+        }
+        guard !parentIds.isEmpty || !rootItemIds.isEmpty else { return }
+        func isStale(_ childId: UUID, in folderId: UUID) -> Bool {
+            rootItemIds.contains(childId) || parentIds[childId].map { $0 != folderId } ?? false
+        }
         for id in itemControllable.itemDataModel.items {
-            guard id != parentId,
-                  let checkItem = itemControllable.itemSync(for: id),
+            guard let checkItem = itemControllable.itemSync(for: id),
                   checkItem.isFolder,
-                  checkItem.entries.contains(where: { $0.childId == itemId }),
+                  checkItem.entries.contains(where: { isStale($0.childId, in: id) }),
                   let folderItem = editModel(for: id) else { continue }
-            folderItem.entries.removeAll { $0.childId == itemId }
+            folderItem.entries.removeAll { isStale($0.childId, in: id) }
             save(updated: folderItem, message: String(localized: "removed item from folder", bundle: .module).localizedString)
         }
     }

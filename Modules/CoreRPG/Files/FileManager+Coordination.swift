@@ -65,6 +65,17 @@ extension FileManager {
         }
     }
 
+    /// Opens the file at `url` for reading inside a coordinated read, so an iCloud file is
+    /// downloaded first. The open handle stays readable after the coordination ends, which lets
+    /// a caller copy a large file in blocks instead of loading it. See CODE_AUDIT_Folder §7.1.
+    func fileHandle(coordinatingReadingAt url: URL) async throws -> FileHandle {
+        try await Self.performCoordinatedFileAccess { cancellation in
+            try Self.coordinate(cancellation, readingItemAt: url) { url in
+                try FileHandle(forReadingFrom: url)
+            }
+        }
+    }
+
     /// Copies a file to `toURL` without reading it into memory, creating the parent folder and
     /// replacing a file already there. See CODE_AUDIT_19 §7.1.
     func copyReplacingItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
