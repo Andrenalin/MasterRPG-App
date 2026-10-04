@@ -50,7 +50,7 @@ public protocol EntryDataEditable: EditControllable {
     /// parent (e.g. an item-list folder) that isn't a valid destination for an
     /// entry. Defaults to `true` (no restriction); a module whose `parentFolder`
     /// can resolve through an unrelated hierarchy overrides this to distinguish
-    /// the two — see `SheetContextMenuView.moveOutOfGroupButton`.
+    /// the two — see `SheetContextMenuMoveOutOfGroupButton` in `SheetContextMenuView.swift`.
     @MainActor func isValueGroupParent(itemId: UUID) -> Bool
 
     // MARK: - QuickEntryEditor

@@ -183,11 +183,13 @@ public extension FileUrl {
     ///
     /// - Cloud/local locations keep their url unless it contains `.`/`..` segments, which are
     ///   removed (unchanged urls stay byte-identical so item versions do not change).
+    /// - A cloud/local url that names no file (`/`, a bare `…/Documents/<module>`) would resolve
+    ///   to a storage folder, so it becomes an app-owned `.newCloud` file as well.
     /// - `.other` (a picked file on the *sender's* device) and `.url` values that are not a
     ///   public http(s) address cannot be resolved here, so they become an app-owned
     ///   `.newCloud` file named after the last path component only.
     ///
-    /// See CODE_AUDIT_15 §5.1 and §6.3.
+    /// See CODE_AUDIT_15 §5.1 and §6.3, CODE_AUDIT_21 §6.1.
     func sanitizedForImport(allowsPrivateRemoteHosts: Bool = false) -> FileUrl {
         switch location {
         case .url:
@@ -196,11 +198,27 @@ public extension FileUrl {
         case .other:
             return relocatedToAppStorage()
         case .appCloud, .icloud, .local, .newCloud:
+            guard namesFileBelowStorageRoot else { return relocatedToAppStorage() }
             guard CloudDocumentController.hasTraversalComponents(_url) else { return self }
             var copy = self
             copy._url = Self.relativeUrl(fromComponents: CloudDocumentController.safeComponents(_url.pathComponents))
             return copy
         }
+    }
+
+    /// Whether a path component is left once the container prefix this location's resolver
+    /// removes is gone (`LocationFileManager.absoluteUrl`, `CloudDocumentController.fullUrl`).
+    private var namesFileBelowStorageRoot: Bool {
+        var components = _url.pathComponents
+        let containerDepth: Int? = switch location {
+        case .local: 1
+        case .newCloud where _url.isFileURL: 2
+        default: nil
+        }
+        if let containerDepth, let index = components.firstIndex(of: CloudDocumentController.documentDirName) {
+            components = Array(components.dropFirst(index + containerDepth))
+        }
+        return !CloudDocumentController.safeComponents(components).isEmpty
     }
 
     private func relocatedToAppStorage() -> FileUrl {

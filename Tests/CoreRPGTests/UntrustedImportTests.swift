@@ -21,22 +21,22 @@ struct UntrustedImportTests {
     @Test("fullUrl(fileUrl:) never leaves the module folder")
     func fullUrlStaysInsideModuleFolder() throws {
         let controller = CloudDocumentController(modulePath: "Photos")
-        let moduleRoot = normalizedPath(controller.fullUrl(filePath: ""))
+        let moduleRoot = normalizedPath(controller.moduleUrl)
 
         let hostile = try #require(URL(string: "../../Stores/Private/private.sqlite"))
-        let resolved = normalizedPath(controller.fullUrl(fileUrl: hostile))
+        let resolved = normalizedPath(try #require(controller.fullUrl(fileUrl: hostile)))
 
         #expect(resolved.hasPrefix(moduleRoot + "/"))
         #expect(!resolved.contains(".."))
     }
 
     @Test("fullUrl(filePath:) drops traversal segments")
-    func fullUrlFilePathStaysInsideModuleFolder() {
+    func fullUrlFilePathStaysInsideModuleFolder() throws {
         let controller = CloudDocumentController(modulePath: "Pdfs")
-        let moduleRoot = normalizedPath(controller.fullUrl(filePath: ""))
+        let moduleRoot = normalizedPath(controller.moduleUrl)
 
         for path in ["/../../Stores/x", "a/../../b", "../../../etc/passwd", "./x/./y"] {
-            let resolved = normalizedPath(controller.fullUrl(filePath: path))
+            let resolved = normalizedPath(try #require(controller.fullUrl(filePath: path)))
             #expect(resolved.hasPrefix(moduleRoot + "/"), "\(path) escaped to \(resolved)")
         }
     }
@@ -49,10 +49,10 @@ struct UntrustedImportTests {
     ])
     func encodedSlashStaysInsideModuleFolder(path: String) throws {
         let controller = CloudDocumentController(modulePath: "Pdfs")
-        let moduleRoot = normalizedPath(controller.fullUrl(filePath: ""))
+        let moduleRoot = normalizedPath(controller.moduleUrl)
         let hostile = try #require(URL(string: path))
 
-        let resolved = normalizedPath(controller.fullUrl(fileUrl: hostile))
+        let resolved = normalizedPath(try #require(controller.fullUrl(fileUrl: hostile)))
 
         #expect(resolved.hasPrefix(moduleRoot + "/"), "\(path) escaped to \(resolved)")
         #expect(CloudDocumentController.hasTraversalComponents(hostile))
@@ -75,10 +75,86 @@ struct UntrustedImportTests {
     }
 
     @Test("A clean relative path keeps resolving to the same file")
-    func cleanPathIsUnchanged() {
+    func cleanPathIsUnchanged() throws {
         let controller = CloudDocumentController(modulePath: "Photos")
-        let moduleRoot = normalizedPath(controller.fullUrl(filePath: ""))
-        #expect(normalizedPath(controller.fullUrl(filePath: "Category/a b.png")) == moduleRoot + "/Category/a b.png")
+        let moduleRoot = normalizedPath(controller.moduleUrl)
+        #expect(normalizedPath(try #require(controller.fullUrl(filePath: "Category/a b.png"))) == moduleRoot + "/Category/a b.png")
+    }
+
+    // MARK: - CODE_AUDIT_21 §5.1, §6.1 paths that resolved to the module folder
+
+    @Test("A file in a user folder named Documents resolves to that folder, not the module folder", arguments: [
+        ("Documents/Rules.pdf", "/Documents/Rules.pdf"),
+        ("/Documents/Rules.pdf", "/Documents/Rules.pdf"),
+        ("Campaign/Documents/Rules.pdf", "/Campaign/Documents/Rules.pdf"),
+        ("Documents/Maps/x.pdf", "/Documents/Maps/x.pdf"),
+        ("Handouts/Rules.pdf", "/Handouts/Rules.pdf")
+    ])
+    func userFolderNamedDocuments(stored: String, expected: String) throws {
+        let controller = CloudDocumentController(modulePath: "Pdfs")
+        let moduleRoot = normalizedPath(controller.moduleUrl)
+        let storedUrl = try #require(URL(string: stored))
+
+        let resolved = try #require(controller.fullUrl(fileUrl: storedUrl))
+
+        #expect(normalizedPath(resolved) == moduleRoot + expected)
+        // The stored path survives the round trip an import or a move takes it through.
+        #expect(controller.nameUrl(fullUrl: resolved).path(percentEncoded: false) == expected)
+    }
+
+    @Test("A path that names no file below the module folder does not resolve", arguments: [
+        "/", ".", "..", "./..", "//"
+    ])
+    func folderPathDoesNotResolve(path: String) throws {
+        let controller = CloudDocumentController(modulePath: "Pdfs")
+        #expect(controller.fullUrl(fileUrl: try #require(URL(string: path))) == nil)
+        #expect(controller.fullUrl(filePath: path) == nil)
+    }
+
+    @Test("An absolute file url is reduced to its path below the container")
+    func absoluteFileUrlIsReducedToItsContainerPath() throws {
+        let controller = CloudDocumentController(modulePath: "Pdfs")
+        let moduleRoot = normalizedPath(controller.moduleUrl)
+
+        // Another device's container.
+        let foreign = URL(filePath: "/Users/other/Library/Mobile Documents/iCloud~app/Documents/pdf/Handouts/Rules.pdf")
+        #expect(normalizedPath(try #require(controller.fullUrl(fileUrl: foreign))) == moduleRoot + "/Handouts/Rules.pdf")
+
+        // This device's module folder, with a user folder named like the container folder.
+        let own = controller.moduleUrl.appending(path: "Documents").appending(path: "Rules.pdf")
+        #expect(normalizedPath(try #require(controller.fullUrl(fileUrl: own))) == moduleRoot + "/Documents/Rules.pdf")
+        #expect(controller.nameUrl(fullUrl: own).path(percentEncoded: false) == "/Documents/Rules.pdf")
+
+        // The container itself names no file.
+        #expect(controller.fullUrl(fileUrl: controller.moduleUrl) == nil)
+        #expect(controller.fullUrl(fileUrl: URL(filePath: "/Users/other/Documents/pdf")) == nil)
+    }
+
+    @Test("sanitizedForImport relocates a path that would resolve to a storage folder", arguments: [
+        ("/", FileLocation.newCloud),
+        ("/", FileLocation.appCloud),
+        ("/", FileLocation.icloud),
+        ("file:///Users/other/Documents/pdf", FileLocation.newCloud),
+        ("file:///var/mobile/Documents", FileLocation.local),
+        ("/Documents", FileLocation.local)
+    ])
+    func sanitizedFolderPath(path: String, location: FileLocation) throws {
+        let hostile = FileUrl(fileId: UUID(), url: try #require(URL(string: path)), location: location, module: "Pdfs", relativeUrl: nil)
+
+        let sanitized = hostile.sanitizedForImport()
+
+        #expect(sanitized.location == .newCloud)
+        #expect(sanitized.fileId == hostile.fileId)
+        let controller = CloudDocumentController(modulePath: "Pdfs")
+        let resolved = try #require(controller.fullUrl(fileUrl: sanitized.rawUrl))
+        #expect(normalizedPath(resolved).hasPrefix(normalizedPath(controller.moduleUrl) + "/"))
+    }
+
+    @Test("sanitizedForImport keeps a file in a folder named Documents untouched")
+    func sanitizedKeepsDocumentsFolder() throws {
+        let clean = FileUrl(fileId: UUID(), url: try #require(URL(string: "Documents/Rules.pdf")), location: .newCloud, module: "Pdfs", relativeUrl: nil)
+        #expect(clean.sanitizedForImport().rawUrl == clean.rawUrl)
+        #expect(clean.sanitizedForImport().location == .newCloud)
     }
 
     @Test("sanitizedForImport removes traversal from cloud locations and leaves clean urls untouched")

@@ -34,8 +34,11 @@ struct PdfContentView: View {
             }
             .task {
                 for await notification in NotificationCenter.default.notifications(named: .PDFViewSelectionChanged) {
-                    let view = notification.object as? PDFView
-                    if let selection = view?.currentSelection, let page = selection.pages.first {
+                    // Only this viewer's own `PDFView`: the notification is posted for every
+                    // PDF view in the app, and a selection in a second viewer set this view's
+                    // bookmark candidate. See CODE_AUDIT_21 §5.25.
+                    guard let view = notification.object as? PDFView, view === searchModel.pdfView else { continue }
+                    if let selection = view.currentSelection, let page = selection.pages.first {
                         let content = String(selection.string?.prefix(300) ?? "")
                         let pageNumber = page.label ?? "-"
                         let bounds = selection.bounds(for: page)

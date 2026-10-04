@@ -260,7 +260,7 @@ private struct DeleteItemView: View {
             withAnimation {
                 removingItems = controller.deleteItem(currentSelected: currentSelected)
                 guard !removingItems.isEmpty else { return }
-                root.removeEntryListModel.removeItems = root.editControllable.markCollectionItemsForRemoval(for: removingItems)
+                root.removeEntryListModel.removeItems = root.editControllable.collectionItemsForRemoval(for: removingItems)
             }
             // Nothing selected: opening the panel showed the previous deletion's list.
             // See CODE_AUDIT_Folder §5.12.

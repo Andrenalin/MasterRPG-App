@@ -89,7 +89,7 @@ struct GameDiceResultPopover: View {
         .animation(.default, value: content)
     }
 
-    /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
+    /// Seat 0 is always the game master (see `GameTableModel.assignSeatsForSharePlay`).
     static let masterSeat = TableSeatIdentifier(0)
 
     static func attachmentId(for group: TableDiceGroup) -> String {

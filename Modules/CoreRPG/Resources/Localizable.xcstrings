@@ -20,7 +20,20 @@
       }
     },
     "%@" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@"
+          }
+        }
+      }
     },
     "%@ - %lld" : {
       "localizations" : {
@@ -1718,7 +1731,20 @@
       }
     },
     "Convert to group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Gruppe umwandeln"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แปลงเป็นกลุ่ม"
+          }
+        }
+      }
     },
     "Convert to Group" : {
       "localizations" : {
@@ -5135,7 +5161,20 @@
       }
     },
     "prepare group" : {
-
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppe vorbereiten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เตรียมกลุ่ม"
+          }
+        }
+      }
     },
     "Presets" : {
       "localizations" : {

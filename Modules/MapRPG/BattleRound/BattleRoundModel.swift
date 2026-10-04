@@ -115,12 +115,14 @@ public final class BattleRoundModel: Sendable {
     }
 
     private func rebuildCombatantIndex() {
-        combatantIndexById = Dictionary(
-            uniqueKeysWithValues: combatants.enumerated().map { ($0.element.id, $0.offset) }
-        )
-        // Last-wins rather than a trapping uniqueKeysWithValues — pinId
+        // Last-wins rather than a trapping uniqueKeysWithValues — id and pinId
         // uniqueness is a roster invariant enforced by callers (addCombatant,
-        // synchronize's additionalDefenders merge), not a type guarantee.
+        // synchronize's additionalDefenders merge), not a type guarantee, and a
+        // roster decoded from a peer can break it. See CODE_AUDIT_21 §6.8.
+        combatantIndexById = Dictionary(
+            combatants.enumerated().map { ($0.element.id, $0.offset) },
+            uniquingKeysWith: { _, new in new }
+        )
         combatantIndexByPinId = Dictionary(
             combatants.enumerated().map { ($0.element.pinId, $0.offset) },
             uniquingKeysWith: { _, new in new }
@@ -142,7 +144,7 @@ public final class BattleRoundModel: Sendable {
     // MARK: - Shared private helpers
 
     func sortEntries() {
-        let priorOrder = Dictionary(uniqueKeysWithValues: entries.enumerated().map { ($0.element.id, $0.offset) })
+        let priorOrder = Dictionary(entries.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
         entries.sort { lhs, rhs in
             let left = combatant(id: lhs.attackerId)?.initiative
             let right = combatant(id: rhs.attackerId)?.initiative

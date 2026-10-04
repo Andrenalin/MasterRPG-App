@@ -48,17 +48,20 @@ private final class TableReceiveSerializer {
     ) async throws -> T {
         let token = UUID()
         let previous = tails[itemId]?.task
-        let gate = Task<Void, Never> {
-            _ = await previous?.value
+        // The operation itself is chained: a gate that only awaited the previous gate finished
+        // at once, so a second call ran while the first was still suspended.
+        // See CODE_AUDIT_21 §5.22.
+        let task = Task { () async throws -> T in
+            await previous?.value
+            return try await operation()
         }
-        tails[itemId] = (token, gate)
-        await gate.value
+        tails[itemId] = (token, Task { _ = await task.result })
         defer {
             if tails[itemId]?.token == token {
                 tails[itemId] = nil
             }
         }
-        return try await operation()
+        return try await task.value
     }
 }
 

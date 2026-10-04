@@ -64,40 +64,31 @@ struct CloudDocumentController: Sendable {
     // e.g.: Pdf
     let modulePath: String
 
-    func fullUrl(fileUrl: URL) -> URL {
-        var nameUrl = moduleUrl
-        // An absolute url (imported from another device or a legacy item) must be
-        // reduced to its name below Documents/<module> — appending it verbatim
-        // produces .../<module>/Users/... which never exists on this device.
-        let components = fileUrl.pathComponents
-        let compPath: [String]
-        if components.contains(CloudDocumentController.documentDirName) {
-            compPath = Array(components.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2))
+    /// Where the stored path `fileUrl` is on this device, or `nil` when it names no file below the
+    /// module folder.
+    ///
+    /// A stored path is relative and is taken as it is: a user folder may be called "Documents".
+    /// Stripping everything up to a `Documents` component by name resolved `Documents/Rules.pdf`
+    /// to the module folder itself, and a delete of that item then removed every file of the
+    /// module. Only an absolute file url (a legacy item, or one from another device) carries a
+    /// container prefix, and only that is reduced. See CODE_AUDIT_21 §5.1, §6.1.
+    func fullUrl(fileUrl: URL) -> URL? {
+        let components: [String]
+        if fileUrl.isFileURL, let belowContainer = componentsBelowContainer(of: fileUrl) {
+            components = belowContainer
         } else {
-            compPath = components.filter { $0 != "/" }
+            components = fileUrl.pathComponents
         }
-        // `FileUrl`s arrive from imported files and game peers, so `..` segments must never
-        // be able to climb out of `Documents/<module>`. See CODE_AUDIT_15 §5.1.
-        CloudDocumentController.safeComponents(compPath).forEach {
-            nameUrl.append(path: $0)
-        }
-        // A second line of defence: whatever the components were, the result stays inside the
-        // module folder. See CODE_AUDIT_Folder §6.3.
-        guard CloudDocumentController.isContained(nameUrl, in: moduleUrl) else { return moduleUrl }
-        return nameUrl
+        return moduleFileUrl(components)
     }
 
-    func fullUrl(filePath: String) -> URL {
-        var url = moduleUrl
-        CloudDocumentController.safeComponents(filePath.split(separator: "/").map(String.init)).forEach {
-            url.append(path: $0)
-        }
-        guard CloudDocumentController.isContained(url, in: moduleUrl) else { return moduleUrl }
-        return url
+    /// `filePath` below the module folder, or `nil` when it names no file there.
+    func fullUrl(filePath: String) -> URL? {
+        moduleFileUrl(filePath.split(separator: "/").map(String.init))
     }
 
     func nameUrl(fullUrl: URL) -> URL {
-        let namePath = fullUrl.pathComponents.drop(while: { $0 != CloudDocumentController.documentDirName }).dropFirst(2)
+        let namePath = componentsBelowContainer(of: fullUrl) ?? []
         // `pathComponents` yields already-decoded segments, which can contain characters
         // invalid in a URL string (`#`, unencoded `%`/`?`, ...); build from a clean base
         // and append via `.append(path:)`, which percent-encodes each component, instead
@@ -115,19 +106,21 @@ struct CloudDocumentController: Sendable {
     func write(data: Data, to filePath: String) async throws {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.write(data:to:)", file: "CloudDocumentController.swift")
         
-        let fileUrl = fullUrl(filePath: filePath)
+        let fileUrl = try destinationUrl(filePath: filePath)
         // Batch both operations into single coordinated access
         try await FileManager.default.updateFile(coordinatingAccessTo: fileUrl) { url in
             let parentDir = url.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
-            try data.write(to: url)
+            // Atomic: a failed replacement in place used to leave the old file truncated.
+            // See CODE_AUDIT_21 §5.2.
+            try data.write(to: url, options: .atomic)
         }
     }
 
     func download(filePath: String) async throws {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.download(filePath:)", file: "CloudDocumentController.swift")
         
-        try await FileManager.default.download(coordinatingAccessAt: fullUrl(filePath: filePath))
+        try await FileManager.default.download(coordinatingAccessAt: destinationUrl(filePath: filePath))
     }
 
     func createNameUrl(for selectedUrl: URL) async throws -> URL {
@@ -143,7 +136,7 @@ struct CloudDocumentController: Sendable {
             // already do. See CODE_AUDIT_17 §5.4.
             let name = try await suggestedFileName(for: "", filename: filename)
             let newFilename = try await move(sourceUrl: selectedUrl, destinationFilename: name)
-            return fullUrl(filePath: newFilename)
+            return try destinationUrl(filePath: newFilename)
         }
     }
 
@@ -159,13 +152,13 @@ struct CloudDocumentController: Sendable {
     /// Copies `sourceUrl` to `filePath` below the module folder without reading it into memory.
     /// See CODE_AUDIT_19 §7.1.
     func copy(from sourceUrl: URL, to filePath: String) async throws {
-        try await FileManager.default.copyReplacingItem(coordinatingAccessFrom: sourceUrl, to: fullUrl(filePath: filePath))
+        try await FileManager.default.copyReplacingItem(coordinatingAccessFrom: sourceUrl, to: destinationUrl(filePath: filePath))
     }
 
     /// Like `copy(from:to:)`, but throws `fileWriteFileExists` when `filePath` is already taken
     /// instead of replacing that file. See CODE_AUDIT_Folder §3.18.
     func copyWithoutReplacing(from sourceUrl: URL, to filePath: String) async throws {
-        try await FileManager.default.copyItemWithoutReplacing(coordinatingAccessFrom: sourceUrl, to: fullUrl(filePath: filePath))
+        try await FileManager.default.copyItemWithoutReplacing(coordinatingAccessFrom: sourceUrl, to: destinationUrl(filePath: filePath))
     }
 
     func move(url: URL, newCategory destination: String) async throws -> (URL, URL)? {
@@ -178,8 +171,8 @@ struct CloudDocumentController: Sendable {
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("/\(newFilename)")
         
-        let sourceUrl = fullUrl(fileUrl: url)
-        let destUrl = fullUrl(filePath: newPath)
+        guard let sourceUrl = fullUrl(fileUrl: url) else { return nil }
+        let destUrl = try destinationUrl(filePath: newPath)
         
         // Batch directory creation and move into the move operation's coordination
         try await FileManager.default.updateFile(coordinatingAccessTo: destUrl) { coordDestUrl in
@@ -207,8 +200,8 @@ struct CloudDocumentController: Sendable {
         let newFilename = try await suggestedFileName(for: path, filename: filename)
         let newPath = path.appending("\(path.isEmpty ? "" : "/")" + newFilename)
         
-        let sourceUrl = fullUrl(fileUrl: url)
-        let destUrl = fullUrl(filePath: newPath)
+        guard let sourceUrl = fullUrl(fileUrl: url) else { return nil }
+        let destUrl = try destinationUrl(filePath: newPath)
         
         // Batch directory creation and move into single coordinated operation
         try await FileManager.default.updateFile(coordinatingAccessTo: destUrl) { coordDestUrl in
@@ -230,7 +223,7 @@ extension CloudDocumentController {
     func suggestedFileName(for path: String, filename: String) async throws -> String {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.suggestedFileName(for:filename:)", file: "CloudDocumentController.swift")
         
-        let url = fullUrl(filePath: path + "/" + filename)
+        let url = try destinationUrl(filePath: path + "/" + filename)
         let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: url)
         if exists {
             let newFilename = CloudDocumentController.increasedFileName(for: filename)
@@ -256,8 +249,11 @@ extension CloudDocumentController {
         let number: Int
         var newFilename: String
         if numCounter > 1 {
-            if let extractedNumber = Int(numbers[numCounter - 1]) {
-                number = extractedNumber + 1
+            // A counter at `Int.max` (a crafted import name) is kept as part of the name: adding
+            // one to it trapped. See CODE_AUDIT_21 §6.4.
+            let next = Int(numbers[numCounter - 1]).map { $0.addingReportingOverflow(1) }
+            if let next, !next.overflow {
+                number = next.partialValue
                 newFilename = numbers.dropLast().joined(separator: "-")
             } else {
                 number = 1
@@ -308,13 +304,50 @@ extension CloudDocumentController {
     static let documentDirName: String = "Documents"
 }
 
+extension CloudDocumentController {
+    /// The folder every file of this module is stored below.
+    var moduleUrl: URL {
+        let root = FileManager.preferredRootUrl
+        return root.appending(path: CloudDocumentController.documentDirName).appending(path: modulePath)
+    }
+}
+
 private extension CloudDocumentController {
     func isCloud(url: URL) -> Bool {
         url.absoluteString.hasPrefix(moduleUrl.absoluteString)
     }
 
-    var moduleUrl: URL {
-        let root = FileManager.preferredRootUrl
-        return root.appending(path: CloudDocumentController.documentDirName).appending(path: modulePath)
+    /// `components` below the module folder. `nil` when nothing is left once `.`, `..` and empty
+    /// segments are dropped, or when the result is not inside the module folder: a resolver
+    /// that answered with the module folder itself turned a later delete into a delete of the
+    /// whole module. See CODE_AUDIT_15 §5.1, CODE_AUDIT_Folder §6.3, CODE_AUDIT_21 §5.1, §6.1.
+    func moduleFileUrl(_ components: [String]) -> URL? {
+        let safe = CloudDocumentController.safeComponents(components)
+        guard !safe.isEmpty else { return nil }
+        var url = moduleUrl
+        safe.forEach { url.append(path: $0) }
+        guard CloudDocumentController.isContained(url, in: moduleUrl) else { return nil }
+        return url
+    }
+
+    /// `fullUrl(filePath:)` for a path that is written to or read from; a path that names no file
+    /// below the module folder throws.
+    func destinationUrl(filePath: String) throws -> URL {
+        guard let url = fullUrl(filePath: filePath) else { throw CocoaError(.fileWriteInvalidFileName) }
+        return url
+    }
+
+    /// The components of the absolute `url` below its `…/Documents/<module>/` container, or `nil`
+    /// when it has none. This device's module folder is matched by its exact path; a container
+    /// of another device is recognised by the first `Documents` component.
+    func componentsBelowContainer(of url: URL) -> [String]? {
+        let moduleComponents = moduleUrl.standardizedFileURL.pathComponents
+        let absoluteComponents = url.standardizedFileURL.pathComponents
+        if absoluteComponents.starts(with: moduleComponents) {
+            return Array(absoluteComponents.dropFirst(moduleComponents.count))
+        }
+        let components = url.pathComponents
+        guard let index = components.firstIndex(of: CloudDocumentController.documentDirName) else { return nil }
+        return Array(components.dropFirst(index + 2))
     }
 }

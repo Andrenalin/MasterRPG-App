@@ -807,6 +807,7 @@
       }
     },
     "Decoding Failure: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1365,6 +1366,7 @@
       }
     },
     "Guardrail Violation: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1499,6 +1501,7 @@
       }
     },
     "Memory exceeded: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1756,6 +1759,7 @@
       }
     },
     "Other error: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1868,6 +1872,7 @@
       }
     },
     "Rate Limit exceeded: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2052,6 +2057,7 @@
       }
     },
     "Send message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2490,6 +2496,7 @@
       }
     },
     "Type your message..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

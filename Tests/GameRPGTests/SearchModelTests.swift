@@ -27,16 +27,23 @@ struct SearchModelTests {
     @Test func assigningNilCancelsCurrentTask() async throws {
         let model = GlobalSearchModel()
 
-        // Create a long-running task
+        // A long-running task that records whether its sleep was cancelled.
+        var wasCancelled = false
         let task = Task<Void, Never> {
-            try? await Task.sleep(for: .seconds(10))
+            do {
+                try await Task.sleep(for: .seconds(10))
+            } catch {
+                wasCancelled = true
+            }
         }
 
         model.currentTask = task
         model.currentTask = nil  // triggers `didSet`'s auto-cancel of the previous task
 
-        // Task should be cancelled - just verify it completes
+        // Without the expectation a regression slept the full 10 s and still passed.
+        // See CODE_AUDIT_21 §9.15.
         await task.value
+        #expect(wasCancelled, "assigning nil cancels the task that was stored")
     }
 
     @Test func currentTaskStoresTaskForTheCallerToAwait() async throws {

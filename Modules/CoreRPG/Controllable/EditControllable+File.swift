@@ -115,7 +115,7 @@ public extension EditControllable {
         guard let url else {
             // The file was removed, not replaced.
             if let replacedFileUrl {
-                fileUrlDataController.delete(replacedFileUrl)
+                fileUrlDataController.delete(replacedFileUrl, keepingStoredFile: itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId))
                 reset(fileUrl: nil, itemId: itemId)
             }
             return
@@ -143,7 +143,9 @@ public extension EditControllable {
             }
             reset(fileUrl: updatedFileUrl, itemId: itemId)
             if let replacedFileUrl {
-                await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: updatedFileUrl)
+                if !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
+                    await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: updatedFileUrl)
+                }
                 if updatedFileUrl.location == .url {
                     // A remote file saves no bookmark, so the old one is stale.
                     fileUrlDataController.removeBookmarks(fileId: itemId)
@@ -187,7 +189,9 @@ public extension EditControllable {
     /// Replaces the item's file with `data`. The new file is written before the old one is
     /// deleted, durably (a write failure throws and keeps the old file instead of falling back
     /// to memory-only bytes), and the old file is never deleted when the new one resolves to the
-    /// same location. See CODE_AUDIT_20 §5.4.
+    /// same location, or when another item uses it. The file is named after the item; a name
+    /// another item's file already has gets a numbered suffix instead of overwriting that file.
+    /// See CODE_AUDIT_20 §5.4, CODE_AUDIT_21 §5.2.
     @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
         try await enqueueFileOperation(itemId: itemId) {
             try await writeFile(data: data, itemId: itemId)
@@ -216,17 +220,22 @@ public extension EditControllable {
         // `baseName` comes from a user-editable item name, which can contain characters
         // (`#`, unencoded `%`/`?`, ...) that aren't valid in a URL string; `.appending(component:)`
         // percent-encodes it so this can never fail, unlike `URL(string:)!`.
-        let dataUrl = URL(string: "/")!.appending(path: folder).appending(component: fileName)
+        let requestedUrl = URL(string: "/")!.appending(path: folder).appending(component: fileName)
+        guard let fileUrlDataController else { return }
+        let dataUrl = try await fileUrlDataController.writeDestination(
+            for: requestedUrl,
+            replacing: replacedFileUrl,
+            referencedFileUrls: itemControllable.libraryFileUrls(excluding: itemId)
+        )
         var dataFileUrl = FileUrl(fileId: item.id, url: dataUrl, location: .newCloud, module: module, relativeUrl: nil)
         dataFileUrl.resetData(data)
 
-        guard let fileUrlDataController else { return }
         guard let fileUrl = try await fileUrlDataController.createNewFileUrl(fileId: item.id, unconvertedFileUrl: dataFileUrl, pathExtension: itemControllable.config.filenameExtension, requireDurableStorage: true) else {
             throw CocoaError(.fileWriteUnknown)
         }
         await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: true)
         reset(fileUrl: fileUrl, itemId: itemId)
-        if let replacedFileUrl {
+        if let replacedFileUrl, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
             await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: fileUrl)
         }
     }

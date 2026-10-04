@@ -147,7 +147,9 @@ extension PdfModel: nonisolated ItemDiffComparable {
             guard entries.count == other.entries.count else { return false }
             // Compared by id, not position — entries can legitimately end up in a
             // different order on each side (e.g. after a merge). See CODE_AUDIT_Pdf §5.5.
-            let otherEntriesById = Dictionary(uniqueKeysWithValues: other.entries.map { ($0.id, $0) })
+            // First-wins, not a trapping `uniqueKeysWithValues`: imported or peer data can
+            // repeat an entry id. See CODE_AUDIT_21 §6.8.
+            let otherEntriesById = Dictionary(other.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             return name == other.name &&
             description == other.description &&
             tags == other.tags &&

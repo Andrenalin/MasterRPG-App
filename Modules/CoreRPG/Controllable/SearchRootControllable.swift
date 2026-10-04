@@ -7,14 +7,14 @@ public protocol SearchRootControllable: Sendable  {
     
     // MARK: - Asynchronous Search (Database Access)
     
-    /// Standard search — may load data from SwiftData if not cached.
+    /// Standard search — may load data from Core Data if not cached.
     /// Results stored on `searchModel.results`.
     /// - Parameter text: The search query string
     /// - Returns: Array of search results matching the query
     @MainActor func results(text: String) async -> [SearchResult]
     
     /// Scoped view — called by `performDetailSearch` to build the detail list for a parent model.
-    /// May load data from SwiftData if not cached.
+    /// May load data from Core Data if not cached.
     /// Returns a view-rooted result: character-as-root for the character inspector,
     /// collection children for `ListRootView` detail, etc.
     /// - Note: Semantically different from `results(text:, focusId:)` — may return the item itself as root.

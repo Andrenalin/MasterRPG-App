@@ -10,21 +10,6 @@ import Testing
 @MainActor
 @Suite(.serialized, .snapshots, .tags(.snapshot))
 struct GeneratorRPGDynamicPreviewSnapshotTests {
-    // snapshot-root: GeneratorRPG::ChatInputView
-    @Test("ChatInputView")
-    func chatInputView() async throws {
-        try await assertDynamicSnapshot("ChatInputView") {
-            GeneratorFocusSnapshotHarness { focus in
-                ChatInputView(
-                    messageText: .constant("Describe a forgotten shrine"),
-                    generatorController: AdventureGeneratorController(),
-                    isTextFieldFocused: focus,
-                    sendMessageAction: { _ in }
-                )
-            }
-        }
-    }
-
     // snapshot-root: GeneratorRPG::DetailListView
     @Test("DetailListView")
     func detailListView() async throws {

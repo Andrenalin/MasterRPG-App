@@ -38,8 +38,11 @@ final class TableGenerationOccurrence: Identifiable {
         self.depth = depth
         self.tablePath = tablePath
         self.sourceEntryId = sourceEntryId
+        // Not a trapping `uniqueKeysWithValues`: a peer or imported table can repeat an entry
+        // id. See CODE_AUDIT_21 §6.8.
         self.selectionIds = Dictionary(
-            uniqueKeysWithValues: entries.map { ($0.id, UUID()) }
+            entries.map { ($0.id, UUID()) },
+            uniquingKeysWith: { first, _ in first }
         )
     }
 

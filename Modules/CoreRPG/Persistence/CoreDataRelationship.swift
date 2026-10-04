@@ -19,8 +19,8 @@ public extension NSManagedObject {
     }
 
     /// Finds `existing`'s member matching `uuid`, or creates a fresh `Child`
-    /// in `self`'s own managed object context — the "entryOrNew"/"photoOrNew"
-    /// pattern every module's to-many relationship accessor hand-wrote.
+    /// in `self`'s own managed object context. `syncEntries` below maps every
+    /// entry of a to-many relationship through it.
     func childOrNew<Child: NSManagedObject & CoreDataId>(_ uuid: UUID, in existing: [Child]) -> Child {
         if let found = existing.first(where: { $0.uuid == uuid }) {
             return found

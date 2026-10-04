@@ -62,4 +62,14 @@ struct CloudDocumentControllerTests {
     func nameWithInvailCounters(testCase: FileNameIncrementTestCase) async throws {
         #expect(testCase.expected == CloudDocumentController.increasedFileName(for: testCase.input))
     }
+
+    /// CODE_AUDIT_21 §6.4: `Int.max + 1` trapped.
+    @Test(arguments: [
+        FileNameIncrementTestCase(input: "a-9223372036854775807.jpg", expected: "a-9223372036854775807-1.jpg"),
+        FileNameIncrementTestCase(input: "a-9223372036854775807", expected: "a-9223372036854775807-1"),
+        FileNameIncrementTestCase(input: "a-9223372036854775806.jpg", expected: "a-9223372036854775807.jpg"),
+    ])
+    func counterAtIntMaxDoesNotOverflow(testCase: FileNameIncrementTestCase) async throws {
+        #expect(testCase.expected == CloudDocumentController.increasedFileName(for: testCase.input))
+    }
 }

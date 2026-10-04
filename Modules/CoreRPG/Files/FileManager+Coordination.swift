@@ -23,9 +23,17 @@ extension FileManager {
         }
     }
     
-    func removeItem(coordinatingAccessAt dirURL: URL) async throws {
+    /// Removes the file at `fileURL`. A folder is never removed and throws
+    /// `DirectoryRemovalRefused`: every caller deletes one item's file, and a stored path that
+    /// resolved to a module folder took every file of the module with it.
+    /// See CODE_AUDIT_21 §5.1, §6.1.
+    func removeFile(coordinatingAccessAt fileURL: URL) async throws {
         try await Self.performCoordinatedFileAccess { cancellation in
-            try Self.coordinate(cancellation, writingItemAt: dirURL, options: .forDeleting) { url in
+            try Self.coordinate(cancellation, writingItemAt: fileURL, options: .forDeleting) { url in
+                var isDirectory: ObjCBool = false
+                if FileManager.default.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory), isDirectory.boolValue {
+                    throw DirectoryRemovalRefused()
+                }
                 try FileManager.default.removeItem(at: url)
             }
         }
@@ -275,6 +283,9 @@ extension FileManager {
         return try block(firstURL, secondURL)
     }
 }
+
+/// Thrown by `FileManager.removeFile(coordinatingAccessAt:)` when the target is a folder.
+struct DirectoryRemovalRefused: Error {}
 
 /// Lets a task's cancellation reach the `NSFileCoordinator` a coordinated operation is blocked
 /// in. A coordinator created after cancellation is cancelled straight away, so the operation

@@ -222,7 +222,7 @@ extension EditController {
     /// character it can legitimately move back out to) as opposed to falling
     /// back to the unrelated item-list folder hierarchy (`parentId`). A value
     /// entry has nowhere valid to "move out" to when the only resolvable
-    /// parent is a folder — see `SheetContextMenuView.moveOutOfGroupButton`.
+    /// parent is a folder — see `SheetContextMenuMoveOutOfGroupButton` in `SheetContextMenuView.swift`.
     @MainActor func isValueGroupParent(itemId: UUID) -> Bool {
         (itemControllable.itemSync(for: itemId) as? Model)?.groupId != nil
     }

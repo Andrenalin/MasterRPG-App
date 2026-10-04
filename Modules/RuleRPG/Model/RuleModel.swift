@@ -134,8 +134,10 @@ extension RuleModel: ItemLinkRegistrable {
     public func changedLinkRegisterModels(
         oldValue: RuleModel
     ) -> (added: [LinkRegisterModel], removed: [LinkRegisterModel]) {
-        let oldById = Dictionary(uniqueKeysWithValues: oldValue.entries.map { ($0.id, $0) })
-        let newById = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        // First-wins, not a trapping `uniqueKeysWithValues`: imported rules can repeat an
+        // entry id. See CODE_AUDIT_21 §6.8.
+        let oldById = Dictionary(oldValue.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let newById = Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let oldIds = Set(oldById.keys)
         let newIds = Set(newById.keys)
 

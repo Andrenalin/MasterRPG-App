@@ -270,11 +270,33 @@ struct MapPopoverButton: View {
             }
             .labelStyle(.iconOnly)
             .imageScale(.large)
-            .padding(8)
+            .modifier(MapPopoverButtonSize())
             .contentShape(.circle)
         }
         .modifier(MapPopoverButtonAppearance(tint: tint))
         .help(title)
+    }
+}
+
+/// One size for every button of a panel. Sized by its symbol, a trash button came out larger
+/// than a plus button and both stayed below the 44 pt touch target, with the destructive action
+/// next to its neighbour. The diameter follows Dynamic Type. tvOS and visionOS keep the padding:
+/// their bordered style sizes the button. See CODE_AUDIT_21 §8.1.
+private struct MapPopoverButtonSize: ViewModifier {
+#if os(macOS)
+    private static let baseDiameter: CGFloat = 36
+#else
+    private static let baseDiameter: CGFloat = 44
+#endif
+
+    @ScaledMetric(relativeTo: .body) private var diameter = MapPopoverButtonSize.baseDiameter
+
+    func body(content: Content) -> some View {
+#if os(tvOS) || os(visionOS)
+        content.padding(8)
+#else
+        content.frame(width: diameter, height: diameter)
+#endif
     }
 }
 

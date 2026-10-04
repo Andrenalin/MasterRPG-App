@@ -402,7 +402,7 @@ extension ExternalImportReviewSession {
         let removed = try await fileController.url(for: fileUrl) { url async throws -> Bool? in
             guard let url else { return false }
             do {
-                try await FileManager.default.removeItem(coordinatingAccessAt: url)
+                try await FileManager.default.removeFile(coordinatingAccessAt: url)
             } catch let error as CocoaError where error.code == .fileNoSuchFile {
                 return true
             }

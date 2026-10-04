@@ -53,10 +53,9 @@ struct ConversationState: Equatable {
     }
 }
 
-/// A generator session model that drives one `ConversationEngine`. The generation options,
-/// the token bookkeeping and the engine wiring were copied between `GeneratorSessionModel`
-/// and `AdventureSessionModel`; fixes already had to be made twice (CODE_AUDIT_18 §5.20).
-/// See CODE_AUDIT_19 §9.16.
+/// A generator session model that drives one `ConversationEngine`: the generation options,
+/// the token bookkeeping and the engine wiring. `GeneratorSessionModel` is the only conformer
+/// since the unused adventure chat copy was removed. See CODE_AUDIT_19 §9.16, CODE_AUDIT_21 §9.1.
 @MainActor
 protocol ConversationSessionModel: AnyObject {
     var conversationEngine: ConversationEngine { get }

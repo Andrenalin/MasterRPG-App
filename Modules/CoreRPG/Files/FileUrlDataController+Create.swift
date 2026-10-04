@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import CryptoKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -49,7 +48,14 @@ public extension FileUrlDataController {
             }
         }
 
-        let fullUrl = cloudDocumentController.fullUrl(fileUrl: unconvertedFileUrl.rawUrl)
+        // A url that names no file below the module folder (a bare folder, the container root of
+        // another device) gets a name of its own; it used to resolve to the module folder.
+        // See CODE_AUDIT_21 §5.1, §6.1.
+        let fallbackName = pathExtension.isEmpty ? fileId.uuidString : "\(fileId.uuidString).\(pathExtension)"
+        guard let fullUrl = cloudDocumentController.fullUrl(fileUrl: unconvertedFileUrl.rawUrl)
+                ?? cloudDocumentController.fullUrl(filePath: fallbackName) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
         let fileURL = cloudDocumentController.nameUrl(fullUrl: fullUrl)
         let filePath = fileURL.path(percentEncoded: false)
 
@@ -113,7 +119,9 @@ public extension FileUrlDataController {
             return try await createNewFileUrl(fileId: fileId, unconvertedFileUrl: unconverted, pathExtension: relativeUrl.pathExtension)
         }
 
-        let fullUrl = cloudDocumentController.fullUrl(fileUrl: relativeUrl)
+        guard let fullUrl = cloudDocumentController.fullUrl(fileUrl: relativeUrl) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
         let nameUrl = cloudDocumentController.nameUrl(fullUrl: fullUrl)
         let filePath = nameUrl.path(percentEncoded: false)
         let cloudDocumentController = cloudDocumentController
@@ -146,6 +154,22 @@ public extension FileUrlDataController {
         let name = try await cloudDocumentController.suggestedFileName(for: folder, filename: requestedUrl.lastPathComponent)
         guard name != requestedUrl.lastPathComponent else { return requestedUrl }
         return requestedUrl.deletingLastPathComponent().appending(component: name)
+    }
+
+    /// Where new bytes for an item are written. `requestedUrl` is used when nothing is there, or
+    /// when the file there is the item's own current file (`current`) and no item in
+    /// `referencedFileUrls` shares it: it is then replaced in place. Any other taken name gets a
+    /// numbered suffix. Item names are not unique, and a second photo named like the first used
+    /// to overwrite, or silently share, the first one's file. See CODE_AUDIT_21 §5.2.
+    func writeDestination(for requestedUrl: URL, replacing current: FileUrl?, referencedFileUrls: [FileUrl]) async throws -> URL {
+        if let current, current.location == .newCloud,
+           let currentLocation = storedLocation(of: current),
+           let requestedLocation = cloudDocumentController.fullUrl(fileUrl: requestedUrl),
+           Self.normalizedPath(currentLocation) == Self.normalizedPath(requestedLocation),
+           !referencedFileUrls.contains(where: { isSameStoredFile($0, current) }) {
+            return requestedUrl
+        }
+        return try await uniqueDestination(for: requestedUrl)
     }
 
     /// ItemController will call to get FileUrl for given urls from picker
@@ -236,10 +260,16 @@ public extension FileUrlDataController {
     }
 
     /// called from ItemStore on delete of the item
-    func delete(_ fileUrl: FileUrl?) {
+    /// - Parameter keepingStoredFile: Another item still references the stored file, so only this
+    ///   item's bookmark and held bytes go. See CODE_AUDIT_21 §5.2.
+    func delete(_ fileUrl: FileUrl?, keepingStoredFile: Bool = false) {
         guard let fileUrl else { return }
         // Bytes a game peer sent for this file are of no use once the item is gone.
         peerFiles.remove(fileUrl.fileId)
+        guard !keepingStoredFile else {
+            fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
+            return
+        }
         switch fileUrl.location {
             case .local, .appCloud, .newCloud:
                 Task { @concurrent in
@@ -297,8 +327,9 @@ public extension FileUrlDataController {
     /// had that name, including another item's file or a newer local version.
     /// See CODE_AUDIT_Folder §5.2.
     func importDestination(for fileUrl: FileUrl, contentHash: String, referencedFileUrls: [FileUrl]) async throws -> FileUrl {
-        guard fileUrl.location != .url else { return fileUrl }
-        let destination = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl)
+        // A url that names no file is given its own name by `createNewFileUrl`.
+        guard fileUrl.location != .url,
+              let destination = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl) else { return fileUrl }
         let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: destination)
         guard exists else { return fileUrl }
         let destinationPath = Self.normalizedPath(destination)
@@ -353,16 +384,46 @@ public extension FileUrlDataController {
     /// when a real error occurred and the caller should keep whatever
     /// reference (e.g. a bookmark) it was about to drop, so the file isn't
     /// silently orphaned. See CODE_AUDIT §5.3.
-    private func removeFileLoggingFailure(at url: URL) async -> Bool {
+    ///
+    /// The one place a stored file is removed. It refuses anything that is not a file strictly
+    /// below a folder the app stores files in: an imported or mis-resolved path used to be able
+    /// to point a delete at a module folder. See CODE_AUDIT_21 §5.1, §6.1.
+    internal func removeFileLoggingFailure(at url: URL) async -> Bool {
+        guard isBelowFileRoot(url) else {
+            Logger.fileStore.fault("Refused to delete \(url.lastPathComponent, privacy: .private): not below a file root of the app")
+            return false
+        }
         do {
-            try await FileManager.default.removeItem(coordinatingAccessAt: url)
+            try await FileManager.default.removeFile(coordinatingAccessAt: url)
             return true
+        } catch is DirectoryRemovalRefused {
+            Logger.fileStore.fault("Refused to delete \(url.lastPathComponent, privacy: .private): it is a folder")
+            return false
         } catch {
             guard (error as NSError).code == NSFileNoSuchFileError else {
                 Logger.fileStore.error("Cannot delete file, keeping bookmark for retry \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
                 return false
             }
             return true
+        }
+    }
+
+    /// Whether `url` lies strictly below a folder the app keeps item files in: the module folder,
+    /// the legacy app-cloud and local document folders, the remote-file cache or the temporary
+    /// folder (staged copies).
+    private func isBelowFileRoot(_ url: URL) -> Bool {
+        let roots: [URL?] = [
+            cloudDocumentController.moduleUrl,
+            locationFileManager.rootAppCloud,
+            locationFileManager.rootLocal,
+            URL.cachesDirectory.appending(path: Self.remoteCacheFolderName, directoryHint: .isDirectory),
+            URL.temporaryDirectory
+        ]
+        let path = Self.normalizedPath(url)
+        return roots.contains { root in
+            guard let root else { return false }
+            let rootPath = Self.normalizedPath(root)
+            return path.hasPrefix(rootPath.hasSuffix("/") ? rootPath : rootPath + "/")
         }
     }
 

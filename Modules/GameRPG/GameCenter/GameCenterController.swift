@@ -87,7 +87,9 @@ final class GameCenterController: Sendable {
         model.beginReporting()
         do {
             let existing = try await GKAchievement.loadAchievements()
-            let existingByID = Dictionary(uniqueKeysWithValues: existing.map { ($0.identifier, $0) })
+            // First-wins, not a trapping `uniqueKeysWithValues`: the ids come from GameKit.
+            // See CODE_AUDIT_21 §5.16.
+            let existingByID = Dictionary(existing.map { ($0.identifier, $0) }, uniquingKeysWith: { first, _ in first })
             let progress = evaluator.progress(from: summary)
             var achievements: [GKAchievement] = []
 

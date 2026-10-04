@@ -202,7 +202,9 @@ final class MapEntryViewerModel {
     }
 
     private func reconcileRoomNodes(with entries: [MapEntryModel]) {
-        var existingNodes = Dictionary(uniqueKeysWithValues: roomNodes.map { ($0.id, $0) })
+        // First-wins, not a trapping `uniqueKeysWithValues`: the nodes mirror entries of a peer
+        // or imported map, which can repeat an id. See CODE_AUDIT_21 §6.8.
+        var existingNodes = Dictionary(roomNodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let reconciled = entries.map { entry in
             if let node = existingNodes.removeValue(forKey: entry.id) {
                 node.update(entry: entry)

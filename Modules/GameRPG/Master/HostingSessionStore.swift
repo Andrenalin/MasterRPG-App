@@ -23,9 +23,13 @@ final class HostingSessionStore: Sendable {
     private let storage: any JoinCodeStorage
     /// Entries of this app run, by key.
     private let memory: Mutex<[String: String]>
-    /// Whether `prewarm()` has read the stored entries, so a miss in memory means "none stored"
-    /// without a Keychain read on the main actor. See CODE_AUDIT_20 §3.7.
-    private let isPrewarmed = Mutex(false)
+    /// The keys `prewarm()` got an answer for from the Keychain (an entry, or none), so a miss in
+    /// memory means "none stored" without a Keychain read on the main actor. A key whose read
+    /// was unavailable (the device was locked) is not listed and is read again when hosting
+    /// starts: counting it as "none stored" minted a new session id over the stored one, and
+    /// the players of the previous run were never redialed.
+    /// See CODE_AUDIT_20 §3.7, CODE_AUDIT_21 §5.3.
+    private let prewarmedKeys = Mutex<Set<String>>([])
     /// Keychain writes, in order, so a later entry never lands before an earlier one.
     private let writeChain = Mutex<Task<Void, Never>?>(nil)
 
@@ -39,22 +43,32 @@ final class HostingSessionStore: Sendable {
     @concurrent
     func prewarm() async {
         for key in [Self.masterKey, Self.proxyKey] {
-            if case .found(let stored) = storage.read(forKey: key) {
+            switch storage.read(forKey: key) {
+            case .found(let stored):
                 memory.withLock { entries in
                     if entries[key] == nil { entries[key] = stored }
                 }
+            case .notFound:
+                break
+            case .unavailable:
+                continue
             }
+            _ = prewarmedKeys.withLock { $0.insert(key) }
         }
-        isPrewarmed.withLock { $0 = true }
     }
 
     func sessionId(forPasscode passcode: String, proxy: Bool) -> String {
         let key = proxy ? Self.proxyKey : Self.masterKey
-        if let remembered = memory.withLock({ $0[key] }), let session = Self.session(from: remembered, passcode: passcode) {
+        let remembered = memory.withLock { $0[key] }
+        if let remembered, let session = Self.session(from: remembered, passcode: passcode) {
             Logger.networking.debug("HostingSessionStore: Reusing the session of this app run")
             return session
         }
-        if isPrewarmed.withLock({ $0 }) {
+        if remembered != nil {
+            // This run's entry belongs to another code and is newer than the stored one: its
+            // Keychain write may still be queued, and the entry it replaces must not come back.
+            Logger.networking.debug("HostingSessionStore: The session of this app run belongs to another code")
+        } else if prewarmedKeys.withLock({ $0.contains(key) }) {
             // The stored entry is already in memory (and belongs to another code, or there is none).
             Logger.networking.debug("HostingSessionStore: No stored session for this code")
         } else {

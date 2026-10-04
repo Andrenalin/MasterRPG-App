@@ -35,6 +35,26 @@ struct TableGenerationControllerTests {
         #expect(result == testCase.expected)
     }
 
+    @Test("A list table is rolled by position; a leading number in a name is not a range (CODE_AUDIT_21 §5.18)")
+    func listTableIgnoresNumericNames() throws {
+        let controller = makeRoot().generationController
+        let entries = [
+            TableGenerationEntry(id: .fixture2, name: "2 Wolves", content: "", tableLinks: []),
+            TableGenerationEntry(id: .fixture3, name: "5 Orcs", content: "", tableLinks: []),
+            TableGenerationEntry(id: .fixture4, name: "A Dragon", content: "", tableLinks: [])
+        ]
+        let list = TableGenerationOccurrence(tableId: .fixture5, tableName: "Encounters", tableType: .list, diceId: nil, entries: entries, depth: 0, tablePath: [])
+
+        #expect(controller.matchingEntry(for: 1, in: list)?.id == entries[0].id)
+        #expect(controller.matchingEntry(for: 2, in: list)?.id == entries[1].id, "\"5 Orcs\" could never be rolled")
+        #expect(controller.matchingEntry(for: 3, in: list)?.id == entries[2].id)
+
+        // In a dice table the names are ranges, also for a result a player rolled and sent.
+        let ranged = TableGenerationOccurrence(tableId: .fixture5, tableName: "Encounters", tableType: .dice, diceId: nil, entries: entries, depth: 0, tablePath: [])
+        #expect(controller.matchingEntry(for: 2, in: ranged)?.id == entries[0].id)
+        #expect(controller.matchingEntry(for: 5, in: ranged)?.id == entries[1].id)
+    }
+
     @Test("Selecting an entry appends every linked table and deselecting restores siblings")
     func selectionExpandsAndCollapsesEveryLinkedTable() throws {
         // Given

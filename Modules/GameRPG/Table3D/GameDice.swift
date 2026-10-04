@@ -232,7 +232,7 @@ struct Die20: EntityEquipment {
         // disabling the entity. See that pose's own doc.
     }
 
-    /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
+    /// Seat 0 is always the game master (see `GameTableModel.assignSeatsForSharePlay`).
     private static func accessibilityLabel(seatIndex: Int, dieNumber: Int) -> LocalizedStringResource {
         seatIndex == 0
             ? LocalizedStringResource("Game master's D20 die \(dieNumber)", bundle: .module)
@@ -344,7 +344,7 @@ struct Die: EntityEquipment {
         // `self.entity.isEnabled = false` here either.
     }
 
-    /// Seat 0 is always the game master (see `GameEquipment.assignSeatsForSharePlay`).
+    /// Seat 0 is always the game master (see `GameTableModel.assignSeatsForSharePlay`).
     private static func accessibilityLabel(seatIndex: Int, dieNumber: Int) -> LocalizedStringResource {
         seatIndex == 0
             ? LocalizedStringResource("Game master's die \(dieNumber)", bundle: .module)

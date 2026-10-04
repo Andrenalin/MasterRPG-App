@@ -57,10 +57,6 @@ public final class ConversationEngine {
         resetSession()
     }
 
-    public func clear() {
-        resetSession()
-    }
-
     public func cancelActiveResponse() {
         activeStreamingTask?.cancel()
         activeStreamingTask = nil

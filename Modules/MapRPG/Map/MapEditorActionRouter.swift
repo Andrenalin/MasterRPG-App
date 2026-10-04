@@ -118,7 +118,9 @@ final class MapEditorActionRouter {
     }
 
     private func synchronizeRooms(from source: MapModel) {
-        let updatedById = Dictionary(uniqueKeysWithValues: source.entries.map { ($0.id, $0) })
+        // First-wins, not a trapping `uniqueKeysWithValues`: a peer or imported map can carry
+        // two entries with one id. See CODE_AUDIT_21 §6.8.
+        let updatedById = Dictionary(source.entries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for entry in session.entries.entries {
             guard let updated = updatedById[entry.id] else { continue }
             session.entries.setEntry(entry: updated)

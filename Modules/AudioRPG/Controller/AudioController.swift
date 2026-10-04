@@ -432,8 +432,17 @@ private extension AudioController {
         guard let currentIndex = model.currentIndex else { return }
         if currentIndex < model.playList.count - 1 {
             togglePlay(id: model.playList[currentIndex + 1].id)
-        } else if model.repeatPlayList, model.playList.count > 1 {
-            togglePlay(id: model.playList[0].id)
+        } else if model.repeatPlayList, let first = model.playList.first {
+            if model.playList.count > 1 {
+                togglePlay(id: first.id)
+            } else {
+                // A one-track playlist: `togglePlay` only switches to another track, so the
+                // track is prepared again, which plays it from the start. Repeat used to do
+                // nothing for a single looping track. See CODE_AUDIT_21 §5.20.
+                Task {
+                    await preparePlay(id: first.id)
+                }
+            }
         } else {
             model.isPlaybackComplete = complete
         }

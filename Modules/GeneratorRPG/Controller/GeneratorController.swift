@@ -239,14 +239,6 @@ struct GeneratorController: Sendable {
         }
     }
         
-    @MainActor func clearChat() {
-        model.conversationEngine.clear()
-        model.isLoading = false
-        model.responseErrorContent = ""
-        model.showError = false
-        model.syncConversationState()
-    }
-
     // MARK: - Extraction
 
     @MainActor func extract(message: String, rootModel: SheetRootModel, generation: Int? = nil, maxCharacters: Int = 6_000) {

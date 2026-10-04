@@ -789,3 +789,37 @@ To spot-check a finding, command-click its `path:line` reference in Xcode; it sh
 **Earlier fixes re-verified as correct.** Folder §3.1–3.4, §3.6–3.11, §3.15, §3.17, §3.18, §5.1, §5.3–5.9, §5.13–5.15, §5.17–5.19, §5.21, §5.23, §5.25, §5.27, §6.3 (traversal part), §7.2, §7.4, §8.1–8.3, §9.2–9.4, §9.6–9.10; audit 20 §3.1, §3.2, §3.3, §3.5, §3.6, §3.8, §4.3, §5.1, §5.6, §5.9, §5.11, §6.1, §7.1, §7.4; audit 19 §5.7, §3.13, §3.14. The twelve `FolderListController` files and the bespoke controllers collapsed into generics lost no differing override.
 
 If a finding doesn't reproduce when you open its line, send me the section number and I'll re-investigate.
+
+---
+
+## 13. Remediation status (Critical, High and the §2 quick wins)
+
+Fixed 2026-10-04 on `develop` (uncommitted at the time of writing). Scope of this round: the Critical finding, the three High findings and the seventeen quick wins of §2. Every fix is tagged `See CODE_AUDIT_21 §x.y` in the code. Findings not listed here are unchanged.
+
+| § | Status | Fix |
+|---|---|---|
+| 5.1 | Fixed | `CloudDocumentController.fullUrl(fileUrl:)` and `fullUrl(filePath:)` return an optional and fail on a path that names no file below the module folder; neither falls back to the module folder. A stored (scheme-less) path is taken as it is, so a user folder named "Documents" resolves to `<module>/Documents/…`. Only an absolute file url is reduced: this device's module folder by exact prefix, another device's container by its `Documents` component. `nameUrl(fullUrl:)` uses the same rule. Existing items in a "Documents" folder need no migration: their file was always written to the path that now resolves. |
+| 6.1 | Fixed | Same resolver. `FileUrl.sanitizedForImport` relocates a cloud or local path that would resolve to a storage folder (`/`, a bare `…/Documents/<module>`, `Documents` for `.local`). `createNewFileUrl` names such a file after its file id instead of failing; `importDestination` and `storedLocation` pass the `nil` on. |
+| 2 (delete helpers) | Fixed | `FileManager.removeFile(coordinatingAccessAt:)` replaces `removeItem(coordinatingAccessAt:)` and refuses a folder. `removeFileLoggingFailure(at:)` is the one remover of stored files (`delete`, `deleteReplaced`, `removeStoredFile`, the legacy move) and also refuses anything not strictly below a file root of the app (module folder, legacy app-cloud and local folders, remote cache, temp). This also covers `.local`/`.appCloud` references that resolve to their root, which the audit did not list. |
+| 5.2 | Fixed | `writeFile(data:)` asks `FileUrlDataController.writeDestination` for the path: the item's own current file is replaced in place unless another item shares it, any other taken name gets a numbered suffix. `CloudDocumentController.write` is atomic. `ItemControllable.isFileUsedElsewhere` keeps a shared file on item delete, file removal and both file replacements. |
+| 5.29 | Fixed | Delete only collects (`collectionItemsForRemoval`) and the panel trashes on Remove (`confirmRemoval(of:keeping:)`: trash all candidates, restore the kept ones, in one step). Cancel, a swipe or a terminated app leave every item untouched; the launch cleanup finds nothing unconfirmed. The rows still leave the list when Delete is pressed and return on Cancel. |
+| 6.4 | Fixed | `increasedFileName` uses `addingReportingOverflow`; a counter at `Int.max` is kept as part of the name and `-1` is appended. |
+| 5.3 | Fixed | `HostingSessionStore` records prewarm per key and only for `.found` or `.notFound`; an unavailable read is repeated at hosting time. Also: an entry of this app run for another code now counts as newer than the Keychain, whose write may still be queued; the stale stored entry could come back (`differentCodeGetsNewSession` failed on that timing). |
+| 3.1 | Fixed, differently | The sync consumer resolves `itemControllable.dataControllable` per batch. The proposed "cancel and clear `syncBatchConsumer` in `setUp`" would end the batch `AsyncStream` (a cancelled consumer terminates it), so no later consumer would receive anything. |
+| 5.18 | Fixed | `matchingEntry` applies the range lookup only for `tableType == .dice`. Not `diceId != nil`: a dice table without an assigned dice still receives a player's roll (`consumesCategorizedPlayerResult`). |
+| 5.20 | Fixed | A one-track playlist with Repeat on is prepared again, which plays it from the start. No test: it needs a playing `AVPlayer`. |
+| 5.22 | Fixed | `TableReceiveSerializer.run` chains the operation itself and awaits that task. |
+| 5.23 | Write half fixed | The app's `RollDiceIntent` records through `DiceConfiguration.recordLastRoll`. The two intents and the two `IntentDiceType` enums are still separate (§9.5). |
+| 5.25 | Fixed | The selection observer ignores notifications whose object is not `searchModel.pdfView`. |
+| 5.10 | Fixed | The import inside the `itemMissing` branch has its own `do/catch`; both failure paths answer through `reportFailedAudioContribution`. |
+| 5.16, 6.8 | Fixed | `uniquingKeysWith` at the eleven cited lines (GameKit ids, journal attachment ids and dependencies, map, battle round, PDF, table generation, rule). The four remaining `uniqueKeysWithValues` uses build from app-owned values (ZIP paths are checked before, review candidates, the module order, preview fixtures). |
+| 8.1 | Fixed | `MapPopoverButton` has one scaled diameter (44 pt on iOS, 36 pt on macOS); tvOS and visionOS keep the bordered style's own size. *Check the two panels on a device.* |
+| 8.2 | Partly fixed | The script accepts `bundle: .ruleModule`. German and Thai added for `"%@"`, `"Convert to group"`, `"prepare group"`; the empty GameRPG key is gone with its source (`GameJoinCodeOTPField` uses a verbatim label). `Text("Recover")` names the main bundle. The check still fails on the 70 stale keys in 13 catalogs, which were not removed: a key that is only looked up dynamically would be lost. |
+| 9.1 | Fixed | `ChatInputView`, `AdventureGeneratorController` with `AdventureSessionModel`, the snapshot test, `GeneratorController.clearChat()` and the then unused `ConversationEngine.clear()` are deleted. `ConversationSessionModel` is still a protocol with one conformer. |
+| 4.1 | Fixed | `import Combine` removed from the nine files. |
+| 9.10 | Fixed | The five references are corrected. |
+| 9.15 | Partly fixed | `assigningNilCancelsCurrentTask` asserts the cancellation. The commented-out test in `AppIntentTests.swift` is unchanged. |
+
+New tests: `UntrustedImportTests` (folder named "Documents", folder paths that do not resolve, absolute urls, import sanitising), `FileUrlDataControllerFileOperationTests` (delete inside "Documents", a folder reference deletes nothing, the remover refuses folders and foreign paths, write destination, shared file), `CloudDocumentControllerTests` (counter at `Int.max`), `FolderOperationAuditTests` (nothing trashed before Remove), `HostingSessionStoreTests` (locked Keychain at prewarm), `TableGenerationControllerTests` (list table by position).
+
+Noticed while fixing, not changed: in the delete panel an item that is itself selected for removal and also links to another selected item is restored on Remove, because link rows count as kept (`restoredItems` in `AffectedLinkActionPanelView`). The behaviour is the same as before this round.

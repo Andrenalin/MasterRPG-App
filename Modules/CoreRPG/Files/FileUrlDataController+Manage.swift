@@ -1,6 +1,5 @@
 // @copyright André Trettin
 
-import Combine
 import CryptoKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -44,7 +43,7 @@ extension FileUrlDataController {
             let destinationName = try await cloudDocumentController.move(sourceUrl: url, destinationFilename: part)
             guard let newUrl = URL(string: destinationName) else { return nil }
             if fileUrl.location == .local || fileUrl.location == .appCloud {
-                try? await FileManager.default.removeItem(coordinatingAccessAt: url)
+                _ = await removeFileLoggingFailure(at: url)
             }
             let newFileUrl = FileUrl(fileId: fileUrl.fileId, url: newUrl, location: .newCloud, module: fileUrl.module, relativeUrl: nil, contentHash: fileUrl.contentHash)
             return newFileUrl
@@ -98,7 +97,7 @@ extension FileUrlDataController {
             ? normalizedFilenameExtension
             : fileUrl.rawUrl.pathExtension
         var url = URL.cachesDirectory
-            .appending(path: "RemoteFiles", directoryHint: .isDirectory)
+            .appending(path: Self.remoteCacheFolderName, directoryHint: .isDirectory)
             .appending(path: locationFileManager.moduleFolder, directoryHint: .isDirectory)
             .appending(path: String(fileUrl.fileId.uuidString.suffix(2)), directoryHint: .isDirectory)
             .appending(path: "\(fileUrl.fileId.uuidString)-\(remoteURLIdentity(for: fileUrl))")
@@ -107,6 +106,9 @@ extension FileUrlDataController {
         }
         return url
     }
+
+    /// The folder below the caches directory that holds the cached copies of `.url` files.
+    static let remoteCacheFolderName = "RemoteFiles"
 
     private func remoteURLIdentity(for fileUrl: FileUrl) -> String {
         Data(SHA256.hash(data: Data(fileUrl.rawUrl.absoluteString.utf8)))

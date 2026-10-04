@@ -1,7 +1,6 @@
 // @copyright André Trettin
 
 import Foundation
-import Combine
 import CoreData
 import CoreSpotlight
 

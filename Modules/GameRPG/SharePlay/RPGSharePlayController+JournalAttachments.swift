@@ -3,7 +3,6 @@
 import AudioRPG
 import AVFoundation
 import CoreRPG
-import Combine
 import Foundation
 import GroupActivities
 import os.log
@@ -74,8 +73,11 @@ extension RPGSharePlayController {
                 arrivalEpoch: $0.arrivalEpoch
             )
         })
-        let orderByAttachmentId = Dictionary(uniqueKeysWithValues:
-            orderedEntries.enumerated().map { ($0.element.attachmentId, $0.offset) }
+        // First-wins, not a trapping `uniqueKeysWithValues`: the attachment ids come from the
+        // group-session journal. See CODE_AUDIT_21 §5.16.
+        let orderByAttachmentId = Dictionary(
+            orderedEntries.enumerated().map { ($0.element.attachmentId, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
         )
         entries.sort {
             orderByAttachmentId[$0.attachment.id, default: .max] <
@@ -220,13 +222,13 @@ extension RPGSharePlayController {
 
         for epoch in Set(entries.map(\.arrivalEpoch)).sorted() {
             let epochEntries = entries.filter { $0.arrivalEpoch == epoch }
-            let dependencies = Dictionary(uniqueKeysWithValues: epochEntries.map { child in
+            let dependencies = Dictionary(epochEntries.map { child in
                 let parentAttachmentIds = Set(epochEntries.compactMap { parent in
                     isCausalJournalCorrection(child.metadata, replyingTo: parent.metadata) ?
                         parent.attachmentId : nil
                 })
                 return (child.attachmentId, parentAttachmentIds)
-            })
+            }, uniquingKeysWith: { $0.union($1) })
             var emittedAttachmentIds: Set<UUID> = []
             var remaining = epochEntries
 

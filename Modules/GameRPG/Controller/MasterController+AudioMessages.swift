@@ -51,7 +51,15 @@ extension MasterController {
                     guard model.data.data != nil else { return nil }
                     // No import policy for the player's package: accepted, see `updateGame(data:hide:deep:)`
                     // (CODE_AUDIT_Folder §6.1, won't fix).
-                    try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+                    do {
+                        try await root.audioRoot.gameControllable.updateGame(data: model.data, hide: false, deep: false)
+                    } catch {
+                        // A throw inside this `catch` body is not caught by the sibling `catch`
+                        // below, so a failed import left the contributing player without an
+                        // answer. See CODE_AUDIT_21 §5.10.
+                        await reportFailedAudioContribution(model, error: error)
+                        return nil
+                    }
                     await send(type: .reveal, subtype: .show, updated: model.data)
                 } catch {
                     // Previously this only logged, leaving the contributing
@@ -62,14 +70,7 @@ extension MasterController {
                     // broadcast `.show` sends in the success paths above,
                     // this failure is specific to this one contribution.
                     // See CODE_AUDIT_Network §5.12.
-                    Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
-                    await send(
-                        type: .reveal,
-                        subtype: .failed,
-                        updated: NetworkCodableDataType(id: model.data.id, type: .audio, version: model.data.version, data: nil),
-                        replyToMessageID: model.messageID,
-                        playerId: model.sender.id
-                    )
+                    await reportFailedAudioContribution(model, error: error)
                 }
             case .playAudio:
                 guard root.gameModel.gameControl.features.audioSharing else { return nil }
@@ -193,6 +194,20 @@ extension MasterController {
             guard let data = self.gameModel.pendingAudioPlays[id] else { return }
             await self.fulfillPendingAudioPlay(id: id, data: data)
         }
+    }
+
+    /// Tells the contributing player that its audio item was not accepted. Targeted at the
+    /// sender only — unlike the broadcast `.show` sends of the success paths — because the
+    /// failure is specific to this one contribution. See CODE_AUDIT_Network §5.12.
+    private func reportFailedAudioContribution(_ model: GameNetworkModel, error: any Error) async {
+        Logger.networking.error("MasterController: Failed to import shared audio \(model.data.id, privacy: .public) as canonical copy: \(error.localizedDescription, privacy: .public)")
+        await send(
+            type: .reveal,
+            subtype: .failed,
+            updated: NetworkCodableDataType(id: model.data.id, type: .audio, version: model.data.version, data: nil),
+            replyToMessageID: model.messageID,
+            playerId: model.sender.id
+        )
     }
 
     private func audioTransferFailed(itemId: UUID, playerId: UUID) {

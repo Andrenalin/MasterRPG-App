@@ -39,11 +39,13 @@ public struct RollDiceIntent: AppIntent {
         let rolledDie = die.applyResult(values: [rollValue])
         let snapshot = DiceSnapshot(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
 
-        var config = DiceConfiguration.loadFromUserDefaults()
-        config.lastRoll = DiceResultModel(diceModel: snapshot, result: .rolled, values: "\(rollValue)", sum: rollValue, checked: false)
-        config.selectedDice = snapshot
-        config.save()
-        DiceWidgetReloader.reloadDiceWidgets()
+        // The same newest-wins write as the in-app roll and the widget's intent; a plain
+        // load-mutate-save here could replace a newer roll. See CODE_AUDIT_18 §3.19,
+        // CODE_AUDIT_21 §5.23.
+        let roll = DiceResultModel(diceModel: snapshot, result: .rolled, values: "\(rollValue)", sum: rollValue, checked: false, timeStamp: Date())
+        if DiceConfiguration.recordLastRoll(roll) {
+            DiceWidgetReloader.reloadDiceWidgets()
+        }
 
         let dialog: IntentDialog = "🎲 Rolled \(diceType.rawValue): \(rollValue)"
         return .result(dialog: dialog)

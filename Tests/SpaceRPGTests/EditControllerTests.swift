@@ -719,7 +719,7 @@ struct EditControllerTests {
 
         // Test collectItemsForRemoval
         let removingItems = [ItemRowModel(itemId: folderModel.id, typeId: .space)]
-        let allItems = sut.markCollectionItemsForRemoval(for: removingItems)
+        let allItems = sut.collectionItemsForRemoval(for: removingItems)
 
         // Should include folder + 2 children = 3 items
         #expect(allItems.count == 3)
@@ -748,7 +748,7 @@ struct EditControllerTests {
 
         // Test collectItemsForRemoval on parent folder
         let removingItems = [ItemRowModel(itemId: parentFolder.id, typeId: .space)]
-        let allItems = sut.markCollectionItemsForRemoval(for: removingItems)
+        let allItems = sut.collectionItemsForRemoval(for: removingItems)
 
         // Should include parent folder + child folder + grandchild item = 3 items
         #expect(allItems.count == 3)
@@ -774,7 +774,7 @@ struct EditControllerTests {
 
         // Test collectItemsForRemoval
         let removingItems = [ItemRowModel(itemId: collectionModel.id, typeId: .space)]
-        let allItems = sut.markCollectionItemsForRemoval(for: removingItems)
+        let allItems = sut.collectionItemsForRemoval(for: removingItems)
 
         // Should only include collection, NOT items (collections don't delete children)
         #expect(allItems.count == 1)
@@ -1097,7 +1097,7 @@ struct EditControllerTests {
         #expect(root.itemController.itemOrEmpty(for: child3).parentId == folderModel.id)
 
         // Simulate the actual UI workflow:
-        // 1. Mark all for deletion (what markCollectionItemsForRemoval does)
+        // 1. Mark all for deletion (what confirmRemoval does on Remove)
         sut.markForDeletion(itemId: folderModel.id)
         sut.markForDeletion(itemId: child1)
         sut.markForDeletion(itemId: child2)

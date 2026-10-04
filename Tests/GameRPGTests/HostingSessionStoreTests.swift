@@ -80,5 +80,21 @@ struct HostingSessionStoreTests {
         #expect(nextLaunch.sessionId(forPasscode: "1234", proxy: false) == first)
         #expect(nextLaunch.sessionId(forPasscode: "5678", proxy: false) != first, "another code starts a new session")
     }
+
+    @Test("A Keychain that was locked at prewarm is read again when hosting starts (CODE_AUDIT_21 §5.3)")
+    func unavailablePrewarmReadsAgainAtHosting() async {
+        let storage = InMemoryJoinCodeStorage()
+        let firstStore = HostingSessionStore(storage: storage)
+        let first = firstStore.sessionId(forPasscode: "1234", proxy: false)
+        await firstStore.waitForStoredWrites()
+
+        // The next launch starts while the device is locked, and hosts after the unlock.
+        let nextLaunch = HostingSessionStore(storage: storage)
+        storage.isUnavailable = true
+        await nextLaunch.prewarm()
+        storage.isUnavailable = false
+
+        #expect(nextLaunch.sessionId(forPasscode: "1234", proxy: false) == first)
+    }
 }
 #endif

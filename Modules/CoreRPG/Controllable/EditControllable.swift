@@ -507,7 +507,12 @@ extension EditControllable {
 // MARK: - Collect Items for Removal
 
 public extension EditControllable {
-    @MainActor func markCollectionItemsForRemoval(for items: [ItemRowModel]) -> [ItemRowModel] {
+    /// The items a delete of `items` removes: `items` and, for a folder, everything below it.
+    /// Nothing is changed here. The delete panel lists the result and `confirmRemoval` trashes
+    /// it on Remove; trashing it before the panel opened let the launch cleanup purge items the
+    /// user never confirmed when the app was terminated with the panel open.
+    /// See CODE_AUDIT_21 §5.29.
+    @MainActor func collectionItemsForRemoval(for items: [ItemRowModel]) -> [ItemRowModel] {
         var allRemovingItems = items
         var processedIds = Set<UUID>()
 
@@ -533,11 +538,18 @@ public extension EditControllable {
         // A folder and its child selected together listed the child twice.
         // See CODE_AUDIT_Folder §5.30.
         var seenIds: Set<UUID> = []
-        allRemovingItems = allRemovingItems.filter { seenIds.insert($0.itemId).inserted }
-        allRemovingItems.forEach {
+        return allRemovingItems.filter { seenIds.insert($0.itemId).inserted }
+    }
+
+    /// Trashes the `candidates` of a delete the user confirmed, except `kept`. All candidates
+    /// are trashed and the kept ones restored together, in one step, so a kept child of a
+    /// removed folder leaves that folder by the rules of `restore(itemIds:)`.
+    /// See CODE_AUDIT_Folder §5.1, §5.4, CODE_AUDIT_21 §5.29.
+    @MainActor func confirmRemoval(of candidates: [ItemRowModel], keeping kept: [ItemRowModel]) {
+        candidates.forEach {
             markForDeletion(itemId: $0.itemId)
         }
-        return allRemovingItems
+        restore(itemIds: kept.map(\.itemId))
     }
 }
 
@@ -715,8 +727,8 @@ public extension EditControllable {
     @MainActor func markForDeletion(itemId: UUID) {
         guard var item = editModel(for: itemId),
               item.displayState != DisplayStateMask.totalHidden.rawValue else { return }
-        // Idempotent: the delete panel marks again on Remove, and a second pass removed the
-        // tags twice. See CODE_AUDIT_Folder §5.19.
+        // Idempotent: a second pass over an already trashed item removed the tags twice.
+        // See CODE_AUDIT_Folder §5.19.
         tagController.remove(tags: item.tags, module: itemControllable.config.module)
         item.displayState = DisplayStateMask.totalHidden.rawValue
         save(updated: item, message: String(localized: "Delete", bundle: .module).localizedString)

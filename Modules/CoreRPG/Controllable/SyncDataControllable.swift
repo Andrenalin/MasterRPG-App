@@ -71,6 +71,13 @@ public extension SyncDataControllable {
     }
 
     @MainActor private func apply(_ batch: SyncBatch) async {
+        // The data controller of the store that is current now, not this controller's own.
+        // The data model keeps one consumer for its lifetime (cancelling it would end the batch
+        // stream), so after a store swap the consumer still runs on the controller of the
+        // previous store: its fetches came back empty, and its deletion diff removed the new
+        // store's items from the lists. See CODE_AUDIT_21 §3.1.
+        guard let dataControllable = itemControllable.dataControllable else { return }
+
         await CloudKitOperationCounter.shared.recordOperation(
             function: "SyncDataControllable.updateFromSync(deleted:\(batch.deletedIds.count) inserted:\(batch.insertedIds.count) updated:\(batch.updatedIds.count))",
             file: "SyncDataControllable.swift"
@@ -145,11 +152,15 @@ public extension SyncDataControllable {
         }
 
         if needsReconciliation {
-            await fetchUpdates()
+            await fetchUpdates(from: dataControllable)
         }
     }
 
     private func fetchUpdates() async {
+        await fetchUpdates(from: dataControllable)
+    }
+
+    private func fetchUpdates(from dataControllable: any DataPersistenceControllable) async {
         do {
             // Read before the fetch as well; see `updates(_:unsavedBeforeFetch:)`.
             let unsavedBeforeFetch = await dataControllable.unsavedInsertIds()

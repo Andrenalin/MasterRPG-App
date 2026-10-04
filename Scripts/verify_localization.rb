@@ -341,8 +341,9 @@ def audit_module_source(path, issues)
   source = path.read
   scan_source = masking_preview_blocks(masking_comments(source))
   expected_bundle = relative.start_with?("Modules/") ? ".module" : ".main"
+  # RuleRPG names its bundle accessor `.ruleModule`; it is that module's own bundle.
   accepted_bundles = if expected_bundle == ".module"
-    ["bundle: .module", "bundle: LocString."]
+    ["bundle: .module", "bundle: .ruleModule", "bundle: LocString."]
   else
     ["bundle: .main"]
   end
@@ -437,7 +438,7 @@ def audit_module_source(path, issues)
 
   call_ranges(scan_source, "LocalizedStringResource").each do |start_offset, _, arguments_start, arguments_end|
     arguments = source[arguments_start...arguments_end]
-    next if arguments.include?("bundle: #{expected_bundle}")
+    next if accepted_bundles.any? { |bundle| arguments.include?(bundle) }
     # App Intents metadata only accepts direct literals. Xcode's metadata
     # exporter fails when `bundle` is supplied for these resources.
     next if relative.match?(%r{/(?:App)?Intent/})

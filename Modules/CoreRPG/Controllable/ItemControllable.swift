@@ -194,7 +194,9 @@ public extension ItemControllable {
         if let fileUrlDataController, let fileUrl = item.fileUrl {
             await cacheControllable?.remove(itemId: itemId)
             if withFileData {
-                fileUrlDataController.delete(fileUrl)
+                // Two items can reference one stored file; it goes with its last item only.
+                // See CODE_AUDIT_21 §5.2.
+                fileUrlDataController.delete(fileUrl, keepingStoredFile: isFileUsedElsewhere(fileUrl, excluding: itemId))
             }
         }
 
@@ -348,6 +350,19 @@ public extension ItemControllable {
         itemDataModel.items.compactMap { itemId in
             guard itemId != excludedId else { return nil }
             return itemSync(for: itemId, noGame: true)?.fileUrl
+        }
+    }
+
+    /// Whether another permanent-library item references the stored file of `fileUrl`. Such a
+    /// file must outlive the delete or the file replacement of one of its items.
+    /// See CODE_AUDIT_21 §5.2.
+    @MainActor func isFileUsedElsewhere(_ fileUrl: FileUrl, excluding itemId: UUID) -> Bool {
+        // A cached remote file is named after its file id, so it is never shared.
+        guard let controller = fileUrlDataController, fileUrl.location != .url else { return false }
+        // The cheap name comparison first: resolving a stored location touches the file system.
+        let name = fileUrl.rawUrl.lastPathComponent
+        return libraryFileUrls(excluding: itemId).contains {
+            $0.rawUrl.lastPathComponent == name && controller.isSameStoredFile($0, fileUrl)
         }
     }
 

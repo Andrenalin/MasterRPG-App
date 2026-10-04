@@ -18,7 +18,9 @@ public struct AffectedLinkActionPanelView: View {
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     /// Set by Remove and Cancel. A sheet dismissed any other way (swipe, Escape outside the
-    /// button) counts as Cancel. See CODE_AUDIT_Folder §5.12.
+    /// button) counts as Cancel. Nothing is trashed before Remove, so a panel that never gets
+    /// to disappear (the app is terminated) leaves every item as it was.
+    /// See CODE_AUDIT_Folder §5.12, CODE_AUDIT_21 §5.29.
     @State private var isResolved = false
         
     public var body: some View {
@@ -50,8 +52,8 @@ public struct AffectedLinkActionPanelView: View {
                         if let action {
                             action(removedItems)
                         } else {
-                            removeItems(models: removedItems)
-                            restoreItems(models: restoredItems)
+                            root.editControllable.confirmRemoval(of: removeEntryList.removeItems, keeping: restoredItems)
+                            root.folderListControllable.scheduleSearch()
                         }
                         navigator.dismiss()
                     } label: {
@@ -66,7 +68,7 @@ public struct AffectedLinkActionPanelView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) {
                         isResolved = true
-                        restoreItems(models: removeEntryList.removeItems)
+                        showRemovedRows()
                         navigator.dismiss()
                     } label: {
                         Label {
@@ -86,12 +88,11 @@ public struct AffectedLinkActionPanelView: View {
             removeEntryList.linkTree = await AffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
         }
         .onDisappear {
-            // The items were trashed before the panel opened; a dismissal without Remove keeps
-            // nothing trashed the user did not confirm. The list is cleared either way, so a
-            // later panel never shows (or restores) this deletion's items.
-            // See CODE_AUDIT_Folder §5.12.
-            if !isResolved, action == nil {
-                restoreItems(models: removeEntryList.removeItems)
+            // A dismissal without Remove trashed nothing; the rows the delete took out of the
+            // list come back. The list is cleared either way, so a later panel never shows this
+            // deletion's items. See CODE_AUDIT_Folder §5.12, CODE_AUDIT_21 §5.29.
+            if !isResolved {
+                showRemovedRows()
             }
             removeEntryList.removeItems = []
             removeEntryList.linkTree = []
@@ -104,16 +105,8 @@ public struct AffectedLinkActionPanelView: View {
 }
 
 private extension AffectedLinkActionPanelView {
-    @MainActor func removeItems(models: [ItemRowModel]) {
-        for model in models {
-            root.editControllable.markForDeletion(itemId: model.itemId)
-        }
-    }
-    
-    /// Restores `models` together, so a folder and its children come back as they were.
-    /// See CODE_AUDIT_Folder §5.4.
-    @MainActor func restoreItems(models: [ItemRowModel]) {
-        root.editControllable.restore(itemIds: models.map(\.itemId))
+    /// Rebuilds the list: the delete took the rows out of it before this panel opened.
+    @MainActor func showRemovedRows() {
         root.folderListControllable.scheduleSearch()
     }
 

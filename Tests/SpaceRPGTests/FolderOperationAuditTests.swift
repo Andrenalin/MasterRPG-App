@@ -41,8 +41,8 @@ struct FolderOperationAuditTests {
         sut.addItem(itemId: removedId, parentId: folderId)
 
         // Delete the folder; the panel keeps the linked child and confirms the rest.
-        _ = sut.markCollectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
-        sut.restore(itemIds: [keptId])
+        let candidates = sut.collectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
+        sut.confirmRemoval(of: candidates, keeping: [ItemRowModel(itemId: keptId, typeId: .space)])
         #expect(!childIds(root, of: folderId).contains(keptId), "the kept child leaves the trashed folder")
 
         // The launch-time purge of the trashed folder.
@@ -87,7 +87,8 @@ struct FolderOperationAuditTests {
         sut.addItem(itemId: childId, parentId: folderId)
         sut.addItem(itemId: grandchildId, parentId: subfolderId)
 
-        let removing = sut.markCollectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
+        let removing = sut.collectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
+        sut.confirmRemoval(of: removing, keeping: [])
         sut.restore(itemIds: removing.map(\.itemId))
 
         #expect(root.itemController.itemSync(for: childId)?.parentId == folderId)
@@ -107,7 +108,7 @@ struct FolderOperationAuditTests {
         let childId = await addItem(root, name: "Child")
         sut.addItem(itemId: childId, parentId: folderId)
 
-        let removing = sut.markCollectionItemsForRemoval(for: [
+        let removing = sut.collectionItemsForRemoval(for: [
             ItemRowModel(itemId: folderId, typeId: .space),
             ItemRowModel(itemId: childId, typeId: .space)
         ])
@@ -115,6 +116,28 @@ struct FolderOperationAuditTests {
         let removedIds = removing.map(\.itemId)
         #expect(removedIds.count == 2)
         #expect(Set(removedIds) == [folderId, childId])
+    }
+
+    @Test("Opening the delete panel trashes nothing; only Remove does (CODE_AUDIT_21 §5.29)")
+    func removalIsTrashedOnConfirmationOnly() async {
+        let root = await makeRoot()
+        let sut = root.editController
+        let folderId = await addItem(root, name: "Folder", type: .folder)
+        let childId = await addItem(root, name: "Child")
+        sut.addItem(itemId: childId, parentId: folderId)
+
+        // What Delete does before the panel opens. An app terminated now, or a launch cleanup
+        // running under the open panel, finds nothing in the trash.
+        let candidates = sut.collectionItemsForRemoval(for: [ItemRowModel(itemId: folderId, typeId: .space)])
+        #expect(Set(candidates.map(\.itemId)) == [folderId, childId])
+        for id in [folderId, childId] {
+            #expect(root.itemController.itemSync(for: id)?.displayState == DisplayStateMask.fullVisible.rawValue)
+        }
+
+        sut.confirmRemoval(of: candidates, keeping: [])
+        for id in [folderId, childId] {
+            #expect(root.itemController.itemSync(for: id)?.displayState == DisplayStateMask.totalHidden.rawValue)
+        }
     }
 
     // MARK: - §5.6 repair

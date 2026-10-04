@@ -24,7 +24,10 @@ struct GameJoinCodeOTPField: View {
 
     var body: some View {
         ZStack {
-            TextField("", text: $code)
+            // No visible label (and no empty catalog key): `accessibilityLabel` below names it.
+            TextField(text: $code) {
+                Text(verbatim: "")
+            }
 #if os(iOS) || os(tvOS)
                 .keyboardType(.numberPad)
 #endif

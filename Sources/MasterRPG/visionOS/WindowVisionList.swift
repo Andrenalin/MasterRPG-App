@@ -72,7 +72,7 @@ struct WindowVisionList: Scene {
         .restorationBehavior(.disabled)
 
         WindowGroup(id: SceneId.gameRecover.rawValue) {
-            Text("Recover")
+            Text("Recover", bundle: .main)
                 .environment(appModel.scenesManager)
         }
         .windowResizability(.contentSize)
