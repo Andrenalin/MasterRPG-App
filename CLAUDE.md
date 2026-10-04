@@ -9,9 +9,11 @@ MasterRPG is a multi-platform Apple app for managing RPG data: Adventures, Chara
 ## Build Commands
 ```bash
 # Build main app for iOS / visionOS Simulator
-xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro' build
 # Build for macOS
 xcodebuild -scheme MasterMac -destination 'platform=macOS' build
+# Build for visionOS
+xcodebuild -scheme MasterRPG -destination 'platform=visionOS Simulator' build
 # Build for tvOS
 xcodebuild -scheme MasterTV -destination 'platform=tvOS Simulator' build
 ```
@@ -19,7 +21,7 @@ xcodebuild -scheme MasterTV -destination 'platform=tvOS Simulator' build
 ## Test Commands
 ```bash
 # Run all tests
-xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+xcodebuild test -scheme MasterRPG -destination 'platform=iOS Simulator,name=iPhone 18 Pro'
 ```
 
 ## Tech Stack

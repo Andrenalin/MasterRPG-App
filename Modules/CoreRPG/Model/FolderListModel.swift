@@ -243,6 +243,19 @@ public extension FolderListModel {
     }
 }
 
+extension FolderListModel {
+    /// In a folder's detail list a tapped row opens its item and stays unselected: the item to
+    /// open, or `nil` in a root list or without a selection. Clears `selected` and
+    /// `listSelection` together. A row id left in `listSelection` was written back into
+    /// `selected` by the list selection observer, which opened the item a second time.
+    func takeDetailSelection() -> UUID? {
+        guard parentModel != nil, let itemId = selectedItemId else { return nil }
+        selected = nil
+        resetListSelection()
+        return itemId
+    }
+}
+
 // MARK: - Navigation
 
 public extension FolderListModel {

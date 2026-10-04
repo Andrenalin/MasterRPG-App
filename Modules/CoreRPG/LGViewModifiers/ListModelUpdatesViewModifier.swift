@@ -91,25 +91,25 @@ private extension ListModelUpdatesViewModifier {
     }
 
     func updateSelected() {
-        if let id = listModel.selected {
-            listModel.listSelection <=> Set(arrayLiteral: id)
-            if let itemId = listModel.selectedItemId {
-                if listModel.parentModel != nil {
-#if os(macOS)
-                    listModel.subFolderRoute = itemId
-#else
-                    if let navigator = listModel.navigationModel.navigator?.currentNavigator {
-                        navigator.navigate(to: listControllable.folderDestination(for: itemId))
-                    }
-#endif
-                    listModel.selected = nil
-                } else {
-                    listModel.itemRoute = itemId
-                    listModel.navigationModel.selectedItemId = itemId
-                }
-            }
-        } else {
+        guard let id = listModel.selected else {
             listModel.resetListSelection()
+            return
+        }
+        if let itemId = listModel.takeDetailSelection() {
+#if os(macOS)
+            listModel.subFolderRoute = itemId
+#else
+            // The stack showing this list: the list's own stack on iPhone, the split's detail
+            // stack on iPad. `currentNavigator` is the stack that appeared last, which on iPad
+            // can be the list column.
+            navigator.navigate(to: listControllable.folderDestination(for: itemId))
+#endif
+            return
+        }
+        listModel.listSelection <=> Set(arrayLiteral: id)
+        if let itemId = listModel.selectedItemId {
+            listModel.itemRoute = itemId
+            listModel.navigationModel.selectedItemId = itemId
         }
     }
 }

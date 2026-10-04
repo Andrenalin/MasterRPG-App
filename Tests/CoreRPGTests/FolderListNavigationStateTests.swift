@@ -90,6 +90,44 @@ struct FolderListNavigationStateTests {
         #expect(!folder.isOpen)
         #expect(model.lastNonNilScrollId == folder.id)
     }
+
+    @Test("A tapped row in a folder's detail list opens its item once")
+    func detailSelectionIsTakenOnce() {
+        // Given
+        let row = makeRow(name: "Child")
+        let parent = FakeItemModel(name: "Folder", category: .folder)
+        let model = FolderListModel(parentModel: parent, navigationModel: ModuleNavigationModel())
+        model.list = [row]
+        model.selected = row.id
+
+        // When
+        let opened = model.takeDetailSelection()
+        // The list selection observer mirrors `listSelection` back into `selected`.
+        model.update(selection: model.listSelection)
+        let openedAgain = model.takeDetailSelection()
+
+        // Then
+        #expect(opened == row.source.itemId)
+        #expect(openedAgain == nil)
+        #expect(model.selected == nil)
+        #expect(model.listSelection.isEmpty)
+    }
+
+    @Test("A root list keeps its selection")
+    func rootSelectionIsNotTaken() {
+        // Given
+        let row = makeRow(name: "Item")
+        let model = FolderListModel(navigationModel: ModuleNavigationModel())
+        model.list = [row]
+        model.selected = row.id
+
+        // When
+        let opened = model.takeDetailSelection()
+
+        // Then
+        #expect(opened == nil)
+        #expect(model.selected == row.id)
+    }
 }
 
 private extension FolderListNavigationStateTests {
