@@ -361,7 +361,7 @@ public extension FileUrlDataController {
     }
 
     private static func normalizedPath(_ url: URL) -> String {
-        url.standardizedFileURL.resolvingSymlinksInPath().path(percentEncoded: false)
+        CloudDocumentController.canonicalPath(url)
     }
 
     /// Deletes a file an item's new file just replaced. The replacement already saved its

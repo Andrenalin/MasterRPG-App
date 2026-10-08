@@ -289,11 +289,37 @@ extension CloudDocumentController {
     }
 
     /// Whether `url` lies inside `root` once `.` and `..` are resolved.
+    ///
+    /// Compared as written, without the file system: `standardizedFileURL` drops a leading
+    /// `/private` only when the shortened path exists. On a device (containers are below
+    /// `/private/var`) a file about to be written kept `/private` while its existing folder
+    /// lost it, so every new file compared as outside its own module folder and could not be
+    /// stored.
     static func isContained(_ url: URL, in root: URL) -> Bool {
-        let rootPath = root.standardizedFileURL.path(percentEncoded: false)
-        let path = url.standardizedFileURL.path(percentEncoded: false)
+        let rootPath = root.standardized.path(percentEncoded: false)
+        let path = url.standardized.path(percentEncoded: false)
         let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         return path == rootPath || path.hasPrefix(prefix)
+    }
+
+    /// The path of `url` with `.`/`..` removed and the symlinks of its existing part resolved.
+    /// The same whether the file itself exists or not (see `isContained(_:in:)`), so the path
+    /// of a file that is still to be written can be compared with the path of an existing one.
+    static func canonicalPath(_ url: URL) -> String {
+        var existing = url.standardizedFileURL
+        var missing: [String] = []
+        while existing.pathComponents.count > 1,
+              !FileManager.default.fileExists(atPath: existing.path(percentEncoded: false)) {
+            missing.append(existing.lastPathComponent)
+            existing.deleteLastPathComponent()
+        }
+        var path = existing.resolvingSymlinksInPath().path(percentEncoded: false)
+        while path.count > 1, path.hasSuffix("/") {
+            path.removeLast()
+        }
+        return missing.reversed().reduce(into: path) { path, component in
+            path += (path.hasSuffix("/") ? "" : "/") + component
+        }
     }
 }
 
@@ -341,10 +367,10 @@ private extension CloudDocumentController {
     /// when it has none. This device's module folder is matched by its exact path; a container
     /// of another device is recognised by the first `Documents` component.
     func componentsBelowContainer(of url: URL) -> [String]? {
-        let moduleComponents = moduleUrl.standardizedFileURL.pathComponents
-        let absoluteComponents = url.standardizedFileURL.pathComponents
+        let moduleComponents = CloudDocumentController.canonicalPath(moduleUrl).split(separator: "/")
+        let absoluteComponents = CloudDocumentController.canonicalPath(url).split(separator: "/")
         if absoluteComponents.starts(with: moduleComponents) {
-            return Array(absoluteComponents.dropFirst(moduleComponents.count))
+            return absoluteComponents.dropFirst(moduleComponents.count).map(String.init)
         }
         let components = url.pathComponents
         guard let index = components.firstIndex(of: CloudDocumentController.documentDirName) else { return nil }

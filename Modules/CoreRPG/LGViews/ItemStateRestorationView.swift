@@ -53,6 +53,7 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
 
     @State private var route: Route?
     @State private var moduleRootNavigationDepth: Int?
+    @State private var hasRestoredState = false
 
     func body(content: Content) -> some View {
         content
@@ -92,6 +93,13 @@ private struct ItemStateRestorationModifier<Route: ItemDetailRoute & Equatable, 
                 }
             }
             .task {
+                // Once per installed view, not on every appearance: the list reappears as soon
+                // as an interactive swipe back starts, while the popped item is still stored
+                // (the path only shrinks when the swipe completes) — a restore started then
+                // pushed that item again after the delay.
+                guard !hasRestoredState else { return }
+                hasRestoredState = true
+
                 // `@SceneStorage` may only be read/written while this view is
                 // synchronously installed — touching it again after the `await`
                 // below resumes on a detached continuation, which is exactly what
