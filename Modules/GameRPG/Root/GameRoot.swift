@@ -50,6 +50,12 @@ public final class GameRoot {
     /// callers onto the same in-flight task rather than tearing down twice.
     private var stopGameTask: Task<Void, Never>?
 
+    /// Set synchronously at the top of `startMaster` and cleared when it returns. The game is
+    /// only `.started` after the adventure's game start has been awaited, so a second call in
+    /// that window used to pass the `.stopped` guard and build a second master id and a second
+    /// controller pair. See CODE_AUDIT_21 §3.2.
+    private var isStartingMaster = false
+
     public init(adventureRoot: AdventureRootModel, audioRoot: AudioRootModel, diceRoot: DiceRootModel, mapRoot: MapRootModel, pdfRoot: PdfRootModel, photoRoot: PhotoRootModel, ruleRoot: RuleRootModel? = nil, spaceRoot: SpaceRootModel, tableRoot: TableRootModel, characterRoot: CharacterRootModel, weatherRoot: WeatherRootModel, gameJoinCodeModel: GameJoinCodeModel = GameJoinCodeModel()) {
         self.gameJoinCodeModel = gameJoinCodeModel
         self.adventureRoot = adventureRoot
@@ -313,6 +319,11 @@ extension GameRoot {
 
 extension GameRoot {
     func startMaster(supporterTier: SupporterTier = .none) async {
+        // Checked and set before the first suspension: a call that arrives while a start is
+        // running is ignored, it neither starts a second game nor stops the one being started.
+        guard !isStartingMaster else { return }
+        isStartingMaster = true
+        defer { isStartingMaster = false }
         await awaitInFlightStop()
         guard gameModel.gameConfig.state == .stopped else {
             await stopGame()

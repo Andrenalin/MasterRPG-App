@@ -18,12 +18,19 @@ struct MasterStartView: View {
     }
     
     @State private var startSharePlayAnimation: Bool = false
+    /// Set in the button action itself, not in its task: a second tap is refused before the
+    /// first start has run at all, and one that lands after the game started would otherwise
+    /// reach `startMaster` again and stop it. See CODE_AUDIT_21 §3.2.
+    @State private var isStarting = false
     
     var body: some View {
         if root.gameModel.selectedAdventure != nil {
             Button {
+                guard !isStarting else { return }
+                isStarting = true
                 Task {
                     await startGame()
+                    isStarting = false
                 }
             } label: {
                 Label {
@@ -35,6 +42,7 @@ struct MasterStartView: View {
                 .padding()
             }
             .borderLessTVButtonStyle()
+            .disabled(isStarting)
             .overlay {
                 MasterStartViewOverlayAnimationView(startSharePlayAnimation: startSharePlayAnimation, accessibilityReduceMotion: accessibilityReduceMotion)
             }

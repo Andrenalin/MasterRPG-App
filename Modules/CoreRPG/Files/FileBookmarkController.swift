@@ -117,6 +117,9 @@ extension FileBookmarkController {
         return await loadBookmark(fileId: fileId, data: data, folder: folder)
     }
     
+    /// `@concurrent`, like `saveBookmark`: resolving and creating a security-scoped bookmark is
+    /// IPC that ran on the caller's (often the main) actor. See CODE_AUDIT_21 §3.7.
+    @concurrent
     private func loadBookmark(fileId: UUID, data: Data, folder: Bool = false) async -> URL? {
         do {
 #if os(macOS)
@@ -139,6 +142,7 @@ extension FileBookmarkController {
         return nil
     }
     
+    @concurrent
     func saveBookmark(fileId: UUID, fileUrl: URL, folder: Bool = false) async throws {
 #if os(macOS)
         let options = URL.BookmarkCreationOptions.withSecurityScope

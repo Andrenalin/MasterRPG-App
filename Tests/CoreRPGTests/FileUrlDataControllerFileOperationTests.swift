@@ -104,6 +104,103 @@ struct FileUrlDataControllerFileOperationTests {
         #expect(FileManager.default.fileExists(atPath: "/etc/hosts"))
     }
 
+    // MARK: - CODE_AUDIT_21 §3.6
+
+    @Test("An import of the same file right after its deletion keeps its file")
+    func importAfterDeleteKeepsItsFile() async throws {
+        let module = "ReimportModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let name = "Reused-\(UUID().uuidString).test"
+        let bytes = Data("same".utf8)
+        let deleted = try await createFile(name, text: "same", module: module, with: sut)
+
+        sut.delete(deleted)
+        // The same package comes in again while the deletion is still queued.
+        var incoming = FileUrl(fileId: UUID(), url: rootUrl(named: name), location: .newCloud, module: module, relativeUrl: nil)
+        incoming.resetData(bytes)
+        let destination = try await sut.importDestination(for: incoming, contentHash: FileUrl.contentHash(of: bytes), referencedFileUrls: [])
+        let imported = try #require(try await sut.createNewFileUrl(
+            fileId: incoming.fileId,
+            unconvertedFileUrl: destination,
+            pathExtension: "test",
+            requireDurableStorage: true
+        ))
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(try text(of: imported, in: sut) == "same")
+    }
+
+    @Test("An announced deletion holds an import back until the file is gone")
+    func announcedDeletionHoldsImportBack() async throws {
+        let module = "AnnounceModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let name = "Announced-\(UUID().uuidString).test"
+        let bytes = Data("same".utf8)
+        let file = try await createFile(name, text: "same", module: module, with: sut)
+        var incoming = FileUrl(fileId: UUID(), url: rootUrl(named: name), location: .newCloud, module: module, relativeUrl: nil)
+        incoming.resetData(bytes)
+        let hash = FileUrl.contentHash(of: bytes)
+
+        // The item left memory: its file is unreferenced, and still there.
+        let announced = try #require(sut.announceDeletion(of: file))
+        let importing = Task { [incoming] in
+            let destination = try await sut.importDestination(for: incoming, contentHash: hash, referencedFileUrls: [])
+            return (destination, FileManager.default.fileExists(atPath: sut.storedLocation(of: file)?.path(percentEncoded: false) ?? ""))
+        }
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(exists(file, in: sut))
+        sut.delete(file, announced: announced)
+
+        let (destination, fileWasThere) = try await importing.value
+        #expect(!fileWasThere, "the import looked only after the deletion had run")
+        #expect(destination.rawUrl == incoming.rawUrl)
+    }
+
+    @Test("A withdrawn deletion lets the import reuse the file")
+    func withdrawnDeletionReleasesImport() async throws {
+        let module = "WithdrawModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        let name = "Kept-\(UUID().uuidString).test"
+        let bytes = Data("same".utf8)
+        let file = try await createFile(name, text: "same", module: module, with: sut)
+        var incoming = FileUrl(fileId: UUID(), url: rootUrl(named: name), location: .newCloud, module: module, relativeUrl: nil)
+        incoming.resetData(bytes)
+
+        let announced = try #require(sut.announceDeletion(of: file))
+        // Another item still uses the file.
+        sut.delete(file, keepingStoredFile: true, announced: announced)
+        let destination = try await sut.importDestination(for: incoming, contentHash: FileUrl.contentHash(of: bytes), referencedFileUrls: [])
+
+        #expect(destination.rawUrl == incoming.rawUrl)
+        #expect(try text(of: file, in: sut) == "same")
+    }
+
+    // MARK: - CODE_AUDIT_21 §3.7
+
+    @Test("Staged bytes are written to their temp copy once per content")
+    func stagedCopyIsWrittenOncePerContent() async throws {
+        let module = "StagedModule-\(UUID().uuidString)"
+        let sut = await makeSut(module: module)
+        var staged = FileUrl(fileId: UUID(), url: rootUrl(named: "staged.test"), location: .other, module: module, relativeUrl: nil)
+        staged.resetData(Data("first".utf8))
+
+        let firstUrl = try #require(await sut.url(for: staged, action: { $0 }))
+        #expect(try String(contentsOf: firstUrl, encoding: .utf8) == "first")
+        // A second write would replace the copy and its date.
+        let marker = Date(timeIntervalSince1970: 1_000_000)
+        try FileManager.default.setAttributes([.modificationDate: marker], ofItemAtPath: firstUrl.path(percentEncoded: false))
+
+        let againUrl = try #require(await sut.url(for: staged, action: { $0 }))
+        #expect(againUrl == firstUrl)
+        let modified = try FileManager.default.attributesOfItem(atPath: firstUrl.path(percentEncoded: false))[.modificationDate] as? Date
+        #expect(modified == marker)
+
+        staged.resetData(Data("second".utf8))
+        let secondUrl = try #require(await sut.url(for: staged, action: { $0 }))
+        #expect(secondUrl != firstUrl)
+        #expect(try String(contentsOf: secondUrl, encoding: .utf8) == "second")
+    }
+
     // MARK: - CODE_AUDIT_21 §5.2
 
     @Test("New bytes never take the name of another item's file")

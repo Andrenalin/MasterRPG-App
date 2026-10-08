@@ -90,7 +90,9 @@ public struct ImportProgressPanelView: View {
                     },
                     onApply: { await applyReview() }
                 )
-                .interactiveDismissDisabled(isSessionActive || isApplyingReview)
+                // The review holds no mutation session (see the parse task), so it is not what
+                // keeps the sheet up: an open review is never swiped away with its decisions.
+                .interactiveDismissDisabled()
                 .alert(
                     Text("Import Unavailable", bundle: .module),
                     isPresented: Binding(
@@ -163,15 +165,16 @@ public struct ImportProgressPanelView: View {
 
                         switch result {
                         case .success:
-                            // A manual import keeps the same exclusive mutation session while the user
-                            // reviews its snapshot. Merge/overwrite imports finish mutating during parse.
-                            if importModel.isReviewReady && importModel.reviewModel != nil {
-                                outcome = .finished
-                            } else {
-                                outcome = .finalizing
-                                await endDataMutation()
-                                outcome = .finished
-                            }
+                            // Merge and overwrite imports finished mutating during the parse. A
+                            // manual import has only built its review snapshot and changed nothing
+                            // in the library yet: its session ends here as well, and Apply takes a
+                            // new one. Held for as long as the review sheet stayed open, the lock
+                            // kept every CloudKit change out of memory and made every package of a
+                            // running game wait. Apply merges onto whatever changed meanwhile.
+                            // See CODE_AUDIT_21 §3.5, CODE_AUDIT_Folder §3.17.
+                            outcome = .finalizing
+                            await endDataMutation()
+                            outcome = .finished
                         case .failure(let error):
                             outcome = .finalizing
                             await endDataMutation()
@@ -257,6 +260,8 @@ private extension ImportProgressPanelView {
         isApplyingReview = true
         outcome = .finalizing
 
+        // The review ran without the lock, so another import or a repair can hold it now: the
+        // review stays open and Apply can be tried again. See CODE_AUDIT_21 §3.5.
         guard beginDataMutation() else {
             applyErrorMessage = dataMutationUnavailableMessage
             outcome = .finished

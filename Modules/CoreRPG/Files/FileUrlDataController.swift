@@ -93,7 +93,12 @@ public struct FileUrlDataController: Sendable {
 
 // MARK: - FileUrl Accessors
 
+// The accessors below are `@concurrent` where they touch the disk: they are plain `async` on a
+// `Sendable` struct, so they ran on their caller's actor, which is the main actor for most of
+// them. Resource values of an iCloud item, bookmark resolution and security-scoped access are
+// IPC that blocks while iCloud is slow. See CODE_AUDIT_21 §3.7.
 public extension FileUrlDataController {
+    @concurrent
     func fileDownloaded(for fileUrl: FileUrl) async -> Bool? {
         if fileUrl.location == .url {
             return await hasLocalData(for: fileUrl)
@@ -135,6 +140,7 @@ public extension FileUrlDataController {
         }
     }
 
+    @concurrent
     func hasAccess(for fileUrl: FileUrl) async -> Bool {
         let bookmarkedUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
         let managedUrl = locationFileManager.absoluteUrl(
@@ -174,6 +180,7 @@ public extension FileUrlDataController {
     /// or present at the resolved local URL. Unlike `hasAccess(for:)` this checks
     /// existence, not permission: an imported item whose binary never arrived has
     /// a valid-looking FileUrl but no local file.
+    @concurrent
     func hasLocalData(for fileUrl: FileUrl) async -> Bool {
         if fileUrl.hasUnconvertedData { return true }
         if fileUrl.location == .url {
@@ -196,6 +203,7 @@ public extension FileUrlDataController {
     /// checks use this so the bytes come from the peer; it also asks iCloud to fetch the file.
     /// Imports keep `hasLocalData`: an existing placeholder with a matching hash is still the
     /// right file to reuse.
+    @concurrent
     func hasDownloadedData(for fileUrl: FileUrl) async -> Bool {
         if fileUrl.hasUnconvertedData { return true }
         if fileUrl.location == .url {
@@ -230,7 +238,10 @@ public extension FileUrlDataController {
     /// A temporary copy of held peer bytes, for readers that need a file URL (PDF, 3D, audio).
     /// The name carries the store's generation, so a replaced hold can never be shadowed by a
     /// stale temp file, and the bytes and the generation are read together. See CODE_AUDIT_20 §3.8.
-    private func heldPeerFileUrl(for fileUrl: FileUrl) -> URL? {
+    /// `@concurrent`: the first call writes the whole held file, which used to happen on the main
+    /// actor when a PDF, 3D model or audio item was opened. See CODE_AUDIT_21 §3.7.
+    @concurrent
+    private func heldPeerFileUrl(for fileUrl: FileUrl) async -> URL? {
         guard let held = peerFiles.snapshot(for: fileUrl.fileId) else { return nil }
         let pathExtension = fileUrl.rawUrl.pathExtension.isEmpty ? filenameExtension : fileUrl.rawUrl.pathExtension
         let heldUrl = URL.temporaryDirectory
@@ -294,14 +305,14 @@ public extension FileUrlDataController {
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) async throws -> T?) async rethrows -> T? {
-        if let heldUrl = heldPeerFileUrl(for: fileUrl) {
+        if let heldUrl = await heldPeerFileUrl(for: fileUrl) {
             return try await action(heldUrl)
         }
         return try await deviceUrl(for: fileUrl, action: action)
     }
 
     func url<T>(for fileUrl: FileUrl, action: @Sendable @escaping (URL?) throws -> T?) async rethrows -> T? {
-        if let heldUrl = heldPeerFileUrl(for: fileUrl) {
+        if let heldUrl = await heldPeerFileUrl(for: fileUrl) {
             return try action(heldUrl)
         }
         return try await deviceUrl(for: fileUrl, action: action)
@@ -353,6 +364,12 @@ public extension FileUrlDataController {
     /// then the plain file location. The temp copy is written atomically, so concurrent
     /// accesses to one file id never read a half-written file. It is deliberately not deleted
     /// afterwards: callers may hold the URL past the action. See CODE_AUDIT_16 §5.8, §5.10.
+    ///
+    /// `@concurrent`: resolving a bookmark and writing the staged bytes ran on the caller's
+    /// (main) actor, a synchronous write of the whole file on every access. The copy is named
+    /// after the file id and its content, and an existing one is used as it is.
+    /// See CODE_AUDIT_21 §3.7.
+    @concurrent
     private func resolveProcessUrl(for fileUrl: FileUrl) async -> ResolvedProcessUrl {
         let fullUrl = locationFileManager.absoluteUrl(
             for: fileUrl.rawUrl,
@@ -362,11 +379,11 @@ public extension FileUrlDataController {
         var loadedFileUrl = await fileBookmarkController.loadBookmark(fileId: fileUrl.fileId)
 
         if loadedFileUrl == nil, let data = fileUrl.data {
-            let tempUrl = URL.temporaryDirectory.appending(path: fileUrl.fileId.uuidString).appendingPathExtension(filenameExtension)
+            let tempUrl = stagedCopyUrl(for: fileUrl, data: data)
             // Only take the temp-file path when the write actually succeeded; otherwise fall
             // through and let `loadedFileUrl` stay `nil` so `processUrl` below still falls back
             // to `fullUrl` instead of pointing at a file that was never written. See CODE_AUDIT §5.4.
-            if (try? data.write(to: tempUrl, options: .atomic)) != nil {
+            if Self.isStagedCopy(at: tempUrl, of: data) || (try? data.write(to: tempUrl, options: .atomic)) != nil {
                 loadedFileUrl = tempUrl
             }
         }
@@ -376,5 +393,24 @@ public extension FileUrlDataController {
             processUrl = fullUrl
         }
         return ResolvedProcessUrl(url: processUrl)
+    }
+
+    /// Where the temp copy of staged in-memory bytes goes: one name per file id and content, so
+    /// replaced bytes never read an older copy. The hash is the one the reference carries, or
+    /// is computed here, off the caller's actor.
+    internal func stagedCopyUrl(for fileUrl: FileUrl, data: Data) -> URL {
+        let contentHash = fileUrl.contentHash ?? FileUrl.contentHash(of: data)
+        // Base64 has `/`, `+` and `=`; only letters and digits go into the file name.
+        let token = String(contentHash.filter { $0.isLetter || $0.isNumber }.prefix(24))
+        return URL.temporaryDirectory
+            .appending(path: "\(fileUrl.fileId.uuidString)-\(token)")
+            .appendingPathExtension(filenameExtension)
+    }
+
+    /// Whether the temp copy at `url` is already there with all of `data`'s bytes. The copy is
+    /// written atomically, so a file of the full size is a complete one.
+    private static func isStagedCopy(at url: URL, of data: Data) -> Bool {
+        guard let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return false }
+        return size == data.count
     }
 }

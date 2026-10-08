@@ -120,8 +120,12 @@ extension AudioController {
     /// See CODE_AUDIT_18 §5.7.
     private static let maxConcurrentTrackLoads = 3
 
+    /// Returns whether the loaded tracks were added. `false` means a newer replacement took
+    /// the playlist while they loaded and they were discarded: the caller must not go on to
+    /// select or play a track of this load, it is not in the playlist. See CODE_AUDIT_21 §3.4.
     @MainActor
-    func add(audio models: [AudioModel], replace: Bool = false) async {
+    @discardableResult
+    func add(audio models: [AudioModel], replace: Bool = false) async -> Bool {
         if replace {
             // The dropped entries' temp copies would otherwise stay until the OS purges the
             // temp folder (`removeAudio` is the only other place that frees them).
@@ -170,10 +174,11 @@ extension AudioController {
             for item in playItems {
                 try? FileManager.default.removeItem(at: item.url)
             }
-            return
+            return false
         }
         // Single mutation: one observation change instead of one per item.
         model.playList.append(contentsOf: playItems)
+        return true
     }
 
     /// @concurrent: file copies and asset loading must not run on the main actor —
@@ -259,8 +264,13 @@ extension AudioController {
         }
         // Item not in playlist, load it first
         let models = [itemController.itemOrEmpty(for: id)]
-        Task {
-            await add(audio: models, replace: true)
+        // Cancel-then-replace, and stop when the load was discarded: tapping track A and then
+        // B, with A's load finishing last, used to select A, which is not in the playlist. That
+        // cleared the current item while B was audible and published A as the shared track.
+        // See CODE_AUDIT_21 §3.4.
+        model.loadAndPlayTask?.cancel()
+        model.loadAndPlayTask = Task {
+            guard await add(audio: models, replace: true), !Task.isCancelled else { return }
             // After loading, set it as current and play
             model.set(currentId: id)
             await preparePlay(id: id)

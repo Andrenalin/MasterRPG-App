@@ -287,6 +287,44 @@ struct GameMessagePipelineTests {
         #expect(redelivered?.model.counter == message.counter)
     }
 
+    // CODE_AUDIT_21 §3.9: `reset()` cleared the busy flag while a handler of the old session was
+    // still suspended, so the next enqueue started a second drain next to it.
+    @Test("a reset while an event is in hand does not let a second drain start")
+    func resetKeepsTheInFlightEventExclusive() async {
+        let pipeline = GameMessagePipeline()
+        let message = Self.message(counter: 1, senderId: UUID())
+        let event = GameMessageEvent(model: message, origin: .direct(UUID()))
+        #expect(await pipeline.enqueue(event) == .enqueued)
+        #expect(await pipeline.next() != nil)
+
+        await pipeline.reset()
+        // The rejoined session replays the same message: the reset forgot its key.
+        #expect(await pipeline.enqueue(event) == .enqueued)
+        #expect(await pipeline.next() == nil)
+
+        // The old session's handler returns. Its result is not recorded for the new session:
+        // the replayed message is still pending, and is delivered to the one drain.
+        await pipeline.processed(success: true)
+        #expect(await pipeline.enqueue(event) == .duplicate)
+        let replayed = await pipeline.next()
+        #expect(replayed?.model.counter == message.counter)
+        #expect(await pipeline.next() == nil)
+    }
+
+    @Test("an event of a reset session is not requeued into the new one")
+    func staleEventIsNotRequeuedAfterReset() async {
+        let pipeline = GameMessagePipeline()
+        let event = GameMessageEvent(model: Self.message(counter: 2, senderId: UUID()), origin: .direct(UUID()))
+        #expect(await pipeline.enqueue(event) == .enqueued)
+        #expect(await pipeline.next() != nil)
+
+        await pipeline.reset()
+        await pipeline.requeueCurrentOnCancellation()
+
+        #expect(await pipeline.hasQueuedMessages == false)
+        #expect(await pipeline.next() == nil)
+    }
+
     private static func message(counter: Int, senderId: UUID, dataId: UUID = UUID()) -> GameNetworkModel {
         let gameConfig = GameConfigModel(
             id: senderId,

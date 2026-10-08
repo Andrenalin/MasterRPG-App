@@ -186,14 +186,16 @@ extension GameController: AudioGameStorable {
             return
         }
         let list = fetchPlaylist(id: id)
-        await audioController.add(audio: list, replace: true)
+        // A newer playlist replaced this one while it loaded: its first track is not in the
+        // playlist, and selecting it would clear the current item. See CODE_AUDIT_21 §3.4.
+        guard await audioController.add(audio: list, replace: true) else { return }
         audioController.togglePlay(id: list.first?.id, triggerPlay: true)
     }
 
     @MainActor
     func loadPlaylist(id: UUID) async {
         let list = fetchPlaylist(id: id)
-        await audioController.add(audio: list, replace: true)
+        guard await audioController.add(audio: list, replace: true) else { return }
         if let firstId = list.first?.id {
             await audioController.preparePlay(id: firstId, triggerPlay: false)
         }

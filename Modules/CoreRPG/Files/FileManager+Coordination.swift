@@ -6,7 +6,7 @@ import Synchronization
 extension FileManager {
 
     func fileExists(coordinatingAccessAt fileURL: URL) async throws -> (exists: Bool, isDirectory: Bool) {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fileURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: fileURL) { url in
                 var isDir: ObjCBool = false
                 let coordinatedExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
@@ -40,7 +40,7 @@ extension FileManager {
     }
     
     public func copyItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fromURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
                 try FileManager.default.copyItem(at: readURL, to: writeURL)
             }
@@ -57,7 +57,7 @@ extension FileManager {
 
     func contentsOfDirectory(coordinatingAccessAt dirURL: URL) async throws -> [URL] {
         let keys: [URLResourceKey] = [.nameKey, .isDirectoryKey, .isReadableKey, .ubiquitousItemIsDownloadingKey]
-        return try await Self.performCoordinatedFileAccess { cancellation in
+        return try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: dirURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: dirURL) { url in
                 try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])
             }
@@ -66,7 +66,7 @@ extension FileManager {
     
     /// The streamed content hash of the file at `url`. See CODE_AUDIT_19 §7.1.
     func contentHash(coordinatingAccessAt url: URL) async throws -> String {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: url) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: url) { url in
                 try FileUrl.contentHash(ofFileAt: url)
             }
@@ -77,7 +77,7 @@ extension FileManager {
     /// downloaded first. The open handle stays readable after the coordination ends, which lets
     /// a caller copy a large file in blocks instead of loading it. See CODE_AUDIT_Folder §7.1.
     func fileHandle(coordinatingReadingAt url: URL) async throws -> FileHandle {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: url) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: url) { url in
                 try FileHandle(forReadingFrom: url)
             }
@@ -87,7 +87,7 @@ extension FileManager {
     /// Copies a file to `toURL` without reading it into memory, creating the parent folder and
     /// replacing a file already there. See CODE_AUDIT_19 §7.1.
     func copyReplacingItem(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fromURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: .forReplacing) { readURL, writeURL in
                 // Replacing a file with itself would delete it. See CODE_AUDIT_20 §5.1.
                 guard readURL.standardizedFileURL.resolvingSymlinksInPath() != writeURL.standardizedFileURL.resolvingSymlinksInPath() else { return }
@@ -105,7 +105,7 @@ extension FileManager {
     /// name can retry with the next one, so two copies racing for one name never overwrite each
     /// other. See CODE_AUDIT_Folder §3.18.
     func copyItemWithoutReplacing(coordinatingAccessFrom fromURL: URL, to toURL: URL) async throws {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fromURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: fromURL, readOptions: [], writingItemAt: toURL, writeOptions: []) { readURL, writeURL in
                 try FileManager.default.createDirectory(at: writeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try FileManager.default.copyItem(at: readURL, to: writeURL)
@@ -114,7 +114,7 @@ extension FileManager {
     }
 
     func contentsOfFile(coordinatingAccessAt url: URL) async throws -> Data {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: url) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: url) { url in
                 try Data(contentsOf: url)
             }
@@ -122,7 +122,7 @@ extension FileManager {
     }
 
     public func download(coordinatingAccessAt url: URL) async throws {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: url) { cancellation in
             try Self.coordinate(cancellation, writingItemAt: url) { newUrl in
                 try FileManager.default.startDownloadingUbiquitousItem(at: newUrl)
             }
@@ -130,7 +130,7 @@ extension FileManager {
     }
 
     func write(_ data: Data, coordinatingAccessTo url: URL) async throws {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: url) { cancellation in
             try Self.coordinate(cancellation, writingItemAt: url) { url in
                 try data.write(to: url)
             }
@@ -138,21 +138,33 @@ extension FileManager {
     }
     
     func updateFile<T: Sendable>(coordinatingAccessTo url: URL, in block: @escaping @Sendable (URL) throws -> T) async throws -> T {
-        try await Self.performCoordinatedFileAccess { cancellation in
+        try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: url) { cancellation in
             try Self.coordinate(cancellation, writingItemAt: url) { url in
                 try block(url)
             }
         }
     }
     
-    private static func performCoordinatedFileAccess<T: Sendable>(_ operation: @escaping @Sendable (CoordinationCancellation) throws -> T) async throws -> T {
+    /// - Parameter url: The item whose coordination waits for an iCloud download when it is not
+    ///   on this device: the one the operation reads, or writes in place. `nil` for an
+    ///   operation that never waits for one (remove, move, create a folder).
+    private static func performCoordinatedFileAccess<T: Sendable>(mayWaitForDownloadOf url: URL? = nil, _ operation: @escaping @Sendable (CoordinationCancellation) throws -> T) async throws -> T {
         // NSFileCoordinator is synchronous and can block while waiting on file presenters or
         // an iCloud download. Run it away from caller tasks so user-initiated work suspends
         // instead of blocking its thread — and cap how many of these blocking calls hold a
         // cooperative-pool thread at once, so a list of evicted iCloud files can never occupy
         // every thread and starve unrelated async work (LAN receive loops, sleeps, decoding).
         // See CODE_AUDIT_15 §3.1.
-        try await CoordinatedAccessLimiter.shared.acquire()
+        //
+        // An access that can wait for an iCloud download takes its slot from a smaller share, so
+        // downloads that stall (offline, a slow iCloud) never hold every slot: a playlist of
+        // evicted tracks used to queue every local import, delete and move behind it.
+        // See CODE_AUDIT_21 §3.8.
+        var slot = CoordinatedAccessLimiter.Slot.local
+        if let url, await waitsForDownload(of: url) {
+            slot = .download
+        }
+        try await CoordinatedAccessLimiter.shared.acquire(slot)
         // The blocking call runs on a dedicated `OperationQueue` thread, not a cooperative-pool
         // thread: waiting on an iCloud download used to pin up to 4 pool threads (most of the
         // pool on a 6-core device). The limiter above keeps this queue from building a backlog.
@@ -172,15 +184,27 @@ extension FileManager {
             } onCancel: {
                 cancellation.cancel()
             }
-            await CoordinatedAccessLimiter.shared.release()
+            await CoordinatedAccessLimiter.shared.release(slot)
             return result
         } catch {
-            await CoordinatedAccessLimiter.shared.release()
+            await CoordinatedAccessLimiter.shared.release(slot)
             // A cancelled coordinator reports `NSUserCancelledError`; surface it as the
             // cancellation it is.
             if cancellation.isCancelled { throw CancellationError() }
             throw error
         }
+    }
+
+    /// Whether coordinating access to `url` can block on an iCloud download: an iCloud item whose
+    /// current version is not on this device. `@concurrent`: the resource values are read off
+    /// the caller's actor. A file that does not exist yet, or is outside iCloud, never waits.
+    @concurrent
+    private static func waitsForDownload(of url: URL) async -> Bool {
+        let securityScope = url.startSecurityScopedAccess()
+        defer { securityScope.stop() }
+        guard let values = try? url.resourceValues(forKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey]),
+              values.isUbiquitousItem == true else { return false }
+        return values.ubiquitousItemDownloadingStatus != .current
     }
 
     private static let coordinationQueue: OperationQueue = {
@@ -330,42 +354,81 @@ final class CoordinationCancellation: Sendable {
 }
 
 /// Bounds the number of blocking `NSFileCoordinator` calls running at once; further callers
-/// wait (cancellably) in FIFO order without occupying a thread. Always leaves at least one
-/// cooperative-pool thread free.
-private actor CoordinatedAccessLimiter {
-    static let maximumConcurrentAccesses = max(1, min(4, ProcessInfo.processInfo.activeProcessorCount - 1))
+/// wait (cancellably) in FIFO order without occupying a thread.
+///
+/// Accesses that can wait for an iCloud download (`Slot.download`) may hold all slots but one.
+/// The last one is kept for accesses that cannot (`Slot.local`), so a stalled iCloud never
+/// stops local file work; nothing cancels those waits, and several callers are tasks nobody
+/// cancels. See CODE_AUDIT_21 §3.8.
+actor CoordinatedAccessLimiter {
+    enum Slot: Sendable {
+        /// The access can block until iCloud has delivered the file.
+        case download
+        /// The access only waits for other coordinated accesses.
+        case local
+    }
+
+    /// At least two, so one slot can be kept for local accesses. The blocking calls run on
+    /// their own `OperationQueue`, not on cooperative-pool threads.
+    static let maximumConcurrentAccesses = max(2, min(4, ProcessInfo.processInfo.activeProcessorCount - 1))
     static let shared = CoordinatedAccessLimiter(limit: maximumConcurrentAccesses)
 
     private let limit: Int
+    private let downloadLimit: Int
     private var running = 0
-    private var waiters: [(id: UUID, continuation: CheckedContinuation<Void, any Error>)] = []
+    private var runningDownloads = 0
+    private var waiters: [(id: UUID, slot: Slot, continuation: CheckedContinuation<Void, any Error>)] = []
 
     init(limit: Int) {
-        self.limit = limit
+        self.limit = max(1, limit)
+        self.downloadLimit = max(1, limit - 1)
     }
 
-    func acquire() async throws {
+    /// Accesses waiting for a slot.
+    var waiterCount: Int {
+        waiters.count
+    }
+
+    func acquire(_ slot: Slot) async throws {
         try Task.checkCancellation()
-        if running < limit {
-            running += 1
+        // Every waiter that could run was started by the last `release`, so a newcomer that
+        // can run overtakes nobody of its own kind.
+        if canRun(slot) {
+            start(slot)
             return
         }
         let id = UUID()
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
-                waiters.append((id, continuation))
+                waiters.append((id, slot, continuation))
             }
         } onCancel: {
             Task { await self.cancelWaiter(id: id) }
         }
     }
 
-    func release() {
-        if waiters.isEmpty {
-            running -= 1
-        } else {
-            // The slot is handed over directly, `running` stays unchanged.
-            waiters.removeFirst().continuation.resume()
+    func release(_ slot: Slot) {
+        running -= 1
+        if slot == .download {
+            runningDownloads -= 1
+        }
+        // In arrival order, skipping download waiters while their share is used up.
+        while let index = waiters.firstIndex(where: { canRun($0.slot) }) {
+            let waiter = waiters.remove(at: index)
+            start(waiter.slot)
+            waiter.continuation.resume()
+        }
+    }
+
+    private func canRun(_ slot: Slot) -> Bool {
+        guard running < limit else { return false }
+        return slot == .local || runningDownloads < downloadLimit
+    }
+
+    private func start(_ slot: Slot) {
+        running += 1
+        if slot == .download {
+            runningDownloads += 1
         }
     }
 

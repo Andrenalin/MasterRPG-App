@@ -32,6 +32,9 @@ public extension FileUrlDataController {
         let contentHash = unconvertedFileUrl.contentHash ?? FileUrl.contentHash(of: oldData)
 
         if let oldUrl = locationFileManager.absoluteUrl(for: unconvertedFileUrl.rawUrl, at: unconvertedFileUrl.location, module: unconvertedFileUrl.module) {
+            // A deletion of this file that is still queued would remove it after it was reused.
+            // See CODE_AUDIT_21 §3.6.
+            await waitForPendingDeletion(at: oldUrl)
             do {
                 // Try the stored legacy location before rewriting imported bytes.
                 let (exists, isDir) = try await FileManager.default.fileExists(coordinatingAccessAt: oldUrl)
@@ -59,6 +62,8 @@ public extension FileUrlDataController {
         let fileURL = cloudDocumentController.nameUrl(fullUrl: fullUrl)
         let filePath = fileURL.path(percentEncoded: false)
 
+        // Likewise a queued deletion of the destination would remove the file written now.
+        await waitForPendingDeletion(at: fullUrl)
         do {
             // Write uses batched coordination internally now (createDirectory + write)
             try await cloudDocumentController.write(data: oldData, to: filePath)
@@ -259,20 +264,44 @@ public extension FileUrlDataController {
         } ?? false
     }
 
+    /// Announces that the stored file of `fileUrl` is about to be deleted, for a caller that
+    /// takes the file's item out of memory now and only reaches `delete(_:)` after further
+    /// suspensions. Pass the result to `delete(_:keepingStoredFile:announced:)`. `nil` for a
+    /// reference the app stores no file for. See CODE_AUDIT_21 §3.6.
+    func announceDeletion(of fileUrl: FileUrl?) -> PendingFileDeletions.Announcement? {
+        guard let fileUrl, let location = storedLocation(of: fileUrl) else { return nil }
+        return PendingFileDeletions.shared.announce(at: Self.normalizedPath(location))
+    }
+
     /// called from ItemStore on delete of the item
     /// - Parameter keepingStoredFile: Another item still references the stored file, so only this
     ///   item's bookmark and held bytes go. See CODE_AUDIT_21 §5.2.
-    func delete(_ fileUrl: FileUrl?, keepingStoredFile: Bool = false) {
-        guard let fileUrl else { return }
+    /// - Parameter announced: The announcement `announceDeletion(of:)` returned for this file.
+    func delete(_ fileUrl: FileUrl?, keepingStoredFile: Bool = false, announced: PendingFileDeletions.Announcement? = nil) {
+        guard let fileUrl else {
+            announced?.withdraw()
+            return
+        }
         // Bytes a game peer sent for this file are of no use once the item is gone.
         peerFiles.remove(fileUrl.fileId)
         guard !keepingStoredFile else {
+            announced?.withdraw()
             fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
             return
         }
+        // The deletion is findable under the file's path from the moment it was announced, or
+        // from here: an import that finds the file unreferenced also finds its deletion and
+        // waits for it, instead of reusing a file that is about to go. See CODE_AUDIT_21 §3.6.
+        let start: (@escaping @Sendable () async -> Void) -> Void = { deletion in
+            if let announced {
+                announced.run(deletion)
+            } else {
+                PendingFileDeletions.shared.start(at: storedLocation(of: fileUrl).map { Self.normalizedPath($0) }, deletion)
+            }
+        }
         switch fileUrl.location {
             case .local, .appCloud, .newCloud:
-                Task { @concurrent in
+                start {
                     await CloudKitOperationCounter.shared.recordOperation(function: "FileUrlDataController.delete(_:)", file: "FileUrlDataController.swift")
 
                     // The real file, never the temp copy of held peer bytes. See CODE_AUDIT_20 §5.3.
@@ -286,12 +315,13 @@ public extension FileUrlDataController {
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
             case .url:
-                Task { @concurrent in
+                start {
                     let cacheURL = remoteCacheURL(for: fileUrl)
                     guard await removeFileLoggingFailure(at: cacheURL) else { return }
                     fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 }
             case .icloud, .other:
+                announced?.withdraw()
                 fileBookmarkController.removeBookmark(fileId: fileUrl.fileId)
                 break
         }
@@ -330,6 +360,10 @@ public extension FileUrlDataController {
         // A url that names no file is given its own name by `createNewFileUrl`.
         guard fileUrl.location != .url,
               let destination = cloudDocumentController.fullUrl(fileUrl: fileUrl.rawUrl) else { return fileUrl }
+        // The file of an item deleted a moment ago is unreferenced and may still be there: its
+        // deletion is queued. Reusing it left the imported item without a file once that
+        // deletion ran. See CODE_AUDIT_21 §3.6.
+        await waitForPendingDeletion(at: destination)
         let (exists, _) = try await FileManager.default.fileExists(coordinatingAccessAt: destination)
         guard exists else { return fileUrl }
         let destinationPath = Self.normalizedPath(destination)
@@ -362,6 +396,13 @@ public extension FileUrlDataController {
 
     private static func normalizedPath(_ url: URL) -> String {
         CloudDocumentController.canonicalPath(url)
+    }
+
+    /// Waits for a deletion of the stored file at `url` that `delete(_:)` started and that has
+    /// not finished. `@concurrent`: the path is resolved on disk. See CODE_AUDIT_21 §3.6.
+    @concurrent
+    private func waitForPendingDeletion(at url: URL) async {
+        await PendingFileDeletions.shared.waitUntilFinished(at: Self.normalizedPath(url))
     }
 
     /// Deletes a file an item's new file just replaced. The replacement already saved its

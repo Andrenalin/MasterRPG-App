@@ -2,15 +2,22 @@
 
 import CoreRPG
 import Foundation
+import os.log
 
 // MARK: - Shared retry-until-removed loop
 
 /// Retries `remove` on `delays`' schedule (repeating the last delay once
-/// exhausted) until it returns `true`, `Task` cancellation is observed, or
-/// `isObsolete` (when provided) reports true — then calls `finish()` exactly
-/// once. `isObsolete` is re-checked both before and after each `remove` call
-/// so a mid-attempt transition to obsolete is caught immediately rather than
-/// waiting out a full backoff cycle first.
+/// exhausted) until it returns `true`, `Task` cancellation is observed,
+/// `isObsolete` (when provided) reports true, or `maximumAttempts` removals
+/// have failed — then calls `finish()` exactly once. `isObsolete` is
+/// re-checked both before and after each `remove` call so a mid-attempt
+/// transition to obsolete is caught immediately rather than waiting out a
+/// full backoff cycle first.
+///
+/// After `maximumAttempts` the attachment is abandoned and logged as such: a
+/// removal that fails for good used to be retried every 5 s for the whole
+/// session, holding its cleanup reservation, and eight of those rejected
+/// every further Journal publication. See CODE_AUDIT_21 §3.11.
 ///
 /// Shared by the 3 best-effort attachment-cleanup retry loops across this
 /// file and `SharePlayJournalPublicationQueue.swift` (removal after a
@@ -19,12 +26,14 @@ import Foundation
 @MainActor
 func retryUntilRemoved(
     delays: [Duration],
+    maximumAttempts: Int = SharePlayAttachmentLoadRetry.maximumCleanupAttempts,
     isObsolete: (() -> Bool)? = nil,
     sleep: (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     remove: () async -> Bool,
     finish: () -> Void
 ) async {
     var retryIndex = 0
+    var attempts = 0
     while !Task.isCancelled {
         if let isObsolete, isObsolete() {
             _ = await remove()
@@ -33,8 +42,13 @@ func retryUntilRemoved(
         if await remove() {
             break
         }
+        attempts += 1
         if let isObsolete, isObsolete() {
             _ = await remove()
+            break
+        }
+        guard attempts < maximumAttempts else {
+            Logger.sharePlay.error("Journal: abandoned an attachment cleanup after \(attempts, privacy: .public) failed removals")
             break
         }
         do {
@@ -349,6 +363,11 @@ enum SharePlayAttachmentLoadRetry {
         .seconds(2),
         .seconds(5)
     ]
+
+    /// Removals a cleanup loop tries before it abandons the attachment and frees its
+    /// reservation. Each one is itself a bounded `load` retry, so this is a few minutes of a
+    /// Journal that keeps refusing the removal. See CODE_AUDIT_21 §3.11.
+    static let maximumCleanupAttempts = 24
 
     static func load<Value: Sendable>(
         retryDelays: [Duration] = defaultRetryDelays,

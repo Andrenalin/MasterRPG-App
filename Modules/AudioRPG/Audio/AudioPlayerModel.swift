@@ -62,6 +62,8 @@ public final class AudioPlayerModel: Sendable {
     var timeObserver: Any? = nil
     @ObservationIgnored var sharedAudioTask: Task<Void, Never>?
     @ObservationIgnored var seekTask: Task<Void, Never>?
+    /// The running `loadAndPlay`, replaced (and cancelled) by the next one. See CODE_AUDIT_21 §3.4.
+    @ObservationIgnored var loadAndPlayTask: Task<Void, Never>?
     
     func add(subscriptions: Set<AnyCancellable>) {
         self.subscriptions = self.subscriptions.union(subscriptions)

@@ -83,6 +83,10 @@ final class PlayerNetworkController: Sendable {
     private var listenerRetryTask: Task<Void, Never>?
     private var listenerRetryAttempt = 0
     private var reconnectDeadlineTask: Task<Void, Never>?
+    /// Bumped by every `stop()`. `restart(connection:)` suspends before it installs the new
+    /// connection and compares this afterwards, so a connection accepted for a session that
+    /// was stopped meanwhile is dropped instead of installed. See CODE_AUDIT_21 §3.3.
+    private var stopGeneration = 0
 
     /// Arguments: name, supporter tier, service type, passcode, session id, delegate.
     private let makeListener: @MainActor (String, SupporterTier, GameServiceType, String, String?, any ListenerManagerDelegate) -> any ListenerManaging
@@ -205,6 +209,7 @@ extension PlayerNetworkController: PlayerNetworkControllable {
 
     func stop() async {
         Logger.playerNetworkController.debug("PlayerNetworkController: Stop")
+        stopGeneration += 1
         resolvePendingConnection(success: false)
         isAwaitingReconnect = false
         listenerRetryTask?.cancel()
@@ -258,7 +263,19 @@ private extension PlayerNetworkController {
     func restart(connection: GameConnection) async {
         Logger.playerNetworkController.debug("PlayerConnection: Restart connection")
         let id = UUID()
+        let generation = stopGeneration
         await connectionThrottle.register(id: id, endpoint: connection.remoteEndpoint)
+        // `stop()` ran while the registration was suspended: the player left. Installing the
+        // connection now gave a stopped model a live session nothing owned (`stop()` leaves
+        // the state at `.notReady`, which `markReadyIfCurrent` accepts), and the master saw the
+        // player as rejoined. Not keeping `connection` closes it; the attempt is no evidence
+        // of a bad passcode, so its throttle entry is cleared without an outcome.
+        // See CODE_AUDIT_21 §3.3.
+        guard generation == stopGeneration else {
+            Logger.playerNetworkController.debug("PlayerNetworkController: Dropping reconnect accepted before a stop")
+            await connectionThrottle.clear(id: id)
+            return
+        }
         // Cancel the replaced controller explicitly: `cancel()` closes its socket and reports
         // the loss now, instead of leaving the socket until TCP fails.
         // See CODE_AUDIT_Join §3.1, CODE_AUDIT_20 §3.9.

@@ -67,6 +67,35 @@ struct AudioControllerTests {
         #expect(model.currentId == first.id)
     }
 
+    // CODE_AUDIT_21 §3.4: a load a newer replacement superseded reported nothing, so its caller
+    // went on to select a track that is not in the playlist.
+    @Test("A playlist load superseded by a newer replacement reports that it was discarded")
+    func supersededLoadReportsDiscard() async throws {
+        let root = AudioRootModel.testRoot()
+        let sut = root.audioController
+        let model = root.audioPlayerModel
+        let current = Self.playlistItem(title: "Current")
+        model.playList = [current]
+        model.currentItem = current
+        let stale = AudioModel(
+            id: UUID(),
+            name: "Stale",
+            fileUrl: FileUrl(importedData: Data([0, 1, 2, 3]), fileId: UUID(), filename: "stale.m4a", module: "audios")
+        )
+
+        let generation = model.playListGeneration
+        // Suspends in its off-main load after it replaced the playlist.
+        let staleLoad = Task { await sut.add(audio: [stale], replace: true) }
+        while model.playListGeneration == generation {
+            await Task.yield()
+        }
+        let newerLoad = await sut.add(audio: [], replace: true)
+
+        #expect(newerLoad)
+        #expect(await staleLoad.value == false)
+        #expect(model.playList.isEmpty)
+    }
+
     @Test("Interruption and route delegates use play state")
     func interruptionsAndRouteChanges() async throws {
         let root = AudioRootModel.testRoot()

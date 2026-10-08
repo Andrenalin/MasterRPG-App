@@ -164,6 +164,10 @@ public extension ItemControllable {
         // can find the item and queue a fresh upsert for it while the deletion below awaits.
         // Removing it last left that window open for the whole delete. See CODE_AUDIT_Folder §3.9.
         itemDataModel.resetModel(id: item.id)
+        // In the same step: the file is unreferenced from here on but only deleted at the end,
+        // after the suspensions below. An import in between reused it, and the deletion then
+        // removed it under the imported item. See CODE_AUDIT_21 §3.6.
+        let announcedFileDeletion = withFileData ? fileUrlDataController?.announceDeletion(of: item.fileUrl) : nil
 
         // Drop any not-yet-flushed queued edit for this id — including on the
         // memory-only sync-deletion path (`withDatabase == false`), which
@@ -196,7 +200,11 @@ public extension ItemControllable {
             if withFileData {
                 // Two items can reference one stored file; it goes with its last item only.
                 // See CODE_AUDIT_21 §5.2.
-                fileUrlDataController.delete(fileUrl, keepingStoredFile: isFileUsedElsewhere(fileUrl, excluding: itemId))
+                fileUrlDataController.delete(
+                    fileUrl,
+                    keepingStoredFile: isFileUsedElsewhere(fileUrl, excluding: itemId),
+                    announced: announcedFileDeletion
+                )
             }
         }
 

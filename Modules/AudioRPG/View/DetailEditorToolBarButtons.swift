@@ -16,7 +16,7 @@ struct PlayToolbarButton: View {
         Button {
             Task {
                 let list = root.itemController.audioList(itemId: model.id)
-                await root.audioController.add(audio: list, replace: true)
+                guard await root.audioController.add(audio: list, replace: true) else { return }
                 root.audioController.togglePlay(id: list.first?.id)
             }
         } label: {

@@ -225,18 +225,32 @@ struct GeneratorController: Sendable {
                 model.chatResponse = response
                 extract(message: response, rootModel: rootModel, generation: generation)
             } catch is CancellationError {
+                // A superseded request must not touch the preview: it belongs to the newer
+                // request by now, whose placeholder this used to remove until its first
+                // partial arrived. See CODE_AUDIT_21 §3.10.
+                guard model.currentGeneration == generation else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 return
             } catch let error as LanguageModelSession.GenerationError {
+                guard reportsFailure(of: generation) else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 model.responseErrorContent = FoundationModelsErrorHandler.handleError(error)
                 model.showError = true
             } catch {
+                guard reportsFailure(of: generation) else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 model.responseErrorContent = error.localizedDescription
                 model.showError = true
             }
         }
+    }
+
+    /// Whether a failed generation or extraction task may still write its failure into the UI:
+    /// only the newest one, and never a cancelled one. A cancelled stream can end in an error
+    /// other than `CancellationError`, which used to raise the error alert on a session model
+    /// that is reused after the assistant was closed. See CODE_AUDIT_21 §3.10.
+    @MainActor private func reportsFailure(of generation: Int) -> Bool {
+        !Task.isCancelled && model.currentGeneration == generation
     }
         
     // MARK: - Extraction
@@ -335,7 +349,13 @@ struct GeneratorController: Sendable {
                 withAnimation(.smooth) { rootModel.updateAIGenerated(finalEntries) }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
 
+            } catch is CancellationError {
+                // Torn down or superseded, not a failure. The preview is only this task's to
+                // clear while no newer request owns it. See CODE_AUDIT_21 §3.10.
+                guard model.currentGeneration == generation else { return }
+                withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
             } catch let error as LanguageModelSession.GenerationError {
+                guard reportsFailure(of: generation) else { return }
                 // Reuse the shared handler `request()`'s catch block already uses, rather
                 // than a second, narrower, drifting vocabulary for the same error type. See
                 // CODE_AUDIT §5.15.
@@ -349,6 +369,7 @@ struct GeneratorController: Sendable {
                 }
                 model.showError = true
             } catch {
+                guard reportsFailure(of: generation) else { return }
                 withAnimation(.smooth) { rootModel.updateAIPreview(nil) }
                 model.responseErrorContent = error.localizedDescription
                 model.showError = true

@@ -92,17 +92,22 @@ extension FilePersistenceController {
 
 // MARK: external data in files
 
+// `@concurrent` like `load`/`save`/`remove` above: these read and write whole files and ran on
+// the caller's actor. See CODE_AUDIT_21 §3.7.
 extension FilePersistenceController {
+    @concurrent
     func loadData(for uuid: String) async throws -> Data? {
         guard let url = try dataUrl(for: uuid) else { return nil }
         return try Data(contentsOf: url)
     }
 
+    @concurrent
     func saveData(_ data: Data, for uuid: String) async throws {
         guard let url = try dataUrl(for: uuid) else { return }
         try data.write(to: url)
     }
 
+    @concurrent
     func removeData(for uuid: String) async throws {
         guard let url = try dataUrl(for: uuid) else { return }
         try FileManager.default.removeItem(at: url)

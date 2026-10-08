@@ -139,7 +139,15 @@ actor GameMessagePipeline {
     /// accumulate unbounded memory. See CODE_AUDIT_Game §7.4.
     private let maximumQueuedMessages: Int
     private var messages: [GameMessageEvent] = []
-    private var processing = false
+    /// Bumped by `reset()` and `cancelAll()`. An event dequeued before the bump belongs to the
+    /// session that was reset, and its drain may still be suspended in its handler.
+    private var generation = 0
+    /// The generation of the event a drain has dequeued and not yet reported back, `nil` when
+    /// no event is in hand. Only the drain that owns the event clears it: `reset()` used to
+    /// clear the busy flag itself, so the next enqueue started a second drain next to a
+    /// handler still importing for the old session, and that handler's `processed` then
+    /// cleared the flag under the second drain. See CODE_AUDIT_21 §3.9.
+    private var inFlightGeneration: Int?
     private var isCancelled = false
     private var recentKeys: [GameMessageKey] = []
     private var recentKeySet: Set<GameMessageKey> = []
@@ -181,9 +189,11 @@ actor GameMessagePipeline {
         !messages.isEmpty
     }
 
+    /// The next event, or `nil` while an event is still in hand: also one of a session that was
+    /// reset since. Its drain picks up the new messages once its handler has returned.
     func next() -> GameMessageEvent? {
-        guard !isCancelled, !processing, !messages.isEmpty else { return nil }
-        processing = true
+        guard !isCancelled, inFlightGeneration == nil, !messages.isEmpty else { return nil }
+        inFlightGeneration = generation
         let event = messages.removeFirst()
         currentKey = event.deduplicationKey
         currentEvent = event
@@ -191,6 +201,9 @@ actor GameMessagePipeline {
     }
 
     func processed(success: Bool) {
+        defer { inFlightGeneration = nil }
+        // The event of a session that was reset meanwhile: its keys went with the reset.
+        guard inFlightGeneration == generation else { return }
         if let currentKey {
             pendingKeySet.remove(currentKey)
             if success {
@@ -199,7 +212,6 @@ actor GameMessagePipeline {
         }
         currentKey = nil
         currentEvent = nil
-        processing = false
     }
 
     /// Call instead of `processed(success:)` when the ambient `Task` driving
@@ -211,6 +223,9 @@ actor GameMessagePipeline {
     /// proxy forward), since a requeue there would risk re-applying them.
     /// See CODE_AUDIT_Network §5.15.
     func requeueCurrentOnCancellation() {
+        defer { inFlightGeneration = nil }
+        // Nothing of a reset session goes back into the queue.
+        guard inFlightGeneration == generation else { return }
         if let currentEvent {
             messages.insert(currentEvent, at: 0)
         }
@@ -219,12 +234,11 @@ actor GameMessagePipeline {
         }
         currentKey = nil
         currentEvent = nil
-        processing = false
     }
 
     func cancelAll() {
         messages.removeAll()
-        processing = false
+        generation += 1
         isCancelled = true
         recentKeys.removeAll()
         recentKeySet.removeAll()
@@ -235,7 +249,7 @@ actor GameMessagePipeline {
 
     func reset() {
         messages.removeAll()
-        processing = false
+        generation += 1
         isCancelled = false
         recentKeys.removeAll()
         recentKeySet.removeAll()

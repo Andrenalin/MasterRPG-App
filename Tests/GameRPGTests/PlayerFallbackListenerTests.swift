@@ -155,6 +155,28 @@ struct PlayerFallbackListenerTests {
         #expect(controller.networkModel.sessionId == nil)
     }
 
+    // CODE_AUDIT_21 §3.3: `restart` suspends before it installs the accepted connection. A stop in
+    // that suspension left a live connection on the stopped model. Yielding until the attempt is
+    // marked puts the stop into that suspension when the scheduler allows it; on the other
+    // interleaving the stop tears an installed connection down, with the same result.
+    @Test("A stop while a reconnect is being accepted leaves no connection behind")
+    func stopDuringReconnectAcceptDropsTheConnection() async {
+        let listener = GameListenerAbstractionMock()
+        let (controller, delegateSpy) = await makeLostPlayer(listener: listener)
+
+        let accept = Task { await controller.listenerNewConnection(pendingConnection()) }
+        while controller.networkModel.connectionState == .lost {
+            await Task.yield()
+        }
+        await controller.stop()
+        await accept.value
+
+        #expect(controller.networkModel.connectionController == nil)
+        #expect(controller.networkModel.isConnected == false)
+        #expect(controller.networkModel.playerConnectionId == nil)
+        #expect(delegateSpy.calledReady == 1)
+    }
+
     /// An unroutable address keeps the connection pending instead of failing on its own.
     private func pendingConnection() -> GameConnection {
         .game(to: .hostPort(host: "192.0.2.1", port: 9), passcode: "1234")
