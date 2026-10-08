@@ -19,10 +19,8 @@ extension Transcript.Entry {
             }
         case .toolOutput(let output):
             return output.segments.reduce(0) { $0 + $1.foundationLabEstimatedTokenCount } + 3
-#if compiler(>=6.4)
         case .reasoning(let reasoning):
             return reasoning.segments.reduce(0) { $0 + $1.foundationLabEstimatedTokenCount }
-#endif
         @unknown default:
             return foundationLabEstimateTokens(String(describing: self))
         }
@@ -31,12 +29,10 @@ extension Transcript.Entry {
     public func foundationLabTokenCount(
         using model: SystemLanguageModel = .default
     ) async -> Int {
-        #if compiler(>=6.3)
         if #available(iOS 26.4, macOS 26.4, visionOS 26.4, *),
            let realTokenCount = try? await model.tokenCount(for: [self]) {
             return realTokenCount
         }
-        #endif
 
         return foundationLabEstimatedTokenCount
     }
@@ -49,10 +45,8 @@ extension Transcript.Segment {
             return foundationLabEstimateTokens(textSegment.content)
         case .structure(let structuredSegment):
             return foundationLabEstimateStructuredTokens(structuredSegment.content)
-#if compiler(>=6.4)
         case .attachment(let attachmentSegment):
             return foundationLabEstimateTokens(attachmentSegment.label ?? "") + 16
-#endif
         @unknown default:
             return foundationLabEstimateTokens(String(describing: self))
         }

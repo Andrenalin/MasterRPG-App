@@ -117,6 +117,7 @@ private struct TableRootSheetCloseButton: View {
     TableRootSheet(root: ItemRootController.fake, itemId: SheetRootModel.fake.sheetModel.id, module: .none, configuration: .init())
         .environment(AppWindowSizeModel())
         .environment(AppGameStateModel())
+        .environment(AppFocusModel())
         .environment(ScenesManager())
         .environment(SearchBarVisibleModel())
 }

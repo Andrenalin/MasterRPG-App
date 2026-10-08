@@ -117,8 +117,10 @@ private extension AdventureRootModel {
 
 #Preview("Reader Mode", traits: .mockData) {
     AdventureSheet(model: .preview, configuration: .init(), dismissAction: nil)
+        .environment(AppFocusModel())
 }
 
 #Preview("Game Mode", traits: .mockData) {
     AdventureSheet(model: .preview, configuration: .init(isGame: true), dismissAction: nil)
+        .environment(AppFocusModel())
 }

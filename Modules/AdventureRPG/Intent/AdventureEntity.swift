@@ -83,7 +83,6 @@ public struct AdventureEntityQuery: @preconcurrency ItemEntityQuery {
     public func model(root: AdventureRootModel, id: UUID) -> AdventureModel? { root.itemController.itemSync(for: id) }
 }
 
-#if compiler(>=6.4)
 @available(iOS 27, macOS 27, visionOS 27, *)
 extension AdventureEntity: SyncableEntity, OwnershipProvidingEntity {
     public var ownership: EntityOwnership { .unknown }
@@ -104,7 +103,6 @@ extension AdventureEntityQuery: @preconcurrency IndexedEntityQuery {
         try await CSSearchableIndex.default().indexAppEntities(all)
     }
 }
-#endif
 
 extension AdventureEntity {
     var sharePreview: SharePreview<Never, Image> {
