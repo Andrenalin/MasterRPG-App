@@ -180,9 +180,12 @@ private struct LinkItemListViewContentView: View {
 
     @ViewBuilder
     var body: some View {
-        let items = listModel.list
+        // Entry rows also come from a text search and from an item opened in the inspector,
+        // which shares this list model, so hiding the chevron alone does not keep them out.
+        let showsEntries = selectionModel.showsEntries(in: type)
+        let items = showsEntries ? listModel.list : listModel.list.filter { !$0.isEntryRow }
 
-        listView(items: items)
+        listView(items: items, showsEntries: showsEntries)
             .frame(minWidth: 150, idealWidth: 250)
             .animation(accessibilityReduceMotion ? nil : .smooth, value: items.count)
             .scrollIndicatorsFlash(onAppear: true)
@@ -191,7 +194,7 @@ private struct LinkItemListViewContentView: View {
 #endif
     }
 
-    private func listView(items: [FolderListItemModel]) -> some View {
+    private func listView(items: [FolderListItemModel], showsEntries: Bool) -> some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: []) {
                 ForEach(items) { item in
@@ -206,7 +209,8 @@ private struct LinkItemListViewContentView: View {
                             showDetailsView: $showDetailsView
                         )
 
-                        if item.isOpen || item.source.entryId != nil {
+                        // An open item whose entry rows are hidden has nothing to separate.
+                        if (item.isOpen && (showsEntries || item.model?.specialCategory == true)) || item.source.entryId != nil {
                             Divider().padding(.leading, 8)
                         }
                     }

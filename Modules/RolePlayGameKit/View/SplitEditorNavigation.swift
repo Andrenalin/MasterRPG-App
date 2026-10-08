@@ -14,6 +14,8 @@ struct SplitEditorNavigation: View {
     @State private var preferredCompactColumn: NavigationSplitViewColumn = .sidebar
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         @Bindable var appModel = appModel
         
         TabView(selection: $appModel.selectedEditorModule) {

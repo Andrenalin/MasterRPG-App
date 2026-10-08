@@ -56,4 +56,11 @@ public final class ItemSelectionModel {
     func canSelect(isCollection: Bool, entryId: UUID?) -> Bool {
         (allowCollections || !isCollection) && (!onlyEntrySelection || onlyEntrySelection && entryId != nil)
     }
+
+    /// Whether a link list of `type` shows the entries of its items: their rows and the chevron
+    /// that reveals them. A selection list hides both when an entry cannot be selected; folders
+    /// and collections keep their chevron, which reveals items.
+    func showsEntries(in type: LinkRootType) -> Bool {
+        !type.isSelection || allowEntrySelection || onlyEntrySelection
+    }
 }

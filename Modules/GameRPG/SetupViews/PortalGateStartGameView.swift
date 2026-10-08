@@ -14,6 +14,8 @@ struct PortalGateStartGameView: View {
     @Environment(AppWindowSizeModel.self) private var appSizeModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         ScrollView {
             VStack {
                 ZStack {

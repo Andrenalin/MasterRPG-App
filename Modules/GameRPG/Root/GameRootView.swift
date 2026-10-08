@@ -33,6 +33,7 @@ private struct GameView: View {
     let root: GameRoot
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
         Group {
             if let playerController = root.gameModel.playerController {
                 if root.gameModel.gameConfig.isMaster {
@@ -52,6 +53,7 @@ private struct GameView: View {
 #endif
 #if os(iOS) || os(visionOS)
         .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
 #endif
     }
 }
@@ -79,4 +81,5 @@ struct GameActionEnvironmentSetUpViewModifier: ViewModifier {
 
 #Preview(traits: .mockData) {
     GameRootView(root: .preview)
+        .environment(AppFocusModel())
 }

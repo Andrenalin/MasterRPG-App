@@ -33,6 +33,8 @@ struct GameRootSetupView: View {
     }
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         ZStack {
             if appGameStateModel.isGameRunning {
                 Color.clear.ignoresSafeArea()
@@ -77,4 +79,5 @@ struct GameRootSetupView: View {
         openSupporter: {},
         startsServices: false
     )
+    .environment(AppFocusModel())
 }

@@ -10,6 +10,8 @@ struct AppGameTypeDestinationView: View {
     @Environment(AppModel.self) private var appModel
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+
         Group {
             switch type {
             case .game:
@@ -31,4 +33,9 @@ struct AppGameTypeDestinationView: View {
 #Preview("Game setup mode") {
     AppGameTypeDestinationView(type: .gameSetup)
         .environment(AppModel())
+        .environment(AppWindowSizeModel())
+        .environment(AppFocusModel())
+        .environment(AppGameStateModel())
+        .environmentSetUp(AppModel())
+        .environment(ScenesManager())
 }

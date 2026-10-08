@@ -311,6 +311,13 @@ public final class FolderListItemModel: Identifiable, Sendable, Equatable, Hasha
     /// Not included in equality/hash — identity is defined by `id`/`source`, not model content.
     public var model: (any ItemDataAccessible)? = nil
 
+    /// True when this row shows an entry of its own item. A member row of a folder or collection
+    /// also carries an `entryId`, the entry of its parent that links to it, and is an item row.
+    var isEntryRow: Bool {
+        guard let entryId = source.entryId else { return false }
+        return model?.entries.contains(where: { $0.id == entryId }) == true
+    }
+
     /// Creates an independent copy of this item and its entire children tree.
     /// Used by `resetDetailList(parentModel:)` to seed a `detailListModel` with pre-loaded items from the
     /// main list without sharing references — each model can evolve independently.

@@ -12,6 +12,8 @@ public enum AppNavigationRouteType: Int, Codable {
 
 extension AppNavigationRouteType: NavigationDestination {
     public var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         switch self {
         case .tabbed:
             TabbedNavigation()

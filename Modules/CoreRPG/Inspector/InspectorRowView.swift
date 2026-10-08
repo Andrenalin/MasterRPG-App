@@ -44,8 +44,7 @@ struct InspectorRowView: View {
 
     @ViewBuilder
     private func rowContent(model: (any ItemDataAccessible)?) -> some View {
-        if let entryId = item.source.entryId,
-           model?.entries.contains(where: { $0.id == entryId }) == true {
+        if let entryId = item.source.entryId, item.isEntryRow {
             entryRow(model: model, entryId: entryId)
         } else {
             standardItemRow(model: model)
@@ -112,11 +111,17 @@ struct InspectorRowView: View {
             entryId: nil,
             name: resolved.name.withoutLink()
         )
-        .overlay(alignment: .trailing) { InspectorRowViewFolderChevronView(root: root, item: item) }
+        .overlay(alignment: .trailing) {
+            // The chevron of a regular item reveals its entries, which a selection list that
+            // cannot select entries does not show; a folder or collection reveals items.
+            if resolved.specialCategory || selectionModel.showsEntries(in: type) {
+                InspectorRowViewFolderChevronView(root: root, item: item)
+            }
+        }
     }
 
     private func isSelectionActive(model: (any ItemDataAccessible)?) -> Bool {
-        (type == .selection || type == .selectionInline) &&
+        type.isSelection &&
         selectionModel.canSelect(
             isCollection: model?.specialCategory ?? false,
             entryId: item.source.entryId

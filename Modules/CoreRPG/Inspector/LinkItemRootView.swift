@@ -2,11 +2,16 @@
 
 import SwiftUI
 
-public enum LinkRootType {
+public enum LinkRootType: Sendable {
     case window
     case inspector
     case selection
     case selectionInline
+
+    /// Whether rows of this list are picked into an `ItemSelectionModel`.
+    var isSelection: Bool {
+        self == .selection || self == .selectionInline
+    }
 }
 
 public struct LinkItemRootView: View {

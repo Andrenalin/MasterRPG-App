@@ -18,6 +18,8 @@ struct SplitVisionNavigation: View {
     }
     
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+
         @Bindable var appModel = appModel
         
         TabView(selection: $appModel.selectedModule) {

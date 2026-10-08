@@ -7,6 +7,8 @@ struct AppInitialRouteTypeDestinationView: View {
     let route: AppInitialRouteType
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+        
         switch route {
         case .initializing:
             DatabaseInitializationView()
@@ -19,4 +21,6 @@ struct AppInitialRouteTypeDestinationView: View {
 #Preview("Database initialization destination") {
     AppInitialRouteTypeDestinationView(route: .initializing)
         .environment(AppModel())
+        .environmentSetUp(AppModel())
+        .appSettingsSetUp(AppModel())
 }

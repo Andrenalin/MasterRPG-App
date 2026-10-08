@@ -11,6 +11,8 @@ struct GameSetupDestinationView: View {
     @Environment(\.navigator) private var navigator
 
     var body: some View {
+        let _ = Self.printViewChangesOnlyInDebug()
+
         GameFactory.rootSetupView(
             root: appModel.gameRoot,
             openStatistics: openStatistics,

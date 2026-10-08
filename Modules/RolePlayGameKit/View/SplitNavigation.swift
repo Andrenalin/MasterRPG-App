@@ -21,6 +21,7 @@ struct SplitNavigation: View {
     
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
+        
         @Bindable var appModel = appModel
 
         SplitNavigationAllTabsView(column: $column, preferredCompactColumn: $preferredCompactColumn)
