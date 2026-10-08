@@ -190,7 +190,7 @@ public extension FileUrlDataController {
         }
         let exists = await url(for: fileUrl) { url -> Bool? in
             guard let url else { return false }
-            return FileManager.default.fileExists(atPath: url.relativePath)
+            return FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
         }
         return exists ?? false
     }
@@ -210,7 +210,7 @@ public extension FileUrlDataController {
             return await hasLocalData(for: fileUrl)
         }
         let isDownloaded = await deviceUrl(for: fileUrl) { url -> Bool? in
-            guard let url, FileManager.default.fileExists(atPath: url.relativePath) else { return false }
+            guard let url, FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return false }
             return Self.isDownloadedOrLocal(url)
         } ?? false
         if isDownloaded {

@@ -43,7 +43,7 @@ extension CacheController: ImageCacheControllable {
             // decoder stays as the fallback for formats ImageIO cannot report dimensions for.
             // See CODE_AUDIT_17 §7.6.
             decodeData: { AKImage.boundedDecode(from: $0) ?? AKImage(data: $0) },
-            decodeUrl: { AKImage.boundedDecode(from: $0) ?? AKImage(contentsOfFile: $0.relativePath) }
+            decodeUrl: { AKImage.boundedDecode(from: $0) ?? AKImage(contentsOfFile: $0.path(percentEncoded: false)) }
         )
     }
 

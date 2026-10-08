@@ -843,3 +843,12 @@ Fixed 2026-10-08 on `develop` (uncommitted at the time of writing). Every fix is
 | 3.11 | Fixed | `retryUntilRemoved` gives up after `SharePlayAttachmentLoadRetry.maximumCleanupAttempts` (24, about three minutes), logs the abandoned cleanup and calls `finish()`, which releases the reservation. |
 
 New tests: `CoordinatedAccessLimiterTests` (4), `FileUrlDataControllerFileOperationTests` (import after delete, announced and withdrawn deletion, staged copy written once per content), `GameMessagePipelineTests` (reset with an event in hand, no requeue across a reset), `PlayerFallbackListenerTests` (stop during accept), `AudioControllerTests` (superseded load).
+
+### 13.2 Remediation status of §4.2
+
+Fixed 2026-10-08 on `develop` (uncommitted at the time of writing).
+
+| § | Status | Fix |
+|---|---|---|
+| 4.2 | Fixed | `path(percentEncoded: false)` replaces `URL.path` at the cited lines and at three the audit did not list (`FoundryVTTImportReader.swift`, two source-cache keys; `CaptureFolderManager.swift`, the capture path), and replaces `relativePath` where it was passed as a file-system path (`FilePersistenceController`, `FileUrlDataController`, PhotoRPG `CacheController`). `append(path:)` replaces `appendPathComponent`. One site keeps the old form on purpose: the path alias of an import source is stored in the source index and compared with stored aliases, and `path(percentEncoded:)` keeps the trailing slash of a folder, so `ExternalImportSourceRegistry.pathAlias(of:)` removes it (test `folderPathAliasHasNoTrailingSlash`). Not changed: `FileUrlDataController.swift:81` uses `relativePath` as the text shown for a bookmarked folder, not as a file-system path. |
+

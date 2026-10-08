@@ -39,7 +39,7 @@ public struct CloudKitCoreDataPersistenceController {
         let privateStoreFolderURL = storeFolderURL.appending(path: "Private")
 
         let fileManager = FileManager.default
-        if !fileManager.fileExists(atPath: privateStoreFolderURL.path) {
+        if !fileManager.fileExists(atPath: privateStoreFolderURL.path(percentEncoded: false)) {
             do {
                 try fileManager.createDirectory(at: privateStoreFolderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {

@@ -93,8 +93,9 @@ enum FoundryVTTDataSource: Sendable {
         case .directory(let root, _, let pathSet, let limits, let selectedPath):
             guard pathSet.contains(path) else { return nil }
             let candidate = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
-            let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
-            guard candidate.path.hasPrefix(rootPrefix) else {
+            let rootPath = root.path(percentEncoded: false)
+            let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+            guard candidate.path(percentEncoded: false).hasPrefix(rootPrefix) else {
                 throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")
             }
             let values = try candidate.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
@@ -113,7 +114,8 @@ enum FoundryVTTDataSource: Sendable {
 private extension FoundryVTTDataSource {
     static func directoryPaths(at root: URL, limits: FoundryImportLimits) throws -> [String] {
         let canonicalRoot = root.standardizedFileURL.resolvingSymlinksInPath()
-        let rootPrefix = canonicalRoot.path.hasSuffix("/") ? canonicalRoot.path : canonicalRoot.path + "/"
+        let rootPath = canonicalRoot.path(percentEncoded: false)
+        let rootPrefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
             at: canonicalRoot,
@@ -126,10 +128,11 @@ private extension FoundryVTTDataSource {
             let values = try fileURL.resourceValues(forKeys: keys)
             guard values.isSymbolicLink != true, values.isRegularFile == true else { continue }
             let canonical = fileURL.standardizedFileURL.resolvingSymlinksInPath()
-            guard canonical.path.hasPrefix(rootPrefix) else {
+            let canonicalPath = canonical.path(percentEncoded: false)
+            guard canonicalPath.hasPrefix(rootPrefix) else {
                 throw FoundryImportError.invalidArchive("A package path escapes its selected directory.")
             }
-            result.append(try FoundryPackagePath.normalized(String(canonical.path.dropFirst(rootPrefix.count))))
+            result.append(try FoundryPackagePath.normalized(String(canonicalPath.dropFirst(rootPrefix.count))))
             guard result.count <= limits.maximumDocumentCount else {
                 throw FoundryImportError.tooManyDocuments(result.count)
             }

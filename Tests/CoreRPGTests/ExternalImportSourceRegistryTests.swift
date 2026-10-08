@@ -7,6 +7,25 @@ import Testing
 
 @Suite("External import source identity")
 struct ExternalImportSourceRegistryTests {
+    // CODE_AUDIT_21 §4.2: the alias is stored and compared, so it keeps the form `URL.path` had.
+    @Test("The path alias of a folder source has no trailing slash")
+    func folderPathAliasHasNoTrailingSlash() throws {
+        let directory = try temporaryRegistryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let world = directory.appending(path: "My World", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: world, withIntermediateDirectories: true)
+        let file = world.appending(path: "world.json")
+        try Data("one".utf8).write(to: file)
+
+        let folderAlias = ExternalImportSourceRegistry.aliases(for: world).path
+        let fileAlias = ExternalImportSourceRegistry.aliases(for: file).path
+
+        #expect(folderAlias.hasSuffix("/My World"))
+        #expect(folderAlias == ExternalImportSourceRegistry.aliases(for: directory.appending(path: "My World")).path)
+        #expect(fileAlias == folderAlias + "/world.json")
+        #expect(ExternalImportSourceRegistry.pathAlias(of: URL(filePath: "/")) == "/")
+    }
+
     @Test("Follows a renamed source by file identity")
     func followsRename() async throws {
         let directory = try temporaryRegistryDirectory()

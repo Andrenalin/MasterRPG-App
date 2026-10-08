@@ -136,7 +136,7 @@ extension ExternalImportSourceRegistry {
     }
 
     static func decodeEntriesIfPresent(at url: URL) throws -> [ExternalImportSourceEntry] {
-        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return [] }
         return try decodeEntries(from: Data(contentsOf: url))
     }
 

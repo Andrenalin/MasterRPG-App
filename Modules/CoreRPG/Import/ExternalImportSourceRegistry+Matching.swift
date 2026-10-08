@@ -304,7 +304,7 @@ extension ExternalImportSourceRegistry {
         // file at that path has been removed and replaced. Resolve metadata through a fresh file
         // URL so a replacement cannot inherit the previous file's physical identity and silently
         // update an unrelated arbitrary import.
-        let metadataURL = URL(filePath: url.path)
+        let metadataURL = URL(filePath: url.path(percentEncoded: false))
         let values = try? metadataURL.resourceValues(forKeys: [
             .fileResourceIdentifierKey,
             .volumeIdentifierKey,
@@ -312,8 +312,20 @@ extension ExternalImportSourceRegistry {
         return SourceAliases(
             file: opaqueAlias(values?.fileResourceIdentifier),
             volume: opaqueAlias(values?.volumeIdentifier),
-            path: url.standardizedFileURL.resolvingSymlinksInPath().path
+            path: pathAlias(of: url.standardizedFileURL.resolvingSymlinksInPath())
         )
+    }
+
+    /// The path as it is stored in the source index and compared with the stored aliases:
+    /// without the trailing slash `path(percentEncoded:)` keeps for a folder, which is the form
+    /// `URL.path` gave it. A Foundry world is a folder; with the slash it would no longer match
+    /// its own entry. See CODE_AUDIT_21 §4.2.
+    static func pathAlias(of url: URL) -> String {
+        var path = url.path(percentEncoded: false)
+        while path.count > 1, path.hasSuffix("/") {
+            path.removeLast()
+        }
+        return path
     }
 
     static func opaqueAlias(_ value: Any?) -> String? {

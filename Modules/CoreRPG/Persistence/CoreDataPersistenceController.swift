@@ -145,7 +145,7 @@ public struct CoreDataPersistenceController {
         let localFolderURL = storeFolderURL.appending(path: "Local")
         
         let fileManager = FileManager.default
-        for folderURL in [localFolderURL] where !fileManager.fileExists(atPath: folderURL.path) {
+        for folderURL in [localFolderURL] where !fileManager.fileExists(atPath: folderURL.path(percentEncoded: false)) {
             do {
                 try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {

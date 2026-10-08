@@ -1223,7 +1223,7 @@ private actor FoundryZIPDataSourceCache {
 
     func dataSource(for sourceURL: URL) throws -> FoundryVTTDataSource {
         try Task.checkCancellation()
-        let path = sourceURL.standardizedFileURL.path
+        let path = sourceURL.standardizedFileURL.path(percentEncoded: false)
         if sourcePath == path, let dataSource {
             return dataSource
         }
@@ -1257,7 +1257,7 @@ private actor FoundryBridgeResourceCache {
         sourceURL: URL
     ) throws -> [String: Data] {
         try Task.checkCancellation()
-        let path = sourceURL.standardizedFileURL.path
+        let path = sourceURL.standardizedFileURL.path(percentEncoded: false)
         if sourcePath != path {
             sourcePath = nil
             resources = [:]

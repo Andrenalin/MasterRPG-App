@@ -121,7 +121,7 @@ final class CaptureFolderManager {
             .appending(path: timestamp, directoryHint: .isDirectory)
 
         Logger.scanner3D.log("Creating capture path: \"\(String(describing: newCaptureDir))\"")
-        let capturePath = newCaptureDir.path
+        let capturePath = newCaptureDir.path(percentEncoded: false)
         do {
             try FileManager.default.createDirectory(atPath: capturePath,
                                                     withIntermediateDirectories: true)
@@ -149,10 +149,10 @@ final class CaptureFolderManager {
         guard outputDir.isFileURL else {
             return false
         }
-        let expandedPath = outputDir.path
+        let expandedPath = outputDir.path(percentEncoded: false)
         var isDirectory: ObjCBool = false
         let fileManager = FileManager()
-        guard !fileManager.fileExists(atPath: outputDir.path, isDirectory: &isDirectory) else {
+        guard !fileManager.fileExists(atPath: expandedPath, isDirectory: &isDirectory) else {
             Logger.scanner3D.error("File already exists at \(expandedPath, privacy: .private)")
             return false
         }

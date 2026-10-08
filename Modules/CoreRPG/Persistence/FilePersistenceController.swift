@@ -39,7 +39,7 @@ extension FilePersistenceController {
         let loadUrl = fileUrl
         do {
             try await migrateOldFile(oldUrl: oldUrl, newUrl: loadUrl)
-            let exists = FileManager.default.fileExists(atPath: loadUrl.relativePath)
+            let exists = FileManager.default.fileExists(atPath: loadUrl.path(percentEncoded: false))
             if !exists {
                 try FileManager.default.createDirectory(at: loadUrl.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try FilePersistenceController.saveModel(data: [], into: loadUrl)
@@ -124,7 +124,7 @@ private extension FilePersistenceController {
     func dataUrl(for uuid: String) throws -> URL? {
         var documentsUrl = URL.documentsDirectory.appending(path: name)
         try FileManager.default.createDirectory(at: documentsUrl, withIntermediateDirectories: true)
-        documentsUrl.appendPathComponent("\(uuid)\(dataExtension ?? "")")
+        documentsUrl.append(path: "\(uuid)\(dataExtension ?? "")")
         return documentsUrl
     }
 
@@ -141,7 +141,7 @@ private extension FilePersistenceController {
     }
 
     func migrateOldFile(oldUrl: URL, newUrl: URL) async throws {
-        guard FileManager.default.fileExists(atPath: oldUrl.relativePath) else { return }
+        guard FileManager.default.fileExists(atPath: oldUrl.path(percentEncoded: false)) else { return }
         try await FileManager.default.moveItem(coordinatingAccessFrom: oldUrl, to: newUrl)
     }
 }

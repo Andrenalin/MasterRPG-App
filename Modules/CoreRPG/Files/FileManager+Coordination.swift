@@ -9,7 +9,7 @@ extension FileManager {
         try await Self.performCoordinatedFileAccess(mayWaitForDownloadOf: fileURL) { cancellation in
             try Self.coordinate(cancellation, readingItemAt: fileURL) { url in
                 var isDir: ObjCBool = false
-                let coordinatedExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
+                let coordinatedExists = FileManager.default.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDir)
                 return (coordinatedExists, isDir.boolValue)
             }
         }
