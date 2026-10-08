@@ -53,9 +53,7 @@ public enum AdventureFactory {
 
     @MainActor @ViewBuilder public static func detailView(root: AdventureRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Adventure") {
-                DetailRootView(root: root, model: root.itemController.itemOrEmpty(for: itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: AdventureRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }

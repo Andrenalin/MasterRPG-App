@@ -19,9 +19,7 @@ public enum TableFactory {
 
     @MainActor @ViewBuilder public static func detailView(root: TableRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Table") {
-                ItemSplitDetailRouteRootView(root: root.rootController, route: TableRoute.detail(itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: TableRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }

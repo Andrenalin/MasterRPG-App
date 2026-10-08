@@ -14,9 +14,7 @@ public enum AudioFactory {
 
     @MainActor @ViewBuilder public static func detailView(root: AudioRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Audio") {
-                ItemSplitDetailRouteRootView(root: root.rootController, route: AudioRoute.detail(itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: AudioRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }

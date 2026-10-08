@@ -17,12 +17,10 @@ public enum RuleFactory {
     @MainActor @ViewBuilder
     public static func detailView(root: RuleRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Rule") {
-                ItemSplitDetailRouteRootView(
-                    root: root.rootController,
-                    route: RuleRoute.detail(itemId)
-                )
-            }
+            ItemSplitDetailRouteRootView(
+                root: root.rootController,
+                route: RuleRoute.detail(itemId)
+            )
         } else {
             SplitContentUnavailableView(module: .rule)
         }

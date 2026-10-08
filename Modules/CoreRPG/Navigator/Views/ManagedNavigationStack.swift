@@ -118,6 +118,10 @@ public struct ManagedNavigationStack<Content: View>: View {
                 content
                     .navigationDestination(for: AnyNavigationDestination.self) { destination in
                         navigator.mappedNavigationView(for: destination.wrapped)
+                            // A destination in a NavigationSplitView column takes its environment
+                            // from the split view, not from this stack: without this, a push made
+                            // from a pushed view went to the window's root navigator.
+                            .environment(\.navigator, navigator)
                     }
             }
             .modifier(NavigationSceneStorageModifier(navigator: navigator, name: sceneName))
@@ -153,6 +157,10 @@ public struct ManagedNavigationStack<Content: View>: View {
                 content(navigator)
                     .navigationDestination(for: AnyNavigationDestination.self) { destination in
                         navigator.mappedNavigationView(for: destination.wrapped)
+                            // A destination in a NavigationSplitView column takes its environment
+                            // from the split view, not from this stack: without this, a push made
+                            // from a pushed view went to the window's root navigator.
+                            .environment(\.navigator, navigator)
                     }
                     .environment(\.navigator, navigator)
             }

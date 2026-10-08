@@ -23,9 +23,7 @@ public enum MapRootFactory {
         
     @MainActor @ViewBuilder public static func detailView(root: MapRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Map") {
-                ItemSplitDetailRouteRootView(root: root.rootController, route: MapRoute.detail(itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: MapRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }

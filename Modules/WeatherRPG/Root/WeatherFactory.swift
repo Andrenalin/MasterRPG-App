@@ -15,9 +15,7 @@ public enum WeatherFactory {
     
     @MainActor @ViewBuilder public static func detailView(root: WeatherRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Weather") {
-                ItemSplitDetailRouteRootView(root: root.rootController, route: WeatherRoute.detail(itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: WeatherRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }

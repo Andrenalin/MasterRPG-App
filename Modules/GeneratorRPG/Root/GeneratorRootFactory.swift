@@ -15,9 +15,7 @@ public struct GeneratorRootFactory {
     
     @ViewBuilder public static func detailView(root: GeneratorRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Generator") {
-                ItemSplitDetailRouteRootView(root: root.rootController, route: GeneratorRoute.detail(itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: GeneratorRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }

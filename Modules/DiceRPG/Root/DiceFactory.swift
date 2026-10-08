@@ -14,9 +14,7 @@ public enum DiceFactory {
     
     @MainActor @ViewBuilder public static func detailView(root: DiceRootModel) -> some View {
         if let itemId = root.navigationModel.selectedItemId {
-            ManagedNavigationStack(name: "Split-Dice") {
-                ItemSplitDetailRouteRootView(root: root.rootController, route: DiceRoute.detail(itemId))
-            }
+            ItemSplitDetailRouteRootView(root: root.rootController, route: DiceRoute.detail(itemId))
         } else {
             SplitContentUnavailableView(module: root.configurable.module)
         }
