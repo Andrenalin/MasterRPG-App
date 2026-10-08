@@ -112,9 +112,9 @@ struct InspectorRowView: View {
             name: resolved.name.withoutLink()
         )
         .overlay(alignment: .trailing) {
-            // The chevron of a regular item reveals its entries, which a selection list that
-            // cannot select entries does not show; a folder or collection reveals items.
-            if resolved.specialCategory || selectionModel.showsEntries(in: type) {
+            // The chevron of a regular item reveals its entries, which a list that does not
+            // show entries leaves out; a folder or collection reveals items.
+            if resolved.specialCategory || selectionModel.showsEntries(in: type, module: root.configurable.module) {
                 InspectorRowViewFolderChevronView(root: root, item: item)
             }
         }

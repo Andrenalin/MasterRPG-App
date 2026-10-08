@@ -57,10 +57,19 @@ public final class ItemSelectionModel {
         (allowCollections || !isCollection) && (!onlyEntrySelection || onlyEntrySelection && entryId != nil)
     }
 
-    /// Whether a link list of `type` shows the entries of its items: their rows and the chevron
-    /// that reveals them. A selection list hides both when an entry cannot be selected; folders
-    /// and collections keep their chevron, which reveals items.
-    func showsEntries(in type: LinkRootType) -> Bool {
-        !type.isSelection || allowEntrySelection || onlyEntrySelection
+    /// Whether a link list of `type` over `module` shows the entries of its items: their rows
+    /// and the chevron that reveals them. Folders and collections keep their chevron, which
+    /// reveals items.
+    /// - A selection list hides entries that cannot be selected.
+    /// - An inspector hides the entries of characters, which other modules link as a whole;
+    ///   the Character module allows entry selection and scopes its inspector to the selected
+    ///   character through `onlyChildrenFrom`.
+    func showsEntries(in type: LinkRootType, module: NetworkModules) -> Bool {
+        if allowEntrySelection || onlyEntrySelection { return true }
+        switch type {
+        case .selection, .selectionInline: return false
+        case .inspector: return module != .value
+        case .window: return true
+        }
     }
 }

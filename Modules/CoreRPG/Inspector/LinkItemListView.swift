@@ -182,7 +182,7 @@ private struct LinkItemListViewContentView: View {
     var body: some View {
         // Entry rows also come from a text search and from an item opened in the inspector,
         // which shares this list model, so hiding the chevron alone does not keep them out.
-        let showsEntries = selectionModel.showsEntries(in: type)
+        let showsEntries = selectionModel.showsEntries(in: type, module: root.configurable.module)
         let items = showsEntries ? listModel.list : listModel.list.filter { !$0.isEntryRow }
 
         listView(items: items, showsEntries: showsEntries)
