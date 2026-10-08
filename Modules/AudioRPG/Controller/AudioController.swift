@@ -30,6 +30,7 @@ extension AudioController {
     /// being configured. See CODE_AUDIT_19 §3.5, CODE_AUDIT_20 §3.2.
     @MainActor
     func play() {
+        model.wantsPlayback = true
         guard model.audioSession?.isConfiguring == true else {
             model.player.play()
             return
@@ -42,6 +43,7 @@ extension AudioController {
 
     @MainActor
     func pause() {
+        model.wantsPlayback = false
         model.player.pause()
     }
     
@@ -455,6 +457,9 @@ private extension AudioController {
             }
         } else {
             model.isPlaybackComplete = complete
+            if complete {
+                model.wantsPlayback = false
+            }
         }
     }
 }
@@ -468,24 +473,36 @@ extension AudioController: AudioPlayerSessionDelegate {
         }
     }
 
+    /// Whether audio was meant to be playing: the app's own intent, not the observed player
+    /// state, which a task updates and which the system's pause may or may not have reached
+    /// yet. The player is paused without giving the intent up. See CODE_AUDIT_21 §5.28.
     @MainActor func beginInterruption() -> Bool {
-        if model.isPlaying {
-            pause()
-            return true
-        }
-        return false
+        guard model.wantsPlayback else { return false }
+        model.player.pause()
+        return true
     }
 
+    /// `play()`, not a toggle: a player that had already resumed was paused by the toggle.
     @MainActor func endInterruption(wasPlaying: Bool) {
         if wasPlaying {
-            togglePlay()
+            play()
         }
     }
 
+    /// After the media server was reset its objects are dead, the player among them: it is
+    /// replaced with its observers and loaded with the current track again. The old player
+    /// was kept, so nothing played until the app was restarted. See CODE_AUDIT_21 §5.28.
     @MainActor
     func resetMediaService() {
+        removeTimeObserver()
+        model.removeSubscriptions()
+        model.seekTask?.cancel()
+        model.player = AVPlayer()
+        model.isPlaying = false
+        model.wantsPlayback = false
         model.isInitialized = false
         initAudioSessionEngine()
+        replaceCurrentItem()
     }
 }
 

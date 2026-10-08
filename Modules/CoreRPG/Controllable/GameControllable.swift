@@ -223,10 +223,7 @@ public extension GameControllable {
         guard let controller = itemControllable.fileUrlDataController else { return }
         let files = controller.model.gameMemoryFiles
         controller.model.gameMemoryFiles = []
-        let libraryFiles = itemControllable.libraryFileUrls()
-        for file in files where !libraryFiles.contains(where: { controller.isSameStoredFile($0, file) }) {
-            await controller.removeStoredFile(file)
-        }
+        await itemControllable.removeUnreferencedGameFiles(files)
     }
     
     @MainActor func resetGameState() {}
@@ -405,7 +402,14 @@ public extension GameControllable {
         var appliedIds: Set<UUID> = []
         if let encodedData = data.data {
             do {
-                appliedIds = try await importNetwork(from: encodedData, importMode: importMode)[itemControllable.config.module] ?? []
+                // A delivery that is stored in the library needs its file on disk: the in-memory
+                // fallback of a failed write was persisted as a reference to a file that does
+                // not exist after relaunch. See CODE_AUDIT_21 §5.14.
+                appliedIds = try await importNetwork(
+                    from: encodedData,
+                    importMode: importMode,
+                    requiresDurableFiles: policy == .persist
+                )[itemControllable.config.module] ?? []
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
@@ -484,7 +488,7 @@ public extension GameControllable {
     /// See CODE_AUDIT_15 §3.3.
     /// Returns the ids each module's import wrote (see `ItemDataImportModel.appliedItemIds`).
     @concurrent @discardableResult
-    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge, peerPolicy: PeerImportPolicy? = nil) async throws -> [NetworkModules: Set<UUID>] {
+    func importNetwork(from data: Data, forceSave: Bool = false, importMode: ImportMode = .merge, peerPolicy: PeerImportPolicy? = nil, requiresDurableFiles: Bool = false) async throws -> [NetworkModules: Set<UUID>] {
         // A bulk import or repair holds the data-mutation lock: apply this package after it
         // instead of interleaving with its writes. See CODE_AUDIT_Folder §3.5.
         await DataMutationCoordinator.shared.waitUntilIdle()
@@ -493,7 +497,7 @@ public extension GameControllable {
         stream.open()
         defer { stream.close() }
         let importController = await exportControllable.rootImportController
-        let importModel = await ItemDataImportModel(importMode: importMode, peerPolicy: peerPolicy)
+        let importModel = await ItemDataImportModel(importMode: importMode, peerPolicy: peerPolicy, requiresDurableFiles: requiresDurableFiles)
         try await importController.importStream(from: stream, forceSave: forceSave, importModel: importModel)
         return await importModel.appliedItemIds
     }

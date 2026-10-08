@@ -395,22 +395,38 @@ extension ExternalImportReviewSession {
         return errors
     }
 
+    /// Removes a file this import wrote, found by where the app stores it. It used to resolve
+    /// through `url(for:)`, which prefers the temp copy of held peer bytes and then the
+    /// bookmark: for a legacy `.icloud` or `.other` reference that is the user's own file
+    /// outside the app's storage. Such a reference has no stored location and nothing is
+    /// removed for it. See CODE_AUDIT_21 §5.13.
     func deleteCreatedFile(
         _ fileUrl: FileUrl,
         using fileController: FileUrlDataController
     ) async throws {
-        let removed = try await fileController.url(for: fileUrl) { url async throws -> Bool? in
-            guard let url else { return false }
-            do {
-                try await FileManager.default.removeFile(coordinatingAccessAt: url)
-            } catch let error as CocoaError where error.code == .fileNoSuchFile {
-                return true
+        if let location = fileController.storedLocation(of: fileUrl) {
+            guard await fileController.removeFileLoggingFailure(at: location) else {
+                throw CocoaError(.fileWriteUnknown)
             }
-            return true
-        } ?? false
-        guard removed else {
-            throw CocoaError(.fileNoSuchFile)
         }
         fileController.removeBookmarks(fileId: fileUrl.fileId)
+    }
+
+    /// Removes the file an imported attachment replaced, unless a library item references it:
+    /// the item itself when its new reference resolves to the same place, or another item
+    /// that shares the file. Only a file in the app's own storage is ever removed, and the
+    /// bookmark is left alone: a replacement can carry the same file id.
+    /// See CODE_AUDIT_21 §5.13.
+    @MainActor
+    func deleteSupersededFile(
+        _ fileUrl: FileUrl,
+        itemControllable: any ItemControllable,
+        using fileController: FileUrlDataController
+    ) async {
+        let isReferenced = itemControllable.libraryFileUrls().contains {
+            fileController.isSameStoredFile($0, fileUrl)
+        }
+        guard !isReferenced else { return }
+        await fileController.removeStoredFile(fileUrl)
     }
 }

@@ -29,9 +29,14 @@ final class GameRootModel: Sendable {
     var gameConfig: GameConfigModel = .empty
     var gameRoster: GameRosterModel = .empty
     var gameControl: GameControlModel = .empty
-    /// The players who shared a dice roll from a device without the 3D table, by the name the
+    /// The players who shared a dice roll from a device without the 3D table, with the name the
     /// dice overlay lists the roll under. The table shows their dice at its guest seat.
-    var tableGuestNames: Set<String> = []
+    /// By sender id: by name, two players with one name on different platforms flipped the
+    /// flag on every roll. See CODE_AUDIT_21 §5.12.
+    var tableGuests: [UUID: String] = [:]
+
+    /// The names the dice overlay lists the guests' rolls under.
+    var tableGuestNames: Set<String> { Set(tableGuests.values) }
 
     var startGameTime = Date()
 
@@ -131,6 +136,7 @@ final class GameRootModel: Sendable {
     }
 
     func remove(playerId: UUID) -> Bool {
+        removeTableGuest(playerId)
         guard let index = gameRoster.players.firstIndex(where: { $0.id == playerId }) else { return false }
         gameRoster.players.remove(at: index)
         if let controlIndex = gameControl.controls.firstIndex(where: { $0.id == playerId }) {
@@ -346,9 +352,14 @@ extension GameRootModel {
     func noteDiceRollSender(of message: GameNetworkModel) {
         guard !message.sender.isMaster, !message.senderName.isEmpty else { return }
         if message.senderPlatform == .visionOS {
-            tableGuestNames.remove(message.senderName)
+            tableGuests[message.sender.id] = nil
         } else {
-            tableGuestNames.insert(message.senderName)
+            tableGuests[message.sender.id] = message.senderName
         }
+    }
+
+    /// A player who left is no guest at the table any more. See CODE_AUDIT_21 §5.12.
+    func removeTableGuest(_ playerId: UUID) {
+        tableGuests[playerId] = nil
     }
 }

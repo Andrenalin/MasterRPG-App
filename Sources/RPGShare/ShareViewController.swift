@@ -63,6 +63,9 @@ class ShareViewController: NSViewController {
 
         guard let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
               let itemProviders = extensionItem.attachments else {
+            // Nothing to share: finish the request, like the iOS controller does. Returning
+            // without it left an empty share sheet with no way out. See CODE_AUDIT_21 §5.27.
+            extensionContext?.completeRequest(returningItems: [])
             return
         }
 

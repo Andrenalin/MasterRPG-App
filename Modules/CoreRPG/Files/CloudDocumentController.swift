@@ -188,19 +188,28 @@ struct CloudDocumentController: Sendable {
     func move(url: URL, newName destination: String) async throws -> (URL, URL)? {
         await CloudKitOperationCounter.shared.recordOperation(function: "CloudDocumentController.move(url:newName:)", file: "CloudDocumentController.swift")
         
-        guard let newUrl = URL(string: destination) else { return nil }
-        let pathComponents = newUrl.pathComponents
-        guard pathComponents.last != nil else { return nil }
-        
+        // The folder and item names, split by hand. Parsed with `URL(string:)`, a `#` or `?` in a
+        // name cut the path there and `%41` was decoded, so the file got a wrong name or
+        // landed at the module root. See CODE_AUDIT_21 §5.15.
+        let names = destination.split(separator: "/", omittingEmptySubsequences: true).map(String.init)
+        guard let name = names.last else { return nil }
+
         let fileExt = url.pathExtension
-        let path = pathComponents.dropLast().joined(separator: "/")
-        let filename = newUrl.lastPathComponent + ".\(fileExt)"
-        
-        guard destination + ".\(fileExt)" != url.path(percentEncoded: false) else { return nil }
-        let newFilename = try await suggestedFileName(for: path, filename: filename)
-        let newPath = path.appending("\(path.isEmpty ? "" : "/")" + newFilename)
-        
+        let path = names.dropLast().joined(separator: "/")
+        let filename = fileExt.isEmpty ? name : name + ".\(fileExt)"
+
         guard let sourceUrl = fullUrl(fileUrl: url) else { return nil }
+        // Already there: compared as resolved locations. The text comparison never matched (the
+        // stored path has a leading slash, the destination none), so the file collided with
+        // itself and was renamed `name-1` on every call. See CODE_AUDIT_21 §5.15.
+        let requestedPath = path.isEmpty ? filename : path + "/" + filename
+        if let requestedUrl = fullUrl(filePath: requestedPath),
+           CloudDocumentController.canonicalPath(requestedUrl) == CloudDocumentController.canonicalPath(sourceUrl) {
+            return nil
+        }
+        let newFilename = try await suggestedFileName(for: path, filename: filename)
+        let newPath = path.isEmpty ? newFilename : path + "/" + newFilename
+
         let destUrl = try destinationUrl(filePath: newPath)
         
         // Batch directory creation and move into single coordinated operation
@@ -209,9 +218,9 @@ struct CloudDocumentController: Sendable {
             try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
             try FileManager.default.moveItem(at: sourceUrl, to: coordDestUrl)
         }
-        
-        guard let relativeUrl = URL(string: newPath) else { return nil }
-        return (destUrl, relativeUrl)
+
+        // Built per component, like every other stored path: each name is percent-encoded.
+        return (destUrl, nameUrl(fullUrl: destUrl))
     }
 }
 

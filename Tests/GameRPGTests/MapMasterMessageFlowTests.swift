@@ -84,6 +84,27 @@ struct MapMasterMessageFlowTests {
         #expect(fixture.root.mapRoot.gameControllable.gameModel.playerReport(for: mapId).isEmpty)
     }
 
+    // CODE_AUDIT_21 §5.4: only the trailing content and state sends were gated, so a joining or
+    // reconnecting player still got the package and the snapshot of the live map.
+    @Test(
+        "A map request gets no map data while Share Map is paused",
+        arguments: [(RPGMessageType.reveal, RPGMessageActionType.mapState), (.update, .generic)]
+    )
+    func pausedSharingAnswersMapRequestsWithFailed(type: RPGMessageType, subType: RPGMessageActionType) async throws {
+        let fixture = try await MapMasterRoutingFixture.makeMaster()
+        let mapId = fixture.currentMapId
+        let reference = await fixture.root.mapRoot.mapGameControllable.shareMap(id: mapId)
+        fixture.root.mapRoot.rootModel.isMapStreaming = false
+        let request = fixture.playerMessage(counter: 46, type: type, subType: subType, data: reference)
+
+        await fixture.master.receivedProcess(request, connectionId: ConnectionController.ID())
+
+        let responses = fixture.directMasterSpy.sendResponseHistory.compactMap { $0 as? GameNetworkModel }
+        #expect(responses.map(\.subType) == [.failed])
+        #expect(responses.allSatisfy { $0.data.data == nil && $0.data.id == mapId })
+        #expect(fixture.root.mapRoot.rootModel.mapsWithUnsharedStructure.contains(mapId))
+    }
+
     @Test("An obsolete mapState repair is superseded by one coherent current Map generation")
     func obsoleteMapStateRepairPublishesCurrentGeneration() async throws {
         // Given

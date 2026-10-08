@@ -434,6 +434,13 @@ private extension ImportProgressPanelView {
         }
         // A reviewed folder may be a partial copy from a subset export. See CODE_AUDIT_Folder §5.8.
         finalModel = root.itemControllable.keepingLocalFolderChildren(finalModel)
+        // An item that leaves the trash takes its tags again: trashing gave their counts back.
+        // See CODE_AUDIT_21 §5.30.
+        let trashed = DisplayStateMask.totalHidden.rawValue
+        if let restored = finalModel as? any ItemDataAccessible, restored.displayState != trashed,
+           root.itemControllable.itemSync(for: item.id, noGame: true)?.displayState == trashed {
+            root.editControllable.tagController.add(tags: restored.tags, module: root.itemControllable.config.module)
+        }
         root.itemControllable.replaceImportedModel(model: finalModel, isInsert: true, forceSave: true)
         return .applied
     }

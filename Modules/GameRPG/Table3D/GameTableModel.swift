@@ -115,6 +115,10 @@ final class GameTableModel: Sendable {
 
     // MARK: - Shared toolbar state (`GameToolBarSession`)
 
+    /// The hex scale the toolbar's slider shows while it is dragged; applied to the map by
+    /// `commitHexScale()` when the slider is released. See CODE_AUDIT_21 §5.19.
+    var pendingHexScale: Double?
+
     /// The game toolbar's "Share Map" state, shared with the 2D map through the map root, so
     /// pausing broadcasting of toolbar-driven edits (added pins, pointer moves) in one mode
     /// pauses it in the other. On by default.

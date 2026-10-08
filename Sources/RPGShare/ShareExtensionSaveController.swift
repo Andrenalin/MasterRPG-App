@@ -36,16 +36,49 @@ final class ShareExtensionSaveController {
             throw ShareExtensionError.contextNotAvailable
         }
 
+        let photoController = ShareImportPhotoController()
+        // The photo files are written to iCloud Drive before their items are saved. When
+        // anything after that fails, they are removed again and the unsaved rows are dropped:
+        // the files stayed behind with no item, and a second try saved rows for them.
+        // See CODE_AUDIT_21 §5.27.
+        var writtenFiles: [FileUrl] = []
+        do {
+            try await saveContent(
+                to: module,
+                name: name,
+                text: text,
+                images: images,
+                context: context,
+                photoController: photoController,
+                writtenFiles: &writtenFiles
+            )
+        } catch {
+            for file in writtenFiles {
+                await photoController.removeFile(file)
+            }
+            await context.perform { context.rollback() }
+            throw error
+        }
+    }
+
+    private func saveContent(
+        to module: NetworkModules,
+        name: String,
+        text: String,
+        images: [ImageItem],
+        context: NSManagedObjectContext,
+        photoController: ShareImportPhotoController,
+        writtenFiles: inout [FileUrl]
+    ) async throws {
         // Step 1: Save photos if we have any
         var photoIds: [UUID] = []
         var photoLinks: [String] = []
 
-        let photoController = ShareImportPhotoController()
-
         for image in images {
-            let (photoId, link) = try await photoController.addNewPhoto(context: context, data: image.imageData, name: name, text: text)
-            photoIds.append(photoId)
-            photoLinks.append(link)
+            let added = try await photoController.addNewPhotoFile(context: context, data: image.imageData, name: name, text: text)
+            writtenFiles.append(added.fileUrl)
+            photoIds.append(added.photoId)
+            photoLinks.append(added.link)
         }
 
         // Step 2: Save to the target module

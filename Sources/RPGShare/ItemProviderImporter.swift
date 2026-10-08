@@ -246,7 +246,24 @@ private extension ItemProviderImporter {
         } else if let url = item as? URL {
             return .url(url)
         }
-        throw Error.noItems
+        // Anything else is an object of the host app, an image object for example. The provider
+        // can still give the type's data; this used to end in `noItems` and the share showed
+        // no photo. See CODE_AUDIT_21 §5.27.
+        return .data(try await loadDataRepresentation(provider: provider, type: type))
+    }
+
+    /// The provider's data for `type`. `NSItemProvider` offers this only with a completion
+    /// handler (it returns a `Progress`), so there is no async variant to call.
+    nonisolated static func loadDataRepresentation(provider: NSItemProvider, type: UTType) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadDataRepresentation(for: type) { data, error in
+                if let data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: error ?? Error.noItems)
+                }
+            }
+        }
     }
 
     nonisolated static func data(from url: URL) async throws -> Data {

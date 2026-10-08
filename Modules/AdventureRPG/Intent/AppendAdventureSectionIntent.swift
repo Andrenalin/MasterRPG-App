@@ -30,8 +30,18 @@ public struct AppendAdventureSectionIntent: AppIntent {
         await DatabaseReadiness.wait()
         // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
         // guards `CSSearchableIndex.isIndexingAvailable()` internally.
+        // Siri and Shortcuts can pass an empty name, and `target` can be an adventure that was
+        // deleted since it was cached: ask again instead of adding a blank section or
+        // reporting success for nothing. See CODE_AUDIT_21 §5.28.
+        let trimmedName = sectionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            throw $sectionName.needsValueError("What should the section be called?")
+        }
+        guard root.itemController.itemSync(for: target.id) != nil else {
+            throw $target.needsValueError("Which adventure?")
+        }
         let contentText = intentPlainText(from: content)
-        let entry = root.editController.create(name: sectionName, content: contentText)
+        let entry = root.editController.create(name: trimmedName, content: contentText)
         root.editController.add(entry: entry, itemId: target.id)
         await root.itemController.save()
 
@@ -40,7 +50,7 @@ public struct AppendAdventureSectionIntent: AppIntent {
             try await indexIntentEntities([updated])
         }
 
-        return .result(dialog: "Added \"\(sectionName)\" to \"\(target.name)\".")
+        return .result(dialog: "Added \"\(trimmedName)\" to \"\(target.name)\".")
     }
 }
 

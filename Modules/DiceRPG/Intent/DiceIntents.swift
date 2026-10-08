@@ -34,21 +34,35 @@ public struct RollDiceIntent: AppIntent {
     // result directly needs no app-side navigation at all. See CODE_AUDIT §5.2.
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        let die = DieModel(id: UUID(), die: diceType.rawDie)
-        let rollValue = die.die.roll()
-        let rolledDie = die.applyResult(values: [rollValue])
-        let snapshot = DiceSnapshot(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
-
-        // The same newest-wins write as the in-app roll and the widget's intent; a plain
-        // load-mutate-save here could replace a newer roll. See CODE_AUDIT_18 §3.19,
-        // CODE_AUDIT_21 §5.23.
-        let roll = DiceResultModel(diceModel: snapshot, result: .rolled, values: "\(rollValue)", sum: rollValue, checked: false, timeStamp: Date())
-        if DiceConfiguration.recordLastRoll(roll) {
-            DiceWidgetReloader.reloadDiceWidgets()
-        }
+        // The one roll-and-record step this intent and the widget's share.
+        // See CODE_AUDIT_21 §5.23.
+        let rollValue = DiceIntentRoll.rollAndRecord(sides: diceType.rawDie.max, name: diceType.rawValue)
 
         let dialog: IntentDialog = "🎲 Rolled \(diceType.rawValue): \(rollValue)"
         return .result(dialog: dialog)
+    }
+}
+
+/// Rolls one die for an App Intent and records it as the last roll the widget shows.
+///
+/// The app's and the widget's `RollDiceIntent` each had their own copy of this, and the app's
+/// copy wrote the result without the newest-wins check. The two intents and their dice-type
+/// enums stay separate declarations: App Intents metadata is extracted per target.
+/// See CODE_AUDIT_18 §3.19, CODE_AUDIT_21 §5.23.
+public enum DiceIntentRoll {
+    /// Returns the rolled value.
+    @discardableResult
+    public static func rollAndRecord(sides: Int, name: String) -> Int {
+        let die = DieModel.die(sides: sides)
+        let rolledDie = die.roll(resetResults: true, rerollOptions: [])
+        let value = rolledDie.result.first ?? die.die.max
+        let snapshot = DiceSnapshot(id: UUID(), name: name, dice: [rolledDie])
+        let roll = DiceResultModel(diceModel: snapshot, result: .rolled, values: "\(value)", sum: value, checked: false, timeStamp: Date())
+        // Newest wins: a plain load-mutate-save could replace a newer roll.
+        if DiceConfiguration.recordLastRoll(roll) {
+            DiceWidgetReloader.reloadDiceWidgets()
+        }
+        return value
     }
 }
 

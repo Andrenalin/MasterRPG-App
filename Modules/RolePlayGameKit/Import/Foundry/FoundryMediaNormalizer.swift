@@ -133,10 +133,14 @@ private extension FoundryMediaNormalizer {
     /// Longest edge of the stored JPEG: the size the app decodes images at anyway.
     static var maximumOutputPixelSize: CGFloat { AKImage.maximumDecodedPixelSize }
 
+    /// The query and the fragment are cut off before the path is percent-decoded. Decoded
+    /// first, an encoded `#` or `?` in a file name (`Token%20%231.webp`) was taken for the
+    /// start of a fragment, the name was cut there and the asset dropped as unsupported media.
+    /// See CODE_AUDIT_21 §5.28.
     static func canonicalPath(_ path: String) -> String {
-        let decoded = path.removingPercentEncoding ?? path
-        let withoutQuery = decoded.split(separator: "?", maxSplits: 1).first.map(String.init) ?? decoded
-        return withoutQuery.split(separator: "#", maxSplits: 1).first.map(String.init) ?? withoutQuery
+        let withoutQuery = path.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? path
+        let withoutFragment = withoutQuery.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? withoutQuery
+        return withoutFragment.removingPercentEncoding ?? withoutFragment
     }
 
     static func normalizedFilename(stem: String, fallback: String, extension: String) -> String {

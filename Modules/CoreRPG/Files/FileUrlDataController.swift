@@ -13,7 +13,66 @@ public final class FileUrlDataModel {
     /// Files an import wrote for items that live only in game memory (game deliveries, a loaded
     /// saved game). Removed at game end unless a library item references them by then.
     /// See CODE_AUDIT_Folder §5.26.
-    @ObservationIgnored var gameMemoryFiles: [FileUrl] = []
+    ///
+    /// The list is also kept on disk: it used to live in memory only, so a game that ended with
+    /// the app being killed left its files behind, and every such session added another
+    /// `name-N` copy to iCloud Drive. See CODE_AUDIT_21 §5.14.
+    @ObservationIgnored var gameMemoryFiles: [FileUrl] = [] {
+        didSet { storeGameMemoryFiles() }
+    }
+
+    /// The list a previous run of the app left behind, removed by the launch cleanup.
+    @ObservationIgnored private(set) var leftoverGameMemoryFiles: [FileUrl] = []
+
+    @ObservationIgnored private let gameMemoryFilesKey: String?
+
+    /// - Parameter gameMemoryFilesKey: The defaults key the list is kept under, per module.
+    ///   `nil` keeps it in memory only.
+    init(gameMemoryFilesKey: String? = nil) {
+        self.gameMemoryFilesKey = gameMemoryFilesKey
+        if let gameMemoryFilesKey,
+           let data = UserDefaults.standard.data(forKey: gameMemoryFilesKey),
+           let files = try? JSONCoding.decoder.decode([StoredGameMemoryFile].self, from: data) {
+            leftoverGameMemoryFiles = files.map(\.fileUrl)
+        }
+    }
+
+    /// Hands the previous run's list to the launch cleanup and forgets it.
+    func takeLeftoverGameMemoryFiles() -> [FileUrl] {
+        let files = leftoverGameMemoryFiles
+        leftoverGameMemoryFiles = []
+        storeGameMemoryFiles()
+        return files
+    }
+
+    private func storeGameMemoryFiles() {
+        guard let gameMemoryFilesKey else { return }
+        let files = (leftoverGameMemoryFiles + gameMemoryFiles).map { StoredGameMemoryFile($0) }
+        guard !files.isEmpty, let data = try? JSONCoding.encoder.encode(files) else {
+            UserDefaults.standard.removeObject(forKey: gameMemoryFilesKey)
+            return
+        }
+        UserDefaults.standard.set(data, forKey: gameMemoryFilesKey)
+    }
+
+    /// What is needed to find a stored file again; never the bytes a reference may still hold.
+    private struct StoredGameMemoryFile: Codable {
+        let fileId: UUID
+        let url: URL
+        let location: FileLocation
+        let module: String
+
+        init(_ fileUrl: FileUrl) {
+            fileId = fileUrl.fileId
+            url = fileUrl.rawUrl
+            location = fileUrl.location
+            module = fileUrl.module
+        }
+
+        var fileUrl: FileUrl {
+            FileUrl(fileId: fileId, url: url, location: location, module: module, relativeUrl: nil)
+        }
+    }
 }
 
 public struct FileUrlDataController: Sendable {
@@ -64,7 +123,7 @@ public struct FileUrlDataController: Sendable {
 
         self.cloudDocumentController = CloudDocumentController(modulePath: moduleFolder)
 
-        self.model = FileUrlDataModel()
+        self.model = FileUrlDataModel(gameMemoryFilesKey: "gameMemoryFiles.\(moduleFolder)")
 
         let saveModel = self.model
         Task {

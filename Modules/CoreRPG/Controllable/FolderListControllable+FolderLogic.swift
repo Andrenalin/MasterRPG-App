@@ -80,8 +80,9 @@ extension FolderListControllable {
     /// Closes the nearest open parent folder of `itemId` and selects that parent folder.
     /// Closes it the way the chevron does: setting only `isOpen` left the children listed, and
     /// the next rebuild reopened the folder from `lastIsOpen`. See CODE_AUDIT_Folder §5.13.
+    /// `itemId` is a row id or an item id, see `folderItem(itemId:)`.
     func closeParentFolder(of itemId: UUID) {
-        guard let item = listModel.row(itemId: itemId) else { return }
+        guard let item = folderItem(itemId: itemId) else { return }
         guard let parentId = item.parentId, let parentItem = listModel.cacheListModels[parentId] else { return }
         if parentItem.isOpen {
             toggleFolder(item: parentItem)
@@ -108,8 +109,7 @@ extension FolderListControllable {
 
     /// Returns true if `itemId` has an open parent folder in the visible tree.
     func hasParentFolder(itemId: UUID?) -> Bool {
-        guard let itemId,
-              let item = listModel.row(itemId: itemId),
+        guard let item = folderItem(itemId: itemId),
               let parentId = item.parentId, let parentItem = listModel.cacheListModels[parentId] else { return false }
         return parentItem.isOpen
     }

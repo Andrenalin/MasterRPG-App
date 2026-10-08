@@ -39,6 +39,11 @@ public final class ItemDataModel: Sendable {
     public var gameItems: [UUID] = []
     public var gameItemData: [UUID: ModelType] = [:]
 
+    /// The ids `ItemControllable.delete` is working on. The item leaves memory before the
+    /// delete's suspensions, so a sync batch that names the id in between would add it again.
+    /// See CODE_AUDIT_21 §5.31.
+    @ObservationIgnored var deletingIds: Set<UUID> = []
+
     /// CloudKit change batches for this module, applied one at a time by a single consumer
     /// task in the order they were enqueued. A stream instead of a chain of tasks: the chain
     /// only kept arrival order if the tasks that built it happened to run first-in, first-out.

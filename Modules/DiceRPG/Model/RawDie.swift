@@ -132,7 +132,11 @@ public struct RawDie: Equatable, Hashable, Codable, Sendable {
                 if sides < 1 {
                     return 2
                 }
-                return sides
+                // The upper bound for every way a die is built: from text (the Core Data load,
+                // a Foundry formula), from code, and from decoded data. It used to sit only in
+                // the decoder, and `d9223372036854775807` from a formula crashed in `max + 1`
+                // each time it was rolled. See CODE_AUDIT_20 §5.10, CODE_AUDIT_21 §5.24.
+                return Swift.min(sides, Self.maximumDecodedSides)
             }
         }
 
@@ -192,7 +196,7 @@ extension RawDie.Sides: Codable {
         }
     }
 
-    /// Largest side count accepted when decoding.
+    /// Largest side count of a die, however it was built: see `number()`.
     static let maximumDecodedSides = 1_000_000
 
     public func encode(to encoder: any Encoder) throws {

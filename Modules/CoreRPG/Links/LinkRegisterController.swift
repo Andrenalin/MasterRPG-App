@@ -178,17 +178,22 @@ public extension LinkRegisterController {
                 let request: NSFetchRequest<NSFetchRequestResult> = LinkReferenceDataModel.fetchRequest()
                 request.predicate = NSPredicate(format: "sourceId IN %@", affectedIds as NSSet)
                 var existing: [UUID: LinkReferenceDataModel] = [:]
-                // Keep the duplicate with the lowest object-ID URI, not whichever the unsorted
-                // fetch returned first: two devices then keep the same row instead of each
-                // deleting the other's. See CODE_AUDIT_18 §5.13.
-                let fetched = (try context.fetch(request) as? [LinkReferenceDataModel] ?? [])
-                    .sorted { $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString }
+                // Keep the duplicate every device keeps (`DuplicateRowOrder`), not whichever the
+                // unsorted fetch returned first, and not the lowest object-ID URI, which differs
+                // per device. See CODE_AUDIT_18 §5.13, CODE_AUDIT_21 §5.7.
+                let fetched = try context.fetch(request) as? [LinkReferenceDataModel] ?? []
+                var rowsById: [UUID: [LinkReferenceDataModel]] = [:]
                 for object in fetched {
-                    if let id = object.uuid, existing[id] == nil {
-                        existing[id] = object
+                    if let id = object.uuid {
+                        rowsById[id, default: []].append(object)
                     } else {
                         context.delete(object)
                     }
+                }
+                for (id, rows) in rowsById {
+                    let ordered = DuplicateRowOrder.sorted(rows)
+                    existing[id] = ordered.first
+                    ordered.dropFirst().forEach(context.delete)
                 }
                 var currentIds: Set<UUID> = []
                 for link in currentLinks {

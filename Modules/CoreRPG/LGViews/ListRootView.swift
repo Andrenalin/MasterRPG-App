@@ -209,7 +209,7 @@ private extension ListRootView {
         } else {
             let removingItems = listController.delete(offsets: offsets)
             guard !removingItems.isEmpty else { return }
-            root.removeEntryListModel.removeItems = root.editControllable.collectionItemsForRemoval(for: removingItems)
+            root.removeEntryListModel.present(root.editControllable.collectionItemsForRemoval(for: removingItems))
             navigator.navigate(to: InternalRoute.removeAlert, method: .managedSheet)
         }
     }

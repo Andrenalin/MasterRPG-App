@@ -26,6 +26,9 @@ public protocol GameToolBarSession: AnyObject, Observable {
 
     var pinScale: CGFloat { get set }
     var hexScale: Double { get set }
+    /// Applies `hexScale` to the map: the hex grid is rebuilt for it. Called once when the
+    /// scale slider is released, not for every value on the way. See CODE_AUDIT_21 §5.19.
+    func commitHexScale()
     var isHexMap: Bool { get }
     var canReshare: Bool { get }
     func resetReshare()
@@ -67,6 +70,10 @@ extension MapEditorSession: GameToolBarSession {
 
     func toggleHexMap() {
         route(.toggleHexGrid)
+    }
+
+    func commitHexScale() {
+        hexScaleCommit &+= 1
     }
 
     func sendMapUpdates() {

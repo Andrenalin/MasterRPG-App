@@ -87,16 +87,21 @@ public extension EditControllable {
 
     /// Replaces the item's file with the file at `url`, or removes it when `url` is nil. Queued
     /// with the item's other file operations. See CODE_AUDIT_Folder §3.19.
-    @MainActor func resetFile(url: URL?, itemId: UUID) async {
-        _ = await enqueueFileOperation(itemId: itemId) {
+    ///
+    /// Returns whether the item has the requested file afterwards. A caller that owns the
+    /// source (the 3D scanner and its scan folder) must keep it when this is `false`.
+    /// See CODE_AUDIT_21 §5.21.
+    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID) async -> Bool {
+        let result = await enqueueFileOperation(itemId: itemId) {
             await replaceFile(url: url, itemId: itemId)
         }.result
+        return (try? result.get()) ?? false
     }
 
     /// The body of `resetFile(url:itemId:)`; callers that already run inside a queued file
     /// operation for `itemId` call this directly.
-    @MainActor private func replaceFile(url: URL?, itemId: UUID) async {
-        guard let fileUrlDataController, let item = editModel(for: itemId) else { return }
+    @MainActor private func replaceFile(url: URL?, itemId: UUID) async -> Bool {
+        guard let fileUrlDataController, let item = editModel(for: itemId) else { return false }
 
         // Check if we have an existing file
         var isSameFilePath: Bool = false
@@ -111,14 +116,14 @@ public extension EditControllable {
             }
         }
 
-        guard !isSameFilePath else { return }
+        guard !isSameFilePath else { return true }
         guard let url else {
             // The file was removed, not replaced.
             if let replacedFileUrl {
                 fileUrlDataController.delete(replacedFileUrl, keepingStoredFile: itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId))
                 reset(fileUrl: nil, itemId: itemId)
             }
-            return
+            return true
         }
 
         let securityScope = url.startSecurityScopedAccess()
@@ -139,7 +144,7 @@ public extension EditControllable {
             guard editModel(for: itemId) != nil else {
                 // Deleted while the new file was created: nothing would reference it.
                 fileUrlDataController.delete(updatedFileUrl)
-                return
+                return false
             }
             reset(fileUrl: updatedFileUrl, itemId: itemId)
             if let replacedFileUrl {
@@ -151,12 +156,14 @@ public extension EditControllable {
                     fileUrlDataController.removeBookmarks(fileId: itemId)
                 }
             }
+            return true
         } catch {
             // The old file and its reference are kept. Log and surface the failure so the
             // user learns the attach failed. See CODE_AUDIT_EditItem §5.7, CODE_AUDIT_19 §5.9.
             Logger.editController.error("resetFile(url:itemId:) failed to create file url: \(error.localizedDescription, privacy: .private)")
             itemControllable.itemDataModel.lastPersistenceError = error
             PersistenceIssueCenter.shared.recordFileError(error)
+            return false
         }
     }
     
@@ -205,7 +212,7 @@ public extension EditControllable {
             if replacedFileUrl != nil {
                 // Already inside this item's queued file operation; calling the queued
                 // `resetFile(url:itemId:)` here would wait on itself.
-                await replaceFile(url: nil, itemId: itemId)
+                _ = await replaceFile(url: nil, itemId: itemId)
             }
             return
         }

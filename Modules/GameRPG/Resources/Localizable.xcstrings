@@ -5265,6 +5265,23 @@
         }
       }
     },
+    "The game master's device did not accept the Character \"%@\"." : {
+      "comment" : "A game log line on a player's device: the game master's device could not import the player's Character after several attempts. The argument is the Character's name.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Gerät der Spielleitung hat den Charakter „%@“ nicht angenommen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "อุปกรณ์ของเกมมาสเตอร์ไม่ยอมรับตัวละคร \"%@\""
+          }
+        }
+      }
+    },
     "The host did not accept the connection in time. Check the code and that Local Network access is allowed, then try again." : {
       "localizations" : {
         "de" : {

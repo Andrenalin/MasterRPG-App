@@ -21,19 +21,6 @@ extension String: LWWActorID {
     public static var local: String { LocalActorId.value }
 }
 
-/// A random id created once per install and kept in `UserDefaults`.
-private enum LocalActorId {
-    static let value: String = {
-        let key = BundleIds.app("crdtLocalActorId")
-        if let stored = UserDefaults.standard.string(forKey: key), !stored.isEmpty {
-            return stored
-        }
-        let created = UUID().uuidString
-        UserDefaults.standard.set(created, forKey: key)
-        return created
-    }()
-}
-
 /// A Last-Writer-Wins Register.
 ///
 /// The `LWWRegister` implementation is based on an optimized CRDT register type as described in

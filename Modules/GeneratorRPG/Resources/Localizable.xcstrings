@@ -1807,6 +1807,23 @@
         }
       }
     },
+    "Pages that could not be analysed: %@" : {
+      "comment" : "A notice after a PDF content extraction in which some pages failed. The argument is the list of page numbers.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seiten, die nicht analysiert werden konnten: %@"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หน้าที่ไม่สามารถวิเคราะห์ได้: %@"
+          }
+        }
+      }
+    },
     "PDF content is too large for processing. Try a smaller document or fewer pages." : {
       "localizations" : {
         "de" : {

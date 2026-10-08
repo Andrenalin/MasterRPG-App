@@ -363,7 +363,10 @@ extension EditController {
     @MainActor func createHexMap(model: MapModel, hexMapScale: Double = 0) {
         let size = MapHexGridGeometry.initialSize(for: model, requestedSize: hexMapScale)
         model.hexMapScale = size
-        let entries = MapHexGridGeometry.grid(for: size, in: CGRect(origin: .zero, size: CGSize(width: model.width, height: model.height)))
+        let grid = MapHexGridGeometry.grid(for: size, in: CGRect(origin: .zero, size: CGSize(width: model.width, height: model.height)))
+        // What the game master had revealed stays revealed at the new scale.
+        // See CODE_AUDIT_21 §5.19.
+        let entries = MapHexGridGeometry.carryingRevealedArea(from: model.entries, to: grid)
         MapHexGridGeometry.replaceGrid(entries, in: model)
     }
 }

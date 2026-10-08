@@ -60,9 +60,9 @@ extension GameNetworkController: MasterNetworkControllerDelegate {
                 }
                 await model.masterStore?.sendResponse(data: relayed, except: connectionId)
                 let useFileJournal = fileJournal || gameData.usesFileJournal
-                // `sendData` is itself `@MainActor` (and `@discardableResult`) — `await`
-                // alone hops there, no `MainActor.run` wrapper needed.
-                await sharePlayStore.sendData(gameData, fileJournal: useFileJournal)
+                // `sendDataReportingLoss` is itself `@MainActor` — `await` alone hops there,
+                // no `MainActor.run` wrapper needed.
+                await sharePlayStore.sendDataReportingLoss(gameData, fileJournal: useFileJournal)
             }
             await model.masterDelegate?.received(gameData, origin: origin)
         }

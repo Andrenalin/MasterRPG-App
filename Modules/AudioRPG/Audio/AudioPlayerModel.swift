@@ -21,6 +21,11 @@ public final class AudioPlayerModel: Sendable {
         volume == 0
     }
     var isPlaybackComplete = false
+    /// Whether the app wants audio to play: set by `play()`, cleared by `pause()` and when the
+    /// playlist ends. An interruption pauses the player without clearing it, so it tells what
+    /// to resume; `isPlaying` is updated by an observer task and may or may not have seen the
+    /// system's pause when the interruption is reported. See CODE_AUDIT_21 §5.28.
+    @ObservationIgnored var wantsPlayback = false
 
     // MARK: player list
     var playList: [PlaylistItem] = []
@@ -67,6 +72,12 @@ public final class AudioPlayerModel: Sendable {
     
     func add(subscriptions: Set<AnyCancellable>) {
         self.subscriptions = self.subscriptions.union(subscriptions)
+    }
+
+    /// Ends the playback observers, which are bound to the player they were created for.
+    func removeSubscriptions() {
+        subscriptions.forEach { $0.cancel() }
+        subscriptions = []
     }
 
 }

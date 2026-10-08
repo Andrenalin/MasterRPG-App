@@ -62,12 +62,14 @@ struct PdfWrapperView: CustomViewRepresentable {
         pdfView.isFindInteractionEnabled = true
 #endif
         
-        if let entry, let pageNo = Int(entry.pageLabel) {
-            if let page = pdfDocument?.page(at: pageNo - 1), let selection = page.selection(for: entry.bounds) {
-                Task { @MainActor in
-                    try? await Task.sleep(for: Self.pdfViewNavigationDelay)
-                    pdfView.go(to: page)
-                }
+        if let entry, let pdfDocument, let page = PdfBookmarkPage.page(for: entry, in: pdfDocument) {
+            // Also when the selection cannot be rebuilt from the stored bounds: the bookmark
+            // then still opens its page. See CODE_AUDIT_21 §5.17.
+            Task { @MainActor in
+                try? await Task.sleep(for: Self.pdfViewNavigationDelay)
+                pdfView.go(to: page)
+            }
+            if let selection = page.selection(for: entry.bounds) {
                 selection.color = AKColor.yellow
                 pdfView.highlightedSelections = [selection]
             }

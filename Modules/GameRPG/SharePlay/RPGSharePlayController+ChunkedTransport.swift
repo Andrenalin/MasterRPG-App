@@ -18,6 +18,19 @@ extension RPGSharePlayController {
     /// Sends to the whole SharePlay session by default. Supplying a participant
     /// ID physically addresses Messenger packages to that active participant;
     /// Journal-backed Audio and Weather repairs remain session-visible by design.
+    /// `sendData` for callers that have nothing to do with its result: a message the session
+    /// neither sent nor kept for a retry is at least logged as lost. Without a session there
+    /// is nothing to report. See CODE_AUDIT_21 §5.6.
+    func sendDataReportingLoss(
+        _ gameNetworkModel: GameNetworkModel,
+        fileJournal: Bool,
+        participantId: UUID? = nil
+    ) {
+        let accepted = sendData(gameNetworkModel, fileJournal: fileJournal, participantId: participantId)
+        guard !accepted, messenger != nil, groupSession != nil else { return }
+        Logger.sharePlay.error("SharePlay did not accept message \(gameNetworkModel.counter, privacy: .public) (\(gameNetworkModel.type.debugDescription, privacy: .public) - \(gameNetworkModel.subType.debugDescription, privacy: .public), \(gameNetworkModel.data.type.token, privacy: .public)): it is lost for SharePlay participants")
+    }
+
     /// Returns whether a transport or bounded deferred queue accepted the intent.
     @discardableResult
     func sendData(
@@ -467,7 +480,7 @@ extension RPGSharePlayController {
                   deliveryAttempt + 1 < Self.maxChunkedDeliveryAttempts
             else { return }
 
-            let retryAt = ContinuousClock().now.advanced(by: Self.chunkedRetryDelay)
+            let retryAt = ContinuousClock().now.advanced(by: Self.chunkedRetryDelay(forAttempt: deliveryAttempt + 1))
             let admission = self.deferredDeliveryQueue.enqueue(
                 model,
                 sessionId: sessionId,

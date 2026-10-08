@@ -46,6 +46,9 @@ extension PlayerController {
             try Task.checkCancellation()
             let reference = await root.characterRoot.gameControllable.share(id: characterId)
             try Task.checkCancellation()
+            // A version the master already rejected several times is not announced again.
+            // See CODE_AUDIT_21 §5.5.
+            guard gameModel.mayAnnounceCharacter(version: reference.version) else { return }
             // First advertise only the Character ID and deterministic version.
             // The master requests the full package only when its local version
             // differs. Value messages never use the SharePlay Journal.

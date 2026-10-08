@@ -1,5 +1,6 @@
 // @copyright André Trettin
 
+import Foundation
 import Testing
 
 @testable import DiceRPG
@@ -11,6 +12,18 @@ struct RawDiceLimitsTests {
     func countIsClamped() {
         #expect(RawDieCounter(text: "999999999999d6").count == RawDieCounter.maximumCount)
         #expect(RawDieCounter(text: "-999999999999d6").count == -RawDieCounter.maximumCount)
+    }
+
+    // CODE_AUDIT_21 §5.24: the side count was bounded only when decoded.
+    @Test("A die built from text has the same side limit as a decoded one")
+    func sidesFromTextAreClamped() {
+        let die = RawDie(text: "d9223372036854775807")
+        #expect(die.max == 1_000_000)
+        #expect((1...1_000_000).contains(die.roll()))
+        // The reroll loop computes `max + 1`.
+        #expect(DieModel(id: UUID(), die: die).roll(rerollOptions: []).result.count == 1)
+        #expect(RawDie(.number(Int.max)).max == 1_000_000)
+        #expect(RawDie(text: "d20").max == 20)
     }
 
     @Test("Saturating arithmetic never traps")

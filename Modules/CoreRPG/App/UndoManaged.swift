@@ -60,6 +60,16 @@ public final class UndoManaged<T> {
         !undoStack.isEmpty
     }
 
+    /// The value the next `undo()` restores.
+    public var nextUndoValue: T? {
+        undoStack.last
+    }
+
+    /// The value the next `redo()` restores.
+    public var nextRedoValue: T? {
+        redoStack.last
+    }
+
     public var canRedo: Bool {
         !redoStack.isEmpty
     }

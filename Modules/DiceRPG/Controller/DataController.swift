@@ -138,8 +138,11 @@ extension DataController: CoreDataSnapshotPersistable {
             // sides (see `applySnapshot` above); older strings have no
             // color suffix and fall back to the previous default. See
             // CODE_AUDIT §5.4.
+            // `split` drops empty parts, so a stored element of ":" has none: `components[0]`
+            // trapped on it. See CODE_AUDIT_21 §5.24.
             let components = die.split(separator: ":", maxSplits: 1)
-            let sidesText = String(components[0])
+            guard let sidesPart = components.first else { return nil }
+            let sidesText = String(sidesPart)
             let color = components.count > 1 ? String(components[1]) : DieModel.ColorCode.Random.rawValue
             return DieModel(id: UUID(), die: RawDie(text: sidesText), color: color)
         }

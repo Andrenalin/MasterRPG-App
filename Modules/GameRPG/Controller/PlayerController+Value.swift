@@ -23,8 +23,20 @@ extension PlayerController {
             // clear it so the existing `scheduleSendCharacter()` triggers
             // retry `sendCharacter()` instead of the handshake staying wedged
             // for the rest of the session. See CODE_AUDIT_Network §5.24.
-            Logger.networking.error("PlayerController: Master failed to import Character \(characterId, privacy: .private); will retry")
-            gameModel.reset(sendPlayer: false)
+            // Retried with a growing delay and only a few times per Character version: every
+            // later master message used to announce the Character again, and each announcement
+            // ended in another full upload of a package the master cannot import.
+            // See CODE_AUDIT_21 §5.5.
+            if gameModel.recordCharacterRejection(version: model.data.version) {
+                Logger.networking.error("PlayerController: Master failed to import Character \(characterId, privacy: .private) \(PlayerControllerModel.maximumCharacterRejections, privacy: .public) times; no longer sending it")
+                let name = root.characterRoot.itemControllable.nameSync(itemId: characterId)
+                root.logGameController.addNote(String(
+                    localized: "The game master's device did not accept the Character \"\(name)\".",
+                    bundle: .module
+                ))
+            } else {
+                Logger.networking.error("PlayerController: Master failed to import Character \(characterId, privacy: .private); will retry")
+            }
             return nil
         }
         // A normal player accepts only the master's targeted response to the

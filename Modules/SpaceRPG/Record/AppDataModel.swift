@@ -116,6 +116,24 @@ final class AppDataModel: Identifiable {
         state = .completed
     }
 
+    /// Ends the capture after its model was reviewed and handed to the item, and closes the
+    /// capture UI. `endCapture()` alone went on to `.ready`, which starts a new capture session
+    /// half a second later: after a finished scan a session ran unseen with the camera on.
+    /// With `attached == false` the model stays in the scan folder: it was deleted there even
+    /// when attaching had failed, and it was the only copy. See CODE_AUDIT_21 §5.21.
+    func finishCapture(attached: Bool) {
+        skipNextAutoRestart = true
+        keepsModelOnReset = !attached
+        finishedCaptures += 1
+        state = .completed
+    }
+
+    /// Counts finished captures; the capture UI dismisses itself when it changes.
+    private(set) var finishedCaptures = 0
+
+    /// Set for the reset after a capture whose model could not be attached.
+    private var keepsModelOnReset = false
+
     /// Set right before a cancel that's also dismissing the capture UI entirely, so
     /// `performStateTransition`'s usual "land on `.ready` → immediately start a new
     /// capture" behavior is skipped once. See ``cancelAndDismiss()``.
@@ -326,10 +344,23 @@ final class AppDataModel: Identifiable {
         // (in `ReconstructionPrimaryView`) copies it into managed storage before `endCapture()`
         // moves state to `.completed`. For a cancelled/failed scan this simply discards the
         // leftover capture photos instead of letting them accumulate in Documents indefinitely.
-        if let rootScanFolder = scanFolderManager?.rootScanFolder {
+        //
+        // A model that could not be attached is the only copy: its folder stays, and only the
+        // capture photos and snapshots go. See CODE_AUDIT_21 §5.21.
+        let keepsModel = keepsModelOnReset
+        keepsModelOnReset = false
+        if let scanFolderManager {
+            let removed = keepsModel
+                ? [scanFolderManager.imagesFolder, scanFolderManager.snapshotsFolder]
+                : [scanFolderManager.rootScanFolder]
+            if keepsModel {
+                Logger.scanner3D.error("The scanned model was not attached; it is kept in \(scanFolderManager.modelsFolder.path(percentEncoded: false), privacy: .private)")
+            }
             cleanupTask = Task(priority: .background) { @concurrent in
                 guard !Task.isCancelled else { return }
-                try? FileManager.default.removeItem(at: rootScanFolder)
+                for url in removed {
+                    try? FileManager.default.removeItem(at: url)
+                }
             }
         }
 

@@ -109,12 +109,15 @@ struct TableGuestDiceTests {
 
     @MainActor
     @Test("A roll from any device but Vision Pro makes its player a table guest; the master never is one")
-    func guestNames() {
+    func guestNames() throws {
         let model = GameRootModel()
-        func roll(_ name: String, role: GameType = .player, platform: GamePlatform?) -> GameNetworkModel {
-            GameNetworkModel(
+        var ids: [String: UUID] = [:]
+        func roll(_ name: String, role: GameType = .player, platform: GamePlatform?, player: String? = nil) -> GameNetworkModel {
+            let id = ids[player ?? name, default: UUID()]
+            ids[player ?? name] = id
+            return GameNetworkModel(
                 counter: 1, proxyCounter: 0, type: .update, subType: .generic, masterId: UUID(),
-                sender: GameSenderModel(id: UUID(), role: role, name: name, characterId: nil),
+                sender: GameSenderModel(id: id, role: role, name: name, characterId: nil),
                 senderPlatform: platform,
                 data: NetworkCodableDataType(id: UUID(), type: .dice, version: 0)
             )
@@ -129,6 +132,15 @@ struct TableGuestDiceTests {
         // Anna moves to a Vision Pro.
         model.noteDiceRollSender(of: roll("Anna", platform: .visionOS))
         #expect(model.tableGuestNames == ["Ben"])
+
+        // CODE_AUDIT_21 §5.12: a second player named Ben on a Vision Pro is another player, and
+        // does not take the first Ben's guest seat away.
+        model.noteDiceRollSender(of: roll("Ben", platform: .visionOS, player: "Ben at the table"))
+        #expect(model.tableGuestNames == ["Ben"])
+
+        // A guest who leaves the game is no guest any more.
+        _ = model.remove(playerId: try #require(ids["Ben"]))
+        #expect(model.tableGuestNames.isEmpty)
     }
 }
 #endif

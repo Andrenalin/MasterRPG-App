@@ -60,7 +60,7 @@ extension MasterController {
         // The binding just landed — replay any `.valueUpdate` this same
         // sender sent before it, which was held rather than dropped. See
         // CODE_AUDIT_Network §5.18.
-        if let pendingUpdate = gameModel.takePendingValueUpdate(senderId: model.sender.id) {
+        for pendingUpdate in gameModel.takePendingValueUpdates(senderId: model.sender.id) {
             applyValueUpdate(pendingUpdate, characterId: characterId)
         }
 

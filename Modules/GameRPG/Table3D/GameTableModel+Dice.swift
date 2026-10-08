@@ -122,6 +122,12 @@ extension GameTableModel {
         return value
     }
 
+    /// Whether `dieId` belongs to the pool of the guest seat.
+    func isGuestDie(_ dieId: EquipmentIdentifier) -> Bool {
+        setup.playerD20Ids[PlayerSeat.guestSeat]?.contains(dieId) == true
+            || setup.playerD6Ids[PlayerSeat.guestSeat]?.contains(dieId) == true
+    }
+
     /// Whether `dieId` belongs to one of the table's dice pools.
     func isDie(_ dieId: EquipmentIdentifier) -> Bool {
         tabletopGame.equipment(of: Die20.self, matching: dieId) != nil
@@ -129,7 +135,11 @@ extension GameTableModel {
     }
 
     /// The game master may handle any die; a player only the dice in their own seat's pool.
+    /// Nobody handles the guest seat's dice: they mirror the rolls of players without a table,
+    /// and a toss gave such a die a value of the table's own, which no longer matched that
+    /// player's roll and hid their result on every table. See CODE_AUDIT_21 §5.11.
     func canControlDie(_ dieId: EquipmentIdentifier) -> Bool {
+        guard !isGuestDie(dieId) else { return false }
         if isGameMaster { return true }
         guard let seat = localSeat else { return false }
         return setup.playerD20Ids[seat]?.contains(dieId) == true

@@ -75,6 +75,7 @@ public struct CloudKitCoreDataPersistenceController {
         }
         
         model.container = container
+        DuplicateRowOrder.register(container)
         if model.inMemory {
             container.persistentStoreDescriptions.first!.url = URL(filePath: "/dev/null")
         }

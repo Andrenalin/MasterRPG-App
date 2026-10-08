@@ -117,6 +117,83 @@ enum MapHexGridGeometry {
         model.entries.append(contentsOf: entries)
     }
 
+    /// `grid` with the revealed area of the grid it replaces: a cell starts shown when its centre
+    /// lies inside a cell of `previous` that was shown. A new scale gives every cell a new id
+    /// and place, so the cells themselves cannot be matched; rebuilding the grid used to hide
+    /// everything the game master had revealed. See CODE_AUDIT_21 §5.19.
+    static func carryingRevealedArea(from previous: [MapEntryModel], to grid: [MapEntryModel]) -> [MapEntryModel] {
+        let revealed = previous
+            .filter { $0.isHexGrid && $0.isShown }
+            .compactMap { RevealedCell(corners: $0.coordinates) }
+        guard !revealed.isEmpty else { return grid }
+        // Cells by the squares of a coarse raster their bounds touch, so a centre is tested
+        // against the few cells around it and not against every revealed cell.
+        let rasterSize = max(revealed.map { max($0.bounds.width, $0.bounds.height) }.max() ?? 1, 1)
+        func rasterIndex(_ value: CGFloat) -> Int {
+            Int((value / rasterSize).rounded(.down))
+        }
+        var raster: [RasterSquare: [Int]] = [:]
+        for (index, cell) in revealed.enumerated() {
+            for x in rasterIndex(cell.bounds.minX)...rasterIndex(cell.bounds.maxX) {
+                for y in rasterIndex(cell.bounds.minY)...rasterIndex(cell.bounds.maxY) {
+                    raster[RasterSquare(x: x, y: y), default: []].append(index)
+                }
+            }
+        }
+        func isRevealed(_ point: CGPoint) -> Bool {
+            raster[RasterSquare(x: rasterIndex(point.x), y: rasterIndex(point.y))]?
+                .contains { revealed[$0].contains(point) } ?? false
+        }
+        return grid.map { entry in
+            guard let centre = centre(of: entry.coordinates) else { return entry }
+            // The centre and four points next to it: a centre exactly on the edge two revealed
+            // cells share is inside neither of them, which left holes in the revealed area.
+            let samples = [
+                centre,
+                CGPoint(x: centre.x - edgeTolerance, y: centre.y),
+                CGPoint(x: centre.x + edgeTolerance, y: centre.y),
+                CGPoint(x: centre.x, y: centre.y - edgeTolerance),
+                CGPoint(x: centre.x, y: centre.y + edgeTolerance)
+            ]
+            guard samples.contains(where: isRevealed) else { return entry }
+            var shown = entry
+            shown.isShown = true
+            return shown
+        }
+    }
+
+    /// How far beside a cell's centre the revealed area is also looked for, in map points.
+    private static let edgeTolerance: CGFloat = 0.5
+
+    private struct RasterSquare: Hashable {
+        let x: Int
+        let y: Int
+    }
+
+    private struct RevealedCell {
+        let bounds: CGRect
+        let path: CGPath
+
+        init?(corners: [CGPoint]) {
+            guard corners.count >= 3, corners.allSatisfy({ $0.x.isFinite && $0.y.isFinite }) else { return nil }
+            let path = CGMutablePath()
+            path.addLines(between: corners)
+            path.closeSubpath()
+            self.path = path
+            bounds = path.boundingBoxOfPath
+        }
+
+        func contains(_ point: CGPoint) -> Bool {
+            bounds.contains(point) && path.contains(point)
+        }
+    }
+
+    private static func centre(of corners: [CGPoint]) -> CGPoint? {
+        guard !corners.isEmpty, corners.allSatisfy({ $0.x.isFinite && $0.y.isFinite }) else { return nil }
+        let sum = corners.reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.x, y: $0.y + $1.y) }
+        return CGPoint(x: sum.x / CGFloat(corners.count), y: sum.y / CGFloat(corners.count))
+    }
+
     private static func hexCorners(at offset: CGPoint, maxPoint: CGPoint, size: Double) -> [CGPoint] {
         let width = sqrt(3) * size
         let height = 2 * size

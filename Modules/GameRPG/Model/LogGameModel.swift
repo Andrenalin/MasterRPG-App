@@ -42,9 +42,11 @@ final class LogGameModel: Identifiable {
         messageID: GameDeliveryMessageID? = nil,
         expectedRecipients: [LogMessageRecipient] = [],
         tracksDelivery: Bool? = nil,
-        sharePlayTransport: SharePlayTransportLog = SharePlayTransportLog()
+        sharePlayTransport: SharePlayTransportLog = SharePlayTransportLog(),
+        note: String? = nil
     ) {
         self.id = id
+        self.note = note
         self.messageID = messageID ?? GameDeliveryMessageID(
             sessionID: GameDeliveryMessageID.legacySessionID,
             counter: id
@@ -62,6 +64,9 @@ final class LogGameModel: Identifiable {
     }
     
     let id: Int
+    /// A line of text shown in place of the message description: the row is a notice for the
+    /// person at this device, not a sent message. See CODE_AUDIT_21 §5.5.
+    let note: String?
     let messageID: GameDeliveryMessageID
     var type: RPGMessageType
     var subType: RPGMessageActionType

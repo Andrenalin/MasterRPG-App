@@ -138,17 +138,17 @@ public struct TagController: Sendable {
                 let request: NSFetchRequest<NSFetchRequestResult> = TagDataModel.fetchRequest()
                 request.predicate = NSPredicate(format: "module IN %@", moduleRawValues as NSArray)
                 var existing: [String: TagDataModel] = [:]
-                // Deterministic survivor (lowest object-ID URI) so two devices keep the same
-                // duplicate. See CODE_AUDIT_18 §5.13.
-                let fetched = (try context.fetch(request) as? [TagDataModel] ?? [])
-                    .sorted { $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString }
+                // The survivor every device keeps (`DuplicateRowOrder`); the lowest object-ID
+                // URI differs per device. See CODE_AUDIT_18 §5.13, CODE_AUDIT_21 §5.7.
+                let fetched = try context.fetch(request) as? [TagDataModel] ?? []
+                var rowsByKey: [String: [TagDataModel]] = [:]
                 for object in fetched {
-                    let key = "\(object.module)|\(object.title ?? "")"
-                    if existing[key] == nil {
-                        existing[key] = object
-                    } else {
-                        context.delete(object)
-                    }
+                    rowsByKey["\(object.module)|\(object.title ?? "")", default: []].append(object)
+                }
+                for (key, rows) in rowsByKey {
+                    let ordered = DuplicateRowOrder.sorted(rows)
+                    existing[key] = ordered.first
+                    ordered.dropFirst().forEach(context.delete)
                 }
                 var currentKeys: Set<String> = []
                 for tag in currentTags {

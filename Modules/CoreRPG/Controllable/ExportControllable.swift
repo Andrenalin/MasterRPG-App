@@ -379,6 +379,7 @@ public extension ExportControllable {
         // silently changes the exported bytes while reporting success. See §5.10.
         guard let fileUrlDataController, let fileUrl = await exportedFileUrl(for: itemId) else { return false }
         if let data = fileUrl.data {
+            guard Self.fitsImportBlock(data.count) else { return false }
             try outputStream.append(counter: data.count, token: ExportDataToken.file.rawValue)
             try outputStream.write(data: data)
             return true
@@ -386,7 +387,7 @@ public extension ExportControllable {
         guard let handle = try? await fileUrlDataController.readHandle(for: fileUrl) else { return false }
         defer { try? handle.close() }
         guard let size = try? handle.seekToEnd(), (try? handle.seek(toOffset: 0)) != nil,
-              let byteCount = Int(exactly: size) else { return false }
+              let byteCount = Int(exactly: size), Self.fitsImportBlock(byteCount) else { return false }
 
         try outputStream.append(counter: byteCount, token: ExportDataToken.file.rawValue)
         let blockSize = 1 << 20
@@ -400,6 +401,15 @@ public extension ExportControllable {
             remaining -= block.count
         }
         return true
+    }
+
+    /// Whether a file block of `byteCount` bytes can be read back: the import refuses a block
+    /// above its own limit as a framing error and stops there. The export used to write any
+    /// size that fits 32 bits, so one larger attachment made a backup that reported success
+    /// and could not be imported past that item. Such a file is left out and reported like an
+    /// unreadable one. See CODE_AUDIT_21 §5.8.
+    static func fitsImportBlock(_ byteCount: Int) -> Bool {
+        byteCount <= InputStream.maxSingleBlockSize
     }
 
     @MainActor private func exportedFileUrl(for itemId: UUID) async -> FileUrl? {

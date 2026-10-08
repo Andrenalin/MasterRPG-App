@@ -33,6 +33,23 @@ public final class ItemEditorModel: Sendable {
     
     @ObservationIgnored public var undoManaged: UndoManaged<ModelType?>
 
+    /// The undo and redo values that belong to a folder edit made on the library, not on what
+    /// is being edited: restoring one writes the library, also during a game. The newest are
+    /// kept; an undo stack is not deeper. See CODE_AUDIT_21 §5.31.
+    @ObservationIgnored private var libraryScopedUndoValues: [AnyObject] = []
+
+    func markLibraryScopedUndo(_ value: ModelType) {
+        libraryScopedUndoValues.append(value as AnyObject)
+        if libraryScopedUndoValues.count > 64 {
+            libraryScopedUndoValues.removeFirst(libraryScopedUndoValues.count - 64)
+        }
+    }
+
+    func isLibraryScopedUndo(_ value: ModelType) -> Bool {
+        let object = value as AnyObject
+        return libraryScopedUndoValues.contains { $0 === object }
+    }
+
     /// The running duplicate started from any menu of this module. A second Duplicate press
     /// while it runs is ignored. See CODE_AUDIT_Folder §3.18.
     @ObservationIgnored var duplicateTask: Task<Void, Never>?

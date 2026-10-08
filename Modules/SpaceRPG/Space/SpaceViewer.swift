@@ -574,8 +574,11 @@ private extension SpaceViewer {
             // Load entity from USDZ file
             let loadedEntity = try await Entity(contentsOf: url, withName: "3DMaster")
 
-            // Validate the loaded entity has content
-            guard loadedEntity.children.count > 0 || loadedEntity.components.count > 0 else {
+            // Validate the loaded entity has something to show. Every entity has a transform
+            // component, so counting children and components was always true: a USDZ without
+            // a mesh never got this message and was positioned from an empty bounding box.
+            // See CODE_AUDIT_21 §5.28.
+            guard !loadedEntity.visualBounds(relativeTo: nil).isEmpty else {
                 loadError = String(localized: "The 3D model is empty.", bundle: .module)
                 hasLoaded = true
                 return

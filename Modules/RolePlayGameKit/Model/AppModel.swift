@@ -332,6 +332,8 @@ extension AppModel {
     public func cleanDatabase() async {
         for step in moduleFolderRepairSteps {
             try? await step.root.itemDataCleanup()
+            // Files a game of the previous run left behind. See CODE_AUDIT_21 §5.14.
+            await step.root.itemControllable.removeLeftoverGameFiles()
         }
     }
 
@@ -500,22 +502,30 @@ extension AppModel {
         itemId: UUID? = nil,
         entryId: UUID? = nil
     ) {
-        let requestedRoute = PendingExternalRoute(
-            module: module,
-            itemId: itemId,
-            entryId: entryId
-        )
-        let now = Date.now
-        guard requestedRoute != lastExternalRoute
-                || now.timeIntervalSince(lastExternalRouteDate) >= 1 else { return }
-        lastExternalRoute = requestedRoute
-        lastExternalRouteDate = now
+        guard admitsExternalRoute(module, itemId: itemId, entryId: entryId) else { return }
 
         guard appNavigationModel.initialRouteType == .ready else {
-            pendingExternalRoute = requestedRoute
+            pendingExternalRoute = PendingExternalRoute(module: module, itemId: itemId, entryId: entryId)
             return
         }
         routeToModule(module, itemId: itemId, entryId: entryId)
+    }
+
+    /// Whether a route that came from outside the app (a link, a widget, a continued activity)
+    /// should run: `false` for the same route within a second of the last one, which is one
+    /// request delivered twice. Records the route. See CODE_AUDIT_21 §5.26.
+    @MainActor public func admitsExternalRoute(
+        _ module: NetworkModules,
+        itemId: UUID? = nil,
+        entryId: UUID? = nil
+    ) -> Bool {
+        let requestedRoute = PendingExternalRoute(module: module, itemId: itemId, entryId: entryId)
+        let now = Date.now
+        guard requestedRoute != lastExternalRoute
+                || now.timeIntervalSince(lastExternalRouteDate) >= 1 else { return false }
+        lastExternalRoute = requestedRoute
+        lastExternalRouteDate = now
+        return true
     }
 
     private func presentPendingExternalNavigationIfNeeded() {

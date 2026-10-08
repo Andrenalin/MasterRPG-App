@@ -39,8 +39,27 @@ extension GameTableModel {
     }
 
     var hexScale: Double {
-        get { currentMapModel()?.hexMapScale ?? 0 }
-        set { currentMapModel()?.hexMapScale = newValue }
+        get { pendingHexScale ?? currentMapModel()?.hexMapScale ?? 0 }
+        set { pendingHexScale = newValue }
+    }
+
+    /// Applies the scale the slider was released at. On a hex map the grid is rebuilt for it,
+    /// with the revealed area kept; the scale alone used to be stored and the grid stayed as it
+    /// was. See CODE_AUDIT_21 §5.19.
+    func commitHexScale() {
+        guard let scale = pendingHexScale else { return }
+        pendingHexScale = nil
+        guard let map = currentMapModel(), scale != map.hexMapScale else { return }
+        guard isHexMap else {
+            map.hexMapScale = scale
+            return
+        }
+        // Game-master only, like `toggleHexMap()`.
+        guard isGameMaster, scale != 0, let mapId = currentMapId else { return }
+        mapRoot.rescaleHexMap(itemId: mapId, scale: scale)
+        replaceFogOfWarTask()
+        syncPawnsWithMapPins()
+        broadcastMapContentEdit(for: mapId)
     }
 
     var isHexMap: Bool {

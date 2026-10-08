@@ -98,6 +98,12 @@ public struct WallclockTimestamp<ActorID: Hashable & Comparable>: Identifiable, 
     }
 }
 
+extension WallclockTimestamp {
+    /// The largest clock a decoded timestamp keeps. Far beyond any real time, and with room for
+    /// later clocks above it.
+    static var maximumDecodedClock: TimeInterval { TimeInterval.greatestFiniteMagnitude / 2 }
+}
+
 extension WallclockTimestamp: Codable where ActorID: Codable {
     private enum CodingKeys: String, CodingKey {
         case clock
@@ -119,7 +125,11 @@ extension WallclockTimestamp: Codable where ActorID: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedClock = try container.decode(TimeInterval.self, forKey: .clock)
-        clock = decodedClock.isFinite ? decodedClock : 0
+        // Capped below the largest finite value, by a constant, so every replica caps alike
+        // (unlike the time-dependent cap described above). A register at the very maximum
+        // could not be overwritten: no later clock exists, and the write then depends on the
+        // actor tie-break. See CODE_AUDIT_21 §5.16.
+        clock = decodedClock.isFinite ? min(decodedClock, Self.maximumDecodedClock) : 0
         actorId = try container.decode(ActorID.self, forKey: .actorId)
     }
 

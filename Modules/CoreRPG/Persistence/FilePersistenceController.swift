@@ -37,8 +37,15 @@ extension FilePersistenceController {
         guard type != .memory else { return await model.cache }
         let oldUrl = oldFileUrl
         let loadUrl = fileUrl
+        // On its own: a move that throws (the new file exists already, the old one is locked) used
+        // to end the whole load with an empty result, and the next save then wrote that empty
+        // list over the stored file. The new file is still read. See CODE_AUDIT_21 §5.16.
         do {
             try await migrateOldFile(oldUrl: oldUrl, newUrl: loadUrl)
+        } catch {
+            Logger.filePersistenceController.error("Could not move the old store file, reading the new one: \(error.logIdentifier, privacy: .public) \(error.localizedDescription, privacy: .private)")
+        }
+        do {
             let exists = FileManager.default.fileExists(atPath: loadUrl.path(percentEncoded: false))
             if !exists {
                 try FileManager.default.createDirectory(at: loadUrl.deletingLastPathComponent(), withIntermediateDirectories: true)

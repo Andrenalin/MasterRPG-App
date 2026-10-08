@@ -281,16 +281,16 @@ public final class ExternalImportReviewSession {
             // replaced files behind. See CODE_AUDIT_Folder §3.1.
             await Task { @MainActor in
                 for superseded in supersededFiles {
-                    guard let fileController = rootManager.rootModel(for: superseded.module)?
-                        .itemControllable.fileUrlDataController else { continue }
-                    do {
-                        try await self.deleteCreatedFile(superseded.fileUrl, using: fileController)
-                    } catch {
-                        // The import itself already committed durably; a failed cleanup here
-                        // is an orphaned file on disk, not data loss. Log it so it's diagnosable
-                        // instead of vanishing silently. See CODE_AUDIT.md §5.2.
-                        Logger.importController.error("ExternalImport: failed to delete superseded file \(superseded.fileUrl.fileId, privacy: .public): \(error.localizedDescription, privacy: .private)")
-                    }
+                    guard let itemControllable = rootManager.rootModel(for: superseded.module)?.itemControllable,
+                          let fileController = itemControllable.fileUrlDataController else { continue }
+                    // The import itself already committed durably; a failed cleanup here is an
+                    // orphaned file on disk, not data loss, and the remover logs it.
+                    // See CODE_AUDIT.md §5.2.
+                    await self.deleteSupersededFile(
+                        superseded.fileUrl,
+                        itemControllable: itemControllable,
+                        using: fileController
+                    )
                 }
             }.value
 

@@ -94,10 +94,12 @@ struct OpenFolderButton: View {
         self.isEnabled = isEnabled
     }
 
+    /// The menu-bar command acts on the selected row. By item id it took the first row showing
+    /// the item, and a collection member has two rows. See CODE_AUDIT_21 §5.31.
     init(root: any ItemRootControllable, isListFocused: Bool = true) {
         self.init(
             listController: root.folderListControllable,
-            itemId: root.currentSelectedItemId,
+            itemId: root.folderListControllable.listModel.selected ?? root.currentSelectedItemId,
             title: root.menuController.itemName(currentSelected: root.currentSelectedItemId),
             isEnabled: isListFocused
         )
@@ -140,8 +142,12 @@ struct CloseFolderButton: View {
         self.itemId = itemId
     }
 
+    /// The selected row, like `OpenFolderButton.init(root:)`. See CODE_AUDIT_21 §5.31.
     init(root: any ItemRootControllable) {
-        self.init(listController: root.folderListControllable, itemId: root.currentSelectedItemId)
+        self.init(
+            listController: root.folderListControllable,
+            itemId: root.folderListControllable.listModel.selected ?? root.currentSelectedItemId
+        )
     }
 
     let listController: (any FolderListControllable)?

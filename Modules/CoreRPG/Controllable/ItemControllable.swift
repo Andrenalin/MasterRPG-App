@@ -164,6 +164,9 @@ public extension ItemControllable {
         // can find the item and queue a fresh upsert for it while the deletion below awaits.
         // Removing it last left that window open for the whole delete. See CODE_AUDIT_Folder §3.9.
         itemDataModel.resetModel(id: item.id)
+        // Until this delete is through, sync does not bring the id back. See CODE_AUDIT_21 §5.31.
+        itemDataModel.deletingIds.insert(itemId)
+        defer { itemDataModel.deletingIds.remove(itemId) }
         // In the same step: the file is unreferenced from here on but only deleted at the end,
         // after the suspensions below. An import in between reused it, and the deletion then
         // removed it under the imported item. See CODE_AUDIT_21 §3.6.
@@ -247,13 +250,14 @@ public extension ItemControllable {
                 syncGameMemoryIfLoaded(with: original)
             }
         } else {
-            if isInsert {
-                do {
-                    try dataControllable?.replaceSync(id: model.id, with: model.copy())
-                    dataControllable?.markUnsavedInsert(id: model.id)
-                } catch {
-                    recordPersistenceFailure(error, operation: "ItemControllable.replace(insert)")
-                }
+            // Also when the caller did not ask for an insert: an id that is not in the library
+            // was added to memory without a database write, so the item was in every list
+            // until the next launch and then gone. See CODE_AUDIT_21 §5.16.
+            do {
+                try dataControllable?.replaceSync(id: model.id, with: model.copy())
+                dataControllable?.markUnsavedInsert(id: model.id)
+            } catch {
+                recordPersistenceFailure(error, operation: isInsert ? "ItemControllable.replace(insert)" : "ItemControllable.replace(new id)")
             }
             resetModel(with: model)
             if syncGameMemory {
@@ -269,10 +273,21 @@ public extension ItemControllable {
     /// See CODE_AUDIT_Folder §5.23.
     @MainActor func persistFromGame(model: ModelType, authoritative: Bool) {
         guard let model = model as? Model else { return }
-        guard let library = itemSync(for: model.id, noGame: true) else {
-            replace(model: model, isInsert: true, forceSave: true)
+        // Bytes that never reached disk are gone at the next launch; the library must not
+        // reference them. The delivery's import already requires a stored file, this covers
+        // every other way an item gets here. See CODE_AUDIT_21 §5.14.
+        if let fileUrl = model.fileUrl, fileUrl.hasUnconvertedData, fileUrl.location == .newCloud {
+            Logger.fileStore.error("Not storing game item \(model.id, privacy: .public) in the library: its file was not written to disk")
             return
         }
+        guard let library = itemSync(for: model.id, noGame: true) else {
+            // A copy: with the game-memory instance itself as the library instance, every later
+            // memory-only update of the game changed the library object in place.
+            // See CODE_AUDIT_21 §5.31.
+            replace(model: model.copy(), isInsert: true, forceSave: true, syncGameMemory: false)
+            return
+        }
+        let previousFile = library.fileUrl
         var persisted: Model
         if authoritative {
             persisted = model.copy()
@@ -284,6 +299,39 @@ public extension ItemControllable {
         persisted.displayState = library.displayState
         // The game copy keeps what the game shows; only the library is written.
         replace(model: persisted, isInsert: true, forceSave: true, syncGameMemory: false)
+        removeFileReplacedFromGame(previousFile, itemId: model.id)
+    }
+
+    /// After `persistFromGame` gave a library item the delivered file: removes the file the item
+    /// had before, unless the item still references it or another item shares it. Nothing did,
+    /// so every stored delivery of a changed file left the old one in iCloud Drive. The
+    /// delivered file itself is never removed here; the game still shows it.
+    /// See CODE_AUDIT_21 §5.14.
+    @MainActor private func removeFileReplacedFromGame(_ previous: FileUrl?, itemId: UUID) {
+        guard let previous, let controller = fileUrlDataController,
+              let current = itemSync(for: itemId, noGame: true)?.fileUrl,
+              !controller.isSameStoredFile(current, previous),
+              !isFileUsedElsewhere(previous, excluding: itemId) else { return }
+        Task {
+            await controller.deleteReplaced(previous, keeping: current)
+        }
+    }
+
+    /// Removes those of `files` (written for game-memory items) that no library item references.
+    /// See CODE_AUDIT_Folder §5.26.
+    @MainActor func removeUnreferencedGameFiles(_ files: [FileUrl]) async {
+        guard let controller = fileUrlDataController, !files.isEmpty else { return }
+        let libraryFiles = libraryFileUrls()
+        for file in files where !libraryFiles.contains(where: { controller.isSameStoredFile($0, file) }) {
+            await controller.removeStoredFile(file)
+        }
+    }
+
+    /// Launch cleanup: the files a previous run wrote for game-memory items and could not
+    /// remove because the app ended first. See CODE_AUDIT_21 §5.14.
+    @MainActor func removeLeftoverGameFiles() async {
+        guard let controller = fileUrlDataController else { return }
+        await removeUnreferencedGameFiles(controller.model.takeLeftoverGameMemoryFiles())
     }
 
     /// Persists a folder or collection membership change made in the library UI, also during a

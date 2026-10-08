@@ -61,6 +61,11 @@ struct PdfContentExtractor: Sendable {
         // Generate without streaming for array types
         // Note: Foundation Models streaming for arrays doesn't provide complete objects incrementally
         var blocks: [BlockEntryGenModel] = []
+        // The pages whose generation failed, and why the last one did. They were only logged:
+        // the caller got what the other pages gave, or an empty result as a success when
+        // every page had failed. See CODE_AUDIT_21 §5.28.
+        var failedPages: [Int] = []
+        var lastFailure = ""
         
         // Each page deliberately gets its own fresh session rather than
         // reusing one across the whole PDF: Apple's on-device model has a
@@ -114,13 +119,22 @@ struct PdfContentExtractor: Sendable {
                 // are skipped (CODE_AUDIT_17 §5.20). See CODE_AUDIT_18 §3.4.
                 throw CancellationError()
             } catch let error as LanguageModelSession.GenerationError {
-                Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(self.handleGenerationError(error), privacy: .public)")
+                lastFailure = handleGenerationError(error)
+                failedPages.append(page.pageNumber)
+                Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(lastFailure, privacy: .public)")
             } catch {
-                Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                lastFailure = error.localizedDescription
+                failedPages.append(page.pageNumber)
+                Logger.generatorRPG.error("PdfContentExtractor: page \(page.pageNumber, privacy: .public) failed: \(lastFailure, privacy: .public)")
             }
             
             // Update extraction progress with accumulated blocks
             await resultModel.setExtractionProgress(blocks)
+        }
+        await resultModel.setFailedPages(failedPages)
+        // No page gave anything: that is a failure, not an empty document.
+        if blocks.isEmpty, failedPages.count == extractedText.count {
+            throw PdfSummaryAnalysisError.generationFailed(lastFailure)
         }
         return blocks
     }

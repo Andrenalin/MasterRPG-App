@@ -146,9 +146,14 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         /// messages had no path into the retry queue at all and were
         /// silently, permanently dropped under send-queue pressure or a
         /// single transient relay failure. See CODE_AUDIT_Network §5.1.
+        ///
+        /// The sender is part of the key: the master relays LAN players' messages with the
+        /// players' own counters, which all start at 1, so two players' dice rolls with equal
+        /// counters used to replace each other here. See CODE_AUDIT_21 §5.6.
         case event(
             sessionId: UUID,
             participantId: UUID?,
+            senderId: UUID,
             module: NetworkModules,
             counter: Int
         )
@@ -315,6 +320,7 @@ struct SharePlayDeferredDeliveryQueue: Sendable {
         return .event(
             sessionId: sessionId,
             participantId: participantId,
+            senderId: model.sender.id,
             module: model.data.type,
             counter: model.counter
         )

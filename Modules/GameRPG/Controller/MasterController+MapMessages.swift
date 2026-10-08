@@ -67,6 +67,7 @@ extension MasterController {
 
         switch model.type {
         case .reveal:
+            guard await answersMapRequest(model, origin: origin) else { return nil }
             guard let recovery = try await recoverMapBundleOrFail(for: model, origin: origin) else { return nil }
             guard mapGeneration(of: recovery.full, matches: model.data) else {
                 // The requested generation disappeared while the player was
@@ -140,6 +141,7 @@ extension MasterController {
                 // latest photo-free structural snapshot. The normal response
                 // path targets the small chunked answer at the requester.
                 guard model.data.data == nil else { return nil }
+                guard await answersMapRequest(model, origin: origin) else { return nil }
                 let update = await root.mapRoot.mapGameControllable.networkMapContentUpdate(
                     for: model.data.id
                 )
@@ -385,6 +387,20 @@ extension MasterController {
     func mayShareMapState(for mapId: UUID) -> Bool {
         guard !root.mapRoot.rootModel.isMapStreaming else { return true }
         root.mapRoot.rootModel.mapsWithUnsharedStructure.insert(mapId)
+        return false
+    }
+
+    /// The one gate for every answer to a player's map request (the full package, the structural
+    /// snapshot, a superseding generation). While the GM paused "Share Map" none of them goes
+    /// out: the package and the snapshot are captured from the live game map and carry what was
+    /// revealed privately. The requester gets `.failed`, retries with its own backoff, and
+    /// receives everything when sharing resumes (the map is marked by `mayShareMapState`).
+    /// Only the gate of the trailing content and state sends existed, so a joining or
+    /// reconnecting player was still answered. See CODE_AUDIT_21 §5.4.
+    private func answersMapRequest(_ model: GameNetworkModel, origin: GameMessageOrigin?) async -> Bool {
+        guard !mayShareMapState(for: model.data.id) else { return true }
+        Logger.networking.debug("MasterController: Map request for \(model.data.id, privacy: .public) not answered while map sharing is paused")
+        await sendMapRecoveryFailed(for: model, origin: origin)
         return false
     }
 

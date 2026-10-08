@@ -41,10 +41,9 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
 
     @MainActor
     func onPhaseStarted(interaction: TabletopInteraction) {
-        if game.tabletopGame.equipment(
-            of: Die20.self,
-            matching: interaction.value.startingEquipmentID
-        ) != nil {
+        // Both kinds of die: only the d20 was handled in the three callbacks here, so a d6 could
+        // be picked up but was never tossed or rolled. See CODE_AUDIT_21 §5.11.
+        if game.isDie(interaction.value.startingEquipmentID) {
             // Don't let the die land on any other equipment, just the table.
             interaction.setConfiguration(.init(allowedDestinations: .restricted([])))
         }
@@ -59,6 +58,8 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
             // sample makes the same split: `.toss(...)` here, and the final `.updateEquipment(...)`
             // only once `onTossStart(interaction:outcomes:)` reports where the simulation left the die.
             interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die20.representation)
+        } else if let die = game.tabletopGame.equipment(of: Die.self, matching: interaction.value.startingEquipmentID) {
+            interaction.toss(equipmentID: interaction.value.startingEquipmentID, as: die.representation)
         }
     }
 
@@ -70,9 +71,13 @@ struct GameInteraction: @MainActor TabletopInteraction.Delegate {
     @MainActor
     func onTossStart(interaction: TabletopInteraction, outcomes: [TabletopInteraction.TossOutcome]) {
         for outcome in outcomes {
-            guard let die20 = game.tabletopGame.equipment(of: Die20.self, matching: outcome.id) else { continue }
-            let nextValue = game.rollTossedDie(outcome.id) ?? Int.random(in: 1 ... 20)
-            interaction.addAction(.updateEquipment(die20, value: nextValue, pose: outcome.pose))
+            if let die20 = game.tabletopGame.equipment(of: Die20.self, matching: outcome.id) {
+                let nextValue = game.rollTossedDie(outcome.id) ?? Int.random(in: 1 ... 20)
+                interaction.addAction(.updateEquipment(die20, value: nextValue, pose: outcome.pose))
+            } else if let die = game.tabletopGame.equipment(of: Die.self, matching: outcome.id) {
+                let nextValue = game.rollTossedDie(outcome.id) ?? Int.random(in: 1 ... 6)
+                interaction.addAction(.updateEquipment(die, value: nextValue, pose: outcome.pose))
+            }
         }
     }
 }

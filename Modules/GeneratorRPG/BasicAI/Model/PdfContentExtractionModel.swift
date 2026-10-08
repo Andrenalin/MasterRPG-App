@@ -26,6 +26,7 @@ final class PdfContentExtractionModel {
         isExtracting = true
         resultModel.extractionProgress = []
         resultModel.pageProgress = PdfAnalysisProgress(currentPage: 0, totalPages: 1)
+        resultModel.setFailedPages([])
         lastError = nil
 
         defer {
@@ -33,7 +34,13 @@ final class PdfContentExtractionModel {
         }
 
         do {
-            return try await analyzer.extractWithProgress(from: pdfDocument, resultModel: resultModel)
+            let blocks = try await analyzer.extractWithProgress(from: pdfDocument, resultModel: resultModel)
+            // Some pages failed and the rest is returned: say which. See CODE_AUDIT_21 §5.28.
+            if !resultModel.failedPages.isEmpty {
+                let pages = resultModel.failedPages.map { $0.formatted() }.formatted(.list(type: .and))
+                lastError = String(localized: "Pages that could not be analysed: \(pages)", bundle: .module)
+            }
+            return blocks
         } catch {
             lastError = error.localizedDescription
             return []

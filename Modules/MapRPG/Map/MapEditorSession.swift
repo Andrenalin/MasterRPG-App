@@ -39,6 +39,9 @@ final class MapEditorSession {
 
     var pinScale: CGFloat
     var hexScale: Double
+    /// Counts the releases of the game toolbar's hex-scale slider; `MapEditor` rebuilds the grid
+    /// when it changes. See CODE_AUDIT_21 §5.19.
+    var hexScaleCommit = 0
     // Max room coordinate extent relative to the map image; 1.0 is the image boundary.
     var maxWidthRatio: Double = 1.0
     var maxHeightRatio: Double = 1.0

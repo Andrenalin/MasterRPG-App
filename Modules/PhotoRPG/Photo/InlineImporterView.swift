@@ -94,6 +94,9 @@ private struct InlineImporterContentView: View {
         .photosPicker(isPresented: $showLibrary, selection: $selectedItem, matching: .images, photoLibrary: .shared())
         .onChange(of: selectedItem) {
             guard let localItem = selectedItem else { return }
+            // Cleared at once: the selection stayed, so picking the same library photo again
+            // was no change and did nothing. See CODE_AUDIT_21 §5.28.
+            selectedItem = nil
             let id = itemId
             Task {
                 do {

@@ -24,33 +24,9 @@ struct RollDiceIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        await DiceIntentPerformer.roll(diceType)
+        // The same roll-and-record step as the app's intent. See CODE_AUDIT_21 §5.23.
+        DiceIntentRoll.rollAndRecord(sides: diceType.sides, name: diceType.rawValue)
         return .result()
-    }
-}
-
-private enum DiceIntentPerformer {
-    static func roll(_ diceType: IntentDiceType) async {
-        let die = diceType.toDieModel()
-        let rolledDie = die.roll(resetResults: true, rerollOptions: [])
-        let result = rolledDie.result.first ?? die.die.max
-
-        // Create dice model with the rolled die
-        let diceModel = DiceSnapshot(id: UUID(), name: diceType.rawValue, dice: [rolledDie])
-
-        // Create result model
-        let rollResult = DiceResultModel(
-            diceModel: diceModel,
-            result: .rolled,
-            values: "\(result)",
-            sum: result,
-            checked: false,
-            timeStamp: Date()
-        )
-
-        // Same newest-wins write as the app. See CODE_AUDIT_18 §3.19.
-        guard DiceConfiguration.recordLastRoll(rollResult) else { return }
-        DiceWidgetReloader.reloadDiceWidgets()
     }
 }
 
@@ -87,7 +63,7 @@ enum IntentDiceType: String, AppEnum {
         .die(sides: sides)
     }
 
-    private var sides: Int {
+    var sides: Int {
         switch self {
         case .d4: 4
         case .d6: 6

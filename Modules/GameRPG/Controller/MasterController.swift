@@ -140,10 +140,22 @@ final class MasterControllerModel {
     /// A `.valueUpdate` that arrived before its sender's ownership binding
     /// was established — held so `bindCharacterOwnership`'s caller can
     /// replay it once the join handshake lands, instead of the edit being
-    /// silently dropped by a message-ordering race. One slot per sender: a
-    /// later update superseding an unreplayed one only needs the latest
-    /// replayed. See CODE_AUDIT_Network §5.18.
-    private var pendingValueUpdatesAwaitingOwnership: [UUID: GameNetworkModel] = [:]
+    /// silently dropped by a message-ordering race. See CODE_AUDIT_Network §5.18.
+    ///
+    /// Held per sender in arrival order, the newest per entry: an update is for one entry, so
+    /// the single slot per sender lost a change of hit points to a later change of another
+    /// value. Bounded per sender; the oldest goes first. See CODE_AUDIT_21 §5.9.
+    private var pendingValueUpdatesAwaitingOwnership: [UUID: [PendingValueUpdate]] = [:]
+
+    private struct PendingValueUpdate {
+        /// The entry the update is for, `nil` when the payload does not decode (it is then
+        /// kept as it is and rejected on replay).
+        let entryId: UUID?
+        let model: GameNetworkModel
+    }
+
+    /// Updates held per sender before the handshake. A Character sheet has a few dozen values.
+    static let maximumPendingValueUpdatesPerSender = 32
 
     /// Last time a full map-recovery bundle (up to three detached full
     /// `createMapGameData` exports) was served to a given (player, map) pair. A map
@@ -169,14 +181,25 @@ final class MasterControllerModel {
     }
 
     func deferValueUpdateAwaitingOwnership(_ model: GameNetworkModel) {
-        pendingValueUpdatesAwaitingOwnership[model.sender.id] = model
+        let entryId = GameValueEntryUpdate.decodeData(of: model.data.data)?.entryId
+        var pending = pendingValueUpdatesAwaitingOwnership[model.sender.id, default: []]
+        if let entryId {
+            pending.removeAll { $0.entryId == entryId }
+        }
+        pending.append(PendingValueUpdate(entryId: entryId, model: model))
+        if pending.count > Self.maximumPendingValueUpdatesPerSender {
+            pending.removeFirst(pending.count - Self.maximumPendingValueUpdatesPerSender)
+        }
+        pendingValueUpdatesAwaitingOwnership[model.sender.id] = pending
     }
 
-    /// Removes and returns a deferred `.valueUpdate` for `senderId`, if any.
+    /// Removes and returns the deferred `.valueUpdate`s of `senderId`, in counter order.
     /// Call once `bindCharacterOwnership` succeeds for that sender.
     @discardableResult
-    func takePendingValueUpdate(senderId: UUID) -> GameNetworkModel? {
-        pendingValueUpdatesAwaitingOwnership.removeValue(forKey: senderId)
+    func takePendingValueUpdates(senderId: UUID) -> [GameNetworkModel] {
+        (pendingValueUpdatesAwaitingOwnership.removeValue(forKey: senderId) ?? [])
+            .map(\.model)
+            .sorted { $0.counter < $1.counter }
     }
 
     /// INTENDED (CODE_AUDIT_17 §6.1, won't fix): the claimed id may be an existing Character

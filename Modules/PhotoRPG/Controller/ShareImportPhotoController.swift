@@ -14,6 +14,13 @@ import UniformTypeIdentifiers
     /// Throws when the image could not be written, instead of saving a photo whose file exists
     /// only in memory and is gone after relaunch. See CODE_AUDIT_Folder §5.11.
     public func addNewPhoto(context: NSManagedObjectContext, data: Data, name: String, text: String) async throws -> (UUID, String) {
+        let added = try await addNewPhotoFile(context: context, data: data, name: name, text: text)
+        return (added.photoId, added.link)
+    }
+
+    /// `addNewPhoto` that also returns the file it wrote, so a caller whose save fails
+    /// afterwards can remove it with `removeFile(_:)`. See CODE_AUDIT_21 §5.27.
+    public func addNewPhotoFile(context: NSManagedObjectContext, data: Data, name: String, text: String) async throws -> (photoId: UUID, link: String, fileUrl: FileUrl) {
         let dataController = DataController(context: context, token: NetworkModules.photo.token)
         let model = PhotoModel.empty.copy()
         model.category = .entry
@@ -43,7 +50,18 @@ import UniformTypeIdentifiers
             let dbmodel = RPGPhoto(context: context)
             dataController.applySnapshot(snapshot, into: dbmodel)
         }
-        return (model.id, model.url(linkNumber: 0))
+        return (model.id, model.url(linkNumber: 0), storedFileUrl)
+    }
+
+    /// Removes a photo file `addNewPhotoFile` wrote and no saved item references.
+    public func removeFile(_ fileUrl: FileUrl) async {
+        let fileUrlDataController = FileUrlDataController(
+            moduleFolder: NetworkModules.photo.token,
+            fileTypes: [.image],
+            filenameExtension: ModuleConfiguration().filenameExtension
+        )
+        await fileUrlDataController.removeStoredFile(fileUrl)
+        fileUrlDataController.removeBookmarks(fileId: fileUrl.fileId)
     }
 
     /// A file name of its own for every shared image: all images of one share used

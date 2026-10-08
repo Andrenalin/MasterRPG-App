@@ -22,6 +22,8 @@ public struct AffectedLinkActionPanelView: View {
     /// to disappear (the app is terminated) leaves every item as it was.
     /// See CODE_AUDIT_Folder §5.12, CODE_AUDIT_21 §5.29.
     @State private var isResolved = false
+    /// The deletion this panel was opened for, see `RemoveEntryListModel.presentation`.
+    @State private var presentation: Int?
         
     public var body: some View {
         ManagedNavigationStack {
@@ -87,6 +89,9 @@ public struct AffectedLinkActionPanelView: View {
         .task(id: removeEntryList.removeItems) {
             removeEntryList.linkTree = await AffectedLinkActionPanelView.linkTree(itemControllable: root.itemControllable, removeItems: removeEntryList.removeItems)
         }
+        .onAppear {
+            presentation = removeEntryList.presentation
+        }
         .onDisappear {
             // A dismissal without Remove trashed nothing; the rows the delete took out of the
             // list come back. The list is cleared either way, so a later panel never shows this
@@ -94,6 +99,9 @@ public struct AffectedLinkActionPanelView: View {
             if !isResolved {
                 showRemovedRows()
             }
+            // Unless a newer deletion has replaced the list meanwhile: it belongs to the next
+            // panel. See CODE_AUDIT_21 §5.31.
+            guard presentation == removeEntryList.presentation else { return }
             removeEntryList.removeItems = []
             removeEntryList.linkTree = []
         }

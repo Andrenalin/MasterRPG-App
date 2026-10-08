@@ -37,6 +37,10 @@ public struct RootURLHandler: NavigationURLHandler {
             return true
         }
 
+        // The scene delegate and the SwiftUI open-URL handler both come here for one link; the
+        // route runs once. See CODE_AUDIT_21 §5.26.
+        guard appModel.admitsExternalRoute(module, itemId: url.itemId, entryId: url.childId) else { return true }
+
         let target = appModel.navigator(for: module)
         if target === navigator {
             navigator.perform(route: KnownRoutes.route(module: module, itemId: url.itemId, entryId: url.childId))

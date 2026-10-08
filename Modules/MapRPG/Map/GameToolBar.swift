@@ -249,6 +249,8 @@ private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
     /// Grows with Dynamic Type instead of a fixed 24 pt. See CODE_AUDIT_18 §8.3.
     @ScaledMetric private var iconSize: CGFloat = 24
     let model: Session
+    /// True while the scale slider is dragged: the grid is rebuilt when the drag ends.
+    @State private var isEditingHexScale = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -281,6 +283,17 @@ private struct GameToolBarHexMapScaleView<Session: GameToolBarSession>: View {
 
             Slider(value: $model.hexScale, in: 20 ... 200) {
                 Text("Hex Scale", bundle: .module)
+            } onEditingChanged: { isEditing in
+                isEditingHexScale = isEditing
+                if !isEditing {
+                    model.commitHexScale()
+                }
+            }
+            // A change outside a drag (VoiceOver's adjust action, a key press) has no release.
+            .onChange(of: model.hexScale) {
+                if !isEditingHexScale {
+                    model.commitHexScale()
+                }
             }
             .labelsHidden()
             .accessibilityValue(model.hexScale.formatted(.number.precision(.fractionLength(0))))

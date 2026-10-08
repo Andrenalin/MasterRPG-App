@@ -102,17 +102,30 @@ struct AudioControllerTests {
         let sut = root.audioController
         let model = root.audioPlayerModel
 
-        model.isPlaying = false
+        // CODE_AUDIT_21 §5.28: "was playing" is the app's own intent, not the observed player
+        // state, which an observer task updates and the system's pause may already have changed.
+        model.isPlaying = true
         #expect(sut.beginInterruption() == false)
 
-        model.isPlaying = true
+        sut.play()
+        model.isPlaying = false
         #expect(sut.beginInterruption())
+        // The interruption does not give the intent up, so a second report still resumes.
+        #expect(model.wantsPlayback)
 
+        sut.pause()
+        #expect(sut.beginInterruption() == false)
+
+        // Unplugged headphones pause for good.
+        sut.play()
         model.isPlaying = true
         sut.routeChanged()
+        #expect(!model.wantsPlayback)
 
         sut.endInterruption(wasPlaying: false)
+        #expect(!model.wantsPlayback)
         sut.endInterruption(wasPlaying: true)
+        #expect(model.wantsPlayback)
     }
 
     @Test("Remote commands are dispatched to controller actions")

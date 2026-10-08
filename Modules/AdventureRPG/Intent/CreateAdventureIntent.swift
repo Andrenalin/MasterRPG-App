@@ -32,8 +32,14 @@ public struct CreateAdventureIntent: AppIntent {
         await DatabaseReadiness.wait()
         // Shared Spotlight glue (see CODE_AUDIT §9.8) — `indexIntentEntities` already
         // guards `CSSearchableIndex.isIndexingAvailable()` internally.
+        // Siri and Shortcuts can pass an empty name: ask again instead of creating a blank
+        // adventure. See CODE_AUDIT_21 §5.28.
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            throw $name.needsValueError("What should the adventure be called?")
+        }
         let storyText = intentPlainText(from: story)
-        let model = AdventureModel(id: UUID(), name: name, description: storyText)
+        let model = AdventureModel(id: UUID(), name: trimmedName, description: storyText)
         root.itemController.replace(model: model, isInsert: true)
         await root.itemController.save()
 
@@ -45,7 +51,7 @@ public struct CreateAdventureIntent: AppIntent {
             try await continueInForeground(alwaysConfirm: false)
         }
 
-        return .result(value: entity, dialog: "Created \"\(name)\".")
+        return .result(value: entity, dialog: "Created \"\(trimmedName)\".")
     }
 }
 

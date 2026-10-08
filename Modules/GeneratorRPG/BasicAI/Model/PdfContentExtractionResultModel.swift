@@ -19,4 +19,11 @@ final class PdfContentExtractionResultModel {
     func setExtractionProgress(_ blocks: [BlockEntryGenModel]) {
         extractionProgress = blocks
     }
+
+    /// The numbers of the pages the last extraction could not analyse.
+    private(set) var failedPages: [Int] = []
+
+    func setFailedPages(_ pages: [Int]) {
+        failedPages = pages
+    }
 }

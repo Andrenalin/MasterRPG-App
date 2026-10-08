@@ -11,6 +11,18 @@ public final class RemoveEntryListModel {
 
     public var removeItems: [ItemRowModel] = []
     var linkTree: [RemoveLinkTreeModel] = []
+
+    /// Counts the deletions handed to the removal panel. A panel only clears the list it was
+    /// opened for: a second Delete during the first panel's dismissal animation replaced the
+    /// list, and the first panel's disappearance then emptied it under the second panel.
+    /// See CODE_AUDIT_21 §5.31.
+    @ObservationIgnored private(set) var presentation = 0
+
+    /// Hands `items` to the removal panel that is opened next.
+    public func present(_ items: [ItemRowModel]) {
+        presentation += 1
+        removeItems = items
+    }
 }
 
 struct RemoveLinkTreeModel: Identifiable {

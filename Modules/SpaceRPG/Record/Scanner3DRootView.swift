@@ -17,16 +17,18 @@ extension Logger {
 }
 
 #Preview {
-    Scanner3DRootView(itemId: UUID()) { _ in }
+    Scanner3DRootView(itemId: UUID()) { _ in true }
 }
 
 struct Scanner3DRootView: View {
     let itemId: UUID
     /// Called once the user finishes reviewing the reconstructed model, with the produced
     /// USDZ file's URL, so the caller can attach it to the item the scanner was opened from.
-    let onCaptureFinished: @MainActor @Sendable (URL) async -> Void
+    /// Returns whether the file was attached.
+    let onCaptureFinished: @MainActor @Sendable (URL) async -> Bool
 
     @State private var appModel: AppDataModel = AppDataModel.instance
+    @Environment(\.dismiss) private var dismiss
 
     @State private var showReconstructionView: Bool = false
     @State private var showErrorAlert: Bool = false
@@ -70,6 +72,11 @@ struct Scanner3DRootView: View {
                 showErrorAlert = false
                 showReconstructionView = newState == .reconstructing || newState == .viewing
             }
+        }
+        // A finished capture closes the scanner; it used to stay up and start the next capture.
+        // See CODE_AUDIT_21 §5.21.
+        .onChange(of: appModel.finishedCaptures) {
+            dismiss()
         }
         .sheet(isPresented: $showReconstructionView) {
             ManagedPresentationView {

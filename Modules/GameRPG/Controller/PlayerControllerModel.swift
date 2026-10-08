@@ -140,6 +140,17 @@ final class PlayerControllerModel {
     private var departedSharePlayMasterParticipantIds = PhysicalIdentityDenylist<UUID>(capacity: 16)
     var lostMaster: Bool = true
     var hasSendPlayer = false
+    /// How often the master answered `.failed` to this player's Character package, for which
+    /// Character version, and when the next announcement may go out. A rejected package was
+    /// announced again on every later master message, and exported and uploaded again each
+    /// time, with no limit. See CODE_AUDIT_21 §5.5.
+    private(set) var characterRejections = 0
+    private var rejectedCharacterVersion: Int?
+    private var characterRetryNotBefore: ContinuousClock.Instant?
+    /// Rejections of one Character version after which it is no longer sent.
+    static let maximumCharacterRejections = 3
+    /// How often a rejected Character is looked at again for a changed version.
+    static let rejectedCharacterProbeInterval: Duration = .seconds(60)
     var asGameMaster = false
     var sendCharacterTask: Task<Void, Never>?
     var sendCharacterTaskId: UUID?
@@ -1041,7 +1052,54 @@ final class PlayerControllerModel {
 
     /// Reads both gate flags in one @MainActor property so a concurrent
     /// writer can't be observed between them. See CODE_AUDIT §3.1.
-    var canSendCharacter: Bool { !hasSendPlayer && !lostMaster }
+    var canSendCharacter: Bool {
+        guard !hasSendPlayer, !lostMaster else { return false }
+        if let characterRetryNotBefore, ContinuousClock.now < characterRetryNotBefore { return false }
+        return true
+    }
+
+    /// The delay before the announcement after the `rejections`-th rejection: 5 s, then 20 s.
+    static func characterRetryDelay(afterRejection rejections: Int) -> Duration {
+        .seconds(5 * (1 << (2 * max(0, rejections - 1))))
+    }
+
+    /// Records the master's `.failed` answer for the Character package of `version`. Returns
+    /// `true` when that was the rejection after which the Character is no longer sent, so the
+    /// caller tells the player once. See CODE_AUDIT_21 §5.5.
+    func recordCharacterRejection(version: Int, now: ContinuousClock.Instant = .now) -> Bool {
+        if rejectedCharacterVersion != version {
+            rejectedCharacterVersion = version
+            characterRejections = 0
+        }
+        characterRejections += 1
+        hasSendPlayer = false
+        guard characterRejections < Self.maximumCharacterRejections else {
+            characterRetryNotBefore = now + Self.rejectedCharacterProbeInterval
+            return characterRejections == Self.maximumCharacterRejections
+        }
+        characterRetryNotBefore = now + Self.characterRetryDelay(afterRejection: characterRejections)
+        return false
+    }
+
+    /// Whether the Character of `version` may be announced. A version the master rejected
+    /// `maximumCharacterRejections` times stays unsent; it is looked at again after the probe
+    /// interval, because an edited Character has a new version and gets new attempts.
+    func mayAnnounceCharacter(version: Int, now: ContinuousClock.Instant = .now) -> Bool {
+        guard characterRejections >= Self.maximumCharacterRejections else { return true }
+        guard rejectedCharacterVersion == version else {
+            resetCharacterRejections()
+            return true
+        }
+        characterRetryNotBefore = now + Self.rejectedCharacterProbeInterval
+        return false
+    }
+
+    /// A new connection, or an edited Character: earlier rejections no longer count.
+    func resetCharacterRejections() {
+        characterRejections = 0
+        rejectedCharacterVersion = nil
+        characterRetryNotBefore = nil
+    }
 
     /// The read-then-conditionally-write needs to stay one @MainActor call so a
     /// concurrent reader never observes a state between the check and the clear.
@@ -1110,6 +1168,7 @@ final class PlayerControllerModel {
     /// reset stays one `@MainActor` call from the controller instead of a
     /// `MainActor.run` closure. See CODE_AUDIT §3.1.
     func resetForLostConnection(preservingSharePlayRebind: Bool) {
+        resetCharacterRejections()
         sendCharacterTask?.cancel()
         sendCharacterTask = nil
         sendCharacterTaskId = nil

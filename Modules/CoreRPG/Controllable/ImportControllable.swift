@@ -114,6 +114,15 @@ public final class ItemDataImportModel {
         self.peerPolicy = peerPolicy
     }
 
+    /// Set for a game delivery that will be stored in the library: its files must reach disk,
+    /// the in-memory fallback of a game-only delivery is not enough. See CODE_AUDIT_21 §5.14.
+    public private(set) var requiresDurableFiles = false
+
+    public convenience init(importMode: ImportMode, peerPolicy: PeerImportPolicy?, requiresDurableFiles: Bool) {
+        self.init(importMode: importMode, peerPolicy: peerPolicy)
+        self.requiresDurableFiles = requiresDurableFiles
+    }
+
     public var importedItems: Int = 0
     /// Items of the import that could not be decoded or applied. Shown after the import so a
     /// partly failed file no longer reads as a clean success. See CODE_AUDIT_15 §5.7.
@@ -270,7 +279,13 @@ public extension ImportControllable {
                             }
                             var fileWrite: ImportedFileWrite?
                             if let itemFile {
-                                let added = try await addFile(data: itemFile, to: newItem, forceSave: forceSave)
+                                let requiresDurableFile = await importModel.requiresDurableFiles
+                                let added = try await addFile(
+                                    data: itemFile,
+                                    to: newItem,
+                                    forceSave: forceSave,
+                                    requiresDurableFile: forceSave || requiresDurableFile
+                                )
                                 if added.reusesLocalFile {
                                     locallyReusedFileIds.insert(newItem.id)
                                 }
@@ -548,8 +563,16 @@ private extension ImportControllable {
             importModel.recordApplied(id, module: itemController.config.module)
 
         case .manual:
-            let merged = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory) as? any ItemDataAccessible
-            recordManualReview(importableItem: importableItem, merged: merged, id: id, itemController: itemController, importModel: importModel)
+            var merged = itemController.mergeSync(with: importableItem, forceMerge: !policy.writesGameMemory)
+            if !policy.writesGameMemory {
+                // The restore rule of the merge branch: a local item in the trash that the
+                // backup has is offered restored. Without it an otherwise equal item was
+                // skipped as unchanged, a different one kept its trashed state by default, and
+                // both were purged at the next launch. Opening a backup file starts in manual
+                // mode. See CODE_AUDIT_Folder §5.20, CODE_AUDIT_21 §5.30.
+                merged = itemController.restoringTrashedItem(merged: merged, imported: importableItem)
+            }
+            recordManualReview(importableItem: importableItem, merged: merged as? any ItemDataAccessible, id: id, itemController: itemController, importModel: importModel)
         }
 
         importModel.importedItems += 1
@@ -796,7 +819,9 @@ private extension ImportControllable {
 
     /// Stores the imported bytes of `item`'s file. Returns whether a game delivery reuses the
     /// local file, and the file it wrote (if any) for `settleImportedFile` to clean up after.
-    @MainActor func addFile(data: Data, to item: any ItemDataAccessible, forceSave: Bool) async throws -> (reusesLocalFile: Bool, write: ImportedFileWrite?) {
+    /// - Parameter requiresDurableFile: The file must reach disk or the import of this item
+    ///   fails: a library import, or a game delivery that is stored. See CODE_AUDIT_21 §5.14.
+    @MainActor func addFile(data: Data, to item: any ItemDataAccessible, forceSave: Bool, requiresDurableFile: Bool) async throws -> (reusesLocalFile: Bool, write: ImportedFileWrite?) {
         guard let fileUrlDataController, var fileUrl = item.fileUrl else { return (false, nil) }
         var item = item
         let module = itemControllable.config.module.rawValue
@@ -843,13 +868,13 @@ private extension ImportControllable {
             // A library import must not count an item whose file never reached disk; the
             // in-memory fallback is lost at relaunch. Game deliveries keep it.
             // See CODE_AUDIT_Folder §5.26.
-            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension, requireDurableStorage: forceSave)
+            let updated = try await fileUrlDataController.createNewFileUrl(fileId: fileUrl.fileId, unconvertedFileUrl: fileUrl, pathExtension: fileUrl.rawUrl.pathExtension, requireDurableStorage: requiresDurableFile)
             Logger.importController.debug("Import addFile stored imported file module=\(module, privacy: .public) item=\(item.id, privacy: .public) file=\(fileUrl.fileId, privacy: .public) storedUrl=\((updated ?? fileUrl).rawUrl.absoluteString, privacy: .private) storedHash=\((updated ?? fileUrl).contentHash ?? "nil", privacy: .public)")
             let stored = updated ?? fileUrl
             await itemControllable.reset(fileUrl: stored, item: &item)
             return (false, ImportedFileWrite(written: stored, previous: localFileUrl))
         } catch {
-            guard !forceSave else { throw error }
+            guard !requiresDurableFile else { throw error }
             Logger.importController.error("Cannot store the delivered file \(module, privacy: .public), keeping it in memory for the game")
             await itemControllable.reset(fileUrl: fileUrl, item: &item)
             return (false, nil)

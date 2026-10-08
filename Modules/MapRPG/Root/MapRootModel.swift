@@ -284,6 +284,13 @@ public extension MapRootModel {
         editController.toggleHexMap(for: gameController.gameItem(for: itemId))
     }
 
+    /// Rebuilds the hex grid of the game map `itemId` for `scale`, keeping the revealed area.
+    /// Public for the 3D table, like `toggleHexMap(itemId:)`. See CODE_AUDIT_21 §5.19.
+    @MainActor
+    func rescaleHexMap(itemId: UUID, scale: Double) {
+        editController.createHexMap(model: gameController.gameItem(for: itemId), hexMapScale: scale)
+    }
+
     @MainActor
     func listItems() -> [MapModel] {
         itemController.itemDataModel.items.map {

@@ -223,7 +223,7 @@ extension GameNetworkController {
                 await sendPlayer(data: data, fileJournal: data.usesFileJournal)
             }
         case let .sharePlay(participantId):
-            sharePlayStore.sendData(
+            sharePlayStore.sendDataReportingLoss(
                 data,
                 fileJournal: data.usesFileJournal,
                 participantId: participantId
@@ -231,7 +231,7 @@ extension GameNetworkController {
         case .file:
             // Journal callbacks do not expose the originating participant. The
             // targetId still prevents unrelated peers from applying the repair.
-            sharePlayStore.sendData(data, fileJournal: data.usesFileJournal)
+            sharePlayStore.sendDataReportingLoss(data, fileJournal: data.usesFileJournal)
         case .local:
             if model.hasLocalPlayer {
                 await model.playerDelegate?.received(data)
@@ -246,7 +246,7 @@ extension GameNetworkController {
     func sendPlayer(data: GameNetworkModel, fileJournal: Bool = false) async {
         await model.masterStore?.sendResponse(data: data)
         if !proxy {
-            sharePlayStore.sendData(data, fileJournal: fileJournal)
+            sharePlayStore.sendDataReportingLoss(data, fileJournal: fileJournal)
             if model.hasLocalPlayer {
                 await model.playerDelegate?.received(data)
             }
@@ -270,7 +270,7 @@ extension GameNetworkController {
         if !proxy { guard !model.hasLocalPlayer else { return } }
         await model.playerStore?.request(with: data)
         if !proxy {
-            sharePlayStore.sendData(data, fileJournal: fileJournal)
+            sharePlayStore.sendDataReportingLoss(data, fileJournal: fileJournal)
         }
     }
 }

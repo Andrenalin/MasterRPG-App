@@ -51,7 +51,7 @@ struct LogGameController: Sendable {
             rows.append(LogMessageRowModel(
                 id: model.id,
                 title: title(for: model),
-                playerNames: logPlayerNames(for: model.players, namesById: namesById),
+                playerNames: model.note == nil ? logPlayerNames(for: model.players, namesById: namesById) : "",
                 deliveryState: deliveryState(for: model),
                 playerStatuses: playerStatuses(for: model),
                 sharePlayTransport: model.sharePlayTransport
@@ -137,6 +137,29 @@ struct LogGameController: Sendable {
         gameModel.logData[messageID.counter] = log
     }
     
+    /// Adds a notice for the person at this device to the log. Notes count down from -1, so
+    /// they never take the row of a sent message, whose ids are message counters.
+    /// See CODE_AUDIT_21 §5.5.
+    @MainActor
+    func addNote(_ text: String) {
+        let id = min(gameModel.logs.min() ?? 0, 0) - 1
+        let sessionID = currentSessionID ?? GameDeliveryMessageID.legacySessionID
+        gameModel.logs.append(id)
+        while gameModel.logs.count > Self.maximumRetainedMessages {
+            gameModel.logData[gameModel.logs.removeFirst()] = nil
+        }
+        gameModel.logData[id] = LogGameModel(
+            id: id,
+            type: .update,
+            subType: .failed,
+            module: .value,
+            itemId: UUID(),
+            messageID: GameDeliveryMessageID(sessionID: sessionID, counter: id),
+            tracksDelivery: false,
+            note: text
+        )
+    }
+
     /// Test affordance — production code calls `updateMessage(messageID:player:)`
     /// directly, already having the full `GameDeliveryMessageID`.
     /// See CODE_AUDIT_Game §9.22.
@@ -216,6 +239,12 @@ struct LogGameController: Sendable {
 
     @MainActor
     private func title(for model: LogGameModel) -> String {
+        if let note = model.note { return note }
+        return messageTitle(for: model)
+    }
+
+    @MainActor
+    private func messageTitle(for model: LogGameModel) -> String {
         "\(model.id): \(model.type.debugDescription) -  \(model.subType.debugDescription) - \(model.module.token) \(name(for: model.module, itemId: model.itemId))"
     }
 

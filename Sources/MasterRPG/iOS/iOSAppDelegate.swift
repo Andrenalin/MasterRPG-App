@@ -45,8 +45,16 @@ import SwiftUI
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        let sceneConfig = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
-        if connectingSceneSession.role == .windowApplication {
+        let role = connectingSceneSession.role
+        // The external display gets the configuration the Info.plist declares for it, with the
+        // scene delegate that builds the player window. With `name: nil` and a delegate only
+        // for the application role that entry was never used. See CODE_AUDIT_21 §5.26.
+        let isExternalDisplay = role == .windowExternalDisplayNonInteractive
+        let sceneConfig = UISceneConfiguration(
+            name: isExternalDisplay ? "External Game View" : nil,
+            sessionRole: role
+        )
+        if role == .windowApplication || isExternalDisplay {
             sceneConfig.delegateClass = IosSceneDelegate.self
         }
         return sceneConfig

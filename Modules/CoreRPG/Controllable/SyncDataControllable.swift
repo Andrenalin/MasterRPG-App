@@ -123,8 +123,12 @@ public extension SyncDataControllable {
         // The data is ALREADY in Core Data (we're fetching from it!)
         // We only need to update in-memory models, NOT save back to database
         for insertedId in batch.insertedIds {
+            // An item this device is deleting right now is not added again: the notification
+            // was queued before its row went. See CODE_AUDIT_21 §5.31.
+            guard !itemControllable.itemDataModel.deletingIds.contains(insertedId) else { continue }
             do {
                 guard let model = try await dataControllable.fetch(id: insertedId) else { continue }
+                guard !itemControllable.itemDataModel.deletingIds.contains(insertedId) else { continue }
                 // An "inserted" record can carry an id that is already loaded (the same package
                 // imported on two devices): merge it like an update instead of replacing the
                 // live instance and listing the id twice. See CODE_AUDIT_Folder §3.10.
@@ -142,7 +146,8 @@ public extension SyncDataControllable {
         // Process updates
         for updatedId in batch.updatedIds {
             do {
-                guard let model = try await dataControllable.fetch(id: updatedId) else { continue }
+                guard let model = try await dataControllable.fetch(id: updatedId),
+                      !itemControllable.itemDataModel.deletingIds.contains(updatedId) else { continue }
                 // Use mergeUpdates to avoid database writes during sync
                 await itemControllable.mergeUpdates(model: model)
             } catch {

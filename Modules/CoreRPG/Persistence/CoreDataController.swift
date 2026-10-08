@@ -435,14 +435,10 @@ private extension CoreDataController {
                 return []
             }
             var foundDuplicates = false
-            // Which duplicate survives must not depend on the fetch order: pick it by a stable
-            // key, but keep the fetch (sort) order of the returned models.
-            // See CODE_AUDIT_15 §5.6.
-            var survivors: [UUID: NSManagedObjectID] = [:]
-            for item in data.sorted(by: { $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString }) {
-                guard let id = item.uuid, survivors[id] == nil else { continue }
-                survivors[id] = item.objectID
-            }
+            // Which duplicate survives must not depend on the fetch order, nor on this device:
+            // see `duplicateSurvivors`. The fetch (sort) order of the returned models is kept.
+            // See CODE_AUDIT_15 §5.6, CODE_AUDIT_21 §5.7.
+            let survivors = duplicateSurvivors(in: data)
             let models = data.compactMap { item -> T? in
                 guard let id = item.uuid else { return nil }
                 guard survivors[id] == item.objectID else {
@@ -465,6 +461,19 @@ private extension CoreDataController {
         }
     }
 
+    /// The row to keep per uuid. Where several rows share a uuid, the one every device picks:
+    /// see `DuplicateRowOrder`. See CODE_AUDIT_21 §5.7.
+    func duplicateSurvivors(in data: [DataType]) -> [UUID: NSManagedObjectID] {
+        var rowsById: [UUID: [DataType]] = [:]
+        for item in data {
+            guard let id = item.uuid else { continue }
+            rowsById[id, default: []].append(item)
+        }
+        return rowsById.compactMapValues { rows in
+            rows.count == 1 ? rows[0].objectID : DuplicateRowOrder.sorted(rows).first?.objectID
+        }
+    }
+
     /// Rethrows a fetch failure: the sync-deletion diff treats a missing id as a remote
     /// deletion, so an empty result on error would empty the whole module in memory and drop
     /// every pending edit in it. See CODE_AUDIT_18 §5.2.
@@ -474,17 +483,18 @@ private extension CoreDataController {
                 Logger.coreDataController.error("fetch returned an unexpected object type; expected \(DataType.self)")
                 throw CocoaError(.coderReadCorrupt)
             }
-            var seenId: Set<UUID> = []
             var foundDuplicates = false
+            // The same survivor as `fetchAndDelete` picks: this kept whichever row the fetch
+            // returned first. See CODE_AUDIT_21 §5.7.
+            let survivors = duplicateSurvivors(in: data)
             let ids = data.compactMap { item -> UUID? in
                 guard let id = item.uuid else { return nil }
-                guard !seenId.contains(id) else {
+                guard survivors[id] == item.objectID else {
                     Logger.coreDataController.warning("duplicate uuid \(id, privacy: .public) - delete coredata object")
                     context.delete(item)
                     foundDuplicates = true
                     return nil
                 }
-                seenId.insert(id)
                 return id
             }
             if foundDuplicates {

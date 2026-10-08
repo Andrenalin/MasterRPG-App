@@ -10,6 +10,17 @@ import UniformTypeIdentifiers
 
 @Suite("Foundry media normalization")
 struct FoundryMediaNormalizerTests {
+    // CODE_AUDIT_21 §5.28: decoded before the query and fragment were cut off, an encoded `#`
+    // in a file name ended the name there.
+    @Test("An encoded # or ? in a file name is part of the name")
+    func encodedFragmentCharactersStayInTheName() {
+        let token = FoundryMediaNormalizer.plan(for: "tokens/Token%20%231.webp")
+        #expect(token?.kind == .image)
+        #expect(token?.suggestedFilename == "Token #1.jpg")
+        #expect(FoundryMediaNormalizer.plan(for: "tokens/Who%3F.png?v=2#top")?.suggestedFilename == "Who?.jpg")
+        #expect(FoundryMediaNormalizer.plan(for: "maps/dungeon.webp?cache=1")?.suggestedFilename == "dungeon.jpg")
+    }
+
     @Test("Raster plans always install JPEG and reject vector resources")
     func imagePlanning() throws {
         // Given / When

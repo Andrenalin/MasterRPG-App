@@ -15,7 +15,8 @@ struct ReconstructionPrimaryView: View {
     let outputFile: URL
     /// Called once the user finishes reviewing the reconstructed model, with the produced
     /// USDZ file's URL, so the caller can attach it to the item the scanner was opened from.
-    let onCaptureFinished: @MainActor @Sendable (URL) async -> Void
+    /// Returns whether the file was attached.
+    let onCaptureFinished: @MainActor @Sendable (URL) async -> Bool
 
     @State private var completed = false
     @State private var cancelled = false
@@ -24,8 +25,8 @@ struct ReconstructionPrimaryView: View {
         if completed && !cancelled {
             ModelView(modelFile: outputFile) { [weak appModel, outputFile, onCaptureFinished] in
                 Task {
-                    await onCaptureFinished(outputFile)
-                    appModel?.endCapture()
+                    let attached = await onCaptureFinished(outputFile)
+                    appModel?.finishCapture(attached: attached)
                 }
             }
         } else {
@@ -49,7 +50,7 @@ struct ReconstructionPrimaryView: View {
 #Preview("Reconstruction") {
     ReconstructionPrimaryView(
         outputFile: PreviewAssetFixture.url(.space) ?? URL(filePath: "/dev/null"),
-        onCaptureFinished: { _ in }
+        onCaptureFinished: { _ in true }
     )
         .environment(AppDataModel.instance)
 }

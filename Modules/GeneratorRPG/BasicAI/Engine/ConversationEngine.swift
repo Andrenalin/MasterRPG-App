@@ -311,17 +311,24 @@ private extension ConversationEngine {
         return response
     }
 
+    /// How much of the conversation is summarised after an overflow: about half of the on-device
+    /// model's 4,096-token window, which leaves room for the instructions and the summary.
+    static let maximumSummaryInputCharacters = 6_000
+
     func generateConversationSummary() async throws -> ConversationSummary {
         let summarySession = LanguageModelSession(
             model: model,
             instructions: Instructions(configuration.summaryInstructions)
         )
 
-        let conversationText = ConversationContextBuilder.conversationText(
+        // The newest part only. This runs because the transcript overflowed the context window;
+        // sent whole to the summary session it overflowed that one as well, and the
+        // conversation was then dropped instead of summarised. See CODE_AUDIT_21 §5.28.
+        let conversationText = String(ConversationContextBuilder.conversationText(
             from: session.transcript,
             userLabel: configuration.conversationUserLabel,
             assistantLabel: configuration.conversationAssistantLabel
-        )
+        ).suffix(Self.maximumSummaryInputCharacters))
         let summaryPrompt = """
         \(configuration.summaryPromptPreamble)
 

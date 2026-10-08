@@ -738,8 +738,15 @@ final class RPGSharePlayController {
     var journal: GroupSessionJournal?
 
     static let journalAddTimeout: Duration = .seconds(10)
-    static let maxChunkedDeliveryAttempts = 2
+    /// One send and three retries. A single retry after one second dropped the message while
+    /// a large transfer still held the send queue. See CODE_AUDIT_21 §5.6.
+    static let maxChunkedDeliveryAttempts = 4
     static let chunkedRetryDelay: Duration = .seconds(1)
+
+    /// The wait before retry number `attempt` (1, 2, 3): 1 s, 2 s, 4 s.
+    static func chunkedRetryDelay(forAttempt attempt: Int) -> Duration {
+        chunkedRetryDelay * (1 << max(0, min(attempt, maxChunkedDeliveryAttempts) - 1))
+    }
 
     // Lifetime observers — survive session resets; re-created if setup() runs again.
     var eligibilityTask: Task<Void, Never>?

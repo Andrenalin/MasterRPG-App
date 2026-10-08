@@ -136,7 +136,10 @@ struct MapEditor: View {
             guard session.mapMode != .edit else { return }
             map.pinScale = session.pinScale
         }
-        .onChange(of: session.hexScale) {
+        // On the release of the slider, not on `session.hexScale`: every value on the way
+        // rebuilt the whole grid (up to 20,000 entries) on the main thread.
+        // See CODE_AUDIT_21 §5.19.
+        .onChange(of: session.hexScaleCommit) {
             guard session.mapMode != .edit,
                   session.isHexMap,
                   session.hexScale != 0,
