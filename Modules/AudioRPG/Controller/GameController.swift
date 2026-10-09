@@ -234,10 +234,12 @@ extension GameController: AudioGameStorable {
         return NetworkCodableDataType(id: UUID(), type: .audio, version: 0, data: data)
     }
     
+    /// Callers checked the whole playlist first (`hasLocalAudioData`), so its tracks are
+    /// reported with it — `allPlayersReported(for:)` asks for every track.
     @MainActor
     func applyAudio(id: UUID, for players: [UUID]) {
         players.forEach {
-            gameModel.setPlayerReport(playerId: $0, for: id)
+            report(itemId: id, for: $0)
         }
     }
 

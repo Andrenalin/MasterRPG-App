@@ -160,6 +160,58 @@ struct PlayerMasterControllerTests {
         #expect(env.playerRoot.audioRoot.itemController.itemDataModel.items.count == 2)
     }
 
+    @Test("Player contributes audio the master lacks and can play it afterwards")
+    func contributedAudioBecomesPlayableOnThePlayer() async throws {
+        // Given: one player owns a playlist the master has never seen.
+        let env = try await PlayerMasterControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.playerRoot.adventureRoot, name: ResourcesDebug.audioTestData, itemCounter: 0)
+        env.masterRoot.adventureRoot.startGame()
+        env.playerRoot.adventureRoot.startGame()
+
+        let playerId = env.playerGameConfig.id
+        let roster = GameRosterModel(players: [PlayerGameModel(id: playerId, type: .player, name: "AndrenalinPlayer")])
+        let control = GameControlModel(controls: [SharingControlModel(id: playerId, name: "AndrenalinPlayer", show: true)])
+        env.masterRoot.gameModel.gameRoster = roster
+        env.masterRoot.gameModel.gameControl = control
+        await env.master.resetPlayers()
+        env.playerRoot.gameModel.reset(
+            gameConfig: GameConfigModel(id: playerId, state: .started, master: env.masterGameConfig.master),
+            gameRoster: roster
+        )
+        env.playerRoot.gameModel.gameControl = control
+        env.player.resetPlayers()
+
+        // A playlist: "everyone has it" asks for each of its tracks as well.
+        let audioId = try #require(env.playerRoot.audioRoot.itemController.itemDataModel.items.first {
+            env.playerRoot.audioRoot.itemController.itemSync(for: $0)?.entries.isEmpty == false
+        })
+        let playerAudio = env.playerRoot.audioRoot.gameController
+
+        // The join handshake: the player reports its tracks, the master answers authoritatively.
+        await env.player.sendAudioList()
+        let playerReport = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        _ = try await env.master.handle(playerReport)
+        let authoritativeReport = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(authoritativeReport.subType == .audioList)
+        _ = try await env.player.handle(authoritativeReport)
+        #expect(!playerAudio.allPlayersReported(for: audioId))
+
+        // When: the player shares the playlist and the master adopts it.
+        let audioShareData = try await playerAudio.createGameData(for: audioId)
+        await env.player.game(message: audioShareData, actionType: .generic)
+        let contribution = try #require(env.playerNetworkSpy.requestData as? GameNetworkModel)
+        _ = try await env.master.handle(contribution)
+        let reveal = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(reveal.type == .reveal)
+        let acknowledgement = try #require(try await env.player.handle(reveal))
+        #expect(acknowledgement.subType == .ok)
+        _ = try await env.master.handle(acknowledgement)
+
+        // Then: both sides know everyone has it, so the player's share button turns to play.
+        #expect(env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId))
+        #expect(playerAudio.allPlayersReported(for: audioId))
+    }
+
     @Test("Available player reveals photo and master forwards only to its local player")
     func handlePhoto() async throws {
         let env = try await PlayerMasterControllerTestEnvironment.create()

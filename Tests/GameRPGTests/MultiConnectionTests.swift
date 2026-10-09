@@ -594,8 +594,8 @@ struct MultiConnectionAudioTests {
         // Act - The receipt updates only the master's availability state.
         _ = try await env.master.handle(acknowledgment)
 
-        // Assert - No full audio-list update is needed; a later play command tells
-        // receivers that every controlled player has the audio.
+        // Assert - This receipt completes no share (the master controls no players here),
+        // so no audio-list update is published.
         #expect(env.masterNetworkSpy.sendResponseHistory.count == sendCountBeforeReceipt)
         #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
         #expect(!env.player2Root.audioRoot.gameController.gameModel.playerReport(for: audioId).contains(env.player1Config.id))
@@ -856,11 +856,16 @@ struct MultiConnectionAudioTests {
         allReported = env.masterRoot.audioRoot.gameController.allPlayersReported(for: audioId)
         #expect(allReported == true)
 
+        // The completing receipt publishes the authoritative list, which records the
+        // master's own copy next to the players' receipts.
         #expect(env.masterRoot.audioRoot.gameController.gameModel.playerReport(for: audioId).sorted() == [
+            env.masterConfig.id,
             env.player1Config.id,
             env.player2Config.id,
             env.player3Config.id
         ].sorted())
+        let announcement = try #require(env.masterNetworkSpy.sendResponseData as? GameNetworkModel)
+        #expect(announcement.subType == .audioList)
     }
 
     @Test("Master broadcasts play command after all players report")

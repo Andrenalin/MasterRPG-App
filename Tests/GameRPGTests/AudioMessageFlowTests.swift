@@ -255,6 +255,57 @@ extension MultiConnectionAudioTests {
         ]))
     }
 
+    @Test("Receipt that completes a share announces the reports to the players")
+    func completingReceiptAnnouncesReports() async throws {
+        // Given: two of three players still miss the audio and no play is pending.
+        let env = try await Self.preparedEnvironment()
+        let audioId = try #require(env.masterRoot.audioRoot.itemController.itemDataModel.items.last)
+        try await Self.reportAvailability(
+            in: env,
+            audioId: audioId,
+            availablePlayerIds: [env.player1Config.id]
+        )
+        let player1Audio = env.player1Root.audioRoot.gameController
+        player1Audio.gameModel.setCurrent(players: [
+            env.masterConfig.id,
+            env.player1Config.id,
+            env.player2Config.id,
+            env.player3Config.id
+        ])
+        func receipt(from root: GameRoot) -> GameNetworkModel {
+            root.gameModel.outgoingMessage(
+                counter: 2,
+                type: .reveal,
+                subType: .ok,
+                asMaster: false,
+                data: NetworkCodableDataType(id: audioId, type: .audio, version: 0)
+            )
+        }
+        let baseline = env.masterNetworkSpy.sendResponseHistory.count
+
+        // When: the first of them confirms.
+        _ = try await env.master.handleAudio(receipt(from: env.player2Root))
+
+        // Then: the share is not complete, nothing is announced.
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline)
+
+        // When: the last one confirms.
+        _ = try await env.master.handleAudio(receipt(from: env.player3Root))
+
+        // Then: one authoritative list tells every player, whose share button turns to play.
+        let sent = env.masterNetworkSpy.sendResponseHistory
+            .dropFirst(baseline)
+            .compactMap { $0 as? GameNetworkModel }
+        #expect(sent.map(\.subType) == [.audioList])
+        #expect(!player1Audio.allPlayersReported(for: audioId))
+        _ = try await env.player1.handleAudio(try #require(sent.first))
+        #expect(player1Audio.allPlayersReported(for: audioId))
+
+        // A repeated receipt changes nothing and is not announced again.
+        _ = try await env.master.handleAudio(receipt(from: env.player3Root))
+        #expect(env.masterNetworkSpy.sendResponseHistory.count == baseline + 1)
+    }
+
     @Test("Reconnect report retries a pending transfer for an unavailable player")
     func reconnectReportRetriesPendingTransfer() async throws {
         // Given

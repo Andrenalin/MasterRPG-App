@@ -19,8 +19,17 @@ import SpaceRPG
 extension MasterController {
     func handleAudio(_ model: GameNetworkModel) async throws -> NetworkCodableDataType? {
         if model.subType == .ok {
+            let audio = root.audioRoot.audioGameControllable
+            let wasMissingPlayers = !audio.missingPlayers(for: model.data.id).isEmpty
+            let hasPendingPlay = gameModel.pendingAudioPlays[model.data.id] != nil
             root.audioRoot.gameControllable.report(itemId: model.data.id, for: model.sender.id)
             await continuePendingAudioPlays()
+            // Only the master collects the receipts. The one that completes a share is
+            // announced, so a player's share button turns to play as well; a pending play
+            // announces it with its play command instead.
+            if wasMissingPlayers, !hasPendingPlay, audio.missingPlayers(for: model.data.id).isEmpty {
+                await broadcastAudioList()
+            }
             return nil
         }
         if model.subType == .failed {
@@ -78,14 +87,19 @@ extension MasterController {
             case .audioList:
                 guard applyAudioList(model) else { return nil }
                 resetAudioTransfers(for: model.sender.id)
-                let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
-                await send(type: .update, subtype: .audioList, updated: audioList)
+                await broadcastAudioList()
                 await continuePendingAudioPlays()
             default:
                 break
             }
             return nil
         }
+    }
+
+    /// Sends every player the authoritative report list: who has which audio.
+    private func broadcastAudioList() async {
+        let audioList = await root.audioRoot.audioGameControllable.audioList(allPlayers: true, with: root.gameModel.gameConfig.id)
+        await send(type: .update, subtype: .audioList, updated: audioList)
     }
 
     private func applyAudioList(_ model: GameNetworkModel) -> Bool {

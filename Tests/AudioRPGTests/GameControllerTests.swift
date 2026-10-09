@@ -135,8 +135,8 @@ struct GameControllerTests {
         ])
 
         // One track of the playlist is not the playlist.
-        sut.applyAudio(id: playlistId, for: [arinId])
-        sut.applyAudio(id: trackAId, for: [arinId])
+        sut.gameModel.setPlayerReport(playerId: arinId, for: playlistId)
+        sut.gameModel.setPlayerReport(playerId: arinId, for: trackAId)
         #expect(statuses().map(\.reported) == [false, false])
 
         // A view that read the statuses is told as soon as a report arrives.
@@ -152,6 +152,28 @@ struct GameControllerTests {
 
         sut.report(itemId: playlistId, for: zaraId)
         #expect(statuses().map(\.reported) == [true, true])
+    }
+
+    @Test("A player that has a playlist is reported for its tracks")
+    func applyAudioReportsPlaylistTracks() async throws {
+        let root = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let playerId = UUID()
+        let masterId = UUID()
+        let trackId = UUID()
+        let playlistId = UUID()
+        root.itemController.replace(model: AudioModel(id: trackId, name: "Track"), isInsert: true)
+        root.itemController.replace(
+            model: AudioModel(id: playlistId, name: "Playlist", entries: [AudioEntryModel(id: UUID(), audioId: trackId)]),
+            isInsert: true
+        )
+        sut.gameModel.setCurrent(players: [playerId, masterId])
+
+        sut.applyAudio(id: playlistId, for: [playerId, masterId])
+
+        #expect(Set(sut.gameModel.playerReport(for: trackId)) == Set([playerId, masterId]))
+        #expect(sut.allPlayersReported(for: playlistId))
     }
 
     @Test("Audio availability uses database items and ignores stale game packages")
