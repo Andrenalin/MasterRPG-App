@@ -7,9 +7,6 @@ final class GameScreenModel {
 
     static let mapOverlaySpacing: CGFloat = 8
     static let chromeHorizontalPadding: CGFloat = 4
-    /// Extra top margin for side-panel content without a navigation bar on screens that
-    /// have no top safe-area inset (iPhone Duo).
-    static let sidePanelDuoTopMargin: CGFloat = 20
 
     private enum WidthValues {
 #if os(macOS)

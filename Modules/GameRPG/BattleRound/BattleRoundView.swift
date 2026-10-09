@@ -75,7 +75,7 @@ struct BattleRoundView: View {
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleHiddenNavigationBar()
             .applyIf(isSidePanel) {
-                $0.gameSidePanelContent(marginWithoutTopSafeArea: GameScreenModel.sidePanelDuoTopMargin)
+                $0.gameSidePanelContent()
             }
         }
         .themedSurface()

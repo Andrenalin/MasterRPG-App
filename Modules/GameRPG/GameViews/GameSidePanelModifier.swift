@@ -29,12 +29,9 @@ extension View {
     /// compact layout, below the top menu wherever the status bar and navigation bar don't
     /// already clear it (no top safe area and no or a compact navigation bar, as on
     /// iPhone Duo).
-    ///
-    /// - Parameter marginWithoutTopSafeArea: Extra top margin on screens without a top
-    ///   safe-area inset (iPhone Duo), where no status bar sets the content off.
-    func gameSidePanelContent(marginWithoutTopSafeArea: CGFloat = 0) -> some View {
+    func gameSidePanelContent() -> some View {
 #if os(iOS)
-        modifier(GameSidePanelContentModifier(marginWithoutTopSafeArea: marginWithoutTopSafeArea))
+        modifier(GameSidePanelContentModifier())
 #else
         self
 #endif
@@ -55,8 +52,6 @@ extension View {
 
 #if os(iOS)
 private struct GameSidePanelContentModifier: ViewModifier {
-    let marginWithoutTopSafeArea: CGFloat
-
     @Environment(GameScreenModel.self) private var gameScreenModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var systemTopInset: CGFloat?
@@ -80,8 +75,7 @@ private struct GameSidePanelContentModifier: ViewModifier {
         let contentTop = horizontalSizeClass == .compact
             ? gameScreenModel.sidePanelContentTop
             : gameScreenModel.chromeTopSafeAreaInset
-        let margin = gameScreenModel.chromeTopSafeAreaInset == 0 ? marginWithoutTopSafeArea : 0
-        return max(0, contentTop - systemTopInset) + margin
+        return max(0, contentTop - systemTopInset)
     }
 }
 

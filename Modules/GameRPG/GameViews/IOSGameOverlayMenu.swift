@@ -12,7 +12,8 @@ struct IOSGameOverlayMenu: View {
 
     @Environment(AppWindowSizeModel.self) private var appWindowSizeModel
     @Environment(GameScreenModel.self) private var gameScreenModel
-    
+    @Environment(\.gameTopTrailingOcclusionWidth) private var topTrailingOcclusionWidth
+
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
         GlassEffectContainerAll {
@@ -41,7 +42,7 @@ struct IOSGameOverlayMenu: View {
                         spacing: itemSpacing
                     )
                 }
-                .padding(.trailing, gameScreenModel.topMenuTrailingReservation)
+                .padding(.trailing, max(gameScreenModel.topMenuTrailingReservation, topTrailingOcclusionWidth))
             } else {
                 HStack(spacing: itemSpacing) {
                     IOSGameOverlayCloseButton()
@@ -61,6 +62,7 @@ struct IOSGameOverlayMenu: View {
                         allowsPrimaryView: isMaster || root.gameModel.gameType != .observer
                     )
                 }
+                .padding(.trailing, topTrailingOcclusionWidth)
             }
         }
         .frame(maxWidth: .infinity)
