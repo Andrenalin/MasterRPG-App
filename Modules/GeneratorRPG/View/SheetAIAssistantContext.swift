@@ -16,14 +16,40 @@ public extension View {
                 .frame(height: 80)
                 .allowsHitTesting(false)
         }
-        .overlay(alignment: .bottomTrailing) {
-            if let rootModel,
-               let generatorController = generatorRoot?.generatorController(forItem: rootModel.sheetModel.source.itemId),
-               generatorController.availability {
-                SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
+        .overlayPreferenceValue(
+            ItemHeaderEditorPresentedPreferenceKey.self,
+            alignment: .bottomTrailing
+        ) { isHeaderEditorPresented in
+            SheetAIAssistantPlacement(
+                generatorRoot: generatorRoot,
+                rootModel: rootModel,
+                isHidden: isHeaderEditorPresented
+            )
+        }
+    }
+}
+
+/// The Ask AI control of a screen, if the screen's item can use it.
+///
+/// A view of its own, so the observable reads are tracked by a `body`: the preference closure
+/// that builds it is not one.
+private struct SheetAIAssistantPlacement: View {
+    let generatorRoot: GeneratorRootModel?
+    let rootModel: SheetRootModel?
+    let isHidden: Bool
+
+    var body: some View {
+        if let rootModel,
+           let generatorController = generatorRoot?.generatorController(forItem: rootModel.sheetModel.source.itemId),
+           generatorController.availability {
+            SheetAIAssistantContent(generatorController: generatorController, rootModel: rootModel)
                 .padding(.horizontal)
                 .padding(.bottom)
-            }
+                // Hidden rather than removed while the header editor covers the screen:
+                // removing it would end the AI session and recreate the glass node.
+                .opacity(isHidden ? 0 : 1)
+                .allowsHitTesting(!isHidden)
+                .accessibilityHidden(isHidden)
         }
     }
 }

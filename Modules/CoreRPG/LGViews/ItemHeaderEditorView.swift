@@ -57,6 +57,7 @@ public struct ItemHeaderEditorView: View {
         .frame(maxWidth: 800)
         .padding()
         .modifier(ItemHeaderEditorPlacement(dismissAction: dismissAction))
+        .preference(key: ItemHeaderEditorPresentedPreferenceKey.self, value: true)
         .task {
 #if !os(tvOS)
             try? await Task.sleep(for: EditorFocus.autoFocusDelay)
@@ -90,6 +91,16 @@ public struct ItemHeaderEditorView: View {
 #endif
 
         dismissAction()
+    }
+}
+
+/// Tells the screen behind an `ItemHeaderEditorView` that the editor covers it, so floating
+/// controls such as the Ask AI button can step aside.
+public struct ItemHeaderEditorPresentedPreferenceKey: PreferenceKey {
+    public static let defaultValue = false
+
+    public static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
     }
 }
 
