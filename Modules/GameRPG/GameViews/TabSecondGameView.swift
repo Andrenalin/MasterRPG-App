@@ -25,7 +25,7 @@ struct TabSecondGameView: View {
 
 /// The module list inside the side panel. The game master's list pushes module views, so it
 /// brings its own navigation stack. See CODE_AUDIT_20 §8.10. The list itself shows no
-/// navigation bar; `gameSidePanelContent()` supplies the top margin the bar used to give.
+/// navigation bar; `gameSidePanelContent(marginWithoutTopSafeArea:)` supplies the top margin the bar used to give.
 private struct GameModuleListPanel: View {
     let root: GameRoot
     let isPlayer: Bool
@@ -33,12 +33,12 @@ private struct GameModuleListPanel: View {
     var body: some View {
         if isPlayer {
             root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: true)
-                .gameSidePanelContent()
+                .gameSidePanelContent(marginWithoutTopSafeArea: GameScreenModel.sidePanelDuoTopMargin)
         } else {
             NavigationStack {
                 root.adventureRoot.viewController.gameModuleListView(root: root.adventureRoot, isPlayer: false)
                     .navigationVisibility(false)
-                    .gameSidePanelContent()
+                    .gameSidePanelContent(marginWithoutTopSafeArea: GameScreenModel.sidePanelDuoTopMargin)
             }
             .gameSidePanelIgnoringTrailingSafeArea()
         }
