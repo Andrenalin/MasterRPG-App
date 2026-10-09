@@ -15,9 +15,9 @@ struct DiceBag: View {
     private static let diceBagB: [DieModel] = [.die3(color: .B), .die4(color: .B), .die6(color: .B), .die8(color: .B), .die10(color: .B), .die12(color: .B), .die20(color: .B)]
     private static let diceBagF: [DieModel] = [.die3(color: .C), .die4(color: .D), .die6(color: .E), .die8(color: .C), .die10(color: .E), .die12(color: .D), .die20(color: .F)]
 
-    private static let diceBagC: [DieModel] = [.die2(color: .G), .die3(color: .D), .die4(color: .C), .die4(color: .E), .die10(color: .C), .die10(color: .D), .die10(color: .F)]
+    private static let diceBagC: [DieModel] = [.die4(color: .C), .die4(color: .E), .die10(color: .C), .die10(color: .D), .die10(color: .F)]
 
-    private static let diceBagD: [DieModel] = [.die6(color: .C), .die6(color: .D), .die6(color: .F), .die6(color: .H), .die6(color: .I)]
+    private static let diceBagD: [DieModel] = [.die2(color: .G), .die3(color: .D), .die6(color: .F), .die6(color: .H), .die6(color: .I)]
     private static let diceBagE: [DieModel] = [.die12(color: .C), .die20(color: .C), .die20(color: .D), .die20(color: .E), .die20(color: .H)]
 
     @Environment(DiceRootModel.self) private var root
