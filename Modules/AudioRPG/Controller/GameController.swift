@@ -90,6 +90,13 @@ extension GameController: GameControllable {
         return missing
     }
 
+    /// The players a share of `itemId` lists. A player counts as reported once they have
+    /// every track of a playlist — the same rule `allPlayersReported(for:)` applies.
+    @MainActor func playerReportStatuses(for itemId: UUID, controls: [SharingControlModel]) -> [PlayerReportStatus] {
+        let missing = missingPlayers(for: itemId, visited: [])
+        return controls.playerReportStatuses { !missing.contains($0) }
+    }
+
     @MainActor func report(itemId: UUID, for player: UUID) {
         report(itemId: itemId, for: player, visited: [])
     }

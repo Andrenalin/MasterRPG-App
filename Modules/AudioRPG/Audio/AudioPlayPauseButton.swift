@@ -13,21 +13,27 @@ struct AudioPlayPauseButton: View, Equatable {
 
     @Environment(AudioRootModel.self) private var root
     @Environment(\.networkActions) private var networkActions
+    // Optional: the import review rows show this button outside the game environment.
+    @Environment(AppGameStateModel.self) private var appGameStateModel: AppGameStateModel?
 
     var body: some View {
-        Button {
-            handlePlayPause()
-        } label: {
-            Image(systemName: iconName)
-                .font(.title)
-                .foregroundStyle(iconColor)
-                .contentShape(.circle)
+        // In a running game the row's share button (`SharingActionView`) plays and pauses,
+        // so this trailing button would be a second play button.
+        if appGameStateModel?.isGameRunning != true {
+            Button {
+                handlePlayPause()
+            } label: {
+                Image(systemName: iconName)
+                    .font(.title)
+                    .foregroundStyle(iconColor)
+                    .contentShape(.circle)
+            }
+            .buttonStyle(.plain)
+            .frame(width: 44, height: 44) // Minimum tap target size
+            .contentShape(.rect) // Ensure entire frame is tappable
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint(accessibilityHint)
         }
-        .buttonStyle(.plain)
-        .frame(width: 44, height: 44) // Minimum tap target size
-        .contentShape(.rect) // Ensure entire frame is tappable
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint(accessibilityHint)
     }
     
     // MARK: - Actions

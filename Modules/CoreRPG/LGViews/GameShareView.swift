@@ -22,27 +22,40 @@ public struct GameShareView<Content: View>: View {
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
     @Environment(\.sharingControlActions) private var sharingControlActions
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    /// Insets of the player report capsule, scaling with Dynamic Type. See CODE_AUDIT_20 §8.7.
-    @ScaledMetric(relativeTo: .caption) private var reportHorizontalInset: CGFloat = 8
-    @ScaledMetric(relativeTo: .caption) private var reportVerticalInset: CGFloat = 3
 
     public var body: some View {
         // Computed once per render — avoids re-deriving the same list for the
         // button's allReported state and the row below it.
         let statuses = playerReportStatuses
-        actionBarWithSharing(statuses: statuses)
-            .overlay(alignment: .topTrailing) {
-                // Only where this view offers sharing: a Photo embedded in a Map shares through
-                // the Map, so its report row showed player names for a share it doesn't offer.
-                // See CODE_AUDIT_19 §8.1.
-                if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
-                    playerReportRow(for: statuses)
-                        // Informational only: a tap on a control in the content's top-trailing
-                        // corner must reach that control, not this caption.
-                        .allowsHitTesting(false)
+        if showsReportBesideButton {
+            PlayerReportRow(statuses: statuses)
+                .shareListItem(isActive: canShare, allReported: allReported(statuses), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            actionBarWithSharing(statuses: statuses)
+                .overlay(alignment: .topTrailing) {
+                    // Only where this view offers sharing: a Photo embedded in a Map shares through
+                    // the Map, so its report row showed player names for a share it doesn't offer.
+                    // See CODE_AUDIT_19 §8.1.
+                    if isShareable, root.viewControllable.sharingViewType == .share, !statuses.isEmpty {
+                        PlayerReportRow(statuses: statuses)
+                            // Informational only: a tap on a control in the content's top-trailing
+                            // corner must reach that control, not this caption.
+                            .allowsHitTesting(false)
+                    }
                 }
-            }
+        }
+    }
+
+    /// A share without content — an item row — is the button alone, so the report overlay
+    /// landed on the button itself. There the players follow the button and the share spans
+    /// the row, the layout of the Music row's `SharingActionView`.
+    private var showsReportBesideButton: Bool {
+        Content.self == EmptyView.self && isShareable && root.viewControllable.sharingViewType == .share
+    }
+
+    private func allReported(_ statuses: [PlayerReportStatus]) -> Bool {
+        !statuses.isEmpty && statuses.allSatisfy(\.reported)
     }
 
     @ViewBuilder
@@ -52,7 +65,7 @@ public struct GameShareView<Content: View>: View {
             content
         case .share:
             content
-                .shareListItem(isActive: canShare, allReported: !statuses.isEmpty && statuses.allSatisfy(\.reported), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
+                .shareListItem(isActive: canShare, allReported: allReported(statuses), feedBackEnabled: true, module: root.configurable.module, action: shareAction)
         case .custom:
             root.viewControllable.sharingView(for: itemId)
         }
@@ -100,71 +113,8 @@ private extension GameShareView {
         guard appGameStateModel.gameModus == .master else { return [] }
         let reported = Set(root.gameControllable.gameModel.playerReport(for: itemId))
         return (sharingControlActions.control?() ?? [])
-            .visibleSortedByName
-            .map { PlayerReportStatus(id: $0.id, name: $0.name, reported: reported.contains($0.id)) }
+            .playerReportStatuses { reported.contains($0) }
     }
-
-    func playerReportRow(for statuses: [PlayerReportStatus]) -> some View {
-        HStack(spacing: 4) {
-            Text(playerReportAttributedString(for: statuses))
-            if statuses.allSatisfy(\.reported) {
-                Image(systemName: "checkmark")
-                    .foregroundStyle(.tint)
-            }
-        }
-        .font(.caption)
-        // Drawn over the photo or text below it: a material background keeps it legible.
-        // See CODE_AUDIT_19 §8.1.
-        .padding(.horizontal, reportHorizontalInset)
-        .padding(.vertical, reportVerticalInset)
-        .background(.regularMaterial, in: .capsule)
-        .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(playerReportAccessibilityLabel(for: statuses))
-    }
-
-    func playerReportAttributedString(status: PlayerReportStatus) -> AttributedString {
-        var playerName = status.name
-        if let firstName = status.name.split(separator: " ").first {
-            playerName = String(firstName)
-        }
-
-        var name = AttributedString(playerName)
-        if status.reported {
-            name.font = .caption.bold()
-        } else {
-            name.foregroundColor = .secondary
-        }
-        return name
-    }
-
-    func playerReportAttributedString(for statuses: [PlayerReportStatus]) -> AttributedString {
-        statuses.enumerated().reduce(into: AttributedString()) { line, entry in
-            let (index, status) = entry
-            if index > 0 {
-                line += AttributedString(", ")
-            }
-            line += playerReportAttributedString(status: status)
-        }
-    }
-
-    func playerReportAccessibilityLabel(for statuses: [PlayerReportStatus]) -> Text {
-        let reportedNames = statuses.filter(\.reported).map(\.name).joined(separator: ", ")
-        let missingNames = statuses.filter { !$0.reported }.map(\.name).joined(separator: ", ")
-        if missingNames.isEmpty {
-            return Text("All players confirmed: \(reportedNames)", bundle: .module)
-        }
-        if reportedNames.isEmpty {
-            return Text("Waiting on: \(missingNames)", bundle: .module)
-        }
-        return Text("Confirmed: \(reportedNames). Waiting on: \(missingNames)", bundle: .module)
-    }
-}
-
-private struct PlayerReportStatus {
-    let id: UUID
-    let name: String
-    let reported: Bool
 }
 
 #Preview {
@@ -216,4 +166,30 @@ private struct PlayerReportStatus {
         },
         update: { _ in }
     ))
+}
+
+#Preview("Master item row with player report status") {
+    let fixture = FakeItemRootControllerFixture(sharingViewType: .share)
+    let gameState = {
+        let gameState = AppGameStateModel()
+        gameState.gameModus = .master
+        gameState.isGameRunning = true
+        return gameState
+    }()
+
+    GameShareView(root: fixture.root, itemId: .fixture1)
+        .padding()
+        .environment(gameState)
+        .environment(\.sharingControlActions, SharingControlActions(
+            control: {
+                [
+                    SharingControlModel(id: .fixture2, name: "Arin Doof", show: true),
+                    SharingControlModel(id: .fixture3, name: "Zara Mega", show: true)
+                ]
+            },
+            update: { _ in }
+        ))
+        .onAppear {
+            fixture.root.gameControllable.report(itemId: .fixture1, for: .fixture2)
+        }
 }

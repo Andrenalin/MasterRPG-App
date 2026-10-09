@@ -14,7 +14,7 @@ extension ViewController: ViewControllable {
     public var hasCustomSpaceAction: Bool { true }
     public var skipsHeaderEditorOnCreate: Bool { true }
     @MainActor public func sharingView(for itemId: UUID) -> AnyView {
-        AnyView(SharingActionView(itemId: itemId, showPlayControl: false).equatable())
+        AnyView(SharingActionView(itemId: itemId, showPlayControl: false, showPlayerReport: true).equatable())
     }
     
     @MainActor public func thumbnailRowView(for itemId: UUID) -> AnyView {

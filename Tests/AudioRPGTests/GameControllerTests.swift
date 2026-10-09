@@ -2,6 +2,8 @@
 
 import CoreRPG
 import Foundation
+import Observation
+import Synchronization
 import Testing
 
 @testable import AudioRPG
@@ -92,6 +94,64 @@ struct GameControllerTests {
 
         try await sut.play(id: nil, shouldPlay: true)
         try await sut.play(id: playlistId, shouldPlay: false)
+    }
+
+    @Test("Player report statuses follow each player's report of the whole playlist")
+    func playerReportStatusesFollowReports() async throws {
+        let root = AudioRootModel.testRoot()
+        try await MockRoot.resetTestData(for: root)
+        let sut = root.gameController
+        let arinId = UUID()
+        let zaraId = UUID()
+        let hiddenId = UUID()
+        let trackAId = UUID()
+        let trackBId = UUID()
+        let playlistId = UUID()
+        let playlist = AudioModel(
+            id: playlistId,
+            name: "Playlist",
+            entries: [
+                AudioEntryModel(id: UUID(), audioId: trackAId),
+                AudioEntryModel(id: UUID(), audioId: trackBId)
+            ]
+        )
+        root.itemController.replace(model: AudioModel(id: trackAId, name: "Track A"), isInsert: true)
+        root.itemController.replace(model: AudioModel(id: trackBId, name: "Track B"), isInsert: true)
+        root.itemController.replace(model: playlist, isInsert: true)
+        let controls = [
+            SharingControlModel(id: zaraId, name: "Zara", show: true),
+            SharingControlModel(id: hiddenId, name: "Hidden", show: false),
+            SharingControlModel(id: arinId, name: "Arin", show: true)
+        ]
+        sut.gameModel.setCurrent(players: [arinId, zaraId])
+
+        func statuses() -> [PlayerReportStatus] {
+            sut.playerReportStatuses(for: playlistId, controls: controls)
+        }
+
+        #expect(statuses() == [
+            PlayerReportStatus(id: arinId, name: "Arin", reported: false),
+            PlayerReportStatus(id: zaraId, name: "Zara", reported: false)
+        ])
+
+        // One track of the playlist is not the playlist.
+        sut.applyAudio(id: playlistId, for: [arinId])
+        sut.applyAudio(id: trackAId, for: [arinId])
+        #expect(statuses().map(\.reported) == [false, false])
+
+        // A view that read the statuses is told as soon as a report arrives.
+        let didChange = Mutex(false)
+        withObservationTracking {
+            _ = statuses()
+        } onChange: {
+            didChange.withLock { $0 = true }
+        }
+        sut.applyAudio(id: trackBId, for: [arinId])
+        #expect(didChange.withLock { $0 })
+        #expect(statuses().map(\.reported) == [true, false])
+
+        sut.report(itemId: playlistId, for: zaraId)
+        #expect(statuses().map(\.reported) == [true, true])
     }
 
     @Test("Audio availability uses database items and ignores stale game packages")

@@ -8,20 +8,51 @@ import SwiftUI
         .padding()
 }
 
+#Preview("Master with player report", traits: .mockData) {
+    @Previewable @Environment(AudioRootModel.self) var root
+    let gameState = {
+        let gameState = AppGameStateModel()
+        gameState.gameModus = .master
+        gameState.isGameRunning = true
+        return gameState
+    }()
+
+    SharingActionView(itemId: AudioModel.previewId, showPlayControl: false, showPlayerReport: true)
+        .padding()
+        .environment(gameState)
+        .environment(\.sharingControlActions, SharingControlActions(
+            control: {
+                [
+                    SharingControlModel(id: .fixture2, name: "Arin Doof", show: true),
+                    SharingControlModel(id: .fixture3, name: "Zara Mega", show: true)
+                ]
+            },
+            update: { _ in }
+        ))
+        .onAppear {
+            root.gameController.gameModel.setCurrent(players: [.fixture2, .fixture3])
+            root.gameController.report(itemId: AudioModel.previewId, for: .fixture2)
+        }
+}
+
 struct SharingActionView: View, Equatable {
     let itemId: UUID
     let showPlayControl: Bool
+    /// True in the item row: the share spans the row and lists the players next to the button.
+    /// An inline audio entry shares its row with the track name and keeps the button alone.
+    var showPlayerReport: Bool = false
 
     @Environment(AudioRootModel.self) private var root
     @Environment(\.networkActions) private var networkActions
     @Environment(\.sharingFeatureActions) private var sharingFeatureActions
+    @Environment(\.sharingControlActions) private var sharingControlActions
     @Environment(AppGameStateModel.self) private var appGameStateModel
 
     @State private var waitForSharing: Bool = false
 
     var body: some View {
         if appGameStateModel.isGameRunning {
-            EmptyView()
+            PlayerReportRow(statuses: playerReportStatuses)
                 .shareListItem(isActive: canShare, allReported: allReported, feedBackEnabled: true, module: .audio, secondActionIcon: playIcon) {
                     shareAudio()
                 } secondAction: {
@@ -32,6 +63,7 @@ struct SharingActionView: View, Equatable {
                         shareAudio()
                     }
                 }
+                .frame(maxWidth: showPlayerReport ? .infinity : nil, alignment: .leading)
                 .onChange(of: allReported) { _, newValue in
                     if waitForSharing && newValue {
                         waitForSharing = false
@@ -57,6 +89,13 @@ struct SharingActionView: View, Equatable {
     // in shareListItem, secondAction, onChange, and playIcon.
     private var allReported: Bool {
         root.gameController.allPlayersReported(for: itemId)
+    }
+
+    /// Only the game master receives the players' acknowledgements, so the list stays empty
+    /// on a player device.
+    private var playerReportStatuses: [PlayerReportStatus] {
+        guard showPlayerReport, appGameStateModel.gameModus == .master else { return [] }
+        return root.gameController.playerReportStatuses(for: itemId, controls: sharingControlActions.control?() ?? [])
     }
 
     private var canShare: Bool {
@@ -88,6 +127,6 @@ struct SharingActionView: View, Equatable {
     // showPlayControl must be included — omitting it would prevent the non-game
     // play button from appearing/disappearing when the parent changes the value.
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.itemId == rhs.itemId && lhs.showPlayControl == rhs.showPlayControl
+        lhs.itemId == rhs.itemId && lhs.showPlayControl == rhs.showPlayControl && lhs.showPlayerReport == rhs.showPlayerReport
     }
 }
