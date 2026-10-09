@@ -6,6 +6,7 @@ import SwiftUI
 final class GameScreenModel {
 
     static let mapOverlaySpacing: CGFloat = 8
+    static let chromeHorizontalPadding: CGFloat = 4
 
     private enum WidthValues {
 #if os(macOS)
@@ -123,21 +124,29 @@ final class GameScreenModel {
         inlineMainOverlayWidth = width
     }
 
-    /// How far the iOS side panel reaches past the chrome's trailing content edge: the
-    /// trailing safe-area inset plus the chrome padding. The panel runs to the screen
-    /// edge, the top menu stops at the safe area.
-    private(set) var inlineSidebarTrailingOverhang: CGFloat = 0
+    /// The window's safe-area insets around the game chrome. The iOS side panel ignores
+    /// the safe area, so it reads zero itself; the chrome measures them for it.
+    private(set) var chromeTopSafeAreaInset: CGFloat = 0
+    private(set) var chromeTrailingSafeAreaInset: CGFloat = 0
 
-    /// The part of the visible side panel that overlaps the top menu's row.
-    var topMenuTrailingReservation: CGFloat {
-        guard isInlineSidebarVisible else { return 0 }
-        return max(0, inlineMainOverlayWidth - inlineSidebarTrailingOverhang)
+    /// Screen-space top edge for the side panel's content: one spacing step below the
+    /// top menu, which overlaps the panel in the compact layout.
+    var sidePanelContentTop: CGFloat {
+        chromeTopSafeAreaInset + topGameMenuHeight + Self.mapOverlaySpacing
     }
 
-    func updateInlineSidebarTrailingOverhang(_ overhang: CGFloat) {
-        let overhang = overhang.isFinite ? max(0, overhang) : 0
-        guard inlineSidebarTrailingOverhang != overhang else { return }
-        inlineSidebarTrailingOverhang = overhang
+    /// The part of the visible side panel that overlaps the top menu's row. The panel
+    /// runs to the screen edge, the menu stops at the safe area and the chrome padding.
+    var topMenuTrailingReservation: CGFloat {
+        guard isInlineSidebarVisible else { return 0 }
+        return max(0, inlineMainOverlayWidth - chromeTrailingSafeAreaInset - Self.chromeHorizontalPadding)
+    }
+
+    func updateChromeSafeAreaInsets(top: CGFloat, trailing: CGFloat) {
+        let top = top.isFinite ? max(0, top) : 0
+        let trailing = trailing.isFinite ? max(0, trailing) : 0
+        if chromeTopSafeAreaInset != top { chromeTopSafeAreaInset = top }
+        if chromeTrailingSafeAreaInset != trailing { chromeTrailingSafeAreaInset = trailing }
     }
 
     func updateTopGameMenuHeight(_ height: CGFloat) {

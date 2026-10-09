@@ -31,6 +31,7 @@ struct BattleRoundSideOverlay: View {
                 gameScreenModel.showsBattleRoundSidebar = false
             }
         }
+        .gameSidePanelIgnoringTrailingSafeArea()
         .frame(
             maxWidth: gameScreenModel.sideBarWidth,
             maxHeight: .infinity,

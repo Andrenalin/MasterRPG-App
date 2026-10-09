@@ -40,12 +40,11 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 #if os(iOS)
                 // The slot must touch the safe-area edges: with the chrome padding in
                 // between, the panel's `ignoresSafeArea()` has no horizontal effect and
-                // the panel stops short of the screen edge, while the navigation stack
-                // inside it still insets its content by the full safe area.
-                .onGeometryChange(for: CGFloat.self) { proxy in
-                    proxy.safeAreaInsets.trailing
-                } action: { trailingInset in
-                    gameScreenModel.updateInlineSidebarTrailingOverhang(trailingInset + horizontalPadding)
+                // the panel stops short of the screen edge.
+                .onGeometryChange(for: EdgeInsets.self) { proxy in
+                    proxy.safeAreaInsets
+                } action: { insets in
+                    gameScreenModel.updateChromeSafeAreaInsets(top: insets.top, trailing: insets.trailing)
                 }
 #else
                 .padding(.horizontal, horizontalPadding)
@@ -99,7 +98,7 @@ struct OverlayGameLayout<MenuTab: View, Side: View, ModuleMenu: View, ToolBar: V
 
     /// Applied per layer instead of to the whole stack, so the iOS side panel can reach
     /// the screen edge.
-    private var horizontalPadding: CGFloat { 4 }
+    private var horizontalPadding: CGFloat { GameScreenModel.chromeHorizontalPadding }
 
 #if os(iOS)
     private var topContentInset: CGFloat {

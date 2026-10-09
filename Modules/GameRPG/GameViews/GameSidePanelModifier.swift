@@ -23,7 +23,71 @@ extension View {
             onWidthChange: onWidthChange
         ))
     }
+
+    /// For a side panel's content (the root view of its navigation stack, or the content
+    /// itself where there is no stack): keeps it inside the top safe area and, in the
+    /// compact layout, below the top menu wherever the status bar and navigation bar don't
+    /// already clear it (no top safe area and no or a compact navigation bar, as on
+    /// iPhone Duo).
+    func gameSidePanelContent() -> some View {
+#if os(iOS)
+        modifier(GameSidePanelContentModifier())
+#else
+        self
+#endif
+    }
+
+    /// Lets a side panel's navigation stack run past the trailing screen edge by the
+    /// trailing safe-area inset. UIKit hands the stack the window's full inset wherever the
+    /// panel sits, so this is what lets its content span the whole panel. Apply it to the
+    /// navigation stack itself: other content is not inset and would be pushed off screen.
+    func gameSidePanelIgnoringTrailingSafeArea() -> some View {
+#if os(iOS)
+        modifier(GameSidePanelTrailingSafeAreaModifier())
+#else
+        self
+#endif
+    }
 }
+
+#if os(iOS)
+private struct GameSidePanelContentModifier: ViewModifier {
+    @Environment(GameScreenModel.self) private var gameScreenModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var systemTopInset: CGFloat?
+
+    func body(content: Content) -> some View {
+        content
+            .safeAreaPadding(.top, topInset)
+            // Measured outside the padding above: the inset the status bar and the
+            // navigation bar provide on their own. The panel starts at the screen's top edge.
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.safeAreaInsets.top
+            } action: { inset in
+                systemTopInset = inset
+            }
+    }
+
+    /// The top menu only overlaps the panel in the compact layout; in the regular one it
+    /// ends at the panel's leading edge and the content only has to clear the safe area.
+    private var topInset: CGFloat {
+        guard let systemTopInset else { return 0 }
+        let contentTop = horizontalSizeClass == .compact
+            ? gameScreenModel.sidePanelContentTop
+            : gameScreenModel.chromeTopSafeAreaInset
+        return max(0, contentTop - systemTopInset)
+    }
+}
+
+private struct GameSidePanelTrailingSafeAreaModifier: ViewModifier {
+    @Environment(GameScreenModel.self) private var gameScreenModel
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.trailing, -gameScreenModel.chromeTrailingSafeAreaInset)
+    }
+}
+#endif
 
 private struct GameSidePanelModifier<Value: Equatable>: ViewModifier {
     let isShown: Bool

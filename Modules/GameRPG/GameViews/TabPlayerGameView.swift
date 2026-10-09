@@ -18,8 +18,10 @@ struct TabPlayerGameView: View {
                         root: root.characterRoot,
                         select: characterId
                     )
+                    .gameSidePanelContent()
                 }
             }
+            .gameSidePanelIgnoringTrailingSafeArea()
             .gameSidePanel(
                 isShown: gameScreenModel.showMainTab != .none,
                 width: gameScreenModel.sideBarWidth,

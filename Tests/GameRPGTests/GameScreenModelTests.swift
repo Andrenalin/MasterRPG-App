@@ -127,19 +127,30 @@ struct GameScreenModelTests {
     @Test("Top menu only reserves the part of the side panel inside the safe area")
     func topMenuReservationExcludesTrailingOverhang() {
         let model = GameScreenModel()
+        let padding = GameScreenModel.chromeHorizontalPadding
         model.updateInlineMainOverlayWidth(300)
-        model.updateInlineSidebarTrailingOverhang(88)
+        model.updateChromeSafeAreaInsets(top: 0, trailing: 84)
 
         #expect(model.topMenuTrailingReservation == 0)
 
         model.showMainTab = .game
-        #expect(model.topMenuTrailingReservation == 212)
+        #expect(model.topMenuTrailingReservation == 216 - padding)
 
-        model.updateInlineSidebarTrailingOverhang(.infinity)
-        #expect(model.topMenuTrailingReservation == 300)
+        model.updateChromeSafeAreaInsets(top: 0, trailing: .infinity)
+        #expect(model.topMenuTrailingReservation == 300 - padding)
 
-        model.updateInlineSidebarTrailingOverhang(400)
+        model.updateChromeSafeAreaInsets(top: 0, trailing: 400)
         #expect(model.topMenuTrailingReservation == 0)
+    }
+
+    @Test("Side panel content starts one spacing step below the top menu")
+    func sidePanelContentTopFollowsMenu() {
+        let model = GameScreenModel()
+        model.updateTopGameMenuHeight(45)
+        #expect(model.sidePanelContentTop == 45 + GameScreenModel.mapOverlaySpacing)
+
+        model.updateChromeSafeAreaInsets(top: 62, trailing: 0)
+        #expect(model.sidePanelContentTop == 62 + 45 + GameScreenModel.mapOverlaySpacing)
     }
 
     @Test("3D table remains local to the main game display")

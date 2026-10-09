@@ -18,7 +18,9 @@ struct TabGameView: View {
                 root: root.adventureRoot,
                 focusedIds: [adventureId]
             )
+            .gameSidePanelContent()
         }
+        .gameSidePanelIgnoringTrailingSafeArea()
         .gameSidePanel(
             isShown: gameScreenModel.showMainTab != .none,
             width: gameScreenModel.sideBarWidth,
