@@ -111,6 +111,50 @@ struct BattleRoundController: Sendable {
         )
     }
 
+    // MARK: - Hit points
+
+    /// The combatant's current hit points, read from its Character's chosen
+    /// Hit Points entry.
+    func hitPoints(for combatant: BattleCombatant) -> Int? {
+        guard let characterId = combatant.gameCharacterId,
+              let entryId = combatant.hitPointsEntryId else {
+            return nil
+        }
+        return root.characterRoot.valueGameControllable.gameEntryCurrentNumber(
+            characterId: characterId,
+            entryId: entryId
+        )
+    }
+
+    /// Writes the current hit points into the combatant's Character for this
+    /// game (a monster's battle copy, or the player's Character) and
+    /// broadcasts the resulting health.
+    @discardableResult
+    func setHitPoints(_ combatantId: UUID, _ value: Int) -> Bool {
+        guard let mapId = authorizedMapId,
+              let combatant = model.combatant(id: combatantId),
+              let characterId = combatant.gameCharacterId,
+              let entryId = combatant.hitPointsEntryId,
+              root.characterRoot.valueGameControllable.setGameEntryCurrentNumber(
+                  value,
+                  characterId: characterId,
+                  entryId: entryId
+              ) else {
+            return false
+        }
+        broadcast(mapId: mapId)
+        return true
+    }
+
+    @discardableResult
+    func adjustHitPoints(_ combatantId: UUID, _ amount: Int) -> Bool {
+        guard let combatant = model.combatant(id: combatantId),
+              let current = hitPoints(for: combatant) else {
+            return false
+        }
+        return setHitPoints(combatantId, current + amount)
+    }
+
     @discardableResult
     func setInitiativeOrder(_ order: BattleInitiativeOrder) -> Bool {
         guard let mapId = authorizedMapId else {

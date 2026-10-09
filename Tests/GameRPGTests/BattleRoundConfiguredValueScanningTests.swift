@@ -236,6 +236,111 @@ struct BattleRoundConfiguredValueScanningTests {
         #expect(sut.healthPercent(for: combatant) == 100)
     }
 
+    @Test("Setting hit points from the battle row writes a modifier into the battle copy only")
+    func settingHitPointsWritesModifierIntoBattleCopy() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let (sut, combatantId) = try startBattleWithEmptyMonster(root: root)
+
+        let characterId = UUID()
+        let hpEntryId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Goblin",
+                entries: [ValueEntryModel(id: hpEntryId, name: "HP", type: .number, value: "20")]
+            ),
+            isInsert: true
+        )
+        #expect(root.battleRoundController.assignCharacter(combatantId, characterId))
+        let controller = root.battleRoundController
+
+        var combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        #expect(controller.hitPoints(for: combatant) == 20)
+
+        #expect(controller.adjustHitPoints(combatantId, -5))
+        combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        #expect(controller.hitPoints(for: combatant) == 15)
+        #expect(sut.healthPercent(for: combatant) == 75)
+
+        #expect(controller.setHitPoints(combatantId, 20))
+        #expect(controller.hitPoints(for: combatant) == 20)
+        // Unchanged value: nothing to write.
+        #expect(!controller.setHitPoints(combatantId, 20))
+
+        // The stored template never sees battle damage.
+        #expect(controller.setHitPoints(combatantId, 4))
+        let template = try #require(root.characterRoot.itemController.itemSync(for: characterId, noGame: true))
+        #expect(template[hpEntryId].value == "20")
+    }
+
+    @Test("Setting hit points keeps a linked base and only adds the modifier")
+    func settingHitPointsKeepsLinkedBase() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let (sut, combatantId) = try startBattleWithEmptyMonster(root: root)
+
+        let hpStat = ValueEntryModel(id: UUID(), name: "Lebenskraft", type: .number, value: "30")
+        let stats = ValueModel(id: UUID(), name: "Stats", entries: [hpStat])
+        root.characterRoot.itemController.replace(model: stats, isInsert: true)
+
+        let link = stats.url(linkNumber: 0, entryId: hpStat.id)
+        let characterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Goblin",
+                entries: [ValueEntryModel(id: UUID(), name: "HP", type: .number, value: link)]
+            ),
+            isInsert: true
+        )
+        #expect(root.battleRoundController.assignCharacter(combatantId, characterId))
+        let controller = root.battleRoundController
+
+        #expect(controller.setHitPoints(combatantId, 24))
+
+        let combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        let gameCharacterId = try #require(combatant.gameCharacterId)
+        let hitPointsEntryId = try #require(combatant.hitPointsEntryId)
+        let entry = try #require(
+            root.characterRoot.valueGameControllable.gameEntry(
+                characterId: gameCharacterId,
+                entryId: hitPointsEntryId
+            )
+        )
+        #expect(entry.value == "\(link)|-6")
+        #expect(controller.hitPoints(for: combatant) == 24)
+        #expect(sut.healthPercent(for: combatant) == 80)
+    }
+
+    @Test("A free-text hit-points entry has no number and is never overwritten")
+    func freeTextHitPointsEntryIsNotOverwritten() async throws {
+        let root = try await MockRoot.createGameRoot()
+        let (sut, combatantId) = try startBattleWithEmptyMonster(root: root)
+
+        let characterId = UUID()
+        root.characterRoot.itemController.replace(
+            model: ValueModel(
+                id: characterId,
+                name: "Ghost",
+                entries: [ValueEntryModel(id: UUID(), name: "HP", type: .text, value: "immortal")]
+            ),
+            isInsert: true
+        )
+        #expect(root.battleRoundController.assignCharacter(combatantId, characterId))
+        let controller = root.battleRoundController
+
+        let combatant = try #require(sut.battleRoundModel.combatant(id: combatantId))
+        #expect(combatant.hitPointsEntryId != nil)
+        #expect(controller.hitPoints(for: combatant) == nil)
+        #expect(!controller.setHitPoints(combatantId, 10))
+        #expect(!controller.adjustHitPoints(combatantId, -1))
+        #expect(
+            root.characterRoot.valueGameControllable.gameEntryDisplayValue(
+                characterId: try #require(combatant.gameCharacterId),
+                entryId: try #require(combatant.hitPointsEntryId)
+            ) == "immortal"
+        )
+    }
+
     /// Starts a battle on a fresh map with a single non-player pin that
     /// carries no `characterId`, mirroring a monster token dropped before
     /// its stat block is chosen.

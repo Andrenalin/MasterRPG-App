@@ -91,42 +91,52 @@ struct BattleParticipantColumn: View {
 #endif
                 
                 VStack(alignment: .leading, spacing: BattleRoundSpacing.compact) {
-                    Button(action: selectInitiativeEntry) {
-                        HStack(spacing: BattleRoundSpacing.extraTight) {
-                            Text("Ini:", bundle: .module)
-                            Text(verbatim: initiativeValue ?? "")
-                                .monospacedDigit()
+                    HStack(spacing: BattleRoundSpacing.tight) {
+                        Button(action: selectInitiativeEntry) {
+                            HStack(spacing: BattleRoundSpacing.extraTight) {
+                                Text("Ini:", bundle: .module)
+                                Text(verbatim: initiativeValue ?? "")
+                                    .monospacedDigit()
+                            }
+                            .font(.caption2)
+                            .contentShape(.rect)
                         }
-                        .font(.caption2)
-                        .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
-                    .help(Text("Choose the Initiative value", bundle: .module))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
+                        .help(Text("Choose the Initiative value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
-                    .battleLinkCharacterDropDestination(action: valueDropAction(kind: .initiative))
+                        .battleLinkCharacterDropDestination(action: valueDropAction(kind: .initiative))
 #endif
+                        if canRevealValueRow(.initiative) {
+                            BattleValueRowRevealButton(kind: .initiative, state: state)
+                        }
+                    }
 
                     // Computed once and reused below: `hitPointsValue` walks a
                     // linked entry's formula chain, so reading it a second time
                     // purely for the color check would redo that work for no
                     // benefit. See CODE_AUDIT §7.1.
                     let hp = hitPointsValue
-                    Button(action: selectHitPointsEntry) {
-                        HStack(spacing: BattleRoundSpacing.extraTight) {
-                            Text("HP:", bundle: .module)
-                            Text(verbatim: hp ?? "")
-                                .monospacedDigit()
+                    HStack(spacing: BattleRoundSpacing.tight) {
+                        Button(action: selectHitPointsEntry) {
+                            HStack(spacing: BattleRoundSpacing.extraTight) {
+                                Text("HP:", bundle: .module)
+                                Text(verbatim: hp ?? "")
+                                    .monospacedDigit()
+                            }
+                            .font(.caption2)
+                            .contentShape(.rect)
                         }
-                        .font(.caption2)
-                        .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(hp == nil ? .tertiary : .primary)
-                    .help(Text("Choose the Hit Points value", bundle: .module))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(hp == nil ? .tertiary : .primary)
+                        .help(Text("Choose the Hit Points value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
-                    .battleLinkCharacterDropDestination(action: valueDropAction(kind: .hitPoints))
+                        .battleLinkCharacterDropDestination(action: valueDropAction(kind: .hitPoints))
 #endif
+                        if canRevealValueRow(.hitPoints) {
+                            BattleValueRowRevealButton(kind: .hitPoints, state: state)
+                        }
+                    }
                 }
             }
 
@@ -190,6 +200,12 @@ struct BattleParticipantColumn: View {
     }
 
     private var hasCharacter: Bool { combatant.hasCharacter }
+
+    /// Only the attacker has config rows; the button reopens one that is
+    /// currently hidden.
+    private func canRevealValueRow(_ kind: BattleValueKind) -> Bool {
+        role == .attacker && hasCharacter && !state.showsValueRow(kind, for: combatant)
+    }
 
     private var hitPointsValue: String? {
         guard let characterId = combatant.gameCharacterId,

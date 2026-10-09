@@ -8,6 +8,21 @@ import SwiftUI
 final class BattleRoundCardState {
     var characterSheet: BattleCharacterSheetPresentation?
 
+    /// The game master's choice per Ini/HP config row: `true` keeps it open
+    /// after its value got set, `false` hides it. No entry means the row
+    /// follows whether the value is missing.
+    private var valueRowOverrides: [BattleValueKind: Bool] = [:]
+
+    func showsValueRow(_ kind: BattleValueKind, for combatant: BattleCombatant) -> Bool {
+        guard combatant.hasCharacter else { return false }
+        return valueRowOverrides[kind] ?? combatant.needsConfiguration(kind)
+    }
+
+    func setValueRow(_ kind: BattleValueKind, isShown: Bool) {
+        guard valueRowOverrides[kind] != isShown else { return }
+        valueRowOverrides[kind] = isShown
+    }
+
     func openCharacter(
         _ combatant: BattleCombatant,
         controller: BattleRoundController,

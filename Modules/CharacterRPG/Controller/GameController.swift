@@ -84,6 +84,18 @@ public protocol ValueGameStorable: Sendable {
     /// "base" may itself be a markdown link (e.g. `[Lebenskraft](RPG://...)`)
     /// rather than a literal number, and possibly several link hops deep.
     @MainActor func calculatedValue(_ text: String, type: ValueEntryModel.ValueType) -> String?
+    /// The entry's current value as a whole number, with links and the
+    /// "base|modifier" convention resolved, or `nil` when it isn't numeric.
+    @MainActor func gameEntryCurrentNumber(characterId: UUID, entryId: UUID) -> Int?
+    /// Makes `number` the entry's current value in game memory. The base
+    /// (and any link in it) is kept; the difference is written as the
+    /// "|modifier". Returns `false` when nothing changed or the stored text
+    /// has no numeric base to adjust.
+    @MainActor @discardableResult func setGameEntryCurrentNumber(
+        _ number: Int,
+        characterId: UUID,
+        entryId: UUID
+    ) -> Bool
     /// Updates an existing game-memory entry while preserving its links.
     @MainActor @discardableResult func applyGameValueEntryUpdate(
         _ update: GameValueEntryUpdate

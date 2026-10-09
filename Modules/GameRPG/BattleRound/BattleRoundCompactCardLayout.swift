@@ -44,6 +44,15 @@ struct BattleRoundCompactCardLayout: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            BattleAttackerConfigRows(
+                combatant: context.presentation.attacker.combatant,
+                cardLayout: .compact,
+                state: context.state,
+                controller: context.controller,
+                selectHitPoints: context.selectHitPoints,
+                selectInitiative: context.selectInitiative
+            )
+
             Divider()
 
             HStack(alignment: .top, spacing: BattleRoundSpacing.standard) {
@@ -64,6 +73,32 @@ struct BattleRoundCompactCardLayout: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
+    }
+}
+
+#Preview("Compact card, config rows hidden", traits: .mockData) {
+    let controller = BattleRoundController.preview()
+    let model = controller.model
+    let state: BattleRoundCardState = {
+        let state = BattleRoundCardState()
+        state.setValueRow(.initiative, isShown: false)
+        state.setValueRow(.hitPoints, isShown: false)
+        return state
+    }()
+
+    if let card = model.cardPresentations.first {
+        BattleRoundCompactCardLayout(
+            context: BattleRoundCardLayoutContext(
+                state: state,
+                presentation: card,
+                controller: controller,
+                showCharacter: { _ in },
+                selectHitPoints: { _ in },
+                selectInitiative: { _ in }
+            )
+        )
+        .frame(width: 340)
+        .padding()
     }
 }
 

@@ -156,16 +156,92 @@ extension GameController {
             return calculated
         }
         // A `.text` entry can still hold a value link (typed or imported; only
-        // the link picker switches the entry to `.number`). Resolve it like a
-        // number so callers get the linked value instead of raw markdown.
-        guard LinkReplaceController.links(for: entry.value).contains(where: { $0.module == .value }),
-              let resolved = calculatedValue(entry.value, type: .decimal),
-              let number = Double(resolved) else {
+        // the link picker switches the entry to `.number`) or a "base|modifier"
+        // pair. Resolve it like a number so callers get the current value
+        // instead of the raw text.
+        guard entry.value.contains("|")
+                || LinkReplaceController.links(for: entry.value).contains(where: { $0.module == .value }),
+              let number = resolvedNumber(entry.value) else {
             return entry.value
         }
-        return number == number.rounded() && abs(number) < Double(Int.max)
-            ? "\(Int(number))"
-            : resolved
+        return number == number.rounded() ? "\(Int(number))" : "\(number)"
+    }
+
+    @MainActor
+    public func gameEntryCurrentNumber(characterId: UUID, entryId: UUID) -> Int? {
+        guard let entry = gameEntry(characterId: characterId, entryId: entryId),
+              let current = resolvedNumber(entry.value) else {
+            return nil
+        }
+        return Int(current.rounded())
+    }
+
+    @MainActor
+    @discardableResult
+    public func setGameEntryCurrentNumber(
+        _ number: Int,
+        characterId: UUID,
+        entryId: UUID
+    ) -> Bool {
+        // Only the owning item is promoted into game memory, so the change
+        // never reaches persistence.
+        guard let ownerId = gameEntryOwnerId(characterId: characterId, entryId: entryId, depth: 0),
+              let owner = gameMemoryCopy(for: ownerId),
+              let index = owner.entries.firstIndex(where: { $0.id == entryId }) else {
+            return false
+        }
+        var entry = owner.entries[index]
+        let baseText = entry.value.split(separator: "|").first.map(String.init) ?? ""
+        let newValue: String
+        if let base = resolvedNumber(baseText) {
+            let modifier = Double(number) - base
+            if modifier == 0 {
+                newValue = baseText
+            } else if modifier == modifier.rounded() {
+                newValue = "\(baseText)|\(Int(modifier))"
+            } else {
+                newValue = "\(baseText)|\(modifier)"
+            }
+        } else if entry.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            newValue = "\(number)"
+        } else {
+            // Free text without a numeric base: overwriting it would destroy
+            // whatever the entry holds.
+            return false
+        }
+        guard entry.value != newValue else { return false }
+        entry.value = newValue
+        owner.entries[index] = entry
+        return true
+    }
+
+    /// The text as a number, with value links and "base|modifier" resolved.
+    @MainActor
+    private func resolvedNumber(_ text: String) -> Double? {
+        guard let number = calculatedValue(text, type: .decimal).flatMap(Double.init),
+              number.isFinite, abs(number) < Double(Int.max) else {
+            return nil
+        }
+        return number
+    }
+
+    /// The item that directly holds `entryId`: `characterId` itself or one of
+    /// its nested value groups.
+    @MainActor
+    private func gameEntryOwnerId(characterId: UUID, entryId: UUID, depth: Int) -> UUID? {
+        guard depth < RecursionLimits.maxValueLinkDepth else { return nil }
+        let item = gameItem(for: characterId)
+        if item.entries.contains(where: { $0.id == entryId }) {
+            return characterId
+        }
+        for entry in item.entries {
+            guard let valueId = entry.valueId,
+                  let found = gameEntryOwnerId(characterId: valueId, entryId: entryId, depth: depth + 1) else {
+                continue
+            }
+            return found
+        }
+        return nil
     }
 
     @MainActor

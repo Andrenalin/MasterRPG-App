@@ -104,6 +104,89 @@ struct BattleRoundInlineCharacterTests {
         #expect(selectionPresentation.id == combatant.id)
     }
 
+    @Test("A combatant asks for Ini/HP configuration only once a Character is assigned and a value is missing")
+    func valueConfigurationNeeds() {
+        let pin = MapPinModel(id: UUID(), name: "Goblin")
+        let characterId = UUID()
+
+        let noCharacter = BattleCombatant(pin: pin, sourceCharacterId: nil, gameCharacterId: nil)
+        #expect(!noCharacter.needsValueConfiguration)
+
+        let nothingFound = BattleCombatant(pin: pin, sourceCharacterId: characterId, gameCharacterId: characterId)
+        #expect(nothingFound.needsInitiativeConfiguration)
+        #expect(nothingFound.needsHitPointsConfiguration)
+
+        // The entry was found, but its value is not a usable number.
+        let iniWithoutValue = BattleCombatant(
+            pin: pin,
+            sourceCharacterId: characterId,
+            gameCharacterId: characterId,
+            initiativeEntryId: UUID(),
+            hitPointsEntryId: UUID()
+        )
+        #expect(iniWithoutValue.needsInitiativeConfiguration)
+        #expect(!iniWithoutValue.needsHitPointsConfiguration)
+
+        // Typed by the game master: the entry is still missing, so the row stays.
+        let typedInitiative = BattleCombatant(
+            pin: pin,
+            sourceCharacterId: characterId,
+            gameCharacterId: characterId,
+            initiative: 12,
+            hitPointsEntryId: UUID()
+        )
+        #expect(typedInitiative.needsInitiativeConfiguration)
+
+        let resolved = BattleCombatant(
+            pin: pin,
+            sourceCharacterId: characterId,
+            gameCharacterId: characterId,
+            initiative: 12,
+            initiativeEntryId: UUID(),
+            hitPointsEntryId: UUID()
+        )
+        #expect(!resolved.needsValueConfiguration)
+    }
+
+    @Test("A config row follows the missing value until the game master hides or reopens it")
+    func valueRowVisibility() {
+        let pin = MapPinModel(id: UUID(), name: "Goblin")
+        let characterId = UUID()
+        let missing = BattleCombatant(pin: pin, sourceCharacterId: characterId, gameCharacterId: characterId)
+        let resolved = BattleCombatant(
+            pin: pin,
+            sourceCharacterId: characterId,
+            gameCharacterId: characterId,
+            initiative: 12,
+            initiativeEntryId: UUID(),
+            hitPointsEntryId: UUID()
+        )
+        let noCharacter = BattleCombatant(pin: pin, sourceCharacterId: nil, gameCharacterId: nil)
+
+        let state = BattleRoundCardState()
+        #expect(state.showsValueRow(.initiative, for: missing))
+        #expect(state.showsValueRow(.hitPoints, for: missing))
+        #expect(!state.showsValueRow(.initiative, for: resolved))
+        #expect(!state.showsValueRow(.initiative, for: noCharacter))
+
+        // The row pins itself open when it appears, so it survives its value getting set.
+        state.setValueRow(.initiative, isShown: true)
+        #expect(state.showsValueRow(.initiative, for: resolved))
+        #expect(!state.showsValueRow(.hitPoints, for: resolved))
+
+        // Checkmark: hidden, even while the entry itself is still missing.
+        state.setValueRow(.initiative, isShown: false)
+        #expect(!state.showsValueRow(.initiative, for: resolved))
+        #expect(!state.showsValueRow(.initiative, for: missing))
+
+        // Reopened from the participant column.
+        state.setValueRow(.hitPoints, isShown: true)
+        #expect(state.showsValueRow(.hitPoints, for: resolved))
+
+        // Never without a Character, whatever was chosen before.
+        #expect(!state.showsValueRow(.hitPoints, for: noCharacter))
+    }
+
     private func emptyRoot() async throws -> GameRoot {
         try await MockRoot.createGameRoot()
     }

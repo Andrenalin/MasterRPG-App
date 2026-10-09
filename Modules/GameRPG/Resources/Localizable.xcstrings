@@ -1111,6 +1111,38 @@
         }
       }
     },
+    "Configure Hit Points" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trefferpunkte einstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตั้งค่าฮิตพอยต์"
+          }
+        }
+      }
+    },
+    "Configure Initiative" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Initiative einstellen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตั้งค่าอินิเชียทีฟ"
+          }
+        }
+      }
+    },
     "Connect to: %@" : {
       "localizations" : {
         "de" : {
@@ -1388,6 +1420,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ตาย"
+          }
+        }
+      }
+    },
+    "Decrease Hit Points" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trefferpunkte verringern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ลดฮิตพอยต์"
           }
         }
       }
@@ -2506,6 +2554,22 @@
         }
       }
     },
+    "Hit Points" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trefferpunkte"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฮิตพอยต์"
+          }
+        }
+      }
+    },
     "Hit Points Pattern" : {
       "localizations" : {
         "de" : {
@@ -2616,6 +2680,22 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "นำเข้าเกมที่บันทึก"
+          }
+        }
+      }
+    },
+    "Increase Hit Points" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trefferpunkte erhöhen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มฮิตพอยต์"
           }
         }
       }
