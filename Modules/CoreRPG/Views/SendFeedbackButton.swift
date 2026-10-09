@@ -82,14 +82,15 @@ private struct SendFeedbackButtonButtonView: View {
         } label: {
             Image(systemName: allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up")
                 .imageScale(.large)
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(allReported ? .teal : .white, .white)
                 .symbolEffect(.disappear, isActive: isSending)
                 .overlay {
                     Image(systemName: "wifi", variableValue: value)
                         .imageScale(.large)
                         .symbolEffect(.disappear, isActive: !isSending)
                 }
+                // After the overlay, so the sending animation follows the icon's colour:
+                // white on the selected tint, primary on the plain glass.
+                .foregroundStyle(allReported ? Color.white : Color.primary)
         }
         .selectedRoundButton(title: String(localized: "Share", bundle: .module), module: module, isSelected: allReported)
         .accessibilityLabel(

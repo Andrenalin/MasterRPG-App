@@ -56,8 +56,7 @@ private struct ShareItemViewModifierButtonView: View {
             }
         } label: {
             Image(systemName: allReported ? secondActionIcon ?? "eye" : "square.and.arrow.up")
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(allReported ? .teal : .white, .white)
+                .foregroundStyle(allReported ? Color.white : Color.primary)
             #if !os(macOS)
                 .frame(height: iconSize)
             #endif

@@ -47,11 +47,16 @@ public struct PlayerReportRow: View {
                 }
             }
             .font(.caption)
-            // Drawn over the photo or text below it: a material background keeps it legible.
-            // See CODE_AUDIT_19 §8.1.
+            // Drawn over the photo or text below it: the glass of the round module buttons
+            // (`GameWindowButtonAppearance`) keeps it legible, without `.interactive()` since
+            // the row is a caption, not a control. See CODE_AUDIT_19 §8.1.
             .padding(.horizontal, reportHorizontalInset)
             .padding(.vertical, reportVerticalInset)
+#if os(visionOS)
             .background(.regularMaterial, in: .capsule)
+#else
+            .glassEffect(.regular, in: .capsule)
+#endif
             .animation(accessibilityReduceMotion ? nil : .default, value: statuses.map(\.reported))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibilityLabel)

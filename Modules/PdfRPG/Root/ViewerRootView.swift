@@ -58,18 +58,20 @@ struct ViewerRootView: View {
                 SearchBar(searchModel: searchModel)
             }
         }
-        .toolbar {
-            if configuration.closeButton {
-                ToolbarItem(placement: .cancellationAction) {
-                    CloseButtonView(dismissAction: dismissAction)
+        .applyIf(toolbar) {
+            $0.toolbar {
+                if configuration.closeButton {
+                    ToolbarItem(placement: .cancellationAction) {
+                        CloseButtonView(dismissAction: dismissAction)
+                    }
                 }
-            }
 
 #if !os(tvOS)
-            ToolbarItem(placement: .automatic) {
-                ExtractionButtonView(model: model)
-            }
+                ToolbarItem(placement: .automatic) {
+                    ExtractionButtonView(model: model)
+                }
 #endif
+            }
         }
         .applyIf(searchBar) {
             $0.searchable(text: $searchModel.displaySearchText, placement: .automatic, prompt: Text("Find in pdf", bundle: .module))
@@ -113,8 +115,15 @@ struct ViewerRootView: View {
 }
 
 private extension ViewerRootView {
+    /// On macOS the game screen shares one window toolbar with the game's own search field,
+    /// so a shared pdf must not add toolbar items or a second `.searchable` to it
+    /// (NSToolbar raises on a duplicate `com.apple.SwiftUI.search` item).
+    var toolbar: Bool {
+        valueFor(iOS: true, macOS: !configuration.isGame, tvOS: true, visionOS: true)
+    }
+
     var searchBar: Bool {
-        valueFor(iOS: !configuration.isGame, macOS: configuration.addToolbar, tvOS: !configuration.isGame, visionOS: !configuration.isGame)
+        valueFor(iOS: !configuration.isGame, macOS: configuration.addToolbar && !configuration.isGame, tvOS: !configuration.isGame, visionOS: !configuration.isGame)
     }
     
     var entry: PdfEntryModel? {
