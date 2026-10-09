@@ -95,7 +95,9 @@ private struct SheetContextMenuLinkButton: View {
         Button {
             guard let entryId = entryModel.source.entryId,
                   let editable = rootModel.entryDataEditable(for: entryModel.source) else { return }
-            navigator.navigate(to: editable.linkSelectionDestination(itemRowModel: ItemRowModel(itemId: entryModel.source.itemId, entryId: entryId, typeId: entryModel.source.typeId)), method: .managedSheet)
+            let itemRowModel = ItemRowModel(itemId: entryModel.source.itemId, entryId: entryId, typeId: entryModel.source.typeId)
+            editable.editorModel.beginLinkSelection(for: itemRowModel, in: rootModel)
+            navigator.navigate(to: editable.linkSelectionDestination(itemRowModel: itemRowModel), method: .managedSheet)
         } label: {
             Label {
                 Text("Add Links", bundle: .module)
