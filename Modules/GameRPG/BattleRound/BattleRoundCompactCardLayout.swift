@@ -9,15 +9,29 @@ struct BattleRoundCompactCardLayout: View {
     var body: some View {
         VStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
             HStack(alignment: .top, spacing: BattleRoundSpacing.relaxed) {
-                BattleRankBadge(
-                    rank: context.presentation.rank,
-                    isActive: context.presentation.isActive
-                )
-                // See CODE_AUDIT §7.2.
-                .equatable()
+                // The badge brings its own top padding, which is the gap to
+                // the activate button here.
+                VStack(spacing: 0) {
+                    BattleActivateAttackerButton(
+                        combatant: context.presentation.attacker.combatant,
+                        isActive: context.presentation.isActive,
+                        controller: context.controller
+                    )
+                    // See CODE_AUDIT §7.2.
+                    .equatable()
+                    .labelStyle(.iconOnly)
+                    BattleRankBadge(
+                        rank: context.presentation.rank,
+                        isActive: context.presentation.isActive
+                    )
+                    // See CODE_AUDIT §7.2.
+                    .equatable()
+                }
                 BattleParticipantColumn(
                     state: context.state,
                     presentation: context.presentation.attacker,
+                    role: .attacker,
+                    cardLayout: .compact,
                     isActive: context.presentation.isActive,
                     tint: context.presentation.isActive ? .blue : .gray,
                     controller: context.controller,
@@ -27,14 +41,7 @@ struct BattleRoundCompactCardLayout: View {
                 )
                 // See CODE_AUDIT §8.3.
                 .equatable()
-                BattleAttackerDetails(
-                    combatant: context.presentation.attacker.combatant,
-                    isActive: context.presentation.isActive,
-                    controller: context.controller
-                )
-                // See CODE_AUDIT §7.2.
-                .equatable()
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Divider()
@@ -47,6 +54,7 @@ struct BattleRoundCompactCardLayout: View {
                 BattleDefenderStrip(
                     state: context.state,
                     defenders: context.presentation.defenders,
+                    cardLayout: .compact,
                     isActiveEntry: context.presentation.isActive,
                     controller: context.controller,
                     showCharacter: context.showCharacter,

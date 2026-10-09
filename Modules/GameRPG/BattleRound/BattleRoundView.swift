@@ -70,7 +70,7 @@ struct BattleRoundView: View {
 #endif
             }
             .navigationTitle(Text("Battle Round", bundle: .module))
-            .battleInlineNavigationTitle()
+            .battleHiddenNavigationBar()
         }
         .themedSurface()
         .sheet(item: $screenModel.presentation) { presentation in

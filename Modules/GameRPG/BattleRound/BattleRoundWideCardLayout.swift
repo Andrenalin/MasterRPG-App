@@ -17,6 +17,8 @@ struct BattleRoundWideCardLayout: View {
             BattleParticipantColumn(
                 state: context.state,
                 presentation: context.presentation.attacker,
+                role: .attacker,
+                cardLayout: .wide,
                 isActive: context.presentation.isActive,
                 tint: context.presentation.isActive ? .blue : .gray,
                 controller: context.controller,
@@ -40,6 +42,7 @@ struct BattleRoundWideCardLayout: View {
             BattleDefenderStrip(
                 state: context.state,
                 defenders: context.presentation.defenders,
+                cardLayout: .wide,
                 isActiveEntry: context.presentation.isActive,
                 controller: context.controller,
                 showCharacter: context.showCharacter,

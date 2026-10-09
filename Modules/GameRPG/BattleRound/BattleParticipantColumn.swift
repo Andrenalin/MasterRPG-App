@@ -9,6 +9,8 @@ import SwiftUI
 struct BattleParticipantColumn: View {
     let state: BattleRoundCardState
     let presentation: BattleRoundParticipantPresentation
+    let role: BattleRoundParticipantRole
+    let cardLayout: BattleRoundCardLayout
     let isActive: Bool
     let tint: Color
     let controller: BattleRoundController
@@ -23,35 +25,16 @@ struct BattleParticipantColumn: View {
     /// displayed frame. See CODE_AUDIT §9.5.
     private static let avatarSize: CGFloat = 48
 
-    // A hard-coded `maxWidth` ignored Dynamic Type entirely, risking illegible
-    // truncation of a free-text combatant name at larger accessibility sizes.
-    @ScaledMetric(relativeTo: .caption2) private var nameMaxWidth: CGFloat = 90
-
     var body: some View {
         VStack(alignment: .leading, spacing: BattleRoundSpacing.tight) {
-            HStack(spacing: BattleRoundSpacing.extraTight) {
-                Button(
-                    combatant.isDead ? "Mark Alive" : "Mark Dead",
-                    systemImage: combatant.isDead ? "heart.fill" : "figure.fall",
-                    action: toggleDead
-                )
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .foregroundStyle(combatant.isDead ? .green : .red)
-                .help(
-                    Text(
-                        combatant.isDead ? "Mark Alive" : "Mark Dead",
-                        bundle: .module
-                    )
-                )
-                
-                Text(combatant.name)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .frame(maxWidth: nameMaxWidth)
-                    .help(Text(verbatim: combatant.name))
-            }
-            
+            BattleParticipantNameRow(
+                combatant: combatant,
+                role: role,
+                isActive: isActive,
+                cardLayout: cardLayout,
+                toggleDead: toggleDead
+            )
+
             HStack(alignment: .center, spacing: BattleRoundSpacing.standard) {
                 Button(action: openCharacter) {
                     controller.root.photoRoot.viewController.mapImage(
@@ -273,19 +256,11 @@ extension BattleParticipantColumn: Equatable {
     /// `BattleRoundCard` excludes its own: never `Equatable`, and stable
     /// once hoisted to method references at the call site (see
     /// `BattleRoundView`).
-    ///
-    /// `nameMaxWidth` (a `@ScaledMetric`, driven by `\.sizeCategory`) is
-    /// deliberately excluded too, for the same reason `BattleRoundCard`
-    /// excludes `accessibilityReduceMotion`: it can only be read correctly
-    /// from a real installed view, so comparing it here would either always
-    /// see the environment default (masking real Dynamic Type changes) or
-    /// reintroduce the exact bug `fd8ed359` fixed for `cardLayout`. The
-    /// accepted tradeoff is that a Dynamic Type size change may not widen a
-    /// truncated name until some other compared field changes and forces a
-    /// real re-render. See CODE_AUDIT §8.3.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.state === rhs.state
             && lhs.presentation == rhs.presentation
+            && lhs.role == rhs.role
+            && lhs.cardLayout == rhs.cardLayout
             && lhs.isActive == rhs.isActive
             && lhs.tint == rhs.tint
             && lhs.controller.root === rhs.controller.root
@@ -301,6 +276,8 @@ extension BattleParticipantColumn: Equatable {
             BattleParticipantColumn(
                 state: BattleRoundCardState(),
                 presentation: participant,
+                role: .defender,
+                cardLayout: .wide,
                 isActive: true,
                 tint: .red,
                 controller: controller,

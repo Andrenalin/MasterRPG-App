@@ -10,39 +10,15 @@ struct BattleAttackerDetails: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: BattleRoundSpacing.compact) {
-            HStack(spacing: BattleRoundSpacing.tight) {
-                if combatant.isPlayer {
-                    Image(systemName: "person.fill")
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("Player", bundle: .module))
-                }
-                if combatant.isDead {
-                    Image(systemName: "person.slash")
-                        .foregroundStyle(.red)
-                        .accessibilityLabel(Text("Dead", bundle: .module))
-                }
-                if isActive {
-                    Image(systemName: "scope")
-                        .foregroundStyle(.blue)
-                        .accessibilityLabel(Text("Highlighted", bundle: .module))
-                }
-            }
-
-            Button(
-                isActive ? "Attacker" : "Activate",
-                systemImage: "scope",
-                action: activateAttacker
+            BattleAttackerStatusIcons(combatant: combatant, isActive: isActive)
+            BattleActivateAttackerButton(
+                combatant: combatant,
+                isActive: isActive,
+                controller: controller
             )
-            .buttonStyle(.borderless)
-            .controlSize(.small)
-            .disabled(isActive || combatant.isDead)
         }
         .frame(minWidth: 128, alignment: .leading)
         .padding(.top, 4)
-    }
-
-    private func activateAttacker() {
-        controller.activateAttacker(combatant.id)
     }
 }
 

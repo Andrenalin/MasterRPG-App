@@ -14,13 +14,13 @@ struct BattleRoundHeader: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: BattleRoundSpacing.loose) {
+                BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 BattleRoundHeading(
                     isRunning: isRunning,
                     round: round,
                     activeAttackerName: activeAttackerName
                 )
                 Spacer(minLength: BattleRoundSpacing.standard)
-                BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 if isRunning {
                     BattleRoundHeaderActions(controller: controller)
                 }
@@ -28,13 +28,13 @@ struct BattleRoundHeader: View {
 
             VStack(alignment: .leading, spacing: BattleRoundSpacing.standard) {
                 HStack(spacing: BattleRoundSpacing.standard) {
+                    BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                     BattleRoundHeading(
                         isRunning: isRunning,
                         round: round,
                         activeAttackerName: activeAttackerName
                     )
                     Spacer(minLength: 4)
-                    BattleRoundConfigurationButton(isExpanded: $isConfigurationExpanded)
                 }
                 if isRunning {
                     BattleRoundHeaderActions(controller: controller)
