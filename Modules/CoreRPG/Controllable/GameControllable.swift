@@ -483,6 +483,13 @@ public extension GameControllable {
 }
 
 public extension GameControllable {
+    /// Whether everyone of the running game has `itemId`, as far as this device knows. A
+    /// player device counts the game master as well. Without players nothing is shared.
+    @MainActor
+    func isSharedWithEveryone(_ itemId: UUID) -> Bool {
+        !gameModel.currentPlayers.isEmpty && allPlayersReported(for: itemId)
+    }
+
     /// Runs off the caller's (usually main) actor: parsing the byte stream reads blocks of up to
     /// 512 MB. Model creation and storage still hop to the main actor per item.
     /// See CODE_AUDIT_15 §3.3.

@@ -54,8 +54,13 @@ public struct GameShareView<Content: View>: View {
         Content.self == EmptyView.self && isShareable && root.viewControllable.sharingViewType == .share
     }
 
+    /// The game master goes by the players it lists. A player device lists no names: its
+    /// button follows its own game model, where it can share itself (Photo, 3D model).
     private func allReported(_ statuses: [PlayerReportStatus]) -> Bool {
-        !statuses.isEmpty && statuses.allSatisfy(\.reported)
+        if appGameStateModel.gameModus == .player {
+            return canShare && root.gameControllable.isSharedWithEveryone(itemId)
+        }
+        return !statuses.isEmpty && statuses.allSatisfy(\.reported)
     }
 
     @ViewBuilder
@@ -106,9 +111,9 @@ public struct GameShareView<Content: View>: View {
 // MARK: - Player report status
 
 private extension GameShareView {
-    /// Only the game master receives per-player acknowledgements for a share —
-    /// a player device has no visibility into its siblings' delivery state, so
-    /// this stays empty (and the row never appears) anywhere else.
+    /// Only the game master receives per-player acknowledgements for a share, so
+    /// this stays empty (and the row never appears) anywhere else. A player device
+    /// shows the outcome on its button alone, see `allReported(_:)`.
     var playerReportStatuses: [PlayerReportStatus] {
         guard appGameStateModel.gameModus == .master else { return [] }
         let reported = Set(root.gameControllable.gameModel.playerReport(for: itemId))
