@@ -26,8 +26,6 @@ public struct ItemHeaderEditorView: View {
     let module: NetworkModules
     let dismissAction: () -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-
     enum FocusField {
         case name
         case information
@@ -58,19 +56,7 @@ public struct ItemHeaderEditorView: View {
         }
         .frame(maxWidth: 800)
         .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .background {
-            Button {
-                withAnimation(accessibilityReduceMotion ? nil : .default) {
-                    dismissAction()
-                }
-            } label: {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-            }
-            .buttonStyle(.plain)
-            .accessibilityHidden(true)
-        }
+        .modifier(ItemHeaderEditorPlacement(dismissAction: dismissAction))
         .task {
 #if !os(tvOS)
             try? await Task.sleep(for: EditorFocus.autoFocusDelay)
@@ -118,6 +104,112 @@ private extension View {
             in: .rect(cornerRadius: 28, style: .continuous)
         )
 #endif
+    }
+}
+
+// MARK: - Placement
+
+/// Centers the card over a dimmed backdrop that dismisses the editor.
+///
+/// On iPhone and iPad the software keyboard can leave less room than the card needs. A centered
+/// card then grows out of both ends of that room and covers the navigation bar buttons, so there
+/// the card scrolls instead.
+private struct ItemHeaderEditorPlacement: ViewModifier {
+    let dismissAction: () -> Void
+
+#if os(iOS)
+    @State private var visibleHeight: CGFloat = 0
+#endif
+
+    func body(content: Content) -> some View {
+#if os(iOS)
+        ScrollView {
+            ItemHeaderEditorViewportLayout(visibleHeight: visibleHeight) {
+                content
+            }
+            .background {
+                // A scroll view takes the taps on its empty area, so the dismiss button
+                // has to be part of the scroll content.
+                ItemHeaderEditorDismissButton(dismissAction: dismissAction) {
+                    Color.clear
+                        .contentShape(.rect)
+                }
+            }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollDismissesKeyboard(.interactively)
+        .mask {
+            // Scroll content would otherwise pass under the navigation bar buttons.
+            Rectangle()
+                .ignoresSafeArea(edges: [.horizontal, .bottom])
+        }
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { newValue in
+            visibleHeight = newValue
+        }
+        .background {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+        }
+#else
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .background {
+                ItemHeaderEditorDismissButton(dismissAction: dismissAction) {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                }
+            }
+#endif
+    }
+}
+
+#if os(iOS)
+/// Offers the scroll view's visible height to the card, which a scroll view itself never does:
+/// the description gets shorter before the card has to scroll, and a card with room to spare is
+/// centered.
+private struct ItemHeaderEditorViewportLayout: Layout {
+    let visibleHeight: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let cardSize = subviews.first?.sizeThatFits(cardProposal(width: proposal.width)) ?? .zero
+        return CGSize(
+            width: proposal.width ?? cardSize.width,
+            height: max(cardSize.height, visibleHeight)
+        )
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(
+            at: CGPoint(x: bounds.midX, y: bounds.midY),
+            anchor: .center,
+            proposal: cardProposal(width: bounds.width)
+        )
+    }
+
+    private func cardProposal(width: CGFloat?) -> ProposedViewSize {
+        ProposedViewSize(width: width, height: visibleHeight)
+    }
+}
+#endif
+
+private struct ItemHeaderEditorDismissButton<Backdrop: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+
+    let dismissAction: () -> Void
+    @ViewBuilder let backdrop: Backdrop
+
+    var body: some View {
+        Button {
+            withAnimation(accessibilityReduceMotion ? nil : .default) {
+                dismissAction()
+            }
+        } label: {
+            backdrop
+        }
+        .buttonStyle(.plain)
+        .accessibilityHidden(true)
     }
 }
 
