@@ -8,6 +8,9 @@ import SwiftUI
 struct BattleRoundView: View {
     let controller: BattleRoundController
     let screenModel: BattleRoundScreenModel
+    /// Shown in the game screen's side panel instead of its own window: the panel's
+    /// content takes its top margin from `gameSidePanelContent`.
+    var isSidePanel = false
 
     @Environment(ScenesManager.self) private var scenesManager
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
@@ -85,6 +88,9 @@ struct BattleRoundView: View {
             }
             .navigationTitle(Text("Battle Round", bundle: .module))
             .battleHiddenNavigationBar()
+            .applyIf(isSidePanel) {
+                $0.gameSidePanelContent()
+            }
         }
         .themedSurface()
         .sheet(item: $screenModel.presentation) { presentation in

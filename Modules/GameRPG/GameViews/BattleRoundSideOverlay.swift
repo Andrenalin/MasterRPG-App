@@ -23,7 +23,7 @@ struct BattleRoundSideOverlay: View {
 
     var body: some View {
         let _ = Self.printViewChangesOnlyInDebug()
-        BattleRoundView(controller: root.battleRoundController, screenModel: screenModel)
+        BattleRoundView(controller: root.battleRoundController, screenModel: screenModel, isSidePanel: true)
         .environment(root.mapRoot)
         .onChange(of: root.battleRoundController.model.isRunning) { wasRunning, isRunning in
             guard wasRunning, !isRunning else { return }
