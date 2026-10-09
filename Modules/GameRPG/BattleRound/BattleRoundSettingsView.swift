@@ -147,7 +147,7 @@ private struct BattleRoundPatternRow: View {
 
 #Preview("Battle settings", traits: .mockData) {
     let controller = BattleRoundController.preview()
-    let screenModel = BattleRoundScreenModel(model: controller.model, layout: .wide)
+    let screenModel = BattleRoundScreenModel(model: controller.model)
     let defaults = UserDefaults(suiteName: "BattleRoundSettingsPreview") ?? .standard
     let settings = BattleRoundSettingsModel(defaults: defaults)
 

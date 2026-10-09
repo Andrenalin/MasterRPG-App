@@ -11,7 +11,7 @@ struct BattleRoundSideOverlay: View {
     init(root: GameRoot) {
         self.root = root
         _screenModel = State(
-            wrappedValue: BattleRoundScreenModel(model: root.battleRoundController.model, layout: .compact)
+            wrappedValue: BattleRoundScreenModel(model: root.battleRoundController.model)
         )
     }
 

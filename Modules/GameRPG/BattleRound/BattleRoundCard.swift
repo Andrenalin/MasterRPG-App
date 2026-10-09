@@ -36,10 +36,8 @@ final class BattleRoundCardState {
     }
 }
 
-/// The properties `BattleRoundWideCardLayout` and `BattleRoundCompactCardLayout`
-/// both need, bundled into one struct so a future added field only needs
-/// declaring once instead of twice — the two layouts' own `body` arrangements
-/// remain genuinely different and stay separate types. See CODE_AUDIT §9.9.
+/// Everything `BattleRoundCompactCardLayout` needs from its card, bundled
+/// into one struct. See CODE_AUDIT §9.9.
 struct BattleRoundCardLayoutContext {
     let state: BattleRoundCardState
     let presentation: BattleRoundCardPresentation
@@ -56,12 +54,14 @@ extension BattleCombatant {
 struct BattleRoundCard: View {
     let presentation: BattleRoundCardPresentation
     let controller: BattleRoundController
-    let cardLayout: BattleRoundCardLayout
     let showCharacter: @MainActor (BattleCombatant) -> Void
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
     let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    // The sidebar is narrower than this anyway; in the battle window it keeps
+    // the card from stretching across the whole window.
+    @ScaledMetric(relativeTo: .body) private var maxCardWidth: CGFloat = 520
     @State private var cardState = BattleRoundCardState()
 
     var body: some View {
@@ -81,15 +81,9 @@ struct BattleRoundCard: View {
             selectInitiative: selectInitiative
         )
         VStack(spacing: 0) {
-            Group {
-                switch cardLayout {
-                case .wide:
-                    BattleRoundWideCardLayout(context: layoutContext)
-                case .compact:
-                    BattleRoundCompactCardLayout(context: layoutContext)
-                }
-            }
-            .padding(10)
+            BattleRoundCompactCardLayout(context: layoutContext)
+                .frame(maxWidth: maxCardWidth)
+                .padding(10)
             #if !os(visionOS)
             // The active card is a darker shade of the same glass, not a
             // saturated color: buttons and text keep their contrast. The blue
@@ -154,23 +148,21 @@ extension BattleRoundCard: Equatable {
     /// references at the call site (see `BattleRoundView`) — always behave the
     /// same regardless of which render's instance gets kept.
     ///
-    /// `cardLayout` must be a plain stored property, not `@Environment`:
-    /// `.equatable()` invokes this `==` on struct copies that were never
-    /// installed into the view tree, and reading an `@Environment`-wrapped
-    /// property outside that installation always silently returns its
-    /// default value (with a runtime diagnostic) instead of the real one.
+    /// Nothing `@Environment`-sourced may be compared here: `.equatable()`
+    /// invokes this `==` on struct copies that were never installed into the
+    /// view tree, and reading an `@Environment`-wrapped property outside that
+    /// installation always silently returns its default value (with a
+    /// runtime diagnostic) instead of the real one.
     ///
-    /// `accessibilityReduceMotion` (also `@Environment`) is deliberately left
-    /// out of this comparison for the same reason — comparing it here would
-    /// just compare the environment default against itself, not the real
-    /// setting. The accepted tradeoff: toggling Reduce Motion while a card's
+    /// `accessibilityReduceMotion` is therefore deliberately left out of this
+    /// comparison — comparing it here would just compare the environment
+    /// default against itself, not the real setting. The accepted tradeoff: toggling Reduce Motion while a card's
     /// other compared state is unchanged may leave its `.animation` modifier
     /// at whatever it captured on the last real re-render, until an
     /// unrelated field change forces one. See CODE_AUDIT §8.2.
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.presentation == rhs.presentation
             && lhs.controller.root === rhs.controller.root
-            && lhs.cardLayout == rhs.cardLayout
     }
 }
 
@@ -182,7 +174,6 @@ extension BattleRoundCard: Equatable {
         BattleRoundCard(
             presentation: card,
             controller: controller,
-            cardLayout: .wide,
             showCharacter: { _ in },
             selectHitPoints: { _ in },
             selectInitiative: { _ in }

@@ -6,7 +6,6 @@ import SwiftUI
 struct BattleDefenderStrip: View {
     let state: BattleRoundCardState
     let defenders: [BattleRoundParticipantPresentation]
-    let cardLayout: BattleRoundCardLayout
     let isActiveEntry: Bool
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
@@ -30,7 +29,6 @@ struct BattleDefenderStrip: View {
                             state: state,
                             presentation: defender,
                             role: .defender,
-                            cardLayout: cardLayout,
                             isActive: isActiveEntry,
                             tint: isActiveEntry ? .red : .gray,
                             controller: controller,
@@ -55,7 +53,6 @@ struct BattleDefenderStrip: View {
         BattleDefenderStrip(
             state: BattleRoundCardState(),
             defenders: card.defenders,
-            cardLayout: .wide,
             isActiveEntry: card.isActive,
             controller: controller,
             showCharacter: { _ in }
@@ -68,7 +65,6 @@ struct BattleDefenderStrip: View {
     BattleDefenderStrip(
         state: BattleRoundCardState(),
         defenders: [],
-        cardLayout: .wide,
         isActiveEntry: false,
         controller: .preview(),
         showCharacter: { _ in }

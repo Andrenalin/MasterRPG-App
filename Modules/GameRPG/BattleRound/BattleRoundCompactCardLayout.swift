@@ -3,6 +3,7 @@
 import MapRPG
 import SwiftUI
 
+/// The one battle card layout, used by the sidebar and the battle window.
 struct BattleRoundCompactCardLayout: View {
     let context: BattleRoundCardLayoutContext
 
@@ -31,7 +32,6 @@ struct BattleRoundCompactCardLayout: View {
                     state: context.state,
                     presentation: context.presentation.attacker,
                     role: .attacker,
-                    cardLayout: .compact,
                     isActive: context.presentation.isActive,
                     tint: context.presentation.isActive ? .blue : .gray,
                     controller: context.controller,
@@ -44,7 +44,6 @@ struct BattleRoundCompactCardLayout: View {
 
             BattleAttackerConfigRows(
                 combatant: context.presentation.attacker.combatant,
-                cardLayout: .compact,
                 state: context.state,
                 controller: context.controller,
                 selectHitPoints: context.selectHitPoints,
@@ -61,7 +60,6 @@ struct BattleRoundCompactCardLayout: View {
                 BattleDefenderStrip(
                     state: context.state,
                     defenders: context.presentation.defenders,
-                    cardLayout: .compact,
                     isActiveEntry: context.presentation.isActive,
                     controller: context.controller,
                     showCharacter: context.showCharacter

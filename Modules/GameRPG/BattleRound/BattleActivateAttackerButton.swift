@@ -4,8 +4,7 @@ import MapRPG
 import SwiftUI
 
 /// The "make this combatant the attacker" action of a battle card. The label
-/// style comes from the environment: the wide card shows title and icon, the
-/// compact card only the icon.
+/// style comes from the environment; the card shows only the icon.
 struct BattleActivateAttackerButton: View {
     let combatant: BattleCombatant
     let isActive: Bool

@@ -32,7 +32,6 @@ extension BattleCombatant {
 /// until the game master confirms it; the participant column can reopen it.
 struct BattleAttackerConfigRows: View {
     let combatant: BattleCombatant
-    let cardLayout: BattleRoundCardLayout
     let state: BattleRoundCardState
     let controller: BattleRoundController
     let selectHitPoints: @MainActor (BattleCombatant) -> Void
@@ -54,7 +53,6 @@ struct BattleAttackerConfigRows: View {
                     BattleValueConfigRow(
                         kind: .initiative,
                         combatant: combatant,
-                        cardLayout: cardLayout,
                         state: state,
                         controller: controller,
                         select: selectInitiative
@@ -64,17 +62,12 @@ struct BattleAttackerConfigRows: View {
                     BattleValueConfigRow(
                         kind: .hitPoints,
                         combatant: combatant,
-                        cardLayout: cardLayout,
                         state: state,
                         controller: controller,
                         select: selectHitPoints
                     )
                 }
             }
-            // The compact card gives the rows its full width. The wide card
-            // is sized by its content, so the rows keep their natural width
-            // instead of pulling the card to the window's width.
-            .fixedSize(horizontal: cardLayout == .wide, vertical: false)
         }
     }
 }
@@ -83,17 +76,12 @@ struct BattleAttackerConfigRows: View {
 private struct BattleValueConfigRow: View {
     let kind: BattleValueKind
     let combatant: BattleCombatant
-    let cardLayout: BattleRoundCardLayout
     let state: BattleRoundCardState
     let controller: BattleRoundController
     let select: @MainActor (BattleCombatant) -> Void
 
     @State private var text = ""
     @FocusState private var isFocused: Bool
-
-    // Wide card only: room for a few digits. The compact card lets the field
-    // fill the row.
-    @ScaledMetric(relativeTo: .body) private var wideFieldWidth: CGFloat = 72
 
     var body: some View {
         let value = currentValue
@@ -108,24 +96,17 @@ private struct BattleValueConfigRow: View {
 
                 // Committed on submit or when focus leaves, not per keystroke:
                 // a new initiative re-sorts the turn order.
-                // No placeholder in the wide card: its short field would
-                // only show a truncated one.
-                TextField(
-                    kind.fieldTitle,
-                    text: $text,
-                    prompt: cardLayout == .wide ? Text(verbatim: "") : nil
-                )
-                .monospacedDigit()
-                .multilineTextAlignment(.center)
-                .frame(width: cardLayout == .wide ? wideFieldWidth : nil)
-                .focused($isFocused)
-                .onSubmit(commit)
-                .submitLabel(.done)
+                TextField(kind.fieldTitle, text: $text)
+                    .monospacedDigit()
+                    .multilineTextAlignment(.center)
+                    .focused($isFocused)
+                    .onSubmit(commit)
+                    .submitLabel(.done)
 #if !os(macOS)
-                .keyboardType(.numbersAndPunctuation)
+                    .keyboardType(.numbersAndPunctuation)
 #endif
 #if !os(tvOS)
-                .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.roundedBorder)
 #endif
 
                 BattleConfigIconButton(title: kind.increaseTitle, systemImage: "plus") {
@@ -292,7 +273,6 @@ struct BattleValueRowRevealButton: View {
         VStack {
             BattleAttackerConfigRows(
                 combatant: card.attacker.combatant,
-                cardLayout: .compact,
                 state: BattleRoundCardState(),
                 controller: controller,
                 selectHitPoints: { _ in },

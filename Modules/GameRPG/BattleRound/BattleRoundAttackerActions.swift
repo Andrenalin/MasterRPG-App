@@ -56,18 +56,6 @@ struct BattleRoundAttackerActions: View {
             }
         }
 
-        if presentation.canReceiveRoll {
-            Button {
-                controller.selectRollRecipient(combatant.id)
-            } label: {
-                Label {
-                    Text("Roll Target", bundle: .module)
-                } icon: {
-                    Image(systemName: presentation.isRollRecipient ? "dice.fill" : "dice")
-                }
-            }
-        }
-
         if canMakeActive {
             Button {
                 controller.activateAttacker(combatant.id)

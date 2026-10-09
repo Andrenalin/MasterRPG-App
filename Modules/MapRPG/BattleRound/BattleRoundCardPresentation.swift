@@ -2,11 +2,6 @@
 
 import Foundation
 
-public enum BattleRoundCardLayout: Sendable, Equatable {
-    case compact
-    case wide
-}
-
 public struct BattleRoundParticipantPresentation: Identifiable, Equatable {
     public let combatant: BattleCombatant
     public let rolls: [BattleRollResult]

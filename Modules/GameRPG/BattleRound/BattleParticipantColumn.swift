@@ -15,7 +15,6 @@ struct BattleParticipantColumn: View {
     let state: BattleRoundCardState
     let presentation: BattleRoundParticipantPresentation
     let role: BattleRoundParticipantRole
-    let cardLayout: BattleRoundCardLayout
     let isActive: Bool
     let tint: Color
     let controller: BattleRoundController
@@ -33,7 +32,6 @@ struct BattleParticipantColumn: View {
             BattleParticipantNameRow(
                 combatant: combatant,
                 role: role,
-                cardLayout: cardLayout,
                 toggleDead: toggleDead
             )
 
@@ -161,11 +159,11 @@ struct BattleParticipantColumn: View {
                     )
                 }
 
-                // Only the compact card's attacker owns the whole row.
+                // Only the attacker owns the whole row.
                 BattleRollResults(
                     results: presentation.rolls,
                     tint: tint,
-                    fillsRow: cardLayout == .compact && role == .attacker
+                    fillsRow: role == .attacker
                 )
             }
         }
@@ -269,7 +267,6 @@ extension BattleParticipantColumn: Equatable {
         lhs.state === rhs.state
             && lhs.presentation == rhs.presentation
             && lhs.role == rhs.role
-            && lhs.cardLayout == rhs.cardLayout
             && lhs.isActive == rhs.isActive
             && lhs.tint == rhs.tint
             && lhs.controller.root === rhs.controller.root
@@ -286,7 +283,6 @@ extension BattleParticipantColumn: Equatable {
                 state: BattleRoundCardState(),
                 presentation: participant,
                 role: .defender,
-                cardLayout: .wide,
                 isActive: true,
                 tint: .red,
                 controller: controller,

@@ -143,7 +143,7 @@ private extension BattleRoundView {
     let controller = BattleRoundController.preview()
     BattleRoundView(
         controller: controller,
-        screenModel: BattleRoundScreenModel(model: controller.model, layout: .wide)
+        screenModel: BattleRoundScreenModel(model: controller.model)
     )
     .setAppSizeMode()
     .environment(AppFocusModel())

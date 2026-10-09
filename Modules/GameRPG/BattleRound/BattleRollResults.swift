@@ -15,6 +15,9 @@ struct BattleRollResults: View {
     @ScaledMetric(relativeTo: .caption2) private var stripWidth: CGFloat = 76
     @ScaledMetric(relativeTo: .caption2) private var stripHeight: CGFloat = 25
 
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var scrollPosition = ScrollPosition(edge: .trailing)
+
     var body: some View {
         if !results.isEmpty {
             ScrollView(.horizontal) {
@@ -25,6 +28,15 @@ struct BattleRollResults: View {
                 }
             }
             .scrollIndicators(.hidden)
+            // The newest roll is the one that matters: start at the end and
+            // move there whenever a roll is added.
+            .scrollPosition($scrollPosition)
+            .defaultScrollAnchor(.trailing, for: .initialOffset)
+            .onChange(of: results.last?.id) {
+                withAnimation(accessibilityReduceMotion ? nil : .default) {
+                    scrollPosition.scrollTo(edge: .trailing)
+                }
+            }
             .frame(
                 minWidth: fillsRow ? nil : stripWidth,
                 maxWidth: fillsRow ? .infinity : stripWidth,
@@ -110,5 +122,15 @@ extension BattleRollOutcome {
         fillsRow: true
     )
     .frame(width: 300)
+    .padding()
+}
+
+#Preview("Overflowing strip starts at the newest roll") {
+    let combatantId = UUID()
+
+    BattleRollResults(
+        results: (1...12).map { BattleRollResult(combatantId: combatantId, total: $0) },
+        tint: .blue
+    )
     .padding()
 }
