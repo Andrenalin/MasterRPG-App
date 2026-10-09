@@ -344,6 +344,38 @@ struct BattleRoundModelTests {
         #expect(Set(entry.rolls.map(\.id)).count == 3)
     }
 
+    @Test("A roll keeps its critical or fumble outcome, and an older payload without one still decodes")
+    func rollOutcomeIsStoredAndOptionalOnTheWire() throws {
+        // Given
+        let sut = BattleRoundModel()
+        let attacker = combatant(name: "Attacker", highlighted: true)
+        sut.begin(mapId: UUID(), players: [attacker], roomCombatants: [], initiativeOrder: .descending)
+        #expect(sut.activateAttacker(attacker.id))
+
+        // When
+        #expect(sut.addRoll(combatantId: attacker.id, total: 20, expression: "d20", outcome: .critical))
+        #expect(sut.addRoll(combatantId: attacker.id, total: 1, expression: "d20", outcome: .fumble))
+        #expect(sut.addRoll(combatantId: attacker.id, total: 9, expression: "d20"))
+
+        // Then
+        let entry = try #require(sut.activeEntry)
+        #expect(entry.rolls.map(\.outcome) == [.critical, .fumble, nil])
+
+        let roundTrip = try JSONDecoder().decode(
+            BattleRollResult.self,
+            from: JSONEncoder().encode(entry.rolls[0])
+        )
+        #expect(roundTrip == entry.rolls[0])
+
+        // A roll encoded before `outcome` existed.
+        let legacy = Data("""
+        {"id":"\(UUID().uuidString)","combatantId":"\(attacker.id.uuidString)","total":14,"timestamp":0}
+        """.utf8)
+        let decoded = try JSONDecoder().decode(BattleRollResult.self, from: legacy)
+        #expect(decoded.total == 14)
+        #expect(decoded.outcome == nil)
+    }
+
     @Test("Surprise accepts new combatants and records rolls on their own rows")
     func preparesSurpriseCombatantsAndRolls() throws {
         // Given

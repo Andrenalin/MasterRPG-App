@@ -10,6 +10,7 @@ extension BattleRoundModel {
         combatantId: UUID,
         total: Int,
         expression: String?,
+        outcome: BattleRollOutcome? = nil,
         timestamp: Date = .now
     ) -> Bool {
         let entryIndex: Int
@@ -35,6 +36,7 @@ extension BattleRoundModel {
                 combatantId: combatantId,
                 total: total,
                 expression: expression,
+                outcome: outcome,
                 timestamp: timestamp
             )
         )

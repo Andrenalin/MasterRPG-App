@@ -40,6 +40,12 @@ final class BattleRoundScreenModel {
 
     private let model: BattleRoundModel
 
+    /// The id of the card whose attacker has the turn (a card's id is its
+    /// entry's id). The list scrolls it to the top when the turn moves on.
+    var activeCardId: UUID? {
+        model.activeEntry?.id
+    }
+
     var activeAttackerName: String? {
         guard let entry = model.activeEntry else { return nil }
         return model.attacker(for: entry)?.name

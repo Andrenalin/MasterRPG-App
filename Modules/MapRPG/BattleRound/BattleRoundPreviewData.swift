@@ -78,6 +78,7 @@ public enum BattleRoundPreviewData {
             combatantId: players[0].id,
             total: 17,
             expression: "1d20 + 4",
+            outcome: .critical,
             timestamp: Date(timeIntervalSince1970: 1_767_225_600)
         )
         _ = model.addRoll(

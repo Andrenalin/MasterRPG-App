@@ -10,6 +10,8 @@ struct BattleRoundView: View {
     let screenModel: BattleRoundScreenModel
 
     @Environment(ScenesManager.self) private var scenesManager
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @State private var scrollPosition = ScrollPosition()
 
     private var root: MapRootModel { controller.root.mapRoot }
 
@@ -63,6 +65,18 @@ struct BattleRoundView: View {
                                 start: { controller.start() }
                             )
                         }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollPosition($scrollPosition)
+                // The turn moved on: bring the new attacker's card to the
+                // top. The previous card collapses its character sheet in the
+                // same update, which would otherwise leave the list wherever
+                // that sheet had pushed it.
+                .onChange(of: screenModel.activeCardId) { _, cardId in
+                    guard let cardId else { return }
+                    withAnimation(accessibilityReduceMotion ? nil : .default) {
+                        scrollPosition.scrollTo(id: cardId, anchor: .top)
                     }
                 }
 #if os(tvOS)

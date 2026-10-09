@@ -3,11 +3,10 @@
 import MapRPG
 import SwiftUI
 
-/// The attacker's status row (player, dead, highlighted) shared by the wide
-/// and compact battle cards.
+/// The attacker's status row (player, dead) shared by the wide and compact
+/// battle cards.
 struct BattleAttackerStatusIcons: View, Equatable {
     let combatant: BattleCombatant
-    let isActive: Bool
     var showsDead = true
 
     var body: some View {
@@ -22,11 +21,6 @@ struct BattleAttackerStatusIcons: View, Equatable {
                     .foregroundStyle(.red)
                     .accessibilityLabel(Text("Dead", bundle: .module))
             }
-            if isActive {
-                Image(systemName: "scope")
-                    .foregroundStyle(.blue)
-                    .accessibilityLabel(Text("Highlighted", bundle: .module))
-            }
         }
     }
 }
@@ -35,10 +29,7 @@ struct BattleAttackerStatusIcons: View, Equatable {
     let model = BattleRoundController.preview().model
 
     if let card = model.cardPresentations.first {
-        BattleAttackerStatusIcons(
-            combatant: card.attacker.combatant,
-            isActive: card.isActive
-        )
+        BattleAttackerStatusIcons(combatant: card.attacker.combatant)
         .padding()
     }
 }

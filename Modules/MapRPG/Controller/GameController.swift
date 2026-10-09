@@ -175,7 +175,8 @@ public protocol MapGameStorable: Sendable {
         itemId: UUID,
         combatantId: UUID,
         total: Int,
-        expression: String?
+        expression: String?,
+        outcome: BattleRollOutcome?
     ) -> Bool
     @MainActor func selectBattleRollRecipient(
         itemId: UUID,

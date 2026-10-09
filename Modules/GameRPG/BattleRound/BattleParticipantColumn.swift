@@ -30,7 +30,6 @@ struct BattleParticipantColumn: View {
             BattleParticipantNameRow(
                 combatant: combatant,
                 role: role,
-                isActive: isActive,
                 cardLayout: cardLayout,
                 toggleDead: toggleDead
             )
@@ -165,7 +164,12 @@ struct BattleParticipantColumn: View {
                     )
                 }
 
-                BattleRollResults(results: presentation.rolls, tint: tint)
+                // Only the compact card's attacker owns the whole row.
+                BattleRollResults(
+                    results: presentation.rolls,
+                    tint: tint,
+                    fillsRow: cardLayout == .compact && role == .attacker
+                )
             }
         }
         .opacity(combatant.isDead ? 0.62 : 1)

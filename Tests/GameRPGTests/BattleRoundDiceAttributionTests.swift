@@ -92,7 +92,18 @@ struct BattleRoundDiceAttributionTests {
         #expect(battle.rolls(for: monster.id, in: updatedMonsterEntry).map(\.total) == [11, 8])
     }
 
-    private func result(characterId: UUID?, total: Int) -> DiceResultModel {
+    @Test("A coup is stored as a critical roll and a fumble as a fumble")
+    func diceResultMapsToBattleOutcome() {
+        #expect(BattleRoundController.battleOutcome(of: result(characterId: nil, total: 20, result: .coup)) == .critical)
+        #expect(BattleRoundController.battleOutcome(of: result(characterId: nil, total: 1, result: .fumble)) == .fumble)
+        #expect(BattleRoundController.battleOutcome(of: result(characterId: nil, total: 12)) == nil)
+    }
+
+    private func result(
+        characterId: UUID?,
+        total: Int,
+        result: DiceResultModel.DiceResult = .rolled
+    ) -> DiceResultModel {
         let category = characterId.map {
             ResultCategory(id: $0, module: .value)
         } ?? ResultCategory(id: UUID(), module: .dice)
@@ -104,7 +115,7 @@ struct BattleRoundDiceAttributionTests {
         )
         return DiceResultModel(
             diceModel: dice,
-            result: .rolled,
+            result: result,
             values: "d20",
             sum: total,
             checked: false

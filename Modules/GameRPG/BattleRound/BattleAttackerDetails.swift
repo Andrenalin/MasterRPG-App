@@ -10,7 +10,7 @@ struct BattleAttackerDetails: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: BattleRoundSpacing.compact) {
-            BattleAttackerStatusIcons(combatant: combatant, isActive: isActive)
+            BattleAttackerStatusIcons(combatant: combatant)
             BattleActivateAttackerButton(
                 combatant: combatant,
                 isActive: isActive,

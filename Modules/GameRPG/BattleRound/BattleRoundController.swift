@@ -242,7 +242,8 @@ struct BattleRoundController: Sendable {
     func addRoll(
         combatantId: UUID,
         total: Int,
-        expression: String? = nil
+        expression: String? = nil,
+        outcome: BattleRollOutcome? = nil
     ) -> Bool {
         guard let mapId = authorizedMapId else {
             return false
@@ -251,7 +252,8 @@ struct BattleRoundController: Sendable {
             itemId: mapId,
             combatantId: combatantId,
             total: total,
-            expression: expression
+            expression: expression,
+            outcome: outcome
         )
     }
 
@@ -343,8 +345,18 @@ struct BattleRoundController: Sendable {
         _ = addRoll(
             combatantId: combatantId,
             total: diceResult.sum,
-            expression: diceResult.values
+            expression: diceResult.values,
+            outcome: Self.battleOutcome(of: diceResult)
         )
+    }
+
+    /// The dice module's coup is the battle's critical.
+    static func battleOutcome(of diceResult: DiceResultModel) -> BattleRollOutcome? {
+        switch diceResult.result {
+        case .coup: .critical
+        case .fumble: .fumble
+        case .rolled, .notRolled: nil
+        }
     }
 
     // MARK: - Value-entry assignment

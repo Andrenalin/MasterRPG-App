@@ -9,7 +9,6 @@ import SwiftUI
 struct BattleParticipantNameRow: View {
     let combatant: BattleCombatant
     let role: BattleRoundParticipantRole
-    let isActive: Bool
     let cardLayout: BattleRoundCardLayout
     let toggleDead: @MainActor () -> Void
 
@@ -28,11 +27,7 @@ struct BattleParticipantNameRow: View {
                 BattleParticipantName(name: combatant.name)
                 if role == .attacker {
                     // The trailing toggle already tells alive from dead.
-                    BattleAttackerStatusIcons(
-                        combatant: combatant,
-                        isActive: isActive,
-                        showsDead: false
-                    )
+                    BattleAttackerStatusIcons(combatant: combatant, showsDead: false)
                     .imageScale(.small)
                     .padding(.leading, BattleRoundSpacing.tight)
                 }
@@ -85,14 +80,12 @@ private struct BattleDeadToggleButton: View {
             BattleParticipantNameRow(
                 combatant: card.attacker.combatant,
                 role: .attacker,
-                isActive: card.isActive,
                 cardLayout: .wide,
                 toggleDead: {}
             )
             BattleParticipantNameRow(
                 combatant: card.attacker.combatant,
                 role: .attacker,
-                isActive: card.isActive,
                 cardLayout: .compact,
                 toggleDead: {}
             )

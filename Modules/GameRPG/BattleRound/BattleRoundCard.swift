@@ -91,9 +91,12 @@ struct BattleRoundCard: View {
             }
             .padding(10)
             #if !os(visionOS)
+            // The active card is a darker shade of the same glass, not a
+            // saturated color: buttons and text keep their contrast. The blue
+            // leading bar and rank badge mark the turn.
             .glassEffect(
                 presentation.isActive
-                    ? .regular.tint(.blue)
+                    ? .regular.tint(.black.opacity(0.18))
                     : .regular,
                 in: .rect(cornerRadius: 12)
             )

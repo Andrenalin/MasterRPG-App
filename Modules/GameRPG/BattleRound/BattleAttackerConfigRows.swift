@@ -280,7 +280,6 @@ struct BattleValueRowRevealButton: View {
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
         .imageScale(.small)
-        .foregroundStyle(.secondary)
         .help(Text(kind.configureTitle))
     }
 }

@@ -257,13 +257,15 @@ extension GameController {
         itemId: UUID,
         combatantId: UUID,
         total: Int,
-        expression: String?
+        expression: String?,
+        outcome: BattleRollOutcome? = nil
     ) -> Bool {
         guard battleRoundModel.mapId == itemId else { return false }
         return battleRoundModel.addRoll(
             combatantId: combatantId,
             total: total,
-            expression: expression
+            expression: expression,
+            outcome: outcome
         )
     }
 

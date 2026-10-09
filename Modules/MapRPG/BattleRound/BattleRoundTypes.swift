@@ -20,18 +20,26 @@ public enum BattleValueKind: Equatable, Sendable {
     case hitPoints
 }
 
+/// A roll the dice rules flagged as special. Plain rolls carry none.
+public enum BattleRollOutcome: String, Codable, Equatable, Sendable {
+    case critical
+    case fumble
+}
+
 public struct BattleRollResult: Identifiable, Codable, Equatable, Sendable {
     public init(
         id: UUID = UUID(),
         combatantId: UUID,
         total: Int,
         expression: String? = nil,
+        outcome: BattleRollOutcome? = nil,
         timestamp: Date = .now
     ) {
         self.id = id
         self.combatantId = combatantId
         self.total = total
         self.expression = expression
+        self.outcome = outcome
         self.timestamp = timestamp
     }
 
@@ -39,6 +47,8 @@ public struct BattleRollResult: Identifiable, Codable, Equatable, Sendable {
     public let combatantId: UUID
     public let total: Int
     public let expression: String?
+    /// Optional, so a battle state sent by an older app version still decodes.
+    public let outcome: BattleRollOutcome?
     public let timestamp: Date
 }
 
