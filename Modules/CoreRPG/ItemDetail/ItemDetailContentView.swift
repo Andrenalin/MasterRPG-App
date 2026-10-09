@@ -53,7 +53,7 @@ struct ItemDetailContentView<Editor: View, LinkTypes: LinkDataTransferable>: Vie
         }
         .animation(accessibilityReduceMotion ? nil : .easeInOut, value: model.url)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .applyFileDropIfNeeded(model: model, fileTypes: fileTypes, root: root)
+        .modifier(FileDropModifier(model: model, fileTypes: fileTypes, root: root))
         .modifier(OpenFileViewerViewModifier(
             model: model,
             openFileWindowModel: root.openFileWindowModel,
@@ -224,28 +224,31 @@ private struct ItemHeaderEditorContentView: View {
     }
 }
 
-private extension View {
-    @ViewBuilder
-    func applyFileDropIfNeeded(
-        model: any ItemDataAccessible,
-        fileTypes: [UTType],
-        root: any ItemRootControllable
-    ) -> some View {
+private struct FileDropModifier: ViewModifier {
+    let model: any ItemDataAccessible
+    let fileTypes: [UTType]
+    let root: any ItemRootControllable
+
+    @State private var replacementConfirmation = FileReplacementConfirmation()
+
+    func body(content: Content) -> some View {
 #if !os(tvOS)
         if model.category != .folder && !fileTypes.isEmpty {
-            self.onDrop(of: [.fileURL], delegate: FileDropDelegate(
-                for: fileTypes,
-                updateFile: { url in
-                    Task {
-                        await root.editControllable.resetFile(url: url, itemId: model.id)
+            content
+                .onDrop(of: [.fileURL], delegate: FileDropDelegate(
+                    for: fileTypes,
+                    updateFile: { [replacementConfirmation, editControllable = root.editControllable, itemId = model.id] url in
+                        Task {
+                            await replacementConfirmation.resetFile(url: url, itemId: itemId, editControllable: editControllable)
+                        }
                     }
-                }
-            ))
+                ))
+                .fileReplacementAlert(replacementConfirmation)
         } else {
-            self
+            content
         }
 #else
-        self
+        content
 #endif
     }
 }

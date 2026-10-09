@@ -74,6 +74,9 @@ private struct InlineImporterContentView: View {
     @State private var showRemoteUrlImporter = false
     @State private var showScanner = false
     @State private var importErrorMessage: String?
+    @State private var replacementConfirmation = FileReplacementConfirmation()
+    /// What happens to the item's file once a scan replaces it, asked before the scanner opens.
+    @State private var scannerReplacedFile: ReplacedFileDisposal = .delete
 
     var body: some View {
         ImporterFanView(
@@ -95,7 +98,7 @@ private struct InlineImporterContentView: View {
             switch result {
             case .success(let url):
                 Task {
-                    await root.editController.resetFile(url: url, itemId: itemId)
+                    await replacementConfirmation.resetFile(url: url, itemId: itemId, editControllable: root.editController)
                 }
             case .failure(let error):
                 importErrorMessage = error.localizedDescription
@@ -104,7 +107,8 @@ private struct InlineImporterContentView: View {
         .remoteFileURLImporter(
             isPresented: $showRemoteUrlImporter,
             editControllable: root.editController,
-            itemId: itemId
+            itemId: itemId,
+            replacementConfirmation: replacementConfirmation
         )
 #endif
 #if os(iOS) && !targetEnvironment(simulator)
@@ -126,8 +130,8 @@ private struct InlineImporterContentView: View {
             // setDrawableSize width=0.000000 height=0.000000" — camera hardware active,
             // frames arriving, nothing rendered). Presenting the plain view removes that
             // extra layer rather than trying to work around it.
-            Scanner3DRootView(itemId: itemId) { url in
-                await root.editController.resetFile(url: url, itemId: itemId)
+            Scanner3DRootView(itemId: itemId) { [replaced = scannerReplacedFile] url in
+                await root.editController.resetFile(url: url, itemId: itemId, replaced: replaced)
             }
         }
         .onChange(of: showScanner) { _, isShowing in
@@ -135,6 +139,7 @@ private struct InlineImporterContentView: View {
         }
 #endif
         .importFailureAlert(message: $importErrorMessage)
+        .fileReplacementAlert(replacementConfirmation)
     }
 
     /// Only the importers this device can use: the 3D scanner needs object capture support.
@@ -158,7 +163,18 @@ private struct InlineImporterContentView: View {
         switch type {
         case .file: showImporter.toggle()
         case .url: showRemoteUrlImporter.toggle()
-        case .scanner: showScanner.toggle()
+        case .scanner: openScanner()
+        }
+    }
+
+    /// Opens the scanner, after asking what happens to the file the item already has. The
+    /// scanner hands over its model from inside its own sheets, where this view's alert cannot
+    /// be shown, so the question comes first; a cancelled scan replaces and deletes nothing.
+    private func openScanner() {
+        Task {
+            guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: itemId, editControllable: root.editController) else { return }
+            scannerReplacedFile = replaced
+            showScanner = true
         }
     }
 }

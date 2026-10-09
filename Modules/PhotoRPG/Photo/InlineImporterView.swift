@@ -57,6 +57,7 @@ private struct InlineImporterContentView: View {
     @State private var showLibrary = false
     @State private var showImagePlayground = false
     @State private var importErrorMessage: String?
+    @State private var replacementConfirmation = FileReplacementConfirmation()
 
     var body: some View {
         ImporterFanView(
@@ -72,7 +73,7 @@ private struct InlineImporterContentView: View {
             switch result {
             case .success(let url):
                 Task {
-                    await root.editController.resetFile(url: url, itemId: itemId)
+                    await replacementConfirmation.resetFile(url: url, itemId: itemId, editControllable: root.editController)
                 }
             case .failure(let error):
                 importErrorMessage = error.localizedDescription
@@ -81,14 +82,15 @@ private struct InlineImporterContentView: View {
         .remoteFileURLImporter(
             isPresented: $showRemoteUrlImporter,
             editControllable: root.editController,
-            itemId: itemId
+            itemId: itemId,
+            replacementConfirmation: replacementConfirmation
         )
         .imagePlaygroundSheet(
             isPresented: $showImagePlayground,
             concept: String(localized: "Create a portrait of a fantasy character", bundle: .module)
         ) { url in
             Task {
-                await root.editController.resetFile(url: url, itemId: itemId)
+                await replacementConfirmation.resetFile(url: url, itemId: itemId, editControllable: root.editController)
             }
         }
         .photosPicker(isPresented: $showLibrary, selection: $selectedItem, matching: .images, photoLibrary: .shared())
@@ -100,8 +102,12 @@ private struct InlineImporterContentView: View {
             let id = itemId
             Task {
                 do {
-                    guard let data = try await localItem.loadTransferable(type: Data.self),
-                          try await root.editController.resetPhoto(data: data, itemId: id) else {
+                    guard let data = try await localItem.loadTransferable(type: Data.self) else {
+                        importErrorMessage = String(localized: "The selected photo could not be loaded.", bundle: .module)
+                        return
+                    }
+                    guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: id, editControllable: root.editController) else { return }
+                    guard try await root.editController.resetPhoto(data: data, itemId: id, replaced: replaced) else {
                         importErrorMessage = String(localized: "The selected photo could not be loaded.", bundle: .module)
                         return
                     }
@@ -129,7 +135,8 @@ private struct InlineImporterContentView: View {
             Task {
                 do {
                     guard let data = try await ItemController.importImageFromProviders(providers) else { return }
-                    guard try await root.editController.resetPhoto(data: data, itemId: id) else {
+                    guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: id, editControllable: root.editController) else { return }
+                    guard try await root.editController.resetPhoto(data: data, itemId: id, replaced: replaced) else {
                         importErrorMessage = String(localized: "The dropped image could not be loaded.", bundle: .module)
                         return
                     }
@@ -141,6 +148,7 @@ private struct InlineImporterContentView: View {
         }
 #endif
         .importFailureAlert(message: $importErrorMessage)
+        .fileReplacementAlert(replacementConfirmation)
     }
 
     /// Only the importers this device can use: the camera sheet exists on iOS only, and Image
@@ -176,8 +184,9 @@ private struct InlineImporterContentView: View {
     }
 
     private func update(id: UUID, image: AKImage?) async {
+        guard let replaced = await replacementConfirmation.disposal(forReplacingFileOf: id, editControllable: root.editController) else { return }
         do {
-            try await root.editController.resetPhoto(image: image, itemId: id)
+            try await root.editController.resetPhoto(image: image, itemId: id, replaced: replaced)
         } catch {
             importErrorMessage = error.localizedDescription
         }

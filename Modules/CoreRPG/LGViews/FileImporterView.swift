@@ -21,6 +21,7 @@ public struct FileImporterView: View {
     /// A picker failure, shown instead of being dropped: a failed pick looked like nothing
     /// happened. See CODE_AUDIT_Folder §8.6.
     @State private var pickerError: String?
+    @State private var replacementConfirmation = FileReplacementConfirmation()
 
     public var body: some View {
 #if !os(tvOS)
@@ -56,7 +57,7 @@ public struct FileImporterView: View {
                 switch result {
                 case .success(let url):
                     Task {
-                        await editControllable.resetFile(url: url, itemId: itemId)
+                        await replacementConfirmation.resetFile(url: url, itemId: itemId, editControllable: editControllable)
                     }
                 case .failure(let error):
                     pickerError = error.localizedDescription
@@ -79,8 +80,10 @@ public struct FileImporterView: View {
             .remoteFileURLImporter(
                 isPresented: $showRemoteUrlImporter,
                 editControllable: editControllable,
-                itemId: itemId
+                itemId: itemId,
+                replacementConfirmation: replacementConfirmation
             )
+            .fileReplacementAlert(replacementConfirmation)
         }
 #endif
     }
@@ -95,16 +98,20 @@ public struct FileImporterView: View {
 }
 
 public extension View {
+    /// - Parameter replacementConfirmation: Asks what happens to the file the item already
+    ///   has; the caller shows its alert with `fileReplacementAlert(_:)`.
     func remoteFileURLImporter(
         isPresented: Binding<Bool>,
         editControllable: any EditControllable,
-        itemId: UUID
+        itemId: UUID,
+        replacementConfirmation: FileReplacementConfirmation
     ) -> some View {
         modifier(
             RemoteFileURLImporterModifier(
                 isPresented: isPresented,
                 editControllable: editControllable,
-                itemId: itemId
+                itemId: itemId,
+                replacementConfirmation: replacementConfirmation
             )
         )
     }
@@ -114,6 +121,7 @@ private struct RemoteFileURLImporterModifier: ViewModifier {
     @Binding var isPresented: Bool
     let editControllable: any EditControllable
     let itemId: UUID
+    let replacementConfirmation: FileReplacementConfirmation
 
     @State private var remoteURLText = ""
 
@@ -143,9 +151,10 @@ private struct RemoteFileURLImporterModifier: ViewModifier {
                     guard let remoteURL else { return }
                     remoteURLText = ""
                     Task {
-                        await editControllable.resetFile(
+                        await replacementConfirmation.resetFile(
                             url: remoteURL,
-                            itemId: itemId
+                            itemId: itemId,
+                            editControllable: editControllable
                         )
                     }
                 }

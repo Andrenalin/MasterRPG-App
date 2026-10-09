@@ -8,6 +8,14 @@ import os.log
 
 // MARK: - Files
 
+/// What happens to the stored file an item's new file replaces.
+public enum ReplacedFileDisposal: Sendable {
+    /// The replaced file is removed from disk, unless another item uses it.
+    case delete
+    /// The replaced file stays where it is; no item references it afterwards.
+    case keep
+}
+
 public extension EditControllable {
     /// The item's path below the module folder: its folder names and its own name. Walks up the
     /// `parentId` chain iteratively with a cycle guard; a parent cycle from imported or merged
@@ -91,16 +99,36 @@ public extension EditControllable {
     /// Returns whether the item has the requested file afterwards. A caller that owns the
     /// source (the 3D scanner and its scan folder) must keep it when this is `false`.
     /// See CODE_AUDIT_21 §5.21.
-    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID) async -> Bool {
+    @MainActor @discardableResult func resetFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal = .delete) async -> Bool {
         let result = await enqueueFileOperation(itemId: itemId) {
-            await replaceFile(url: url, itemId: itemId)
+            await replaceFile(url: url, itemId: itemId, replaced: replaced)
         }.result
         return (try? result.get()) ?? false
     }
 
-    /// The body of `resetFile(url:itemId:)`; callers that already run inside a queued file
-    /// operation for `itemId` call this directly.
-    @MainActor private func replaceFile(url: URL?, itemId: UUID) async -> Bool {
+    /// The stored file that giving the item a new file would delete, or `nil` when nothing
+    /// would be deleted: the item has no file, `url` is the file it already has, the file is a
+    /// remote link or a reference the app does not own, or another item uses it. Waits for the
+    /// item's queued file operations, so it sees the file they end with. What asks the user
+    /// whether to keep the replaced file checks here first. Pass no `url` when the new file is
+    /// written from data.
+    @MainActor func storedFileDeletedByReplacement(itemId: UUID, url: URL? = nil) async -> FileUrl? {
+        await editorModel.fileOperationTails[itemId]?.task.value
+        guard let fileUrlDataController, let existingFileUrl = editModel(for: itemId)?.fileUrl,
+              existingFileUrl.location != .url,
+              fileUrlDataController.storedLocation(of: existingFileUrl) != nil,
+              !itemControllable.isFileUsedElsewhere(existingFileUrl, excluding: itemId) else { return nil }
+        if let url {
+            let securityScope = url.startSecurityScopedAccess()
+            defer { securityScope.stop() }
+            guard await !fileUrlDataController.isSameFile(existingFileUrl: existingFileUrl, newUrl: url) else { return nil }
+        }
+        return existingFileUrl
+    }
+
+    /// The body of `resetFile(url:itemId:replaced:)`; callers that already run inside a queued
+    /// file operation for `itemId` call this directly.
+    @MainActor private func replaceFile(url: URL?, itemId: UUID, replaced: ReplacedFileDisposal) async -> Bool {
         guard let fileUrlDataController, let item = editModel(for: itemId) else { return false }
 
         // Check if we have an existing file
@@ -120,7 +148,7 @@ public extension EditControllable {
         guard let url else {
             // The file was removed, not replaced.
             if let replacedFileUrl {
-                fileUrlDataController.delete(replacedFileUrl, keepingStoredFile: itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId))
+                fileUrlDataController.delete(replacedFileUrl, keepingStoredFile: replaced == .keep || itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId))
                 reset(fileUrl: nil, itemId: itemId)
             }
             return true
@@ -148,7 +176,7 @@ public extension EditControllable {
             }
             reset(fileUrl: updatedFileUrl, itemId: itemId)
             if let replacedFileUrl {
-                if !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
+                if replaced == .delete, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
                     await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: updatedFileUrl)
                 }
                 if updatedFileUrl.location == .url {
@@ -197,22 +225,23 @@ public extension EditControllable {
     /// deleted, durably (a write failure throws and keeps the old file instead of falling back
     /// to memory-only bytes), and the old file is never deleted when the new one resolves to the
     /// same location, or when another item uses it. The file is named after the item; a name
-    /// another item's file already has gets a numbered suffix instead of overwriting that file.
+    /// another item's file already has gets a numbered suffix instead of overwriting that file,
+    /// and so does the item's own file when it is kept (`replaced` is `.keep`).
     /// See CODE_AUDIT_20 §5.4, CODE_AUDIT_21 §5.2.
-    @MainActor func resetFile(data: Data?, itemId: UUID, path: String) async throws {
+    @MainActor func resetFile(data: Data?, itemId: UUID, path: String, replaced: ReplacedFileDisposal = .delete) async throws {
         try await enqueueFileOperation(itemId: itemId) {
-            try await writeFile(data: data, itemId: itemId)
+            try await writeFile(data: data, itemId: itemId, replaced: replaced)
         }.value
     }
 
-    @MainActor private func writeFile(data: Data?, itemId: UUID) async throws {
+    @MainActor private func writeFile(data: Data?, itemId: UUID, replaced: ReplacedFileDisposal) async throws {
         guard let item = editModel(for: itemId) else { return }
         let replacedFileUrl = item.fileUrl
         guard let data else {
             if replacedFileUrl != nil {
                 // Already inside this item's queued file operation; calling the queued
                 // `resetFile(url:itemId:)` here would wait on itself.
-                _ = await replaceFile(url: nil, itemId: itemId)
+                _ = await replaceFile(url: nil, itemId: itemId, replaced: replaced)
             }
             return
         }
@@ -231,7 +260,8 @@ public extension EditControllable {
         guard let fileUrlDataController else { return }
         let dataUrl = try await fileUrlDataController.writeDestination(
             for: requestedUrl,
-            replacing: replacedFileUrl,
+            // A kept file is never written over in place.
+            replacing: replaced == .keep ? nil : replacedFileUrl,
             referencedFileUrls: itemControllable.libraryFileUrls(excluding: itemId)
         )
         var dataFileUrl = FileUrl(fileId: item.id, url: dataUrl, location: .newCloud, module: module, relativeUrl: nil)
@@ -242,7 +272,7 @@ public extension EditControllable {
         }
         await itemControllable.cacheControllable?.remove(itemId: itemId, includeImage: true)
         reset(fileUrl: fileUrl, itemId: itemId)
-        if let replacedFileUrl, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
+        if replaced == .delete, let replacedFileUrl, !itemControllable.isFileUsedElsewhere(replacedFileUrl, excluding: itemId) {
             await fileUrlDataController.deleteReplaced(replacedFileUrl, keeping: fileUrl)
         }
     }
