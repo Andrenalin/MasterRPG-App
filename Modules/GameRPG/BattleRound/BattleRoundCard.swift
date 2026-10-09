@@ -129,24 +129,13 @@ struct BattleRoundCard: View {
                 cardState.characterSheet = nil
             }
             .contextMenu {
-                BattleRoundParticipantActionsMenu(
-                    role: .attacker,
+                BattleRoundAttackerActions(
                     presentation: presentation.attacker,
                     cardState: cardState,
                     controller: controller,
                     showCharacter: showCharacter,
                     selectHitPoints: selectHitPoints
                 )
-                ForEach(presentation.defenders) { defender in
-                    BattleRoundParticipantActionsMenu(
-                        role: .defender,
-                        presentation: defender,
-                        cardState: cardState,
-                        controller: controller,
-                        showCharacter: showCharacter,
-                        selectHitPoints: selectHitPoints
-                    )
-                }
             }
 
             if let sheet = cardState.characterSheet {

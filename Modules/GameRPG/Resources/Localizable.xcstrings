@@ -662,6 +662,7 @@
       }
     },
     "Attacker: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1459,6 +1460,7 @@
       }
     },
     "Defender: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

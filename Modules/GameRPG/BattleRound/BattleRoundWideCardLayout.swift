@@ -23,9 +23,7 @@ struct BattleRoundWideCardLayout: View {
                     isActive: context.presentation.isActive,
                     tint: context.presentation.isActive ? .blue : .gray,
                     controller: context.controller,
-                    showCharacter: context.showCharacter,
-                    selectHitPoints: context.selectHitPoints,
-                    selectInitiative: context.selectInitiative
+                    showCharacter: context.showCharacter
                 )
                 // See CODE_AUDIT §8.3.
                 .equatable()
@@ -46,9 +44,7 @@ struct BattleRoundWideCardLayout: View {
                     cardLayout: .wide,
                     isActiveEntry: context.presentation.isActive,
                     controller: context.controller,
-                    showCharacter: context.showCharacter,
-                    selectHitPoints: context.selectHitPoints,
-                    selectInitiative: context.selectInitiative
+                    showCharacter: context.showCharacter
                 )
             }
 

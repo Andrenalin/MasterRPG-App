@@ -6,6 +6,11 @@ import MapRPG
 import PhotoRPG
 import SwiftUI
 
+enum BattleRoundParticipantRole {
+    case attacker
+    case defender
+}
+
 struct BattleParticipantColumn: View {
     let state: BattleRoundCardState
     let presentation: BattleRoundParticipantPresentation
@@ -15,8 +20,6 @@ struct BattleParticipantColumn: View {
     let tint: Color
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     private var root: MapRootModel { controller.root.mapRoot }
 
@@ -91,18 +94,16 @@ struct BattleParticipantColumn: View {
                 
                 VStack(alignment: .leading, spacing: BattleRoundSpacing.compact) {
                     HStack(spacing: BattleRoundSpacing.tight) {
-                        Button(action: selectInitiativeEntry) {
-                            HStack(spacing: BattleRoundSpacing.extraTight) {
-                                Text("Ini:", bundle: .module)
-                                Text(verbatim: initiativeValue ?? "")
-                                    .monospacedDigit()
-                            }
-                            .font(.caption2)
-                            .contentShape(.rect)
+                        // Not tappable: the attacker's config row picks or
+                        // types the value. A value can still be dropped here.
+                        HStack(spacing: BattleRoundSpacing.extraTight) {
+                            Text("Ini:", bundle: .module)
+                            Text(verbatim: initiativeValue ?? "")
+                                .monospacedDigit()
                         }
-                        .buttonStyle(.plain)
+                        .font(.caption2)
+                        .contentShape(.rect)
                         .foregroundStyle(initiativeValue == nil ? .tertiary : .primary)
-                        .help(Text("Choose the Initiative value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
                         .battleLinkCharacterDropDestination(action: valueDropAction(kind: .initiative))
 #endif
@@ -117,18 +118,14 @@ struct BattleParticipantColumn: View {
                     // benefit. See CODE_AUDIT §7.1.
                     let hp = hitPointsValue
                     HStack(spacing: BattleRoundSpacing.tight) {
-                        Button(action: selectHitPointsEntry) {
-                            HStack(spacing: BattleRoundSpacing.extraTight) {
-                                Text("HP:", bundle: .module)
-                                Text(verbatim: hp ?? "")
-                                    .monospacedDigit()
-                            }
-                            .font(.caption2)
-                            .contentShape(.rect)
+                        HStack(spacing: BattleRoundSpacing.extraTight) {
+                            Text("HP:", bundle: .module)
+                            Text(verbatim: hp ?? "")
+                                .monospacedDigit()
                         }
-                        .buttonStyle(.plain)
+                        .font(.caption2)
+                        .contentShape(.rect)
                         .foregroundStyle(hp == nil ? .tertiary : .primary)
-                        .help(Text("Choose the Hit Points value", bundle: .module))
 #if os(iOS) || os(macOS) || os(visionOS)
                         .battleLinkCharacterDropDestination(action: valueDropAction(kind: .hitPoints))
 #endif
@@ -234,14 +231,6 @@ struct BattleParticipantColumn: View {
         controller.selectRollRecipient(combatant.id)
     }
 
-    private func selectHitPointsEntry() {
-        selectHitPoints(combatant)
-    }
-
-    private func selectInitiativeEntry() {
-        selectInitiative(combatant)
-    }
-
     private func toggleDead() {
         controller.setDead(combatant.id, !combatant.isDead)
     }
@@ -272,9 +261,9 @@ extension BattleParticipantColumn: Equatable {
     /// defender's HP/roll changing used to force re-diffing every sibling
     /// defender and the attacker column too, even though only one
     /// participant's own data actually changed. See CODE_AUDIT §8.3. The
-    /// three action closures are excluded for the same reason
+    /// `showCharacter` closure is excluded for the same reason
     /// `BattleRoundCard` excludes its own: never `Equatable`, and stable
-    /// once hoisted to method references at the call site (see
+    /// once hoisted to a method reference at the call site (see
     /// `BattleRoundView`).
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.state === rhs.state
@@ -301,9 +290,7 @@ extension BattleParticipantColumn: Equatable {
                 isActive: true,
                 tint: .red,
                 controller: controller,
-                showCharacter: { _ in },
-                selectHitPoints: { _ in },
-                selectInitiative: { _ in }
+                showCharacter: { _ in }
             )
             .padding()
         }

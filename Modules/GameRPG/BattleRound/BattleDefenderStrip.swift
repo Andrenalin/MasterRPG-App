@@ -10,8 +10,6 @@ struct BattleDefenderStrip: View {
     let isActiveEntry: Bool
     let controller: BattleRoundController
     let showCharacter: @MainActor (BattleCombatant) -> Void
-    let selectHitPoints: @MainActor (BattleCombatant) -> Void
-    let selectInitiative: @MainActor (BattleCombatant) -> Void
 
     var body: some View {
         if defenders.isEmpty {
@@ -36,9 +34,7 @@ struct BattleDefenderStrip: View {
                             isActive: isActiveEntry,
                             tint: isActiveEntry ? .red : .gray,
                             controller: controller,
-                            showCharacter: showCharacter,
-                            selectHitPoints: selectHitPoints,
-                            selectInitiative: selectInitiative
+                            showCharacter: showCharacter
                         )
                         // See CODE_AUDIT §8.3.
                         .equatable()
@@ -62,9 +58,7 @@ struct BattleDefenderStrip: View {
             cardLayout: .wide,
             isActiveEntry: card.isActive,
             controller: controller,
-            showCharacter: { _ in },
-            selectHitPoints: { _ in },
-            selectInitiative: { _ in }
+            showCharacter: { _ in }
         )
         .padding()
     }
@@ -77,9 +71,7 @@ struct BattleDefenderStrip: View {
         cardLayout: .wide,
         isActiveEntry: false,
         controller: .preview(),
-        showCharacter: { _ in },
-        selectHitPoints: { _ in },
-        selectInitiative: { _ in }
+        showCharacter: { _ in }
     )
     .padding()
 }
