@@ -58,7 +58,7 @@ extension PlayerController {
         switch model.type {
         case .reveal:
             if try await root.photoRoot.gameControllable.reveal(itemId: model.data.id, data: model.data, save: true) {
-                gameModel.setGameUpdateType(.photo)
+                presentPhoto(itemId: model.data.id)
 
                 let localPlayerId = root.gameModel.gameConfig.id
                 root.photoRoot.photoGameControllable.markPhotoAvailable(
@@ -113,10 +113,18 @@ extension PlayerController {
                 }
             }
             if await root.photoRoot.gameControllable.setCurrent(itemId: model.data.id) {
-                gameModel.setGameUpdateType(.photo)
+                presentPhoto(itemId: model.data.id)
             }
         }
         return nil
+    }
+
+    /// A show-photo event: switches the game screen to the photo and names it as the presented
+    /// photo, which the visionOS 3D image viewer follows. A `.store` only caches its photo and
+    /// never comes here.
+    func presentPhoto(itemId: UUID) {
+        gameModel.setGameUpdateType(.photo)
+        root.photoRoot.photoGameControllable.presentPhoto(itemId: itemId)
     }
 
     private func applyPhotoList(_ model: GameNetworkModel) async -> Bool {

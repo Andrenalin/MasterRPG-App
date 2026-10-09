@@ -170,7 +170,11 @@ extension PlayerController {
             masterVersion: { root.photoRoot.photoGameControllable.masterVersion(for: $0, masterId: $1) },
             isAvailable: { root.photoRoot.photoGameControllable.isPhotoAvailable(itemId: $0, for: $1, masterId: $2) },
             allPlayersReported: { root.photoRoot.gameControllable.allPlayersReported(for: $0) },
-            setCurrent: { await root.photoRoot.gameControllable.setCurrent(itemId: $0) }
+            setCurrent: {
+                guard await root.photoRoot.gameControllable.setCurrent(itemId: $0) else { return false }
+                root.photoRoot.photoGameControllable.presentPhoto(itemId: $0)
+                return true
+            }
         )
     }
 

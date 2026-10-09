@@ -29,7 +29,7 @@ final class GameRenderer: TabletopGame.RenderDelegate {
     /// How far back from the volume's front (near-viewer, +Z) face the table
     /// sits. Tightened from an earlier ~0.5 m held here for viewer comfort
     /// so the window's system grab handle and this view's
-    /// `.bottomLeadingFront`/`.bottomTrailingFront` ornaments — both
+    /// `.bottomFront` ornament — both
     /// anchored to that same front face — sit close to the table's own
     /// front edge instead of a visible gap; 15 cm rather than 1 cm (which
     /// `sideClearance` uses on X) because — confirmed on-device — the master

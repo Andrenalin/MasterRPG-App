@@ -190,6 +190,48 @@ struct PlayerControllerTests {
         #expect(restoredItem?.name == item?.name)
     }
 
+    @Test("Only a show-photo event presents a photo; a stored photo is cached without being presented")
+    func storedPhotoIsNotPresented() async throws {
+        let env = try await PlayerControllerTestEnvironment.create()
+        try await MockRoot.importTestData(into: env.root.adventureRoot)
+        env.root.adventureRoot.startGame()
+
+        let itemId = env.root.photoRoot.itemControllable.itemDataModel.items[0]
+        let netData = try await env.root.photoRoot.gameControllable.createGameData(for: itemId)
+        let masterConfig = Self.masterConfig()
+
+        // A map's pin photo arrives as a store. It is the first cached photo of the game, so
+        // it becomes the module's current item — but nobody asked to show it.
+        _ = try await env.playerController.handle(GameNetworkModel(
+            version: 1,
+            counter: 1,
+            proxyCounter: 0,
+            type: .store,
+            subType: .store,
+            gameConfig: masterConfig,
+            data: netData
+        ))
+        #expect(await env.root.photoRoot.gameControllable.currentId == itemId)
+        #expect(env.root.photoRoot.photoGameControllable.presentedPhotoId == nil)
+        #expect(env.playerController.gameModel.gameUpdateType != .photo)
+
+        let result = try await env.playerController.handle(GameNetworkModel(
+            version: 1,
+            counter: 2,
+            proxyCounter: 0,
+            type: .reveal,
+            subType: .show,
+            gameConfig: masterConfig,
+            data: netData
+        ))
+        #expect(result?.subType == .ok)
+        #expect(env.root.photoRoot.photoGameControllable.presentedPhotoId == itemId)
+        #expect(env.playerController.gameModel.gameUpdateType == .photo)
+
+        await env.root.photoRoot.gameControllable.reset()
+        #expect(env.root.photoRoot.photoGameControllable.presentedPhotoId == nil)
+    }
+
     @Test("Player photo share chooses baseline request, master delivery, then reference from availability")
     func playerPhotoShareUsesAvailability() async throws {
         let env = try await PlayerControllerTestEnvironment.create()

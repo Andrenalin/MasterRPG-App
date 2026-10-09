@@ -18,7 +18,6 @@ struct DiceGameActionBar: View {
     @Environment(DiceDisplayModel.self) var diceDisplayModel
     
     @Environment(AppGameStateModel.self) private var appGameStateModel
-    @Environment(\.networkActions) private var networkActions
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
@@ -61,25 +60,7 @@ struct DiceGameActionBar: View {
                         }
 #endif
                         
-                        Button {
-                            if diceDisplayModel.isEditing {
-                                withAnimation(Animation.default.reduced(if: reduceMotion)) {
-                                    diceDisplayModel.isEditing = false
-                                }
-                            }
-                            withAnimation(Animation.default.reduced(if: reduceMotion)) {
-                                root.gameController.rollDice(itemId: itemId, networkActions: networkActions)
-                            }
-                        } label: {
-                            Label {
-                                Text("Roll dice", bundle: .module)
-                            } icon: {
-                                Image(systemName: diceIcon)
-                                    .contentTransition(.symbolEffect(.replace.wholeSymbol))
-                            }
-                            .labelStyle(.iconOnly)
-                        }
-                        .gameOverlayControlStyle()
+                        DiceRollButton(itemId: itemId)
                     }
                     
                     if canShowPlayer {
@@ -143,10 +124,6 @@ struct DiceGameActionBar: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
-    var diceIcon: String {
-        root.gameController.hasResults(itemId: itemId) ? root.itemController.config.module.icon + ".fill" : root.itemController.config.module.icon
     }
 }
 

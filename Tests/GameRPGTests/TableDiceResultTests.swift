@@ -2,6 +2,7 @@
 
 #if (os(iOS) || os(macOS) || os(visionOS)) && canImport(Testing)
 import CoreRPG
+import DiceRPG
 import Foundation
 import Spatial
 import Testing
@@ -19,6 +20,40 @@ struct TableDiceResultTests {
         #expect(TableDieValue.face(TableDieValue.unrolled) == 1)
         #expect(TableDieValue.face(17) == 17)
         #expect(TableDieValue.face(TableDieValue.parked) == 0)
+    }
+
+    @Test("Own dice get a popover before they are rolled; another seat's only with a rolled face")
+    func popoverForDice() {
+        let unrolled = [TableDieValue.unrolled, TableDieValue.unrolled]
+        let partlyRolled = [TableDieValue.unrolled, 4]
+
+        #expect(TableDieValue.hasPopover(unrolled, isLocalSeat: true))
+        #expect(TableDieValue.hasPopover(partlyRolled, isLocalSeat: true))
+        #expect(!TableDieValue.hasPopover([], isLocalSeat: true))
+        #expect(!TableDieValue.hasPopover(unrolled, isLocalSeat: false))
+        #expect(TableDieValue.hasPopover(partlyRolled, isLocalSeat: false))
+        #expect(!TableDieValue.hasPopover([], isLocalSeat: false))
+    }
+
+    @Test("The focused dice change with a roll, with their number and with a copy taking their place")
+    @MainActor
+    func focusedDice() {
+        let first = DieModel(id: UUID(), die: RawDie(.twenty), result: [17])
+        let second = DieModel(id: UUID(), die: RawDie(.twenty))
+        let dice = DiceModel(id: UUID(), dice: [first, second])
+        let mirrored = TableFocusedDice(dice)
+
+        #expect(mirrored == TableFocusedDice(dice))
+        #expect(mirrored.faces == [20, 17, 20])
+
+        // What the popover's compare value editor focuses: the same dice under a new id.
+        #expect(mirrored != TableFocusedDice(dice.copy(withId: UUID())))
+
+        dice.dice[1] = DieModel(id: second.id, die: second.die, result: [3])
+        #expect(mirrored != TableFocusedDice(dice))
+
+        dice.dice.append(DieModel(id: UUID(), die: RawDie(.six)))
+        #expect(TableFocusedDice(dice).faces == [20, 17, 20, 3, 6])
     }
 
     @Test("A die is at rest only close to its goal in both position and orientation")

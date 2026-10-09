@@ -18,14 +18,17 @@ extension GameTableModel {
     /// A group's popover is up once its dice have been rolled and lie where their state puts
     /// them. It goes away as soon as a die is picked up, tossed or turns to a new face, and
     /// comes back when all of them have settled again — in the place they then lie. What it
-    /// shows is the dice overlay's result for that group; see `GameDiceResultPopover`.
+    /// shows is the dice overlay's result for that group; see `GameDiceResultPopover`. This
+    /// device's own dice have theirs before they are rolled as well, for its roll button.
     func updateDiceResults(snapshot: TableSnapshot, visualState: TableVisualState) {
         let now = ContinuousClock.now
+        let localSeat = snapshot.seat(of: PlayerSeat.self, for: tabletopGame.localPlayer)?.0.id
 
         for seat in setup.seats where seat.id != PlayerSeat.guestSeat {
             updateDiceResult(
                 for: .seat(seat.id),
                 dice: seatDice(seat.id, snapshot: snapshot),
+                isLocalSeat: seat.id == localSeat,
                 now: now,
                 snapshot: snapshot,
                 visualState: visualState
@@ -36,6 +39,7 @@ extension GameTableModel {
             updateDiceResult(
                 for: .guest(index),
                 dice: guestDice(guestGroups[index], snapshot: snapshot) ?? [],
+                isLocalSeat: false,
                 now: now,
                 snapshot: snapshot,
                 visualState: visualState
@@ -46,12 +50,13 @@ extension GameTableModel {
     private func updateDiceResult(
         for group: TableDiceGroup,
         dice: [TableDie],
+        isLocalSeat: Bool,
         now: ContinuousClock.Instant,
         snapshot: TableSnapshot,
         visualState: TableVisualState
     ) {
-        let faces = dice.filter { TableDieValue.isRolled($0.value) }.map(\.value)
-        let isResting = !faces.isEmpty && dice.allSatisfy {
+        let values = dice.map(\.value)
+        let isResting = TableDieValue.hasPopover(values, isLocalSeat: isLocalSeat) && dice.allSatisfy {
             isAtRest($0.id, snapshot: snapshot, visualState: visualState)
         }
         guard isResting else {
@@ -60,9 +65,9 @@ extension GameTableModel {
             return
         }
 
-        // New faces start the wait again: the dice may not have begun to turn yet.
-        if diceRestingSince[group]?.faces != faces {
-            diceRestingSince[group] = (faces, now)
+        // New values start the wait again: the dice may not have begun to turn yet.
+        if diceRestingSince[group]?.values != values {
+            diceRestingSince[group] = (values, now)
             hideDiceResult(for: group)
         }
         guard let start = diceRestingSince[group]?.start,

@@ -25,8 +25,8 @@ struct WindowVisionList: Scene {
                 .gameTableActivityAssociation(root: appModel.gameRoot, sceneId: SceneId.gameTable.rawValue)
                 // GameTableToolbar's ornament reaches for GameToolBar (needs
                 // AppWindowSizeModel + networkActions), GameTableWindowButton
-                // (needs AppSettingsModel), and now the dice action bar's
-                // DiceGameActionBar (needs AppGameStateModel) — the volumetric
+                // (needs AppSettingsModel), and the dice result attachments
+                // need AppGameStateModel — the volumetric
                 // scene otherwise never picks these up the way the app's other
                 // (navigation-hosted) windows do via
                 // AppEnvironmentSetUpViewModifier/GameRootView.

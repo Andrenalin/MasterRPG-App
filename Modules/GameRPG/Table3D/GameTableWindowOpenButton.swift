@@ -4,7 +4,7 @@
 import CoreRPG
 import SwiftUI
 
-/// The leading ornament's window-controls row entry (alongside `GameTableSideMenu`): toggles the
+/// The front ornament's window-controls row entry (alongside `GameTableSideMenu`): toggles the
 /// floating adventure (master) or character sheet (player) window. It mirrors `GameTableSideMenu`'s
 /// gating exactly: the master needs an `adventureId` before it can show; a player needs an active
 /// (non-observer) game. A separate `View` struct rather than a computed property on `GameTableView`

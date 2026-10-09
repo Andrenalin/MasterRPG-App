@@ -6,10 +6,10 @@ import SwiftUI
 
 /// The master's and player's "open another module window" buttons (see
 /// `MasterSideMenu`/`PlayerSideMenu`), merged behind a single `isMaster`
-/// flag — used inside `GameTableView`'s own leading-side ornament, folded
+/// flag — used inside `GameTableView`'s own front ornament, folded
 /// into the *same* `HStack`/`GlassEffectContainerAll` as `windowOpenButton`
-/// (row 1 of that ornament's window-controls / `GameTableToolbar` / dice-bar
-/// stack) so the whole row reads as one continuous glass group rather than
+/// (row 1 of that ornament's window-controls / `GameTableToolbar` stack)
+/// so the whole row reads as one continuous glass group rather than
 /// two adjacent ones. Deliberately bare — no own `HStack`, `GlassEffectContainerAll`,
 /// or `.padding()` — so `GameTableView` can wrap this together with
 /// `windowOpenButton` in a single shared container instead of nesting one

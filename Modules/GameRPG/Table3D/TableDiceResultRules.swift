@@ -2,6 +2,7 @@
 
 #if os(iOS) || os(macOS) || os(visionOS)
 import CoreRPG
+import DiceRPG
 import Foundation
 import Spatial
 
@@ -14,16 +15,40 @@ enum TableDieValue {
     /// A pool slot that isn't part of its seat's focused dice set; the die is parked off-table.
     static let parked = 0
     /// A die of a focused set that has not been rolled yet. It lies with its 1 up, like a
-    /// rolled 1, but shows no result.
+    /// rolled 1, but no other seat shows a result for it.
     static let unrolled = -1
 
     static func isRolled(_ value: Int) -> Bool {
         value > 0
     }
 
+    /// Whether a group of dice on the table, with these values, gets a popover once it lies
+    /// still. Another seat's dice need a rolled face, as there is a result to show only then.
+    /// This device's own always get one: it has the button that rolls them and, on its result
+    /// line, the editor of their compare value — which may set how many dice there are.
+    static func hasPopover(_ values: [Int], isLocalSeat: Bool) -> Bool {
+        isLocalSeat ? !values.isEmpty : values.contains(where: isRolled)
+    }
+
     /// The face a die with this value shows on top.
     static func face(_ value: Int) -> Int {
         value == unrolled ? 1 : value
+    }
+}
+
+/// What the table mirrors of the focused dice set onto this device's seat: which set it is, and
+/// the sides and results of its dice. A roll changes it. So does a set that takes the place of
+/// another with the same dice and results — changing the compare value in the dice popover
+/// focuses such a copy — and a die tossed by hand must then roll that one, not the set it
+/// replaced (`GameTableModel.mirroredSheet`).
+struct TableFocusedDice: Equatable {
+    let diceId: UUID
+    let faces: [Int]
+
+    @MainActor
+    init(_ dice: DiceModel) {
+        diceId = dice.id
+        faces = dice.dice.flatMap { [$0.die.max] + $0.result }
     }
 }
 

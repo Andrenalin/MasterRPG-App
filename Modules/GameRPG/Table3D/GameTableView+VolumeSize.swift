@@ -10,7 +10,7 @@ extension GameTableView {
     /// held purely for viewer comfort (so the table wouldn't land right at
     /// the volume's near clipping bound when the window opens), which also
     /// left the window's system grab handle and this view's own
-    /// `.bottomLeadingFront`/`.bottomTrailingFront` ornaments — both
+    /// `.bottomFront` ornament — both
     /// anchored to that same front face — sitting a visible ~0.5 m off the
     /// table's actual edge. 1 cm (matching `sideClearance`), 5 cm, and 10 cm
     /// all still clipped on-device — not the table mesh itself (a plain,
@@ -30,9 +30,7 @@ extension GameTableView {
     public static let frontClearance: Double = 0.15
     /// Clearance left on each side (X) of the table's own footprint —
     /// deliberately tight (not `backClearance`'s 0.15 m) so the leading/
-    /// trailing window handle and this view's own `.bottomLeadingFront`/
-    /// `.bottomTrailingFront` ornaments sit right at the table's edge
-    /// instead of the ~0.3 m gap the old `tableLength`-derived width left.
+    /// trailing window handle sits right at the table's edge instead of the ~0.3 m gap the old `tableLength`-derived width left.
     /// `TableScaleGestureController.maxScale` is tuned against this same
     /// 1 cm budget — see its own doc before widening this back out.
     static let sideClearance: Double = 0.01

@@ -12,6 +12,10 @@ import TabletopKit
 // group is a seat's dice, or the dice of one player without a table, at the guest seat. What the
 // popover shows is the dice overlay's result (`MasterGameScreen`/`PlayerGameScreen`): the focused
 // dice's own result for this device's seat, and a player's entry, with the name, for any other.
+// This device's own popover starts with the button that rolls the dice, and is up before the
+// first roll: for that button, and for the result line, which opens the editor of the focused
+// dice's compare value. A new value can change how many dice the set has (`DiceModel`'s "add
+// dice every"), and the table follows — see `TableFocusedDice`.
 
 /// The dice result popover as one of the table volume's per-group attachments.
 @MainActor
@@ -19,8 +23,8 @@ struct GameDiceResultPopover: View {
     let root: GameRoot
     let game: GameTableModel
     let group: TableDiceGroup
-    /// The table's dice display state, shared with its dice action bar: tapping the own result
-    /// opens the quick value editor there and here.
+    /// The table's dice display state, shared by all its result attachments: tapping the own
+    /// result opens the quick value editor.
     let diceDisplayModel: DiceDisplayModel
     /// The table scene's environment, handed on to the attachment.
     let appGameStateModel: AppGameStateModel?
@@ -35,9 +39,8 @@ struct GameDiceResultPopover: View {
         let playerNames: [String]
         switch group {
         case .seat(let seat) where seat == game.localSeat:
-            guard let focusId = dice.gameModel.focusItemIds.first,
-                  dice.showsResult(for: focusId) else { return nil }
-            return .own
+            guard let focusId = dice.gameModel.focusItemIds.first else { return nil }
+            return .own(showsResult: dice.showsResult(for: focusId))
         case .seat(let seat):
             guard isVisible(isMasterSeat: seat == Self.masterSeat) else { return nil }
             // Several players can share a seat; the overlay lists one result per player.
@@ -66,7 +69,7 @@ struct GameDiceResultPopover: View {
         let content = content
         ZStack {
             if let content {
-                game.mapRoot.viewController.tablePopoverLabel(isInteractive: content == .own) {
+                game.mapRoot.viewController.tablePopoverLabel(isInteractive: content.isOwn) {
                     GameDiceResultContent(root: root, kind: content)
                         .padding(MapPopoverLayout.contentInset)
                 }
@@ -105,10 +108,15 @@ struct GameDiceResultPopover: View {
 /// The dice overlay's result view for a seat.
 private struct GameDiceResultContent: View {
     enum Kind: Equatable {
-        /// This device's seat: the focused dice's result, as the overlay shows it.
-        case own
+        /// This device's seat: the button that rolls the focused dice and, if they sum up or
+        /// compare, their result line as the overlay shows it, rolled or not.
+        case own(showsResult: Bool)
         /// Another seat: the overlay's entry for the dice its player last shared.
         case player(diceId: UUID)
+
+        var isOwn: Bool {
+            if case .own = self { true } else { false }
+        }
     }
 
     let root: GameRoot
@@ -116,8 +124,14 @@ private struct GameDiceResultContent: View {
 
     var body: some View {
         switch kind {
-        case .own:
-            root.diceRoot.viewController.diceResultView(root: root.diceRoot)
+        case .own(let showsResult):
+            // Top-aligned: the result's quick value editor opens below it, not below the button.
+            HStack(alignment: .top) {
+                root.diceRoot.viewController.diceRollButtonView(root: root.diceRoot)
+                if showsResult {
+                    root.diceRoot.viewController.diceResultView(root: root.diceRoot)
+                }
+            }
         case .player(let diceId):
             root.diceRoot.viewController.dicePlayerResultView(root: root.diceRoot, diceId: diceId)
         }

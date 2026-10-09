@@ -95,8 +95,10 @@ struct GameRootViewer: View {
             root.applicationBecameActive()
         }
 #if os(visionOS)
-        .onChange(of: root.photoRoot.gameControllable.gameModel.currentItemId) {
-            guard let photoId = root.photoRoot.gameControllable.gameModel.currentItemId else { return }
+        // Follows the presented photo, not the photo module's `currentItemId`: only a
+        // show-photo event sets it, so a photo a map merely stored never opens the viewer.
+        .onChange(of: root.photoRoot.photoGameControllable.presentedPhotoId) { _, photoId in
+            guard let photoId else { return }
             root.photoRoot.imagePresentationModel.selectedItemId = photoId
             scenesManager.openWindow(SceneId.imageSpaceViewer)
         }
